@@ -1,14 +1,53 @@
 import { Type, Schema } from "@google/genai";
 import { RatioTableData, RatioTableChallenge } from "../../primitives/visual-primitives/math/RatioTable";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Ratio Table Data (multi-challenge format)
- *
- * Each challenge defines its own proportional relationship context,
- * base ratio, row labels, target multiplier, and task type.
- * This allows a single activity to present 3-5 varied ratio challenges.
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'build-ratio': {
+    promptDoc:
+      `"build-ratio": Student constructs an equivalent ratio using a slider. `
+      + `Give base ratio and target; student adjusts multiplier to reach the target scaled value. `
+      + `Example: baseRatio [5, 20], targetMultiplier 4 → "Build a ratio equivalent to 5:20 that gives 80."`,
+    schemaDescription: "'build-ratio' (construct equivalent ratio)",
+  },
+  'missing-value': {
+    promptDoc:
+      `"missing-value": Student finds a hidden value in a scaled ratio. `
+      + `Set hiddenValue to 'scaled-first' or 'scaled-second'. `
+      + `Example: baseRatio [3, 36], targetMultiplier 2, hiddenValue 'scaled-second' → "How many cookies from 6 cups?" (Answer: 72).`,
+    schemaDescription: "'missing-value' (find hidden scaled value)",
+  },
+  'find-multiplier': {
+    promptDoc:
+      `"find-multiplier": Student determines the scaling factor between base and scaled ratios. `
+      + `Give both base and scaled values; student finds the multiplier. `
+      + `Example: baseRatio [4, 12], targetMultiplier 3 → "You used 12 eggs, what multiplier did you use?"`,
+    schemaDescription: "'find-multiplier' (determine scaling factor)",
+  },
+  'unit-rate': {
+    promptDoc:
+      `"unit-rate": Student calculates and applies the unit rate (rate per 1 unit). `
+      + `Focus on division to find rate per 1. `
+      + `Example: baseRatio [6, 48], targetMultiplier 1 → "If 6 notebooks cost $48, what is the cost per notebook?"`,
+    schemaDescription: "'unit-rate' (calculate and apply unit rate)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema
+// ---------------------------------------------------------------------------
+
 const ratioTableChallengeSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -91,15 +130,6 @@ const ratioTableSchema: Schema = {
 /**
  * Generate ratio table data with multiple progressive challenges
  *
- * Produces 3-5 challenges of mixed types:
- * - missing-value: Students find a hidden value using proportional reasoning
- * - find-multiplier: Determine the scaling factor between ratios
- * - build-ratio: Construct a specific equivalent ratio
- * - unit-rate: Calculate and apply unit rates
- *
- * Each challenge has its own real-world context, base ratio, and row labels,
- * allowing variety within a single activity.
- *
  * @param topic - The math topic or concept to teach
  * @param gradeLevel - Grade level for age-appropriate content
  * @param config - Optional configuration hints from the manifest
@@ -108,41 +138,42 @@ const ratioTableSchema: Schema = {
 export const generateRatioTable = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<RatioTableData>
+  config?: Partial<RatioTableData> & {
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode?: string;
+  }
 ): Promise<RatioTableData> => {
+  // ---------------------------------------------------------------------------
+  // Eval mode resolution
+  // ---------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    'ratio-table',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('RatioTable', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(ratioTableSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : ratioTableSchema;
+
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
   const prompt = `
 Create an educational ratio table activity for teaching "${topic}" to ${gradeLevel} students.
 
-This activity should contain 3-5 CHALLENGES of MIXED TYPES that progress in difficulty.
-Each challenge is a separate ratio problem with its own context, base ratio, and row labels.
+This activity should contain 3-5 CHALLENGES that progress in difficulty.
 
-CHALLENGE TYPES (use a mix of these):
+${challengeTypeSection}
 
-1. "missing-value" — Student finds a hidden value in a scaled ratio.
-   - Set hiddenValue to 'scaled-first' or 'scaled-second'
-   - Example: baseRatio [3, 36], targetMultiplier 2.5, hiddenValue 'scaled-second'
-     → "If 3 cups flour makes 36 cookies, how many cookies from 7.5 cups?" (Answer: 90)
-
-2. "find-multiplier" — Student determines the scaling factor.
-   - Give both the base and scaled values; student finds the multiplier
-   - Example: baseRatio [4, 12], targetMultiplier 3
-     → "A recipe uses 4 eggs for 12 muffins. If you used 12 eggs, what multiplier did you use?" (Answer: 3)
-
-3. "build-ratio" — Student constructs an equivalent ratio.
-   - Student adjusts the multiplier to create a target scaled value
-   - Example: baseRatio [5, 20], targetMultiplier 4
-     → "Build a ratio equivalent to 5:20 that gives you 80 in the second column." (Answer: multiplier 4)
-
-4. "unit-rate" — Student calculates and applies the unit rate.
-   - Focus on finding the rate per 1 unit
-   - Example: baseRatio [6, 48], targetMultiplier 1 (unit rate focus)
-     → "If 6 notebooks cost $48, what is the cost per notebook?" (Answer: $8)
-
-DIFFICULTY PROGRESSION BY GRADE:
+${!evalConstraint ? `DIFFICULTY PROGRESSION BY GRADE:
 - Grades 6-7: Whole number multipliers (2, 3, 4, 5), integer results, simple contexts
 - Grades 7-8: Decimal multipliers (1.5, 2.5, 3.5), may have decimal answers
 - Grades 8+: Complex multipliers (2.25, 3.75, 0.75), multi-step reasoning
-
+` : ''}
 REAL-WORLD CONTEXTS (vary across challenges):
 - Recipes: ingredients scaling (flour to cookies, eggs to muffins)
 - Shopping: unit pricing (items to cost, quantity to total)
@@ -160,69 +191,21 @@ ${config.showBarChart !== undefined ? `- Show bar chart: ${config.showBarChart}`
 
 REQUIREMENTS:
 1. Generate 3-5 challenges that PROGRESS in difficulty
-2. Use a MIX of challenge types — do NOT make them all the same type
+2. ${evalConstraint ? 'ALL challenges must use ONLY the allowed challenge type(s)' : 'Use a MIX of challenge types — do NOT make them all the same type'}
 3. Each challenge MUST have its own:
    - id: unique string (e.g., 'rt1', 'rt2', ...)
-   - type: one of the four challenge types
+   - type: one of the allowed challenge types
    - instruction: a clear, specific question or task
    - baseRatio: [number, number] with positive values
    - rowLabels: [string, string] matching the context
    - targetMultiplier: positive number appropriate for grade level
    - hint: helpful guidance without giving the answer
 4. For "missing-value" challenges, set hiddenValue to 'scaled-first' or 'scaled-second'
-5. Start with easier challenges (simpler numbers, missing-value type) and progress to harder ones
+5. Start with easier challenges (simpler numbers) and progress to harder ones
 6. Write engaging, age-appropriate instructions
 7. Ensure all numbers produce reasonable, contextually sensible answers
 8. Set tolerance for challenges where rounding may be needed (e.g., 5 for 5% tolerance)
 9. Write a descriptive title and educational description that spans all challenges
-
-EXAMPLE OUTPUT:
-{
-  "title": "Ratio Reasoning: Recipes & Shopping",
-  "description": "Practice proportional reasoning across different real-world scenarios",
-  "challenges": [
-    {
-      "id": "rt1",
-      "type": "missing-value",
-      "instruction": "If 3 cups of flour makes 36 cookies, how many cookies can you make with 6 cups?",
-      "baseRatio": [3, 36],
-      "rowLabels": ["Cups of Flour", "Cookies Made"],
-      "targetMultiplier": 2,
-      "hiddenValue": "scaled-second",
-      "hint": "Think about how many times 3 goes into 6, then multiply the cookies by the same amount."
-    },
-    {
-      "id": "rt2",
-      "type": "find-multiplier",
-      "instruction": "A car travels 60 miles in 1 hour. If it traveled 210 miles, what multiplier was used?",
-      "baseRatio": [1, 60],
-      "rowLabels": ["Hours", "Miles"],
-      "targetMultiplier": 3.5,
-      "hint": "Divide the total miles (210) by the miles per hour (60) to find how many hours."
-    },
-    {
-      "id": "rt3",
-      "type": "unit-rate",
-      "instruction": "If 5 notebooks cost $15, what is the cost per notebook?",
-      "baseRatio": [5, 15],
-      "rowLabels": ["Notebooks", "Cost ($)"],
-      "targetMultiplier": 1,
-      "hint": "To find the unit rate, divide the total cost by the number of items."
-    },
-    {
-      "id": "rt4",
-      "type": "build-ratio",
-      "instruction": "Build an equivalent ratio to 4:20 where the second value is 100.",
-      "baseRatio": [4, 20],
-      "rowLabels": ["Workers", "Widgets Made"],
-      "targetMultiplier": 5,
-      "hint": "What number do you multiply 20 by to get 100? Use that same multiplier for both values."
-    }
-  ],
-  "showUnitRate": true,
-  "showBarChart": true,
-  "maxMultiplier": 10
-}
 
 Return the complete ratio table configuration.
 `;
@@ -232,7 +215,7 @@ Return the complete ratio table configuration.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: ratioTableSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -258,7 +241,17 @@ Return the complete ratio table configuration.
   );
 
   if (data.challenges.length === 0) {
-    throw new Error('No valid challenge types in Gemini response');
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'missing-value';
+    data.challenges = [{
+      id: 'rt1',
+      type: fallbackType,
+      instruction: `Solve the ratio problem.`,
+      baseRatio: [2, 6],
+      rowLabels: ['Items', 'Cost ($)'],
+      targetMultiplier: 3,
+      hiddenValue: fallbackType === 'missing-value' ? 'scaled-second' : undefined,
+      hint: 'Think about the relationship between the two quantities.',
+    }];
   }
 
   // ── Per-challenge validation ───────────────────────────────────────────

@@ -1,6 +1,40 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { SpellingPatternExplorerData, PatternType } from "../../primitives/visual-primitives/literacy/SpellingPatternExplorer";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'short-vowel': {
+    promptDoc: `"short-vowel": CVC and short vowel patterns. Word families (-at, -an, -ig, -op, -ug). Grade 1 level.`,
+    schemaDescription: "'short-vowel' (CVC patterns)",
+  },
+  'long-vowel': {
+    promptDoc: `"long-vowel": CVCe and vowel team patterns (ai, ea, oa, ee). Grade 2 level.`,
+    schemaDescription: "'long-vowel' (CVCe, vowel teams)",
+  },
+  'r-controlled': {
+    promptDoc: `"r-controlled": R-controlled vowel patterns (ar, er, ir, or, ur). Grade 3 level.`,
+    schemaDescription: "'r-controlled' (ar, er, ir, or, ur)",
+  },
+  'suffix-change': {
+    promptDoc: `"suffix-change": Suffix addition rules (-ing, -ed, -ly, -ful, -ness). Doubling, dropping, changing rules. Grades 3-4.`,
+    schemaDescription: "'suffix-change' (suffix addition rules)",
+  },
+  'latin-root': {
+    promptDoc: `"latin-root": Latin/Greek root-based spelling patterns. -tion/-sion/-cian endings. Grades 5-6.`,
+    schemaDescription: "'latin-root' (etymology-based spelling)",
+  },
+  'silent-letter': {
+    promptDoc: `"silent-letter": Silent letter conventions (kn, wr, gn, mb, etc.). Grades 5-6.`,
+    schemaDescription: "'silent-letter' (silent letter patterns)",
+  },
+};
 
 const spellingPatternExplorerSchema: Schema = {
   type: Type.OBJECT,
@@ -21,9 +55,23 @@ const spellingPatternExplorerSchema: Schema = {
 export const generateSpellingPatternExplorer = async (
   topic: string,
   gradeLevel: string = '3',
-  config?: Partial<SpellingPatternExplorerData>
+  config?: Partial<SpellingPatternExplorerData & { targetEvalMode: string }>
 ): Promise<SpellingPatternExplorerData> => {
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
+
+  const evalConstraint = resolveEvalModeConstraint(
+    'spelling-pattern-explorer',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('SpellingPatternExplorer', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(spellingPatternExplorerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'patternType',
+        rootLevel: true,
+      })
+    : spellingPatternExplorerSchema;
 
   const gradeNotes: Record<string, string> = {
     '1': 'Grade 1: SHORT-VOWEL CVC patterns. Word families (-at, -an, -ig, -op, -ug). 6 pattern words, 4 dictation words. Simple rule.',
@@ -44,12 +92,16 @@ export const generateSpellingPatternExplorer = async (
   };
 
   const patterns = patternsByGrade[gradeLevelKey] || patternsByGrade['3'];
-  const selectedPattern = config?.patternType || patterns[Math.floor(Math.random() * patterns.length)];
+  const selectedPattern = evalConstraint
+    ? evalConstraint.allowedTypes[0] as PatternType
+    : (config?.patternType || patterns[Math.floor(Math.random() * patterns.length)]);
+
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `Create a spelling pattern exploration activity about: "${topic}".
 GRADE: ${gradeLevelKey}. PATTERN TYPE: ${selectedPattern}.
 ${gradeNotes[gradeLevelKey] || gradeNotes['3']}
-
+${challengeTypeSection}
 Rules:
 1. Choose words related to the topic when possible
 2. All patternWords must share the same spelling pattern
@@ -64,14 +116,16 @@ Rules:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: spellingPatternExplorerSchema,
+        responseSchema: activeSchema,
         systemInstruction: 'You are an expert K-6 spelling instructor specializing in phonics patterns, morphology, and word study. You create word lists with clear, consistent spelling patterns. Your rule templates guide students to discover patterns inductively. Dictation words apply the same pattern in new contexts.',
       }
     });
     const text = response.text;
     if (!text) throw new Error("No data returned from Gemini API");
     const result = JSON.parse(text) as SpellingPatternExplorerData;
-    return { ...result, ...config };
+    const { targetEvalMode: _unused, ...configRest } = config ?? {};
+    void _unused;
+    return { ...result, ...configRest };
   } catch (error) {
     console.error("Error generating spelling pattern explorer:", error);
     throw error;

@@ -1,6 +1,55 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { TextStructureAnalyzerData, StructureType } from "../../primitives/visual-primitives/literacy/TextStructureAnalyzer";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'cause-effect': {
+    promptDoc:
+      `"cause-effect": Identify cause and effect relationships in text. `
+      + `The passage should use signal words like "because", "so", "as a result", "therefore". `
+      + `Template regions: Cause / Effect. Key ideas map to cause or effect regions.`,
+    schemaDescription: "'cause-effect' (identify cause and effect relationships, β 2.5)",
+  },
+  'compare-contrast': {
+    promptDoc:
+      `"compare-contrast": Analyze similarities and differences in text. `
+      + `The passage should use signal words like "however", "similarly", "in contrast", "on the other hand", "both". `
+      + `Template regions: Similarities / Differences (or Item A / Item B). Key ideas map to comparison regions.`,
+    schemaDescription: "'compare-contrast' (analyze similarities and differences, β 3.0)",
+  },
+  'problem-solution': {
+    promptDoc:
+      `"problem-solution": Identify the problem and proposed solutions in text. `
+      + `The passage should use signal words like "the problem is", "one solution", "as a result", "to fix this". `
+      + `Template regions: Problem / Solution(s). Key ideas map to problem or solution regions.`,
+    schemaDescription: "'problem-solution' (identify problem and proposed solutions, β 3.5)",
+  },
+  'chronological': {
+    promptDoc:
+      `"chronological": Sequence events in time order from the text. `
+      + `The passage should use signal words like "first", "then", "next", "finally", "after", "before". `
+      + `Template regions: ordered steps or time periods. Key ideas map to sequential regions.`,
+    schemaDescription: "'chronological' (sequence events in time order, β 2.0)",
+  },
+  'description': {
+    promptDoc:
+      `"description": Identify descriptive text structure. `
+      + `The passage should use signal words like "for example", "such as", "includes", "characteristics". `
+      + `Template regions: Main Topic / Details or Features. Key ideas map to descriptive categories.`,
+    schemaDescription: "'description' (identify descriptive text structure, β 2.0)",
+  },
+};
 
 const textStructureAnalyzerSchema: Schema = {
   type: Type.OBJECT,
@@ -64,9 +113,26 @@ const textStructureAnalyzerSchema: Schema = {
 export const generateTextStructureAnalyzer = async (
   topic: string,
   gradeLevel: string = '4',
-  config?: Partial<TextStructureAnalyzerData>
+  config?: Partial<TextStructureAnalyzerData> & { targetEvalMode?: string },
 ): Promise<TextStructureAnalyzerData> => {
   const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
+
+  // -------------------------------------------------------------------------
+  // Eval mode resolution
+  // -------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    'text-structure-analyzer',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('TextStructureAnalyzer', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(textStructureAnalyzerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'structureType',
+        rootLevel: true,
+      })
+    : textStructureAnalyzerSchema;
 
   const gradeNotes: Record<string, string> = {
     '2': 'Grade 2: Focus on CHRONOLOGICAL or DESCRIPTION only. Use "first, then, finally" or descriptive signal words. 4-5 simple sentences. 3-4 signal words. 3-4 key ideas. 2 template regions.',
@@ -87,11 +153,26 @@ export const generateTextStructureAnalyzer = async (
 
   const availableStructures = structuresByGrade[gradeLevelKey] || structuresByGrade['4'];
 
+  // -------------------------------------------------------------------------
+  // Build prompt with eval-mode-scoped challenge type docs
+  // -------------------------------------------------------------------------
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  const structureTypeOverride = evalConstraint
+    ? `\nSTRUCTURE TYPE CONSTRAINT: You MUST use one of these structure types: ${evalConstraint.allowedTypes.join(', ')}. Do NOT use any other structure type.`
+    : '';
+
   const prompt = `Create a text structure analysis activity about: "${topic}".
 GRADE: ${gradeLevelKey}.
 ${gradeNotes[gradeLevelKey] || gradeNotes['4']}
 
 AVAILABLE STRUCTURES for this grade: ${availableStructures.join(', ')}
+
+${challengeTypeSection}
+${structureTypeOverride}
 
 Rules:
 1. Write an informational passage using ONE primary structure from the available list
@@ -108,14 +189,17 @@ Rules:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: textStructureAnalyzerSchema,
+        responseSchema: activeSchema,
         systemInstruction: 'You are an expert K-6 reading comprehension instructor specializing in informational text structure analysis. You create grade-appropriate passages with clear organizational patterns and embedded signal words. You are meticulous about character offsets — count carefully. Template regions match the passage structure. Key ideas are concise excerpts that clearly belong to one region.',
       }
     });
     const text = response.text;
     if (!text) throw new Error("No data returned from Gemini API");
     const result = JSON.parse(text) as TextStructureAnalyzerData;
-    return { ...result, ...config };
+
+    // Exclude targetEvalMode from config spread
+    const { targetEvalMode: _targetEvalMode, ...restConfig } = config || {};
+    return { ...result, ...restConfig };
   } catch (error) {
     console.error("Error generating text structure analyzer:", error);
     throw error;

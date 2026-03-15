@@ -5,6 +5,42 @@ import type {
   WordWorkoutMode,
   WordWorkoutChallenge,
 } from "../../primitives/visual-primitives/literacy/WordWorkout";
+import {
+  resolveEvalModeConstraint,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'real-vs-nonsense': {
+    promptDoc:
+      `"real-vs-nonsense": Student sees two CVC words side by side — one real, one nonsense. `
+      + `Must identify which is the real word. Tests word recognition and decoding accuracy.`,
+    schemaDescription: "'real-vs-nonsense' (identify the real word)",
+  },
+  'picture-match': {
+    promptDoc:
+      `"picture-match": Student sees a decoded CVC word and picks the matching picture from 3 options. `
+      + `Tests word-meaning connection after decoding.`,
+    schemaDescription: "'picture-match' (match word to picture)",
+  },
+  'word-chains': {
+    promptDoc:
+      `"word-chains": Student reads a chain of 4-6 CVC words where one letter changes each step (cat→hat→hot→hop). `
+      + `Tests fluent single-letter substitution reading.`,
+    schemaDescription: "'word-chains' (read chain with one-letter changes)",
+  },
+  'sentence-reading': {
+    promptDoc:
+      `"sentence-reading": Student reads a decodable sentence made from CVC + sight words, `
+      + `then answers a simple comprehension question. Tests word-in-context fluency.`,
+    schemaDescription: "'sentence-reading' (read decodable sentence)",
+  },
+};
 
 // ============================================================================
 // Mode-specific schemas — simple, all fields required per mode.
@@ -312,8 +348,8 @@ async function generateModeChallenges(
 // Main Generator (public API)
 //
 // Architecture (follows ordinal-line orchestrator pattern):
-//   - No config.mode → multi-mode: 4 parallel calls, one per mode
-//   - With config.mode → single-mode: one call for that mode only
+//   - No config.mode and no targetEvalMode → multi-mode: 4 parallel calls
+//   - With config.mode or targetEvalMode → single/filtered-mode generation
 // ============================================================================
 
 export const generateWordWorkout = async (
@@ -323,15 +359,30 @@ export const generateWordWorkout = async (
     mode: WordWorkoutMode;
     challengeCount: number;
     masteredVowels: string[];
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode: string;
   }>
 ): Promise<WordWorkoutData> => {
+  // ── Eval mode resolution ────────────────────────────────────────────
+  const evalConstraint = resolveEvalModeConstraint(
+    'word-workout',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('WordWorkout', config?.targetEvalMode, evalConstraint);
+
   const masteredVowels = config?.masteredVowels || ["a", "e", "i", "o", "u"];
 
-  // ── Single mode (explicit request) ──────────────────────────────
-  if (config?.mode) {
-    const count = config.challengeCount || 5;
+  // Determine which modes to generate
+  const explicitMode = config?.mode;
+  const evalModes = evalConstraint?.allowedTypes as WordWorkoutMode[] | undefined;
+
+  // ── Single mode (explicit request OR eval mode targeting single mode) ──
+  if (explicitMode || (evalModes && evalModes.length === 1)) {
+    const targetMode = explicitMode || evalModes![0];
+    const count = config?.challengeCount || 5;
     const challenges = await generateModeChallenges(
-      config.mode,
+      targetMode,
       topic,
       gradeLevel,
       masteredVowels,
@@ -344,45 +395,47 @@ export const generateWordWorkout = async (
       id: `c${i + 1}`,
     }));
 
-    console.log(`[word-workout] Single-mode (${config.mode}): ${finalChallenges.length} challenges`);
+    console.log(`[word-workout] Single-mode (${targetMode}): ${finalChallenges.length} challenges`);
 
     return {
       title: `CVC Word Workout: ${topic}`,
-      mode: config.mode,
+      mode: targetMode,
       masteredVowels,
       challenges: finalChallenges,
     };
   }
 
-  // ── Multi-mode (default): 4 parallel calls ─────────────────────
-  const [rvn, pm, wc, sr] = await Promise.all([
-    generateModeChallenges("real-vs-nonsense", topic, gradeLevel, masteredVowels, 2),
-    generateModeChallenges("picture-match", topic, gradeLevel, masteredVowels, 2),
-    generateModeChallenges("word-chains", topic, gradeLevel, masteredVowels, 1),
-    generateModeChallenges("sentence-reading", topic, gradeLevel, masteredVowels, 1),
-  ]);
+  // ── Multi-mode (default or eval mode with multiple types) ──────────
+  const modesToGenerate: WordWorkoutMode[] = evalModes || [
+    "real-vs-nonsense",
+    "picture-match",
+    "word-chains",
+    "sentence-reading",
+  ];
+
+  // Distribute challenge count roughly evenly across modes
+  const countPerMode = Math.max(1, Math.ceil(6 / modesToGenerate.length));
+
+  const results = await Promise.all(
+    modesToGenerate.map(mode => generateModeChallenges(mode, topic, gradeLevel, masteredVowels,
+      mode === 'word-chains' || mode === 'sentence-reading' ? 1 : countPerMode
+    ))
+  );
 
   // Merge with sequential IDs
   let idx = 1;
-  const allChallenges: WordWorkoutChallenge[] = [
-    ...rvn.map((ch) => ({ ...ch, id: `c${idx++}` })),
-    ...pm.map((ch) => ({ ...ch, id: `c${idx++}` })),
-    ...wc.map((ch) => ({ ...ch, id: `c${idx++}` })),
-    ...sr.map((ch) => ({ ...ch, id: `c${idx++}` })),
-  ];
+  const allChallenges: WordWorkoutChallenge[] = results.flatMap(
+    modeResults => modeResults.map(ch => ({ ...ch, id: `c${idx++}` }))
+  );
 
   console.log("[word-workout] Multi-mode generated:", {
     total: allChallenges.length,
-    "real-vs-nonsense": rvn.length,
-    "picture-match": pm.length,
-    "word-chains": wc.length,
-    "sentence-reading": sr.length,
-    firstChallenge: allChallenges[0],
+    modes: modesToGenerate,
   });
 
   return {
     title: `CVC Word Workout: ${topic}`,
-    mode: "real-vs-nonsense", // primary mode for backward compat
+    mode: modesToGenerate[0],
     masteredVowels,
     challenges: allChallenges,
   };

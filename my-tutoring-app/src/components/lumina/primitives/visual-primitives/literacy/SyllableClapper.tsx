@@ -25,6 +25,7 @@ interface SyllableChallenge {
   syllables: string[];         // ["but", "ter", "fly"]
   imageDescription: string;
   difficulty: number;           // 3-5
+  challengeType: 'easy' | 'medium' | 'hard';
 }
 
 export interface SyllableClapperData {
@@ -61,10 +62,9 @@ const SYLLABLE_COLORS = [
 ];
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  '1': { label: '1-Syllable', icon: '\uD83D\uDC4F', accentColor: 'blue' },
-  '2': { label: '2-Syllable', icon: '\uD83D\uDC4F\uD83D\uDC4F', accentColor: 'purple' },
-  '3': { label: '3-Syllable', icon: '\uD83D\uDC4F\uD83D\uDC4F\uD83D\uDC4F', accentColor: 'emerald' },
-  '4': { label: '4-Syllable', icon: '\uD83D\uDC4F\uD83D\uDC4F\uD83D\uDC4F\uD83D\uDC4F', accentColor: 'amber' },
+  easy: { label: 'Easy Words', icon: '\uD83D\uDC4F', accentColor: 'blue' },
+  medium: { label: 'Medium Words', icon: '\uD83D\uDC4F\uD83D\uDC4F', accentColor: 'purple' },
+  hard: { label: 'Hard Words', icon: '\uD83D\uDC4F\uD83D\uDC4F\uD83D\uDC4F', accentColor: 'emerald' },
 };
 
 const MAX_CLAPS = 6;
@@ -122,7 +122,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     challenges,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    getChallengeType: (ch) => String(ch.syllableCount),
+    getChallengeType: (ch) => ch.challengeType,
     phaseConfig: PHASE_TYPE_CONFIG,
   });
 

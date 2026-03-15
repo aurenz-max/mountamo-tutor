@@ -1,6 +1,36 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { ContextCluesDetectiveData } from "../../primitives/visual-primitives/literacy/ContextCluesDetective";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  definition: {
+    promptDoc: `"definition": The word is directly explained in the text. The passage contains an explicit definition or restatement of the target word. Simplest clue type — grades 2-3.`,
+    schemaDescription: "'definition' (meaning stated directly in text)",
+  },
+  synonym: {
+    promptDoc: `"synonym": A similar word appears near the target word. The passage uses a synonym or near-synonym to clarify meaning. Grades 3-4.`,
+    schemaDescription: "'synonym' (meaning from similar word nearby)",
+  },
+  antonym: {
+    promptDoc: `"antonym": An opposite word creates contrast that clarifies the target word's meaning. Uses "unlike", "but", "however" signal words. Grades 4-5.`,
+    schemaDescription: "'antonym' (meaning from opposite/contrast)",
+  },
+  example: {
+    promptDoc: `"example": Examples in the text clarify the target word's meaning. Uses "such as", "for example", "including" signal phrases. Grades 2-4.`,
+    schemaDescription: "'example' (meaning from given examples)",
+  },
+  inference: {
+    promptDoc: `"inference": Meaning must be inferred from broader context — not directly stated. Requires combining clues from multiple sentences. Hardest type — grades 5-6.`,
+    schemaDescription: "'inference' (meaning from broader context)",
+  },
+};
 
 /**
  * Schema definition for Context Clues Detective Data
@@ -120,7 +150,7 @@ const contextCluesDetectiveSchema: Schema = {
 export const generateContextCluesDetective = async (
   topic: string,
   gradeLevel: string = '3',
-  config?: Partial<ContextCluesDetectiveData>
+  config?: Partial<ContextCluesDetectiveData & { targetEvalMode: string }>
 ): Promise<ContextCluesDetectiveData> => {
 
   const gradeContext: Record<string, string> = {
@@ -177,6 +207,24 @@ GRADE 6 GUIDELINES:
 `
   };
 
+  const evalConstraint = resolveEvalModeConstraint(
+    'context-clues-detective',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('ContextCluesDetective', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(contextCluesDetectiveSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'clueType',
+      })
+    : contextCluesDetectiveSchema;
+
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
   const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
 
   const generationPrompt = `Create a context clues detective activity about: "${topic}".
@@ -184,6 +232,7 @@ GRADE 6 GUIDELINES:
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeContext[gradeLevelKey] || gradeContext['3']}
+${challengeTypeSection}
 
 REQUIRED INFORMATION:
 
@@ -215,8 +264,7 @@ REQUIRED INFORMATION:
    - The correctMeaning MUST be one of the meaningOptions exactly
    - Distractors should be plausible (related to the topic) but clearly wrong in context
    - Each challenge should use a DIFFERENT target word
-   - Vary the clue types across challenges
-
+${!evalConstraint ? '   - Vary the clue types across challenges\n' : ''}
 EXAMPLE FOR GRADE 3:
 {
   "title": "Word Detective: Ocean Secrets",
@@ -252,7 +300,7 @@ Now generate a context clues detective activity about "${topic}" at grade level 
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: contextCluesDetectiveSchema,
+        responseSchema: activeSchema,
         systemInstruction: `You are an expert K-6 vocabulary and reading comprehension specialist. You create context clues activities that teach students to determine word meaning from surrounding text. You understand the five context clue types deeply: definition (word is explained in text), synonym (similar word nearby), antonym (opposite word creates contrast), example (examples clarify meaning), and inference (meaning deduced from broader context). You choose age-appropriate target vocabulary that challenges students at their grade level while remaining deducible from well-crafted context. Your passages are engaging, topically coherent, and pedagogically sound.`,
       }
     });
@@ -264,9 +312,11 @@ Now generate a context clues detective activity about "${topic}" at grade level 
 
     const result = JSON.parse(text) as ContextCluesDetectiveData;
 
+    const { targetEvalMode: _unused, ...configRest } = config ?? {};
+    void _unused;
     const finalData: ContextCluesDetectiveData = {
       ...result,
-      ...config,
+      ...configRest,
     };
 
     console.log('Context Clues Detective Generated:', {

@@ -291,6 +291,7 @@ Important primitives for elementary progression. All have challenge type enums.
 ### 20. 3DShapeExplorer
 - **File:** `gemini-3d-shape-explorer.ts`
 - **Challenge types:** `identify-3d`, `2d-vs-3d`, `match-to-real-world`, `faces-and-properties`, `shape-riddle`
+- **Status:** DONE
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -303,6 +304,7 @@ Important primitives for elementary progression. All have challenge type enums.
 ### 21. StrategyPicker
 - **File:** `gemini-strategy-picker.ts`
 - **Challenge types:** `guided-strategy`, `try-another`, `compare`, `choose-your-strategy`, `match-strategy`
+- **Status:** DONE
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -315,6 +317,7 @@ Important primitives for elementary progression. All have challenge type enums.
 ### 22. RatioTable
 - **File:** `gemini-ratio-table.ts`
 - **Challenge types:** `missing-value`, `find-multiplier`, `build-ratio`, `unit-rate`
+- **Status:** DONE
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -494,9 +497,9 @@ Requires adding challenge type enums before eval modes. Prioritize by student im
 | 17 | ShapeBuilder | DONE | 6 | 2 | Yes |
 | 18 | ShapeTracer | DONE | 4 | 2 | Yes |
 | 19 | SortingStation | DONE | 6 | 2 | Yes |
-| 20 | 3DShapeExplorer | READY | 5 | 2 | |
-| 21 | StrategyPicker | READY | 5 | 2 | |
-| 22 | RatioTable | READY | 4 | 2 | |
+| 20 | 3DShapeExplorer | DONE | 5 | 2 | Yes |
+| 21 | StrategyPicker | DONE | 5 | 2 | Yes |
+| 22 | RatioTable | DONE | 4 | 2 | Yes |
 | 23 | PlaceValueChart | NEEDS TYPES | 4 | 3 | |
 | 24 | FractionBar | NEEDS TYPES | 4 | 3 | |
 | 25 | PercentBar | NEEDS TYPES | 4 | 3 | |

@@ -1,7 +1,7 @@
 # PRD: Eval Modes Rollout — Literacy Primitives
 
-**Status:** Draft
-**Last Updated:** 2026-03-11
+**Status:** In Progress
+**Last Updated:** 2026-03-14
 **Skill:** `/add-eval-modes`
 **Reference:** `PRD_EVAL_MODES_ROLLOUT.md` (math primitives), `lumina_difficulty_calibration_prd.md` (IRT β priors)
 
@@ -122,7 +122,7 @@ export function constrainChallengeTypeEnum(
 #### 1. LetterSpotter
 - **File:** `gemini-letter-spotter.ts`
 - **Schema field:** `challenges.items.properties.mode` → `["name-it", "find-it", "match-it"]`
-- **Status:** NEEDS FIELD RENAME
+- **Status:** DONE
 - **Backend:** Not registered (has no per-mode priors)
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
@@ -134,8 +134,8 @@ export function constrainChallengeTypeEnum(
 #### 2. LetterSoundLink
 - **File:** `gemini-letter-sound-link.ts`
 - **Schema field:** `challenges.items.properties.mode` → `["see-hear", "hear-see", "keyword-match"]`
-- **Status:** NEEDS FIELD RENAME
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -145,22 +145,22 @@ export function constrainChallengeTypeEnum(
 
 #### 3. PhonemeExplorer
 - **File:** `gemini-phoneme-explorer.ts`
-- **Schema field:** Needs challenge type enum added
-- **Status:** NEEDS TYPES
-- **Backend:** Not registered
+- **Schema field:** `challenges.items.properties.mode` → `["isolate", "blend", "segment", "manipulate"]`
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
 | `isolate` | 1.5 | 1 | `['isolate']` | Identify initial/final phoneme |
-| `segment` | 2.5 | 2 | `['segment']` | Break word into all phonemes |
-| `blend` | 3.5 | 3 | `['blend']` | Combine phonemes into word |
+| `blend` | 2.5 | 2 | `['blend']` | Combine phonemes into word |
+| `segment` | 3.5 | 3 | `['segment']` | Break word into all phonemes |
 | `manipulate` | 5.0 | 4 | `['manipulate']` | Add/delete/substitute phoneme |
 
 #### 4. PhonicsBlender
 - **File:** `gemini-phonics-blender.ts`
 - **Schema field:** root `patternType` → `["cvc", "cvce", "blend", "digraph", "r-controlled", "diphthong"]`
-- **Status:** NEEDS FIELD RENAME (root-level field)
-- **Backend:** `"phonics-blender": {"default": PriorConfig(2.5)}`
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -172,8 +172,8 @@ export function constrainChallengeTypeEnum(
 #### 5. RhymeStudio
 - **File:** `gemini-rhyme-studio.ts`
 - **Schema field:** `challenges.items.properties.mode` → `["recognition", "identification", "production"]`
-- **Status:** NEEDS FIELD RENAME
-- **Backend:** `"rhyme-studio": {"default": PriorConfig(2.0)}`
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -184,8 +184,8 @@ export function constrainChallengeTypeEnum(
 #### 6. SoundSwap
 - **File:** `gemini-sound-swap.ts`
 - **Schema field:** `challenges.items.properties.operation` → `["addition", "deletion", "substitution"]`
-- **Status:** NEEDS FIELD RENAME
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -234,8 +234,8 @@ export function constrainChallengeTypeEnum(
 #### 10. WordWorkout
 - **File:** `gemini-word-workout.ts`
 - **Schema field:** `challenges.items.properties.mode` → `["real-vs-nonsense", "picture-match", "word-chains", "sentence-reading"]`
-- **Status:** NEEDS FIELD RENAME
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -251,8 +251,8 @@ export function constrainChallengeTypeEnum(
 #### 11. StoryMap
 - **File:** `gemini-story-map.ts`
 - **Schema field:** root `structureType` → `["bme", "story-mountain", "plot-diagram", "heros-journey"]`
-- **Status:** NEEDS FIELD RENAME (root-level)
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -277,8 +277,8 @@ export function constrainChallengeTypeEnum(
 #### 13. PoetryLab
 - **File:** `gemini-poetry-lab.ts`
 - **Schema field:** `challenges.items.properties.mode` → `["analysis", "composition"]`
-- **Status:** NEEDS FIELD RENAME
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -316,9 +316,9 @@ export function constrainChallengeTypeEnum(
 #### 16. TextStructureAnalyzer
 - **File:** `gemini-text-structure-analyzer.ts`
 - **Schema field:** root `structureType` → `["cause-effect", "compare-contrast", "problem-solution", "chronological", "description"]`
-- **Status:** NEEDS FIELD RENAME (root-level)
-- **Backend:** Not registered
-- **Notes:** Structure types are content categories, not difficulty levels. Need a separate task type for eval modes.
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
+- **Notes:** Structure types grouped by difficulty: chronological/description (easiest) → cause-effect → compare-contrast → problem-solution (hardest).
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -334,8 +334,8 @@ export function constrainChallengeTypeEnum(
 #### 17. SentenceBuilder
 - **File:** `gemini-sentence-builder.ts`
 - **Schema field:** root `sentenceType` → `["simple", "compound", "complex", "compound-complex"]`
-- **Status:** NEEDS FIELD RENAME (root-level)
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -347,8 +347,8 @@ export function constrainChallengeTypeEnum(
 #### 18. ContextCluesDetective
 - **File:** `gemini-context-clues-detective.ts`
 - **Schema field:** `challenges.items.properties.clueType` → `["definition", "synonym", "antonym", "example", "inference"]`
-- **Status:** NEEDS FIELD RENAME
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -360,8 +360,8 @@ export function constrainChallengeTypeEnum(
 #### 19. FigurativeLanguageFinder
 - **File:** `gemini-figurative-language-finder.ts`
 - **Schema field:** `instances.items.properties.type` → `["simile", "metaphor", "personification", "hyperbole", "idiom", "alliteration", "onomatopoeia", "imagery"]`
-- **Status:** NEEDS FIELD RENAME (array name `instances` instead of `challenges`)
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -373,8 +373,8 @@ export function constrainChallengeTypeEnum(
 #### 20. SpellingPatternExplorer
 - **File:** `gemini-spelling-pattern-explorer.ts`
 - **Schema field:** root `patternType` → `["short-vowel", "long-vowel", "r-controlled", "suffix-change", "latin-root", "silent-letter"]`
-- **Status:** NEEDS FIELD RENAME (root-level)
-- **Backend:** `"spelling-pattern-explorer": {"default": PriorConfig(3.5)}`
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -391,9 +391,8 @@ export function constrainChallengeTypeEnum(
 #### 21. ParagraphArchitect
 - **File:** `gemini-paragraph-architect.ts`
 - **Schema field:** root `paragraphType` → `["informational", "narrative", "opinion"]`
-- **Status:** NEEDS FIELD RENAME (root-level)
-- **Backend:** Not registered
-- **Notes:** Paragraph types are content categories. Eval modes should map to task complexity.
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -416,8 +415,8 @@ export function constrainChallengeTypeEnum(
 #### 23. OpinionBuilder
 - **File:** `gemini-opinion-builder.ts`
 - **Schema field:** root `framework` → `["oreo", "cer"]`
-- **Status:** NEEDS FIELD RENAME (root-level)
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -427,8 +426,8 @@ export function constrainChallengeTypeEnum(
 #### 24. RevisionWorkshop
 - **File:** `gemini-revision-workshop.ts`
 - **Schema field:** root `revisionSkill` → `["add-details", "word-choice", "combine-sentences", "transitions", "reorganize", "concision"]`
-- **Status:** NEEDS FIELD RENAME (root-level)
-- **Backend:** Not registered
+- **Status:** DONE
+- **Backend:** Per-mode priors registered
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -555,24 +554,24 @@ These primitives need new challenge type enums added before eval modes.
 
 | # | Primitive | Strand | Status | Modes | Wave | Completed |
 |---|-----------|--------|--------|-------|------|-----------|
-| — | **Schema Utility** | infra | PENDING | — | 0 | |
+| — | **Schema Utility** | infra | DONE | — | 0 | Yes |
 | 1 | LetterSpotter | RF | DONE | 3 | 1 | Yes |
 | 2 | LetterSoundLink | RF | DONE | 3 | 1 | Yes |
-| 3 | RhymeStudio | RF | NEEDS FIELD RENAME | 3 | 1 | |
-| 4 | SoundSwap | RF | NEEDS FIELD RENAME | 3 | 1 | |
-| 5 | PhonicsBlender | RF | NEEDS FIELD RENAME | 4 | 1 | |
-| 6 | WordWorkout | RF | NEEDS FIELD RENAME | 4 | 1 | |
-| 7 | ContextCluesDetective | L | NEEDS FIELD RENAME | 4 | 2 | |
-| 8 | SentenceBuilder | L | NEEDS FIELD RENAME | 4 | 2 | |
-| 9 | SpellingPatternExplorer | L | NEEDS FIELD RENAME | 5 | 2 | |
-| 10 | FigurativeLanguageFinder | L | NEEDS FIELD RENAME | 4 | 2 | |
-| 11 | StoryMap | RL | NEEDS FIELD RENAME | 4 | 3 | |
-| 12 | PoetryLab | RL | NEEDS FIELD RENAME | 2 | 3 | |
-| 13 | RevisionWorkshop | W | NEEDS FIELD RENAME | 6 | 3 | |
-| 14 | ParagraphArchitect | W | NEEDS FIELD RENAME | 3 | 3 | |
-| 15 | OpinionBuilder | W | NEEDS FIELD RENAME | 2 | 3 | |
-| 16 | TextStructureAnalyzer | RI | NEEDS FIELD RENAME | 4 | 3 | |
-| 17 | PhonemeExplorer | RF | NEEDS TYPES | 4 | 4 | |
+| 3 | RhymeStudio | RF | DONE | 3 | 1 | Yes |
+| 4 | SoundSwap | RF | DONE | 3 | 1 | Yes |
+| 5 | PhonicsBlender | RF | DONE | 4 | 1 | Yes |
+| 6 | WordWorkout | RF | DONE | 4 | 1 | Yes |
+| 7 | ContextCluesDetective | L | DONE | 4 | 2 | Yes |
+| 8 | SentenceBuilder | L | DONE | 4 | 2 | Yes |
+| 9 | SpellingPatternExplorer | L | DONE | 5 | 2 | Yes |
+| 10 | FigurativeLanguageFinder | L | DONE | 4 | 2 | Yes |
+| 11 | StoryMap | RL | DONE | 4 | 3 | Yes |
+| 12 | PoetryLab | RL | DONE | 2 | 3 | Yes |
+| 13 | RevisionWorkshop | W | DONE | 6 | 3 | Yes |
+| 14 | ParagraphArchitect | W | DONE | 3 | 3 | Yes |
+| 15 | OpinionBuilder | W | DONE | 2 | 3 | Yes |
+| 16 | TextStructureAnalyzer | RI | DONE | 4 | 3 | Yes |
+| 17 | PhonemeExplorer | RF | DONE | 4 | 4 | Yes |
 | 18 | SyllableClapper | RF | NEEDS TYPES | 3 | 4 | |
 | 19 | CharacterWeb | RL | NEEDS TYPES | 4 | 4 | |
 | 20 | EvidenceFinder | RI | NEEDS TYPES | 3 | 4 | |

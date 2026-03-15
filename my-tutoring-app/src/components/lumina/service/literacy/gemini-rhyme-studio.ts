@@ -1,6 +1,44 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { RhymeStudioData } from "../../primitives/visual-primitives/literacy/RhymeStudio";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  recognition: {
+    promptDoc:
+      `"recognition": Show two words; student says "yes" or "no" to whether they rhyme. `
+      + `Mix it up: some pairs SHOULD rhyme (doesRhyme: true), some should NOT (doesRhyme: false). `
+      + `REQUIRED fields: comparisonWord, comparisonWordImage, doesRhyme. `
+      + `Do NOT include options or acceptableAnswers. 3-4 challenges per session.`,
+    schemaDescription: "'recognition' (do these words rhyme? yes/no)",
+  },
+  identification: {
+    promptDoc:
+      `"identification": Show a target word and 2-3 options; student picks the rhyming one. `
+      + `Exactly ONE option must have isCorrect: true; all others isCorrect: false. `
+      + `REQUIRED fields: options (array of {word, image, isCorrect}). `
+      + `Do NOT include comparisonWord, doesRhyme, or acceptableAnswers. 2-3 challenges per session.`,
+    schemaDescription: "'identification' (pick the rhyming word)",
+  },
+  production: {
+    promptDoc:
+      `"production": Show a target word; student types a rhyming word. `
+      + `Provide 3-5 common acceptable answers (do NOT include the target word itself). `
+      + `REQUIRED fields: acceptableAnswers (array of strings). `
+      + `Do NOT include comparisonWord, doesRhyme, or options. 2-3 challenges per session.`,
+    schemaDescription: "'production' (type a rhyming word)",
+  },
+};
 
 /**
  * Schema definition for Rhyme Studio Data
@@ -100,14 +138,32 @@ const rhymeStudioSchema: Schema = {
  *
  * @param topic - Theme for the word set (e.g., "Animals", "Food", "At the Park")
  * @param gradeLevel - Grade level ('K', '1', or '2') determines vocabulary complexity
- * @param config - Optional configuration overrides (e.g., challengeCount)
+ * @param config - Optional configuration overrides (e.g., challengeCount, targetEvalMode)
  * @returns RhymeStudioData with grade-appropriate rhyming challenges
  */
 export const generateRhymeStudio = async (
   topic: string,
   gradeLevel: string = "K",
-  config?: Partial<{ challengeCount: number }>
+  config?: Partial<{
+    challengeCount: number;
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode: string;
+  }>
 ): Promise<RhymeStudioData> => {
+  // ── Eval mode resolution ────────────────────────────────────────────
+  const evalConstraint = resolveEvalModeConstraint(
+    'rhyme-studio',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('RhymeStudio', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(rhymeStudioSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'mode',
+      })
+    : rhymeStudioSchema;
+
   const gradeLevelKey = ["K", "1", "2"].includes(gradeLevel.toUpperCase())
     ? gradeLevel.toUpperCase()
     : "K";
@@ -144,27 +200,26 @@ GRADE 2 GUIDELINES:
 `,
   };
 
+  // ── Build prompt ────────────────────────────────────────────────────
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
   const generationPrompt = `Create a rhyming practice activity for the topic: "${topic}".
 
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}
 
-Generate exactly ${challengeCount} challenges in this order:
-1. RECOGNITION challenges (3-4 total): Show two words; student says "yes" or "no" to whether they rhyme.
-   - Mix it up: some pairs SHOULD rhyme (doesRhyme: true), some should NOT (doesRhyme: false).
-   - REQUIRED fields: comparisonWord, comparisonWordImage, doesRhyme
-   - Do NOT include options or acceptableAnswers for recognition challenges.
+Generate exactly ${challengeCount} challenges.
 
-2. IDENTIFICATION challenges (2-3 total): Show a target word and 2-3 options; student picks the rhyming one.
-   - Exactly ONE option must have isCorrect: true; all others isCorrect: false.
-   - REQUIRED fields: options (array of {word, image, isCorrect})
-   - Do NOT include comparisonWord, doesRhyme, or acceptableAnswers for identification challenges.
+${challengeTypeSection}
 
-3. PRODUCTION challenges (2-3 total): Show a target word; student types a rhyming word.
-   - Provide 3-5 common acceptable answers (do NOT include the target word itself).
-   - REQUIRED fields: acceptableAnswers (array of strings)
-   - Do NOT include comparisonWord, doesRhyme, or options for production challenges.
+MODE-SPECIFIC FIELD RULES:
+- recognition: set comparisonWord, comparisonWordImage, doesRhyme. Do NOT set options or acceptableAnswers.
+- identification: set options (array of {word, image, isCorrect}). Do NOT set comparisonWord, doesRhyme, or acceptableAnswers.
+- production: set acceptableAnswers (array of strings). Do NOT set comparisonWord, doesRhyme, or options.
 
 CRITICAL RULES:
 - Every challenge must have: id, mode, targetWord, targetWordImage, rhymeFamily
@@ -175,53 +230,7 @@ CRITICAL RULES:
 - Use simple, common, age-appropriate words
 - IDs should be sequential: "c1", "c2", "c3", etc.
 - Image descriptions should be brief (3-6 words) and kid-friendly
-
-EXAMPLE:
-{
-  "title": "Rhyme Time: Animals!",
-  "challenges": [
-    {
-      "id": "c1",
-      "mode": "recognition",
-      "targetWord": "cat",
-      "targetWordImage": "a fluffy orange cat",
-      "rhymeFamily": "-at",
-      "comparisonWord": "bat",
-      "comparisonWordImage": "a flying brown bat",
-      "doesRhyme": true
-    },
-    {
-      "id": "c2",
-      "mode": "recognition",
-      "targetWord": "dog",
-      "targetWordImage": "a happy brown dog",
-      "rhymeFamily": "-og",
-      "comparisonWord": "sun",
-      "comparisonWordImage": "a bright yellow sun",
-      "doesRhyme": false
-    },
-    {
-      "id": "c5",
-      "mode": "identification",
-      "targetWord": "hen",
-      "targetWordImage": "a red farm hen",
-      "rhymeFamily": "-en",
-      "options": [
-        { "word": "ten", "image": "the number 10", "isCorrect": true },
-        { "word": "hat", "image": "a red hat", "isCorrect": false },
-        { "word": "cup", "image": "a blue cup", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "c8",
-      "mode": "production",
-      "targetWord": "bug",
-      "targetWordImage": "a small green bug",
-      "rhymeFamily": "-ug",
-      "acceptableAnswers": ["rug", "hug", "mug", "tug", "dug"]
-    }
-  ]
-}
+${!evalConstraint ? '- Order challenges: recognition first, then identification, then production (easiest → hardest).' : ''}
 
 Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
 
@@ -231,7 +240,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: rhymeStudioSchema,
+        responseSchema: activeSchema,
         systemInstruction:
           "You are an expert K-2 reading specialist who designs engaging phonological awareness activities. " +
           "You understand rhyme families deeply and always produce linguistically accurate rhyming pairs. " +
@@ -308,6 +317,21 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
         return ch;
       }
     );
+
+    // Fallback: ensure at least one challenge exists
+    if (result.challenges.length === 0) {
+      const fallbackMode = evalConstraint?.allowedTypes[0] ?? 'recognition';
+      result.challenges = [{
+        id: 'c1',
+        mode: fallbackMode,
+        targetWord: 'cat',
+        targetWordImage: 'a fluffy cat',
+        rhymeFamily: '-at',
+        comparisonWord: 'hat',
+        comparisonWordImage: 'a red hat',
+        doesRhyme: true,
+      }];
+    }
 
     const finalData: RhymeStudioData = {
       title: result.title,

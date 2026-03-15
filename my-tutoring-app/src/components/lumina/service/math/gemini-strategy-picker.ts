@@ -1,6 +1,11 @@
 import { Type, Schema } from "@google/genai";
 import { StrategyPickerData, StrategyPickerChallenge, StrategyId } from "../../primitives/visual-primitives/math/StrategyPicker";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
 // ============================================================================
 // Setup Schema (lightweight first call)
@@ -496,6 +501,43 @@ function fallbackMatch(setup: SetupResult) {
 }
 
 // ============================================================================
+// Challenge type documentation (for eval mode resolution)
+// ============================================================================
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'guided-strategy': {
+    promptDoc:
+      `"guided-strategy": Student follows a given strategy with step-by-step scaffolding to solve a problem. `
+      + `Concrete, fully guided — the teacher assigns both the problem and the strategy.`,
+    schemaDescription: "'guided-strategy' (follow a given strategy)",
+  },
+  'match-strategy': {
+    promptDoc:
+      `"match-strategy": Student reads a worked solution and identifies which strategy was used. `
+      + `Multiple-choice recognition task — the strategy name is NOT in the solution text.`,
+    schemaDescription: "'match-strategy' (identify strategy from worked solution)",
+  },
+  'try-another': {
+    promptDoc:
+      `"try-another": Student solves the SAME problem using a DIFFERENT strategy. `
+      + `Builds flexibility — compare the feel of two approaches on one problem.`,
+    schemaDescription: "'try-another' (solve same problem a different way)",
+  },
+  'compare': {
+    promptDoc:
+      `"compare": Metacognitive reflection — student compares two strategies they just used. `
+      + `No wrong answer. Reflective question about preference, speed, or ease.`,
+    schemaDescription: "'compare' (reflect on multiple strategies)",
+  },
+  'choose-your-strategy': {
+    promptDoc:
+      `"choose-your-strategy": Student picks their own strategy from a menu, then solves. `
+      + `Autonomous selection — assesses strategic flexibility and preference.`,
+    schemaDescription: "'choose-your-strategy' (autonomous strategy selection)",
+  },
+};
+
+// ============================================================================
 // Main Generator (public API)
 // ============================================================================
 
@@ -504,7 +546,7 @@ function fallbackMatch(setup: SetupResult) {
  *
  * Architecture:
  *   1. Lightweight "setup" call → title, problems, strategy pairings
- *   2. Five parallel calls (one per challenge type) with tiny focused schemas
+ *   2. Parallel calls for needed challenge types (filtered by eval mode)
  *   3. Recombine into StrategyPickerData
  */
 export const generateStrategyPicker = async (
@@ -516,18 +558,42 @@ export const generateStrategyPicker = async (
     strategiesIntroduced: string[];
     challengeCount: number;
     gradeBand: string;
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode: string;
   }>
 ): Promise<StrategyPickerData> => {
+  // ---------------------------------------------------------------------------
+  // Eval mode resolution
+  // ---------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    'strategy-picker',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('StrategyPicker', config?.targetEvalMode, evalConstraint);
+
+  const allowedTypes = evalConstraint?.allowedTypes ?? [
+    'guided-strategy', 'try-another', 'compare', 'choose-your-strategy', 'match-strategy',
+  ];
+
   // Step 1: Setup call
   const setup = await generateSetup(topic, gradeLevel, config);
 
-  // Step 2: Five parallel challenge calls
+  // Step 2: Parallel challenge calls — only for allowed types
+  // Some types depend on others (try-another and compare need guided first),
+  // so always generate guided if try-another or compare are needed.
+  const needGuided = allowedTypes.includes('guided-strategy') || allowedTypes.includes('try-another') || allowedTypes.includes('compare');
+  const needTryAnother = allowedTypes.includes('try-another') || allowedTypes.includes('compare');
+  const needCompare = allowedTypes.includes('compare');
+  const needChoose = allowedTypes.includes('choose-your-strategy');
+  const needMatch = allowedTypes.includes('match-strategy');
+
   const [guided, tryAnother, compare, choose, match] = await Promise.all([
-    generateGuided(setup, gradeLevel),
-    generateTryAnotherChallenge(setup, gradeLevel),
-    generateCompareChallenge(setup, gradeLevel),
-    generateChooseChallenge(setup, gradeLevel),
-    generateMatchChallenge(setup, gradeLevel),
+    needGuided ? generateGuided(setup, gradeLevel) : Promise.resolve(fallbackGuided(setup)),
+    needTryAnother ? generateTryAnotherChallenge(setup, gradeLevel) : Promise.resolve(fallbackTryAnother(setup)),
+    needCompare ? generateCompareChallenge(setup, gradeLevel) : Promise.resolve(fallbackCompare(setup)),
+    needChoose ? generateChooseChallenge(setup, gradeLevel) : Promise.resolve({ instruction: 'Pick any strategy you like!' }),
+    needMatch ? generateMatchChallenge(setup, gradeLevel) : Promise.resolve(fallbackMatch(setup)),
   ]);
 
   // Step 3: Build problem objects
@@ -543,8 +609,8 @@ export const generateStrategyPicker = async (
   const p1 = buildProblem(setup.problems[1]);
   const p2 = buildProblem(setup.problems[2]);
 
-  // Step 4: Assemble challenges
-  const challenges: StrategyPickerChallenge[] = [
+  // Step 4: Assemble challenges — only include allowed types
+  const allChallenges: StrategyPickerChallenge[] = [
     {
       id: 'ch1',
       type: 'guided-strategy',
@@ -557,7 +623,7 @@ export const generateStrategyPicker = async (
       id: 'ch2',
       type: 'try-another',
       instruction: tryAnother.instruction,
-      problem: p0, // same problem
+      problem: p0,
       assignedStrategy: setup.tryAnotherStrategy,
       strategySteps: tryAnother.strategySteps,
     },
@@ -565,7 +631,7 @@ export const generateStrategyPicker = async (
       id: 'ch3',
       type: 'compare',
       instruction: compare.instruction,
-      problem: p0, // same problem
+      problem: p0,
       strategies: [setup.guidedStrategy, setup.tryAnotherStrategy],
       comparisonQuestion: compare.comparisonQuestion,
     },
@@ -586,6 +652,10 @@ export const generateStrategyPicker = async (
       correctStrategy: setup.matchCorrectStrategy,
     },
   ];
+
+  const challenges = evalConstraint
+    ? allChallenges.filter(c => allowedTypes.includes(c.type))
+    : allChallenges;
 
   return {
     title: setup.title,

@@ -1,6 +1,32 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { ParagraphArchitectData } from "../../primitives/visual-primitives/literacy/ParagraphArchitect";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  informational: {
+    promptDoc: `"informational": Structured informational paragraph (β 2.5). Topic sentence, details, conclusion.`,
+    schemaDescription: "'informational' (topic sentence + supporting details + conclusion)",
+  },
+  narrative: {
+    promptDoc: `"narrative": Narrative paragraph with elements (β 3.5). Setting, characters, events.`,
+    schemaDescription: "'narrative' (setting + characters + events)",
+  },
+  opinion: {
+    promptDoc: `"opinion": Opinion with claim + support (β 5.0). Claim, reasons, evidence, conclusion.`,
+    schemaDescription: "'opinion' (claim + reasons + evidence + conclusion)",
+  },
+};
 
 /**
  * Schema definition for Paragraph Architect Data
@@ -107,8 +133,30 @@ const paragraphArchitectSchema: Schema = {
 export const generateParagraphArchitect = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<ParagraphArchitectData>
+  config?: Partial<ParagraphArchitectData & { targetEvalMode: string }>
 ): Promise<ParagraphArchitectData> => {
+
+  // ---------------------------------------------------------------------------
+  // Eval mode resolution
+  // ---------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    'paragraph-architect',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('ParagraphArchitect', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(
+        paragraphArchitectSchema,
+        evalConstraint.allowedTypes,
+        CHALLENGE_TYPE_DOCS,
+        { fieldName: 'paragraphType', rootLevel: true },
+      )
+    : paragraphArchitectSchema;
+
+  // Build challenge type prompt section
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   // Grade-specific complexity and content instructions
   const gradeContext: Record<string, string> = {
@@ -206,14 +254,18 @@ GRADE 6 GUIDELINES:
     opinion: "OPINION paragraph (claim/opinion + reasons + conclusion). The topic sentence states a clear opinion, details give reasons with evidence, and the conclusion restates the opinion."
   };
 
-  // Infer paragraph type from config or default to informational
-  const targetParagraphType = config?.paragraphType || 'informational';
+  // When eval mode is active, use the first allowed type; otherwise use config or default
+  const targetParagraphType = evalConstraint
+    ? evalConstraint.allowedTypes[0]
+    : (config?.paragraphType || 'informational');
   const paragraphTypeDescription = paragraphTypeDescriptions[targetParagraphType] || paragraphTypeDescriptions.informational;
 
   const generationPrompt = `Create a scaffolded paragraph writing activity for: "${topic}".
 
 TARGET GRADE LEVEL: ${gradeLevel}
 PARAGRAPH TYPE: ${paragraphTypeDescription}
+
+${challengeTypeSection}
 
 ${selectedGradeContext}
 
@@ -307,7 +359,7 @@ Now generate a paragraph architect activity for "${topic}" at grade level ${grad
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: paragraphArchitectSchema,
+        responseSchema: activeSchema,
         systemInstruction: `You are an expert elementary writing teacher specializing in K-6 paragraph instruction. You understand the "hamburger" model of paragraph writing (topic sentence as top bun, details as fillings, conclusion as bottom bun). You create age-appropriate sentence frames that scaffold student writing while encouraging original thought. You know how to scale writing instruction from kindergarten (simple sentences with heavy support) through grade 6 (complex academic paragraphs with argumentative structure). You always use grade-appropriate vocabulary, sentence length, and complexity. Your model paragraphs are engaging, accurate, and demonstrate the exact structure you want students to learn.`,
       }
     });
@@ -319,10 +371,11 @@ Now generate a paragraph architect activity for "${topic}" at grade level ${grad
 
     const result = JSON.parse(text) as ParagraphArchitectData;
 
-    // Merge with any config overrides
+    // Merge with any config overrides (excluding targetEvalMode)
+    const { targetEvalMode: _unused, ...configRest } = config ?? {};
     const finalData: ParagraphArchitectData = {
       ...result,
-      ...config,
+      ...configRest,
     };
 
     console.log('Paragraph Architect Generated:', {

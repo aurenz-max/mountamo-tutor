@@ -1,6 +1,58 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { PhonicsBlenderData } from "../../primitives/visual-primitives/literacy/PhonicsBlender";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  cvc: {
+    promptDoc:
+      `"cvc": Simple consonant-vowel-consonant words with 3 phonemes each (cat, dog, sun, bus). `
+      + `Use short vowel sounds only. Each phoneme maps to exactly one letter. `
+      + `K level. 4-5 words per session.`,
+    schemaDescription: "'cvc' (simple CVC blending)",
+  },
+  cvce: {
+    promptDoc:
+      `"cvce": Words with silent-e and long vowel sounds (cake, bike, bone, cute). `
+      + `The silent-e is part of the vowel phoneme or a separate /silent/ phoneme. `
+      + `Grade 1 level. 4-6 words per session.`,
+    schemaDescription: "'cvce' (silent-e words)",
+  },
+  blend: {
+    promptDoc:
+      `"blend": Words with consonant blends where each consonant is a separate phoneme (stop, clap, frog, drum). `
+      + `3-5 phonemes per word. Grade 1 level. 4-6 words per session.`,
+    schemaDescription: "'blend' (consonant blends)",
+  },
+  digraph: {
+    promptDoc:
+      `"digraph": Words with digraphs (sh, ch, th, wh) where the digraph is ONE phoneme (ship, chop, thin). `
+      + `3-4 phonemes per word. Grade 1 level. 4-6 words per session.`,
+    schemaDescription: "'digraph' (two letters, one sound)",
+  },
+  'r-controlled': {
+    promptDoc:
+      `"r-controlled": Words with r-controlled vowels (ar, er, ir, or, ur) where the r-controlled vowel is ONE phoneme (farm, fern, bird, corn). `
+      + `3-5 phonemes per word. Grade 2 level. 4-6 words per session.`,
+    schemaDescription: "'r-controlled' (r-controlled vowels)",
+  },
+  diphthong: {
+    promptDoc:
+      `"diphthong": Words with diphthongs (oi/oy, ou/ow) where the diphthong is ONE phoneme (coin, boy, cloud, cow). `
+      + `3-5 phonemes per word. Grade 2 level. 4-6 words per session.`,
+    schemaDescription: "'diphthong' (vowel diphthongs)",
+  },
+};
 
 /**
  * Schema definition for Phonics Blender Data
@@ -80,21 +132,34 @@ const phonicsBlenderSchema: Schema = {
  * Creates interactive sound-by-sound word building activities that scale
  * from Kindergarten CVC words through Grade 2 multisyllabic blending.
  *
- * The blender follows a 3-phase learning progression per word:
- * - Listen: Hear each phoneme sound individually
- * - Build: Arrange phoneme tiles in the correct order
- * - Blend: Hear the blended word and see a reward image
- *
  * @param topic - Theme for the word set (e.g., "Animals", "Food", "At the Park")
  * @param gradeLevel - Grade level ('K', '1', or '2') determines pattern complexity
- * @param config - Optional partial configuration to override generated values
+ * @param config - Optional configuration overrides
  * @returns PhonicsBlenderData with grade-appropriate words and phoneme breakdowns
  */
 export const generatePhonicsBlender = async (
   topic: string,
   gradeLevel: string = 'K',
-  config?: Partial<PhonicsBlenderData>
+  config?: Partial<PhonicsBlenderData & {
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode: string;
+  }>
 ): Promise<PhonicsBlenderData> => {
+
+  // ── Eval mode resolution ────────────────────────────────────────────
+  const evalConstraint = resolveEvalModeConstraint(
+    'phonics-blender',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('PhonicsBlender', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(phonicsBlenderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'patternType',
+        rootLevel: true,
+      })
+    : phonicsBlenderSchema;
 
   // Grade-specific phonics pattern guidelines
   const gradeContext: Record<string, string> = {
@@ -144,11 +209,19 @@ GRADE 2 GUIDELINES:
   const gradeLevelKey = ['K', '1', '2'].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : 'K';
   const defaultPatternType = gradeLevelKey === 'K' ? 'cvc' : gradeLevelKey === '1' ? 'blend' : 'r-controlled';
 
+  // ── Build prompt ────────────────────────────────────────────────────
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
   const generationPrompt = `Create a phonics blending activity for the topic: "${topic}".
 
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
-${gradeContext[gradeLevelKey] || gradeContext['K']}
+${!evalConstraint ? (gradeContext[gradeLevelKey] || gradeContext['K']) : ''}
+
+${challengeTypeSection}
 
 REQUIRED INFORMATION:
 
@@ -156,7 +229,7 @@ REQUIRED INFORMATION:
 
 2. **Grade Level**: "${gradeLevelKey}"
 
-3. **Pattern Type**: "${config?.patternType || defaultPatternType}"
+3. **Pattern Type**: "${evalConstraint ? evalConstraint.allowedTypes[0] : (config?.patternType || defaultPatternType)}"
 
 4. **Words** (4-6 words):
    For EACH word provide:
@@ -175,58 +248,9 @@ REQUIRED INFORMATION:
    - R-controlled vowels (ar, er, ir, or, ur) are SINGLE phonemes
    - Diphthongs (oi, oy, ou, ow) are SINGLE phonemes
    - Silent-e in CVCE words: the vowel phoneme should use the long sound, and "e" is part of it
-     - For "cake": phonemes are /k/ (letters: "c"), /ā/ (letters: "a"), /k/ (letters: "k"), with silent "e" appended to the last consonant's letters OR handled as: c + a_e + k where a_e = long a
      - SIMPLER APPROACH: Just include the silent-e as its own phoneme with sound "//" and letters "e"
    - Each phoneme ID must be unique within the word (use pattern: w1_p1, w1_p2)
    - Phoneme sounds should use simple notation students can understand
-
-EXAMPLE OUTPUT FOR KINDERGARTEN (CVC):
-{
-  "title": "Animal Sound Blending",
-  "gradeLevel": "K",
-  "patternType": "cvc",
-  "words": [
-    {
-      "id": "w1",
-      "targetWord": "cat",
-      "phonemes": [
-        { "id": "w1_p1", "sound": "/k/", "letters": "c" },
-        { "id": "w1_p2", "sound": "/a/", "letters": "a" },
-        { "id": "w1_p3", "sound": "/t/", "letters": "t" }
-      ],
-      "imageDescription": "a fluffy orange cat sitting"
-    },
-    {
-      "id": "w2",
-      "targetWord": "dog",
-      "phonemes": [
-        { "id": "w2_p1", "sound": "/d/", "letters": "d" },
-        { "id": "w2_p2", "sound": "/o/", "letters": "o" },
-        { "id": "w2_p3", "sound": "/g/", "letters": "g" }
-      ],
-      "imageDescription": "a happy brown dog wagging its tail"
-    }
-  ]
-}
-
-EXAMPLE OUTPUT FOR GRADE 1 (DIGRAPH):
-{
-  "title": "Digraph Sound Blending",
-  "gradeLevel": "1",
-  "patternType": "digraph",
-  "words": [
-    {
-      "id": "w1",
-      "targetWord": "ship",
-      "phonemes": [
-        { "id": "w1_p1", "sound": "/sh/", "letters": "sh" },
-        { "id": "w1_p2", "sound": "/i/", "letters": "i" },
-        { "id": "w1_p3", "sound": "/p/", "letters": "p" }
-      ],
-      "imageDescription": "a big ship sailing on the ocean"
-    }
-  ]
-}
 
 Now generate a phonics blending activity for "${topic}" at grade level ${gradeLevelKey}. Ensure all phoneme letters concatenate exactly to the target word.`;
 
@@ -236,7 +260,7 @@ Now generate a phonics blending activity for "${topic}" at grade level ${gradeLe
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: phonicsBlenderSchema,
+        responseSchema: activeSchema,
         systemInstruction: `You are an expert K-2 reading specialist and phonics instructor. You create engaging, developmentally appropriate phonics blending activities that teach students to decode words sound by sound. You understand phonemic awareness deeply — you know which letter combinations form single phonemes (digraphs, diphthongs, r-controlled vowels) vs. separate sounds. You always ensure phoneme breakdowns are linguistically accurate and that the concatenation of letter mappings exactly spells the target word. You choose words that are concrete, picturable, and motivating for young learners.`,
       }
     });
@@ -248,10 +272,12 @@ Now generate a phonics blending activity for "${topic}" at grade level ${gradeLe
 
     const result = JSON.parse(text) as PhonicsBlenderData;
 
-    // Merge with any config overrides
+    // Merge with any config overrides (exclude targetEvalMode from spread)
+    const { targetEvalMode: _unused, ...configRest } = config ?? {};
+    void _unused;
     const finalData: PhonicsBlenderData = {
       ...result,
-      ...config,
+      ...configRest,
     };
 
     console.log('Phonics Blender Generated:', {

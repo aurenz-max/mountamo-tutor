@@ -33,6 +33,40 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'phonics-blender',
     description: 'Sound-by-sound word building with phoneme tiles. Students tap to hear individual sounds, then blend into words. Supports CVC, CVCE, blends, digraphs, diphthongs, and r-controlled vowels. Audio playback via TTS. AI-generated word images on success. ESSENTIAL for K-2 phonics instruction.',
     constraints: 'Grades K-2 only. Requires phonics/decoding content.',
+    evalModes: [
+      {
+        evalMode: 'cvc',
+        label: 'CVC (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['cvc'],
+        description: 'Simple CVC blending (cat, dog).',
+      },
+      {
+        evalMode: 'cvce_blend',
+        label: 'CVCE & Blends (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['cvce', 'blend'],
+        description: 'Silent-e and consonant blends.',
+      },
+      {
+        evalMode: 'digraph',
+        label: 'Digraphs (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['digraph'],
+        description: 'Two letters, one sound (sh, ch, th).',
+      },
+      {
+        evalMode: 'advanced',
+        label: 'Advanced (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['r-controlled', 'diphthong'],
+        description: 'R-controlled vowels and diphthongs.',
+      },
+    ],
     supportsEvaluation: true,
     tutoring: {
       taskDescription:
@@ -158,6 +192,32 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'rhyme-studio',
     description: 'Interactive rhyme awareness activity with three progressive modes: Recognition (do these words rhyme?), Identification (which word rhymes?), and Production (type a rhyming word). Covers the full rhyme awareness progression. Perfect for kindergarten phonological awareness. ESSENTIAL for K-2 literacy.',
     constraints: 'Requires 8-10 challenges mixing all three modes. Recognition challenges need doesRhyme boolean. Identification needs 2-3 options. Production needs acceptableAnswers array.',
+    evalModes: [
+      {
+        evalMode: 'recognition',
+        label: 'Recognition (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['recognition'],
+        description: 'Do these words rhyme? Yes or no decision.',
+      },
+      {
+        evalMode: 'identification',
+        label: 'Identification (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['identification'],
+        description: 'Pick the rhyming word from 2-3 options.',
+      },
+      {
+        evalMode: 'production',
+        label: 'Production (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['production'],
+        description: 'Generate a word that rhymes with the target.',
+      },
+    ],
     tutoring: {
       taskDescription:
         'Rhyme awareness activity. Mode: {{challengeMode}}. '
@@ -204,6 +264,32 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'syllable-clapper',
     description: 'Syllable clapping activity where students hear a word and tap/clap to count its syllables. Visual bar splits into color-coded syllable segments. AI tutor pronounces words and syllables. Supports 1-4 syllable words. Perfect for phonological awareness development. ESSENTIAL for kindergarten literacy.',
     constraints: 'Requires 1-4 syllable words appropriate for kindergarten. Each word needs correct syllable segmentation.',
+    evalModes: [
+      {
+        evalMode: 'easy',
+        label: 'Easy Words (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['easy'],
+        description: 'High-frequency 1-2 syllable words with clear boundaries. AI over-emphasizes beats and paces slowly.',
+      },
+      {
+        evalMode: 'medium',
+        label: 'Medium Words (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['medium'],
+        description: '2-3 syllable words, broader vocabulary including compound words. AI models once then lets student try.',
+      },
+      {
+        evalMode: 'hard',
+        label: 'Hard Words (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['hard'],
+        description: '3-4 syllable words with some ambiguous boundaries. AI says word naturally, student parses independently.',
+      },
+    ],
     tutoring: {
       taskDescription:
         'Syllable clapping activity. Word {{currentChallenge}}/{{totalChallenges}}: '
@@ -239,41 +325,75 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'phoneme-explorer',
     description:
-      'Emoji-based phoneme matching activity. Students hear a letter sound, see an example word with emoji, '
-      + 'then pick from 4 emoji+word choices to find the word that starts with the same sound. '
-      + 'Audio-first with AI tutor pronouncing phonemes. Perfect for beginning phoneme awareness. ESSENTIAL for K-2 literacy.',
-    constraints: 'Use concrete, picturable words with clear emoji matches. Focus on beginning sounds.',
+      'Multi-mode phoneme awareness activity with four progressive modes: '
+      + 'Isolate (match initial/final sound), Blend (combine phoneme tiles into word), '
+      + 'Segment (break word into phonemes), Manipulate (add/delete/substitute phoneme). '
+      + 'Emoji+word 4-choice format. Audio-first with AI tutor. ESSENTIAL for K-2 literacy.',
+    constraints: 'Use concrete, picturable words with clear emoji matches. K: CVC words, initial sounds only.',
+    evalModes: [
+      {
+        evalMode: 'isolate',
+        label: 'Isolate (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['isolate'],
+        description: 'Identify initial/final phoneme — hear a sound, pick the word that starts with it.',
+      },
+      {
+        evalMode: 'blend',
+        label: 'Blend (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['blend'],
+        description: 'Combine phoneme tiles into a word — see /c/ /a/ /t/, pick "cat".',
+      },
+      {
+        evalMode: 'segment',
+        label: 'Segment (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['segment'],
+        description: 'Break a word into its component phonemes — pick correct breakdown.',
+      },
+      {
+        evalMode: 'manipulate',
+        label: 'Manipulate (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['manipulate'],
+        description: 'Add, delete, or substitute a phoneme to create a new word.',
+      },
+    ],
     tutoring: {
       taskDescription:
-        'Phoneme matching activity. '
-        + 'Challenge {{currentChallenge}}/{{totalChallenges}}: Sound "{{phonemeSound}}" (letter {{phoneme}}). '
-        + 'Example: {{exampleWord}}. Attempts: {{attempts}}.',
+        'Phoneme awareness activity. Mode: {{mode}}. '
+        + 'Challenge {{currentChallenge}}/{{totalChallenges}}. Attempts: {{attempts}}.',
       contextKeys: [
-        'phoneme', 'phonemeSound', 'exampleWord', 'currentChallenge',
-        'totalChallenges', 'attempts',
+        'mode', 'currentChallenge', 'totalChallenges', 'attempts',
       ],
       scaffoldingLevels: {
         level1:
-          '"Listen to the sound: {{phonemeSound}}. {{exampleWord}} starts with that sound. '
-          + 'Which other word starts the same way?"',
+          '"Listen to the sound carefully. Say each word out loud and listen for the beginning sound."',
         level2:
-          '"Say {{phonemeSound}} slowly. Now say each word and listen for the beginning sound. '
-          + 'Which one starts with {{phonemeSound}}?"',
+          '"Let\'s break it down together. Say the sounds slowly, one at a time."',
         level3:
-          '"The answer starts with the {{phoneme}} sound, like {{exampleWord}}. Listen: {{phonemeSound}}..."',
+          '"I\'ll give you a hint — listen to the first sound again..."',
       },
       commonStruggles: [
         { pattern: 'Confusing letter names with sounds', response: 'We want the SOUND, not the letter name. "B" makes the sound "buh".' },
         { pattern: 'Looking at emojis instead of listening', response: 'Say each word out loud. Listen to the FIRST sound. Does it match?' },
-        { pattern: 'Guessing randomly', response: 'Let\'s say the sound together: "{{phonemeSound}}". Now say each word. Which one starts the same?' },
+        { pattern: 'Struggling with blending', response: 'Say the sounds slowly, then faster: "/k/... /a/... /t/... cat!"' },
+        { pattern: 'Struggling with segmentation', response: 'Put up a finger for each sound you hear. How many fingers?' },
       ],
       aiDirectives: [
         {
           title: 'PRONUNCIATION COMMANDS',
           instruction:
-            'When you receive [NEW_CHALLENGE], say the phoneme sound clearly and slowly. '
-            + 'Then say the example word, emphasizing the first sound. '
-            + 'Ask which other word starts the same way. Keep it encouraging and playful.',
+            'When you receive [NEW_CHALLENGE], adapt to the mode. '
+            + 'For isolate: say the phoneme sound clearly. '
+            + 'For blend: say each sound slowly then blend. '
+            + 'For segment: say the word clearly. '
+            + 'For manipulate: say the original word and the operation.',
         },
       ],
     },
@@ -287,6 +407,32 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'and Substitution (swap one phoneme for another to transform a word). Uses visual sound tiles with animated transitions. '
       + 'Perfect for advanced phonological awareness practice. ESSENTIAL for K-2 reading readiness.',
     constraints: 'Use simple CVC/CVCC words. All result words must be real words. Use proper phoneme notation with slashes.',
+    evalModes: [
+      {
+        evalMode: 'addition',
+        label: 'Addition (Tier 1)',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['addition'],
+        description: 'Add a phoneme to make a new word.',
+      },
+      {
+        evalMode: 'deletion',
+        label: 'Deletion (Tier 2)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['deletion'],
+        description: 'Remove a phoneme — what word remains?',
+      },
+      {
+        evalMode: 'substitution',
+        label: 'Substitution (Tier 3)',
+        beta: 4.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['substitution'],
+        description: 'Swap a phoneme to change the word.',
+      },
+    ],
     tutoring: {
       taskDescription:
         'Phoneme manipulation activity. Operation: {{operation}}. '
@@ -409,13 +555,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'letter-sound-link',
     description:
-      'Letter-sound correspondence activity where students learn the sounds letters make. Three modes: see a letter and select its sound, '
-      + 'hear a sound and find the letter, or match letters to keyword images. Uses cumulative letter groups (1-4) following systematic phonics '
-      + 'progression. Color-coded: consonant sounds in blue, short vowel sounds in red. AI tutor pronounces clean phonemes. '
+      'Audio-first letter-sound correspondence activity. Three modes: see a letter and hear two sounds via speaker bubbles (pick the right one), '
+      + 'hear a sound auto-played and pick the correct letter, or match a letter to a keyword image. Binary discrimination (2 options) with '
+      + 'phonologically confusable distractors (t/d, p/b, a/e, etc.) for genuine phonological awareness training. No phoneme text shown — '
+      + 'students LISTEN, not read. Uses cumulative letter groups (1-4). AI tutor pronounces clean phonemes. '
       + 'ESSENTIAL for kindergarten and first-grade phonics instruction.',
     constraints:
       'Requires AI tutor voice connection for phoneme pronunciation. Supports 4 cumulative letter groups. '
-      + 'Each challenge needs 4 options with one correct answer.',
+      + 'Each challenge has exactly 2 options (binary discrimination) with confusable sound distractors.',
     tutoring: {
       taskDescription:
         'Letter-sound correspondence activity. Group {{letterGroup}}. '
@@ -485,44 +632,83 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'cvc-speller',
     description:
-      'CVC word spelling from audio. Students hear a word and place letters in three Elkonin-box slots. '
-      + 'Covers five short vowels (a, e, i, o, u) with progressive difficulty. Color-coded consonant/vowel letter bank. '
-      + 'Perfect for K-2 encoding practice. ESSENTIAL for Kindergarten and Grade 1 phonics.',
-    constraints: 'Only CVC (3-letter) words. One vowel focus per activity. Requires AI tutor voice for pronunciation.',
+      'Audio-first CVC word encoding with three progressive task modes. Fill-the-Vowel: hear a word, see consonant frame (c_t), '
+      + 'pick the correct vowel from 2 confusable options. Spell-It: hear a word, place all 3 letters in Elkonin boxes. '
+      + 'Word-Sort: hear words, categorize into 2 vowel-sound buckets. AI tutor provides progressive phoneme scaffolding '
+      + '(natural word \u2192 stretched vowel \u2192 isolated vowel sound). ESSENTIAL for K-1 phonics encoding.',
+    constraints:
+      'Only CVC (3-letter) words. One vowel focus per activity. Requires AI tutor voice for pronunciation. '
+      + 'Fill-vowel has 2 confusable vowel options. Word-sort has 2 vowel-sound buckets.',
+    evalModes: [
+      {
+        evalMode: 'fill_vowel',
+        label: 'Fill the Vowel (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['fill-vowel'],
+        description: 'Hear word, pick missing vowel from 2 confusable options in a C_C frame.',
+      },
+      {
+        evalMode: 'spell_word',
+        label: 'Spell It (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['spell-word'],
+        description: 'Hear word, spell all 3 letters in Elkonin boxes from a letter bank.',
+      },
+      {
+        evalMode: 'word_sort',
+        label: 'Word Sort (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['word-sort'],
+        description: 'Hear words, sort into 2 vowel-sound buckets (e.g., short-a vs short-e).',
+      },
+    ],
     tutoring: {
       taskDescription:
-        'CVC spelling activity. Vowel focus: {{vowelFocus}}. Letter group: {{letterGroup}}. '
+        'CVC encoding activity. Task: {{taskType}}. Vowel focus: {{vowelFocus}}. '
         + 'Word {{currentChallenge}}/{{totalChallenges}}: "{{targetWord}}" ({{targetPhonemes}}). '
-        + 'Student placed: {{placedLetters}}. Attempts: {{attempts}}.',
+        + 'Attempts: {{attempts}}.',
       contextKeys: [
-        'vowelFocus', 'letterGroup', 'targetWord', 'targetPhonemes', 'targetLetters',
+        'vowelFocus', 'letterGroup', 'taskType', 'targetWord', 'targetPhonemes', 'targetLetters',
         'placedLetters', 'currentChallenge', 'totalChallenges', 'attempts',
+        'firstPhoneme', 'middlePhoneme',
       ],
       scaffoldingLevels: {
-        level1: '"Say the word slowly. What sounds do you hear? Find those letters."',
-        level2: '"{{targetWord}} starts with the sound {{firstPhoneme}}. Which letter makes that sound?"',
-        level3: '"{{targetWord}} is spelled {{targetLetters}}. The sounds are {{targetPhonemes}}. Find each letter."',
+        level1: '"Say the word again naturally. Ask: what sounds do you hear?"',
+        level2: '"Stretch the word with emphasis on the vowel. Use keyword association: {{middlePhoneme}} like [keyword]."',
+        level3: '"Isolate just the vowel sound. Say it alone, then connect to the letter. {{targetWord}} has {{middlePhoneme}} in the middle."',
       },
       commonStruggles: [
-        { pattern: 'Vowel confusion (e.g., placing "e" instead of "a")', response: 'Listen to the middle sound. Is it /ă/ like apple or /ĕ/ like egg? They sound different.' },
-        { pattern: 'Reversing letter order', response: 'What\'s the FIRST sound? That goes in the first box. Then the middle, then the last.' },
-        { pattern: 'Cannot identify the medial vowel', response: 'Use the stretch button. Listen to the middle sound carefully. It\'s the loud sound in the middle.' },
+        { pattern: 'Vowel confusion (e.g., picking "e" instead of "a")', response: 'Contrast the two sounds: "Is it /\u0103/ like apple or /\u0115/ like egg?" Stretch the word to emphasize the middle.' },
+        { pattern: 'Reversing letter order in spell-word mode', response: 'What\'s the FIRST sound? That goes in the first box. Segment the word: first... middle... last.' },
+        { pattern: 'Cannot identify the medial vowel', response: 'Use the Stretch button. The AI will emphasize the vowel sound. It\'s the loud sound in the middle.' },
+        { pattern: 'Sorting a word into the wrong bucket', response: 'Say both bucket vowel sounds, then the word. "Is cat more like apple... or egg?" Stretch the vowel to hear it.' },
       ],
       aiDirectives: [
         {
-          title: 'PRONUNCIATION COMMANDS',
+          title: 'PROGRESSIVE PHONEME SCAFFOLDING',
           instruction:
-            'When you receive [PRONOUNCE_WORD] or [REPEAT_WORD], say the word clearly and naturally. '
-            + 'When you receive [STRETCH_WORD], say each phoneme with a pause: "/k/... /æ/... /t/". '
-            + 'When you receive [CONFIRM_SOUND], say just the clean phoneme for that letter. '
-            + 'No extra commentary for any pronunciation command.',
+            'This is the core pedagogical strategy. When the student struggles, progress through these levels: '
+            + 'LEVEL 1 ([SAY_WORD], [REPEAT_WORD]): Say the word naturally \u2014 clear, twice. '
+            + 'LEVEL 2 ([STRETCH_WORD], [STRETCH_VOWEL]): Stretch the word with emphasis on the vowel. '
+            + 'Say each phoneme with a pause: "/k/... /aaaa/... /t/". Hold the vowel longer. '
+            + 'LEVEL 3 ([ISOLATE_VOWEL]): Say JUST the vowel sound alone: "/\u0103/... /\u0103/. That\'s the letter A, like apple." '
+            + 'Never jump to level 3 \u2014 always scaffold progressively.',
         },
         {
-          title: 'VOWEL CONFUSION FEEDBACK',
+          title: 'SOUND CONFIRMATION',
           instruction:
-            'When you receive [VOWEL_CONFUSION], give specific corrective feedback comparing the two vowel sounds. '
-            + 'Use keyword associations: /ă/ = apple, /ĕ/ = egg, /ĭ/ = itch, /ŏ/ = octopus, /ŭ/ = up. '
-            + 'Say both sounds so the student can hear the difference.',
+            'When you receive [CONFIRM_SOUND], say just the clean phoneme for that letter \u2014 no words, no commentary. '
+            + 'Consonants: crisp, no "uh" added (/t/ not "tuh"). Vowels: short sound only.',
+        },
+        {
+          title: 'VOWEL CONTRAST',
+          instruction:
+            'When you receive [VOWEL_CONFUSION], [FILL_VOWEL_WRONG], [SORT_WRONG_L1]: contrast the two vowel sounds. '
+            + 'Use keyword associations: /\u0103/ = apple, /\u0115/ = egg, /\u012D/ = itch, /\u014F/ = octopus, /\u016D/ = up. '
+            + 'Say both sounds clearly so the student can hear the difference. Then say the word again.',
         },
       ],
     },
@@ -537,6 +723,40 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     constraints:
       'Requires mode selection. Real/Nonsense needs phonetically plausible nonsense words. '
       + 'Word Chains must follow one-letter-change rule. Sentences use only mastered CVC words + approved sight words.',
+    evalModes: [
+      {
+        evalMode: 'real_vs_nonsense',
+        label: 'Real vs Nonsense (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['real-vs-nonsense'],
+        description: 'Is this a real word? Recognition-level decoding.',
+      },
+      {
+        evalMode: 'picture_match',
+        label: 'Picture Match (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['picture-match'],
+        description: 'Match decoded word to picture — word-meaning connection.',
+      },
+      {
+        evalMode: 'word_chains',
+        label: 'Word Chains (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['word-chains'],
+        description: 'Read chain of words with one-letter changes.',
+      },
+      {
+        evalMode: 'sentence_reading',
+        label: 'Sentence Reading (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['sentence-reading'],
+        description: 'Read word in decodable sentence context.',
+      },
+    ],
     tutoring: {
       taskDescription:
         'CVC word application activity. Mode: {{mode}}. '
@@ -588,6 +808,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'story-map',
     description: 'Interactive plot structure diagram where students identify and place story elements on a visual arc. Supports beginning-middle-end (K-1), story mountain (2-3), full plot diagram (4-5), and hero\'s journey (5-6). Students drag event cards to arc positions. ESSENTIAL for reading comprehension K-6.',
     constraints: 'Requires narrative text. Structure type should match grade level.',
+    evalModes: [
+      { evalMode: 'bme', label: 'BME (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['bme'], description: 'Beginning-Middle-End (K-1).' },
+      { evalMode: 'story_mountain', label: 'Story Mountain (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['story-mountain'], description: '5-part narrative arc (2-3).' },
+      { evalMode: 'plot_diagram', label: 'Plot Diagram (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['plot-diagram'], description: 'Freytag\'s pyramid (4-6).' },
+      { evalMode: 'heros_journey', label: 'Hero\'s Journey (Tier 5)', beta: 6.5, scaffoldingMode: 5, challengeTypes: ['heros-journey'], description: 'Complex narrative structure (5-6).' },
+    ],
     supportsEvaluation: true,
     tutoring: {
       taskDescription: 'Map story elements to {{structureType}} structure. Current phase: {{currentPhase}}. Elements found: {{elementsIdentified}}.',
@@ -614,6 +840,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'poetry-lab',
     description: 'Dual-mode poetry primitive. Analysis mode: examine poems with interactive annotations for rhyme scheme, meter, figurative language, and structure. Composition mode: write poetry within structured templates (haiku, limerick, acrostic, free verse). TTS read-aloud with expressive prosody. Perfect for grades 1-6 poetry.',
     constraints: 'Best for grades 1-6. Analysis mode needs a poem; composition mode needs a template type.',
+    evalModes: [
+      { evalMode: 'analysis', label: 'Analysis (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['analysis'], description: 'Identify poetic elements in given poem.' },
+      { evalMode: 'composition', label: 'Composition (Tier 5)', beta: 6.0, scaffoldingMode: 5, challengeTypes: ['composition'], description: 'Compose poem using template structure.' },
+    ],
     supportsEvaluation: true,
   },
   {
@@ -628,6 +858,12 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'text-structure-analyzer',
     description: 'Students identify organizational structure of informational passages: cause-effect, compare-contrast, problem-solution, chronological, or description. Highlight signal words, select structure type, drag content onto visual templates (Venn, T-chart, flowchart, timeline). ESSENTIAL for grades 2-6 informational reading.',
     constraints: 'Best for grades 2-6. Requires informational text with clear organizational structure.',
+    evalModes: [
+      { evalMode: 'chronological_description', label: 'Chronological/Description (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['chronological', 'description'], description: 'Identify sequence or descriptive structure.' },
+      { evalMode: 'cause_effect', label: 'Cause-Effect (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['cause-effect'], description: 'Identify cause and effect relationships.' },
+      { evalMode: 'compare_contrast', label: 'Compare-Contrast (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['compare-contrast'], description: 'Analyze similarities and differences.' },
+      { evalMode: 'problem_solution', label: 'Problem-Solution (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['problem-solution'], description: 'Identify problem and proposed solutions.' },
+    ],
     supportsEvaluation: true,
   },
   {
@@ -656,6 +892,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'paragraph-architect',
     description: 'Scaffolded paragraph construction using hamburger model (topic sentence -> details -> conclusion). Supports informational, narrative, and opinion paragraph types. Sentence-starter frames, linking word guidance, TTS read-back. ESSENTIAL for grades 1-6 writing instruction.',
     constraints: 'Best for grades 1-6. Select paragraph type appropriate to grade level.',
+    evalModes: [
+      { evalMode: 'informational', label: 'Informational (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['informational'], description: 'Structured informational paragraph.' },
+      { evalMode: 'narrative', label: 'Narrative (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['narrative'], description: 'Narrative paragraph with elements.' },
+      { evalMode: 'opinion', label: 'Opinion (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['opinion'], description: 'Opinion with claim + support.' },
+    ],
     supportsEvaluation: true,
   },
   {
@@ -668,12 +909,24 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'opinion-builder',
     description: 'Structured scaffold for opinion/argumentative writing. Uses OREO model (grades 2-4) transitioning to CER framework (grades 5-6). Students construct arguments piece by piece with validation. Counter-argument support at grades 5-6. TTS read-back. ESSENTIAL for persuasive writing grades 2-6.',
     constraints: 'Best for grades 2-4 (OREO), grades 5-6 (CER).',
+    evalModes: [
+      { evalMode: 'oreo', label: 'OREO (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['oreo'], description: 'Opinion-Reason-Example-Opinion (grades 2-4).' },
+      { evalMode: 'cer', label: 'CER (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['cer'], description: 'Claim-Evidence-Reasoning (grades 5-6).' },
+    ],
     supportsEvaluation: true,
   },
   {
     id: 'revision-workshop',
     description: 'Students apply specific revision strategies to draft passages: adding details, strengthening word choice, combining sentences, fixing run-ons, improving transitions, reorganizing. Before/after comparison with TTS read-aloud. Perfect for grades 2-6 revision skills.',
     constraints: 'Best for grades 2-6. Focus on one revision skill at a time.',
+    evalModes: [
+      { evalMode: 'add_details', label: 'Add Details (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['add-details'], description: 'Expand with sensory/specific details.' },
+      { evalMode: 'word_choice', label: 'Word Choice (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['word-choice'], description: 'Replace weak/vague words.' },
+      { evalMode: 'combine_sentences', label: 'Combine Sentences (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['combine-sentences'], description: 'Combine choppy sentences.' },
+      { evalMode: 'transitions', label: 'Transitions (Tier 3)', beta: 4.5, scaffoldingMode: 3, challengeTypes: ['transitions'], description: 'Add/improve transition words.' },
+      { evalMode: 'reorganize', label: 'Reorganize (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['reorganize'], description: 'Reorder for logical flow.' },
+      { evalMode: 'concision', label: 'Concision (Tier 5)', beta: 6.5, scaffoldingMode: 5, challengeTypes: ['concision'], description: 'Eliminate wordiness.' },
+    ],
     supportsEvaluation: true,
   },
 
@@ -761,24 +1014,168 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'sentence-builder',
     description: 'Students construct grammatical sentences by arranging color-coded word/phrase tiles by grammatical role (subject=blue, predicate=red, object=green, modifier=yellow). Progressive complexity from simple S-V to compound-complex sentences. TTS read-back. ESSENTIAL for grades 1-6 grammar.',
     constraints: 'Best for grades 1-6. Sentence complexity should match grade level.',
+    evalModes: [
+      {
+        evalMode: 'simple',
+        label: 'Simple (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['simple'],
+        description: 'Build simple sentence from tiles.',
+      },
+      {
+        evalMode: 'compound',
+        label: 'Compound (Tier 2)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['compound'],
+        description: 'Join clauses with conjunction.',
+      },
+      {
+        evalMode: 'complex',
+        label: 'Complex (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['complex'],
+        description: 'Subordinate clause construction.',
+      },
+      {
+        evalMode: 'compound_complex',
+        label: 'Compound-Complex (Tier 5)',
+        beta: 7.0,
+        scaffoldingMode: 5,
+        challengeTypes: ['compound-complex'],
+        description: 'Multi-clause sentence building.',
+      },
+    ],
     supportsEvaluation: true,
   },
   {
     id: 'context-clues-detective',
     description: 'Students determine unfamiliar word meaning using context clues. Teaches clue types: definition, synonym/antonym, example, inference. Students highlight clues, identify type, provide meaning. Dictionary comparison reveal. Perfect for grades 2-6 vocabulary.',
     constraints: 'Best for grades 2-6. Requires passage with context clues near target word.',
+    evalModes: [
+      {
+        evalMode: 'definition',
+        label: 'Definition (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['definition'],
+        description: 'Meaning stated directly in text.',
+      },
+      {
+        evalMode: 'synonym_antonym',
+        label: 'Synonym/Antonym (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['synonym', 'antonym'],
+        description: 'Meaning from similar/opposite words.',
+      },
+      {
+        evalMode: 'example',
+        label: 'Example (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['example'],
+        description: 'Meaning from given examples.',
+      },
+      {
+        evalMode: 'inference',
+        label: 'Inference (Tier 4)',
+        beta: 5.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['inference'],
+        description: 'Meaning from broader context.',
+      },
+    ],
     supportsEvaluation: true,
   },
   {
     id: 'figurative-language-finder',
     description: 'Students identify and classify figurative language in passages: simile, metaphor, personification, hyperbole, idiom, alliteration, onomatopoeia, imagery. Color-coded highlighting by type. Literal translation mode. Connects to poetry-lab. Perfect for grades 3-6.',
     constraints: 'Best for grades 3-6. Requires passage rich in figurative language.',
+    evalModes: [
+      {
+        evalMode: 'sound_devices',
+        label: 'Sound Devices (Tier 1)',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['alliteration', 'onomatopoeia'],
+        description: 'Identify sound-based devices.',
+      },
+      {
+        evalMode: 'comparison',
+        label: 'Comparison (Tier 2)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['simile', 'metaphor'],
+        description: 'Identify explicit/implicit comparisons.',
+      },
+      {
+        evalMode: 'advanced',
+        label: 'Advanced (Tier 3)',
+        beta: 4.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['personification', 'hyperbole', 'imagery'],
+        description: 'Non-literal expression identification.',
+      },
+      {
+        evalMode: 'idiom',
+        label: 'Idiom (Tier 5)',
+        beta: 6.0,
+        scaffoldingMode: 5,
+        challengeTypes: ['idiom'],
+        description: 'Interpret culturally specific expressions.',
+      },
+    ],
     supportsEvaluation: true,
   },
   {
     id: 'spelling-pattern-explorer',
     description: 'Students investigate word groups sharing spelling patterns, discover underlying rules, then apply via audio dictation practice. Supports word families, vowel patterns, suffix rules, Latin/Greek roots. TTS pronunciation and slow syllable mode. Perfect for grades 1-6 spelling.',
     constraints: 'Best for grades 1-6. Pattern complexity should match grade level.',
+    evalModes: [
+      {
+        evalMode: 'short_vowel',
+        label: 'Short Vowel (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['short-vowel'],
+        description: 'CVC and short vowel patterns.',
+      },
+      {
+        evalMode: 'long_vowel',
+        label: 'Long Vowel (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['long-vowel'],
+        description: 'CVCe, vowel teams.',
+      },
+      {
+        evalMode: 'r_controlled',
+        label: 'R-Controlled (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['r-controlled'],
+        description: 'ar, er, ir, or, ur patterns.',
+      },
+      {
+        evalMode: 'silent_letter',
+        label: 'Silent Letter (Tier 3)',
+        beta: 4.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['silent-letter'],
+        description: 'Silent letter conventions.',
+      },
+      {
+        evalMode: 'morphological',
+        label: 'Morphological (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['suffix-change', 'latin-root'],
+        description: 'Morpheme-based spelling.',
+      },
+    ],
     supportsEvaluation: true,
   },
 ];

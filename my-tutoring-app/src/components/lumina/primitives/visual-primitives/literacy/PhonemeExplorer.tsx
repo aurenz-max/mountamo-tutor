@@ -26,11 +26,27 @@ interface PhonemeChoice {
 
 interface PhonemeChallenge {
   id: string;
-  phoneme: string;         // The letter/sound displayed, e.g. "B"
-  phonemeSound: string;    // Pronunciation hint, e.g. "buh"
-  exampleWord: string;     // Example word starting with phoneme, e.g. "Bear"
-  exampleEmoji: string;    // Emoji for example word, e.g. "🐻"
-  choices: PhonemeChoice[]; // 4 choices (1 correct, 3 distractors)
+  mode: 'isolate' | 'blend' | 'segment' | 'manipulate';
+  // -- isolate fields --
+  phoneme?: string;
+  phonemeSound?: string;
+  exampleWord?: string;
+  exampleEmoji?: string;
+  // -- blend fields --
+  phonemeSequence?: string[];
+  phonemeDisplay?: string;
+  // -- segment fields --
+  targetWord?: string;
+  targetEmoji?: string;
+  segmentOptions?: string[];
+  correctSegmentation?: number;
+  // -- manipulate fields --
+  originalWord?: string;
+  originalEmoji?: string;
+  operation?: string;
+  operationDescription?: string;
+  // -- shared choices (isolate, blend, manipulate) --
+  choices?: PhonemeChoice[];
 }
 
 export interface PhonemeExplorerData {
@@ -60,7 +76,33 @@ interface PhonemeExplorerProps {
 // ============================================================================
 
 const PHASE_CONFIG: Record<string, PhaseConfig> = {
-  'phoneme-match': { label: 'Sound Match', icon: '\uD83D\uDD0A', accentColor: 'blue' },
+  isolate: { label: 'Sound Match', icon: '\uD83D\uDD0A', accentColor: 'blue' },
+  blend: { label: 'Sound Blend', icon: '\uD83E\uDDE9', accentColor: 'purple' },
+  segment: { label: 'Sound Split', icon: '\u2702\uFE0F', accentColor: 'emerald' },
+  manipulate: { label: 'Sound Swap', icon: '\uD83D\uDD00', accentColor: 'amber' },
+};
+
+const MODE_LABELS: Record<string, { badge: string; icon: string; instruction: string }> = {
+  isolate: {
+    badge: 'Sound Match',
+    icon: '\uD83D\uDD0A',
+    instruction: 'Which word starts with the same sound?',
+  },
+  blend: {
+    badge: 'Sound Blend',
+    icon: '\uD83E\uDDE9',
+    instruction: 'What word do these sounds make?',
+  },
+  segment: {
+    badge: 'Sound Split',
+    icon: '\u2702\uFE0F',
+    instruction: 'How do you break this word into sounds?',
+  },
+  manipulate: {
+    badge: 'Sound Swap',
+    icon: '\uD83D\uDD00',
+    instruction: 'What new word do you get?',
+  },
 };
 
 const MAX_ATTEMPTS = 3;
@@ -115,7 +157,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     challenges,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    getChallengeType: () => 'phoneme-match',
+    getChallengeType: (ch) => ch.mode,
     phaseConfig: PHASE_CONFIG,
   });
 
@@ -137,7 +179,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   const currentChallenge = challenges[currentIndex];
 
-  // ── Shuffle choices once per challenge ─────────────────────────
+  // ── Shuffle choices once per challenge (for choice-based modes) ─
   const shuffledChoices = useMemo(() => {
     if (!currentChallenge?.choices) return [];
     return [...currentChallenge.choices].sort(() => Math.random() - 0.5);
@@ -145,15 +187,12 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
   }, [currentIndex]);
 
   // ── AI Tutoring integration ────────────────────────────────────
-  // NOTE: Only include progress metadata here, NOT challenge-specific content.
-  // Challenge data (phoneme, choices, etc.) is sent explicitly via [NEW_CHALLENGE]
-  // messages. Including it here causes a duplicate context update (500ms debounced)
-  // that triggers Gemini to hallucinate a second response.
   const aiPrimitiveData = useMemo(() => ({
     currentChallenge: currentIndex + 1,
     totalChallenges: challenges.length,
     attempts: currentAttempts,
-  }), [currentIndex, challenges.length, currentAttempts]);
+    mode: currentChallenge?.mode,
+  }), [currentIndex, challenges.length, currentAttempts, currentChallenge?.mode]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'phoneme-explorer',
@@ -168,36 +207,70 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
   useEffect(() => {
     if (!hasStarted || !isConnected || hasIntroducedRef.current || !currentChallenge) return;
     hasIntroducedRef.current = true;
+    sendChallengeIntro(currentChallenge, challenges.length, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasStarted, isConnected, currentChallenge]);
 
-    const choiceWords = currentChallenge.choices.map(c => c.word).join(', ');
-    sendText(
-      `[ACTIVITY_START] This is a phoneme matching activity. `
-      + `There are ${challenges.length} challenges. `
-      + `Warmly introduce: "Let's listen for beginning sounds!" `
-      + `Then say the sound "${currentChallenge.phonemeSound}" clearly and slowly. `
-      + `Say: "This is the ${currentChallenge.phoneme} sound, like in ${currentChallenge.exampleWord}! `
-      + `Which word starts with ${currentChallenge.phonemeSound}?" `
-      + `Then read each option aloud: "${choiceWords}". `
-      + `Say each word clearly so the student can hear the beginning sounds.`,
-      { silent: true },
-    );
-  }, [hasStarted, isConnected, currentChallenge, challenges.length, sendText]);
-
-  // ── Pronounce phoneme when challenge changes ───────────────────
+  // ── Introduce new challenge when index changes ─────────────────
   useEffect(() => {
     if (!currentChallenge || !isConnected || !hasIntroducedRef.current) return;
     if (currentIndex === 0) return;
+    sendChallengeIntro(currentChallenge, challenges.length, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, currentChallenge, isConnected]);
 
-    const choiceWords = currentChallenge.choices.map(c => c.word).join(', ');
-    sendText(
-      `[NEW_CHALLENGE] Say the sound "${currentChallenge.phonemeSound}" clearly and slowly. `
-      + `Say: "This is the ${currentChallenge.phoneme} sound, like in ${currentChallenge.exampleWord}! `
-      + `Which word starts with ${currentChallenge.phonemeSound}?" `
-      + `Then read each option aloud: "${choiceWords}". `
-      + `Say each word clearly so the student can hear the beginning sounds.`,
-      { silent: true },
-    );
-  }, [currentIndex, currentChallenge, isConnected, sendText]);
+  function sendChallengeIntro(ch: PhonemeChallenge, total: number, isFirst: boolean) {
+    const prefix = isFirst
+      ? `[ACTIVITY_START] This is a phoneme awareness activity with ${total} challenges. Warmly introduce: "Let's explore sounds!" `
+      : `[NEW_CHALLENGE] `;
+
+    switch (ch.mode) {
+      case 'isolate': {
+        const choiceWords = ch.choices?.map(c => c.word).join(', ') ?? '';
+        sendText(
+          prefix
+          + `Mode: Sound Match. Say the sound "${ch.phonemeSound}" clearly and slowly. `
+          + `Say: "This is the ${ch.phoneme} sound, like in ${ch.exampleWord}! `
+          + `Which word starts with ${ch.phonemeSound}?" `
+          + `Then read each option aloud: "${choiceWords}".`,
+          { silent: true },
+        );
+        break;
+      }
+      case 'blend': {
+        const choiceWords = ch.choices?.map(c => c.word).join(', ') ?? '';
+        sendText(
+          prefix
+          + `Mode: Sound Blend. Say each sound slowly: "${ch.phonemeDisplay}". `
+          + `Say: "Listen... ${ch.phonemeDisplay}... What word do these sounds make?" `
+          + `Read each option aloud: "${choiceWords}".`,
+          { silent: true },
+        );
+        break;
+      }
+      case 'segment': {
+        sendText(
+          prefix
+          + `Mode: Sound Split. Show the word "${ch.targetWord}" ${ch.targetEmoji}. `
+          + `Say: "Let's break '${ch.targetWord}' into sounds! How many sounds do you hear?" `
+          + `Read each option aloud: "${ch.segmentOptions?.join(', ')}".`,
+          { silent: true },
+        );
+        break;
+      }
+      case 'manipulate': {
+        const choiceWords = ch.choices?.map(c => c.word).join(', ') ?? '';
+        sendText(
+          prefix
+          + `Mode: Sound Swap. Show word "${ch.originalWord}" ${ch.originalEmoji}. `
+          + `Say: "${ch.operationDescription}" `
+          + `"What new word do you get?" Read options: "${choiceWords}".`,
+          { silent: true },
+        );
+        break;
+      }
+    }
+  }
 
   // ── Reset interaction state when challenge advances ────────────
   useEffect(() => {
@@ -240,7 +313,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     ).join(', ');
     sendText(
       `[ALL_COMPLETE] All ${totalCount} challenges done! Scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-      + `Celebrate and summarize which letter sounds were practiced. Then STOP.`,
+      + `Celebrate and summarize which sounds were practiced. Then STOP.`,
       { silent: true },
     );
   }, [
@@ -248,8 +321,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     submitEvaluation, sendText,
   ]);
 
-  // ── Handle choice selection ────────────────────────────────────
-  const handleSelect = useCallback((choiceIndex: number) => {
+  // ── Handle choice selection (isolate, blend, manipulate) ───────
+  const handleChoiceSelect = useCallback((choiceIndex: number) => {
     if (showResult || !currentChallenge) return;
 
     const choice = shuffledChoices[choiceIndex];
@@ -258,9 +331,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     incrementAttempts();
 
     if (choice.correct) {
-      setFeedback(
-        `Yes! ${choice.emoji} "${choice.word}" starts with the ${currentChallenge.phoneme} sound!`
-      );
+      setFeedback(`Yes! ${choice.emoji} "${choice.word}" is correct!`);
       setFeedbackType('success');
       setShowResult(true);
       setIsCelebrating(true);
@@ -268,22 +339,20 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
       sendText(
-        `[ANSWER_CORRECT] Student correctly picked "${choice.word}" ${choice.emoji} for the ${currentChallenge.phoneme} sound. `
-        + `Brief celebration! Say: "Yes! ${choice.word} starts with ${currentChallenge.phonemeSound}!" `
-        + `Then STOP. Do NOT present a new challenge. Wait for the student to click Next.`,
+        `[ANSWER_CORRECT] Student correctly picked "${choice.word}" ${choice.emoji}. `
+        + `Brief celebration! Then STOP and wait for student to click Next.`,
         { silent: true },
       );
     } else {
-      setFeedback(`Hmm, "${choice.word}" starts with a different sound. Try again!`);
+      setFeedback(`Hmm, that's not quite right. Try again!`);
       setFeedbackType('error');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
       setSelectedIndex(null);
 
       sendText(
-        `[ANSWER_INCORRECT] Student chose "${choice.word}" ${choice.emoji} but that doesn't start with ${currentChallenge.phoneme}. `
-        + `Attempt ${currentAttempts + 1}. Help: "Listen... ${currentChallenge.phonemeSound}... `
-        + `${currentChallenge.exampleWord} starts with ${currentChallenge.phonemeSound}. Which other word starts the same way?"`,
+        `[ANSWER_INCORRECT] Student chose "${choice.word}" ${choice.emoji} — incorrect. `
+        + `Attempt ${currentAttempts + 1}. Give a brief hint.`,
         { silent: true },
       );
 
@@ -292,7 +361,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         setTimeout(() => {
           setShowResult(true);
           setFeedback(
-            `The answer is ${correctChoice?.emoji} "${correctChoice?.word}" \u2014 it starts with ${currentChallenge.phoneme}!`
+            `The answer is ${correctChoice?.emoji} "${correctChoice?.word}"!`
           );
           setFeedbackType('success');
           recordResult({ challengeId: currentChallenge.id, correct: false, attempts: currentAttempts + 1 });
@@ -301,6 +370,55 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     }
   }, [showResult, currentChallenge, shuffledChoices, currentAttempts, incrementAttempts, recordResult, sendText]);
 
+  // ── Handle segment option selection ────────────────────────────
+  const handleSegmentSelect = useCallback((optionIndex: number) => {
+    if (showResult || !currentChallenge || currentChallenge.mode !== 'segment') return;
+
+    setSelectedIndex(optionIndex);
+    incrementAttempts();
+
+    const isCorrect = optionIndex === currentChallenge.correctSegmentation;
+
+    if (isCorrect) {
+      const correctOption = currentChallenge.segmentOptions?.[optionIndex] ?? '';
+      setFeedback(`Yes! "${currentChallenge.targetWord}" breaks into ${correctOption}!`);
+      setFeedbackType('success');
+      setShowResult(true);
+      setIsCelebrating(true);
+      setTimeout(() => setIsCelebrating(false), 1500);
+
+      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+      sendText(
+        `[ANSWER_CORRECT] Student correctly segmented "${currentChallenge.targetWord}" as ${correctOption}. `
+        + `Celebrate! Then STOP.`,
+        { silent: true },
+      );
+    } else {
+      setFeedback(`Not quite — listen carefully to each sound. Try again!`);
+      setFeedbackType('error');
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
+      setSelectedIndex(null);
+
+      sendText(
+        `[ANSWER_INCORRECT] Student picked wrong segmentation. Attempt ${currentAttempts + 1}. Help them count the sounds.`,
+        { silent: true },
+      );
+
+      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
+        const correctOption = currentChallenge.segmentOptions?.[currentChallenge.correctSegmentation ?? 0] ?? '';
+        setTimeout(() => {
+          setShowResult(true);
+          setFeedback(
+            `The answer is ${correctOption}!`
+          );
+          setFeedbackType('success');
+          recordResult({ challengeId: currentChallenge.id, correct: false, attempts: currentAttempts + 1 });
+        }, 1000);
+      }
+    }
+  }, [showResult, currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
+
   // ── Advance to next challenge ──────────────────────────────────
   const handleNext = useCallback(() => {
     if (!advanceProgress()) {
@@ -308,12 +426,202 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       setShowSummary(true);
       return;
     }
-    // NOTE: Do NOT sendText here. Advancing currentIndex triggers the
-    // [NEW_CHALLENGE] useEffect which already tells Gemini exactly what
-    // the new challenge is. Sending a bare "[NEXT_CHALLENGE]" first gives
-    // Gemini a turn to respond before the real data arrives, causing it
-    // to hallucinate a challenge from its imagination.
   }, [advanceProgress, submitFinalEvaluation]);
+
+  // ============================================================================
+  // Render helpers per mode
+  // ============================================================================
+
+  const renderIsolateChallenge = (ch: PhonemeChallenge) => (
+    <div className="space-y-5">
+      {/* Phoneme display */}
+      <div className="flex flex-col items-center gap-3">
+        <div className="rounded-2xl bg-blue-500/15 border-2 border-blue-500/30 px-10 py-6 text-center">
+          <div className="text-5xl font-black text-blue-200 tracking-wide">
+            {ch.phoneme}
+          </div>
+          <p className="text-sm text-blue-400/70 mt-2 italic">
+            &ldquo;{ch.phonemeSound}&rdquo;
+          </p>
+        </div>
+      </div>
+
+      {/* Example word */}
+      <div className="flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3">
+        <span className="text-3xl">{ch.exampleEmoji}</span>
+        <div className="text-center">
+          <span className="text-xl font-bold text-slate-100">{ch.exampleWord}</span>
+          <p className="text-xs text-slate-500">
+            starts with <span className="text-blue-300 font-semibold">{ch.phoneme}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Question */}
+      <p className="text-center text-base text-slate-300 font-medium">
+        Which word also starts with the{' '}
+        <span className="text-blue-300 font-bold">{ch.phoneme}</span> sound?
+      </p>
+
+      {/* 4 choice buttons */}
+      {renderChoiceGrid()}
+    </div>
+  );
+
+  const renderBlendChallenge = (ch: PhonemeChallenge) => (
+    <div className="space-y-5">
+      {/* Phoneme tiles */}
+      <div className="flex flex-col items-center gap-3">
+        <p className="text-sm text-purple-400/70 font-medium">Blend these sounds together:</p>
+        <div className="flex items-center gap-2">
+          {ch.phonemeSequence?.map((p, i) => (
+            <React.Fragment key={i}>
+              <div className="rounded-xl bg-purple-500/15 border-2 border-purple-500/30 px-5 py-4 text-center">
+                <span className="text-2xl font-black text-purple-200">/{p}/</span>
+              </div>
+              {i < (ch.phonemeSequence?.length ?? 0) - 1 && (
+                <span className="text-purple-400/50 text-lg">+</span>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Question */}
+      <p className="text-center text-base text-slate-300 font-medium">
+        What word do these sounds make?
+      </p>
+
+      {/* 4 choice buttons */}
+      {renderChoiceGrid()}
+    </div>
+  );
+
+  const renderSegmentChallenge = (ch: PhonemeChallenge) => (
+    <div className="space-y-5">
+      {/* Target word display */}
+      <div className="flex flex-col items-center gap-3">
+        <div className="rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/30 px-10 py-6 text-center">
+          <span className="text-4xl">{ch.targetEmoji}</span>
+          <div className="text-3xl font-black text-emerald-200 mt-2">
+            {ch.targetWord}
+          </div>
+        </div>
+      </div>
+
+      {/* Question */}
+      <p className="text-center text-base text-slate-300 font-medium">
+        How do you break <span className="text-emerald-300 font-bold">&ldquo;{ch.targetWord}&rdquo;</span> into sounds?
+      </p>
+
+      {/* 4 segmentation options */}
+      <div className={`grid grid-cols-1 gap-2 ${isShaking ? 'animate-shake' : ''}`}>
+        {ch.segmentOptions?.map((option, idx) => {
+          const isCorrectOption = showResult && idx === ch.correctSegmentation;
+          const isWrongSelected = showResult && selectedIndex === idx && idx !== ch.correctSegmentation;
+
+          return (
+            <button
+              key={idx}
+              onClick={() => !showResult && handleSegmentSelect(idx)}
+              disabled={showResult}
+              className={`
+                rounded-xl border-2 p-4 text-center transition-all duration-200 cursor-pointer
+                ${isCorrectOption
+                  ? 'bg-emerald-500/20 border-emerald-500/50 ring-2 ring-emerald-400/40'
+                  : isWrongSelected
+                    ? 'bg-red-500/10 border-red-500/30'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                }
+                ${isCelebrating && isCorrectOption ? 'animate-bounce' : ''}
+              `}
+            >
+              <span className={`text-lg font-mono font-bold ${
+                isCorrectOption
+                  ? 'text-emerald-200'
+                  : isWrongSelected
+                    ? 'text-red-300'
+                    : 'text-slate-200'
+              }`}>
+                {option}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderManipulateChallenge = (ch: PhonemeChallenge) => (
+    <div className="space-y-5">
+      {/* Original word */}
+      <div className="flex flex-col items-center gap-3">
+        <div className="rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 px-10 py-6 text-center">
+          <span className="text-4xl">{ch.originalEmoji}</span>
+          <div className="text-3xl font-black text-amber-200 mt-2">
+            {ch.originalWord}
+          </div>
+        </div>
+      </div>
+
+      {/* Operation instruction */}
+      <div className="rounded-xl bg-white/5 border border-white/10 px-5 py-3 text-center">
+        <p className="text-base text-slate-200 font-medium">
+          {ch.operationDescription}
+        </p>
+      </div>
+
+      {/* Question */}
+      <p className="text-center text-base text-slate-300 font-medium">
+        What new word do you get?
+      </p>
+
+      {/* 4 choice buttons */}
+      {renderChoiceGrid()}
+    </div>
+  );
+
+  const renderChoiceGrid = () => (
+    <div className={`grid grid-cols-2 gap-3 ${isShaking ? 'animate-shake' : ''}`}>
+      {shuffledChoices.map((choice, idx) => {
+        const isCorrectChoice = showResult && choice.correct;
+        const isWrongSelected = showResult && selectedIndex === idx && !choice.correct;
+        const modeColor = currentChallenge?.mode === 'blend' ? 'purple'
+          : currentChallenge?.mode === 'manipulate' ? 'amber'
+          : 'emerald';
+
+        return (
+          <button
+            key={idx}
+            onClick={() => !showResult && handleChoiceSelect(idx)}
+            disabled={showResult}
+            className={`
+              rounded-xl border-2 p-4 flex flex-col items-center gap-2
+              transition-all duration-200 cursor-pointer
+              ${isCorrectChoice
+                ? `bg-${modeColor}-500/20 border-${modeColor}-500/50 ring-2 ring-${modeColor}-400/40 bg-emerald-500/20 border-emerald-500/50 ring-2 ring-emerald-400/40`
+                : isWrongSelected
+                  ? 'bg-red-500/10 border-red-500/30'
+                  : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+              }
+              ${isCelebrating && isCorrectChoice ? 'animate-bounce' : ''}
+            `}
+          >
+            <span className="text-3xl">{choice.emoji}</span>
+            <span className={`text-lg font-bold ${
+              isCorrectChoice
+                ? 'text-emerald-200'
+                : isWrongSelected
+                  ? 'text-red-300'
+                  : 'text-slate-200'
+            }`}>
+              {choice.word}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
 
   // ============================================================================
   // Main Render
@@ -330,6 +638,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
   }
 
   const elapsedMs = Date.now() - startTimeRef.current;
+  const modeInfo = MODE_LABELS[currentChallenge?.mode ?? 'isolate'];
 
   // ── Start screen ──────────────────────────────────────────────
   if (!hasStarted) {
@@ -339,11 +648,11 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
           <div className="text-5xl">{'\uD83D\uDD0A'}</div>
           <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
           <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-            Sound Match
+            Phoneme Explorer
           </Badge>
           <p className="text-slate-400 text-sm max-w-sm">
-            Listen to a sound, then find the word that starts with it!
-            {' '}{challenges.length} sounds to explore.
+            Listen to sounds and explore how words are built!
+            {' '}{challenges.length} challenges to complete.
           </p>
           <Button
             variant="ghost"
@@ -368,9 +677,14 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
           {!showSummary && (
             <Badge
               variant="outline"
-              className="text-xs bg-blue-500/20 border-blue-500/40 text-blue-300"
+              className={`text-xs ${
+                currentChallenge?.mode === 'blend' ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+                : currentChallenge?.mode === 'segment' ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                : currentChallenge?.mode === 'manipulate' ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                : 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+              }`}
             >
-              {'\uD83D\uDD0A'} Sound Match
+              {modeInfo.icon} {modeInfo.badge}
             </Badge>
           )}
         </div>
@@ -382,7 +696,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
           <>
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-400">
-                Sound {currentIndex + 1} of {challenges.length}
+                Challenge {currentIndex + 1} of {challenges.length}
               </span>
               <span className="text-slate-500 text-xs">
                 {challengeResults.filter(r => r.correct).length} correct
@@ -397,78 +711,14 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
           </>
         )}
 
-        {/* Challenge content */}
+        {/* Challenge content — mode-specific rendering */}
         {!showSummary && currentChallenge && (
-          <div className="space-y-5">
-            {/* Phoneme display */}
-            <div className="flex flex-col items-center gap-3">
-              <div className="rounded-2xl bg-blue-500/15 border-2 border-blue-500/30 px-10 py-6 text-center">
-                <div className="text-5xl font-black text-blue-200 tracking-wide">
-                  {currentChallenge.phoneme}
-                </div>
-                <p className="text-sm text-blue-400/70 mt-2 italic">
-                  &ldquo;{currentChallenge.phonemeSound}&rdquo;
-                </p>
-              </div>
-            </div>
-
-            {/* Example word with emoji */}
-            <div className="flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3">
-              <span className="text-3xl">{currentChallenge.exampleEmoji}</span>
-              <div className="text-center">
-                <span className="text-xl font-bold text-slate-100">
-                  {currentChallenge.exampleWord}
-                </span>
-                <p className="text-xs text-slate-500">
-                  starts with <span className="text-blue-300 font-semibold">{currentChallenge.phoneme}</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Question prompt */}
-            <p className="text-center text-base text-slate-300 font-medium">
-              Which word also starts with the{' '}
-              <span className="text-blue-300 font-bold">{currentChallenge.phoneme}</span> sound?
-            </p>
-
-            {/* 4 choice buttons */}
-            <div className={`grid grid-cols-2 gap-3 ${isShaking ? 'animate-shake' : ''}`}>
-              {shuffledChoices.map((choice, idx) => {
-                const isCorrectChoice = showResult && choice.correct;
-                const isWrongSelected = showResult && selectedIndex === idx && !choice.correct;
-
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => !showResult && handleSelect(idx)}
-                    disabled={showResult}
-                    className={`
-                      rounded-xl border-2 p-4 flex flex-col items-center gap-2
-                      transition-all duration-200 cursor-pointer
-                      ${isCorrectChoice
-                        ? 'bg-emerald-500/20 border-emerald-500/50 ring-2 ring-emerald-400/40'
-                        : isWrongSelected
-                          ? 'bg-red-500/10 border-red-500/30'
-                          : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-                      }
-                      ${isCelebrating && isCorrectChoice ? 'animate-bounce' : ''}
-                    `}
-                  >
-                    <span className="text-3xl">{choice.emoji}</span>
-                    <span className={`text-lg font-bold ${
-                      isCorrectChoice
-                        ? 'text-emerald-200'
-                        : isWrongSelected
-                          ? 'text-red-300'
-                          : 'text-slate-200'
-                    }`}>
-                      {choice.word}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <>
+            {currentChallenge.mode === 'isolate' && renderIsolateChallenge(currentChallenge)}
+            {currentChallenge.mode === 'blend' && renderBlendChallenge(currentChallenge)}
+            {currentChallenge.mode === 'segment' && renderSegmentChallenge(currentChallenge)}
+            {currentChallenge.mode === 'manipulate' && renderManipulateChallenge(currentChallenge)}
+          </>
         )}
 
         {/* Feedback banner */}
@@ -496,7 +746,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
               onClick={handleNext}
               className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
             >
-              {currentIndex < challenges.length - 1 ? 'Next Sound' : 'Finish'}
+              {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
             </Button>
           </div>
         )}
@@ -508,7 +758,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
             overallScore={submittedScore ?? undefined}
             durationMs={elapsedMs}
             heading="Phoneme Explorer Complete!"
-            celebrationMessage="Great job matching sounds to words!"
+            celebrationMessage="Great job exploring sounds!"
             className="mb-6"
           />
         )}

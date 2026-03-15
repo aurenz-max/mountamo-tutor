@@ -1,6 +1,35 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { PoetryLabData } from "../../primitives/visual-primitives/literacy/PoetryLab";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  analysis: {
+    promptDoc:
+      `"analysis": Identify poetic elements in a given poem (β 3.5). `
+      + `Student reads a poem and identifies mood, figurative language instances, and rhyme scheme. `
+      + `Grades 3-6. REQUIRED fields: poem, poemLines, correctMood, moodOptions, figurativeInstances, rhymeScheme, rhymeSchemeOptions.`,
+    schemaDescription: "'analysis' (identify poetic elements in a given poem)",
+  },
+  composition: {
+    promptDoc:
+      `"composition": Compose a poem using template structure (β 6.0). `
+      + `Student writes a poem following a specific template (haiku, limerick, acrostic, free-verse, sonnet-intro). `
+      + `Grades 4-6. REQUIRED fields: compositionPrompt, templateType, templateConstraints. `
+      + `Do NOT include poem/poemLines/figurativeInstances/rhymeScheme/rhymeSchemeOptions.`,
+    schemaDescription: "'composition' (compose a poem using template structure)",
+  },
+};
 
 const poetryLabSchema: Schema = {
   type: Type.OBJECT,
@@ -46,10 +75,35 @@ const poetryLabSchema: Schema = {
 export const generatePoetryLab = async (
   topic: string,
   gradeLevel: string = '4',
-  config?: Partial<PoetryLabData>
+  config?: Partial<PoetryLabData & { targetEvalMode: string }>
 ): Promise<PoetryLabData> => {
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
-  const requestedMode = config?.mode || 'analysis';
+
+  // ---------------------------------------------------------------------------
+  // Eval mode resolution
+  // ---------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    'poetry-lab',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('PoetryLab', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(poetryLabSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'mode',
+      })
+    : poetryLabSchema;
+
+  // ---------------------------------------------------------------------------
+  // Build prompt with eval-mode-scoped challenge type docs
+  // ---------------------------------------------------------------------------
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  const requestedMode = evalConstraint?.allowedTypes[0] || config?.mode || 'analysis';
 
   const gradeNotes: Record<string, string> = {
     '1': 'Grade 1: Simple rhyming poem. Identify rhyming words. Repetition. 4-6 lines. AABB rhyme. No figurative language beyond simple repetition.',
@@ -73,6 +127,8 @@ export const generatePoetryLab = async (
 GRADE: ${gradeLevelKey}. MODE: ${requestedMode}.
 ${requestedMode === 'analysis' ? gradeNotes[gradeLevelKey] : compositionNotes[gradeLevelKey]}
 
+${challengeTypeSection}
+
 ${requestedMode === 'analysis' ? `Generate:
 1. A grade-appropriate poem about the topic with clear figurative language
 2. poemLines: each line as a separate string
@@ -93,14 +149,16 @@ ${requestedMode === 'analysis' ? `Generate:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: poetryLabSchema,
+        responseSchema: activeSchema,
         systemInstruction: 'You are an expert K-6 poetry instructor who creates engaging, age-appropriate poems and poetry activities. For analysis mode, write poems with clear figurative language and consistent rhyme schemes. For composition mode, create inspiring prompts with clear structural constraints. Be meticulous about character offsets.',
       }
     });
     const text = response.text;
     if (!text) throw new Error("No data returned from Gemini API");
     const result = JSON.parse(text) as PoetryLabData;
-    return { ...result, ...config };
+    // Exclude targetEvalMode from config spread
+    const { targetEvalMode: _targetEvalMode, ...restConfig } = config || {};
+    return { ...result, ...restConfig };
   } catch (error) {
     console.error("Error generating poetry lab:", error);
     throw error;

@@ -1,6 +1,48 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { FigurativeLanguageFinderData, FigurativeType } from "../../primitives/visual-primitives/literacy/FigurativeLanguageFinder";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  alliteration: {
+    promptDoc: `"alliteration": Repetition of initial consonant sounds. Easy to identify by sound pattern. Grades 3-4.`,
+    schemaDescription: "'alliteration' (repeated initial sounds)",
+  },
+  onomatopoeia: {
+    promptDoc: `"onomatopoeia": Words that imitate sounds (buzz, crash, whisper). Easy to identify. Grades 3-4.`,
+    schemaDescription: "'onomatopoeia' (sound words)",
+  },
+  simile: {
+    promptDoc: `"simile": Comparison using "like" or "as". Has clear signal words. Grades 3-5.`,
+    schemaDescription: "'simile' (comparison with like/as)",
+  },
+  metaphor: {
+    promptDoc: `"metaphor": Implicit comparison without like/as. Harder than simile. Grades 4-6.`,
+    schemaDescription: "'metaphor' (implicit comparison)",
+  },
+  personification: {
+    promptDoc: `"personification": Giving human qualities to non-human things. Grades 4-6.`,
+    schemaDescription: "'personification' (human qualities to non-human)",
+  },
+  hyperbole: {
+    promptDoc: `"hyperbole": Extreme exaggeration for effect. Grades 4-6.`,
+    schemaDescription: "'hyperbole' (extreme exaggeration)",
+  },
+  imagery: {
+    promptDoc: `"imagery": Vivid sensory language appealing to sight, sound, touch, taste, or smell. Grades 5-6.`,
+    schemaDescription: "'imagery' (sensory language)",
+  },
+  idiom: {
+    promptDoc: `"idiom": Culturally specific expressions where meaning differs from literal words. Hardest type. Grades 5-6.`,
+    schemaDescription: "'idiom' (culturally specific expression)",
+  },
+};
 
 const figurativeLanguageFinderSchema: Schema = {
   type: Type.OBJECT,
@@ -33,8 +75,21 @@ const figurativeLanguageFinderSchema: Schema = {
 export const generateFigurativeLanguageFinder = async (
   topic: string,
   gradeLevel: string = '4',
-  config?: Partial<FigurativeLanguageFinderData>
+  config?: Partial<FigurativeLanguageFinderData & { targetEvalMode: string }>
 ): Promise<FigurativeLanguageFinderData> => {
+  const evalConstraint = resolveEvalModeConstraint(
+    'figurative-language-finder',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('FigurativeLanguageFinder', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(figurativeLanguageFinderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        arrayName: 'instances',
+      })
+    : figurativeLanguageFinderSchema;
+
   const gradeLevelKey = ['3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
 
   const gradeNotes: Record<string, string> = {
@@ -53,12 +108,18 @@ export const generateFigurativeLanguageFinder = async (
 
   const availableTypes = typesByGrade[gradeLevelKey] || typesByGrade['4'];
 
+  const activeTypes = evalConstraint
+    ? evalConstraint.allowedTypes as FigurativeType[]
+    : availableTypes;
+
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `Create a figurative language identification activity about: "${topic}".
 GRADE: ${gradeLevelKey}.
 ${gradeNotes[gradeLevelKey] || gradeNotes['4']}
 
-AVAILABLE TYPES for this grade: ${availableTypes.join(', ')}
-
+AVAILABLE TYPES for this grade: ${activeTypes.join(', ')}
+${challengeTypeSection}
 Rules:
 1. Write a passage that naturally embeds figurative language instances
 2. Mark EXACT startIndex and endIndex character offsets for each instance in the passage string
@@ -73,14 +134,16 @@ Rules:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: figurativeLanguageFinderSchema,
+        responseSchema: activeSchema,
         systemInstruction: 'You are an expert K-6 language arts instructor specializing in figurative language and literary devices. You create engaging passages rich in figurative language with clear, age-appropriate examples. You are meticulous about character offsets — count every character including spaces and punctuation. Literal meanings are written in student-friendly language.',
       }
     });
     const text = response.text;
     if (!text) throw new Error("No data returned from Gemini API");
     const result = JSON.parse(text) as FigurativeLanguageFinderData;
-    return { ...result, ...config };
+    const { targetEvalMode: _unused, ...configRest } = config ?? {};
+    void _unused;
+    return { ...result, ...configRest };
   } catch (error) {
     console.error("Error generating figurative language finder:", error);
     throw error;

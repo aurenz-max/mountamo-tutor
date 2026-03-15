@@ -49,14 +49,14 @@ export interface LetterSoundLinkData {
 // ============================================================================
 
 const MODE_CONFIG: Record<string, { label: string; description: string; icon: string }> = {
-  'see-hear': { label: 'See → Hear', description: 'See a letter, pick its sound', icon: '👁️' },
-  'hear-see': { label: 'Hear → See', description: 'Hear a sound, find the letter', icon: '👂' },
-  'keyword-match': { label: 'Keyword Match', description: 'Match letter to keyword', icon: '🖼️' },
+  'see-hear': { label: 'See \u2192 Hear', description: 'See a letter, pick its sound', icon: '\uD83D\uDC41\uFE0F' },
+  'hear-see': { label: 'Hear \u2192 See', description: 'Hear a sound, find the letter', icon: '\uD83D\uDC42' },
+  'keyword-match': { label: 'Keyword Match', description: 'Match letter to keyword', icon: '\uD83D\uDDBC\uFE0F' },
 };
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'see-hear': { label: 'See → Hear', accentColor: 'blue' },
-  'hear-see': { label: 'Hear → See', accentColor: 'purple' },
+  'see-hear': { label: 'See \u2192 Hear', accentColor: 'blue' },
+  'hear-see': { label: 'Hear \u2192 See', accentColor: 'purple' },
   'keyword-match': { label: 'Keyword Match', accentColor: 'emerald' },
 };
 
@@ -65,13 +65,62 @@ const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 
 /** Keyword image emoji/icon mapping */
 const KEYWORD_IMAGES: Record<string, string> = {
-  sun: '☀️', apple: '🍎', top: '🔝', itch: '🤏', pig: '🐷', net: '🥅',
-  cat: '🐱', kite: '🪁', egg: '🥚', hat: '🎩', run: '🏃', map: '🗺️', dog: '🐶',
-  go: '🟢', octopus: '🐙', up: '⬆️', lip: '👄', fan: '🌬️', bat: '🦇',
-  jam: '🍯', zip: '⚡', web: '🕸️', van: '🚐', yes: '✅', box: '📦', queen: '👑',
+  sun: '\u2600\uFE0F', apple: '\uD83C\uDF4E', top: '\uD83D\uDD1D', itch: '\uD83E\uDD0F', pig: '\uD83D\uDC37', net: '\uD83E\uDD45',
+  cat: '\uD83D\uDC31', kite: '\uD83E\uDE81', egg: '\uD83E\uDD5A', hat: '\uD83C\uDFA9', run: '\uD83C\uDFC3', map: '\uD83D\uDDFA\uFE0F', dog: '\uD83D\uDC36',
+  go: '\uD83D\uDFE2', octopus: '\uD83D\uDC19', up: '\u2B06\uFE0F', lip: '\uD83D\uDC44', fan: '\uD83C\uDF2C\uFE0F', bat: '\uD83E\uDD87',
+  jam: '\uD83C\uDF6F', zip: '\u26A1', web: '\uD83D\uDD78\uFE0F', van: '\uD83D\uDE90', yes: '\u2705', box: '\uD83D\uDCE6', queen: '\uD83D\uDC51',
 };
 
+/** Speaker bubble colors for the two binary options */
+const SPEAKER_COLORS = [
+  {
+    bg: 'bg-rose-500/15',
+    border: 'border-rose-400/30',
+    hoverBg: 'hover:bg-rose-500/25',
+    activeBg: 'bg-rose-500/30',
+    activeBorder: 'border-rose-400/50',
+    ring: 'ring-rose-400/40',
+    iconColor: 'text-rose-300',
+    label: 'rose',
+  },
+  {
+    bg: 'bg-sky-500/15',
+    border: 'border-sky-400/30',
+    hoverBg: 'hover:bg-sky-500/25',
+    activeBg: 'bg-sky-500/30',
+    activeBorder: 'border-sky-400/50',
+    ring: 'ring-sky-400/40',
+    iconColor: 'text-sky-300',
+    label: 'sky',
+  },
+];
+
 const MAX_ATTEMPTS = 3;
+
+// ============================================================================
+// Speaker Icon SVG
+// ============================================================================
+
+const SpeakerIcon: React.FC<{ className?: string; playing?: boolean }> = ({ className = '', playing = false }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`${className} ${playing ? 'animate-pulse' : ''}`}
+  >
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity={0.3} />
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+    {playing && (
+      <>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+      </>
+    )}
+  </svg>
+);
 
 // ============================================================================
 // Props
@@ -132,11 +181,14 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   // Local UI state
   // ---------------------------------------------------------------------------
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [listenedOption, setListenedOption] = useState<number | null>(null);
+  const [playingOption, setPlayingOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [isLocked, setIsLocked] = useState(false);
   const [confusedPairs, setConfusedPairs] = useState<Array<[string, string]>>([]);
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
+  const [showKeywordHint, setShowKeywordHint] = useState(false);
 
   // Per-mode tracking for evaluation metrics
   const [seeHearResults, setSeeHearResults] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
@@ -206,6 +258,26 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   }, [isConnected, currentChallenge, letterGroup, cumulativeLetters, challenges.length, sendText]);
 
   // ---------------------------------------------------------------------------
+  // Auto-play sound for hear-see mode on challenge load
+  // ---------------------------------------------------------------------------
+  const lastAutoPlayedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isConnected || !currentChallenge || isLocked) return;
+    if (currentChallenge.mode !== 'hear-see') return;
+    if (lastAutoPlayedRef.current === currentChallenge.id) return;
+
+    lastAutoPlayedRef.current = currentChallenge.id;
+    // Small delay to let the UI render first
+    const timer = setTimeout(() => {
+      sendText(
+        `[PRONOUNCE_SOUND] Say ONLY the sound ${currentChallenge.targetSound}. Just the clean phoneme, nothing else. Then pause.`,
+        { silent: true },
+      );
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [isConnected, currentChallenge, isLocked, sendText]);
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
@@ -219,7 +291,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
   /** Get the emoji for a keyword */
   const getKeywordEmoji = useCallback((keyword: string) => {
-    return KEYWORD_IMAGES[keyword.toLowerCase()] || '📝';
+    return KEYWORD_IMAGES[keyword.toLowerCase()] || '\uD83D\uDCDD';
   }, []);
 
   /** Track confused sound pairs */
@@ -242,22 +314,70 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   }, [isVowel]);
 
   // ---------------------------------------------------------------------------
-  // Option selection handler (all modes)
+  // Speaker bubble: tap to hear, tap again to choose
   // ---------------------------------------------------------------------------
-  const handleOptionSelect = useCallback((optionIndex: number) => {
+  const handleSpeakerTap = useCallback((optionIndex: number) => {
     if (isLocked || hasSubmittedEvaluation || !currentChallenge) return;
 
     const options = currentChallenge.options || [];
     const option = options[optionIndex];
     if (!option) return;
 
-    setSelectedOption(optionIndex);
-    incrementAttempts();
+    // First tap on this option: play the sound
+    if (listenedOption !== optionIndex) {
+      setListenedOption(optionIndex);
+      setPlayingOption(optionIndex);
+      setSelectedOption(null);
 
+      // Play the sound via AI
+      if (currentChallenge.mode === 'see-hear' || currentChallenge.mode === 'keyword-match') {
+        const soundToPlay = option.sound || '';
+        if (currentChallenge.mode === 'keyword-match') {
+          // For keyword match, say the word
+          sendText(
+            `[TAP_OPTION] Say the word "${soundToPlay}" clearly. Just the word, nothing else.`,
+            { silent: true },
+          );
+        } else {
+          // For see-hear, say the phoneme
+          sendText(
+            `[TAP_OPTION] Say only the sound ${soundToPlay}. Just the clean phoneme, nothing else.`,
+            { silent: true },
+          );
+        }
+      } else if (currentChallenge.mode === 'hear-see') {
+        // For hear-see, say the letter name
+        const letterToSay = option.letter || '';
+        sendText(
+          `[TAP_OPTION] Say the name of the letter "${letterToSay.toUpperCase()}". Just the letter name, nothing else.`,
+          { silent: true },
+        );
+      }
+
+      // Clear playing animation after a short delay
+      setTimeout(() => setPlayingOption(null), 1500);
+      return;
+    }
+
+    // Second tap on same option: confirm selection
+    setSelectedOption(optionIndex);
+    confirmSelection(optionIndex);
+  }, [isLocked, hasSubmittedEvaluation, currentChallenge, listenedOption, sendText]);
+
+  // ---------------------------------------------------------------------------
+  // Confirm selection (called on second tap)
+  // ---------------------------------------------------------------------------
+  const confirmSelection = useCallback((optionIndex: number) => {
+    if (!currentChallenge) return;
+
+    const options = currentChallenge.options || [];
+    const option = options[optionIndex];
+    if (!option) return;
+
+    incrementAttempts();
     const isCorrect = option.isCorrect;
 
     if (isCorrect) {
-      const modeLabel = MODE_CONFIG[currentChallenge.mode]?.label ?? currentChallenge.mode;
       setFeedback(
         currentChallenge.mode === 'keyword-match'
           ? `Yes! "${currentChallenge.targetLetter.toUpperCase()}" makes ${currentChallenge.targetSound}, like in "${currentChallenge.keywordWord}"!`
@@ -279,7 +399,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
       sendText(
         `[ANSWER_CORRECT] The student correctly identified the letter-sound link! `
-        + `Letter "${currentChallenge.targetLetter.toUpperCase()}" → sound ${currentChallenge.targetSound}. `
+        + `Letter "${currentChallenge.targetLetter.toUpperCase()}" \u2192 sound ${currentChallenge.targetSound}. `
         + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} `
         + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. `
         + `Say "Yes! The letter ${currentChallenge.targetLetter.toUpperCase()} makes the sound ${currentChallenge.targetSound}!" `
@@ -288,20 +408,15 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           : ''}`,
         { silent: true },
       );
-
-      // For hear-see mode, ask AI to pronounce the sound on correct
-      if (currentChallenge.mode === 'see-hear') {
-        sendText(
-          `[PRONOUNCE_SOUND] This sound is ${currentChallenge.targetSound}. ${currentChallenge.targetSound}.`,
-          { silent: true },
-        );
-      }
     } else {
       const wrongDisplay = currentChallenge.mode === 'hear-see'
         ? `letter "${option.letter || '?'}"`
         : `sound "${option.sound || '?'}"`;
-      setFeedback('Not quite! Try again.');
+      setFeedback('Not quite! Listen again and try the other one.');
       setFeedbackType('error');
+
+      // Show keyword hint after first wrong attempt (progressive scaffolding)
+      setShowKeywordHint(true);
 
       // Track confusion
       if (currentChallenge.mode === 'see-hear' && option.sound) {
@@ -310,9 +425,13 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
         trackConfusion(currentChallenge.targetLetter, option.letter);
       }
 
+      // Reset listened state so they can tap again
+      setListenedOption(null);
+      setSelectedOption(null);
+
       sendText(
         `[ANSWER_INCORRECT] The student chose ${wrongDisplay} but the correct answer is `
-        + `letter "${currentChallenge.targetLetter.toUpperCase()}" → sound ${currentChallenge.targetSound}. `
+        + `letter "${currentChallenge.targetLetter.toUpperCase()}" \u2192 sound ${currentChallenge.targetSound}. `
         + `Attempt ${currentAttempts + 1}. `
         + `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
         + `Give a brief hint connecting the letter to its keyword.`,
@@ -347,21 +466,9 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       }
     }
   }, [
-    isLocked, hasSubmittedEvaluation, currentChallenge, currentAttempts,
+    currentChallenge, currentAttempts,
     incrementAttempts, recordResult, sendText, trackConfusion, updateModeAccuracy,
   ]);
-
-  // ---------------------------------------------------------------------------
-  // Tap option to hear it (for see-hear and hear-see modes)
-  // ---------------------------------------------------------------------------
-  const handleTapToHear = useCallback((soundOrLetter: string, isSound: boolean) => {
-    sendText(
-      isSound
-        ? `[TAP_OPTION] Say only the sound ${soundOrLetter}. Just the clean phoneme, nothing else.`
-        : `[TAP_OPTION] Say the name of the letter "${soundOrLetter.toUpperCase()}". Just the letter name, nothing else.`,
-      { silent: true },
-    );
-  }, [sendText]);
 
   // ---------------------------------------------------------------------------
   // Submit final evaluation
@@ -377,7 +484,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
     // Deduplicate confused pairs
     const uniquePairs = Array.from(
-      new Set(confusedPairs.map(([a, b]) => [a, b].sort().join('↔')))
+      new Set(confusedPairs.map(([a, b]) => [a, b].sort().join('\u2194')))
     );
 
     const metrics: LetterSoundLinkMetrics = {
@@ -444,9 +551,12 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   // ---------------------------------------------------------------------------
   const handleNextChallenge = useCallback(() => {
     setSelectedOption(null);
+    setListenedOption(null);
+    setPlayingOption(null);
     setFeedback('');
     setFeedbackType('');
     setIsLocked(false);
+    setShowKeywordHint(false);
 
     if (!advanceProgress()) {
       submitFinalEvaluation();
@@ -460,7 +570,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
     sendText(
       `[NEXT_CHALLENGE] Challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `${modeLabel}. Target: letter "${nextChallenge.targetLetter.toUpperCase()}" → sound ${nextChallenge.targetSound}. `
+      + `${modeLabel}. Target: letter "${nextChallenge.targetLetter.toUpperCase()}" \u2192 sound ${nextChallenge.targetSound}. `
       + `[SAY_KEYWORD] ${nextChallenge.targetSound} as in ${nextChallenge.keywordWord}. `
       + `Briefly introduce the new challenge.`,
       { silent: true },
@@ -468,11 +578,61 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   }, [advanceProgress, submitFinalEvaluation, challenges, currentChallengeIndex, sendText]);
 
   // ============================================================================
-  // Render: See → Hear Mode
+  // Render: Speaker Bubble (shared by see-hear & keyword-match modes)
+  // ============================================================================
+  const renderSpeakerBubble = (idx: number, colorConfig: typeof SPEAKER_COLORS[0]) => {
+    const isListened = listenedOption === idx;
+    const isSelected = selectedOption === idx;
+    const isPlaying = playingOption === idx;
+    const showCorrect = isLocked && currentChallenge?.options?.[idx]?.isCorrect;
+    const showWrong = isSelected && feedbackType === 'error' && !currentChallenge?.options?.[idx]?.isCorrect;
+
+    return (
+      <button
+        key={idx}
+        onClick={() => handleSpeakerTap(idx)}
+        disabled={isLocked}
+        className={`
+          relative flex flex-col items-center justify-center gap-2
+          w-28 h-28 sm:w-32 sm:h-32 rounded-full
+          border-2 transition-all duration-300
+          ${showCorrect
+            ? 'bg-emerald-500/30 border-emerald-400/60 scale-110'
+            : showWrong
+              ? 'bg-red-500/20 border-red-500/40 scale-95'
+              : isListened
+                ? `${colorConfig.activeBg} ${colorConfig.activeBorder} ring-2 ${colorConfig.ring} scale-105`
+                : `${colorConfig.bg} ${colorConfig.border} ${colorConfig.hoverBg} hover:scale-105`
+          }
+          ${isLocked ? 'cursor-default' : 'cursor-pointer'}
+          disabled:opacity-70
+        `}
+      >
+        <SpeakerIcon
+          className={`w-10 h-10 sm:w-12 sm:h-12 ${
+            showCorrect ? 'text-emerald-300' : showWrong ? 'text-red-300' : colorConfig.iconColor
+          }`}
+          playing={isPlaying}
+        />
+        {isListened && !isLocked && (
+          <span className="text-[10px] text-slate-400 animate-pulse">
+            tap to choose
+          </span>
+        )}
+        {!isListened && !isLocked && (
+          <span className="text-[10px] text-slate-500">
+            tap to hear
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  // ============================================================================
+  // Render: See → Hear Mode (audio-first speaker bubbles)
   // ============================================================================
   const renderSeeHear = () => {
     if (!currentChallenge) return null;
-    const options = currentChallenge.options || [];
     const letterColor = getLetterColorClass(currentChallenge.targetLetter);
 
     return (
@@ -486,59 +646,33 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           `}>
             {currentChallenge.targetLetter.toUpperCase()}
           </div>
-          <p className="text-slate-400 text-sm">What sound does this letter make?</p>
+          <p className="text-slate-400 text-sm">Which sound does this letter make?</p>
         </div>
 
-        {/* Keyword hint */}
-        <div className="flex items-center justify-center gap-2 text-slate-500 text-xs">
-          <span className="text-lg">{getKeywordEmoji(currentChallenge.keywordWord)}</span>
-          <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>
+        {/* Keyword hint — only after wrong attempt */}
+        {showKeywordHint && (
+          <div className="flex items-center justify-center gap-2 text-slate-400 text-xs animate-in fade-in duration-500">
+            <span className="text-lg">{getKeywordEmoji(currentChallenge.keywordWord)}</span>
+            <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>
+          </div>
+        )}
+
+        {/* Two speaker bubbles */}
+        <div className="flex items-center justify-center gap-6 sm:gap-10">
+          {(currentChallenge.options || []).slice(0, 2).map((_, idx) =>
+            renderSpeakerBubble(idx, SPEAKER_COLORS[idx])
+          )}
         </div>
 
-        {/* Sound options */}
-        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
-          {options.map((option, idx) => {
-            const isSelected = selectedOption === idx;
-            const showCorrect = isLocked && option.isCorrect;
-            const showWrong = isSelected && feedbackType === 'error' && !option.isCorrect;
-
-            return (
-              <div key={idx} className="flex flex-col gap-1">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleOptionSelect(idx)}
-                  disabled={isLocked}
-                  className={`
-                    h-16 text-xl font-bold transition-all
-                    ${showCorrect
-                      ? 'bg-emerald-500/30 border-2 border-emerald-400/60 text-emerald-200'
-                      : showWrong
-                        ? 'bg-red-500/20 border-2 border-red-500/40 text-red-300'
-                        : isSelected
-                          ? 'bg-blue-500/20 border-2 border-blue-500/40 text-blue-200'
-                          : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
-                    }
-                  `}
-                >
-                  {option.sound || '?'}
-                </Button>
-                {/* Tap to hear button */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleTapToHear(option.sound || '', true); }}
-                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  tap to hear
-                </button>
-              </div>
-            );
-          })}
-        </div>
+        <p className="text-center text-xs text-slate-600">
+          Tap each speaker to hear the sound, then tap your answer again to choose it
+        </p>
       </div>
     );
   };
 
   // ============================================================================
-  // Render: Hear → See Mode
+  // Render: Hear → See Mode (auto-play sound, pick the letter)
   // ============================================================================
   const renderHearSee = () => {
     if (!currentChallenge) return null;
@@ -546,21 +680,36 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
     return (
       <div className="space-y-6">
-        {/* Sound display with play button */}
+        {/* Sound play button — no phoneme text shown */}
         <div className="flex flex-col items-center gap-3">
           <button
-            onClick={() => handleTapToHear(currentChallenge.targetSound, true)}
+            onClick={() => {
+              sendText(
+                `[PRONOUNCE_SOUND] Say ONLY the sound ${currentChallenge.targetSound}. Just the clean phoneme, nothing else.`,
+                { silent: true },
+              );
+            }}
             className="
-              text-6xl font-bold text-amber-300
-              bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl
-              px-12 py-8 select-none cursor-pointer
-              hover:bg-amber-500/20 hover:scale-105 transition-all
+              flex items-center justify-center
+              w-28 h-28 rounded-full
+              bg-amber-500/15 border-2 border-amber-500/30
+              cursor-pointer select-none
+              hover:bg-amber-500/25 hover:scale-105 transition-all
+              active:scale-95
             "
           >
-            {currentChallenge.targetSound}
+            <SpeakerIcon className="w-14 h-14 text-amber-300" playing={false} />
           </button>
-          <p className="text-slate-400 text-sm">Tap the sound to hear it, then find the letter!</p>
+          <p className="text-slate-400 text-sm">Tap to hear the sound, then find the letter!</p>
         </div>
+
+        {/* Keyword hint — only after wrong attempt */}
+        {showKeywordHint && (
+          <div className="flex items-center justify-center gap-2 text-slate-400 text-xs animate-in fade-in duration-500">
+            <span className="text-lg">{getKeywordEmoji(currentChallenge.keywordWord)}</span>
+            <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>
+          </div>
+        )}
 
         {/* Shared sound note */}
         {currentChallenge.sharedSoundLetters && currentChallenge.sharedSoundLetters.length > 0 && (
@@ -569,9 +718,9 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           </p>
         )}
 
-        {/* Letter options */}
-        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
-          {options.map((option, idx) => {
+        {/* Letter options — these stay as visible letters (letters are what's being tested) */}
+        <div className="flex items-center justify-center gap-6 sm:gap-10">
+          {options.slice(0, 2).map((option, idx) => {
             const isSelected = selectedOption === idx;
             const showCorrect = isLocked && option.isCorrect;
             const showWrong = isSelected && feedbackType === 'error' && !option.isCorrect;
@@ -582,17 +731,72 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
               <Button
                 key={idx}
                 variant="ghost"
-                onClick={() => handleOptionSelect(idx)}
+                onClick={() => {
+                  if (isLocked) return;
+                  setSelectedOption(idx);
+                  incrementAttempts();
+
+                  // Directly confirm for hear-see (no two-tap needed — letters are visible)
+                  const isCorrect = option.isCorrect;
+
+                  if (isCorrect) {
+                    setFeedback(`Yes! The letter "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}!`);
+                    setFeedbackType('success');
+                    setIsLocked(true);
+                    updateModeAccuracy(currentChallenge.mode, true, currentChallenge.targetLetter);
+                    recordResult({
+                      challengeId: currentChallenge.id,
+                      correct: true,
+                      attempts: currentAttempts + 1,
+                      mode: currentChallenge.mode,
+                      targetLetter: currentChallenge.targetLetter,
+                      targetSound: currentChallenge.targetSound,
+                    });
+                    sendText(
+                      `[ANSWER_CORRECT] The student correctly picked letter "${currentChallenge.targetLetter.toUpperCase()}" for the sound ${currentChallenge.targetSound}! `
+                      + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} `
+                      + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. Celebrate briefly!`,
+                      { silent: true },
+                    );
+                  } else {
+                    setFeedback('Not quite! Listen to the sound again and try the other letter.');
+                    setFeedbackType('error');
+                    setShowKeywordHint(true);
+                    setSelectedOption(null);
+                    trackConfusion(currentChallenge.targetLetter, option.letter || '');
+                    sendText(
+                      `[ANSWER_INCORRECT] Student chose "${(option.letter || '').toUpperCase()}" but correct is "${currentChallenge.targetLetter.toUpperCase()}" (${currentChallenge.targetSound}). `
+                      + `Attempt ${currentAttempts + 1}. `
+                      + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. Give a brief hint.`,
+                      { silent: true },
+                    );
+
+                    if (currentAttempts + 1 >= MAX_ATTEMPTS) {
+                      setFeedback(
+                        `The letter "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}, like in "${currentChallenge.keywordWord}".`
+                      );
+                      setFeedbackType('error');
+                      setIsLocked(true);
+                      updateModeAccuracy(currentChallenge.mode, false, currentChallenge.targetLetter);
+                      recordResult({
+                        challengeId: currentChallenge.id,
+                        correct: false,
+                        attempts: currentAttempts + 1,
+                        mode: currentChallenge.mode,
+                        targetLetter: currentChallenge.targetLetter,
+                        targetSound: currentChallenge.targetSound,
+                      });
+                    }
+                  }
+                }}
                 disabled={isLocked}
                 className={`
-                  h-16 text-3xl font-bold transition-all
+                  w-28 h-28 sm:w-32 sm:h-32 rounded-2xl text-5xl font-bold transition-all
                   ${showCorrect
-                    ? 'bg-emerald-500/30 border-2 border-emerald-400/60 text-emerald-200'
+                    ? 'bg-emerald-500/30 border-2 border-emerald-400/60 text-emerald-200 scale-110'
                     : showWrong
-                      ? 'bg-red-500/20 border-2 border-red-500/40 text-red-300'
-                      : isSelected
-                        ? 'bg-blue-500/20 border-2 border-blue-500/40 text-blue-200'
-                        : `bg-white/5 border border-white/20 hover:bg-white/10 ${letterColor}`
+                      ? 'bg-red-500/20 border-2 border-red-500/40 text-red-300 scale-95'
+                      : `bg-white/5 border-2 border-white/20 hover:bg-white/10 hover:scale-105 ${letterColor}`
                   }
                 `}
               >
@@ -606,16 +810,15 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   };
 
   // ============================================================================
-  // Render: Keyword Match Mode
+  // Render: Keyword Match Mode (speaker bubbles with word audio)
   // ============================================================================
   const renderKeywordMatch = () => {
     if (!currentChallenge) return null;
-    const options = currentChallenge.options || [];
     const letterColor = getLetterColorClass(currentChallenge.targetLetter);
 
     return (
       <div className="space-y-6">
-        {/* Letter and sound display */}
+        {/* Letter display */}
         <div className="flex flex-col items-center gap-2">
           <div className={`
             text-7xl font-bold ${letterColor}
@@ -624,45 +827,60 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           `}>
             {currentChallenge.targetLetter.toUpperCase()}
           </div>
-          <div className="text-xl text-slate-400 font-mono">
-            {currentChallenge.targetSound}
-          </div>
-          <p className="text-slate-400 text-sm">Which picture matches this letter&apos;s sound?</p>
+          <p className="text-slate-400 text-sm">Which word starts with this letter&apos;s sound?</p>
         </div>
 
-        {/* Keyword image options */}
-        <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-          {options.map((option, idx) => {
+        {/* Two keyword options as speaker bubbles with emoji */}
+        <div className="flex items-center justify-center gap-6 sm:gap-10">
+          {(currentChallenge.options || []).slice(0, 2).map((option, idx) => {
+            const keyword = option.sound || '';
+            const emoji = getKeywordEmoji(keyword);
+            const colorConfig = SPEAKER_COLORS[idx];
+            const isListened = listenedOption === idx;
             const isSelected = selectedOption === idx;
             const showCorrect = isLocked && option.isCorrect;
             const showWrong = isSelected && feedbackType === 'error' && !option.isCorrect;
-            const keyword = option.sound || '';
-            const emoji = getKeywordEmoji(keyword);
 
             return (
-              <Button
+              <button
                 key={idx}
-                variant="ghost"
-                onClick={() => handleOptionSelect(idx)}
+                onClick={() => handleSpeakerTap(idx)}
                 disabled={isLocked}
                 className={`
-                  h-24 flex flex-col gap-1 transition-all
+                  relative flex flex-col items-center justify-center gap-1.5
+                  w-28 h-28 sm:w-32 sm:h-32 rounded-2xl
+                  border-2 transition-all duration-300
                   ${showCorrect
-                    ? 'bg-emerald-500/30 border-2 border-emerald-400/60 text-emerald-200'
+                    ? 'bg-emerald-500/30 border-emerald-400/60 scale-110'
                     : showWrong
-                      ? 'bg-red-500/20 border-2 border-red-500/40 text-red-300'
-                      : isSelected
-                        ? 'bg-blue-500/20 border-2 border-blue-500/40 text-blue-200'
-                        : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
+                      ? 'bg-red-500/20 border-red-500/40 scale-95'
+                      : isListened
+                        ? `${colorConfig.activeBg} ${colorConfig.activeBorder} ring-2 ${colorConfig.ring} scale-105`
+                        : `${colorConfig.bg} ${colorConfig.border} ${colorConfig.hoverBg} hover:scale-105`
                   }
+                  ${isLocked ? 'cursor-default' : 'cursor-pointer'}
+                  disabled:opacity-70
                 `}
               >
                 <span className="text-3xl">{emoji}</span>
-                <span className="text-sm">{keyword}</span>
-              </Button>
+                {isListened && !isLocked && (
+                  <span className="text-[10px] text-slate-400 animate-pulse">
+                    tap to choose
+                  </span>
+                )}
+                {!isListened && !isLocked && (
+                  <span className="text-[10px] text-slate-500">
+                    tap to hear
+                  </span>
+                )}
+              </button>
             );
           })}
         </div>
+
+        <p className="text-center text-xs text-slate-600">
+          Tap each picture to hear the word, then choose which one starts with this letter&apos;s sound
+        </p>
       </div>
     );
   };

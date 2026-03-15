@@ -1,6 +1,47 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { SoundSwapData, SoundSwapChallenge } from "../../primitives/visual-primitives/literacy/SoundSwap";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  addition: {
+    promptDoc:
+      `"addition": Add a phoneme to an existing word to make a new word. `
+      + `resultPhonemes has exactly ONE more phoneme than originalPhonemes. `
+      + `K: add single consonant to make CVC from VC (e.g., "at" + /k/ = "cat"). `
+      + `Grade 1: add consonants/blends (e.g., "lip" → "slip"). `
+      + `Grade 2: add to create blends/clusters (e.g., "rain" → "train").`,
+    schemaDescription: "'addition' (add a phoneme to make a new word)",
+  },
+  deletion: {
+    promptDoc:
+      `"deletion": Remove a phoneme from an existing word to reveal a new word. `
+      + `originalPhonemes has exactly ONE more phoneme than resultPhonemes. `
+      + `K: remove one consonant from CVC (e.g., "cat" - /k/ = "at"). `
+      + `Grade 1: remove from blends/clusters (e.g., "stop" → "top"). `
+      + `Grade 2: remove from complex words (e.g., "cream" → "ream").`,
+    schemaDescription: "'deletion' (remove a phoneme to reveal a new word)",
+  },
+  substitution: {
+    promptDoc:
+      `"substitution": Swap one phoneme for another to transform a word. `
+      + `Both arrays have the SAME length, differing at exactly ONE position. `
+      + `K: swap beginning sound in CVC (e.g., "cat" → "bat"). `
+      + `Grade 1: swap beginning/ending sounds (e.g., "hit" → "sit"). `
+      + `Grade 2: swap any position including medial vowels (e.g., "bit" → "bat").`,
+    schemaDescription: "'substitution' (swap one phoneme to change the word)",
+  },
+};
 
 /**
  * Schema definition for Sound Swap Data
@@ -190,20 +231,38 @@ function deriveOperationFields(raw: RawChallenge): SoundSwapChallenge {
  *
  * @param topic - Theme for the word set (e.g., "Animals", "Food", "At the Park")
  * @param gradeLevel - Grade level ('K', '1', or '2') determines vocabulary complexity
- * @param config - Optional configuration overrides (challengeCount, operations)
+ * @param config - Optional configuration overrides (challengeCount, operations, targetEvalMode)
  * @returns SoundSwapData with grade-appropriate phoneme manipulation challenges
  */
 export const generateSoundSwap = async (
   topic: string,
   gradeLevel: string = "K",
-  config?: Partial<{ challengeCount: number; operations: string[] }>
+  config?: Partial<{
+    challengeCount: number;
+    operations: string[];
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode: string;
+  }>
 ): Promise<SoundSwapData> => {
+  // ── Eval mode resolution ────────────────────────────────────────────
+  const evalConstraint = resolveEvalModeConstraint(
+    'sound-swap',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('SoundSwap', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(soundSwapSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'operation',
+      })
+    : soundSwapSchema;
+
   const gradeLevelKey = ["K", "1", "2"].includes(gradeLevel.toUpperCase())
     ? gradeLevel.toUpperCase()
     : "K";
 
   const challengeCount = config?.challengeCount ?? 9;
-  const operations = config?.operations ?? ["addition", "deletion", "substitution"];
 
   const gradeGuidelines: Record<string, string> = {
     K: `
@@ -238,10 +297,11 @@ GRADE 2 GUIDELINES:
 `,
   };
 
-  const operationInstructions = operations.includes("addition") && operations.includes("deletion") && operations.includes("substitution")
-    ? `Mix all three operation types roughly equally (about ${Math.ceil(challengeCount / 3)} each).
-Order them: addition challenges first, then deletion, then substitution.`
-    : `Include only these operation types: ${operations.join(", ")}.`;
+  // ── Build prompt ────────────────────────────────────────────────────
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
 
   const generationPrompt = `Create a phoneme manipulation (Sound Swap) activity for the topic: "${topic}".
 
@@ -250,7 +310,8 @@ TARGET GRADE LEVEL: ${gradeLevelKey}
 ${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}
 
 Generate exactly ${challengeCount} challenges.
-${operationInstructions}
+
+${challengeTypeSection}
 
 PHONEME NOTATION RULES:
 - Use IPA-style phoneme notation wrapped in forward slashes: /k/, /æ/, /t/, /s/, /b/, /ɪ/, /ʌ/, /ɛ/, /ɑ/, /ʊ/
@@ -262,11 +323,8 @@ PHONEME ARRAY RULES (CRITICAL):
 - originalPhonemes must exactly represent the sounds in originalWord
 - resultPhonemes must exactly represent the sounds in resultWord
 - For ADDITION: resultPhonemes has exactly ONE more phoneme than originalPhonemes
-  Example: "at" ["/æ/", "/t/"] → "cat" ["/k/", "/æ/", "/t/"] (added /k/ at beginning)
 - For DELETION: originalPhonemes has exactly ONE more phoneme than resultPhonemes
-  Example: "cat" ["/k/", "/æ/", "/t/"] → "at" ["/æ/", "/t/"] (removed /k/ from beginning)
 - For SUBSTITUTION: both arrays have the SAME length, differing at exactly ONE position
-  Example: "cat" ["/k/", "/æ/", "/t/"] → "bat" ["/b/", "/æ/", "/t/"] (changed position 0)
 
 CRITICAL RULES:
 - EVERY result word must be a REAL English word (no nonsense words!)
@@ -275,43 +333,7 @@ CRITICAL RULES:
 - IDs should be sequential: "c1", "c2", "c3", etc.
 - Relate words to the topic "${topic}" when possible, but prioritize valid transformations
 - Double-check that originalPhonemes and resultPhonemes are accurate for both words
-
-EXAMPLE OUTPUT:
-{
-  "title": "Sound Swap: Animal Sounds!",
-  "challenges": [
-    {
-      "id": "c1",
-      "operation": "addition",
-      "originalWord": "at",
-      "originalPhonemes": ["/æ/", "/t/"],
-      "originalImage": "the word at",
-      "resultWord": "cat",
-      "resultPhonemes": ["/k/", "/æ/", "/t/"],
-      "resultImage": "a fluffy orange cat"
-    },
-    {
-      "id": "c2",
-      "operation": "deletion",
-      "originalWord": "farm",
-      "originalPhonemes": ["/f/", "/ɑ/", "/r/", "/m/"],
-      "originalImage": "a red barn on a farm",
-      "resultWord": "arm",
-      "resultPhonemes": ["/ɑ/", "/r/", "/m/"],
-      "resultImage": "a person's arm"
-    },
-    {
-      "id": "c3",
-      "operation": "substitution",
-      "originalWord": "cat",
-      "originalPhonemes": ["/k/", "/æ/", "/t/"],
-      "originalImage": "a fluffy orange cat",
-      "resultWord": "bat",
-      "resultPhonemes": ["/b/", "/æ/", "/t/"],
-      "resultImage": "a flying brown bat"
-    }
-  ]
-}
+${!evalConstraint ? '- Order challenges: addition first, then deletion, then substitution (easiest → hardest).' : ''}
 
 Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
 
@@ -321,7 +343,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: soundSwapSchema,
+        responseSchema: activeSchema,
         systemInstruction:
           "You are an expert K-2 reading specialist who designs phoneme manipulation activities. " +
           "You understand phonemic awareness deeply — addition, deletion, and substitution of individual phonemes. " +

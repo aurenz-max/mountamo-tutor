@@ -1,6 +1,36 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { SentenceBuilderData } from "../../primitives/visual-primitives/literacy/SentenceBuilder";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  simple: {
+    promptDoc: `"simple": Build simple sentences from tiles (S+V or S+V+O). 3-5 tiles. Grades 1-2.`,
+    schemaDescription: "'simple' (subject-verb-object)",
+  },
+  compound: {
+    promptDoc: `"compound": Build compound sentences with coordinating conjunctions (and, but, so, or). Two clauses joined. 6-7 tiles. Grade 3.`,
+    schemaDescription: "'compound' (two clauses with conjunction)",
+  },
+  complex: {
+    promptDoc: `"complex": Build complex sentences with subordinating conjunctions (because, when, while, although, if). Independent + dependent clause. 7-8 tiles. Grade 4.`,
+    schemaDescription: "'complex' (subordinate clause construction)",
+  },
+  'compound-complex': {
+    promptDoc: `"compound-complex": Build compound-complex sentences combining both patterns. Multiple clauses. 8-10 tiles. Grades 5-6.`,
+    schemaDescription: "'compound-complex' (multi-clause sentence)",
+  },
+};
 
 /**
  * Schema definition for Sentence Builder Data
@@ -116,8 +146,23 @@ const sentenceBuilderSchema: Schema = {
 export const generateSentenceBuilder = async (
   topic: string,
   gradeLevel: string = '2',
-  config?: Partial<SentenceBuilderData>
+  config?: Partial<SentenceBuilderData & { targetEvalMode: string }>
 ): Promise<SentenceBuilderData> => {
+
+  // ── Eval mode resolution ────────────────────────────────────────────
+  const evalConstraint = resolveEvalModeConstraint(
+    'sentence-builder',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('SentenceBuilder', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(sentenceBuilderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'sentenceType',
+        rootLevel: true,
+      })
+    : sentenceBuilderSchema;
 
   // Grade-specific complexity guidelines
   const gradeContext: Record<string, string> = {
@@ -197,11 +242,19 @@ GRADE 6 GUIDELINES:
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '2';
   const sentenceTypeForGrade = gradeLevelKey <= '2' ? 'simple' : gradeLevelKey === '3' ? 'compound' : gradeLevelKey === '4' ? 'complex' : 'compound-complex';
 
+  // ── Build prompt ────────────────────────────────────────────────────
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
   const generationPrompt = `Create an interactive sentence builder activity for: "${topic}".
 
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
-${gradeContext[gradeLevelKey] || gradeContext['2']}
+${!evalConstraint ? (gradeContext[gradeLevelKey] || gradeContext['2']) : ''}
+
+${challengeTypeSection}
 
 REQUIRED INFORMATION:
 
@@ -209,7 +262,7 @@ REQUIRED INFORMATION:
 
 2. **Grade Level**: "${gradeLevelKey}"
 
-3. **Sentence Type**: "${sentenceTypeForGrade}"
+3. **Sentence Type**: "${evalConstraint ? evalConstraint.allowedTypes[0] : sentenceTypeForGrade}"
 
 4. **Challenges** (3-4 challenges):
    For EACH challenge provide:
@@ -351,7 +404,7 @@ Now generate a sentence builder activity for "${topic}" at grade level ${gradeLe
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: sentenceBuilderSchema,
+        responseSchema: activeSchema,
         systemInstruction: `You are an expert K-6 English Language Arts educator specializing in grammar instruction and sentence construction. You create engaging, age-appropriate sentence building activities that teach students about parts of speech, sentence structure, and grammatical patterns. You understand developmental progression from simple subject-verb sentences in grade 1 through compound-complex structures in grade 6. You make grammar fun and accessible, using topics and vocabulary that excite young learners. You always ensure grammatical accuracy and provide clear, helpful hints.`,
       }
     });
@@ -363,10 +416,12 @@ Now generate a sentence builder activity for "${topic}" at grade level ${gradeLe
 
     const result = JSON.parse(text) as SentenceBuilderData;
 
-    // Merge with any config overrides
+    // Merge with any config overrides (excluding targetEvalMode)
+    const { targetEvalMode: _unused, ...configRest } = config ?? {};
+    void _unused;
     const finalData: SentenceBuilderData = {
       ...result,
-      ...config,
+      ...configRest,
     };
 
     console.log('Sentence Builder Generated:', {

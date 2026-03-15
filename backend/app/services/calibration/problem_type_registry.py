@@ -162,7 +162,26 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "missing_number":  PriorConfig(5.0, "Transitional: find unknown operand"),
         "speed_round":     PriorConfig(6.5, "Symbolic: timed rapid recall"),
     },
-    "strategy-picker":            {"default": PriorConfig(5.0, "Choose solution strategy")},
+    "3d-shape-explorer": {
+        "identify_3d":      PriorConfig(1.5, "Concrete: name 3D shapes from visual display"),
+        "match_real_world":  PriorConfig(2.5, "Pictorial: connect shapes to real-world objects"),
+        "2d_vs_3d":         PriorConfig(3.5, "Pictorial: compare and sort 2D vs 3D shapes"),
+        "faces_properties":  PriorConfig(5.0, "Transitional: analyze faces/edges/vertices"),
+        "shape_riddle":     PriorConfig(6.5, "Symbolic: deductive identification from clues"),
+    },
+    "strategy-picker": {
+        "guided":       PriorConfig(1.5, "Concrete: follow a given strategy with scaffolding"),
+        "match":        PriorConfig(2.5, "Pictorial: identify strategy from worked solution"),
+        "try_another":  PriorConfig(3.5, "Pictorial: solve same problem a different way"),
+        "compare":      PriorConfig(5.0, "Transitional: reflect on multiple strategies"),
+        "choose":       PriorConfig(6.5, "Symbolic: autonomous strategy selection"),
+    },
+    "ratio-table": {
+        "build_ratio":      PriorConfig(2.5, "Pictorial: construct equivalent ratio with slider"),
+        "missing_value":    PriorConfig(3.5, "Pictorial: find hidden value in scaled ratio"),
+        "find_multiplier":  PriorConfig(5.0, "Transitional: discover scale factor between ratios"),
+        "unit_rate":        PriorConfig(6.5, "Symbolic: calculate and apply unit rate"),
+    },
     "bar-model":                  {"default": PriorConfig(3.0, "Bar model comparison")},
     "ordinal-line": {
         "identify":           PriorConfig(1.5, "Concrete: name ordinal position"),
@@ -183,11 +202,86 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     # Literacy primitives
     # -----------------------------------------------------------------
-    "phonics-blender":            {"default": PriorConfig(2.5, "Blend phonemes")},
-    "rhyme-studio":               {"default": PriorConfig(2.0, "Identify rhymes")},
+    "sound-swap": {
+        "addition":     PriorConfig(2.0, "Addition: add a phoneme to make a new word"),
+        "deletion":     PriorConfig(3.0, "Deletion: remove a phoneme to reveal a new word"),
+        "substitution": PriorConfig(4.0, "Substitution: swap a phoneme to change the word"),
+    },
+    "phonics-blender": {
+        "cvc":          PriorConfig(1.5, "CVC: simple 3-phoneme blending"),
+        "cvce_blend":   PriorConfig(2.5, "CVCE/blends: silent-e and consonant blends"),
+        "digraph":      PriorConfig(3.5, "Digraphs: two letters, one sound (sh, ch, th)"),
+        "advanced":     PriorConfig(5.0, "Advanced: r-controlled vowels and diphthongs"),
+    },
+    "rhyme-studio": {
+        "recognition":    PriorConfig(1.5, "Recognition: do these words rhyme? (yes/no)"),
+        "identification": PriorConfig(2.5, "Guided: pick the rhyming word from options"),
+        "production":     PriorConfig(5.0, "Production: generate a rhyming word"),
+    },
     "read-aloud-studio":          {"default": PriorConfig(3.0, "Read aloud fluency")},
-    "spelling-pattern-explorer":  {"default": PriorConfig(3.5, "Spelling patterns")},
-    "syllable-clapper":           {"default": PriorConfig(2.0, "Count syllables")},
+    "context-clues-detective": {
+        "definition":      PriorConfig(1.5, "Definition: meaning stated directly in text"),
+        "synonym_antonym":  PriorConfig(2.5, "Synonym/Antonym: meaning from similar/opposite words"),
+        "example":         PriorConfig(3.5, "Example: meaning from given examples"),
+        "inference":       PriorConfig(5.5, "Inference: meaning from broader context"),
+    },
+    "sentence-builder": {
+        "simple":           PriorConfig(1.5, "Simple: subject-verb-object sentence"),
+        "compound":         PriorConfig(3.0, "Compound: two clauses with conjunction"),
+        "complex":          PriorConfig(5.0, "Complex: subordinate clause construction"),
+        "compound_complex": PriorConfig(7.0, "Compound-complex: multi-clause sentence"),
+    },
+    "figurative-language-finder": {
+        "sound_devices": PriorConfig(2.0, "Sound devices: alliteration, onomatopoeia"),
+        "comparison":    PriorConfig(3.0, "Comparison: simile and metaphor"),
+        "advanced":      PriorConfig(4.5, "Advanced: personification, hyperbole, imagery"),
+        "idiom":         PriorConfig(6.0, "Idiom: culturally specific expressions"),
+    },
+    "spelling-pattern-explorer": {
+        "short_vowel":   PriorConfig(1.5, "Short vowel: CVC patterns"),
+        "long_vowel":    PriorConfig(2.5, "Long vowel: CVCe, vowel teams"),
+        "r_controlled":  PriorConfig(3.5, "R-controlled: ar, er, ir, or, ur"),
+        "silent_letter": PriorConfig(4.0, "Silent letter: kn, wr, gn, mb"),
+        "morphological": PriorConfig(5.0, "Morphological: suffix changes, Latin roots"),
+    },
+    "story-map": {
+        "bme":            PriorConfig(1.5, "BME: beginning-middle-end (K-1)"),
+        "story_mountain": PriorConfig(3.0, "Story mountain: 5-part arc (2-3)"),
+        "plot_diagram":   PriorConfig(5.0, "Plot diagram: Freytag's pyramid (4-6)"),
+        "heros_journey":  PriorConfig(6.5, "Hero's journey: complex structure (5-6)"),
+    },
+    "poetry-lab": {
+        "analysis":    PriorConfig(3.5, "Analysis: identify poetic elements"),
+        "composition": PriorConfig(6.0, "Composition: compose poem from template"),
+    },
+    "text-structure-analyzer": {
+        "chronological_description": PriorConfig(2.0, "Chronological/description structure"),
+        "cause_effect":              PriorConfig(2.5, "Cause-effect relationships"),
+        "compare_contrast":          PriorConfig(3.0, "Compare-contrast analysis"),
+        "problem_solution":          PriorConfig(3.5, "Problem-solution identification"),
+    },
+    "paragraph-architect": {
+        "informational": PriorConfig(2.5, "Informational paragraph construction"),
+        "narrative":     PriorConfig(3.5, "Narrative paragraph with elements"),
+        "opinion":       PriorConfig(5.0, "Opinion paragraph with claim + support"),
+    },
+    "opinion-builder": {
+        "oreo": PriorConfig(3.0, "OREO: Opinion-Reason-Example-Opinion (2-4)"),
+        "cer":  PriorConfig(5.5, "CER: Claim-Evidence-Reasoning (5-6)"),
+    },
+    "revision-workshop": {
+        "add_details":       PriorConfig(2.0, "Add sensory/specific details"),
+        "word_choice":       PriorConfig(3.0, "Replace weak/vague words"),
+        "combine_sentences": PriorConfig(3.5, "Combine choppy sentences"),
+        "transitions":       PriorConfig(4.5, "Add/improve transition words"),
+        "reorganize":        PriorConfig(5.5, "Reorder for logical flow"),
+        "concision":         PriorConfig(6.5, "Eliminate wordiness"),
+    },
+    "syllable-clapper": {
+        "easy":   PriorConfig(1.5, "Easy: high-frequency 1-2 syllable words, clear boundaries"),
+        "medium": PriorConfig(2.5, "Medium: 2-3 syllable words, broader vocab, compound words"),
+        "hard":   PriorConfig(3.5, "Hard: 3-4 syllable words, ambiguous boundaries"),
+    },
     "letter-spotter": {
         "name_it":   PriorConfig(1.5, "Recognition: name the letter shown"),
         "find_it":   PriorConfig(2.5, "Guided: find target letter in grid"),
@@ -197,6 +291,18 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "see_hear":       PriorConfig(1.5, "Recognition: see letter, pick its sound"),
         "hear_see":       PriorConfig(2.5, "Guided: hear sound, identify the letter"),
         "keyword_match":  PriorConfig(3.5, "Application: match letter to keyword"),
+    },
+    "phoneme-explorer": {
+        "isolate":    PriorConfig(1.5, "Recognition: identify initial/final phoneme"),
+        "blend":      PriorConfig(2.5, "Guided: combine phonemes into word"),
+        "segment":    PriorConfig(3.5, "Application: break word into phonemes"),
+        "manipulate": PriorConfig(5.0, "Production: add/delete/substitute phoneme"),
+    },
+    "word-workout": {
+        "real_vs_nonsense": PriorConfig(1.5, "Recognition: real vs nonsense word"),
+        "picture_match":    PriorConfig(2.5, "Guided: match decoded word to picture"),
+        "word_chains":      PriorConfig(3.5, "Application: read one-letter-change chains"),
+        "sentence_reading": PriorConfig(5.0, "Production: read word in sentence context"),
     },
     # -----------------------------------------------------------------
     # Engineering primitives

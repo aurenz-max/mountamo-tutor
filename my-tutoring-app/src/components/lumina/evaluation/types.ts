@@ -2295,6 +2295,7 @@ export interface LetterSoundLinkMetrics extends BasePrimitiveMetrics {
 export interface CvcSpellerMetrics extends BasePrimitiveMetrics {
   type: 'cvc-speller';
   vowelFocus: 'short-a' | 'short-e' | 'short-i' | 'short-o' | 'short-u';
+  taskType: 'fill-vowel' | 'spell-word' | 'word-sort';
   wordsSpelledCorrectly: number;
   wordsTotal: number;
   vowelAccuracy: number;

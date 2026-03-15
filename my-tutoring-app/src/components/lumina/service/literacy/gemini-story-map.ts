@@ -3,6 +3,59 @@ import { ai } from "../geminiClient";
 
 // Import the data type from the component (single source of truth)
 import { StoryMapData } from "../../primitives/visual-primitives/literacy/StoryMap";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'bme': {
+    promptDoc:
+      `"bme" (Beginning-Middle-End): Simple 3-part structure for K-1 students. `
+      + `Story has a clear beginning, middle, and end. Use 3-4 events. `
+      + `Events use arcPositions: 'beginning', 'climax' (for middle), 'resolution' (for end). `
+      + `Do NOT use 'rising-action' or 'falling-action'. `
+      + `Write a VERY simple story (3-5 short sentences) with basic sight words. `
+      + `2 characters maximum. Clear, concrete setting. Happy resolution.`,
+    schemaDescription: "'bme' (Beginning-Middle-End, K-1)",
+  },
+  'story-mountain': {
+    promptDoc:
+      `"story-mountain" (5-part narrative arc): For grades 2-3. `
+      + `Build-up, problem, resolution structure. Use 5-6 events across all 5 arcPositions: `
+      + `'beginning', 'rising-action', 'climax', 'falling-action', 'resolution'. `
+      + `Write a short story (5-6 sentences) with grade-appropriate vocabulary. `
+      + `2-3 characters with distinct roles. Include rising action and a clear climax. `
+      + `Simple conflict that is resolved by the end.`,
+    schemaDescription: "'story-mountain' (5-part narrative arc, grades 2-3)",
+  },
+  'plot-diagram': {
+    promptDoc:
+      `"plot-diagram" (Freytag's pyramid): For grades 4-6. `
+      + `Exposition, rising action, climax, falling action, resolution. Use 5-6 events across all 5 arcPositions. `
+      + `Write a more developed story (6-8 sentences) with rich vocabulary and figurative language. `
+      + `3-4 characters with clear protagonist, possible antagonist, and supporting characters. `
+      + `MUST include a well-defined conflict (person-vs-person, person-vs-self, person-vs-nature, or person-vs-society). `
+      + `Complex enough for students to analyze conflict type.`,
+    schemaDescription: "'plot-diagram' (Freytag's pyramid, grades 4-6)",
+  },
+  'heros-journey': {
+    promptDoc:
+      `"heros-journey" (Complex narrative structure): For grades 5-6. `
+      + `Multiple stages of the hero's journey. Use 5-6 events across all 5 arcPositions. `
+      + `Write a developed story (6-8 sentences) with rich vocabulary. `
+      + `3-4 characters including a clear hero/protagonist. Detailed setting with atmosphere. `
+      + `MUST include a well-defined conflict. The hero undergoes transformation through the journey.`,
+    schemaDescription: "'heros-journey' (hero's journey, grades 5-6)",
+  },
+};
 
 /**
  * Schema definition for Story Map Data
@@ -197,10 +250,41 @@ function getStructureType(
 export const generateStoryMap = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<StoryMapData>
+  config?: Partial<StoryMapData & { targetEvalMode: string }>
 ): Promise<StoryMapData> => {
-  const structureType = config?.structureType || getStructureType(gradeLevel);
+
+  // -------------------------------------------------------------------------
+  // Eval mode resolution
+  // -------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    'story-map',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('StoryMap', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(storyMapSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'structureType',
+        rootLevel: true,
+      })
+    : storyMapSchema;
+
+  // -------------------------------------------------------------------------
+  // Structure type setup
+  // -------------------------------------------------------------------------
+  const structureType = evalConstraint
+    ? evalConstraint.allowedTypes[0] as "bme" | "story-mountain" | "plot-diagram" | "heros-journey"
+    : (config?.structureType || getStructureType(gradeLevel));
   const gradeNum = parseInt(gradeLevel.replace(/[^0-9]/g, ""), 10) || 0;
+
+  // -------------------------------------------------------------------------
+  // Build prompt with eval-mode-scoped challenge type docs
+  // -------------------------------------------------------------------------
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
 
   // Grade-specific instructions
   const gradeContext: Record<string, string> = {
@@ -254,6 +338,8 @@ STRUCTURE TYPE: ${structureType}
 
 ${gradeContext[band]}
 
+${challengeTypeSection}
+
 IMPORTANT RULES:
 1. The passage text MUST contain all the information needed to identify the characters, setting, and events.
 2. Events MUST be clearly described in the passage text so students can find them.
@@ -265,7 +351,7 @@ ${gradeNum >= 4 ? "6. Include a clear conflict that students can classify into o
 STRUCTURE TYPE RULES:
 ${structureType === "bme" ? `
 - Use EXACTLY 3-4 events
-- Events MUST use these arcPositions: 'beginning', 'climax' (as the middle event), 'resolution' (as the end event)
+- Events MUST use these arcPositions: 'beginning', 'climax' (for middle), 'resolution' (for end)
 - Do NOT use 'rising-action' or 'falling-action' for BME
 ` : `
 - Use EXACTLY 5-6 events
@@ -281,7 +367,7 @@ Generate a complete, engaging story that is age-appropriate and educational. The
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: storyMapSchema,
+        responseSchema: activeSchema,
         systemInstruction: `You are an expert K-6 literacy educator who creates engaging, age-appropriate stories for reading comprehension activities. You specialize in story structure, narrative elements, and scaffolded literacy instruction. Your stories are vivid, relatable to young students, and designed to teach story structure concepts. You always create stories where all elements (characters, setting, events, conflict) are clearly embedded in the passage text so students can identify them through close reading.`,
       },
     });
@@ -328,10 +414,11 @@ Generate a complete, engaging story that is age-appropriate and educational. The
       );
     }
 
-    // Merge with any config overrides
+    // Merge with any config overrides, excluding targetEvalMode
+    const { targetEvalMode: _targetEvalMode, ...configRest } = config || {};
     const finalData: StoryMapData = {
       ...result,
-      ...config,
+      ...configRest,
       // Preserve nested objects unless explicitly overridden
       passage: config?.passage || result.passage,
       elements: config?.elements || result.elements,

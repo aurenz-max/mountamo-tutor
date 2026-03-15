@@ -1,14 +1,69 @@
 import { Type, Schema } from "@google/genai";
 import { ThreeDShapeExplorerData } from "../../primitives/visual-primitives/math/ThreeDShapeExplorer";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for 3D Shape Explorer Data
- *
- * This schema defines the structure for 3D shape exploration activities,
- * including shape identification, 2D vs 3D classification, real-world matching,
- * face/property exploration, and shape comparison for K-1 geometry.
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  'identify-3d': {
+    promptDoc:
+      `"identify-3d": Show a 3D shape, student picks its name from options. `
+      + `Set shape3d to the shape name. Provide 3-4 options including the correct answer. `
+      + `Great for introducing shape vocabulary. Concrete identification task.`,
+    schemaDescription: "'identify-3d' (name the 3D shape)",
+  },
+  'match-to-real-world': {
+    promptDoc:
+      `"match-to-real-world": Match real-world objects to their 3D shapes. `
+      + `Provide 3-5 matchPairs with realWorldObject, emoji, and shape3d. `
+      + `Use kid-friendly objects (basketball=sphere, dice=cube, can=cylinder, party hat=cone, shoebox=rectangular-prism).`,
+    schemaDescription: "'match-to-real-world' (connect shapes to objects)",
+  },
+  '2d-vs-3d': {
+    promptDoc:
+      `"2d-vs-3d": Show a mix of flat (2D) and solid (3D) shapes, student sorts them. `
+      + `Provide 4-6 mixedShapes with name, emoji, and is3d flag. `
+      + `Include 2D shapes: circle, square, triangle, rectangle. `
+      + `Include 3D shapes: cube, sphere, cylinder, cone. `
+      + `Use clear emojis.`,
+    schemaDescription: "'2d-vs-3d' (sort flat vs solid)",
+  },
+  'faces-and-properties': {
+    promptDoc:
+      `"faces-and-properties": Explore a shape's properties. `
+      + `Set displayShape to the shape. `
+      + `Provide accurate properties (flatFaces, curvedSurfaces, faceShapes, canRoll, canStack, canSlide). `
+      + `Provide 2-4 propertyQuestions with answerType: "boolean"/"number"/"choice", correctAnswer as string, `
+      + `and options array for "choice" type. `
+      + `CORRECT PROPERTIES: cube: 6 flat, 0 curved, ["square"]; sphere: 0 flat, 1 curved, []; `
+      + `cylinder: 2 flat, 1 curved, ["circle"]; cone: 1 flat, 1 curved, ["circle"]; `
+      + `rectangular-prism: 6 flat, 0 curved, ["rectangle"].`,
+    schemaDescription: "'faces-and-properties' (explore shape properties)",
+  },
+  'shape-riddle': {
+    promptDoc:
+      `"shape-riddle": A mystery shape detective challenge! Give clues, student guesses the shape. `
+      + `Set shape3d to the correct answer shape. Provide 3-4 options including the correct answer. `
+      + `Provide 3-4 clues describing properties without naming the shape. `
+      + `Clues should reference faces, rolling, stacking, real-world look-alikes. `
+      + `NEVER include the shape name in any clue!`,
+    schemaDescription: "'shape-riddle' (guess mystery shape from clues)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
+
 const threeDShapeExplorerSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -159,8 +214,30 @@ const threeDShapeExplorerSchema: Schema = {
 export const generateThreeDShapeExplorer = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<ThreeDShapeExplorerData>
+  config?: Partial<ThreeDShapeExplorerData> & {
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode?: string;
+  }
 ): Promise<ThreeDShapeExplorerData> => {
+  // ---------------------------------------------------------------------------
+  // Eval mode resolution
+  // ---------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    '3d-shape-explorer',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('3DShapeExplorer', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(threeDShapeExplorerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : threeDShapeExplorerSchema;
+
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
   const prompt = `
 Create an educational 3D shape exploration activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -176,52 +253,9 @@ AVAILABLE 3D SHAPES (use these exact names):
 - "cone" (like an ice cream cone)
 - "rectangular-prism" (like a cereal box)
 
-CHALLENGE TYPES:
-1. "identify-3d": Show a 3D shape, student picks its name from options.
-   - Set shape3d to the shape name
-   - Provide 3-4 options including the correct answer
-   - Great for introducing shape vocabulary
+${challengeTypeSection}
 
-2. "2d-vs-3d": Show a mix of flat (2D) and solid (3D) shapes, student sorts them.
-   - Provide 4-6 mixedShapes with name, emoji, and is3d flag
-   - Include 2D shapes: circle, square, triangle, rectangle
-   - Include 3D shapes: cube, sphere, cylinder, cone
-   - Use clear emojis (e.g., ⚽ for sphere, 🟡 for circle, 🧊 for cube, 🔺 for triangle)
-
-3. "match-to-real-world": Match real-world objects to their 3D shapes.
-   - Provide 3-5 matchPairs with realWorldObject, emoji, and shape3d
-   - Use kid-friendly objects (basketball=sphere, dice=cube, can=cylinder, party hat=cone, shoebox=rectangular-prism)
-
-4. "faces-and-properties": Explore a shape's properties.
-   - Set displayShape to the shape
-   - Provide accurate properties (flatFaces, curvedSurfaces, faceShapes, canRoll, canStack, canSlide)
-   - Provide 2-4 propertyQuestions. Each question MUST have:
-     * question: the text to show
-     * answerType: "boolean" for Yes/No questions, "number" for counting, "choice" for naming shapes
-     * correctAnswer: the answer as a string ("true"/"false", "6", "square")
-     * options: REQUIRED for "choice" type (e.g., ["circle", "square", "rectangle", "triangle"])
-   - QUESTION EXAMPLES:
-     * { question: "How many flat faces?", answerType: "number", correctAnswer: "6" }
-     * { question: "Can this shape roll?", answerType: "boolean", correctAnswer: "false" }
-     * { question: "Can this shape stack?", answerType: "boolean", correctAnswer: "true" }
-     * { question: "What shape are the flat faces?", answerType: "choice", correctAnswer: "square", options: ["circle", "square", "rectangle", "triangle"] }
-   - CORRECT PROPERTIES:
-     * cube: 6 flat faces, 0 curved, faceShapes=["square"], canRoll=false, canStack=true, canSlide=true
-     * sphere: 0 flat faces, 1 curved, faceShapes=[], canRoll=true, canStack=false, canSlide=false
-     * cylinder: 2 flat faces, 1 curved, faceShapes=["circle"], canRoll=true, canStack=true, canSlide=true
-     * cone: 1 flat face, 1 curved, faceShapes=["circle"], canRoll=true, canStack=false, canSlide=true
-     * rectangular-prism: 6 flat faces, 0 curved, faceShapes=["rectangle"], canRoll=false, canStack=true, canSlide=true
-
-5. "shape-riddle": A mystery shape detective challenge! Give clues, student guesses the shape.
-   - Set shape3d to the correct answer shape
-   - Provide 3-4 options (shape names) including the correct answer
-   - Provide 3-4 clues describing the shape's properties without naming it
-   - Clues should reference properties like faces, rolling, stacking, real-world look-alikes
-   - Example clues for sphere: ["I have no flat faces.", "I can roll in any direction.", "I have one curved surface.", "I look like a ball!"]
-   - Example clues for cube: ["All my faces are the same shape.", "I have 6 flat faces.", "I cannot roll.", "I look like a dice!"]
-   - NEVER include the shape name in any clue!
-
-GUIDELINES FOR GRADE LEVELS:
+${!evalConstraint ? `GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
   * Focus on identify-3d, 2d-vs-3d, and match-to-real-world
   * Use very simple language ("This shape looks like a ball!")
@@ -233,7 +267,7 @@ GUIDELINES FOR GRADE LEVELS:
   * Slightly more academic language but still warm
   * 4-5 challenges with variety of types
   * showUnfoldAnimation: true, show3dRotation: true
-
+` : ''}
 ${config ? `
 CONFIGURATION HINTS:
 ${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
@@ -243,11 +277,11 @@ ${config.show3dRotation !== undefined ? `- Show 3D rotation: ${config.show3dRota
 
 REQUIREMENTS:
 1. Generate 3-5 challenges that progress from easier to harder
-2. Mix challenge types appropriate for the grade level
+2. ${evalConstraint ? `ALL challenges must use ONLY the allowed challenge type(s)` : 'Mix challenge types appropriate for the grade level'}
 3. Use warm, encouraging language for young children
 4. Shape names MUST be exactly: "cube", "sphere", "cylinder", "cone", "rectangular-prism"
 5. For identify-3d challenges, the correct shape name MUST be in the options array
-6. For faces-and-properties, properties MUST be factually accurate (use the reference above)
+6. For faces-and-properties, properties MUST be factually accurate
 7. For 2d-vs-3d, include a balanced mix of 2D and 3D shapes
 8. For match-to-real-world, use objects kids recognize from everyday life
 9. For shape-riddle, NEVER include the shape name in any clue — clues must describe properties only
@@ -261,7 +295,7 @@ Return the complete 3D shape explorer configuration.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: threeDShapeExplorerSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -430,16 +464,29 @@ Return the complete 3D shape explorer configuration.
 
   // Ensure at least one challenge
   if (data.challenges.length === 0) {
-    data.challenges = [
-      {
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'identify-3d';
+    if (fallbackType === 'identify-3d') {
+      data.challenges = [{
         id: 'c1',
         type: 'identify-3d',
         instruction: 'What shape is this? It looks like a ball!',
         shape3d: 'sphere',
         options: ['cube', 'sphere', 'cylinder', 'cone'],
-      },
-      {
-        id: 'c2',
+      }];
+    } else if (fallbackType === 'match-to-real-world') {
+      data.challenges = [{
+        id: 'c1',
+        type: 'match-to-real-world',
+        instruction: 'Can you match each object to its 3D shape?',
+        matchPairs: [
+          { realWorldObject: 'basketball', emoji: '🏀', shape3d: 'sphere' },
+          { realWorldObject: 'dice', emoji: '🎲', shape3d: 'cube' },
+          { realWorldObject: 'can of soup', emoji: '🥫', shape3d: 'cylinder' },
+        ],
+      }];
+    } else if (fallbackType === '2d-vs-3d') {
+      data.challenges = [{
+        id: 'c1',
         type: '2d-vs-3d',
         instruction: 'Can you sort the flat shapes from the solid shapes?',
         mixedShapes: [
@@ -448,8 +495,29 @@ Return the complete 3D shape explorer configuration.
           { name: 'square', emoji: '🟧', is3d: false },
           { name: 'cube', emoji: '🧊', is3d: true },
         ],
-      },
-    ];
+      }];
+    } else if (fallbackType === 'faces-and-properties') {
+      data.challenges = [{
+        id: 'c1',
+        type: 'faces-and-properties',
+        instruction: 'Let\'s explore the properties of a cube!',
+        displayShape: 'cube',
+        properties: { flatFaces: 6, curvedSurfaces: 0, faceShapes: ['square'], canRoll: false, canStack: true, canSlide: true },
+        propertyQuestions: [
+          { question: 'How many flat faces does this shape have?', answerType: 'number', correctAnswer: '6' },
+          { question: 'Can this shape roll?', answerType: 'boolean', correctAnswer: 'false' },
+        ],
+      }];
+    } else {
+      data.challenges = [{
+        id: 'c1',
+        type: 'shape-riddle',
+        instruction: 'Can you guess the mystery shape from the clues?',
+        shape3d: 'sphere',
+        options: ['cube', 'sphere', 'cylinder', 'cone'],
+        clues: ['I have no flat faces.', 'I can roll in any direction.', 'I have one curved surface.', 'I look like a ball!'],
+      }];
+    }
   }
 
   // Apply explicit config overrides
