@@ -195,41 +195,41 @@ export function constrainChallengeTypeEnum(
 
 #### 7. SyllableClapper
 - **File:** `gemini-syllable-clapper.ts`
-- **Schema field:** Needs challenge type enum added (currently difficulty-based)
-- **Status:** NEEDS TYPES
-- **Backend:** `"syllable-clapper": {"default": PriorConfig(2.0)}`
+- **Schema field:** `challenges.items.properties.challengeType` → `["easy", "medium", "hard"]`
+- **Status:** DONE (audit 2026-03-14: already fully wired with `CHALLENGE_TYPE_DOCS`, `resolveEvalModeConstraint()`, and `constrainChallengeTypeEnum()`)
+- **Backend:** `"syllable-clapper": {"default": PriorConfig(2.0)}` — needs per-mode update
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
-| `count` | 1.5 | 1 | `['count']` | Clap and count syllables (1-2 syllable words) |
-| `segment` | 2.5 | 2 | `['segment']` | Break word into syllable parts |
-| `compound` | 3.5 | 3 | `['compound']` | Multi-syllable words (3-4 syllables) |
+| `count` | 1.5 | 1 | `['easy']` | Clap and count syllables (1-2 syllable words) |
+| `segment` | 2.5 | 2 | `['medium']` | Break word into syllable parts (2-3 syllables) |
+| `compound` | 3.5 | 3 | `['hard']` | Multi-syllable words (3-4 syllables) |
 
 #### 8. CvcSpeller
 - **File:** `gemini-cvc-speller.ts`
-- **Schema field:** root `vowelFocus` → `["short-a", "short-e", "short-i", "short-o", "short-u"]`
-- **Status:** REVIEW
-- **Backend:** Not registered
-- **Notes:** Vowel focus is content axis, not difficulty axis. May need a separate `taskType` enum (e.g., `spell_from_audio`, `fill_missing_vowel`, `word_sort`) to create meaningful eval modes.
+- **Schema field:** `challenges.items.properties.taskType` → `["fill-vowel", "spell-word", "word-sort"]` + root `vowelFocus` (content axis)
+- **Status:** DONE (audit 2026-03-14: already has `taskType` enum + `CHALLENGE_TYPE_DOCS` + eval mode constraint wired)
+- **Backend:** Not registered — needs per-mode entries
+- **Notes:** Two independent axes: `taskType` (difficulty, used for eval modes) and `vowelFocus` (content, independent curriculum variable). `letterGroup` (1-4) controls consonant complexity, also independent of eval modes.
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
-| `fill_vowel` | 1.5 | 1 | `['fill_vowel']` | Select missing vowel in C_C frame |
-| `spell_word` | 2.5 | 2 | `['spell_word']` | Spell full CVC word from audio |
-| `word_sort` | 3.5 | 3 | `['word_sort']` | Sort words by vowel pattern |
+| `fill_vowel` | 1.5 | 1 | `['fill-vowel']` | Select missing vowel in C_C frame |
+| `spell_word` | 2.5 | 2 | `['spell-word']` | Spell full CVC word from audio |
+| `word_sort` | 3.5 | 3 | `['word-sort']` | Sort words by vowel pattern |
 
 #### 9. DecodableReader
 - **File:** `gemini-decodable-reader.ts`
-- **Schema field:** per-word `phonicsPattern` (not a challenge type)
-- **Status:** REVIEW
+- **Schema field:** per-word `phonicsPattern` (content annotation, not challenge type) + `comprehensionQuestion.type` → `["multiple-choice", "short-answer"]` (response format)
+- **Status:** NEEDS TYPES (audit 2026-03-14: confirmed no task-type enum exists. `phonicsPattern` is content axis.)
 - **Backend:** Not registered
-- **Notes:** Challenge types should be reading task types, not phonics patterns. Phonics patterns are a content axis.
+- **Notes:** Phonics patterns control vocabulary selection (content axis). Need separate `challengeType` enum for reading task difficulty: decode → comprehend → fluency. Component changes: control word highlighting/tapping availability, comprehension question format, and timing/scoring mode.
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
-| `decode` | 1.5 | 1 | `['decode']` | Read highlighted decodable words |
-| `comprehend` | 3.0 | 2 | `['comprehend']` | Answer MC comprehension questions |
-| `fluency` | 5.0 | 4 | `['fluency']` | Read passage with accuracy tracking |
+| `decode` | 1.5 | 1 | `['decode']` | Read with highlighted decodable words, tap-to-hear enabled |
+| `comprehend` | 3.0 | 2 | `['comprehend']` | Answer MC comprehension questions after reading |
+| `fluency` | 5.0 | 4 | `['fluency']` | Read passage independently with accuracy tracking |
 
 #### 10. WordWorkout
 - **File:** `gemini-word-workout.ts`
@@ -263,9 +263,10 @@ export function constrainChallengeTypeEnum(
 
 #### 12. CharacterWeb
 - **File:** `gemini-character-web.ts`
-- **Schema field:** Needs challenge type enum (currently relationship mapping only)
-- **Status:** NEEDS TYPES
+- **Schema field:** Needs challenge type enum. Current schema: `characters[]` (with `suggestedTraits`, `traitEvidence`), `relationships[]` (with `relationshipType: friend|rival|family|mentor|enemy|ally`), `changePrompt`, `expectedChange`
+- **Status:** NEEDS TYPES (audit 2026-03-14: confirmed no challenge type enum. `relationshipType` is edge metadata, not a task type. Multi-task single viz — all components presented at once with no scaffolding progression.)
 - **Backend:** Not registered
+- **Conversion notes:** Add root-level `challengeType` enum. Control which components are visible/interactive per mode. `identify_traits` shows only character cards; `map_relationships` enables the graph builder; `analyze_change` requires full story arc.
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -287,9 +288,10 @@ export function constrainChallengeTypeEnum(
 
 #### 14. GenreExplorer
 - **File:** `gemini-genre-explorer.ts`
-- **Schema field:** Needs challenge type enum (currently genre identification only)
-- **Status:** NEEDS TYPES
+- **Schema field:** Needs challenge type enum. Current schema: `excerpts[]` (with `genre`, `features[]` with `present: boolean`), `genreOptions[]`, `comparisonEnabled: boolean`
+- **Status:** NEEDS TYPES (audit 2026-03-14: confirmed no challenge type enum. `genre` is answer metadata. Features are pre-computed for student verification.)
 - **Backend:** Not registered
+- **Conversion notes:** Add root-level `challengeType` enum. Control: genre label visibility (hidden in `identify`), feature checklist visibility (shown in `match_features`), comparison UI (enabled in `compare`). Excerpt count and genre option breadth scale with difficulty.
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -303,9 +305,10 @@ export function constrainChallengeTypeEnum(
 
 #### 15. EvidenceFinder
 - **File:** `gemini-evidence-finder.ts`
-- **Schema field:** Needs challenge type enum (currently sentence-level evidence tagging)
-- **Status:** NEEDS TYPES
+- **Schema field:** Needs challenge type enum. Current schema: `passage` (with `sentences[]`, each tagged `isEvidence`, `evidenceStrength: strong|moderate|weak`, `claimIndex`), `claims[]`, `cerEnabled: boolean`
+- **Status:** NEEDS TYPES (audit 2026-03-14: confirmed no challenge type enum. `evidenceStrength` is output ranking metadata. `cerEnabled` is binary feature flag, not progressive difficulty.)
 - **Backend:** Not registered
+- **Conversion notes:** Add root-level `challengeType` enum. Control task availability per mode: highlight mode hides strength UI; rank mode enables strength picker; CER mode enables reasoning prompts and sets `cerEnabled: true`.
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -402,9 +405,10 @@ export function constrainChallengeTypeEnum(
 
 #### 22. StoryPlanner
 - **File:** `gemini-story-planner.ts`
-- **Schema field:** Needs challenge type enum (currently planning template only)
-- **Status:** NEEDS TYPES
+- **Schema field:** Needs challenge type enum. Current schema: `elements[]` (with `elementId`, `label`, `prompt`, `required`), `storyArcLabels[]`, optional `conflictTypes[]`, `dialoguePrompt`
+- **Status:** NEEDS TYPES (audit 2026-03-14: confirmed no challenge type enum. Grade level controls which elements appear, but no fine-grained difficulty axis within a grade.)
 - **Backend:** Not registered
+- **Conversion notes:** Add root-level `challengeType` enum. Control element visibility and prompt specificity: `guided_plan` shows all elements with explicit prompts; `independent_plan` reduces hints; `arc_design` requires student-generated arc labels and rising action detail.
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -444,22 +448,23 @@ export function constrainChallengeTypeEnum(
 
 #### 25. ListenAndRespond
 - **File:** `gemini-listen-and-respond.ts`
-- **Schema field:** root `passageType` → `["narrative", "informational", "persuasive", "dialogue"]` + `questions.items.properties.type` → `["multiple-choice", "short-answer", "sequencing"]`
-- **Status:** REVIEW
+- **Schema field:** root `passageType` → `["narrative", "informational", "persuasive", "dialogue"]` + `questions.items.properties.type` → `["multiple-choice", "short-answer", "sequencing"]` + `questions.items.properties.difficulty` → `["literal", "inferential", "evaluative"]`
+- **Status:** PARTIAL (audit 2026-03-14: already has `difficulty` field on each question — the correct eval mode axis. `passageType` is content axis, stays independent. Needs wiring: `targetEvalMode` should constrain question `difficulty`, not `passageType`.)
 - **Backend:** Not registered
-- **Notes:** Two independent axes — passage type (content) and question type (task). Eval modes should target question difficulty, not passage type.
+- **Notes:** Two independent axes — passage type (content, keep configurable) and question difficulty (eval mode axis). Generator should filter/generate questions matching the target difficulty when eval mode active.
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
-| `literal` | 1.5 | 1 | `['multiple-choice']` | MC questions about explicit details |
-| `inferential` | 3.5 | 3 | `['short-answer']` | Short-answer inferential questions |
-| `evaluative` | 5.5 | 4 | `['sequencing']` | Sequence events + evaluate content |
+| `literal` | 1.5 | 1 | `['literal']` | MC questions about explicit details |
+| `inferential` | 3.5 | 3 | `['inferential']` | Short-answer inferential questions |
+| `evaluative` | 5.5 | 4 | `['evaluative']` | Sequencing + analytical questions |
 
 #### 26. ReadAloudStudio
 - **File:** `gemini-read-aloud-studio.ts`
-- **Schema field:** Needs challenge type enum (currently fluency-focused, single mode)
-- **Status:** NEEDS TYPES
-- **Backend:** `"read-aloud-studio": {"default": PriorConfig(3.0)}`
+- **Schema field:** Needs challenge type enum. Current schema: `passage`, `passageWords[]`, `targetWPM`, `lexileLevel`, `expressionMarkers[]` (with `type: pause|emphasis|question|exclamation|slow`), `comprehensionQuestion`
+- **Status:** NEEDS TYPES (audit 2026-03-14: confirmed no task-type enum. Expression marker `type` is annotation category, not challenge type.)
+- **Backend:** `"read-aloud-studio": {"default": PriorConfig(3.0)}` — needs per-mode update
+- **Conversion notes:** Add root-level `challengeType` enum. Control: model audio playback (echo = yes), expression marker visibility (guided = shown, independent = hidden), feedback timing (echo = immediate, guided = per-sentence, independent = end-of-passage), recording + scoring UI.
 
 | Eval Mode | β | Scaffold | Challenge Types | Description |
 |-----------|---|----------|-----------------|-------------|
@@ -469,16 +474,21 @@ export function constrainChallengeTypeEnum(
 
 ---
 
-## Readiness Summary
+## Readiness Summary (updated 2026-03-14 after full audit)
 
 | Status | Count | Primitives |
 |--------|-------|------------|
-| NEEDS FIELD RENAME | 14 | LetterSpotter, LetterSoundLink, PhonicsBlender, RhymeStudio, SoundSwap, WordWorkout, StoryMap, PoetryLab, SentenceBuilder, ContextCluesDetective, FigurativeLanguageFinder, SpellingPatternExplorer, OpinionBuilder, RevisionWorkshop |
-| NEEDS TYPES | 7 | PhonemeExplorer, SyllableClapper, CharacterWeb, GenreExplorer, EvidenceFinder, StoryPlanner, ReadAloudStudio |
-| REVIEW | 3 | CvcSpeller, DecodableReader, ListenAndRespond |
-| NEEDS FIELD RENAME (root) | 2 | TextStructureAnalyzer, ParagraphArchitect |
+| DONE (Waves 0-3) | 17 | Schema Utility, LetterSpotter, LetterSoundLink, RhymeStudio, SoundSwap, PhonicsBlender, WordWorkout, ContextCluesDetective, SentenceBuilder, SpellingPatternExplorer, FigurativeLanguageFinder, StoryMap, PoetryLab, RevisionWorkshop, ParagraphArchitect, OpinionBuilder, TextStructureAnalyzer |
+| DONE (found already wired) | 3 | PhonemeExplorer, SyllableClapper, CvcSpeller |
+| PARTIAL (has correct axis, needs wiring) | 1 | ListenAndRespond (has `difficulty` field on questions) |
+| NEEDS TYPES | 5 | CharacterWeb, GenreExplorer, EvidenceFinder, StoryPlanner, ReadAloudStudio |
+| NEEDS TYPES (was REVIEW) | 1 | DecodableReader (phonicsPattern is content, needs task-type enum) |
 
-**Note:** All 14 "NEEDS FIELD RENAME" primitives become READY after Wave 0 (schema utility extension). The field names stay as-is in the generators — only the utility needs to accept a config parameter.
+**Key audit corrections:**
+- **SyllableClapper:** Was NEEDS TYPES → **DONE**. Generator already has `challengeType: easy|medium|hard` + `CHALLENGE_TYPE_DOCS` + eval mode constraint wired.
+- **CvcSpeller:** Was REVIEW → **DONE**. Generator already has `taskType: fill-vowel|spell-word|word-sort` + eval mode constraint. Vowel focus is correctly independent content axis.
+- **ListenAndRespond:** Was REVIEW → **PARTIAL**. Already has `difficulty: literal|inferential|evaluative` on questions — just needs eval mode wiring to constrain this field.
+- **DecodableReader:** Was REVIEW → **NEEDS TYPES**. `phonicsPattern` confirmed as content axis; needs new `challengeType` enum for reading task types.
 
 ---
 
@@ -531,22 +541,26 @@ These have existing type fields but some are content categories requiring mode r
 | 15 | OpinionBuilder | 2 | `{fieldName: 'framework', rootLevel: true}` | Argumentative writing |
 | 16 | TextStructureAnalyzer | 4 | Needs task type, not structure type | Informational reading |
 
-### Wave 4 — Schema Work Required (est. 30-45 min each)
+### Wave 4 — Schema Work Required (updated 2026-03-14)
 
-These primitives need new challenge type enums added before eval modes.
+Reduced from 10 to 7 primitives after audit found SyllableClapper, CvcSpeller, and PhonemeExplorer already wired.
+
+#### Wave 4a — Quick Win (est. 15 min)
+
+| Primitive | Est. | Why |
+|-----------|------|-----|
+| ListenAndRespond | 15 min | Already has `difficulty` field — just wire eval mode constraint to filter questions by difficulty |
+
+#### Wave 4b — NEEDS TYPES (est. 30-45 min each)
 
 | Priority | Primitive | Est. | Why |
 |----------|-----------|------|-----|
-| High | PhonemeExplorer | 30 min | Core K-1 phonemic awareness |
-| High | SyllableClapper | 30 min | Decoding prerequisite |
-| High | CharacterWeb | 30 min | Core RL standard |
-| Medium | EvidenceFinder | 30 min | Core RI standard |
-| Medium | GenreExplorer | 30 min | Literary knowledge |
-| Medium | StoryPlanner | 30 min | Writing process |
-| Medium | ReadAloudStudio | 30 min | Fluency assessment |
-| Lower | CvcSpeller | 45 min | Needs task type axis added |
-| Lower | DecodableReader | 45 min | Needs task type axis added |
-| Lower | ListenAndRespond | 45 min | Dual-axis (passage × question) |
+| High | CharacterWeb | 30 min | Core RL standard, multi-task single viz |
+| High | EvidenceFinder | 30 min | Core RI standard, `cerEnabled` flag provides partial structure |
+| Medium | GenreExplorer | 30 min | Literary knowledge, straightforward enum addition |
+| Medium | StoryPlanner | 30 min | Writing process, grade-level controls provide scaffolding template |
+| Medium | ReadAloudStudio | 30 min | Fluency assessment, expression markers provide structure |
+| Lower | DecodableReader | 45 min | Need task-type enum separate from phonicsPattern content axis |
 
 ---
 
@@ -571,16 +585,16 @@ These primitives need new challenge type enums added before eval modes.
 | 14 | ParagraphArchitect | W | DONE | 3 | 3 | Yes |
 | 15 | OpinionBuilder | W | DONE | 2 | 3 | Yes |
 | 16 | TextStructureAnalyzer | RI | DONE | 4 | 3 | Yes |
-| 17 | PhonemeExplorer | RF | DONE | 4 | 4 | Yes |
-| 18 | SyllableClapper | RF | NEEDS TYPES | 3 | 4 | |
-| 19 | CharacterWeb | RL | NEEDS TYPES | 4 | 4 | |
-| 20 | EvidenceFinder | RI | NEEDS TYPES | 3 | 4 | |
-| 21 | GenreExplorer | RL | NEEDS TYPES | 3 | 4 | |
-| 22 | StoryPlanner | W | NEEDS TYPES | 3 | 4 | |
-| 23 | ReadAloudStudio | SL | NEEDS TYPES | 3 | 4 | |
-| 24 | CvcSpeller | RF | REVIEW | 3 | 4 | |
-| 25 | DecodableReader | RF | REVIEW | 3 | 4 | |
-| 26 | ListenAndRespond | SL | REVIEW | 3 | 4 | |
+| 17 | PhonemeExplorer | RF | DONE | 4 | — | Yes (pre-existing) |
+| 18 | SyllableClapper | RF | DONE | 3 | — | Yes (pre-existing) |
+| 19 | CvcSpeller | RF | DONE | 3 | — | Yes (pre-existing) |
+| 20 | ListenAndRespond | SL | PARTIAL | 3 | 4a | |
+| 21 | CharacterWeb | RL | NEEDS TYPES | 4 | 4b | |
+| 22 | EvidenceFinder | RI | NEEDS TYPES | 3 | 4b | |
+| 23 | GenreExplorer | RL | NEEDS TYPES | 3 | 4b | |
+| 24 | StoryPlanner | W | NEEDS TYPES | 3 | 4b | |
+| 25 | ReadAloudStudio | SL | NEEDS TYPES | 3 | 4b | |
+| 26 | DecodableReader | RF | NEEDS TYPES | 3 | 4b | |
 
 ---
 
@@ -588,12 +602,11 @@ These primitives need new challenge type enums added before eval modes.
 
 | Category | Count | Eval Modes | Est. Time |
 |----------|-------|------------|-----------|
-| Wave 0 (utility) | 1 | — | ~30 min |
-| Wave 1 (RF K-2) | 6 | 20 | ~90 min |
-| Wave 2 (Language) | 4 | 17 | ~60 min |
-| Wave 3 (Comprehension/Writing) | 6 | 21 | ~90 min |
-| Wave 4 (Schema work) | 10 | 32 | ~6-7 hrs |
-| **Total** | **26** | **90** | — |
+| DONE (Waves 0-3) | 17 | 59 | — |
+| DONE (pre-existing) | 3 | 10 | — |
+| Wave 4a (wire existing field) | 1 | 3 | ~15 min |
+| Wave 4b (NEEDS TYPES) | 6 | 19 | ~3-4 hrs |
+| **Total** | **26** | **91** | — |
 
 ---
 

@@ -636,7 +636,9 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  const [generationKey, setGenerationKey] = useState(0);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
+  const [showGeneratedJson, setShowGeneratedJson] = useState(false);
 
   const selectedOption = PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)!;
 
@@ -680,6 +682,7 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
 
       const result = await response.json();
       setGeneratedData(result.data || result);
+      setGenerationKey(k => k + 1);
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate primitive');
@@ -862,6 +865,7 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
 
           {generatedData ? (
             <PrimitiveRenderer
+              key={generationKey}
               componentId={selectedPrimitive}
               data={generatedData}
               onEvaluationSubmit={handleEvaluationSubmit}
@@ -877,6 +881,90 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
         {/* Evaluation Results Panel - Third Column */}
         <div className="lg:col-span-2">
           <EvaluationResultsPanel />
+
+          {/* Generated Data (Gemini Output) */}
+          {generatedData != null && (() => {
+            const d = generatedData as Record<string, unknown>;
+            const title = typeof d.title === 'string' ? d.title : selectedOption.label;
+            const description = typeof d.description === 'string' ? d.description : null;
+            const operation = typeof d.operation === 'string' ? d.operation : null;
+            const gradeBand = typeof d.gradeBand === 'string' ? d.gradeBand : null;
+            const challengeCount = Array.isArray(d.challenges) ? d.challenges.length : null;
+            const modeLabel = selectedEvalMode
+              ? evalModes.find(m => m.evalMode === selectedEvalMode)?.label ?? selectedEvalMode
+              : 'Auto (mixed)';
+
+            return (
+              <div className="mt-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                {/* Metadata header */}
+                <div className="mb-3 pb-3 border-b border-slate-700/50">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="text-base font-semibold text-white">{title}</h4>
+                    <button
+                      onClick={() => {
+                        const meta = [
+                          `# ${title}`,
+                          description ? `${description}` : '',
+                          '',
+                          `Primitive: ${selectedOption.label}`,
+                          `Mode: ${modeLabel}`,
+                          `Grade: ${gradeBand ?? gradeLevel}`,
+                          operation ? `Operation: ${operation}` : '',
+                          challengeCount != null ? `Challenges: ${challengeCount}` : '',
+                          '',
+                          '```json',
+                          JSON.stringify(generatedData, null, 2),
+                          '```',
+                        ].filter(Boolean).join('\n');
+                        navigator.clipboard.writeText(meta);
+                      }}
+                      className="text-xs text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2 py-1 rounded transition-colors"
+                    >
+                      Copy JSON
+                    </button>
+                  </div>
+                  {description && (
+                    <p className="text-sm text-slate-400 mb-2">{description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-3 text-xs">
+                    <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">
+                      {selectedOption.label}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                      Mode: {modeLabel}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-slate-700 text-slate-300">
+                      Grade: {gradeBand ?? gradeLevel}
+                    </span>
+                    {operation && (
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                        {operation}
+                      </span>
+                    )}
+                    {challengeCount != null && (
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                        {challengeCount} challenge{challengeCount !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Collapsible JSON */}
+                <button
+                  onClick={() => setShowGeneratedJson(!showGeneratedJson)}
+                  className="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-1 mb-2"
+                >
+                  <span className={`inline-block transition-transform ${showGeneratedJson ? 'rotate-90' : ''}`}>&#9654;</span>
+                  Raw JSON
+                </button>
+                {showGeneratedJson && (
+                  <pre className="text-xs text-slate-400 overflow-auto max-h-64 bg-slate-900/50 p-3 rounded-lg">
+                    {JSON.stringify(generatedData, null, 2)}
+                  </pre>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Last Result Quick View */}
           {lastEvaluationResult && (

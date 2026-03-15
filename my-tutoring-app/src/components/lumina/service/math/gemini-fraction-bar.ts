@@ -1,6 +1,49 @@
 import { Type, Schema } from "@google/genai";
 import { FractionBarData } from "../../primitives/visual-primitives/math/FractionBar";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  identify: {
+    promptDoc:
+      `"identify": Unit fractions (1/2, 1/3, 1/4). Simple denominators 2-4. `
+      + `Focus on naming the fraction. Grades 2-3. Concrete manipulative with full guidance.`,
+    schemaDescription: "'identify' (unit fractions with small denominators)",
+  },
+  build: {
+    promptDoc:
+      `"build": Non-unit proper fractions (2/3, 3/4, 2/5). Denominators 2-6. `
+      + `Focus on shading correctly. Grades 3-4. Pictorial representation with prompts.`,
+    schemaDescription: "'build' (shade non-unit proper fractions)",
+  },
+  compare: {
+    promptDoc:
+      `"compare": Fractions with larger denominators (3/8, 5/12). Denominators 2-12. `
+      + `More complex MC distractors. Grades 4-5. Pictorial with reduced prompts.`,
+    schemaDescription: "'compare' (fractions with larger denominators)",
+  },
+  add_subtract: {
+    promptDoc:
+      `"add_subtract": Fractions requiring understanding of addition context `
+      + `(e.g., "shade 2/5 then add 1/5 more"). Denominators 2-10. Grades 5-6. `
+      + `Transitional symbolic/pictorial.`,
+    schemaDescription: "'add_subtract' (fractions in operation context)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Schema definition for Fraction Bar Data
+// ---------------------------------------------------------------------------
 
 /**
  * Schema definition for Fraction Bar Data
@@ -11,6 +54,11 @@ import { ai } from "../geminiClient";
 const fractionBarSchema: Schema = {
   type: Type.OBJECT,
   properties: {
+    challengeType: {
+      type: Type.STRING,
+      description: "Challenge type: 'identify' (unit fractions), 'build' (non-unit proper fractions), 'compare' (larger denominators), 'add_subtract' (fractions in operation context)",
+      enum: ["identify", "build", "compare", "add_subtract"],
+    },
     title: {
       type: Type.STRING,
       description: "Title for the fraction bar challenge (e.g., 'Shade 3/4 of the bar')"
@@ -46,7 +94,7 @@ const fractionBarSchema: Schema = {
       description: "Exactly 4 multiple-choice options for identifying the denominator. Must include the correct denominator plus 3 plausible distractors, shuffled"
     }
   },
-  required: ["title", "description", "numerator", "denominator"]
+  required: ["challengeType", "title", "description", "numerator", "denominator"]
 };
 
 /**
@@ -62,7 +110,7 @@ const fractionBarSchema: Schema = {
  *
  * @param topic - The math topic or concept to teach
  * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional overrides for numerator, denominator, showDecimal
+ * @param config - Optional overrides for numerator, denominator, showDecimal, targetEvalMode
  * @returns FractionBarData with complete configuration
  */
 export const generateFractionBar = async (
@@ -72,8 +120,25 @@ export const generateFractionBar = async (
     numerator?: number;
     denominator?: number;
     showDecimal?: boolean;
+    targetEvalMode?: string;
   }
 ): Promise<FractionBarData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'fraction-bar',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('FractionBar', config?.targetEvalMode, evalConstraint);
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(fractionBarSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
+    : fractionBarSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create an educational fraction bar challenge for teaching "${topic}" to ${gradeLevel} students.
 
@@ -96,18 +161,21 @@ This component guides students through three phases to deeply understand a singl
     The student shades the correct number of parts on a blank bar divided
     into the correct number of equal parts.
 
+${challengeTypeSection}
+
 REQUIREMENTS:
 1. Generate a PROPER fraction: numerator <= denominator, denominator >= 2.
-2. Choose an appropriate fraction for the topic and grade level:
+2. Choose an appropriate fraction for the topic and grade level.
+${!evalConstraint ? `3. Grade-level guidelines:
    - Grades 2-3: Simple fractions with small denominators (2, 3, 4)
    - Grades 4-5: Broader denominators (2-8), including unit and non-unit fractions
-   - Grades 6+: Larger denominators (2-12), more complex fractions
-3. Write a clear, student-friendly title that mentions the fraction.
-4. Provide an educational description of what the student will practice.
-5. numeratorChoices: exactly 4 numbers including the correct numerator. Shuffle the order.
-6. denominatorChoices: exactly 4 numbers including the correct denominator. Shuffle the order.
-7. Set showDecimal to true if connecting fractions to decimals is relevant, false otherwise.
-8. Set gradeLevel to "${gradeLevel}".
+   - Grades 6+: Larger denominators (2-12), more complex fractions` : ''}
+4. Write a clear, student-friendly title that mentions the fraction.
+5. Provide an educational description of what the student will practice.
+6. numeratorChoices: exactly 4 numbers including the correct numerator. Shuffle the order.
+7. denominatorChoices: exactly 4 numbers including the correct denominator. Shuffle the order.
+8. Set showDecimal to true if connecting fractions to decimals is relevant, false otherwise.
+9. Set gradeLevel to "${gradeLevel}".
 
 ${config ? `
 CONFIGURATION HINTS (use these values if provided):
@@ -132,7 +200,7 @@ Return the complete fraction bar configuration as JSON.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: fractionBarSchema
+      responseSchema: activeSchema
     },
   });
 

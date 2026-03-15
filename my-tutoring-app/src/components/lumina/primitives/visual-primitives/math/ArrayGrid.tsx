@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   usePrimitiveEvaluation,
   type ArrayGridMetrics,
@@ -12,14 +12,20 @@ import {
  * K-5 Math Primitive for understanding:
  * - Multiplication as repeated addition (K-2)
  * - Array models for multiplication (2-3)
- * - Commutative property (a×b = b×a) (3-4)
+ * - Commutative property (a*b = b*a) (3-4)
  *
- * Task: Student builds an array with given dimensions, then calculates total
+ * Supports three challenge types:
+ * - build_array: Student builds array with buttons, then counts total
+ * - count_array: Array shown pre-built, student counts total
+ * - multiply_array: Array shown pre-built, student writes rows x columns = total
  */
 
 export interface ArrayGridData {
   title: string;
   description: string;
+
+  // Challenge type determines interaction mode
+  challengeType?: 'build_array' | 'count_array' | 'multiply_array';
 
   // Task configuration
   targetRows: number; // Required: number of rows to build (e.g., 3)
@@ -28,8 +34,8 @@ export interface ArrayGridData {
   // Display options
   iconType?: 'dot' | 'square' | 'star';
   showLabels?: boolean; // Show row/column numbers (default true)
-  maxRows?: number; // Maximum rows in button panel (default 10)
-  maxColumns?: number; // Maximum columns in button panel (default 12)
+  maxRows?: number; // Maximum rows in button panel (default 6)
+  maxColumns?: number; // Maximum columns in button panel (default 8)
 
   // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -51,12 +57,13 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
   const {
     title,
     description,
+    challengeType = 'build_array',
     targetRows,
     targetColumns,
     iconType = 'star',
     showLabels = true,
-    maxRows = 10,
-    maxColumns = 12,
+    maxRows = 6,
+    maxColumns = 8,
     // Evaluation props
     instanceId,
     skillId,
@@ -66,15 +73,25 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // State
-  const [currentRows, setCurrentRows] = useState(0);
-  const [currentColumns, setCurrentColumns] = useState(0);
+  // Determine mode
+  const isPreBuilt = challengeType === 'count_array' || challengeType === 'multiply_array';
+  const isMultiplyMode = challengeType === 'multiply_array';
+
+  // State — pre-built modes start with array already constructed
+  const [currentRows, setCurrentRows] = useState(isPreBuilt ? targetRows : 0);
+  const [currentColumns, setCurrentColumns] = useState(isPreBuilt ? targetColumns : 0);
   const [totalAnswer, setTotalAnswer] = useState('');
+  const [rowsAnswer, setRowsAnswer] = useState('');
+  const [columnsAnswer, setColumnsAnswer] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'hint' | null>(null);
 
   const targetProduct = targetRows * targetColumns;
   const arrayBuilt = currentRows === targetRows && currentColumns === targetColumns;
+
+  // Capped button ranges
+  const rowButtonCount = Math.min(maxRows, 6);
+  const colButtonCount = Math.min(maxColumns, 8);
 
   // Evaluation hook
   const {
@@ -93,24 +110,33 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
       | undefined,
   });
 
-  // Handler for row changes
+  // Handler for row changes (build_array only)
   const handleRowChange = (newRows: number) => {
-    if (hasSubmittedEvaluation) return;
+    if (hasSubmittedEvaluation || isPreBuilt) return;
     setCurrentRows(newRows);
     setFeedback(null);
   };
 
-  // Handler for column changes
+  // Handler for column changes (build_array only)
   const handleColumnChange = (newColumns: number) => {
-    if (hasSubmittedEvaluation) return;
+    if (hasSubmittedEvaluation || isPreBuilt) return;
     setCurrentColumns(newColumns);
     setFeedback(null);
   };
 
-  // Submit handler for evaluation
+  // Submit handler — branches by challenge type
   const handleSubmit = () => {
     if (hasSubmittedEvaluation) return;
 
+    if (isMultiplyMode) {
+      handleSubmitMultiply();
+    } else {
+      handleSubmitCountOrBuild();
+    }
+  };
+
+  // Build / Count submission — validate total
+  const handleSubmitCountOrBuild = () => {
     const studentTotal = parseInt(totalAnswer, 10);
     const correctArray = currentRows === targetRows && currentColumns === targetColumns;
     const correctTotal = studentTotal === targetProduct;
@@ -122,32 +148,40 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
       success = true;
       score = 100;
       setFeedback(
-        `Perfect! You built a ${currentRows} × ${currentColumns} array and correctly calculated ${studentTotal} total items.`
+        challengeType === 'count_array'
+          ? `Correct! There are ${targetProduct} ${iconType}s in total.`
+          : `Perfect! You built a ${currentRows} x ${currentColumns} array with ${studentTotal} total items.`
       );
       setFeedbackType('success');
     } else if (correctArray && !correctTotal) {
       score = 50;
       setFeedback(
-        `You built the array correctly (${currentRows} × ${currentColumns}), but your total is incorrect. Count again!`
+        challengeType === 'count_array'
+          ? `Not quite. Try counting again — you can skip count by rows or columns!`
+          : `You built the array correctly (${currentRows} x ${currentColumns}), but your total is incorrect. Count again!`
       );
       setFeedbackType('hint');
     } else if (!correctArray && correctTotal) {
       score = 50;
       setFeedback(
-        `Your total (${studentTotal}) would be correct for a different array. Build ${targetRows} rows × ${targetColumns} columns.`
+        `Your total (${studentTotal}) would be correct for a different array. Build ${targetRows} rows x ${targetColumns} columns.`
       );
       setFeedbackType('hint');
     } else {
       score = 0;
       setFeedback(
-        `Not quite. First, build the array with ${targetRows} rows and ${targetColumns} columns, then count the total.`
+        challengeType === 'count_array'
+          ? `Not quite. Count the items carefully — try skip counting by rows!`
+          : `Not quite. First, build the array with ${targetRows} rows and ${targetColumns} columns, then count the total.`
       );
       setFeedbackType('error');
     }
 
+    const taskType = challengeType === 'count_array' ? 'count' : 'build';
+
     const metrics: ArrayGridMetrics = {
       type: 'array-grid',
-      taskType: 'build',
+      taskType: taskType as ArrayGridMetrics['taskType'],
       goalMet: success,
       finalRows: currentRows,
       finalColumns: currentColumns,
@@ -171,15 +205,89 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     });
   };
 
+  // Multiply submission — validate rows, columns, and total
+  const handleSubmitMultiply = () => {
+    const studentRows = parseInt(rowsAnswer, 10);
+    const studentColumns = parseInt(columnsAnswer, 10);
+    const studentTotal = parseInt(totalAnswer, 10);
+
+    const correctRows = studentRows === targetRows;
+    const correctColumns = studentColumns === targetColumns;
+    const correctTotal = studentTotal === targetProduct;
+
+    // Partial credit: each part worth ~33%
+    let score = 0;
+    if (correctRows) score += 33;
+    if (correctColumns) score += 33;
+    if (correctTotal) score += 34;
+
+    const success = correctRows && correctColumns && correctTotal;
+
+    if (success) {
+      setFeedback(
+        `Excellent! ${targetRows} x ${targetColumns} = ${targetProduct}. You wrote the multiplication fact correctly!`
+      );
+      setFeedbackType('success');
+    } else {
+      const hints: string[] = [];
+      if (!correctRows) hints.push('count the rows (horizontal groups)');
+      if (!correctColumns) hints.push('count the columns (items in each row)');
+      if (!correctTotal) hints.push('multiply rows times columns for the total');
+      setFeedback(`Not quite. Try to ${hints.join(', ')}.`);
+      setFeedbackType(score >= 50 ? 'hint' : 'error');
+    }
+
+    const metrics: ArrayGridMetrics = {
+      type: 'array-grid',
+      taskType: 'multiply' as ArrayGridMetrics['taskType'],
+      goalMet: success,
+      finalRows: targetRows,
+      finalColumns: targetColumns,
+      totalItems: targetProduct,
+      targetProduct,
+      productCorrect: correctTotal,
+      dimensionsCorrect: correctRows && correctColumns,
+      rowChanges: 0,
+      columnChanges: 0,
+      cellClicks: 0,
+      finalConfiguration: {
+        rows: targetRows,
+        columns: targetColumns,
+        partitionLines: [],
+        highlightedCells: [],
+      },
+    };
+
+    submitEvaluation(success, score, metrics, {
+      studentWork: {
+        rows: studentRows,
+        columns: studentColumns,
+        total: studentTotal,
+        sentence: `${studentRows} x ${studentColumns} = ${studentTotal}`,
+      },
+    });
+  };
+
   // Reset handler
   const handleReset = () => {
-    setCurrentRows(0);
-    setCurrentColumns(0);
+    setCurrentRows(isPreBuilt ? targetRows : 0);
+    setCurrentColumns(isPreBuilt ? targetColumns : 0);
     setTotalAnswer('');
+    setRowsAnswer('');
+    setColumnsAnswer('');
     setFeedback(null);
     setFeedbackType(null);
     resetEvaluationAttempt();
   };
+
+  // Can submit?
+  const canSubmit = useMemo(() => {
+    if (hasSubmittedEvaluation) return false;
+    if (isMultiplyMode) {
+      return rowsAnswer !== '' && columnsAnswer !== '' && totalAnswer !== '';
+    }
+    return arrayBuilt && totalAnswer !== '';
+  }, [hasSubmittedEvaluation, isMultiplyMode, rowsAnswer, columnsAnswer, totalAnswer, arrayBuilt]);
 
   // Render icon based on type
   const renderIcon = () => {
@@ -219,6 +327,10 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     }
   };
 
+  // Displayed rows/columns for the grid
+  const displayRows = isPreBuilt ? targetRows : currentRows;
+  const displayColumns = isPreBuilt ? targetColumns : currentColumns;
+
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -238,7 +350,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
             <p className="text-xs text-green-400 font-mono uppercase tracking-wider">
-              Build & Multiply
+              {isMultiplyMode ? 'Multiply' : isPreBuilt ? 'Count' : 'Build & Multiply'}
             </p>
           </div>
         </div>
@@ -260,65 +372,67 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             <p className="text-slate-300 font-light">{description}</p>
           </div>
 
-          {/* Step 1: Build the Array */}
-          <div className="mb-8">
-            <h4 className="text-lg font-semibold text-green-300 mb-4 text-center">
-              Step 1: Build the Array
-            </h4>
+          {/* Step 1: Build the Array (build_array mode only) */}
+          {!isPreBuilt && (
+            <div className="mb-8">
+              <h4 className="text-lg font-semibold text-green-300 mb-4 text-center">
+                Step 1: Build the Array
+              </h4>
 
-            <div className="flex flex-col items-center gap-6">
-              {/* Row Controls */}
-              <div className="flex items-center gap-4">
-                <span className="text-green-300 font-semibold w-24 text-right">Rows:</span>
-                <div className="flex gap-2 flex-wrap max-w-2xl">
-                  {Array.from({ length: Math.min(maxRows, 6) }, (_, i) => i + 1).map((num) => (
-                    <button
-                      key={`row-${num}`}
-                      onClick={() => handleRowChange(num)}
-                      disabled={hasSubmittedEvaluation}
-                      className={`w-10 h-10 rounded-lg font-bold transition-all ${
-                        currentRows === num
-                          ? 'bg-green-500 text-white scale-110 shadow-lg'
-                          : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {num}
-                    </button>
-                  ))}
+              <div className="flex flex-col items-center gap-6">
+                {/* Row Controls */}
+                <div className="flex items-center gap-4">
+                  <span className="text-green-300 font-semibold w-24 text-right">Rows:</span>
+                  <div className="flex gap-2 flex-wrap max-w-2xl">
+                    {Array.from({ length: rowButtonCount }, (_, i) => i + 1).map((num) => (
+                      <button
+                        key={`row-${num}`}
+                        onClick={() => handleRowChange(num)}
+                        disabled={hasSubmittedEvaluation}
+                        className={`w-10 h-10 rounded-lg font-bold transition-all ${
+                          currentRows === num
+                            ? 'bg-green-500 text-white scale-110 shadow-lg'
+                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Column Controls */}
-              <div className="flex items-center gap-4">
-                <span className="text-blue-300 font-semibold w-24 text-right">Columns:</span>
-                <div className="flex gap-2 flex-wrap max-w-2xl">
-                  {Array.from({ length: Math.min(maxColumns, 8) }, (_, i) => i + 1).map((num) => (
-                    <button
-                      key={`col-${num}`}
-                      onClick={() => handleColumnChange(num)}
-                      disabled={hasSubmittedEvaluation}
-                      className={`w-10 h-10 rounded-lg font-bold transition-all ${
-                        currentColumns === num
-                          ? 'bg-blue-500 text-white scale-110 shadow-lg'
-                          : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {num}
-                    </button>
-                  ))}
+                {/* Column Controls */}
+                <div className="flex items-center gap-4">
+                  <span className="text-blue-300 font-semibold w-24 text-right">Columns:</span>
+                  <div className="flex gap-2 flex-wrap max-w-2xl">
+                    {Array.from({ length: colButtonCount }, (_, i) => i + 1).map((num) => (
+                      <button
+                        key={`col-${num}`}
+                        onClick={() => handleColumnChange(num)}
+                        disabled={hasSubmittedEvaluation}
+                        className={`w-10 h-10 rounded-lg font-bold transition-all ${
+                          currentColumns === num
+                            ? 'bg-blue-500 text-white scale-110 shadow-lg'
+                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Array Grid */}
-          {currentRows > 0 && currentColumns > 0 && (
+          {/* Array Grid — shown when built (build mode) or always (pre-built modes) */}
+          {displayRows > 0 && displayColumns > 0 && (
             <div className="flex justify-center items-center mb-8">
               <div className="relative inline-block">
                 {/* Column Labels */}
                 {showLabels && (
                   <div className="flex mb-2" style={{ marginLeft: showLabels ? '40px' : '0' }}>
-                    {Array.from({ length: currentColumns }).map((_, index) => (
+                    {Array.from({ length: displayColumns }).map((_, index) => (
                       <div
                         key={`col-label-${index}`}
                         className="flex items-center justify-center text-blue-300 font-mono font-bold text-sm w-16"
@@ -333,7 +447,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                   {/* Row Labels */}
                   {showLabels && (
                     <div className="flex flex-col mr-2">
-                      {Array.from({ length: currentRows }).map((_, index) => (
+                      {Array.from({ length: displayRows }).map((_, index) => (
                         <div
                           key={`row-label-${index}`}
                           className="flex items-center justify-center text-green-300 font-mono font-bold text-sm h-16 w-10"
@@ -348,11 +462,11 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                   <div
                     className="grid gap-2"
                     style={{
-                      gridTemplateColumns: `repeat(${currentColumns}, 64px)`,
+                      gridTemplateColumns: `repeat(${displayColumns}, 64px)`,
                     }}
                   >
-                    {Array.from({ length: currentRows }).map((_, rowIndex) =>
-                      Array.from({ length: currentColumns }).map((_, colIndex) => {
+                    {Array.from({ length: displayRows }).map((_, rowIndex) =>
+                      Array.from({ length: displayColumns }).map((_, colIndex) => {
                         const cellKey = `${rowIndex}-${colIndex}`;
 
                         return (
@@ -371,8 +485,72 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             </div>
           )}
 
-          {/* Step 2: Calculate Total */}
-          {arrayBuilt && !hasSubmittedEvaluation && (
+          {/* Input Section — varies by challenge type */}
+
+          {/* count_array: Just total input (shown immediately since array is pre-built) */}
+          {challengeType === 'count_array' && !hasSubmittedEvaluation && (
+            <div className="mb-8 animate-fade-in">
+              <h4 className="text-lg font-semibold text-purple-300 mb-4 text-center">
+                How many {iconType}s in total?
+              </h4>
+
+              <div className="flex justify-center items-center gap-4">
+                <label className="text-slate-300 font-semibold">Total:</label>
+                <input
+                  type="number"
+                  value={totalAnswer}
+                  onChange={(e) => setTotalAnswer(e.target.value)}
+                  placeholder="?"
+                  className="px-4 py-2 w-32 bg-slate-800 border border-slate-600 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-purple-400"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && canSubmit) handleSubmit();
+                  }}
+                />
+                <span className="text-slate-300">{iconType}s</span>
+              </div>
+            </div>
+          )}
+
+          {/* multiply_array: Three inputs for rows x columns = total */}
+          {isMultiplyMode && !hasSubmittedEvaluation && (
+            <div className="mb-8 animate-fade-in">
+              <h4 className="text-lg font-semibold text-purple-300 mb-4 text-center">
+                Write the multiplication sentence
+              </h4>
+
+              <div className="flex justify-center items-center gap-3 flex-wrap">
+                <input
+                  type="number"
+                  value={rowsAnswer}
+                  onChange={(e) => setRowsAnswer(e.target.value)}
+                  placeholder="rows"
+                  className="px-3 py-2 w-24 bg-slate-800 border border-green-500/40 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-green-400"
+                />
+                <span className="text-2xl text-slate-300 font-bold">x</span>
+                <input
+                  type="number"
+                  value={columnsAnswer}
+                  onChange={(e) => setColumnsAnswer(e.target.value)}
+                  placeholder="cols"
+                  className="px-3 py-2 w-24 bg-slate-800 border border-blue-500/40 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-blue-400"
+                />
+                <span className="text-2xl text-slate-300 font-bold">=</span>
+                <input
+                  type="number"
+                  value={totalAnswer}
+                  onChange={(e) => setTotalAnswer(e.target.value)}
+                  placeholder="total"
+                  className="px-3 py-2 w-28 bg-slate-800 border border-purple-500/40 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-purple-400"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && canSubmit) handleSubmit();
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* build_array: Total input appears after array is built */}
+          {challengeType === 'build_array' && arrayBuilt && !hasSubmittedEvaluation && (
             <div className="mb-8 animate-fade-in">
               <h4 className="text-lg font-semibold text-purple-300 mb-4 text-center">
                 Step 2: How many {iconType}s in total?
@@ -384,10 +562,10 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                   type="number"
                   value={totalAnswer}
                   onChange={(e) => setTotalAnswer(e.target.value)}
-                  placeholder="Enter total"
+                  placeholder="?"
                   className="px-4 py-2 w-32 bg-slate-800 border border-slate-600 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-purple-400"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && totalAnswer) handleSubmit();
+                    if (e.key === 'Enter' && canSubmit) handleSubmit();
                   }}
                 />
                 <span className="text-slate-300">{iconType}s</span>
@@ -443,10 +621,10 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           <div className="flex justify-center gap-4 mb-8">
             <button
               onClick={handleSubmit}
-              disabled={hasSubmittedEvaluation || !arrayBuilt || !totalAnswer}
+              disabled={!canSubmit}
               className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold rounded-lg hover:from-green-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
             >
-              {hasSubmittedEvaluation ? 'Submitted ✓' : 'Check Answer'}
+              {hasSubmittedEvaluation ? 'Submitted' : 'Check Answer'}
             </button>
             {hasSubmittedEvaluation && (
               <button
@@ -458,30 +636,52 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             )}
           </div>
 
-          {/* Instructions */}
+          {/* Instructions — context-sensitive */}
           <div className="mt-6 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
             <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Instructions</h4>
             <ul className="text-sm text-slate-300 space-y-2">
+              {challengeType === 'build_array' && (
+                <>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">&#9656;</span>
+                    <span>
+                      Click the row and column buttons to build an array with {targetRows} rows and {targetColumns}{' '}
+                      columns
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">&#9656;</span>
+                    <span>Once you've built the correct array, count the total number of {iconType}s</span>
+                  </li>
+                </>
+              )}
+              {challengeType === 'count_array' && (
+                <>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">&#9656;</span>
+                    <span>Look at the array of {iconType}s shown above</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">&#9656;</span>
+                    <span>Count the total number of {iconType}s — try skip counting by rows or columns!</span>
+                  </li>
+                </>
+              )}
+              {isMultiplyMode && (
+                <>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">&#9656;</span>
+                    <span>Look at the array and count how many rows and columns it has</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">&#9656;</span>
+                    <span>Write the multiplication sentence: rows x columns = total</span>
+                  </li>
+                </>
+              )}
               <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-1">▸</span>
-                <span>
-                  Click the row and column buttons to build an array with {targetRows} rows and {targetColumns}{' '}
-                  columns
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-1">▸</span>
-                <span>Once you've built the correct array, count the total number of {iconType}s</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-1">▸</span>
-                <span>Enter your answer and click "Check Answer" to see if you're correct</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-1">▸</span>
-                <span>
-                  This helps you understand multiplication as rows × columns = total items
-                </span>
+                <span className="text-green-400 mt-1">&#9656;</span>
+                <span>Enter your answer and click &quot;Check Answer&quot; to see if you&apos;re correct</span>
               </li>
             </ul>
           </div>

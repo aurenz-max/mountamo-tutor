@@ -1,6 +1,48 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { PlaceValueChartData } from "../../primitives/visual-primitives/math/PlaceValueChart";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  identify: {
+    promptDoc:
+      `"identify": Simple 2-digit numbers, focus on recognizing place names. `
+      + `Use numbers like 35, 47, 72. Set highlightedDigitPlace to ones (0) or tens (1). `
+      + `Great for K-2 students just learning place value vocabulary. Grades K-2.`,
+    schemaDescription: "'identify' (recognize place names, K-2)",
+  },
+  build: {
+    promptDoc:
+      `"build": 3-digit numbers, focus on constructing the number in the chart. `
+      + `Use numbers like 253, 481, 706. Set minPlace=0, maxPlace=2. `
+      + `Phase 3 (build) is the primary challenge. Grades 2-3.`,
+    schemaDescription: "'build' (construct number in chart, 2-3)",
+  },
+  compare: {
+    promptDoc:
+      `"compare": 3-4 digit numbers. Generate a more challenging number with multiple non-zero digits. `
+      + `Use numbers like 3472, 5831, 2097. Set minPlace=0, maxPlace=3. `
+      + `Pick an interior place for highlighting. Grades 3-4.`,
+    schemaDescription: "'compare' (multi-digit place reasoning, 3-4)",
+  },
+  expanded_form: {
+    promptDoc:
+      `"expanded_form": 4+ digit numbers or decimals, with showExpandedForm=true. `
+      + `Use numbers like 12450.75, 3245.5, 125456. Include decimal places when appropriate. `
+      + `Set minPlace to cover decimal digits, maxPlace to cover integer digits. Grades 5+.`,
+    schemaDescription: "'expanded_form' (expanded form with larger numbers, 5+)",
+  },
+};
 
 /**
  * Schema definition for Place Value Chart Data (multi-phase interface)
@@ -19,6 +61,11 @@ import { ai } from "../geminiClient";
 const placeValueChartSchema: Schema = {
   type: Type.OBJECT,
   properties: {
+    challengeType: {
+      type: Type.STRING,
+      enum: ["identify", "build", "compare", "expanded_form"],
+      description: "Challenge type controlling difficulty: 'identify' (K-2 simple place names), 'build' (2-3 construct numbers), 'compare' (3-4 multi-digit), 'expanded_form' (5+ expanded form with large numbers/decimals)"
+    },
     title: {
       type: Type.STRING,
       description: "Title for the place value chart (e.g., 'Explore 3,472' or 'Place Value Challenge')"
@@ -67,7 +114,7 @@ const placeValueChartSchema: Schema = {
     }
   },
   required: [
-    "title", "description", "targetNumber", "highlightedDigitPlace",
+    "challengeType", "title", "description", "targetNumber", "highlightedDigitPlace",
     "minPlace", "maxPlace", "placeNameChoices", "digitValueChoices"
   ]
 };
@@ -119,8 +166,26 @@ function getDigitAtPlace(num: number, place: number): number {
 export const generatePlaceValueChart = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<PlaceValueChartData>
+  config?: Partial<PlaceValueChartData> & {
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode?: string;
+  }
 ): Promise<PlaceValueChartData> => {
+  // ---------------------------------------------------------------------------
+  // Eval-mode constraint resolution
+  // ---------------------------------------------------------------------------
+  const evalConstraint = resolveEvalModeConstraint(
+    'place-value-chart',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('PlaceValueChart', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(placeValueChartSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
+    : placeValueChartSchema;
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create a MULTI-PHASE place value chart problem for "${topic}" for ${gradeLevel} students.
 
@@ -129,6 +194,9 @@ PROBLEM FLOW (three phases):
   Phase 2: "Find the Value" — student picks the value of that digit (MC)
   Phase 3: "Build the Number" — student enters every digit in the place value chart
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 GRADE-APPROPRIATE TARGET NUMBERS:
 - Grades K-1: 2-digit whole numbers (e.g., 35, 72)
   -> minPlace: 0, maxPlace: 1
@@ -140,6 +208,7 @@ GRADE-APPROPRIATE TARGET NUMBERS:
   -> minPlace: -2, maxPlace: 4 or 5
 - Grades 7-8: Larger numbers with decimals (e.g., 125,456.125)
   -> minPlace: -3, maxPlace: 5 or 6
+` : ''}
 
 CHOOSING highlightedDigitPlace:
 - Pick a place whose digit in targetNumber is NON-ZERO
@@ -178,6 +247,7 @@ ADDITIONAL GUIDELINES:
 
 EXAMPLE OUTPUT:
 {
+  "challengeType": "compare",
   "title": "Explore 3,472",
   "description": "Let's explore 3,472! Which place is the highlighted digit in? What is it worth? Then build the whole number!",
   "targetNumber": 3472,
@@ -202,7 +272,7 @@ Return a complete multi-phase place value chart problem.
         thinkingLevel: ThinkingLevel.LOW,
       },
       responseMimeType: "application/json",
-      responseSchema: placeValueChartSchema
+      responseSchema: activeSchema
     },
   });
 

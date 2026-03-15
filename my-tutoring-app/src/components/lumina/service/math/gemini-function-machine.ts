@@ -1,6 +1,53 @@
-import { Type, Schema, ThinkingLevel } from "@google/genai";
+import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from '../../primitives/visual-primitives/math/FunctionMachine';
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  observe: {
+    promptDoc:
+      `"observe": Rule IS shown. Student watches inputs go through the machine and sees outputs. `
+      + `Full guidance — the student observes how the rule transforms each input. `
+      + `Set showRule=true. Use 5-8 sequential inputs. Concrete manipulative with full scaffolding.`,
+    schemaDescription: "'observe' (watch input/output with rule visible)",
+  },
+  predict: {
+    promptDoc:
+      `"predict": Rule IS shown. Student must predict outputs for NEW inputs not already in the queue. `
+      + `The student sees the rule and must mentally apply it before the machine reveals the answer. `
+      + `Set showRule=true. Use inputs that test understanding (include 0, negatives for higher grades). `
+      + `Pictorial with prompts.`,
+    schemaDescription: "'predict' (predict output for new input)",
+  },
+  discover_rule: {
+    promptDoc:
+      `"discover_rule": Rule is HIDDEN. Student sees input/output pairs and must figure out the rule. `
+      + `Set showRule=false. Choose inputs that make the pattern discoverable but not trivial. `
+      + `Include 0 to reveal the constant term for two-step rules. Strategy/pictorial with reduced prompts.`,
+    schemaDescription: "'discover_rule' (identify hidden function rule)",
+  },
+  create_rule: {
+    promptDoc:
+      `"create_rule": Student is given a pattern of I/O pairs and must write the rule expression. `
+      + `Set showRule=false. Provide clear input/output pairs. The student writes the rule in algebraic form. `
+      + `Transitional symbolic/pictorial — bridges concrete understanding to symbolic notation.`,
+    schemaDescription: "'create_rule' (write rule for given I/O pairs)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Schema definition for Function Machine Data
+// ---------------------------------------------------------------------------
 
 /**
  * Schema definition for Function Machine Data
@@ -11,6 +58,11 @@ import { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from '..
 const functionMachineSchema: Schema = {
   type: Type.OBJECT,
   properties: {
+    challengeType: {
+      type: Type.STRING,
+      description: "Challenge type: 'observe' (watch input/output with rule visible), 'predict' (predict output for new input), 'discover_rule' (identify hidden function rule), 'create_rule' (write rule for given I/O pairs)",
+      enum: ["observe", "predict", "discover_rule", "create_rule"],
+    },
     title: {
       type: Type.STRING,
       description: "Title for the function machine (e.g., 'Mystery Function', 'Linear Function Explorer')"
@@ -65,7 +117,7 @@ const functionMachineSchema: Schema = {
       description: "Array of chained machines for function composition. Each machine has its own rule. Output of one becomes input of next."
     }
   },
-  required: ["title", "description", "rule"]
+  required: ["challengeType", "title", "description", "rule"]
 };
 
 /**
@@ -94,8 +146,25 @@ export const generateFunctionMachine = async (
     ruleComplexity?: 'oneStep' | 'twoStep' | 'expression';
     gradeBand?: '3-4' | '5' | 'advanced';
     chainedMachines?: MachineConfig[];
+    targetEvalMode?: string;
   }
 ): Promise<FunctionMachineData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'function-machine',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('FunctionMachine', config?.targetEvalMode, evalConstraint);
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(functionMachineSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
+    : functionMachineSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create an educational function machine visualization for teaching "${topic}" to ${gradeLevel} students.
 
@@ -104,6 +173,8 @@ CONTEXT:
 - Students drop numbers into the input hopper, watch them transform, and see the output
 - They can guess the rule by analyzing input-output pairs
 - Builds understanding of functions, patterns, and algebraic thinking
+
+${challengeTypeSection}
 
 GUIDELINES FOR GRADE LEVELS:
 - Grades 3-4: Simple one-step rules (x+3, x-2, x*2), small positive integers
@@ -195,7 +266,7 @@ Return the complete function machine configuration.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: functionMachineSchema
+      responseSchema: activeSchema
     },
   });
 

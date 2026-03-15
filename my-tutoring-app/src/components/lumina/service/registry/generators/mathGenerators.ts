@@ -63,35 +63,43 @@ import { generatePercentBar } from '../../math/gemini-percent-bar';
 registerGenerator('place-value-chart', async (item, topic, gradeContext) => ({
   type: 'place-value-chart',
   instanceId: item.instanceId,
-  data: await generatePlaceValueChart(topic, gradeContext, item.config),
+  data: await generatePlaceValueChart(topic, gradeContext, { ...item.config }),
 }));
 
 // Fraction Bar
 registerGenerator('fraction-bar', async (item, topic, gradeContext) => ({
   type: 'fraction-bar',
   instanceId: item.instanceId,
-  data: await generateFractionBar(topic, gradeContext, item.config),
+  data: await generateFractionBar(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Area Model
 registerGenerator('area-model', async (item, topic, gradeContext) => ({
   type: 'area-model',
   instanceId: item.instanceId,
-  data: await generateAreaModel(topic, gradeContext, item.config),
+  data: await generateAreaModel(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Array Grid
 registerGenerator('array-grid', async (item, topic, gradeContext) => ({
   type: 'array-grid',
   instanceId: item.instanceId,
-  data: await generateArrayGrid(topic, gradeContext, item.config),
+  data: await generateArrayGrid(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Double Number Line
 registerGenerator('double-number-line', async (item, topic, gradeContext) => ({
   type: 'double-number-line',
   instanceId: item.instanceId,
-  data: await generateDoubleNumberLine(topic, gradeContext, item.config),
+  data: await generateDoubleNumberLine(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Tape Diagram
@@ -126,7 +134,7 @@ registerGenerator('balance-scale', async (item, topic, gradeContext) => ({
 registerGenerator('function-machine', async (item, topic, gradeContext) => ({
   type: 'function-machine',
   instanceId: item.instanceId,
-  data: await generateFunctionMachine(topic, gradeContext, item.config),
+  data: await generateFunctionMachine(topic, gradeContext, { ...item.config }),
 }));
 
 // Coordinate Graph
@@ -154,7 +162,9 @@ registerGenerator('systems-equations-visualizer', async (item, topic, gradeConte
 registerGenerator('matrix-display', async (item, topic, gradeContext) => ({
   type: 'matrix-display',
   instanceId: item.instanceId,
-  data: await generateMatrix(topic, gradeContext, item.config),
+  data: await generateMatrix(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Dot Plot
@@ -219,7 +229,9 @@ registerGenerator('skip-counting-runner', async (item, topic, gradeContext) => (
 registerGenerator('regrouping-workbench', async (item, topic, gradeContext) => ({
   type: 'regrouping-workbench',
   instanceId: item.instanceId,
-  data: await generateRegroupingWorkbench(topic, gradeContext, item.config),
+  data: await generateRegroupingWorkbench(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Multiplication Explorer (2-4 multi-representation multiplication)
@@ -236,7 +248,9 @@ registerGenerator('multiplication-explorer', async (item, topic, gradeContext) =
 registerGenerator('measurement-tools', async (item, topic, gradeContext) => ({
   type: 'measurement-tools',
   instanceId: item.instanceId,
-  data: await generateMeasurementTools(topic, gradeContext, item.config),
+  data: await generateMeasurementTools(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // Shape Builder (K-5 geometric construction & properties)
@@ -390,7 +404,9 @@ registerGenerator('fraction-circles', async (item, topic, gradeContext) => ({
 registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
   type: 'percent-bar',
   instanceId: item.instanceId,
-  data: await generatePercentBar(topic, gradeContext, item.config),
+  data: await generatePercentBar(topic, gradeContext, {
+    ...item.config,
+  }),
 }));
 
 // ============================================================================

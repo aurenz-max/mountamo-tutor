@@ -27,7 +27,8 @@
       "Bash(python -c \"from backend.app.api.endpoints.mastery import router; print\\(f''Mastery router OK: {len\\(router.routes\\)} routes''\\); [print\\(f''  {r.methods} {r.path}''\\) for r in router.routes]\")",
       "Read",
       "Bash(npx tsc*)",
-      "Bash(pip show pytest)"
+      "Bash(pip show pytest)",
+      "Bash(curl -s \"http://localhost:3000/api/lumina/eval-test*)"
     ],
     "deny": [],
     "ask": []

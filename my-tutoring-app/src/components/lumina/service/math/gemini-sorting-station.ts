@@ -277,10 +277,12 @@ GUIDELINES FOR GRADE LEVELS:
 ${challengeTypeSection}
 
 ADDITIONAL RULES FOR CHALLENGE TYPES:
+- "sort-by-one": MUST have ≥2 categories. Every object MUST match exactly one category via its attributes. The instruction MUST ask students to sort/group — NEVER ask "which group has more" (that's count-and-compare) or "which doesn't belong" (that's odd-one-out).
+- "sort-by-attribute": Same rules as sort-by-one — every object must fit a category.
 - "two-attributes": Both attributes must be VISUALLY DISTINGUISHABLE through different emojis. Prefer color + type. Do NOT use "size". Use distinct emojis per combination.
 - "count-and-compare": correctComparison must be 'more', 'fewer', or 'equal'.
 - "odd-one-out": oddOneOut must be an object ID that appears in the objects array.
-- "tally-record": set showTallyChart to true.
+- "tally-record": set showTallyChart to true. Every object must match exactly one category. Category labels must match what the rule actually selects (e.g., if rule is {type: insect}, label must be "Insects", NOT "Insects & Amphibians").
 
 ${config ? `
 CONFIGURATION HINTS:
@@ -379,6 +381,83 @@ Return the complete sorting station configuration.
         if (!cat.label) cat.label = 'Group';
         if (!cat.rule || typeof cat.rule !== 'object') {
           cat.rule = {};
+        }
+      }
+    }
+
+    // ── Fix: sort-by-one / tally-record must have ≥2 categories covering ALL objects ──
+    if (
+      (challenge.type === 'sort-by-one' || challenge.type === 'sort-by-attribute' || challenge.type === 'tally-record') &&
+      Array.isArray(challenge.categories) &&
+      challenge.objects.length > 0
+    ) {
+      const sortAttr = challenge.sortingAttribute || 'type';
+
+      // Rebuild categories from actual object attribute values so every object has a bin
+      const valueSet = new Set<string>();
+      for (const obj of challenge.objects) {
+        const val = obj.attributes[sortAttr];
+        if (val) valueSet.add(val);
+      }
+
+      // Only rebuild if fewer categories than distinct values (i.e. some objects are orphaned)
+      if (valueSet.size > challenge.categories.length || challenge.categories.length < 2) {
+        challenge.categories = Array.from(valueSet).map((val: string) => ({
+          label: val.charAt(0).toUpperCase() + val.slice(1),
+          rule: { [sortAttr]: val },
+        }));
+      } else {
+        // Even if category count looks right, verify every object matches at least one
+        const orphaned = challenge.objects.filter((obj: { attributes: Record<string, string> }) =>
+          !challenge.categories.some((cat: { rule: Record<string, string> }) =>
+            Object.entries(cat.rule).every(([k, v]) => obj.attributes[k] === v)
+          )
+        );
+        if (orphaned.length > 0) {
+          // Add missing categories for orphaned objects' attribute values
+          const missingValues = new Set<string>();
+          for (const obj of orphaned) {
+            const val = obj.attributes[sortAttr];
+            if (val) missingValues.add(val);
+          }
+          for (const val of missingValues) {
+            if (!challenge.categories.some((c: { rule: Record<string, string> }) => c.rule[sortAttr] === val)) {
+              challenge.categories.push({
+                label: val.charAt(0).toUpperCase() + val.slice(1),
+                rule: { [sortAttr]: val },
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // ── Fix: sort-by-one instructions must not contain patterns from other modes ──
+    if (challenge.type === 'sort-by-one' && challenge.instruction) {
+      const lowerInst = challenge.instruction.toLowerCase();
+      // If instruction asks "which group has more" → retype as count-and-compare
+      if (lowerInst.includes('which group has more') || lowerInst.includes('which has more') || lowerInst.includes('are there more')) {
+        if (evalConstraint?.allowedTypes.includes('count-and-compare')) {
+          challenge.type = 'count-and-compare';
+          if (!challenge.correctComparison) challenge.correctComparison = 'more';
+          if (!challenge.comparisonQuestion) challenge.comparisonQuestion = challenge.instruction;
+        } else {
+          // Can't retype — rewrite instruction to match sort-by-one
+          const attr = challenge.sortingAttribute || 'type';
+          challenge.instruction = `Can you sort these by ${attr}?`;
+        }
+      }
+      // If instruction asks "odd one out" / "doesn't belong" → retype or rewrite
+      if (lowerInst.includes('odd one out') || lowerInst.includes("doesn't belong") || lowerInst.includes('does not belong')) {
+        if (evalConstraint?.allowedTypes.includes('odd-one-out')) {
+          challenge.type = 'odd-one-out';
+          if (!challenge.oddOneOut && challenge.objects.length > 0) {
+            challenge.oddOneOut = challenge.objects[challenge.objects.length - 1].id;
+          }
+          if (!challenge.oddOneOutReason) challenge.oddOneOutReason = 'This one is different from the others.';
+        } else {
+          const attr = challenge.sortingAttribute || 'type';
+          challenge.instruction = `Can you sort these by ${attr}?`;
         }
       }
     }

@@ -354,7 +354,55 @@ Fix any errors. Common issues:
 - Import path typos
 - Metrics not added to PrimitiveMetrics union
 
-## Phase 5: Report (Main Agent)
+## Phase 5: Smoke Test via Eval-Test API (Main Agent)
+
+**Only if the primitive has eval modes (2+ challenge types).** Skip for display-only or single-phase primitives.
+
+After type-check passes, curl the eval-test endpoint for each eval mode to verify the generator produces valid data that the component can render.
+
+### 5a. Test each eval mode
+
+For each eval mode defined in the catalog entry:
+
+```bash
+curl -s "http://localhost:3000/api/lumina/eval-test?componentId=<id>&evalMode=<mode>"
+```
+
+If connection refused, tell the user: `cd my-tutoring-app && npm run dev` and wait for them to confirm the dev server is running before retrying.
+
+### 5b. Analyze the response
+
+For each response, check:
+
+1. **Status**: `status` field should be `"pass"`. If `"fail"` or `"error"`, report the error immediately.
+2. **Challenge types**: `validation.typesFound` should only contain types from `validation.disallowedTypes` should be empty/absent.
+3. **Challenge count**: `validation.challengeCount` should be > 0 (generator actually produced challenges).
+4. **Data shape**: Read the component source and verify that `fullData` contains the fields the component destructures from its `Data` interface. Flag any missing required fields.
+5. **Answer integrity**: Check that correct answers are not leaked in title, description, or hint fields visible before interaction.
+6. **Math correctness**: For math primitives, spot-check that operands produce the claimed results.
+
+### 5c. Report results inline
+
+Print a compact results table:
+
+```
+Eval-Test Smoke Results:
+| Eval Mode      | Status | Challenges | Types Found       | Issues |
+|----------------|--------|------------|-------------------|--------|
+| <mode>         | PASS   | 6          | [build, subitize] | —      |
+```
+
+**If any mode fails:**
+- Show the error/validation message from the API
+- Read the generator and component to diagnose the root cause
+- Fix the issue (generator schema mismatch, missing field defaults, wrong type constraint)
+- Re-run the curl to confirm the fix
+
+**If ALL modes pass**, proceed to Phase 6.
+
+---
+
+## Phase 6: Report (Main Agent)
 
 Report to the user:
 - Files created/modified (list all)
@@ -362,6 +410,7 @@ Report to the user:
 - sendText tags defined
 - Tutoring scaffold added (or why skipped for display-only)
 - Eval modes added (if 2+ challenge types — list each mode with β value)
+- Eval-test smoke results (pass/fail per mode)
 - If eval modes added, remind user to also add entries to `backend/app/services/calibration/problem_type_registry.py` if not already present
 
 ---

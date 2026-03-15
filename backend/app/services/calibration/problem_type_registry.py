@@ -60,10 +60,10 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "find_rule":      PriorConfig(6.5, "Symbolic: discover underlying rule"),
     },
     "function-machine": {
-        "observe":   PriorConfig(2.5, "Observe input/output pairs"),
-        "predict":   PriorConfig(3.0, "Predict output for given input"),
-        "discover":  PriorConfig(3.5, "Discover the function rule"),
-        "create":    PriorConfig(4.5, "Create a function machine"),
+        "observe":       PriorConfig(2.5, "Pictorial: watch input/output with rule visible"),
+        "predict":       PriorConfig(3.0, "Pictorial: predict output for new input"),
+        "discover_rule": PriorConfig(3.5, "Strategy: identify hidden function rule"),
+        "create_rule":   PriorConfig(4.5, "Transitional: write rule for given I/O pairs"),
     },
     # -----------------------------------------------------------------
     # Single-mode math primitives (default β)
@@ -85,15 +85,52 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "compare":    PriorConfig(3.5, "Pictorial: compare two fractions visually"),
         "equivalent": PriorConfig(5.0, "Transitional: find equivalent fractions"),
     },
-    "fraction-bar":               {"default": PriorConfig(4.0, "Fraction bar model")},
-    "area-model":                 {"default": PriorConfig(5.0, "Area model multiplication")},
+    "regrouping-workbench": {
+        "add_no_regroup":      PriorConfig(1.5, "Concrete: addition without carrying"),
+        "subtract_no_regroup": PriorConfig(2.5, "Pictorial: subtraction without borrowing"),
+        "add_regroup":         PriorConfig(3.5, "Strategy: addition with carrying"),
+        "subtract_regroup":    PriorConfig(5.0, "Transitional: subtraction with borrowing"),
+    },
+    "percent-bar": {
+        "identify_percent": PriorConfig(2.5, "Pictorial: find percentage of a number"),
+        "find_part":        PriorConfig(3.5, "Pictorial: discount/decrease problems"),
+        "find_whole":       PriorConfig(5.0, "Transitional: tax/tip/markup problems"),
+        "convert":          PriorConfig(6.5, "Symbolic: compare percentages across contexts"),
+    },
+    "fraction-bar": {
+        "identify":     PriorConfig(1.5, "Concrete: identify unit fractions"),
+        "build":        PriorConfig(2.5, "Pictorial: shade non-unit proper fractions"),
+        "compare":      PriorConfig(3.5, "Pictorial: fractions with larger denominators"),
+        "add_subtract": PriorConfig(5.0, "Transitional: fractions in operation context"),
+    },
+    "measurement-tools": {
+        "measure":   PriorConfig(1.5, "Concrete: direct measurement with ruler"),
+        "compare":   PriorConfig(3.0, "Pictorial: measure and compare objects"),
+        "convert":   PriorConfig(5.0, "Transitional: measure and convert between units"),
+    },
+    "array-grid": {
+        "build_array":    PriorConfig(1.5, "Concrete: build array with given dimensions"),
+        "count_array":    PriorConfig(2.5, "Pictorial: count total objects in array"),
+        "multiply_array": PriorConfig(3.5, "Pictorial: write multiplication from array"),
+    },
+    "area-model": {
+        "build_model": PriorConfig(1.5, "Concrete: construct area model from factors"),
+        "find_area":   PriorConfig(2.5, "Pictorial: calculate partial products and total"),
+        "multiply":    PriorConfig(3.5, "Pictorial: multi-digit multiplication via model"),
+        "factor":      PriorConfig(5.0, "Transitional: find factors from given area"),
+    },
     "comparison-builder": {
         "compare_groups":    PriorConfig(1.5, "Concrete: visual group comparison"),
         "one_more_less":     PriorConfig(2.5, "Pictorial: adjacent number reasoning"),
         "compare_numbers":   PriorConfig(3.5, "Pictorial: symbolic comparison (>, <, =)"),
         "order":             PriorConfig(5.0, "Transitional: order multiple values"),
     },
-    "place-value-chart":          {"default": PriorConfig(2.5, "Place value decomposition")},
+    "place-value-chart": {
+        "identify":      PriorConfig(1.5, "Concrete: identify place name and digit value"),
+        "build":         PriorConfig(2.5, "Pictorial: construct number in chart"),
+        "compare":       PriorConfig(3.5, "Pictorial: challenging multi-digit numbers"),
+        "expanded_form": PriorConfig(5.0, "Transitional: expanded form with larger numbers"),
+    },
     "skip-counting-runner": {
         "count_along":              PriorConfig(1.5, "Concrete: follow skip-count sequence"),
         "predict":                  PriorConfig(2.5, "Pictorial: anticipate next value"),
@@ -181,6 +218,23 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "missing_value":    PriorConfig(3.5, "Pictorial: find hidden value in scaled ratio"),
         "find_multiplier":  PriorConfig(5.0, "Transitional: discover scale factor between ratios"),
         "unit_rate":        PriorConfig(6.5, "Symbolic: calculate and apply unit rate"),
+    },
+    "matrix-display": {
+        "transpose":           PriorConfig(2.5, "Pictorial: swap rows and columns"),
+        "add_subtract":        PriorConfig(3.5, "Pictorial: element-wise add/subtract"),
+        "multiply":            PriorConfig(5.0, "Transitional: row-by-column multiplication"),
+        "determinant_inverse": PriorConfig(6.5, "Symbolic: determinant and inverse"),
+    },
+    "double-number-line": {
+        "equivalent_ratios": PriorConfig(2.5, "Pictorial: scale given unit rate to find pairs"),
+        "find_missing":      PriorConfig(3.5, "Pictorial: find missing values in ratio"),
+        "unit_rate":         PriorConfig(5.0, "Transitional: discover unit rate via division"),
+    },
+    "tape-diagram": {
+        "represent":         PriorConfig(1.5, "Concrete: build diagram from word problem"),
+        "solve_part_whole":  PriorConfig(2.5, "Pictorial: standard part-whole problems"),
+        "solve_comparison":  PriorConfig(3.5, "Pictorial: comparison problems"),
+        "multi_step":        PriorConfig(5.0, "Transitional: multi-step word problems"),
     },
     "bar-model":                  {"default": PriorConfig(3.0, "Bar model comparison")},
     "ordinal-line": {

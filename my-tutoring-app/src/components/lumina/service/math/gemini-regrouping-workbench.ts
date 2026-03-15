@@ -1,13 +1,57 @@
 import { Type, Schema } from "@google/genai";
 import { RegroupingWorkbenchData } from "../../primitives/visual-primitives/math/RegroupingWorkbench";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Regrouping Workbench Data
- *
- * This schema defines the structure for addition/subtraction with
- * regrouping (carry/borrow) challenges for grades 1-4.
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  add_no_regroup: {
+    promptDoc:
+      `"add_no_regroup": Addition problems where NO carrying is needed. `
+      + `Ones digits must sum to 9 or less (e.g., 23+14, 31+42). `
+      + `Set operation='addition', requiresRegrouping=false, regroupCount=0. `
+      + `Great for building confidence before introducing carrying.`,
+    schemaDescription: "'add_no_regroup' (addition without carrying)",
+  },
+  subtract_no_regroup: {
+    promptDoc:
+      `"subtract_no_regroup": Subtraction problems where NO borrowing is needed. `
+      + `Each digit of operand1 must be >= the corresponding digit of operand2 (e.g., 47-23, 86-34). `
+      + `Set operation='subtraction', requiresRegrouping=false, regroupCount=0. `
+      + `Builds subtraction fluency before introducing borrowing.`,
+    schemaDescription: "'subtract_no_regroup' (subtraction without borrowing)",
+  },
+  add_regroup: {
+    promptDoc:
+      `"add_regroup": Addition problems that REQUIRE carrying (regrouping). `
+      + `Ones digits must sum to 10+ (e.g., 27+45, 38+24, 67+85). `
+      + `Set operation='addition', requiresRegrouping=true, regroupCount=1+. `
+      + `Grades 1-2: 2-digit, 1 regroup. Grades 3-4: 3-digit, 1-2 regroups.`,
+    schemaDescription: "'add_regroup' (addition with carrying)",
+  },
+  subtract_regroup: {
+    promptDoc:
+      `"subtract_regroup": Subtraction problems that REQUIRE borrowing. `
+      + `At least one digit of operand1 must be smaller than the corresponding digit of operand2 (e.g., 52-17, 403-248). `
+      + `Set operation='subtraction', requiresRegrouping=true, regroupCount=1+. `
+      + `operand1 MUST be larger than operand2 (no negative results).`,
+    schemaDescription: "'subtract_regroup' (subtraction with borrowing)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema (all challenge types)
+// ---------------------------------------------------------------------------
+
 const regroupingWorkbenchSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -92,6 +136,11 @@ const regroupingWorkbenchSchema: Schema = {
             type: Type.STRING,
             description: "Unique challenge ID"
           },
+          type: {
+            type: Type.STRING,
+            enum: ["add_no_regroup", "add_regroup", "subtract_no_regroup", "subtract_regroup"],
+            description: "Challenge type: 'add_no_regroup' (addition without carrying), 'subtract_no_regroup' (subtraction without borrowing), 'add_regroup' (addition with carrying), 'subtract_regroup' (subtraction with borrowing)"
+          },
           problem: {
             type: Type.STRING,
             description: "The problem string (e.g., '27 + 45', '52 - 17')"
@@ -113,7 +162,7 @@ const regroupingWorkbenchSchema: Schema = {
             description: "AI narration for introducing this problem"
           }
         },
-        required: ["id", "problem", "requiresRegrouping", "regroupCount", "hint", "narration"]
+        required: ["id", "type", "problem", "requiresRegrouping", "regroupCount", "hint", "narration"]
       },
       description: "Array of 3-5 progressive challenges"
     },
@@ -188,8 +237,35 @@ export const generateRegroupingWorkbench = async (
     operation?: 'addition' | 'subtraction';
     gradeBand?: '1-2' | '3-4';
     maxPlace?: 'tens' | 'hundreds' | 'thousands';
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode?: string;
   }
 ): Promise<RegroupingWorkbenchData> => {
+  // Resolve eval mode from catalog (single source of truth)
+  const evalConstraint = resolveEvalModeConstraint(
+    'regrouping-workbench',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('RegroupingWorkbench', config?.targetEvalMode, evalConstraint);
+
+  // Constrain schema when eval mode is active
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(regroupingWorkbenchSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : regroupingWorkbenchSchema;
+
+  // Build challenge type prompt section
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // Infer operation constraint from eval mode
+  const evalOperation = evalConstraint?.allowedTypes[0]?.startsWith('add') ? 'addition'
+    : evalConstraint?.allowedTypes[0]?.startsWith('subtract') ? 'subtraction'
+    : undefined;
+  const effectiveOperation = evalOperation ?? config?.operation;
+
   const prompt = `
 Create an educational regrouping (carry/borrow) activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -198,6 +274,9 @@ CONTEXT:
 - Students use base-ten blocks (ones cubes, tens rods, hundreds flats) alongside the written algorithm
 - The blocks make the "carry" and "borrow" visible and concrete
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Grades 1-2 (gradeBand "1-2"):
   * Two-digit numbers ONLY (maxPlace: 'tens')
@@ -216,26 +295,25 @@ GUIDELINES FOR GRADE LEVELS:
   * stepByStepMode: false (free exploration)
   * Word problems: more complex contexts
   * Can include problems that regroup across multiple places
+` : ''}
 
 CHALLENGE REQUIREMENTS:
-1. Generate 3-5 challenges that progress in difficulty
-2. Start with no-regroup, then 1 regroup, then 2+ regroups
+1. Generate 3-5 challenges${evalConstraint ? ' all of the constrained type' : ' that progress in difficulty'}
+2. Each challenge MUST have a "type" field matching one of the allowed challenge types
 3. The 'problem' field should be formatted as "27 + 45" or "52 - 17"
 4. Set requiresRegrouping and regroupCount accurately for each problem
 5. For subtraction: operand1 must be LARGER than operand2 (no negative results)
 6. Include conversational narration: "Whoa, 7 + 5 = 12! That's more than 9!"
 7. Include regroupingSteps for the FIRST problem that requires regrouping
 
-IMPORTANT: Always generate problems where regrouping is needed (that's the whole point).
-- For addition: ones digits should sum to 10+ (e.g., 7+5, 8+6, 9+4)
-- For subtraction: ones digit of operand1 should be smaller than operand2's ones digit (e.g., 42-17: 2<7)
+IMPORTANT:
+- For addition with regroup: ones digits should sum to 10+ (e.g., 7+5, 8+6, 9+4)
+- For subtraction with regroup: ones digit of operand1 should be smaller than operand2's ones digit (e.g., 42-17: 2<7)
+- For no-regroup problems: ensure NO column requires regrouping
 
-${config ? `
-CONFIGURATION HINTS:
-${config.operation ? `- Operation: ${config.operation}` : ''}
-${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.maxPlace ? `- Max place: ${config.maxPlace}` : ''}
-` : ''}
+${effectiveOperation ? `- Operation: ${effectiveOperation}` : ''}
+${config?.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
+${config?.maxPlace ? `- Max place: ${config.maxPlace}` : ''}
 
 Return the complete regrouping workbench configuration.
 `;
@@ -245,7 +323,7 @@ Return the complete regrouping workbench configuration.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: regroupingWorkbenchSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -257,7 +335,7 @@ Return the complete regrouping workbench configuration.
 
   // Validation: ensure operation is valid
   if (data.operation !== 'addition' && data.operation !== 'subtraction') {
-    data.operation = 'addition';
+    data.operation = effectiveOperation ?? 'addition';
   }
 
   // Validation: ensure gradeBand
@@ -288,22 +366,24 @@ Return the complete regrouping workbench configuration.
   }
 
   // Ensure challenges
-  const validChallengeTypes = ['extend', 'identify_core', 'create', 'translate', 'find_rule'];
   data.challenges = (data.challenges || []).filter(
     (c: { problem: string }) => c.problem && c.problem.length > 0
   );
 
   if (data.challenges.length === 0) {
-    const op = data.operation === 'addition' ? '+' : '-';
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'add_regroup';
+    const isAddition = fallbackType.startsWith('add');
+    const op = isAddition ? '+' : '-';
     data.challenges = [{
       id: 'c1',
+      type: fallbackType,
       problem: `${data.operand1} ${op} ${data.operand2}`,
-      requiresRegrouping: true,
-      regroupCount: 1,
-      hint: data.operation === 'addition'
+      requiresRegrouping: fallbackType.includes('regroup'),
+      regroupCount: fallbackType.includes('regroup') ? 1 : 0,
+      hint: isAddition
         ? 'Add the ones first. If you get more than 9, trade 10 ones for 1 ten!'
         : 'If you can\'t subtract the ones, borrow 1 ten to get 10 more ones.',
-      narration: data.operation === 'addition'
+      narration: isAddition
         ? `Let's add ${data.operand1} and ${data.operand2}! Start with the ones column.`
         : `Let's subtract ${data.operand2} from ${data.operand1}! Start with the ones column.`,
     }];
@@ -325,9 +405,9 @@ Return the complete regrouping workbench configuration.
     data.wordProblemContext = { enabled: false };
   }
 
-  // Apply config overrides
+  // Apply config overrides (only non-eval-mode config)
   if (config) {
-    if (config.operation !== undefined) data.operation = config.operation;
+    if (config.operation !== undefined && !evalOperation) data.operation = config.operation;
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
     if (config.maxPlace !== undefined) data.maxPlace = config.maxPlace;
   }

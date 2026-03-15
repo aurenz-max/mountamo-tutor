@@ -153,6 +153,9 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   const [selectedOddOne, setSelectedOddOne] = useState<string | null>(null);
   const [tallyCounts, setTallyCounts] = useState<Record<string, number>>({});
   const [comparisonAnswer, setComparisonAnswer] = useState<string | null>(null);
+  const [countComparePhase, setCountComparePhase] = useState<'count' | 'compare'>('count');
+  const [enteredBinCounts, setEnteredBinCounts] = useState<Record<string, number>>({});
+  const [tallyRecordPhase, setTallyRecordPhase] = useState<'sort' | 'tally'>('sort');
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
 
@@ -291,7 +294,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     if (hasSubmittedEvaluation || !currentChallenge) return;
     const type = currentChallenge.type;
 
-    if (type === 'sort-by-one' || type === 'sort-by-attribute') {
+    if (type === 'sort-by-one' || type === 'sort-by-attribute' || (type === 'tally-record' && tallyRecordPhase === 'sort')) {
       setSelectedObjectId(prev => prev === objId ? null : objId);
     } else if (type === 'two-attributes') {
       setSelectedObjects(prev => {
@@ -303,7 +306,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     } else if (type === 'odd-one-out') {
       setSelectedOddOne(prev => prev === objId ? null : objId);
     }
-  }, [hasSubmittedEvaluation, currentChallenge]);
+  }, [hasSubmittedEvaluation, currentChallenge, tallyRecordPhase]);
 
   const handleBinClick = useCallback((binIndex: number) => {
     if (hasSubmittedEvaluation || !selectedObjectId) return;
@@ -380,23 +383,61 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         );
       } else {
         const wrongCount = totalPlaced - correctCount;
+        const attempt = currentAttempts + 1;
         setFeedback(`${wrongCount} object${wrongCount > 1 ? 's are' : ' is'} in the wrong bin. Try again!`);
         setFeedbackType('error');
         sendText(
-          `[ANSWER_INCORRECT] ${wrongCount} of ${totalPlaced} objects misplaced. Attempt ${currentAttempts + 1}. Give a hint about the sorting rule.`,
+          `[ANSWER_INCORRECT] ${wrongCount} of ${totalPlaced} objects misplaced. `
+          + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "Look at each object's ${currentChallenge.sortingAttribute || selectedAttribute || 'attribute'} — does it match the bin name?"` : attempt >= 2 ? `Hint: "Check each bin — do all the objects in it share the same ${currentChallenge.sortingAttribute || selectedAttribute || 'attribute'}?"` : 'Give a hint about the sorting rule.'}`,
           { silent: true },
         );
       }
     }
 
     else if (type === 'count-and-compare') {
-      if (!comparisonAnswer) return;
-      // Compute correct answer from actual bin counts rather than trusting Gemini
       const cats = currentChallenge.categories || [];
       const binCounts = cats.map((cat, idx) => ({
         label: cat.label,
         count: (autoSortedBins.get(idx) || []).length,
       }));
+
+      // ── Phase 1: Count each bin ──
+      if (countComparePhase === 'count') {
+        let allCountsCorrect = true;
+        for (let i = 0; i < cats.length; i++) {
+          const expected = binCounts[i].count;
+          const entered = enteredBinCounts[cats[i].label] ?? -1;
+          if (entered !== expected) {
+            allCountsCorrect = false;
+            break;
+          }
+        }
+
+        if (allCountsCorrect) {
+          setFeedback('Great counting! Now answer the question.');
+          setFeedbackType('success');
+          setCountComparePhase('compare');
+          sendText(
+            `[COUNTS_CORRECT] Student correctly counted all bins: ${binCounts.map(b => `${b.label}=${b.count}`).join(', ')}. `
+            + `Now transitioning to comparison question: "${currentChallenge.comparisonQuestion}". Say: "Nice counting! Now, look at those numbers..."`,
+            { silent: true },
+          );
+        } else {
+          const attempt = currentAttempts + 1;
+          const wrongBins = cats.filter((cat, i) => (enteredBinCounts[cat.label] ?? -1) !== binCounts[i].count);
+          setFeedback(`Some counts aren't right. Try counting ${wrongBins.map(c => c.label).join(' and ')} again!`);
+          setFeedbackType('error');
+          sendText(
+            `[ANSWER_INCORRECT] Student miscounted bins: ${wrongBins.map(c => `${c.label} (entered ${enteredBinCounts[c.label] ?? '?'}, actual ${binCounts.find(b => b.label === c.label)?.count})`).join(', ')}. `
+            + `Attempt ${attempt}. ${attempt >= 3 ? 'Give a very specific hint: "Point to each object one at a time as you count."' : attempt >= 2 ? 'Give a hint: "Try touching each object as you count it."' : 'Encourage: "Count carefully — point to each one!"'}`,
+            { silent: true },
+          );
+        }
+        return; // Don't fall through to advance logic
+      }
+
+      // ── Phase 2: Compare ──
+      if (!comparisonAnswer) return;
       const allEqual = binCounts.length > 0 && binCounts.every(b => b.count === binCounts[0].count);
       const question = (currentChallenge.comparisonQuestion || '').toLowerCase();
       const asksFewer = /fewer|fewest|less|least|smallest/.test(question);
@@ -408,7 +449,6 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         const min = Math.min(...binCounts.map(b => b.count));
         correctLabel = binCounts.find(b => b.count === min)!.label;
       } else {
-        // Default: question asks about "more"
         const max = Math.max(...binCounts.map(b => b.count));
         correctLabel = binCounts.find(b => b.count === max)!.label;
       }
@@ -419,14 +459,16 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         setFeedbackType('success');
         recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
         sendText(
-          `[ANSWER_CORRECT] Student correctly picked "${comparisonAnswer}". Celebrate!`,
+          `[ANSWER_CORRECT] Student correctly compared: "${comparisonAnswer}". Counts were ${binCounts.map(b => `${b.label}=${b.count}`).join(', ')}. Celebrate and reinforce the comparison!`,
           { silent: true },
         );
       } else {
-        setFeedback('Not quite. Count each group and try again!');
+        const attempt = currentAttempts + 1;
+        setFeedback('Not quite. Look at your counts again!');
         setFeedbackType('error');
         sendText(
-          `[ANSWER_INCORRECT] Student chose "${comparisonAnswer}" but correct is "${correctLabel}". Attempt ${currentAttempts + 1}. Hint: count each group carefully.`,
+          `[ANSWER_INCORRECT] Student chose "${comparisonAnswer}" but correct is "${correctLabel}". Counts: ${binCounts.map(b => `${b.label}=${b.count}`).join(', ')}. `
+          + `Attempt ${attempt}. ${attempt >= 3 ? 'Very specific hint: "Look — one group has MORE. Which number is bigger?"' : attempt >= 2 ? 'Hint: "Compare the numbers you counted. Which is bigger?"' : 'Encourage: "Look at the numbers you counted!"'}`,
           { silent: true },
         );
       }
@@ -454,13 +496,16 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       } else {
         const missed = Array.from(correctIds).filter(id => !selectedObjects.has(id)).length;
         const extra = selectedArr.filter(id => !correctIds.has(id)).length;
+        const attempt = currentAttempts + 1;
         let msg = 'Not quite.';
         if (missed > 0) msg += ` You missed ${missed}.`;
         if (extra > 0) msg += ` ${extra} ${extra === 1 ? "doesn't" : "don't"} belong.`;
         setFeedback(msg);
         setFeedbackType('error');
+        const ruleKeys = Object.keys(rule);
         sendText(
-          `[ANSWER_INCORRECT] Missed ${missed}, selected ${extra} extras. Attempt ${currentAttempts + 1}. Give a two-attribute hint.`,
+          `[ANSWER_INCORRECT] Missed ${missed}, selected ${extra} extras. `
+          + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "You need objects that are BOTH ${ruleKeys.map(k => `${k}=${rule[k]}`).join(' AND ')}. Check each one."` : attempt >= 2 ? `[ATTRIBUTE_HINT] Hint: "Remember, it needs TWO things: the right ${ruleKeys[0]} AND the right ${ruleKeys[1]}."` : 'Give a two-attribute hint.'}`,
           { silent: true },
         );
       }
@@ -474,14 +519,17 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         setFeedbackType('success');
         recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
         sendText(
-          `[ANSWER_CORRECT] Student correctly identified the odd one out. Reason: ${currentChallenge.oddOneOutReason}. Ask: "How did you know?"`,
+          `[ANSWER_CORRECT] Student correctly identified the odd one out. Reason: ${currentChallenge.oddOneOutReason}. `
+          + `[EXPLAIN_WHY] Ask the student to explain their reasoning: "You got it! Can you tell me WHY that one doesn't belong?" This builds metacognitive skills.`,
           { silent: true },
         );
       } else {
+        const attempt = currentAttempts + 1;
         setFeedback('That one fits in! Look for the one that is different.');
         setFeedbackType('error');
         sendText(
-          `[ANSWER_INCORRECT] Student chose wrong object for odd-one-out. Attempt ${currentAttempts + 1}. Hint: "What do most of these have in common?"`,
+          `[ANSWER_INCORRECT] Student chose wrong object for odd-one-out. `
+          + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "Most of these are the same kind of thing. One is totally different. Which one?"` : attempt >= 2 ? 'Hint: "Look at what makes most of them similar. One doesn\'t share that."' : 'Hint: "What do most of these have in common?"'}`,
           { silent: true },
         );
       }
@@ -489,9 +537,59 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
 
     else if (type === 'tally-record') {
       const cats = currentChallenge.categories || [];
+
+      // ── Phase 1: Sort objects into bins ──
+      if (tallyRecordPhase === 'sort') {
+        if (cats.length === 0) return;
+
+        let correctCount = 0;
+        let totalPlaced = 0;
+
+        for (const [objId, binIdx] of Array.from(binAssignments.entries())) {
+          totalPlaced++;
+          const obj = currentChallenge.objects.find(o => o.id === objId);
+          if (obj && binIdx < cats.length && objectMatchesRule(obj, cats[binIdx].rule)) {
+            correctCount++;
+          }
+        }
+
+        const allPlaced = totalPlaced === currentChallenge.objects.length;
+        const allCorrect = allPlaced && correctCount === totalPlaced;
+
+        if (allCorrect) {
+          setFeedback('Great sorting! Now count each group.');
+          setFeedbackType('success');
+          setTallyRecordPhase('tally');
+          sendText(
+            `[SORT_PHASE_COMPLETE] Student correctly sorted all ${totalPlaced} objects into bins. `
+            + `Now transitioning to tally phase. Say: "Awesome sorting! Now let's count how many are in each group."`,
+            { silent: true },
+          );
+        } else if (!allPlaced) {
+          setFeedback(`Sort all objects first! (${totalPlaced}/${currentChallenge.objects.length} placed)`);
+          setFeedbackType('error');
+          sendText(
+            `[INCOMPLETE] Student placed ${totalPlaced} of ${currentChallenge.objects.length} objects. Encourage: "Keep going — sort them all!"`,
+            { silent: true },
+          );
+        } else {
+          const attempt = currentAttempts + 1;
+          const wrongCount = totalPlaced - correctCount;
+          setFeedback(`${wrongCount} object${wrongCount > 1 ? 's are' : ' is'} in the wrong bin. Try again!`);
+          setFeedbackType('error');
+          sendText(
+            `[ANSWER_INCORRECT] ${wrongCount} of ${totalPlaced} objects misplaced in tally-record sort phase. `
+            + `Attempt ${attempt}. ${attempt >= 3 ? 'Very specific hint: "Look at each object — what type is it? Put it with the matching group."' : attempt >= 2 ? 'Hint: "Read the group names carefully. Which group does each object belong to?"' : 'Give a hint about the sorting rule.'}`,
+            { silent: true },
+          );
+        }
+        return; // Don't fall through
+      }
+
+      // ── Phase 2: Record tallies from student's sorted bins ──
       let allCorrect = true;
       for (let i = 0; i < cats.length; i++) {
-        const expected = (autoSortedBins.get(i) || []).length;
+        const expected = (objectsInBins.get(i) || []).length;
         const entered = tallyCounts[cats[i].label] ?? 0;
         if (entered !== expected) {
           allCorrect = false;
@@ -503,12 +601,18 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         setFeedback('Perfect tallies!');
         setFeedbackType('success');
         recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
-        sendText(`[ANSWER_CORRECT] Student recorded all tallies correctly. Celebrate!`, { silent: true });
+        sendText(
+          `[ANSWER_CORRECT] Student recorded all tallies correctly from their sorted bins. Celebrate: "You sorted AND counted — great data skills!"`,
+          { silent: true },
+        );
       } else {
-        setFeedback('Some counts are off. Count each group carefully!');
+        const attempt = currentAttempts + 1;
+        const wrongBins = cats.filter((cat, i) => (tallyCounts[cat.label] ?? 0) !== (objectsInBins.get(i) || []).length);
+        setFeedback(`Some counts are off. Count ${wrongBins.map(c => c.label).join(' and ')} again!`);
         setFeedbackType('error');
         sendText(
-          `[ANSWER_INCORRECT] Tally counts don't match. Attempt ${currentAttempts + 1}. Hint: "Point to each object as you count."`,
+          `[ANSWER_INCORRECT] Tally counts wrong for: ${wrongBins.map(c => `${c.label} (entered ${tallyCounts[c.label] ?? 0}, actual ${(objectsInBins.get(cats.indexOf(c)) || []).length})`).join(', ')}. `
+          + `Attempt ${attempt}. ${attempt >= 3 ? 'Very specific: "Point to each item in the bin and count out loud: one, two, three..."' : attempt >= 2 ? 'Hint: "Touch each object as you count it."' : 'Encourage: "Count each bin carefully!"'}`,
           { silent: true },
         );
       }
@@ -516,7 +620,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   }, [
     currentChallenge, derivedCategories, binAssignments, selectedAttribute,
     comparisonAnswer, selectedObjects, selectedOddOne, tallyCounts,
-    autoSortedBins, currentAttempts, incrementAttempts, recordResult, sendText,
+    autoSortedBins, objectsInBins, currentAttempts, incrementAttempts, recordResult, sendText,
+    countComparePhase, enteredBinCounts, tallyRecordPhase,
   ]);
 
   // ─── Advance ───────────────────────────────────────────────────
@@ -570,6 +675,9 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     setSelectedOddOne(null);
     setTallyCounts({});
     setComparisonAnswer(null);
+    setCountComparePhase('count');
+    setEnteredBinCounts({});
+    setTallyRecordPhase('sort');
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
     sendText(
@@ -610,13 +718,17 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     switch (currentChallenge.type) {
       case 'sort-by-one': return binAssignments.size > 0;
       case 'sort-by-attribute': return selectedAttribute !== null && binAssignments.size > 0;
-      case 'count-and-compare': return comparisonAnswer !== null;
+      case 'count-and-compare': return countComparePhase === 'count'
+        ? Object.keys(enteredBinCounts).length > 0
+        : comparisonAnswer !== null;
       case 'two-attributes': return selectedObjects.size > 0;
       case 'odd-one-out': return selectedOddOne !== null;
-      case 'tally-record': return Object.keys(tallyCounts).length > 0;
+      case 'tally-record': return tallyRecordPhase === 'sort'
+        ? binAssignments.size > 0
+        : Object.keys(tallyCounts).length > 0;
       default: return false;
     }
-  }, [currentChallenge, isCurrentChallengeComplete, binAssignments.size, selectedAttribute, comparisonAnswer, selectedObjects.size, selectedOddOne, tallyCounts]);
+  }, [currentChallenge, isCurrentChallengeComplete, binAssignments.size, selectedAttribute, comparisonAnswer, selectedObjects.size, selectedOddOne, tallyCounts, countComparePhase, enteredBinCounts, tallyRecordPhase]);
 
   // ─── Render helpers ────────────────────────────────────────────
 
@@ -760,10 +872,73 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       return renderSortingUI();
     }
 
-    // Count-and-compare
+    // Count-and-compare (two-phase: count → compare)
     if (type === 'count-and-compare') {
       const cats = currentChallenge.categories || [];
-      // Build answer options from category labels + an "equal" option
+
+      // Phase 1: Count each bin
+      if (countComparePhase === 'count') {
+        return (
+          <>
+            {renderPreSortedBins(cats)}
+            <div className="bg-slate-800/30 rounded-lg p-4 border border-white/5 space-y-3">
+              <p className="text-slate-300 text-sm text-center font-medium">
+                How many are in each group? Count carefully!
+              </p>
+              <div className="flex flex-wrap justify-center gap-6">
+                {cats.map((cat, idx) => {
+                  const color = BIN_COLORS[idx % BIN_COLORS.length];
+                  const count = enteredBinCounts[cat.label] ?? 0;
+                  return (
+                    <div key={cat.label} className="flex flex-col items-center gap-1.5">
+                      <span className={`text-sm font-medium ${color.text}`}>{cat.label}</span>
+                      <div className="flex items-center gap-0">
+                        <button
+                          onClick={() =>
+                            setEnteredBinCounts(prev => ({
+                              ...prev,
+                              [cat.label]: Math.max((prev[cat.label] ?? 0) - 1, 0),
+                            }))
+                          }
+                          disabled={count <= 0}
+                          className={`w-9 h-10 rounded-l-lg border border-white/20 flex items-center justify-center text-lg font-bold transition-colors ${
+                            count <= 0
+                              ? 'bg-white/[0.02] text-slate-600 cursor-not-allowed'
+                              : 'bg-white/5 text-slate-300 hover:bg-white/10 active:bg-white/15'
+                          }`}
+                        >
+                          &minus;
+                        </button>
+                        <div className={`w-12 h-10 flex items-center justify-center border-y border-white/20 text-lg font-bold tabular-nums ${color.text} bg-slate-800/60`}>
+                          {count}
+                        </div>
+                        <button
+                          onClick={() =>
+                            setEnteredBinCounts(prev => ({
+                              ...prev,
+                              [cat.label]: Math.min((prev[cat.label] ?? 0) + 1, 20),
+                            }))
+                          }
+                          disabled={count >= 20}
+                          className={`w-9 h-10 rounded-r-lg border border-white/20 flex items-center justify-center text-lg font-bold transition-colors ${
+                            count >= 20
+                              ? 'bg-white/[0.02] text-slate-600 cursor-not-allowed'
+                              : 'bg-white/5 text-slate-300 hover:bg-white/10 active:bg-white/15'
+                          }`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        );
+      }
+
+      // Phase 2: Comparison question (counts locked, shown as badges)
       const answerOptions = [
         ...cats.map(cat => ({ value: cat.label, display: cat.label })),
         { value: '__equal__', display: "They're equal!" },
@@ -771,6 +946,17 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       return (
         <>
           {renderPreSortedBins(cats)}
+          {/* Show locked counts */}
+          <div className="flex justify-center gap-4 mb-1">
+            {cats.map((cat, idx) => {
+              const color = BIN_COLORS[idx % BIN_COLORS.length];
+              return (
+                <Badge key={cat.label} className={`${color.bg} ${color.border} ${color.text} text-sm px-3 py-1`}>
+                  {cat.label}: {enteredBinCounts[cat.label] ?? 0}
+                </Badge>
+              );
+            })}
+          </div>
           <div className="bg-slate-800/30 rounded-lg p-4 border border-white/5 text-center space-y-3">
             <p className="text-slate-200 text-sm font-medium">{currentChallenge.comparisonQuestion}</p>
             <div className="flex flex-wrap justify-center gap-2">
@@ -861,15 +1047,43 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       );
     }
 
-    // Tally-record
+    // Tally-record (two-phase: sort → tally)
     if (type === 'tally-record') {
       const cats = currentChallenge.categories || [];
+
+      // Phase 1: Sort objects into bins (reuse sorting UI)
+      if (tallyRecordPhase === 'sort') {
+        return renderSortingUI();
+      }
+
+      // Phase 2: Tally the student's sorted bins
       return (
         <>
-          {renderPreSortedBins(cats)}
+          {/* Show student's sorted bins (locked) */}
+          <div className={`grid gap-3 ${cats.length <= 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+            {cats.map((cat, idx) => {
+              const color = BIN_COLORS[idx % BIN_COLORS.length];
+              const items = objectsInBins.get(idx) || [];
+              return (
+                <div key={cat.label} className={`rounded-xl p-3 border ${color.bg} ${color.border}`}>
+                  <div className="mb-2">
+                    <span className={`text-sm font-medium ${color.text}`}>{cat.label}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 justify-center">
+                    {items.map(obj => (
+                      <div key={obj.id} className="flex flex-col items-center gap-0.5 rounded-lg px-1.5 py-1 bg-white/5 border border-white/10">
+                        <span className="text-lg">{obj.emoji}</span>
+                        <span className="text-[9px] text-slate-400 leading-tight text-center break-words max-w-[72px]">{obj.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
           <div className="bg-slate-800/30 rounded-lg p-4 border border-white/5 space-y-3">
             <p className="text-slate-300 text-sm text-center font-medium">
-              Record the count for each group:
+              Now count how many you sorted into each group:
             </p>
             <div className="flex flex-wrap justify-center gap-6">
               {cats.map((cat, idx) => {
@@ -968,10 +1182,39 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Instruction */}
+        {/* Instruction (phase-aware) */}
         {currentChallenge && !allChallengesComplete && (
           <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-            <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+            <p className="text-slate-200 text-sm font-medium">
+              {currentChallenge.type === 'count-and-compare' && countComparePhase === 'count'
+                ? 'First, count how many are in each group!'
+                : currentChallenge.type === 'tally-record' && tallyRecordPhase === 'sort'
+                ? `Sort the objects into groups, then we'll count them!`
+                : currentChallenge.type === 'tally-record' && tallyRecordPhase === 'tally'
+                ? 'Great sorting! Now record the tally for each group.'
+                : currentChallenge.instruction}
+            </p>
+            {/* Phase indicator for multi-phase challenges */}
+            {currentChallenge.type === 'count-and-compare' && (
+              <div className="flex gap-2 mt-2">
+                <Badge className={`text-[10px] ${countComparePhase === 'count' ? 'bg-blue-500/20 border-blue-400/40 text-blue-300' : 'bg-slate-800/30 border-slate-700/30 text-slate-500'}`}>
+                  1. Count
+                </Badge>
+                <Badge className={`text-[10px] ${countComparePhase === 'compare' ? 'bg-blue-500/20 border-blue-400/40 text-blue-300' : 'bg-slate-800/30 border-slate-700/30 text-slate-500'}`}>
+                  2. Compare
+                </Badge>
+              </div>
+            )}
+            {currentChallenge.type === 'tally-record' && (
+              <div className="flex gap-2 mt-2">
+                <Badge className={`text-[10px] ${tallyRecordPhase === 'sort' ? 'bg-cyan-500/20 border-cyan-400/40 text-cyan-300' : 'bg-slate-800/30 border-slate-700/30 text-slate-500'}`}>
+                  1. Sort
+                </Badge>
+                <Badge className={`text-[10px] ${tallyRecordPhase === 'tally' ? 'bg-cyan-500/20 border-cyan-400/40 text-cyan-300' : 'bg-slate-800/30 border-slate-700/30 text-slate-500'}`}>
+                  2. Tally
+                </Badge>
+              </div>
+            )}
           </div>
         )}
 
@@ -999,7 +1242,13 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                 onClick={handleCheckAnswer}
                 disabled={!canCheck || hasSubmittedEvaluation}
               >
-                Check Answer
+                {currentChallenge?.type === 'count-and-compare' && countComparePhase === 'count'
+                  ? 'Check Counts'
+                  : currentChallenge?.type === 'tally-record' && tallyRecordPhase === 'sort'
+                  ? 'Check Sort'
+                  : currentChallenge?.type === 'tally-record' && tallyRecordPhase === 'tally'
+                  ? 'Check Tallies'
+                  : 'Check Answer'}
               </Button>
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (

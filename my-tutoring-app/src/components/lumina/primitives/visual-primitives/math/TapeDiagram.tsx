@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
 import {
   usePrimitiveEvaluation,
   type TapeDiagramMetrics,
 } from '../../../evaluation';
+
+// ---------------------------------------------------------------------------
+// Data Interfaces
+// ---------------------------------------------------------------------------
 
 export interface BarSegment {
   value?: number;
@@ -19,6 +23,12 @@ export interface BarConfig {
   color?: string;
 }
 
+export type TapeDiagramChallengeType =
+  | 'represent'
+  | 'solve_part_whole'
+  | 'solve_comparison'
+  | 'multi_step';
+
 export interface TapeDiagramData {
   title: string;
   description: string;
@@ -26,6 +36,25 @@ export interface TapeDiagramData {
   comparisonMode?: boolean;
   showBrackets?: boolean;
   unknownSegment?: number | null;
+
+  /** Discriminates the interaction mode */
+  challengeType?: TapeDiagramChallengeType;
+  /** Word problem text (represent, comparison, multi_step modes) */
+  wordProblem?: string;
+  /** Comparison-specific metadata */
+  comparisonData?: {
+    quantity1: number;
+    quantity2: number;
+    difference: number;
+    comparisonWord: string;
+    unknownPart: string;
+  };
+  /** Multi-step-specific metadata */
+  multiStepData?: {
+    step1Hint: string;
+    step2Hint: string;
+    solveOrder: number[]; // segment indices to solve in order
+  };
 
   // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -43,6 +72,10 @@ interface TapeDiagramProps {
   className?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
 type LearningPhase = 'explore' | 'practice' | 'apply';
 
 interface SegmentAttempt {
@@ -52,11 +85,37 @@ interface SegmentAttempt {
   correctOnFirstTry: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Color palette
+// ---------------------------------------------------------------------------
+
+const COLOR_PALETTE = [
+  'from-blue-500 to-blue-600',
+  'from-purple-500 to-purple-600',
+  'from-green-500 to-green-600',
+  'from-orange-500 to-orange-600',
+  'from-pink-500 to-pink-600',
+  'from-teal-500 to-teal-600',
+];
+
+function getBarColor(barIndex: number, customColor?: string) {
+  if (customColor) return customColor;
+  return COLOR_PALETTE[barIndex % COLOR_PALETTE.length];
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   const {
     bars = [],
     comparisonMode = false,
     showBrackets = true,
+    challengeType = 'solve_part_whole',
+    wordProblem,
+    comparisonData,
+    multiStepData,
     // Evaluation props
     instanceId,
     skillId,
@@ -66,22 +125,24 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // Learning phases
+  // --- Shared state ---
+  const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState<Record<string, 'correct' | 'incorrect' | null>>({});
+  const [segmentAttempts, setSegmentAttempts] = useState<Map<string, SegmentAttempt>>(new Map());
+  const [showHints, setShowHints] = useState(false);
+  const [totalHintsUsed, setTotalHintsUsed] = useState(0);
+
+  // --- Part-whole specific state ---
   const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
   const [wholeValue, setWholeValue] = useState('');
   const [wholeFound, setWholeFound] = useState(false);
-
-  const [selectedSegment, setSelectedSegment] = useState<{ barIndex: number; segmentIndex: number } | null>(null);
-  const [userAnswers, setUserAnswers] = useState<{ [key: string]: string }>({});
-  const [feedback, setFeedback] = useState<{ [key: string]: 'correct' | 'incorrect' | null }>({});
-  const [showHints, setShowHints] = useState(false);
-
-  // Tracking for evaluation
-  const [segmentAttempts, setSegmentAttempts] = useState<Map<string, SegmentAttempt>>(new Map());
   const [phaseAttempts, setPhaseAttempts] = useState({ explore: 0, practice: 0, apply: 0 });
   const [phaseHints, setPhaseHints] = useState({ explore: 0, practice: 0, apply: 0 });
 
-  // Evaluation hook
+  // --- Multi-step specific state ---
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+
+  // --- Evaluation hook ---
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
@@ -98,53 +159,10 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       | undefined,
   });
 
-  // Color palette for different bars
-  const colorPalette = [
-    'from-blue-500 to-blue-600',
-    'from-purple-500 to-purple-600',
-    'from-green-500 to-green-600',
-    'from-orange-500 to-orange-600',
-    'from-pink-500 to-pink-600',
-    'from-teal-500 to-teal-600',
-  ];
+  // --- Helpers ---
+  const getSegmentKey = (barIndex: number, segmentIndex: number) => `${barIndex}-${segmentIndex}`;
 
-  const getBarColor = (barIndex: number, customColor?: string) => {
-    if (customColor) return customColor;
-    return colorPalette[barIndex % colorPalette.length];
-  };
-
-  const calculateTotalValue = (segments: BarSegment[]): number | null => {
-    let total = 0;
-    for (const segment of segments) {
-      if (segment.isUnknown || segment.value === undefined) return null;
-      total += segment.value;
-    }
-    return total;
-  };
-
-  const handleSegmentClick = (barIndex: number, segmentIndex: number) => {
-    setSelectedSegment({ barIndex, segmentIndex });
-  };
-
-  const getSegmentKey = (barIndex: number, segmentIndex: number) => {
-    return `${barIndex}-${segmentIndex}`;
-  };
-
-  const calculateCorrectAnswer = (barIndex: number, segmentIndex: number): number | null => {
-    const bar = bars[barIndex];
-    if (!bar) return null;
-
-    const segment = bar.segments[segmentIndex];
-    if (!segment?.isUnknown) return null;
-
-    // In our 3-phase structure, the unknown segments already have their values stored
-    // We just need to return them directly since the component architecture
-    // stores the actual values even for "unknown" segments
-    return segment.value || null;
-  };
-
-  // Get all unknown segments across all bars
-  const getAllUnknownSegments = (): Array<{ barIndex: number; segmentIndex: number }> => {
+  const getAllUnknownSegments = useMemo(() => {
     const unknowns: Array<{ barIndex: number; segmentIndex: number }> = [];
     bars.forEach((bar, barIndex) => {
       bar.segments.forEach((segment, segmentIndex) => {
@@ -154,303 +172,787 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       });
     });
     return unknowns;
-  };
+  }, [bars]);
 
-  // Phase 1: Check if student correctly identified the whole
-  const handleCheckWhole = () => {
-    if (hasSubmittedEvaluation) return;
-
-    const inputWhole = parseFloat(wholeValue);
-    if (isNaN(inputWhole)) return;
-
-    // Calculate the actual total from the FIRST 2 segments only (knownPart1 + knownPart2)
-    // Phase 1 shows only segments 0 and 1
-    const firstBar = bars[0];
-    if (!firstBar) return;
-
-    let actualTotal = 0;
-    // Only sum the first 2 segments (indices 0 and 1)
-    for (let i = 0; i < 2 && i < firstBar.segments.length; i++) {
-      const seg = firstBar.segments[i];
-      if (seg.value !== undefined) {
-        actualTotal += seg.value;
-      }
-    }
-
-    setPhaseAttempts(prev => ({ ...prev, explore: prev.explore + 1 }));
-
-    if (Math.abs(inputWhole - actualTotal) < 0.01) {
-      setWholeFound(true);
-      setFeedback({ explore: 'correct' });
-      setTimeout(() => {
-        setCurrentPhase('practice');
-        setFeedback({});
-      }, 2000);
-    } else {
-      setFeedback({ explore: 'incorrect' });
-    }
-  };
-
-  const handleAnswerSubmit = (barIndex: number, segmentIndex: number) => {
-    if (hasSubmittedEvaluation) return;
-
+  const handleAnswerChange = (barIndex: number, segmentIndex: number, value: string) => {
     const key = getSegmentKey(barIndex, segmentIndex);
-    const userAnswer = parseFloat(userAnswers[key]);
-    const correctAnswer = calculateCorrectAnswer(barIndex, segmentIndex);
-
-    if (isNaN(userAnswer) || correctAnswer === null) {
-      return;
-    }
-
-    // Track attempts
-    const attemptKey = key;
-    const currentAttempt = segmentAttempts.get(attemptKey) || {
-      barIndex,
-      segmentIndex,
-      attempts: 0,
-      correctOnFirstTry: false,
-    };
-    currentAttempt.attempts += 1;
-
-    const isCorrect = Math.abs(userAnswer - correctAnswer) < 0.01;
-
-    if (isCorrect && currentAttempt.attempts === 1) {
-      currentAttempt.correctOnFirstTry = true;
-    }
-
-    setSegmentAttempts(new Map(segmentAttempts.set(attemptKey, currentAttempt)));
-
-    // Update phase attempts
-    setPhaseAttempts(prev => ({
-      ...prev,
-      [currentPhase]: prev[currentPhase] + 1,
-    }));
-
-    const newFeedback: { [key: string]: 'correct' | 'incorrect' | null } = {
-      ...feedback,
-      [key]: isCorrect ? 'correct' : 'incorrect'
-    };
-
-    setFeedback(newFeedback);
-
-    // Check phase progression with the updated feedback
-    if (isCorrect) {
-      checkPhaseCompletion(newFeedback);
+    setUserAnswers(prev => ({ ...prev, [key]: value }));
+    if (feedback[key]) {
+      setFeedback(prev => ({ ...prev, [key]: null }));
     }
   };
 
-  const checkPhaseCompletion = (updatedFeedback: { [key: string]: 'correct' | 'incorrect' | null } = feedback) => {
-    const allUnknowns = getAllUnknownSegments();
-
-    if (currentPhase === 'practice') {
-      // Phase 2: Check if first unknown (segment 2) is solved
-      const firstUnknown = allUnknowns[0]; // This should be segment 2
-      if (firstUnknown) {
-        const key = getSegmentKey(firstUnknown.barIndex, firstUnknown.segmentIndex);
-        if (updatedFeedback[key] === 'correct') {
-          setTimeout(() => {
-            setCurrentPhase('apply');
-          }, 1500);
-        }
-      }
-    } else if (currentPhase === 'apply') {
-      // Phase 3: Check if all unknowns are solved (segments 2 and 3)
-      const allSolved = allUnknowns.every(({ barIndex, segmentIndex }) => {
-        const key = getSegmentKey(barIndex, segmentIndex);
-        return updatedFeedback[key] === 'correct';
-      });
-
-      if (allSolved) {
-        handleFinalSubmit();
-      }
-    }
+  const trackAttempt = (barIndex: number, segmentIndex: number, isCorrect: boolean) => {
+    const key = getSegmentKey(barIndex, segmentIndex);
+    const current = segmentAttempts.get(key) || {
+      barIndex, segmentIndex, attempts: 0, correctOnFirstTry: false,
+    };
+    current.attempts += 1;
+    if (isCorrect && current.attempts === 1) current.correctOnFirstTry = true;
+    setSegmentAttempts(new Map(segmentAttempts.set(key, current)));
   };
 
-  const handleFinalSubmit = () => {
-    if (hasSubmittedEvaluation) return;
+  const handleShowHints = () => {
+    if (!showHints) {
+      setTotalHintsUsed(prev => prev + 1);
+      if (challengeType === 'solve_part_whole') {
+        setPhaseHints(prev => ({ ...prev, [currentPhase]: prev[currentPhase] + 1 }));
+      }
+    }
+    setShowHints(!showHints);
+  };
 
-    const allUnknowns = getAllUnknownSegments();
-    // Phase 2 has only 1 unknown (the first one, which is segment 2)
-    const practiceUnknowns = allUnknowns.slice(0, 1);
+  const handleReset = () => {
+    setUserAnswers({});
+    setFeedback({});
+    setSegmentAttempts(new Map());
+    setShowHints(false);
+    setTotalHintsUsed(0);
+    setCurrentPhase('explore');
+    setWholeValue('');
+    setWholeFound(false);
+    setPhaseAttempts({ explore: 0, practice: 0, apply: 0 });
+    setPhaseHints({ explore: 0, practice: 0, apply: 0 });
+    setCurrentStepIndex(0);
+    resetEvaluationAttempt();
+  };
 
-    // Calculate metrics
+  // --- Build evaluation metrics for any mode ---
+  const buildMetrics = (overrides?: Partial<TapeDiagramMetrics>): TapeDiagramMetrics => {
+    const allUnknowns = getAllUnknownSegments;
     const totalUnknowns = allUnknowns.length;
-    const correctUnknowns = allUnknowns.filter(({ barIndex, segmentIndex }) => {
-      const key = getSegmentKey(barIndex, segmentIndex);
-      return feedback[key] === 'correct';
-    }).length;
-
-    const practiceCorrect = practiceUnknowns.filter(({ barIndex, segmentIndex }) => {
-      const key = getSegmentKey(barIndex, segmentIndex);
-      return feedback[key] === 'correct';
+    const correctCount = allUnknowns.filter(({ barIndex, segmentIndex }) => {
+      return feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct';
     }).length;
 
     const segmentRelationships = allUnknowns.map(({ barIndex, segmentIndex }) => {
       const key = getSegmentKey(barIndex, segmentIndex);
       const segment = bars[barIndex].segments[segmentIndex];
-      const expectedValue = calculateCorrectAnswer(barIndex, segmentIndex) || 0;
-      const studentValue = parseFloat(userAnswers[key]) || null;
       const attempt = segmentAttempts.get(key);
-
       return {
         barIndex,
         segmentIndex,
         segmentLabel: segment.label,
-        expectedValue,
-        studentValue,
+        expectedValue: segment.value || 0,
+        studentValue: parseFloat(userAnswers[key]) || null,
         correctOnFirstTry: attempt?.correctOnFirstTry || false,
         attempts: attempt?.attempts || 0,
       };
     });
 
-    const totalAttempts = phaseAttempts.explore + phaseAttempts.practice + phaseAttempts.apply;
-    const totalHints = phaseHints.explore + phaseHints.practice + phaseHints.apply;
+    const totalAttemptCount = Array.from(segmentAttempts.values()).reduce((s, a) => s + a.attempts, 0);
+    const accuracy = totalUnknowns > 0 ? (correctCount / totalUnknowns) * 100 : 100;
 
-    const metrics: TapeDiagramMetrics = {
+    return {
       type: 'tape-diagram',
-
-      // Overall achievement
-      allPhasesCompleted: true,
-      finalSuccess: correctUnknowns === totalUnknowns,
-
-      // Phase completion
-      explorePhaseCompleted: wholeFound,
-      practicePhaseCompleted: practiceCorrect === practiceUnknowns.length,
-      applyPhaseCompleted: correctUnknowns === totalUnknowns,
-
-      // Phase 1: Explore
-      wholeCorrectlyIdentified: wholeFound,
-      exploreAttempts: phaseAttempts.explore,
-      exploreHintsUsed: phaseHints.explore,
-
-      // Phase 2: Practice
-      practiceUnknownsTotal: practiceUnknowns.length,
-      practiceUnknownsCorrect: practiceCorrect,
-      practiceAccuracy: practiceUnknowns.length > 0 ? (practiceCorrect / practiceUnknowns.length) * 100 : 100,
-      practiceAttempts: phaseAttempts.practice,
-      practiceHintsUsed: phaseHints.practice,
-
-      // Phase 3: Apply
-      totalUnknownSegments: totalUnknowns,
-      correctUnknownSegments: correctUnknowns,
-      accuracyPercentage: totalUnknowns > 0 ? (correctUnknowns / totalUnknowns) * 100 : 100,
-      applyAttempts: phaseAttempts.apply,
-      applyHintsUsed: phaseHints.apply,
+      challengeType,
 
       // Overall
-      totalAttempts,
-      totalHintsUsed: totalHints,
-      firstAttemptSuccess: totalAttempts === allUnknowns.length + 1, // +1 for explore phase
+      allPhasesCompleted: true,
+      finalSuccess: correctCount === totalUnknowns,
+      totalAttempts: totalAttemptCount,
+      totalHintsUsed,
+      firstAttemptSuccess: totalAttemptCount === totalUnknowns,
+      solvedWithoutHints: totalHintsUsed === 0,
+      averageAttemptsPerUnknown: totalUnknowns > 0 ? totalAttemptCount / totalUnknowns : 0,
 
-      // Strategy
-      solvedInSequence: true, // Could track this more rigorously
-      usedPartWholeStrategy: wholeFound,
+      // Phase defaults (overridden by part-whole mode)
+      explorePhaseCompleted: true,
+      practicePhaseCompleted: true,
+      applyPhaseCompleted: true,
+      wholeCorrectlyIdentified: true,
+      exploreAttempts: 0,
+      exploreHintsUsed: 0,
+      practiceUnknownsTotal: 0,
+      practiceUnknownsCorrect: 0,
+      practiceAccuracy: 100,
+      practiceAttempts: 0,
+      practiceHintsUsed: 0,
+      totalUnknownSegments: totalUnknowns,
+      correctUnknownSegments: correctCount,
+      accuracyPercentage: accuracy,
+      applyAttempts: 0,
+      applyHintsUsed: 0,
+      solvedInSequence: true,
+      usedPartWholeStrategy: true,
       segmentRelationships,
 
-      // Efficiency
-      solvedWithoutHints: totalHints === 0,
-      averageAttemptsPerUnknown: totalUnknowns > 0 ? totalAttempts / totalUnknowns : 0,
+      ...overrides,
+    };
+  };
+
+  // =========================================================================
+  // RENDER: Shared bar visualization
+  // =========================================================================
+
+  const renderBar = (
+    bar: BarConfig,
+    barIndex: number,
+    options: {
+      visibleSegmentIndices?: number[];
+      showBracket?: boolean;
+      bracketLabel?: string;
+      showUnknownInputs?: boolean;
+      isSegmentLocked?: (segIdx: number) => boolean;
+      onSegmentSubmit?: (barIdx: number, segIdx: number) => void;
+    } = {}
+  ) => {
+    const {
+      visibleSegmentIndices,
+      showBracket = false,
+      bracketLabel = '',
+      showUnknownInputs = true,
+      isSegmentLocked,
+      onSegmentSubmit,
+    } = options;
+
+    const indices = visibleSegmentIndices || bar.segments.map((_, i) => i);
+    const visibleSegments = indices.map(idx => ({ segment: bar.segments[idx], originalIndex: idx }));
+    const total = bar.segments.reduce((s, seg) => s + (seg.value || 0), 0);
+
+    return (
+      <div key={barIndex} className="relative">
+        {/* Bracket */}
+        {showBracket && bracketLabel && (
+          <div className="absolute -top-16 left-0 right-0 flex items-start justify-center">
+            <div className="flex flex-col items-center">
+              <svg width="100%" height="30" className="mb-1">
+                <path
+                  d="M 0 25 L 0 5 Q 0 0 5 0 L 95% 0 Q 100% 0 100% 5 L 100% 25"
+                  fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-400"
+                />
+              </svg>
+              <div className="text-sm font-bold text-white bg-slate-800/80 px-3 py-1 rounded-full border border-slate-600">
+                {bracketLabel}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bar label (for comparison mode) */}
+        {comparisonMode && bar.totalLabel && (
+          <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">
+            {bar.totalLabel}
+          </div>
+        )}
+
+        {/* Segments */}
+        <div className={`flex ${comparisonMode ? 'items-start' : 'items-stretch'} gap-1`}>
+          {visibleSegments.map(({ segment, originalIndex: segIdx }) => {
+            const key = getSegmentKey(barIndex, segIdx);
+            const isUnknown = segment.isUnknown;
+            const locked = isSegmentLocked?.(segIdx) || false;
+            const segFeedback = feedback[key];
+            const widthPct = segment.value ? (segment.value / (total || 1)) * 100 : 100 / bar.segments.length;
+
+            return (
+              <div
+                key={segIdx}
+                className="relative flex-1"
+                style={{ minWidth: '80px', flex: comparisonMode ? `0 0 ${widthPct}%` : 1 }}
+              >
+                <div
+                  className={`
+                    w-full h-20 rounded-lg border-2 transition-all duration-200 flex items-center justify-center shadow-lg
+                    ${isUnknown
+                      ? locked
+                        ? 'bg-slate-800/50 border-slate-600 opacity-50'
+                        : segFeedback === 'correct'
+                          ? 'bg-green-900/30 border-green-500'
+                          : 'bg-slate-700/50 border-yellow-500 border-dashed'
+                      : `bg-gradient-to-br ${getBarColor(barIndex, bar.color)} border-slate-600`
+                    }
+                  `}
+                >
+                  <div className="text-center">
+                    {isUnknown ? (
+                      segFeedback === 'correct' ? (
+                        <div className="text-2xl font-bold text-green-400">{segment.value}</div>
+                      ) : locked ? (
+                        <div className="text-2xl font-bold text-slate-600">🔒</div>
+                      ) : (
+                        <div className="text-3xl font-bold text-yellow-400">?</div>
+                      )
+                    ) : (
+                      segment.value !== undefined && (
+                        <div className="text-2xl font-bold text-white">{segment.value}</div>
+                      )
+                    )}
+                    <div className="text-xs font-medium text-white/90 px-2 truncate">
+                      {segment.label}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Input for unknown segments */}
+                {isUnknown && showUnknownInputs && !locked && segFeedback !== 'correct' && !hasSubmittedEvaluation && (
+                  <div className="mt-3">
+                    <CalculatorInput
+                      label={`${segment.label} =`}
+                      value={userAnswers[key] || ''}
+                      onChange={(v) => handleAnswerChange(barIndex, segIdx, v)}
+                      onSubmit={() => onSegmentSubmit?.(barIndex, segIdx)}
+                      showSubmitButton={true}
+                      allowNegative={false}
+                      allowDecimal={true}
+                      className="mb-2"
+                    />
+                    {segFeedback === 'incorrect' && (
+                      <div className="text-center text-red-400 text-sm font-semibold">Not quite — try again!</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Comparison alignment line */}
+        {comparisonMode && barIndex < bars.length - 1 && (
+          <div className="mt-4 mb-4 h-px bg-slate-600/50"></div>
+        )}
+      </div>
+    );
+  };
+
+  // =========================================================================
+  // MODE: Represent
+  // =========================================================================
+
+  const renderRepresentMode = () => {
+    const allUnknowns = getAllUnknownSegments;
+    const allCorrect = allUnknowns.every(({ barIndex, segmentIndex }) =>
+      feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
+    );
+
+    const handleRepresentSubmit = (barIndex: number, segmentIndex: number) => {
+      if (hasSubmittedEvaluation) return;
+      const key = getSegmentKey(barIndex, segmentIndex);
+      const userVal = parseFloat(userAnswers[key]);
+      const segment = bars[barIndex]?.segments[segmentIndex];
+      if (isNaN(userVal) || !segment?.value) return;
+
+      const isCorrect = Math.abs(userVal - segment.value) < 0.01;
+      trackAttempt(barIndex, segmentIndex, isCorrect);
+
+      const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
+      setFeedback(newFeedback);
+
+      // Check if all done
+      if (isCorrect) {
+        const nowAllCorrect = allUnknowns.every(({ barIndex: bi, segmentIndex: si }) =>
+          (bi === barIndex && si === segmentIndex) ? isCorrect : newFeedback[getSegmentKey(bi, si)] === 'correct'
+        );
+        if (nowAllCorrect) {
+          const metrics = buildMetrics();
+          submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, { studentWork: { userAnswers } });
+        }
+      }
     };
 
-    const score = metrics.accuracyPercentage;
-    const success = metrics.finalSuccess;
+    return (
+      <>
+        {/* Word problem */}
+        {wordProblem && (
+          <div className="mb-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+            <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">Read the Problem</div>
+            <p className="text-lg text-blue-100 leading-relaxed">{wordProblem}</p>
+          </div>
+        )}
 
-    submitEvaluation(success, score, metrics, {
-      studentWork: {
-        userAnswers,
-        feedback,
-        phaseAttempts,
-      },
-    });
+        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-center">
+          <p className="text-sm text-yellow-200">Fill in each segment value from the word problem above.</p>
+        </div>
+
+        {/* Bars */}
+        <div className="space-y-16">
+          {bars.map((bar, barIndex) =>
+            renderBar(bar, barIndex, {
+              showBracket: false,
+              showUnknownInputs: true,
+              onSegmentSubmit: handleRepresentSubmit,
+            })
+          )}
+        </div>
+
+        {/* Hint */}
+        {Object.values(feedback).some(f => f === 'incorrect') && !allCorrect && (
+          <div className="mt-4 text-center">
+            <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
+              {showHints ? 'Hide Hint' : 'Need a Hint?'}
+            </button>
+            {showHints && wordProblem && (
+              <div className="mt-3 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-sm text-blue-200">
+                Re-read the word problem carefully. Each number mentioned corresponds to one segment on the diagram.
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    );
   };
 
-  const handleReset = () => {
-    setCurrentPhase('explore');
-    setWholeValue('');
-    setWholeFound(false);
-    setUserAnswers({});
-    setFeedback({});
-    setSegmentAttempts(new Map());
-    setPhaseAttempts({ explore: 0, practice: 0, apply: 0 });
-    setPhaseHints({ explore: 0, practice: 0, apply: 0 });
-    setShowHints(false);
-    resetEvaluationAttempt();
-  };
+  // =========================================================================
+  // MODE: Solve Part-Whole (original 3-phase behavior)
+  // =========================================================================
 
-  const handleAnswerChange = (barIndex: number, segmentIndex: number, value: string) => {
-    const key = getSegmentKey(barIndex, segmentIndex);
-    setUserAnswers({
-      ...userAnswers,
-      [key]: value
-    });
-    // Clear feedback when user changes answer
-    if (feedback[key]) {
-      setFeedback({
-        ...feedback,
-        [key]: null
-      });
-    }
-  };
+  const renderPartWholeMode = () => {
+    const allUnknowns = getAllUnknownSegments;
 
-  const handleShowHints = () => {
-    setShowHints(!showHints);
-    if (!showHints) {
-      setPhaseHints(prev => ({
-        ...prev,
-        [currentPhase]: prev[currentPhase] + 1,
-      }));
-    }
-  };
+    // Phase-specific visible segments
+    const getVisibleSegments = (barIndex: number): number[] => {
+      const bar = bars[barIndex];
+      if (!bar) return [];
+      if (currentPhase === 'explore') return [0, 1];
+      if (currentPhase === 'practice') return [0, 2];
+      return bar.segments.map((_, i) => i);
+    };
 
-  // Get segments visible in the current phase
-  // Phase 1: Show only first 2 segments (known parts), no unknowns
-  // Phase 2: Show segment 0 (knownPart1) and segment 2 (unknown1)
-  // Phase 3: Show all 4 segments (knownPart1, knownPart2, unknown1, unknown2)
-  const getVisibleSegments = (barIndex: number): number[] => {
-    const bar = bars[barIndex];
-    if (!bar) return [];
-
-    if (currentPhase === 'explore') {
-      // Phase 1: Show only first 2 segments (the known parts)
-      return [0, 1];
-    } else if (currentPhase === 'practice') {
-      // Phase 2: Show segment 0 (knownPart1) and segment 2 (unknown1)
-      return [0, 2];
-    } else {
-      // Phase 3: Show all segments
-      return bar.segments.map((_, idx) => idx);
-    }
-  };
-
-  // Determine which unknowns to show based on phase
-  const getVisibleUnknowns = (): Array<{ barIndex: number; segmentIndex: number }> => {
-    const allUnknowns = getAllUnknownSegments();
-    if (currentPhase === 'explore') {
-      // Phase 1: No unknowns shown
-      return [];
-    } else if (currentPhase === 'practice') {
-      // Phase 2: Only first unknown (segment 2)
-      return allUnknowns.slice(0, 1);
-    } else {
-      // Phase 3: All unknowns (segments 2 and 3)
+    const getVisibleUnknowns = (): Array<{ barIndex: number; segmentIndex: number }> => {
+      if (currentPhase === 'explore') return [];
+      if (currentPhase === 'practice') return allUnknowns.slice(0, 1);
       return allUnknowns;
-    }
+    };
+
+    const visibleUnknowns = getVisibleUnknowns();
+
+    const handleCheckWhole = () => {
+      if (hasSubmittedEvaluation) return;
+      const inputWhole = parseFloat(wholeValue);
+      if (isNaN(inputWhole)) return;
+
+      const firstBar = bars[0];
+      if (!firstBar) return;
+
+      let actualTotal = 0;
+      for (let i = 0; i < 2 && i < firstBar.segments.length; i++) {
+        const seg = firstBar.segments[i];
+        if (seg.value !== undefined) actualTotal += seg.value;
+      }
+
+      setPhaseAttempts(prev => ({ ...prev, explore: prev.explore + 1 }));
+
+      if (Math.abs(inputWhole - actualTotal) < 0.01) {
+        setWholeFound(true);
+        setFeedback({ explore: 'correct' });
+        setTimeout(() => { setCurrentPhase('practice'); setFeedback({}); }, 2000);
+      } else {
+        setFeedback({ explore: 'incorrect' });
+      }
+    };
+
+    const handlePartWholeSubmit = (barIndex: number, segmentIndex: number) => {
+      if (hasSubmittedEvaluation) return;
+      const key = getSegmentKey(barIndex, segmentIndex);
+      const userVal = parseFloat(userAnswers[key]);
+      const segment = bars[barIndex]?.segments[segmentIndex];
+      if (isNaN(userVal) || !segment?.value) return;
+
+      const isCorrect = Math.abs(userVal - segment.value) < 0.01;
+      trackAttempt(barIndex, segmentIndex, isCorrect);
+      setPhaseAttempts(prev => ({ ...prev, [currentPhase]: prev[currentPhase] + 1 }));
+
+      const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
+      setFeedback(newFeedback);
+
+      if (isCorrect) {
+        if (currentPhase === 'practice') {
+          const firstUnknown = allUnknowns[0];
+          if (firstUnknown && getSegmentKey(firstUnknown.barIndex, firstUnknown.segmentIndex) === key) {
+            setTimeout(() => setCurrentPhase('apply'), 1500);
+          }
+        } else if (currentPhase === 'apply') {
+          const allSolved = allUnknowns.every(({ barIndex: bi, segmentIndex: si }) =>
+            newFeedback[getSegmentKey(bi, si)] === 'correct'
+          );
+          if (allSolved) {
+            const practiceUnknowns = allUnknowns.slice(0, 1);
+            const practiceCorrect = practiceUnknowns.filter(({ barIndex: bi, segmentIndex: si }) =>
+              newFeedback[getSegmentKey(bi, si)] === 'correct'
+            ).length;
+
+            const totalAttemptCount = phaseAttempts.explore + phaseAttempts.practice + phaseAttempts.apply + 1;
+            const correctCount = allUnknowns.length;
+
+            const metrics = buildMetrics({
+              explorePhaseCompleted: wholeFound,
+              practicePhaseCompleted: practiceCorrect === practiceUnknowns.length,
+              applyPhaseCompleted: true,
+              wholeCorrectlyIdentified: wholeFound,
+              exploreAttempts: phaseAttempts.explore,
+              exploreHintsUsed: phaseHints.explore,
+              practiceUnknownsTotal: practiceUnknowns.length,
+              practiceUnknownsCorrect: practiceCorrect,
+              practiceAccuracy: practiceUnknowns.length > 0 ? (practiceCorrect / practiceUnknowns.length) * 100 : 100,
+              practiceAttempts: phaseAttempts.practice,
+              practiceHintsUsed: phaseHints.practice,
+              applyAttempts: phaseAttempts.apply + 1,
+              applyHintsUsed: phaseHints.apply,
+              totalAttempts: totalAttemptCount,
+              usedPartWholeStrategy: wholeFound,
+            });
+            submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, {
+              studentWork: { userAnswers, phaseAttempts },
+            });
+          }
+        }
+      }
+    };
+
+    // Compute phase total for bracket label
+    const bar = bars[0];
+    const visibleIndices = bar ? getVisibleSegments(0) : [];
+    let phaseTotal = 0;
+    visibleIndices.forEach(idx => {
+      const seg = bar?.segments[idx];
+      if (seg?.value !== undefined) phaseTotal += seg.value;
+    });
+
+    let bracketLabel = '';
+    if (currentPhase === 'practice') bracketLabel = `Total = ${phaseTotal}`;
+    else if (currentPhase === 'apply') bracketLabel = bar?.totalLabel || `Total = ${phaseTotal}`;
+
+    return (
+      <>
+        {/* Phase Progress */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          {(['explore', 'practice', 'apply'] as LearningPhase[]).map((phase, i) => {
+            const isActive = currentPhase === phase;
+            const isDone = phase === 'explore' ? wholeFound
+              : phase === 'practice' ? (currentPhase === 'apply')
+              : false;
+            return (
+              <React.Fragment key={phase}>
+                {i > 0 && <div className="h-px w-8 bg-slate-600"></div>}
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                  isActive ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                    : isDone ? 'bg-green-500/20 border-green-500/50 text-green-300'
+                    : 'bg-slate-700/50 border-slate-600 text-slate-400'
+                }`}>
+                  {isDone ? '✓' : i + 1} {phase === 'explore' ? 'Explore' : phase === 'practice' ? 'Practice' : 'Apply'}
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        {/* Phase instructions */}
+        {!hasSubmittedEvaluation && (
+          <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl text-center">
+            <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">
+              {currentPhase === 'explore' && 'Step 1: Find the Whole'}
+              {currentPhase === 'practice' && 'Step 2: Find the Unknown Part'}
+              {currentPhase === 'apply' && 'Step 3: Solve with Multiple Parts'}
+            </div>
+            <p className="text-sm text-blue-200">
+              {currentPhase === 'explore' && 'Add the two parts together to find the total'}
+              {currentPhase === 'practice' && 'Use the total and known part to find the unknown part'}
+              {currentPhase === 'apply' && 'Use all the parts to find the missing values'}
+            </p>
+          </div>
+        )}
+
+        {/* Bars (phase-filtered) */}
+        <div className="space-y-16">
+          {bars.map((bar, barIndex) =>
+            renderBar(bar, barIndex, {
+              visibleSegmentIndices: getVisibleSegments(barIndex),
+              showBracket: showBrackets && currentPhase !== 'explore',
+              bracketLabel,
+              showUnknownInputs: currentPhase !== 'explore',
+              onSegmentSubmit: handlePartWholeSubmit,
+            })
+          )}
+        </div>
+
+        {/* Phase 1: Find the whole */}
+        {currentPhase === 'explore' && !hasSubmittedEvaluation && (
+          <div className="mt-8">
+            <div className="flex items-center gap-4 mb-6">
+              <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">Phase 1: Explore</span>
+              <div className="h-px flex-1 bg-gradient-to-r from-orange-700 to-transparent"></div>
+            </div>
+            <div className="mb-6 text-center">
+              <h5 className="text-2xl font-bold text-white">
+                What is the <span className="text-orange-400">total</span> of all the known parts?
+              </h5>
+            </div>
+            <CalculatorInput
+              label="Total ="
+              value={wholeValue}
+              onChange={setWholeValue}
+              onSubmit={handleCheckWhole}
+              showSubmitButton={true}
+              allowNegative={false}
+              allowDecimal={true}
+              className="mb-6"
+            />
+            {feedback.explore === 'correct' && (
+              <div className="p-4 bg-green-500/20 border-2 border-green-500/50 rounded-xl text-center">
+                <div className="text-green-400 font-bold text-lg">Perfect!</div>
+                <div className="text-green-300/80 text-sm">You found the whole. Now let&apos;s find the unknowns!</div>
+              </div>
+            )}
+            {feedback.explore === 'incorrect' && renderFeedbackIncorrect('Try adding all the known values together.')}
+          </div>
+        )}
+
+        {/* Phase 2 & 3: Solve unknowns — handled by renderBar's inline inputs */}
+        {(currentPhase === 'practice' || currentPhase === 'apply') && !hasSubmittedEvaluation && visibleUnknowns.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center gap-4 mb-4">
+              <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">
+                {currentPhase === 'practice' ? 'Phase 2: Practice' : 'Phase 3: Apply'}
+              </span>
+              <div className="h-px flex-1 bg-gradient-to-r from-orange-700 to-transparent"></div>
+            </div>
+          </div>
+        )}
+      </>
+    );
   };
 
-  const visibleUnknowns = getVisibleUnknowns();
-  const hasUnknowns = getAllUnknownSegments().length > 0;
+  // =========================================================================
+  // MODE: Solve Comparison
+  // =========================================================================
 
-  // Validation: Multi-bar problems with unknowns are not supported for evaluation
-  // This ensures Phase 1 (finding the whole) is unambiguous
-  React.useEffect(() => {
-    if (hasUnknowns && bars.length > 1) {
-      console.warn(
-        'TapeDiagram: Multi-bar problems with unknowns are not supported for 3-phase evaluation. ' +
-        'Only the first bar will be used for evaluation. ' +
-        'Please use a single bar when including unknown segments.'
-      );
-    }
-  }, [hasUnknowns, bars.length]);
+  const renderComparisonMode = () => {
+    const allUnknowns = getAllUnknownSegments;
+
+    const handleComparisonSubmit = (barIndex: number, segmentIndex: number) => {
+      if (hasSubmittedEvaluation) return;
+      const key = getSegmentKey(barIndex, segmentIndex);
+      const userVal = parseFloat(userAnswers[key]);
+      const segment = bars[barIndex]?.segments[segmentIndex];
+      if (isNaN(userVal) || !segment?.value) return;
+
+      const isCorrect = Math.abs(userVal - segment.value) < 0.01;
+      trackAttempt(barIndex, segmentIndex, isCorrect);
+
+      const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
+      setFeedback(newFeedback);
+
+      if (isCorrect) {
+        const allSolved = allUnknowns.every(({ barIndex: bi, segmentIndex: si }) =>
+          newFeedback[getSegmentKey(bi, si)] === 'correct'
+        );
+        if (allSolved) {
+          const metrics = buildMetrics();
+          submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, {
+            studentWork: { userAnswers, comparisonData },
+          });
+        }
+      }
+    };
+
+    return (
+      <>
+        {/* Word problem */}
+        {wordProblem && (
+          <div className="mb-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+            <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">Comparison Problem</div>
+            <p className="text-lg text-blue-100 leading-relaxed">{wordProblem}</p>
+          </div>
+        )}
+
+        {/* Two bars for comparison */}
+        <div className="space-y-8">
+          {bars.map((bar, barIndex) =>
+            renderBar(bar, barIndex, {
+              showBracket: false,
+              showUnknownInputs: true,
+              onSegmentSubmit: handleComparisonSubmit,
+            })
+          )}
+        </div>
+
+        {/* Comparison visual cue */}
+        {comparisonData && (
+          <div className="mt-6 p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl text-center">
+            <p className="text-sm text-purple-200">
+              {comparisonData.unknownPart === 'difference'
+                ? `How many ${comparisonData.comparisonWord} does the first group have?`
+                : `Find the missing quantity.`
+              }
+            </p>
+          </div>
+        )}
+
+        {/* Hint */}
+        {Object.values(feedback).some(f => f === 'incorrect') && (
+          <div className="mt-4 text-center">
+            <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
+              {showHints ? 'Hide Hint' : 'Need a Hint?'}
+            </button>
+            {showHints && comparisonData && (
+              <div className="mt-3 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-sm text-blue-200">
+                {comparisonData.unknownPart === 'difference'
+                  ? `Subtract the smaller value (${comparisonData.quantity2}) from the larger value (${comparisonData.quantity1}).`
+                  : comparisonData.unknownPart === 'quantity2'
+                    ? `The difference is ${comparisonData.difference}. Subtract it from the larger value.`
+                    : `The difference is ${comparisonData.difference}. Add it to the smaller value.`
+                }
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    );
+  };
+
+  // =========================================================================
+  // MODE: Multi-Step
+  // =========================================================================
+
+  const renderMultiStepMode = () => {
+    const solveOrder = multiStepData?.solveOrder || [2, 3];
+    const currentSolveSegIdx = solveOrder[currentStepIndex];
+    const totalSteps = solveOrder.length;
+
+    const isSegmentLocked = (segIdx: number) => {
+      const orderIdx = solveOrder.indexOf(segIdx);
+      if (orderIdx < 0) return false;
+      return orderIdx > currentStepIndex;
+    };
+
+    const handleMultiStepSubmit = (barIndex: number, segmentIndex: number) => {
+      if (hasSubmittedEvaluation) return;
+      if (segmentIndex !== currentSolveSegIdx) return; // Can only solve current step
+
+      const key = getSegmentKey(barIndex, segmentIndex);
+      const userVal = parseFloat(userAnswers[key]);
+      const segment = bars[barIndex]?.segments[segmentIndex];
+      if (isNaN(userVal) || !segment?.value) return;
+
+      const isCorrect = Math.abs(userVal - segment.value) < 0.01;
+      trackAttempt(barIndex, segmentIndex, isCorrect);
+
+      const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
+      setFeedback(newFeedback);
+
+      if (isCorrect) {
+        const nextStep = currentStepIndex + 1;
+        if (nextStep >= totalSteps) {
+          // All steps complete
+          const metrics = buildMetrics();
+          submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, {
+            studentWork: { userAnswers, stepsCompleted: totalSteps },
+          });
+        } else {
+          setTimeout(() => {
+            setCurrentStepIndex(nextStep);
+            setShowHints(false);
+          }, 1500);
+        }
+      }
+    };
+
+    const currentHint = currentStepIndex === 0
+      ? multiStepData?.step1Hint
+      : multiStepData?.step2Hint;
+
+    return (
+      <>
+        {/* Word problem */}
+        {wordProblem && (
+          <div className="mb-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+            <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">Multi-Step Problem</div>
+            <p className="text-lg text-blue-100 leading-relaxed">{wordProblem}</p>
+          </div>
+        )}
+
+        {/* Step progress */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          {solveOrder.map((_, i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <div className="h-px w-8 bg-slate-600"></div>}
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                i === currentStepIndex ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                  : i < currentStepIndex ? 'bg-green-500/20 border-green-500/50 text-green-300'
+                  : 'bg-slate-700/50 border-slate-600 text-slate-400'
+              }`}>
+                {i < currentStepIndex ? '✓' : i + 1} Step {i + 1}
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Current step instruction */}
+        {!hasSubmittedEvaluation && (
+          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-center">
+            <div className="text-sm font-mono uppercase tracking-wider text-yellow-400 mb-1">
+              Step {currentStepIndex + 1} of {totalSteps}
+            </div>
+            <p className="text-sm text-yellow-200">
+              Find the value of <span className="font-bold text-yellow-300">
+                {bars[0]?.segments[currentSolveSegIdx]?.label || 'the unknown'}
+              </span>
+            </p>
+          </div>
+        )}
+
+        {/* Bars with locking */}
+        <div className="space-y-16">
+          {bars.map((bar, barIndex) =>
+            renderBar(bar, barIndex, {
+              showBracket: showBrackets,
+              bracketLabel: bar.totalLabel || '',
+              showUnknownInputs: true,
+              isSegmentLocked,
+              onSegmentSubmit: handleMultiStepSubmit,
+            })
+          )}
+        </div>
+
+        {/* Hint */}
+        {Object.values(feedback).some(f => f === 'incorrect') && !hasSubmittedEvaluation && (
+          <div className="mt-4 text-center">
+            <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
+              {showHints ? 'Hide Hint' : 'Need a Hint?'}
+            </button>
+            {showHints && currentHint && (
+              <div className="mt-3 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-sm text-blue-200">
+                {currentHint}
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    );
+  };
+
+  // =========================================================================
+  // Shared feedback helper
+  // =========================================================================
+
+  const renderFeedbackIncorrect = (message: string) => (
+    <div className="space-y-3">
+      <div className="p-4 bg-red-500/20 border-2 border-red-500/50 rounded-xl text-center">
+        <div className="text-red-400 font-bold text-lg">Not Quite</div>
+        <div className="text-red-300/80 text-sm">{message}</div>
+      </div>
+      <div className="text-center">
+        <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
+          {showHints ? 'Hide Hint' : 'Need a Hint?'}
+        </button>
+      </div>
+    </div>
+  );
+
+  // =========================================================================
+  // Mode label
+  // =========================================================================
+
+  const modeLabel = {
+    represent: 'Diagram Builder',
+    solve_part_whole: 'Part-Whole Visualization',
+    solve_comparison: 'Comparison Model',
+    multi_step: 'Multi-Step Problem',
+  }[challengeType] || 'Part-Whole Visualization';
+
+  // =========================================================================
+  // Main render
+  // =========================================================================
 
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
@@ -465,13 +967,13 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           <h2 className="text-2xl font-bold text-white tracking-tight">Tape Diagram / Bar Model</h2>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
-            <p className="text-xs text-orange-400 font-mono uppercase tracking-wider">Part-Whole Visualization</p>
+            <p className="text-xs text-orange-400 font-mono uppercase tracking-wider">{modeLabel}</p>
           </div>
         </div>
       </div>
 
       <div className="glass-panel p-8 md:p-12 rounded-3xl border border-orange-500/20 relative overflow-hidden">
-        {/* Background Texture */}
+        {/* Background texture */}
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(#f97316 1px, transparent 1px)', backgroundSize: '20px 20px' }}
@@ -483,523 +985,47 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
             <p className="text-slate-300 font-light">{data.description}</p>
           </div>
 
-          {/* Phase Progress Indicator */}
-          {hasUnknowns && (
-            <div className="flex items-center justify-center gap-4 mb-8">
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                currentPhase === 'explore'
-                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
-                  : wholeFound
-                    ? 'bg-green-500/20 border-green-500/50 text-green-300'
-                    : 'bg-slate-700/50 border-slate-600 text-slate-400'
-              }`}>
-                {wholeFound ? '✓' : '1'} Explore
-              </div>
-              <div className="h-px w-8 bg-slate-600"></div>
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                currentPhase === 'practice'
-                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
-                  : currentPhase === 'apply'
-                    ? 'bg-green-500/20 border-green-500/50 text-green-300'
-                    : 'bg-slate-700/50 border-slate-600 text-slate-400'
-              }`}>
-                {currentPhase === 'apply' ? '✓' : '2'} Practice
-              </div>
-              <div className="h-px w-8 bg-slate-600"></div>
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                currentPhase === 'apply'
-                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
-                  : 'bg-slate-700/50 border-slate-600 text-slate-400'
-              }`}>
-                3 Apply
-              </div>
-            </div>
-          )}
+          {/* Mode-specific content */}
+          {challengeType === 'represent' && renderRepresentMode()}
+          {challengeType === 'solve_part_whole' && renderPartWholeMode()}
+          {challengeType === 'solve_comparison' && renderComparisonMode()}
+          {challengeType === 'multi_step' && renderMultiStepMode()}
 
-          {/* Phase Instructions */}
-          {hasUnknowns && !hasSubmittedEvaluation && (
-            <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-              <div className="text-center">
-                <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">
-                  {currentPhase === 'explore' && 'Step 1: Find the Whole'}
-                  {currentPhase === 'practice' && 'Step 2: Find the Unknown Part'}
-                  {currentPhase === 'apply' && 'Step 3: Solve with Multiple Parts'}
-                </div>
-                <p className="text-sm text-blue-200">
-                  {currentPhase === 'explore' && 'Add the two parts together to find the total'}
-                  {currentPhase === 'practice' && 'Use the total and known part to find the unknown part'}
-                  {currentPhase === 'apply' && 'Use all the parts to find the missing values'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Tape Diagram Bars */}
-          <div className={`space-y-16 ${comparisonMode ? 'relative' : ''}`}>
-            {bars.map((bar, barIndex) => {
-              // Get visible segment indices for current phase
-              const visibleSegmentIndices = getVisibleSegments(barIndex);
-              const visibleSegments = visibleSegmentIndices.map(idx => ({
-                segment: bar.segments[idx],
-                originalIndex: idx
-              }));
-
-              // Calculate total based on visible segments only
-              let phaseTotal = 0;
-              visibleSegmentIndices.forEach(idx => {
-                const seg = bar.segments[idx];
-                if (seg?.value !== undefined) {
-                  phaseTotal += seg.value;
-                }
-              });
-
-              const total = calculateTotalValue(bar.segments);
-              const maxSegmentValue = Math.max(...bar.segments.map(s => s.value || 1));
-
-              // Only show bracket in Phase 2 and Phase 3 (not in Phase 1/Explore)
-              const hasBracket = showBrackets && currentPhase !== 'explore';
-
-              // Phase-specific total label
-              let phaseTotalLabel = '';
-              if (currentPhase === 'practice') {
-                // Phase 2: Total of segment 0 + segment 2
-                phaseTotalLabel = `Total = ${phaseTotal}`;
-              } else if (currentPhase === 'apply') {
-                // Phase 3: Grand total of all 4 segments
-                phaseTotalLabel = bar.totalLabel || `Total = ${phaseTotal}`;
-              }
-
-              return (
-                <div key={barIndex} className="relative">
-                  {/* Total Label with Bracket (if enabled and totalLabel exists) */}
-                  {hasBracket && (
-                    <div className="absolute -top-16 left-0 right-0 flex items-start justify-center">
-                      <div className="flex flex-col items-center">
-                        {/* Bracket SVG */}
-                        <svg width="100%" height="30" className="mb-1">
-                          <path
-                            d="M 0 25 L 0 5 Q 0 0 5 0 L 95% 0 Q 100% 0 100% 5 L 100% 25"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            className="text-slate-400"
-                          />
-                        </svg>
-                        <div className="text-sm font-bold text-white bg-slate-800/80 px-3 py-1 rounded-full border border-slate-600">
-                          {phaseTotalLabel}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* The Bar */}
-                  <div className={`flex ${comparisonMode ? 'items-start' : 'items-stretch'} gap-1`}>
-                    {visibleSegments.map(({ segment, originalIndex: segmentIndex }) => {
-                      const isSelected = selectedSegment?.barIndex === barIndex && selectedSegment?.segmentIndex === segmentIndex;
-                      const isUnknown = segment.isUnknown;
-
-                      // Calculate relative width based on value
-                      const widthPercentage = segment.value
-                        ? (segment.value / (total || maxSegmentValue)) * 100
-                        : 100 / bar.segments.length;
-
-                      return (
-                        <div
-                          key={segmentIndex}
-                          className="relative"
-                          style={{
-                            flex: comparisonMode ? `0 0 ${widthPercentage}%` : 1,
-                            minWidth: '80px'
-                          }}
-                        >
-                          {/* Segment Box */}
-                          <button
-                            onClick={() => handleSegmentClick(barIndex, segmentIndex)}
-                            className={`
-                              w-full h-20 rounded-lg border-2 transition-all duration-200
-                              ${isUnknown
-                                ? 'bg-slate-700/50 border-yellow-500 border-dashed'
-                                : `bg-gradient-to-br ${getBarColor(barIndex, bar.color)} border-slate-600`
-                              }
-                              ${isSelected ? 'ring-4 ring-orange-400 scale-105' : 'hover:scale-105'}
-                              flex items-center justify-center
-                              shadow-lg
-                            `}
-                          >
-                            <div className="text-center">
-                              {isUnknown ? (
-                                <div className="text-3xl font-bold text-yellow-400">?</div>
-                              ) : (
-                                <>
-                                  {segment.value !== undefined && (
-                                    <div className="text-2xl font-bold text-white mb-1">{segment.value}</div>
-                                  )}
-                                </>
-                              )}
-                              <div className="text-xs font-medium text-white/90 px-2 truncate">
-                                {segment.label}
-                              </div>
-                            </div>
-                          </button>
-
-                          {/* Segment Label Below - Only show if label is different from value inside */}
-                          {!isUnknown && segment.value !== undefined && segment.label && segment.label !== String(segment.value) && (
-                            <div className="text-center mt-2 text-xs text-slate-400 font-mono">
-                              {segment.label}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Comparison Alignment Lines */}
-                  {comparisonMode && barIndex < bars.length - 1 && (
-                    <div className="absolute -bottom-4 left-0 right-0 h-px bg-slate-600/50"></div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Selected Segment Info */}
-          {selectedSegment !== null && bars[selectedSegment.barIndex]?.segments[selectedSegment.segmentIndex] && (
-            <div className="mt-8 p-6 bg-orange-900/20 rounded-xl border border-orange-500/30">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-orange-400 mb-3">
-                Selected Segment Details
-              </h4>
-              <div className="space-y-2 text-sm text-slate-300">
-                {(() => {
-                  const bar = bars[selectedSegment.barIndex];
-                  const segment = bar.segments[selectedSegment.segmentIndex];
-                  return (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Label:</span>
-                        <span className="font-semibold text-white">{segment.label}</span>
-                      </div>
-                      {!segment.isUnknown && segment.value !== undefined && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400">Value:</span>
-                          <span className="font-semibold text-white">{segment.value}</span>
-                        </div>
-                      )}
-                      {segment.isUnknown && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400">Status:</span>
-                          <span className="font-semibold text-yellow-400">Unknown Variable</span>
-                        </div>
-                      )}
-                      {bar.totalLabel && (
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-600">
-                          <span className="text-slate-400">Bar Total:</span>
-                          <span className="font-semibold text-white">{bar.totalLabel}</span>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
-
-          {/* Phase 1: Explore - Find the Whole */}
-          {hasUnknowns && currentPhase === 'explore' && !hasSubmittedEvaluation && (
-            <div className="mt-8">
-              <div className="flex items-center gap-4 mb-6">
-                <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">
-                  Phase 1: Explore
-                </span>
-                <div className="h-px flex-1 bg-gradient-to-r from-orange-700 to-transparent"></div>
-              </div>
-
-              <div className="mb-6 text-center">
-                <div className="text-sm text-slate-400 font-mono uppercase tracking-wider mb-2">Find the Whole</div>
-                <h5 className="text-2xl font-bold text-white">
-                  What is the <span className="text-orange-400">total</span> of all the known parts?
-                </h5>
-              </div>
-
-              <CalculatorInput
-                label="Total ="
-                value={wholeValue}
-                onChange={(value) => setWholeValue(value)}
-                onSubmit={handleCheckWhole}
-                showSubmitButton={true}
-                allowNegative={false}
-                allowDecimal={true}
-                className="mb-6"
-              />
-
-              {feedback.explore === 'correct' && (
-                <div className="p-4 bg-green-500/20 border-2 border-green-500/50 rounded-xl">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-green-400 font-bold text-lg">Perfect!</div>
-                      <div className="text-green-300/80 text-sm">You found the whole. Now let's use it to find the unknowns!</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {feedback.explore === 'incorrect' && (
-                <div className="space-y-3">
-                  <div className="p-4 bg-red-500/20 border-2 border-red-500/50 rounded-xl">
-                    <div className="flex items-center justify-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-red-500/30 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                      </div>
-                      <div>
-                        <div className="text-red-400 font-bold text-lg">Not Quite</div>
-                        <div className="text-red-300/80 text-sm">Try adding all the known values together.</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-center">
-                    <button
-                      onClick={handleShowHints}
-                      className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg
-                        hover:bg-blue-600/30 hover:border-blue-500/60 transition-all duration-200 font-semibold text-sm
-                        flex items-center gap-2 mx-auto"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                      </svg>
-                      {showHints ? 'Hide Hint' : 'Need a Hint?'}
-                    </button>
-                  </div>
-
-                  {showHints && (
-                    <div className="p-4 bg-blue-500/20 border-2 border-blue-500/50 rounded-xl animate-fade-in">
-                      <div className="text-center mb-3">
-                        <div className="inline-block px-3 py-1 bg-blue-600/30 rounded-full text-blue-300 text-xs font-mono uppercase tracking-wider mb-2">
-                          💡 Hint
-                        </div>
-                      </div>
-                      <div className="space-y-2 text-sm text-blue-200">
-                        <div className="p-2 bg-blue-900/30 rounded">
-                          <div className="text-blue-300 mb-1">Known values:</div>
-                          <div className="font-mono">
-                            {bars[0]?.segments
-                              .slice(0, 2) // Only show first 2 segments in Phase 1
-                              .filter(s => !s.isUnknown && s.value !== undefined)
-                              .map(s => `${s.label} = ${s.value}`)
-                              .join(', ') || 'None'}
-                          </div>
-                        </div>
-                        <div className="text-center p-2 italic text-blue-300/90">
-                          Add these two values together to find the total!
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Phase 2 & 3: Practice and Apply - Solve for Unknowns */}
-          {hasUnknowns && (currentPhase === 'practice' || currentPhase === 'apply') && !hasSubmittedEvaluation && (
-            <div className="mt-8">
-              <div className="flex items-center gap-4 mb-8">
-                <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">
-                  {currentPhase === 'practice' ? 'Phase 2: Practice' : 'Phase 3: Apply'}
-                </span>
-                <div className="h-px flex-1 bg-gradient-to-r from-orange-700 to-transparent"></div>
-              </div>
-
-              <div className="space-y-6">
-                {visibleUnknowns.map(({ barIndex, segmentIndex }) => {
-                  const key = getSegmentKey(barIndex, segmentIndex);
-                  const segment = bars[barIndex].segments[segmentIndex];
-                  const segmentFeedback = feedback[key];
-                  const correctAnswer = calculateCorrectAnswer(barIndex, segmentIndex);
-                  const bar = bars[barIndex];
-
-                  return (
-                    <div key={key} className="relative">
-                      {/* Question Header */}
-                      <div className="mb-6 text-center">
-                        <div className="text-sm text-slate-400 font-mono uppercase tracking-wider mb-2">Find the Value</div>
-                        <h5 className="text-2xl font-bold text-white">
-                          What is <span className="text-yellow-400">{segment.label}</span>?
-                        </h5>
-                      </div>
-
-                      {/* Calculator Input Component */}
-                      <CalculatorInput
-                        label={`${segment.label} =`}
-                        value={userAnswers[key] || ''}
-                        onChange={(value) => handleAnswerChange(barIndex, segmentIndex, value)}
-                        onSubmit={() => handleAnswerSubmit(barIndex, segmentIndex)}
-                        showSubmitButton={true}
-                        allowNegative={true}
-                        allowDecimal={true}
-                        className="mb-6"
-                      />
-
-                      {/* Feedback */}
-                      {segmentFeedback === 'correct' && (
-                        <div className="p-4 bg-green-500/20 border-2 border-green-500/50 rounded-xl">
-                          <div className="flex items-center justify-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center">
-                              <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
-                              </svg>
-                            </div>
-                            <div>
-                              <div className="text-green-400 font-bold text-lg">Correct!</div>
-                              <div className="text-green-300/80 text-sm">Excellent work! You solved it.</div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {segmentFeedback === 'incorrect' && (
-                        <div className="space-y-3">
-                          <div className="p-4 bg-red-500/20 border-2 border-red-500/50 rounded-xl">
-                            <div className="flex items-center justify-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-red-500/30 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                              </div>
-                              <div>
-                                <div className="text-red-400 font-bold text-lg">Not Quite</div>
-                                <div className="text-red-300/80 text-sm">Try again! You can do this.</div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Hint Section */}
-                          <div className="text-center">
-                            <button
-                              onClick={handleShowHints}
-                              className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg
-                                hover:bg-blue-600/30 hover:border-blue-500/60 transition-all duration-200 font-semibold text-sm
-                                flex items-center gap-2 mx-auto"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                              </svg>
-                              {showHints ? 'Hide Hint' : 'Need a Hint?'}
-                            </button>
-                          </div>
-
-                          {showHints && correctAnswer !== null && (() => {
-                            // Get visible segments for the current phase
-                            const visibleIndices = getVisibleSegments(barIndex);
-                            const visibleKnownSegments = visibleIndices
-                              .map(idx => bar.segments[idx])
-                              .filter(s => s && !s.isUnknown && s.value !== undefined);
-
-                            // Calculate phase-specific total
-                            let phaseTotal = 0;
-                            visibleIndices.forEach(idx => {
-                              const seg = bar.segments[idx];
-                              if (seg?.value !== undefined) {
-                                phaseTotal += seg.value;
-                              }
-                            });
-
-                            return (
-                              <div className="p-4 bg-blue-500/20 border-2 border-blue-500/50 rounded-xl animate-fade-in">
-                                <div className="text-center mb-3">
-                                  <div className="inline-block px-3 py-1 bg-blue-600/30 rounded-full text-blue-300 text-xs font-mono uppercase tracking-wider mb-2">
-                                    💡 Hint
-                                  </div>
-                                </div>
-                                <div className="space-y-2 text-sm text-blue-200">
-                                  <div className="flex items-center justify-between p-2 bg-blue-900/30 rounded">
-                                    <span className="text-blue-300">Total:</span>
-                                    <span className="font-bold">{phaseTotal}</span>
-                                  </div>
-                                  <div className="p-2 bg-blue-900/30 rounded">
-                                    <div className="text-blue-300 mb-1">Known values:</div>
-                                    <div className="font-mono">
-                                      {visibleKnownSegments
-                                        .map(s => `${s.label} = ${s.value}`)
-                                        .join(', ')}
-                                    </div>
-                                  </div>
-                                  <div className="text-center p-2 italic text-blue-300/90">
-                                    Subtract the known values from the total!
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Final Success State */}
+          {/* Final success state */}
           {hasSubmittedEvaluation && (
-            <div className="mt-8 p-6 bg-green-500/20 border-2 border-green-500/50 rounded-xl">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-green-500/30 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-green-400 font-bold text-xl">All Complete!</div>
-                  <div className="text-green-300/80">You've mastered this tape diagram problem.</div>
-                </div>
-              </div>
-              <div className="text-center">
-                <button
-                  onClick={handleReset}
-                  className="px-6 py-2 bg-orange-600/20 border-2 border-orange-500/40 text-orange-400 rounded-lg
-                    hover:bg-orange-600/30 hover:border-orange-500/60 transition-all duration-200 font-semibold"
-                >
-                  Try Another Problem
-                </button>
-              </div>
+            <div className="mt-8 p-6 bg-green-500/20 border-2 border-green-500/50 rounded-xl text-center">
+              <div className="text-green-400 font-bold text-xl mb-1">All Complete!</div>
+              <div className="text-green-300/80 mb-4">You&apos;ve mastered this tape diagram problem.</div>
+              <button
+                onClick={handleReset}
+                className="px-6 py-2 bg-orange-600/20 border-2 border-orange-500/40 text-orange-400 rounded-lg hover:bg-orange-600/30 transition-all font-semibold"
+              >
+                Try Another Problem
+              </button>
             </div>
           )}
 
           {/* Instructions */}
           <div className="mt-8 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
-            <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">
-              Interactive Controls
-            </h4>
+            <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Interactive Controls</h4>
             <ul className="text-sm text-slate-300 space-y-2">
               <li className="flex items-start gap-2">
                 <span className="text-orange-400 mt-1">▸</span>
-                <span>Click on any segment to view detailed information</span>
+                <span>
+                  {challengeType === 'represent'
+                    ? 'Read the word problem and enter the value for each segment'
+                    : challengeType === 'solve_comparison'
+                    ? 'Compare the two bars and find the missing value'
+                    : challengeType === 'multi_step'
+                    ? 'Solve each step in order — later steps unlock as you progress'
+                    : 'Follow the 3-step progression: Explore → Practice → Apply'
+                  }
+                </span>
               </li>
-              {comparisonMode && (
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-400 mt-1">▸</span>
-                  <span>Bars are aligned for comparison - observe the relative sizes</span>
-                </li>
-              )}
-              {hasUnknowns && (
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-400 mt-1">▸</span>
-                  <span>Yellow dashed segments with "?" represent unknown values to solve for</span>
-                </li>
-              )}
-              {showBrackets && bars.some(bar => bar.totalLabel) && (
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-400 mt-1">▸</span>
-                  <span>Brackets show the total value for each bar</span>
-                </li>
-              )}
+              <li className="flex items-start gap-2">
+                <span className="text-orange-400 mt-1">▸</span>
+                <span>Yellow dashed segments with &ldquo;?&rdquo; represent values to solve for</span>
+              </li>
             </ul>
           </div>
         </div>

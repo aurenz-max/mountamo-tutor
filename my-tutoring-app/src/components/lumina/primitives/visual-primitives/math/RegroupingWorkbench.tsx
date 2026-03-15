@@ -96,9 +96,13 @@ const PLACE_LABELS = ['Ones', 'Tens', 'Hundreds', 'Thousands'];
 // Helpers
 // ============================================================================
 
-function getDigits(num: number, maxPlace: string): number[] {
+function getPlaceCount(maxPlace: string): number {
+  return maxPlace === 'thousands' ? 4 : maxPlace === 'hundreds' ? 3 : 2;
+}
+
+function getDigits(num: number, maxPlace: string, overridePlaces?: number): number[] {
   const digits: number[] = [];
-  const places = maxPlace === 'thousands' ? 4 : maxPlace === 'hundreds' ? 3 : 2;
+  const places = overridePlaces ?? getPlaceCount(maxPlace);
   let n = Math.abs(Math.floor(num));
   for (let i = 0; i < places; i++) {
     digits.push(n % 10);
@@ -151,7 +155,28 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     stepByStepMode = false,
   } = showOptions;
 
-  const places = maxPlace === 'thousands' ? 4 : maxPlace === 'hundreds' ? 3 : 2;
+  // Compute places from maxPlace, but expand if any answer needs more digits
+  // (e.g., 67+85=152 needs 3 digit slots even when maxPlace='tens')
+  const basePlaces = getPlaceCount(maxPlace);
+  const places = useMemo(() => {
+    let maxDigits = basePlaces;
+    // Check initial operands
+    const ans0 = Math.abs(computeAnswer(operation, initialOperand1, initialOperand2));
+    const d0 = ans0 > 0 ? Math.floor(Math.log10(ans0)) + 1 : 1;
+    if (d0 > maxDigits) maxDigits = d0;
+    // Check all challenge answers
+    for (const ch of challenges) {
+      const parts = ch.problem.split(/[+\-−]/);
+      const a = parseInt(parts[0]?.trim(), 10);
+      const b = parseInt(parts[1]?.trim(), 10);
+      if (!isNaN(a) && !isNaN(b)) {
+        const ans = Math.abs(computeAnswer(operation, a, b));
+        const d = ans > 0 ? Math.floor(Math.log10(ans)) + 1 : 1;
+        if (d > maxDigits) maxDigits = d;
+      }
+    }
+    return maxDigits;
+  }, [basePlaces, operation, initialOperand1, initialOperand2, challenges]);
 
   // -------------------------------------------------------------------------
   // State — shared hooks
@@ -186,13 +211,10 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   const correctAnswer = computeAnswer(operation, operand1, operand2);
 
   // Block counts per place value [ones, tens, hundreds, thousands]
+  // Always show the answer's digits so students see the result in blocks
   const [blocks, setBlocks] = useState<number[]>(() => {
-    const d1 = getDigits(operand1, maxPlace);
-    const d2 = getDigits(operand2, maxPlace);
-    if (operation === 'addition') {
-      return d1.map((d, i) => d + d2[i]);
-    }
-    return d1.slice(); // For subtraction, start with operand1
+    const answer = computeAnswer(operation, operand1, operand2);
+    return getDigits(answer, maxPlace, places);
   });
 
   // Carry/borrow state per place
@@ -491,14 +513,9 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     const nextChallenge = challenges[nextIndex];
     const nextOp1 = parseInt(nextChallenge.problem.split(/[+\-−]/)[0].trim(), 10) || operand1;
     const nextOp2 = parseInt(nextChallenge.problem.split(/[+\-−]/)[1]?.trim(), 10) || operand2;
-    const d1 = getDigits(nextOp1, maxPlace);
-    const d2 = getDigits(nextOp2, maxPlace);
-
-    if (operation === 'addition') {
-      setBlocks(d1.map((d, i) => d + d2[i]));
-    } else {
-      setBlocks(d1.slice());
-    }
+    // Always show the answer's digits in blocks
+    const nextAnswer = computeAnswer(operation, nextOp1, nextOp2);
+    setBlocks(getDigits(nextAnswer, maxPlace, places));
 
     setCurrentPhase('explore');
 
@@ -528,10 +545,10 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     return Math.round((correct / challenges.length) * 100);
   }, [allChallengesComplete, challenges, challengeResults]);
 
-  // Digits for display
-  const d1Display = getDigits(operand1, maxPlace);
-  const d2Display = getDigits(operand2, maxPlace);
-  const answerDisplay = getDigits(correctAnswer, maxPlace);
+  // Digits for display — use expanded `places` so answer row has enough slots
+  const d1Display = getDigits(operand1, maxPlace, places);
+  const d2Display = getDigits(operand2, maxPlace, places);
+  const answerDisplay = getDigits(correctAnswer, maxPlace, places);
 
   // Does the current place need regrouping?
   const needsRegroup = useCallback((placeIndex: number): boolean => {

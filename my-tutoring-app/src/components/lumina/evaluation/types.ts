@@ -1035,7 +1035,7 @@ export interface ArrayGridMetrics extends BasePrimitiveMetrics {
   type: 'array-grid';
 
   // Goal achievement
-  taskType: 'build' | 'partition' | 'skip-count' | 'explore';
+  taskType: 'build' | 'count' | 'multiply' | 'partition' | 'skip-count' | 'explore';
   goalMet: boolean;
 
   // Array configuration
@@ -1096,6 +1096,9 @@ export interface RatioTableMetrics extends BasePrimitiveMetrics {
 
 export interface TapeDiagramMetrics extends BasePrimitiveMetrics {
   type: 'tape-diagram';
+
+  /** Which interaction mode was active */
+  challengeType?: 'represent' | 'solve_part_whole' | 'solve_comparison' | 'multi_step';
 
   // Goal achievement
   allPhasesCompleted: boolean;        // Did student complete all three phases
@@ -2532,10 +2535,10 @@ export interface CountingBoardMetrics extends BasePrimitiveMetrics {
 export interface MeasurementToolsMetrics extends BasePrimitiveMetrics {
   type: 'measurement-tools';
 
-  estimateCorrect: number;
-  estimateTotal: number;
-  readCorrect: number;
-  readTotal: number;
+  measureCorrect: number;
+  measureTotal: number;
+  compareCorrect: number;
+  compareTotal: number;
   convertCorrect: number;
   convertTotal: number;
   attemptsCount: number;

@@ -1,15 +1,56 @@
-import { Type, Schema, ThinkingLevel } from "@google/genai";
+import { Type, Schema } from "@google/genai";
 import { DoubleNumberLineData } from "../../primitives/visual-primitives/math/DoubleNumberLine";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Schema definition for Double Number Line Data
- *
- * Simplified schema for 3-phase learning:
- * 1. Find the unit rate (relationship between quantities)
- * 2. Practice scaling with 2-3 points
- * 3. Apply to find all remaining points
- */
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  equivalent_ratios: {
+    promptDoc:
+      `"equivalent_ratios": The unit rate is GIVEN (shown as a given point). `
+      + `Students multiply to find equivalent ratio pairs on the double number line. `
+      + `Easiest mode — just scaling. `
+      + `Include the unit rate point in givenPoints, not targetPoints. `
+      + `targetInputs should be 3-4 multiples of the unit rate input. `
+      + `contextQuestion should state the unit rate explicitly. `
+      + `IMPORTANT: The stated unit rate direction in contextQuestion MUST match topLabel→bottomLabel. `
+      + `If context says "1 X makes 3 Y", topLabel must be X and bottomLabel must be Y (unitRateOutput=3), never inverted.`,
+    schemaDescription: "'equivalent_ratios' (scale given unit rate)",
+  },
+  find_missing: {
+    promptDoc:
+      `"find_missing": Some points are given, but one or two values are missing. `
+      + `Students must use the proportional relationship to find the missing values. `
+      + `Intermediate difficulty — requires identifying the relationship. `
+      + `Give 1-2 complete points as givenPoints, then ask for 2-3 target points. `
+      + `contextQuestion should describe the relationship without explicitly stating the unit rate.`,
+    schemaDescription: "'find_missing' (find missing values in ratio table)",
+  },
+  unit_rate: {
+    promptDoc:
+      `"unit_rate": Students must DISCOVER the unit rate from a non-unit ratio pair. `
+      + `Hardest mode — requires division to find per-unit value. `
+      + `Give a non-unit pair (e.g., 3 cups → 9 cookies, NOT 1 cup → 3 cookies). `
+      + `The givenPoints should include only the origin and a non-unit pair. `
+      + `Phase 1 becomes: find when input=1, what is the output? `
+      + `contextQuestion should present the non-unit relationship.`,
+    schemaDescription: "'unit_rate' (discover unit rate from non-unit pair)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Base schema
+// ---------------------------------------------------------------------------
+
 const doubleNumberLineSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -20,6 +61,11 @@ const doubleNumberLineSchema: Schema = {
     description: {
       type: Type.STRING,
       description: "One sentence explaining what students will learn"
+    },
+    challengeType: {
+      type: Type.STRING,
+      enum: ["equivalent_ratios", "find_missing", "unit_rate"],
+      description: "Challenge type: 'equivalent_ratios' (scale given unit rate), 'find_missing' (find missing values), 'unit_rate' (discover unit rate from non-unit pair)"
     },
     contextQuestion: {
       type: Type.STRING,
@@ -51,22 +97,67 @@ const doubleNumberLineSchema: Schema = {
       description: "3-5 input values students must find outputs for (e.g., [2, 3, 5, 7]). Should NOT include unitRateInput since that's phase 1."
     }
   },
-  required: ["title", "description", "contextQuestion", "topLabel", "bottomLabel", "unitRateInput", "unitRateOutput", "maxInput", "targetInputs"]
+  required: ["title", "description", "challengeType", "contextQuestion", "topLabel", "bottomLabel", "unitRateInput", "unitRateOutput", "maxInput", "targetInputs"]
 };
+
+type Point = { topValue: number; bottomValue: number; label?: string };
+
+/**
+ * Build givenPoints and targetPoints based on challenge type.
+ *
+ * - equivalent_ratios: origin + unit rate are GIVEN; students scale to find targets
+ * - find_missing: origin + one non-unit pair GIVEN; students find the rest (including unit rate)
+ * - unit_rate / default: only origin given; students discover unit rate then find targets
+ */
+function buildPointsByMode(
+  challengeType: string,
+  unitRateInput: number,
+  unitRateOutput: number,
+  unitRate: number,
+  targetInputs: number[],
+): { givenPoints: Point[]; targetPoints: Point[] } {
+  const origin: Point = { topValue: 0, bottomValue: 0, label: 'Start' };
+  const unitRatePoint: Point = { topValue: unitRateInput, bottomValue: unitRateOutput, label: 'Unit Rate' };
+  const additionalPoints: Point[] = targetInputs.map((input: number, i: number) => ({
+    topValue: input,
+    bottomValue: input * unitRate,
+    label: `Point ${i + 2}`,
+  }));
+
+  if (challengeType === 'equivalent_ratios') {
+    // Unit rate is given — students just scale
+    return {
+      givenPoints: [origin, unitRatePoint],
+      targetPoints: additionalPoints,
+    };
+  }
+
+  if (challengeType === 'find_missing') {
+    // Give one non-unit ratio pair as a clue; students find unit rate + remaining points
+    // Pick the first additional point as the given clue
+    const [cluePoint, ...remainingPoints] = additionalPoints;
+    if (cluePoint) {
+      return {
+        givenPoints: [origin, { ...cluePoint, label: 'Given' }],
+        targetPoints: [unitRatePoint, ...remainingPoints],
+      };
+    }
+    // Fallback if no additional points (shouldn't happen)
+    return {
+      givenPoints: [origin],
+      targetPoints: [unitRatePoint, ...additionalPoints],
+    };
+  }
+
+  // unit_rate or default: only origin given, students discover everything
+  return {
+    givenPoints: [origin],
+    targetPoints: [unitRatePoint, ...additionalPoints],
+  };
+}
 
 /**
  * Generate double number line data for visualization
- *
- * This function creates double number line data including:
- * - Two parallel number lines with independent scales
- * - Linked points showing proportional relationships
- * - Vertical guides to emphasize correspondence
- * - Educational context for ratio and proportion concepts
- *
- * @param topic - The math topic or concept to teach
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns DoubleNumberLineData with complete configuration
  */
 export const generateDoubleNumberLine = async (
   topic: string,
@@ -80,65 +171,55 @@ export const generateDoubleNumberLine = async (
     givenPoints?: Array<{ topValue: number; bottomValue: number; label?: string }>;
     showUnitRate?: boolean;
     showVerticalGuides?: boolean;
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode?: string;
   }
 ): Promise<DoubleNumberLineData> => {
+  // Resolve eval mode from catalog (single source of truth)
+  const evalConstraint = resolveEvalModeConstraint(
+    'double-number-line',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('DoubleNumberLine', config?.targetEvalMode, evalConstraint);
+
+  // Constrain schema when eval mode is active (challengeType at root level)
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(doubleNumberLineSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'challengeType',
+        rootLevel: true,
+      })
+    : doubleNumberLineSchema;
+
+  // Build challenge type prompt section
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
   const prompt = `
 Create a double number line problem for "${topic}" (${gradeLevel}).
 
+${challengeTypeSection}
+
+${!evalConstraint ? `
 The problem has 3 learning phases:
 1. Students find the UNIT RATE (when input = 1, what's the output?)
 2. Students practice with 2-3 points
 3. Students find all remaining points
+` : ''}
 
 WHAT YOU NEED TO CREATE:
 - title: Short, clear title (e.g., "Baking Cookies: Relating Flour to Cookies Made")
 - description: One sentence about what they'll learn
-- contextQuestion: Real-world setup that states the unit rate relationship clearly
+- challengeType: Must match the constrained type${evalConstraint ? ` (${evalConstraint.allowedTypes.join(' or ')})` : ''}
+- contextQuestion: Real-world setup
 - topLabel: Input quantity name (e.g., "Cups of Flour")
 - bottomLabel: Output quantity name (e.g., "Cookies Made")
-- unitRateInput: ALWAYS set to 1 (students will find: when input = 1, what's the output?)
-- unitRateOutput: The answer to the unit rate question (e.g., 3 cookies per 1 cup)
-- maxInput: Maximum input value for the scale (keep it 5-10 for simplicity)
-- targetInputs: Array of 3-4 OTHER input values students solve in phases 2-3 (do NOT include 1)
-
-EXAMPLE 1 - Baking (Grade 6):
-{
-  "title": "Baking Cookies: Relating Flour to Cookies Made",
-  "description": "Explore how quantities change together in a recipe.",
-  "contextQuestion": "A baker knows that 1 cup of flour makes exactly 3 cookies. How many cookies can the baker make if they use 7 cups of flour?",
-  "topLabel": "Cups of Flour",
-  "bottomLabel": "Cookies Made",
-  "unitRateInput": 1,
-  "unitRateOutput": 3,
-  "maxInput": 10,
-  "targetInputs": [2, 5, 7]
-}
-
-EXAMPLE 2 - Speed (Grade 7):
-{
-  "title": "Road Trip: Hours Driving to Miles Traveled",
-  "description": "Learn how distance and time relate at a constant speed.",
-  "contextQuestion": "A car travels at 60 miles per hour. How far will it go in different amounts of time?",
-  "topLabel": "Hours",
-  "bottomLabel": "Miles",
-  "unitRateInput": 1,
-  "unitRateOutput": 60,
-  "maxInput": 5,
-  "targetInputs": [2, 3, 5]
-}
-
-EXAMPLE 3 - Shopping (Grade 6):
-{
-  "title": "Buying Apples: Items to Cost",
-  "description": "See how total cost changes with quantity.",
-  "contextQuestion": "Apples cost $2 each. How much do different amounts cost?",
-  "topLabel": "Apples",
-  "bottomLabel": "Cost ($)",
-  "unitRateInput": 1,
-  "unitRateOutput": 2,
-  "maxInput": 8,
-  "targetInputs": [3, 5, 8]
-}
+- unitRateInput: ALWAYS set to 1
+- unitRateOutput: The answer when input = 1 (e.g., 3 cookies per 1 cup)
+- maxInput: Maximum input value (keep 5-10)
+- targetInputs: Array of 3-4 OTHER input values students solve (do NOT include 1)
 
 RULES:
 - unitRateInput: MUST always be 1
@@ -146,7 +227,8 @@ RULES:
 - targetInputs: Should NOT include 1 (that's phase 1). Use 3-4 other values spread out.
 - maxInput should be 5-10 to keep it manageable
 - Use concrete, relatable contexts for the grade level
-- contextQuestion should clearly state the unit rate in the problem text
+- contextQuestion should clearly present the proportional relationship
+- CRITICAL — RATIO DIRECTION: topLabel is the INPUT (independent variable) and bottomLabel is the OUTPUT (dependent variable). The unit rate means "1 unit of topLabel = unitRateOutput units of bottomLabel". The contextQuestion MUST describe the same direction. For example, if contextQuestion says "1 can of paint covers 4 feet", then topLabel MUST be "Cans of Paint" and bottomLabel MUST be "Feet", with unitRateOutput = 4. NEVER invert the relationship — if the context says "A covers B units of C", then A's quantity is the top (input) and C is the bottom (output).
 
 Return the problem data.
 `;
@@ -156,7 +238,7 @@ Return the problem data.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: doubleNumberLineSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -168,9 +250,28 @@ Return the problem data.
 
   // Extract values from Gemini's response
   const unitRateInput = geminiData.unitRateInput || 1;
-  const unitRateOutput = geminiData.unitRateOutput || 1;
+  let unitRateOutput = geminiData.unitRateOutput || 1;
   const maxInput = geminiData.maxInput || 10;
   const targetInputs = geminiData.targetInputs || [2, 3, 5];
+
+  // Validate ratio direction: if contextQuestion states "1 X = N Y" but unitRateOutput
+  // is 1/N (inverted), fix it. We detect this by checking if the context mentions a
+  // specific number that equals 1/unitRateOutput, suggesting the ratio was flipped.
+  const contextQ = (geminiData.contextQuestion || '').toLowerCase();
+
+  // Look for patterns like "1 <word> covers/makes/equals N <word>"
+  // and verify unitRateOutput matches N, not 1/N
+  const ratioMatch = contextQ.match(/\b1\b[^.]*?\b(\d+(?:\.\d+)?)\b/);
+  if (ratioMatch) {
+    const statedValue = parseFloat(ratioMatch[1]);
+    // If context says the rate is N but unitRateOutput is 1/N, the ratio was inverted
+    if (statedValue > 1 && Math.abs(unitRateOutput - 1 / statedValue) < 0.01) {
+      console.warn(
+        `[DoubleNumberLine] Ratio direction mismatch detected: context states rate ~${statedValue} but unitRateOutput=${unitRateOutput}. Correcting to ${statedValue}.`
+      );
+      unitRateOutput = statedValue;
+    }
+  }
 
   // Calculate the unit rate for scaling
   const unitRate = unitRateOutput / unitRateInput;
@@ -193,22 +294,14 @@ Return the problem data.
     topScale: { min: 0, max: maxInput, interval: topInterval },
     bottomScale: { min: 0, max: maxOutput, interval: bottomInterval },
 
-    // Given point: just the origin
-    givenPoints: [
-      { topValue: 0, bottomValue: 0, label: 'Start' }
-    ],
-
-    // Target points: Phase 1 (unit rate) + Phases 2-3 (practice/apply)
-    targetPoints: [
-      // Phase 1: Unit rate discovery
-      { topValue: unitRateInput, bottomValue: unitRateOutput, label: 'Unit Rate' },
-      // Phases 2-3: Additional points
-      ...targetInputs.map((input: number, i: number) => ({
-        topValue: input,
-        bottomValue: input * unitRate,
-        label: `Point ${i + 2}`
-      }))
-    ],
+    // Given / target points vary by challenge type
+    ...buildPointsByMode(
+      geminiData.challengeType,
+      unitRateInput,
+      unitRateOutput,
+      unitRate,
+      targetInputs,
+    ),
 
     showVerticalGuides: true,
     showUnitRate: true

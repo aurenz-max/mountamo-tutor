@@ -1,6 +1,41 @@
 import { Type, Schema } from "@google/genai";
 import { MeasurementToolsData, MeasurementShape } from "../../primitives/visual-primitives/math/MeasurementTools";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  measure: {
+    promptDoc:
+      `"measure": Student uses ruler to measure shapes accurately. `
+      + `Direct measurement — drag shape onto ruler and read the width. `
+      + `Standard drag-to-ruler interaction. Grades 1-3.`,
+    schemaDescription: "'measure' (direct measurement with ruler)",
+  },
+  compare: {
+    promptDoc:
+      `"compare": Student measures multiple shapes then orders them from shortest to longest. `
+      + `Generate shapes with similar but distinct widths so comparison is meaningful. `
+      + `Shapes should NOT be pre-sorted by width. Grades 2-3.`,
+    schemaDescription: "'compare' (measure and compare objects)",
+  },
+  convert: {
+    promptDoc:
+      `"convert": Student measures shapes in one unit then converts to another unit. `
+      + `Generate shapes with widths that convert to relatively clean numbers `
+      + `(e.g., 2 inches ≈ 5 cm, 4 inches ≈ 10 cm). Grades 3-4.`,
+    schemaDescription: "'convert' (measure and convert between units)",
+  },
+};
 
 /**
  * Gemini schema for the new MeasurementTools shape-based interface.
@@ -10,6 +45,11 @@ import { ai } from "../geminiClient";
 const measurementToolsSchema: Schema = {
   type: Type.OBJECT,
   properties: {
+    challengeType: {
+      type: Type.STRING,
+      description: "Challenge type: 'measure' (direct measurement), 'compare' (measure and compare), 'convert' (measure and convert units)",
+      enum: ["measure", "compare", "convert"],
+    },
     title: {
       type: Type.STRING,
       description: "Short activity title, e.g. 'Measure the Shapes'",
@@ -21,6 +61,10 @@ const measurementToolsSchema: Schema = {
     unit: {
       type: Type.STRING,
       description: "One of: 'inches', 'centimeters'",
+    },
+    convertToUnit: {
+      type: Type.STRING,
+      description: "Target unit for conversion in 'convert' mode. One of: 'inches', 'centimeters'. Should be different from 'unit'.",
     },
     precision: {
       type: Type.STRING,
@@ -48,7 +92,7 @@ const measurementToolsSchema: Schema = {
       description: "Array of 3-5 shapes to measure",
     },
   },
-  required: ["title", "rulerLengthInches", "unit", "precision", "gradeBand", "shapes"],
+  required: ["challengeType", "title", "rulerLengthInches", "unit", "precision", "gradeBand", "shapes"],
 };
 
 /**
@@ -63,8 +107,25 @@ export const generateMeasurementTools = async (
     unit?: 'inches' | 'centimeters';
     precision?: 'whole' | 'half';
     gradeBand?: 'K-2' | '3-5';
+    targetEvalMode?: string;
   },
 ): Promise<MeasurementToolsData> => {
+  // ── Resolve eval mode ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'measurement-tools',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('MeasurementTools', config?.targetEvalMode, evalConstraint);
+
+  // ── Build mode-constrained schema ──
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(measurementToolsSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
+    : measurementToolsSchema;
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
 Create a measurement activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -75,6 +136,8 @@ THE STUDENT EXPERIENCE:
 - They read where the RIGHT edge falls on the ruler to determine the width.
 - They type their answer (in the specified unit).
 
+${challengeTypeSection}
+
 SHAPE REQUIREMENTS:
 - Generate 3 to 5 shapes (mix of 'rectangle' and 'square' types).
 - Each shape needs a unique widthInches — this is the measurement the student must find.
@@ -83,6 +146,15 @@ SHAPE REQUIREMENTS:
 - Each shape must have a DIFFERENT color using rgba format (e.g. 'rgba(99,102,241,0.35)').
 - Each shape needs a descriptive label like "Blue Rectangle" or "Red Square".
 - Each shape needs a hint that helps the student read the ruler without revealing the answer.
+
+COMPARE MODE SPECIFICS:
+- For "compare" challenges, generate shapes with similar but distinct widths (e.g., 3, 4, 5 — not 1, 5, 10).
+- Do NOT sort shapes by width — randomize the order so comparison is non-trivial.
+
+CONVERT MODE SPECIFICS:
+- For "convert" challenges, set convertToUnit to the opposite of unit (inches→centimeters or centimeters→inches).
+- Choose shape widths that produce relatively clean conversion values.
+- For inches→cm: prefer widths like 2, 4, 5, 8, 10 (multiply by 2.54 gives round-ish numbers).
 
 GRADE GUIDELINES:
 ${config?.gradeBand === '3-5' || (!config?.gradeBand && !gradeLevel.toLowerCase().includes('kinder') && !gradeLevel.includes('1') && !gradeLevel.includes('2')) ? `
@@ -123,7 +195,7 @@ Return the complete measurement tools configuration.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: measurementToolsSchema,
+      responseSchema: activeSchema,
     },
   });
 
@@ -134,6 +206,12 @@ Return the complete measurement tools configuration.
   }
 
   // ── Validation & sanitization ──────────────────────────────────
+
+  // Challenge type
+  const validChallengeTypes = ['measure', 'compare', 'convert'];
+  if (!validChallengeTypes.includes(data.challengeType)) {
+    data.challengeType = evalConstraint?.allowedTypes[0] ?? 'measure';
+  }
 
   // Grade band
   if (data.gradeBand !== 'K-2' && data.gradeBand !== '3-5') {
@@ -149,6 +227,17 @@ Return the complete measurement tools configuration.
   // Unit
   if (data.unit !== 'inches' && data.unit !== 'centimeters') {
     data.unit = 'inches';
+  }
+
+  // Convert-to unit (for convert mode)
+  if (data.challengeType === 'convert') {
+    if (data.convertToUnit !== 'inches' && data.convertToUnit !== 'centimeters') {
+      data.convertToUnit = data.unit === 'inches' ? 'centimeters' : 'inches';
+    }
+    // Ensure convertToUnit differs from unit
+    if (data.convertToUnit === data.unit) {
+      data.convertToUnit = data.unit === 'inches' ? 'centimeters' : 'inches';
+    }
   }
 
   // Precision step for value alignment

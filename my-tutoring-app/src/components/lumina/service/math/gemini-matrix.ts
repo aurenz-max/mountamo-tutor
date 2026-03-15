@@ -1,5 +1,12 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
 /**
  * Matrix Display Data Interface
@@ -87,6 +94,57 @@ interface CoreMatrixData {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  transpose: {
+    promptDoc:
+      `"transpose": Swap rows and columns of the matrix. `
+      + `The simplest operation — row i becomes column i. `
+      + `Good for introducing matrix operations. Use 2×3 or 3×2 matrices so the shape change is visible.`,
+    schemaDescription: "'transpose' (swap rows and columns)",
+  },
+  add: {
+    promptDoc:
+      `"add": Add two matrices element-by-element. `
+      + `Both matrices MUST have the same dimensions. `
+      + `MUST include secondMatrix field. Use simple integers.`,
+    schemaDescription: "'add' (element-wise addition)",
+  },
+  subtract: {
+    promptDoc:
+      `"subtract": Subtract two matrices element-by-element. `
+      + `Both matrices MUST have the same dimensions. `
+      + `MUST include secondMatrix field. Can result in negative values.`,
+    schemaDescription: "'subtract' (element-wise subtraction)",
+  },
+  multiply: {
+    promptDoc:
+      `"multiply": Multiply two matrices using row-by-column dot products. `
+      + `Matrix A columns MUST equal Matrix B rows. `
+      + `MUST include secondMatrix field. Use small integers to keep calculations manageable. `
+      + `Typical: 2×2 × 2×2 or 2×3 × 3×2.`,
+    schemaDescription: "'multiply' (matrix multiplication)",
+  },
+  determinant: {
+    promptDoc:
+      `"determinant": Calculate the determinant of a square matrix. `
+      + `Matrix MUST be square (rows = columns). `
+      + `DO NOT include secondMatrix. Use integers that produce clean determinant values (not zero unless teaching singular matrices). `
+      + `2×2: det = ad - bc. 3×3: cofactor expansion.`,
+    schemaDescription: "'determinant' (calculate determinant)",
+  },
+  inverse: {
+    promptDoc:
+      `"inverse": Find the inverse of a square matrix. `
+      + `Matrix MUST be square with non-zero determinant. `
+      + `DO NOT include secondMatrix. Use integers that produce a clean inverse (e.g., det = ±1, ±2). `
+      + `2×2: use adjugate method. 3×3: Gaussian elimination.`,
+    schemaDescription: "'inverse' (find inverse matrix)",
+  },
+};
 
 // ============================================================================
 // STAGE 1: Core Matrix Generation
@@ -121,6 +179,7 @@ const coreMatrixSchema: Schema = {
     },
     operationType: {
       type: Type.STRING,
+      enum: ["determinant", "inverse", "transpose", "add", "subtract", "multiply"],
       description: "Operation type: 'determinant', 'inverse', 'transpose', 'add', 'subtract', 'multiply'"
     },
     educationalContext: {
@@ -155,7 +214,9 @@ async function generateCoreMatrix(
     operation: 'determinant' | 'inverse' | 'transpose' | 'add' | 'subtract' | 'multiply';
     rows?: number;
     columns?: number;
-  }
+  },
+  activeSchema: Schema,
+  challengeTypeSection: string,
 ): Promise<CoreMatrixData> {
   const { operation } = config;
   const isBinaryOp = ['add', 'subtract', 'multiply'].includes(operation);
@@ -164,6 +225,8 @@ async function generateCoreMatrix(
 Create a matrix for teaching "${topic}" to ${gradeLevel} students.
 
 OPERATION: ${operation}
+
+${challengeTypeSection}
 
 CRITICAL REQUIREMENTS:
 ${isBinaryOp ? `
@@ -196,7 +259,7 @@ Return ONLY the core matrix data with appropriate values for the grade level.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: coreMatrixSchema
+      responseSchema: activeSchema,
     },
   });
 
@@ -313,7 +376,7 @@ function validateFinalMatrix(data: MatrixDisplayData): MatrixDisplayData {
 }
 
 // ============================================================================
-// MAIN ORCHESTRATOR: Simplified Single-Stage Generation
+// MAIN ORCHESTRATOR
 // ============================================================================
 
 /**
@@ -322,37 +385,13 @@ function validateFinalMatrix(data: MatrixDisplayData): MatrixDisplayData {
 function inferOperationFromTopic(topic: string): 'determinant' | 'inverse' | 'transpose' | 'add' | 'subtract' | 'multiply' {
   const topicLower = topic.toLowerCase();
 
-  // Check for multiplication keywords
-  if (topicLower.includes('multipl') || topicLower.includes('product')) {
-    return 'multiply';
-  }
+  if (topicLower.includes('multipl') || topicLower.includes('product')) return 'multiply';
+  if (topicLower.includes('add') || topicLower.includes('sum')) return 'add';
+  if (topicLower.includes('subtract') || topicLower.includes('difference')) return 'subtract';
+  if (topicLower.includes('transpose')) return 'transpose';
+  if (topicLower.includes('inverse')) return 'inverse';
+  if (topicLower.includes('determinant')) return 'determinant';
 
-  // Check for addition keywords
-  if (topicLower.includes('add') || topicLower.includes('sum')) {
-    return 'add';
-  }
-
-  // Check for subtraction keywords
-  if (topicLower.includes('subtract') || topicLower.includes('difference')) {
-    return 'subtract';
-  }
-
-  // Check for transpose keywords
-  if (topicLower.includes('transpose')) {
-    return 'transpose';
-  }
-
-  // Check for inverse keywords
-  if (topicLower.includes('inverse')) {
-    return 'inverse';
-  }
-
-  // Check for determinant keywords
-  if (topicLower.includes('determinant')) {
-    return 'determinant';
-  }
-
-  // Default to determinant for general matrix topics
   return 'determinant';
 }
 
@@ -361,11 +400,6 @@ function inferOperationFromTopic(topic: string): 'determinant' | 'inverse' | 'tr
  *
  * Generates the core matrix with appropriate operations available.
  * The component itself handles determinant and transpose visualizations.
- *
- * @param topic - The math topic or concept to teach
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns MatrixDisplayData with complete configuration
  */
 export const generateMatrix = async (
   topic: string,
@@ -376,29 +410,59 @@ export const generateMatrix = async (
     operation?: 'determinant' | 'inverse' | 'transpose' | 'multiply' | 'add' | 'subtract' | 'rowOperation' | 'solve';
     augmented?: boolean;
     editable?: boolean;
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode?: string;
   }
 ): Promise<MatrixDisplayData> => {
   console.log('[Matrix Gen] Starting generation:', { topic, gradeLevel, config });
 
-  try {
-    // Infer operation from topic if not explicitly provided
-    const inferredOperation = inferOperationFromTopic(topic);
-    const operation = config?.operation || inferredOperation;
+  // Resolve eval mode from catalog (single source of truth)
+  const evalConstraint = resolveEvalModeConstraint(
+    'matrix-display',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('Matrix', config?.targetEvalMode, evalConstraint);
 
-    if (!config?.operation) {
-      console.log(`[Matrix Gen] No operation specified, inferred '${inferredOperation}' from topic: "${topic}"`);
+  // Constrain schema when eval mode is active (operationType is at root level)
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(coreMatrixSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'operationType',
+        rootLevel: true,
+      })
+    : coreMatrixSchema;
+
+  // Build challenge type prompt section
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  try {
+    // Determine operation: eval mode constraint > explicit config > topic inference
+    let operation: 'determinant' | 'inverse' | 'transpose' | 'add' | 'subtract' | 'multiply';
+
+    if (evalConstraint) {
+      // Pick the first allowed type from the eval constraint
+      operation = evalConstraint.allowedTypes[0] as typeof operation;
+      console.log(`[Matrix Gen] Eval mode constraining operation to '${operation}'`);
+    } else {
+      const inferredOperation = inferOperationFromTopic(topic);
+      const configOp = config?.operation;
+      operation = (configOp && configOp !== 'solve' && configOp !== 'rowOperation')
+        ? configOp as typeof operation
+        : inferredOperation;
+
+      if (!configOp) {
+        console.log(`[Matrix Gen] No operation specified, inferred '${inferredOperation}' from topic: "${topic}"`);
+      }
     }
 
-    // Map 'solve' and 'rowOperation' to appropriate base operations
-    const baseOperation = (operation === 'solve' || operation === 'rowOperation')
-      ? 'determinant'
-      : operation as 'determinant' | 'inverse' | 'transpose' | 'add' | 'subtract' | 'multiply';
-
     const coreMatrix = await generateCoreMatrix(topic, gradeLevel, {
-      operation: baseOperation,
+      operation,
       rows: config?.rows,
       columns: config?.columns
-    });
+    }, activeSchema, challengeTypeSection);
 
     console.log('[Matrix Gen] Core matrix generated:', {
       rows: coreMatrix.rows,
