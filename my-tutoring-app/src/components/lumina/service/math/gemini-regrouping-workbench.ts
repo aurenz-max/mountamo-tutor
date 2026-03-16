@@ -33,9 +33,12 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   add_regroup: {
     promptDoc:
       `"add_regroup": Addition problems that REQUIRE carrying (regrouping). `
-      + `Ones digits must sum to 10+ (e.g., 27+45, 38+24, 67+85). `
+      + `Ones digits must sum to 10+ (e.g., 27+45, 38+24). `
       + `Set operation='addition', requiresRegrouping=true, regroupCount=1+. `
-      + `Grades 1-2: 2-digit, 1 regroup. Grades 3-4: 3-digit, 1-2 regroups.`,
+      + `CRITICAL for Grades 1-2 (gradeBand "1-2"): Both addends MUST be 2-digit numbers between 10 and 49. `
+      + `The sum MUST be ≤ 99. Do NOT use addends like 67, 85, or 128 for Grades 1-2. `
+      + `Good examples: 27+45=72, 38+24=62, 19+36=55. Bad examples: 67+85=152 (sum>99). `
+      + `Grades 3-4: 3-digit, 1-2 regroups.`,
     schemaDescription: "'add_regroup' (addition with carrying)",
   },
   subtract_regroup: {
@@ -305,6 +308,7 @@ CHALLENGE REQUIREMENTS:
 5. For subtraction: operand1 must be LARGER than operand2 (no negative results)
 6. Include conversational narration: "Whoa, 7 + 5 = 12! That's more than 9!"
 7. Include regroupingSteps for the FIRST problem that requires regrouping
+8. If wordProblemContext is enabled, the story MUST be generic enough for ALL challenges — do NOT include specific numbers. Use phrases like "some items", "a group of objects", or "several toys" instead of exact quantities. The numbers change per challenge, so the story must not contradict any of them.
 
 IMPORTANT:
 - For addition with regroup: ones digits should sum to 10+ (e.g., 7+5, 8+6, 9+4)
@@ -369,6 +373,19 @@ Return the complete regrouping workbench configuration.
   data.challenges = (data.challenges || []).filter(
     (c: { problem: string }) => c.problem && c.problem.length > 0
   );
+
+  // Post-process: clamp challenges that overflow maxPlace (SP-2 fix for RW-2)
+  const maxForPlace: Record<string, number> = { tens: 99, hundreds: 999, thousands: 9999 };
+  const placeLimit = maxForPlace[data.maxPlace] ?? 99;
+  data.challenges = data.challenges.filter((c: { problem: string; type?: string }) => {
+    const nums = c.problem.match(/\d+/g)?.map(Number) ?? [];
+    if (nums.length < 2) return true; // can't validate, keep it
+    const [a, b] = nums;
+    const isAdd = c.type?.startsWith('add') || data.operation === 'addition';
+    const result = isAdd ? a + b : a - b;
+    // Reject if any operand or result exceeds the place limit
+    return a <= placeLimit && b <= placeLimit && result <= placeLimit && result >= 0;
+  });
 
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'add_regroup';

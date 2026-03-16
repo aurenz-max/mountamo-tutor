@@ -114,18 +114,31 @@ export const generateRevisionWorkshop = async (
     CHALLENGE_TYPE_DOCS,
   );
 
-  const prompt = `Create a revision workshop activity about: "${topic}".
-GRADE: ${gradeLevelKey}. SKILL: ${selectedSkill}.
-${!evalConstraint ? (gradeNotes[gradeLevelKey] || gradeNotes['4']) : ''}
+  const reorganizeRules = `
+Rules for REORGANIZE skill:
+1. Write 4-6 complete sentences about the topic that form a coherent paragraph when in the CORRECT order
+2. The "draft" field must contain these sentences in a SCRAMBLED (wrong) order
+3. Each target represents one sentence. targets must be in the CORRECT logical order
+4. Each target's originalText = the sentence text (same text appears in draft, just in wrong position)
+5. Each target's idealRevision = the same sentence text (the sentence itself is fine, just misplaced)
+6. Each target's suggestion = a hint about why this sentence belongs in its position (e.g. "This is the topic sentence" or "This conclusion wraps up the ideas")
+7. Do NOT include alternatives for reorganize`;
 
-${challengeTypeSection}
-
+  const standardRules = `
 Rules:
 1. Write a draft passage with INTENTIONAL weaknesses matching the revision skill
 2. Each target's originalText must be an EXACT substring of the draft
 3. For word-choice skill: include 3-4 alternatives per target
 4. Suggestions should guide without giving away the answer
 5. idealRevision shows the model answer`;
+
+  const prompt = `Create a revision workshop activity about: "${topic}".
+GRADE: ${gradeLevelKey}. SKILL: ${selectedSkill}.
+${!evalConstraint ? (gradeNotes[gradeLevelKey] || gradeNotes['4']) : ''}
+
+${challengeTypeSection}
+
+${selectedSkill === 'reorganize' ? reorganizeRules : standardRules}`;
 
   try {
     const response = await ai.models.generateContent({

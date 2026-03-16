@@ -24,7 +24,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   cvce: {
     promptDoc:
       `"cvce": Words with silent-e and long vowel sounds (cake, bike, bone, cute). `
-      + `The silent-e is part of the vowel phoneme or a separate /silent/ phoneme. `
+      + `IMPORTANT: The silent-e MUST be its own phoneme with sound "//" and letters "e". `
+      + `The vowel before it uses its long sound. Example: "cake" = /k/ "c", /ā/ "a", /k/ "k", /silent/ "e". `
+      + `NEVER use underscore notation like "a_e" or "i_e" in the letters field. `
+      + `Only use regular CVCE words — exclude irregular words like "one", "done", "gone", "come", "some", "love", "have", "give", "live". `
       + `Grade 1 level. 4-6 words per session.`,
     schemaDescription: "'cvce' (silent-e words)",
   },
@@ -106,7 +109,7 @@ const phonicsBlenderSchema: Schema = {
                 },
                 letters: {
                   type: Type.STRING,
-                  description: "The letter(s) this phoneme maps to in the word (e.g., 'c', 'a', 't', 'sh', 'a_e')"
+                  description: "The letter(s) this phoneme maps to in the word (e.g., 'c', 'a', 't', 'sh', 'th'). For CVCE words, silent-e is its own phoneme with letters 'e'."
                 }
               },
               required: ["id", "sound", "letters"]
@@ -181,8 +184,10 @@ GRADE 1 GUIDELINES:
 - Pattern types: cvce, blend, or digraph
 - 4-6 words per session
 - For CVCE: words with silent-e (cake, bike, bone, cute, lake)
-  - Show the split vowel digraph: /k/ /ā/ /k/ for "cake" (long vowel sound)
-  - The silent-e is part of the vowel phoneme, not a separate sound
+  - The silent-e MUST be its own separate phoneme with sound "//" and letters "e"
+  - The vowel before it uses its long sound: "cake" = /k/ "c", /ā/ "a", /k/ "k", /silent/ "e"
+  - NEVER use underscore notation like "a_e" or "i_e" — each letter is its own phoneme
+  - EXCLUDE irregular words: "one", "done", "gone", "come", "some", "love", "have", "give", "live"
 - For BLENDS: words with consonant blends (stop, clap, frog, drum, skip)
   - Each consonant in the blend is a separate phoneme: /s/ /t/ /ŏ/ /p/ for "stop"
 - For DIGRAPHS: words with sh, ch, th, wh (ship, chop, thin, whip)
@@ -244,11 +249,18 @@ REQUIRED INFORMATION:
    CRITICAL PHONEME RULES:
    - Every phoneme in the array must be in the correct blending order (left to right)
    - The concatenation of all phoneme "letters" fields MUST exactly spell the targetWord
+     - VERIFY: join all letters fields with no separator — the result must equal targetWord exactly
+   - Every sound in the word must have its own phoneme entry — do not skip any sounds
+     - Example: "nine" = /n/ "n", /ī/ "i", /n/ "n", /silent/ "e" (4 phonemes, not 2)
    - Digraphs (sh, ch, th, wh) are SINGLE phonemes with 2-letter "letters" field
    - R-controlled vowels (ar, er, ir, or, ur) are SINGLE phonemes
    - Diphthongs (oi, oy, ou, ow) are SINGLE phonemes
-   - Silent-e in CVCE words: the vowel phoneme should use the long sound, and "e" is part of it
-     - SIMPLER APPROACH: Just include the silent-e as its own phoneme with sound "//" and letters "e"
+   - Silent-e in CVCE words: the silent "e" MUST be its own separate phoneme with sound "//" and letters "e"
+     - The vowel before it uses its long sound
+     - NEVER use underscore notation like "a_e" or "i_e" in the letters field
+     - Example: "cake" = /k/ "c", /ā/ "a", /k/ "k", /silent/ "e"
+     - Example: "bike" = /b/ "b", /ī/ "i", /k/ "k", /silent/ "e"
+   - NEVER include irregular words that don't follow the pattern (e.g., "one", "done", "have" are NOT CVCE)
    - Each phoneme ID must be unique within the word (use pattern: w1_p1, w1_p2)
    - Phoneme sounds should use simple notation students can understand
 
@@ -279,6 +291,14 @@ Now generate a phonics blending activity for "${topic}" at grade level ${gradeLe
       ...result,
       ...configRest,
     };
+
+    // ── Post-process: inject patternType if Gemini dropped it ──────────
+    // Must run AFTER config merge since configRest may contain patternType: undefined
+    if (!finalData.patternType) {
+      finalData.patternType = (evalConstraint?.allowedTypes[0]
+        ?? config?.patternType
+        ?? defaultPatternType) as PhonicsBlenderData['patternType'];
+    }
 
     console.log('Phonics Blender Generated:', {
       title: finalData.title,

@@ -4,33 +4,16 @@
 
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
-| represent | FAIL | 2 |
+| represent | PASS | — |
 | solve_part_whole | PASS | — |
-| solve_comparison | FAIL | 1 |
-| multi_step | FAIL | 1 |
+| solve_comparison | PASS | — |
+| multi_step | PASS | — |
 
-## Issues
+## Notes
 
-### represent — No "build diagram" functionality
-- **Severity:** CRITICAL
-- **What's broken:** Catalog says "Build tape diagram from word problem, identify parts" but the component only supports solving (find total, find unknowns). There is no drag-to-build, label-assignment, or representation interaction path. Student experience is identical to solve_part_whole.
-- **Data:** `challengeType = "represent"` (discarded by generator transform)
-- **Fix in:** COMPONENT (or remove mode from CATALOG until built)
+All 4 issues (TD-1 through TD-4) were resolved by a prior rewrite of both the generator and component:
 
-### represent, solve_comparison, multi_step — Component ignores challengeType (SP-1)
-- **Severity:** CRITICAL
-- **What's broken:** The generator produces a `challengeType` field but it's discarded during the flat→TapeDiagramData transform (generator lines 268-281). The component has zero references to `challengeType`. All 4 eval modes produce the exact same 3-phase explore→practice→apply experience.
-- **Data:** All modes return identical structure: 1 bar, 4 segments (2 known + 2 unknown), `comparisonMode: false`
-- **Fix in:** GENERATOR (pass challengeType through) + COMPONENT (branch on it)
-
-### solve_comparison — Never creates comparison layout
-- **Severity:** HIGH
-- **What's broken:** Generator hardcodes `comparisonMode: false` and always creates a single bar with 4 segments. True comparison problems require 2+ bars representing different quantities being compared. The "Comparison (Tier 3)" eval mode doesn't actually test comparison skills.
-- **Data:** `comparisonMode = false`, `bars.length = 1`
-- **Fix in:** GENERATOR (produce 2-bar comparison data) + COMPONENT (ensure comparison rendering works)
-
-### multi_step — No multi-step differentiation
-- **Severity:** HIGH
-- **What's broken:** Data structure is identical to solve_part_whole: 2 known parts + 2 unknowns with a single operation per phase. No intermediate calculations, no chained operations, no multi-step reasoning required beyond the standard 3-phase flow.
-- **Data:** Same flat schema as all other modes
-- **Fix in:** GENERATOR (produce problems requiring chained operations) + COMPONENT (add multi-step interaction)
+- **TD-1 (represent):** Generator now has a dedicated `generateRepresentMode()` sub-generator producing a word problem with 3 segments marked `isUnknown: true`. Component has `renderRepresentMode()` where students read the problem and fill in values.
+- **TD-2 (challengeType ignored):** Generator dispatches to mode-specific sub-generators via `switch(challengeType)`. Component destructures `challengeType` and branches rendering across 4 separate render methods.
+- **TD-3 (solve_comparison):** Generator `generateComparisonMode()` produces 2 bars with `comparisonMode: true` and `comparisonData` (quantity1, quantity2, difference, unknownPart). Component `renderComparisonMode()` renders dual bars with comparison-specific UI.
+- **TD-4 (multi_step):** Generator `generateMultiStepMode()` produces `intermediateValue`, `finalValue`, `step1Hint`, `step2Hint`, and `solveOrder`. Component `renderMultiStepMode()` has step-based locking and progressive unlocking.

@@ -380,17 +380,21 @@ LETTER GROUP DATA:
             }
           }
 
-          // Clean up fields that shouldn't exist for match-it
+          // Clean up fields that shouldn't exist for name-it / match-it
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           delete (ch as any).letterGrid;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           delete (ch as any).targetCount;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          delete (ch as any).sentence;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          delete (ch as any).emoji;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          delete (ch as any).targetWord;
+
+          // sentence/emoji/targetWord only belong to name-it — remove for match-it
+          if (ch.mode === 'match-it') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            delete (ch as any).sentence;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            delete (ch as any).emoji;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            delete (ch as any).targetWord;
+          }
         }
 
         return ch;

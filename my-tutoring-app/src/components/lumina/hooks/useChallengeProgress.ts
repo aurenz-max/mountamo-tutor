@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -62,6 +62,17 @@ export function useChallengeProgress<TChallenge>(
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentAttempts, setCurrentAttempts] = useState(0);
   const [results, setResults] = useState<ChallengeResult[]>([]);
+
+  // Reset progress when the challenges array changes (e.g., new eval mode / regeneration)
+  const prevChallengesRef = useRef(challenges);
+  useEffect(() => {
+    if (prevChallengesRef.current !== challenges) {
+      prevChallengesRef.current = challenges;
+      setCurrentIndex(0);
+      setCurrentAttempts(0);
+      setResults([]);
+    }
+  }, [challenges]);
 
   const isComplete =
     challenges.length > 0 && results.length >= challenges.length;

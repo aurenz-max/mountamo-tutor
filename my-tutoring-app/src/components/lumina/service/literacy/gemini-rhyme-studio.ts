@@ -13,13 +13,26 @@ import {
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
+// Irregular-spelling words that Gemini can't reliably classify for rhyme.
+// These words rhyme phonetically with regular words but their spelling misleads
+// the LLM into marking valid pairs as non-rhyming (SP-7).
+const IRREGULAR_RHYME_WORDS = [
+  'one', 'two', 'four', 'eight',
+  'there', 'were', 'done', 'gone', 'come', 'some',
+  'love', 'have', 'give', 'live',
+  'said', 'says',
+  'though', 'through', 'tough', 'cough', 'dough',
+];
+
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   recognition: {
     promptDoc:
       `"recognition": Show two words; student says "yes" or "no" to whether they rhyme. `
       + `Mix it up: some pairs SHOULD rhyme (doesRhyme: true), some should NOT (doesRhyme: false). `
       + `REQUIRED fields: comparisonWord, comparisonWordImage, doesRhyme. `
-      + `Do NOT include options or acceptableAnswers. 3-4 challenges per session.`,
+      + `Do NOT include options or acceptableAnswers. 3-4 challenges per session. `
+      + `NEVER use these irregular-spelling words as targetWord or comparisonWord in recognition: ${IRREGULAR_RHYME_WORDS.join(', ')}. `
+      + `Only use words with regular, predictable spelling patterns so rhyme judgments are unambiguous.`,
     schemaDescription: "'recognition' (do these words rhyme? yes/no)",
   },
   identification: {
@@ -39,6 +52,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'production' (type a rhyming word)",
   },
 };
+
 
 /**
  * Schema definition for Rhyme Studio Data
@@ -224,8 +238,14 @@ MODE-SPECIFIC FIELD RULES:
 CRITICAL RULES:
 - Every challenge must have: id, mode, targetWord, targetWordImage, rhymeFamily
 - rhymeFamily MUST start with a hyphen (e.g., "-at", "-un", "-ig")
-- For recognition pairs that DO rhyme, both words must share the same rhyme family ending
-- For recognition pairs that do NOT rhyme, words must have clearly different endings
+- PHONETIC ACCURACY IS PARAMOUNT — words rhyme ONLY if they share the same ending SOUND:
+  - "eight" (/eɪt/) does NOT rhyme with "kite" (/kaɪt/) — different vowel sounds
+  - "there" (/ðɛr/) does NOT rhyme with "zero" (/zɪroʊ/) — completely different endings
+  - When in doubt, only use words that share the EXACT same spelling pattern for their ending
+- For recognition challenges, NEVER use irregular-spelling words: ${IRREGULAR_RHYME_WORDS.join(', ')}. Stick to words with regular phonetic spelling.
+- For recognition with doesRhyme: true, BOTH words MUST end with the rhymeFamily spelling (e.g., rhymeFamily "-at" → "cat" and "hat", NOT "eight" and "kite")
+- For recognition with doesRhyme: false, words must have clearly different endings
+- For production acceptableAnswers, EVERY word must genuinely rhyme with the targetWord — same ending sound
 - All words should relate to the topic "${topic}" when possible, but prioritize real rhymes
 - Use simple, common, age-appropriate words
 - IDs should be sequential: "c1", "c2", "c3", etc.
@@ -236,7 +256,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-flash-lite-latest",
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
@@ -317,6 +337,15 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
         return ch;
       }
     );
+
+    // Post-process: remove recognition challenges that use irregular-spelling words (SP-7 safety net)
+    const irregularSet = new Set(IRREGULAR_RHYME_WORDS);
+    result.challenges = result.challenges.filter((ch: Record<string, unknown>) => {
+      if (ch.mode !== 'recognition') return true;
+      const target = String(ch.targetWord ?? '').toLowerCase();
+      const comparison = String(ch.comparisonWord ?? '').toLowerCase();
+      return !irregularSet.has(target) && !irregularSet.has(comparison);
+    });
 
     // Fallback: ensure at least one challenge exists
     if (result.challenges.length === 0) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -86,6 +86,8 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
   const [currentPhase, setCurrentPhase] = useState<WorkshopPhase>('read');
   const [revisions, setRevisions] = useState<Record<string, string>>({}); // targetId -> student revision
   const [beforeAfterCompared, setBeforeAfterCompared] = useState(false);
+  // Reorganize mode: track sentence order as array of target indices
+  const [sentenceOrder, setSentenceOrder] = useState<number[]>(() => targets.map((_, i) => i));
 
   const {
     submitResult: submitEvaluation,
@@ -110,8 +112,24 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
     if (idx > 0) setCurrentPhase(phases[idx - 1]);
   };
 
+  // Reorganize helpers
+  const isReorganize = revisionSkill === 'reorganize';
+
+  const moveSentence = useCallback((fromIdx: number, direction: 'up' | 'down') => {
+    setSentenceOrder(prev => {
+      const arr = [...prev];
+      const toIdx = direction === 'up' ? fromIdx - 1 : fromIdx + 1;
+      if (toIdx < 0 || toIdx >= arr.length) return prev;
+      [arr[fromIdx], arr[toIdx]] = [arr[toIdx], arr[fromIdx]];
+      return arr;
+    });
+  }, []);
+
   // Build revised draft
   const getRevisedDraft = useCallback(() => {
+    if (isReorganize) {
+      return sentenceOrder.map(i => targets[i]?.originalText || '').join(' ');
+    }
     let revised = draft;
     targets.forEach(t => {
       const replacement = revisions[t.targetId];
@@ -120,19 +138,34 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
       }
     });
     return revised;
-  }, [draft, targets, revisions]);
+  }, [draft, targets, revisions, isReorganize, sentenceOrder]);
+
+  // Ideal draft for reorganize (targets in original array order = correct order)
+  const idealDraft = useMemo(() => {
+    if (!isReorganize) return '';
+    return targets.map(t => t.idealRevision || t.originalText).join(' ');
+  }, [isReorganize, targets]);
 
   // Submit
   const submitFinalEvaluation = useCallback(() => {
     if (hasSubmittedEvaluation) return;
-    const revisionsApplied = targets.filter(t => (revisions[t.targetId] || '').trim().length > 3).length;
 
-    // Simple improvement score based on whether revisions were made and differ from original
-    const changed = targets.filter(t => {
-      const rev = (revisions[t.targetId] || '').trim();
-      return rev.length > 3 && rev !== t.originalText;
-    }).length;
-    const improvementScore = targets.length > 0 ? Math.round((changed / targets.length) * 100) : 0;
+    let revisionsApplied: number;
+    let improvementScore: number;
+
+    if (isReorganize) {
+      // Score reorganize by how many sentences are in correct position
+      const correctPositions = sentenceOrder.filter((origIdx, pos) => origIdx === pos).length;
+      revisionsApplied = correctPositions;
+      improvementScore = targets.length > 0 ? Math.round((correctPositions / targets.length) * 100) : 0;
+    } else {
+      revisionsApplied = targets.filter(t => (revisions[t.targetId] || '').trim().length > 3).length;
+      const changed = targets.filter(t => {
+        const rev = (revisions[t.targetId] || '').trim();
+        return rev.length > 3 && rev !== t.originalText;
+      }).length;
+      improvementScore = targets.length > 0 ? Math.round((changed / targets.length) * 100) : 0;
+    }
 
     const score = targets.length > 0 ? Math.round((revisionsApplied / targets.length) * 70) + (beforeAfterCompared ? 15 : 0) + (improvementScore > 50 ? 15 : 5) : 50;
 
@@ -147,8 +180,11 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
       attemptsCount: 1,
     };
 
-    submitEvaluation(score >= 50, Math.min(100, score), metrics, { revisions, revisedDraft: getRevisedDraft() });
-  }, [hasSubmittedEvaluation, targets, revisions, revisionSkill, beforeAfterCompared, getRevisedDraft, submitEvaluation]);
+    submitEvaluation(score >= 50, Math.min(100, score), metrics, {
+      ...(isReorganize ? { sentenceOrder } : { revisions }),
+      revisedDraft: getRevisedDraft(),
+    });
+  }, [hasSubmittedEvaluation, targets, revisions, revisionSkill, beforeAfterCompared, getRevisedDraft, submitEvaluation, isReorganize, sentenceOrder]);
 
   // Render progress
   const renderProgress = () => (
@@ -231,12 +267,18 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
         {/* Phase 1: Read */}
         {currentPhase === 'read' && (
           <div className="space-y-3">
-            <p className="text-xs text-slate-500">Read this draft and notice the highlighted areas that need revision:</p>
+            <p className="text-xs text-slate-500">
+              {isReorganize
+                ? 'Read this passage — the sentences are out of order. Your job is to put them in the right order:'
+                : 'Read this draft and notice the highlighted areas that need revision:'}
+            </p>
             <div className="rounded-lg bg-white/5 border border-white/10 p-4">
-              {renderDraftWithHighlights()}
+              {isReorganize
+                ? <p className="text-sm leading-relaxed text-slate-200">{draft}</p>
+                : renderDraftWithHighlights()}
             </div>
             <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2">
-              <p className="text-xs text-amber-300">Focus: <span className="font-bold">{SKILL_LABELS[revisionSkill]}</span> — {targets.length} areas to improve</p>
+              <p className="text-xs text-amber-300">Focus: <span className="font-bold">{SKILL_LABELS[revisionSkill]}</span> — {isReorganize ? `${targets.length} sentences to reorder` : `${targets.length} areas to improve`}</p>
             </div>
             <div className="flex justify-end">
               <Button variant="ghost" onClick={nextPhase}
@@ -250,43 +292,81 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
         {/* Phase 2: Revise */}
         {currentPhase === 'revise' && (
           <div className="space-y-3">
-            <p className="text-xs text-slate-500">Revise each highlighted section:</p>
-            {targets.map(target => (
-              <div key={target.targetId} className="rounded-lg bg-white/5 border border-white/10 p-3 space-y-2">
-                <div className="flex items-start gap-2">
-                  <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded ${SKILL_COLORS[revisionSkill]}`}>Original</span>
-                  <p className="text-sm text-slate-400 line-through">{target.originalText}</p>
+            {isReorganize ? (
+              <>
+                <p className="text-xs text-slate-500">Reorder these sentences so they flow logically. Use the arrows to move sentences up or down:</p>
+                <div className="space-y-1.5">
+                  {sentenceOrder.map((origIdx, pos) => {
+                    const target = targets[origIdx];
+                    if (!target) return null;
+                    return (
+                      <div key={target.targetId} className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 p-2.5">
+                        <span className="text-xs font-mono text-slate-500 w-5 shrink-0 text-center">{pos + 1}</span>
+                        <p className="text-sm text-slate-200 flex-1">{target.originalText}</p>
+                        <div className="flex flex-col gap-0.5 shrink-0">
+                          <button
+                            onClick={() => moveSentence(pos, 'up')}
+                            disabled={pos === 0}
+                            className="px-1.5 py-0.5 rounded text-xs border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="Move up"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            onClick={() => moveSentence(pos, 'down')}
+                            disabled={pos === sentenceOrder.length - 1}
+                            className="px-1.5 py-0.5 rounded text-xs border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="Move down"
+                          >
+                            ▼
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="text-xs text-slate-500">{target.suggestion}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-slate-500">Revise each highlighted section:</p>
+                {targets.map(target => (
+                  <div key={target.targetId} className="rounded-lg bg-white/5 border border-white/10 p-3 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded ${SKILL_COLORS[revisionSkill]}`}>Original</span>
+                      <p className="text-sm text-slate-400 line-through">{target.originalText}</p>
+                    </div>
+                    <p className="text-xs text-slate-500">{target.suggestion}</p>
 
-                {target.alternatives && target.alternatives.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {target.alternatives.map((alt, i) => (
-                      <button key={i} onClick={() => setRevisions(prev => ({ ...prev, [target.targetId]: alt }))}
-                        className={`px-2 py-1 rounded text-xs border transition-all ${
-                          revisions[target.targetId] === alt
-                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                            : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
-                        }`}>
-                        {alt}
-                      </button>
-                    ))}
+                    {target.alternatives && target.alternatives.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {target.alternatives.map((alt, i) => (
+                          <button key={i} onClick={() => setRevisions(prev => ({ ...prev, [target.targetId]: alt }))}
+                            className={`px-2 py-1 rounded text-xs border transition-all ${
+                              revisions[target.targetId] === alt
+                                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                            }`}>
+                            {alt}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <textarea
+                        value={revisions[target.targetId] || ''}
+                        onChange={e => setRevisions(prev => ({ ...prev, [target.targetId]: e.target.value }))}
+                        placeholder="Write your revision..."
+                        rows={2}
+                        className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
+                      />
+                    )}
                   </div>
-                ) : (
-                  <textarea
-                    value={revisions[target.targetId] || ''}
-                    onChange={e => setRevisions(prev => ({ ...prev, [target.targetId]: e.target.value }))}
-                    placeholder="Write your revision..."
-                    rows={2}
-                    className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
-                  />
-                )}
-              </div>
-            ))}
+                ))}
+              </>
+            )}
             <div className="flex justify-between">
               <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
               <Button variant="ghost" onClick={nextPhase}
-                disabled={!targets.some(t => (revisions[t.targetId] || '').trim())}
+                disabled={!isReorganize && !targets.some(t => (revisions[t.targetId] || '').trim())}
                 className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
                 Compare
               </Button>
@@ -297,15 +377,21 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
         {/* Phase 3: Compare */}
         {currentPhase === 'compare' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid ${isReorganize ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
               <div className="rounded-lg bg-rose-500/5 border border-rose-500/20 p-3">
-                <p className="text-xs font-bold text-rose-400 mb-2">Before</p>
+                <p className="text-xs font-bold text-rose-400 mb-2">{isReorganize ? 'Scrambled' : 'Before'}</p>
                 <p className="text-sm text-slate-300 leading-relaxed">{draft}</p>
               </div>
               <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 p-3">
-                <p className="text-xs font-bold text-emerald-400 mb-2">After</p>
+                <p className="text-xs font-bold text-emerald-400 mb-2">Your Order</p>
                 <p className="text-sm text-slate-300 leading-relaxed">{getRevisedDraft()}</p>
               </div>
+              {isReorganize && (
+                <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
+                  <p className="text-xs font-bold text-blue-400 mb-2">Ideal Order</p>
+                  <p className="text-sm text-slate-300 leading-relaxed">{idealDraft}</p>
+                </div>
+              )}
             </div>
 
             {!beforeAfterCompared && (

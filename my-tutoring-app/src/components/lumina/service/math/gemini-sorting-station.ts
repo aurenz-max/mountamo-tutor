@@ -1,242 +1,527 @@
 import { Type, Schema } from "@google/genai";
-import { SortingStationData } from "../../primitives/visual-primitives/math/SortingStation";
+import {
+  SortingStationData,
+  SortingStationChallenge,
+  SortingObject,
+  SortingCategory,
+} from "../../primitives/visual-primitives/math/SortingStation";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
-  constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
 
 // ============================================================================
-// Eval Mode Docs — one entry per challenge type
+// Eval Mode Docs — one entry per challenge type (kept for eval mode resolution)
 // ============================================================================
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'sort-by-one': {
-    promptDoc:
-      `"sort-by-one": Sort objects by ONE visible attribute (color, shape, or size). Provide sortingAttribute and categories with matching rules. Example: Sort fruits by color into "Red" and "Yellow" bins.`,
+    promptDoc: `"sort-by-one": Sort objects by ONE visible attribute (color, shape, or size).`,
     schemaDescription: "'sort-by-one' (single-attribute sort)",
   },
   'sort-by-attribute': {
-    promptDoc:
-      `"sort-by-attribute": Objects have multiple attributes; student picks how to sort. Provide sortingAttribute and categories. Objects should have multiple interesting attributes. Example: Sort animals — by size OR number of legs.`,
+    promptDoc: `"sort-by-attribute": Objects have multiple attributes; student picks how to sort.`,
     schemaDescription: "'sort-by-attribute' (named-property sort)",
   },
   'count-and-compare': {
-    promptDoc:
-      `"count-and-compare": Objects are pre-sorted into groups. Student counts each group and answers a comparison question. Provide categories, comparisonQuestion, and correctComparison ('more', 'fewer', or 'equal'). Example: "Are there more red apples or green apples?"`,
+    promptDoc: `"count-and-compare": Objects are pre-sorted into groups. Student counts and compares.`,
     schemaDescription: "'count-and-compare' (quantify and compare groups)",
   },
   'odd-one-out': {
-    promptDoc:
-      `"odd-one-out": A group where one doesn't belong. Student identifies it. Provide oddOneOut (ID of the odd object) and oddOneOutReason. Example: 🍎🍊🍋🚗 — the car doesn't belong because it's not a fruit.`,
+    promptDoc: `"odd-one-out": A group where one doesn't belong. Student identifies it.`,
     schemaDescription: "'odd-one-out' (identify the exception)",
   },
   'two-attributes': {
-    promptDoc:
-      `"two-attributes": Find objects matching TWO attributes simultaneously. Provide categories with rules having EXACTLY two attribute keys. Use visually distinct emojis (prefer color + type). Do NOT use "size" as an attribute. Example: Find RED FRUITS → rule: { color: 'red', type: 'fruit' }.`,
+    promptDoc: `"two-attributes": Find objects matching TWO attributes simultaneously.`,
     schemaDescription: "'two-attributes' (multi-criterion classification)",
   },
   'tally-record': {
-    promptDoc:
-      `"tally-record": Sort objects and record the count of each group using tallies. Provide categories. The showTallyChart flag should be true. Example: Sort the shapes and tally how many of each.`,
+    promptDoc: `"tally-record": Sort objects and record the count of each group using tallies.`,
     schemaDescription: "'tally-record' (sort and tally counts)",
   },
 };
 
-/**
- * Schema definition for Sorting Station Data
- *
- * This schema defines the structure for sorting and categorization activities,
- * including attribute-based sorting, count-and-compare, odd-one-out,
- * and tally recording for K-1 data and classification skills.
- *
- * Each challenge presents objects with attributes that students sort
- * into categories based on rules.
- */
-const sortingStationSchema: Schema = {
+// ============================================================================
+// Shared object schema — used by all modes
+// ============================================================================
+
+const objectItemSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: {
-      type: Type.STRING,
-      description: "Title for the sorting activity (e.g., 'Sort the Animals!', 'Fruit Color Sort')"
-    },
-    description: {
-      type: Type.STRING,
-      description: "Brief educational description of what students will learn"
-    },
+    label: { type: Type.STRING, description: "Display label (e.g., 'Red Apple')" },
+    emoji: { type: Type.STRING, description: "Single emoji (e.g., '🍎')" },
+    color: { type: Type.STRING, description: "Color attribute (e.g., 'red')" },
+    shape: { type: Type.STRING, description: "Shape attribute (e.g., 'round')" },
+    size: { type: Type.STRING, description: "Size attribute (e.g., 'big')" },
+    type: { type: Type.STRING, description: "Type attribute (e.g., 'fruit')" },
+  },
+  required: ["label", "emoji"],
+};
+
+// ============================================================================
+// Per-mode schemas — simple, focused, no cross-contamination
+// ============================================================================
+
+/** sort-by-one / sort-by-attribute / tally-record all use the same shape */
+const sortSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Fun title for the activity" },
+    description: { type: Type.STRING, description: "Brief educational description" },
     challenges: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique challenge ID (e.g., 'c1', 'c2')"
-          },
-          type: {
-            type: Type.STRING,
-            description: "Challenge type: 'sort-by-one', 'sort-by-attribute', 'count-and-compare', 'two-attributes', 'odd-one-out', 'tally-record'"
-          },
           instruction: {
             type: Type.STRING,
-            description: "Student-facing instruction, warm and encouraging (e.g., 'Can you sort the animals by color?')"
-          },
-          objects: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                id: {
-                  type: Type.STRING,
-                  description: "Unique object ID (e.g., 'obj1', 'obj2')"
-                },
-                label: {
-                  type: Type.STRING,
-                  description: "Display label for the object (e.g., 'Red Apple', 'Blue Bird')"
-                },
-                emoji: {
-                  type: Type.STRING,
-                  description: "Single emoji representing the object (e.g., '🍎', '🐦')"
-                },
-                attributes: {
-                  type: Type.OBJECT,
-                  properties: {
-                    color: {
-                      type: Type.STRING,
-                      description: "Color attribute (e.g., 'red', 'blue', 'green')"
-                    },
-                    shape: {
-                      type: Type.STRING,
-                      description: "Shape attribute (e.g., 'round', 'square', 'triangle')"
-                    },
-                    size: {
-                      type: Type.STRING,
-                      description: "Size attribute (e.g., 'big', 'small', 'medium')"
-                    },
-                    type: {
-                      type: Type.STRING,
-                      description: "Type/category attribute (e.g., 'fruit', 'animal', 'vehicle')"
-                    }
-                  },
-                  description: "Key-value pairs of object attributes used for sorting"
-                }
-              },
-              required: ["id", "label", "emoji", "attributes"]
-            },
-            description: "Array of sortable objects with attributes"
+            description: "Warm instruction asking students to sort (e.g., 'Can you sort the animals by color?')",
           },
           sortingAttribute: {
             type: Type.STRING,
-            description: "The attribute to sort by (e.g., 'color', 'shape', 'size'). Used for sort-by-one and sort-by-attribute types."
+            description: "Which attribute to sort by: 'color', 'shape', 'size', or 'type'",
           },
-          categories: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                label: {
-                  type: Type.STRING,
-                  description: "Display label for the category (e.g., 'Red Things', 'Big Animals')"
-                },
-                rule: {
-                  type: Type.OBJECT,
-                  properties: {
-                    color: {
-                      type: Type.STRING,
-                      description: "Color value to match"
-                    },
-                    shape: {
-                      type: Type.STRING,
-                      description: "Shape value to match"
-                    },
-                    size: {
-                      type: Type.STRING,
-                      description: "Size value to match"
-                    },
-                    type: {
-                      type: Type.STRING,
-                      description: "Type value to match"
-                    }
-                  },
-                  description: "Rule defining which objects belong in this category (attribute key-value pairs to match)"
-                }
-              },
-              required: ["label", "rule"]
-            },
-            description: "Categories to sort objects into. Required for sort-by-one, sort-by-attribute, count-and-compare, two-attributes, and tally-record."
-          },
-          oddOneOut: {
+          objects: { type: Type.ARRAY, items: objectItemSchema },
+        },
+        required: ["instruction", "sortingAttribute", "objects"],
+      },
+    },
+  },
+  required: ["title", "description", "challenges"],
+};
+
+const countCompareSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Fun title" },
+    description: { type: Type.STRING, description: "Brief description" },
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          instruction: {
             type: Type.STRING,
-            description: "ID of the object that doesn't belong (for odd-one-out challenges)"
+            description: "Instruction asking students to count and compare groups",
           },
-          oddOneOutReason: {
+          sortingAttribute: {
             type: Type.STRING,
-            description: "Explanation of why this object doesn't belong (e.g., 'It's the only one that isn't round')"
+            description: "Attribute the objects are pre-sorted by: 'color', 'shape', 'size', or 'type'",
           },
+          objects: { type: Type.ARRAY, items: objectItemSchema },
           comparisonQuestion: {
             type: Type.STRING,
-            description: "Question about comparing sorted groups (e.g., 'Which group has more?'). For count-and-compare."
+            description: "The comparison question (e.g., 'Which group has more?')",
           },
           correctComparison: {
             type: Type.STRING,
-            description: "Correct answer to comparison: 'more', 'fewer', or 'equal'. For count-and-compare."
-          }
+            description: "Answer: 'more', 'fewer', or 'equal'",
+          },
         },
-        required: ["id", "type", "instruction", "objects"]
+        required: ["instruction", "sortingAttribute", "objects", "comparisonQuestion", "correctComparison"],
       },
-      description: "Array of 3-5 progressive sorting challenges"
     },
-    maxCategories: {
-      type: Type.NUMBER,
-      description: "Maximum number of sorting categories (2-4 for K-1)"
-    },
-    showCounts: {
-      type: Type.BOOLEAN,
-      description: "Whether to show count badges on categories"
-    },
-    showTallyChart: {
-      type: Type.BOOLEAN,
-      description: "Whether to show a tally chart for recording counts"
-    },
-    gradeBand: {
-      type: Type.STRING,
-      description: "Grade band: 'K' for Kindergarten, '1' for Grade 1"
-    }
   },
-  required: ["title", "challenges", "maxCategories", "showCounts", "showTallyChart", "gradeBand"]
+  required: ["title", "description", "challenges"],
 };
 
-/**
- * Generate sorting station data for interactive categorization activities
- *
- * Grade-aware content:
- * - Kindergarten: sort by one attribute (color/shape/size), 2-3 categories, simple objects
- * - Grade 1: sort by multiple attributes, odd-one-out reasoning, tally recording, comparisons
- *
- * Each challenge presents objects that students sort into categories based on rules.
- *
- * @param topic - The math topic or concept
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns SortingStationData with complete configuration
- */
+const oddOneOutSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Fun title" },
+    description: { type: Type.STRING, description: "Brief description" },
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          instruction: {
+            type: Type.STRING,
+            description: "Instruction asking which one doesn't belong",
+          },
+          objects: { type: Type.ARRAY, items: objectItemSchema },
+          oddOneOutIndex: {
+            type: Type.NUMBER,
+            description: "Zero-based index of the object that doesn't belong",
+          },
+          oddOneOutReason: {
+            type: Type.STRING,
+            description: "Explanation of why it doesn't belong",
+          },
+        },
+        required: ["instruction", "objects", "oddOneOutIndex", "oddOneOutReason"],
+      },
+    },
+  },
+  required: ["title", "description", "challenges"],
+};
+
+const twoAttributesSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Fun title" },
+    description: { type: Type.STRING, description: "Brief description" },
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          instruction: {
+            type: Type.STRING,
+            description: "Instruction asking students to find objects matching two attributes",
+          },
+          objects: { type: Type.ARRAY, items: objectItemSchema },
+          targetColor: {
+            type: Type.STRING,
+            description: "First attribute value to match (a color, e.g., 'red')",
+          },
+          targetType: {
+            type: Type.STRING,
+            description: "Second attribute value to match (a type, e.g., 'fruit')",
+          },
+          categoryLabel: {
+            type: Type.STRING,
+            description: "Human label for the target group (e.g., 'Red Fruits')",
+          },
+        },
+        required: ["instruction", "objects", "targetColor", "targetType", "categoryLabel"],
+      },
+    },
+  },
+  required: ["title", "description", "challenges"],
+};
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function gradeGuidance(gradeLevel: string): string {
+  const isK = /[kK]|kinder/i.test(gradeLevel);
+  return isK
+    ? 'Kindergarten: 4-6 objects, 2-3 groups, very familiar concrete objects (animals, fruits, toys), simple warm language.'
+    : 'Grade 1: 5-8 objects, 2-4 groups, introduce reasoning, connect to data concepts.';
+}
+
+function resolveGradeBand(gradeLevel: string): 'K' | '1' {
+  return /[kK]|kinder/i.test(gradeLevel) ? 'K' : '1';
+}
+
+/** Convert flat LLM object fields into the component's SortingObject shape */
+function toLuminaObjects(
+  raw: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }>,
+  idOffset: number,
+): SortingObject[] {
+  return raw.map((obj, j) => ({
+    id: `obj${idOffset + j + 1}`,
+    label: obj.label || obj.emoji || 'Object',
+    emoji: obj.emoji || '⭐',
+    attributes: {
+      ...(obj.color && { color: obj.color }),
+      ...(obj.shape && { shape: obj.shape }),
+      ...(obj.size && { size: obj.size }),
+      ...(obj.type && { type: obj.type }),
+    },
+  }));
+}
+
+/** Derive categories deterministically from actual object attribute values */
+function deriveCategories(objects: SortingObject[], sortAttr: string): SortingCategory[] {
+  const values = Array.from(new Set(objects.map(o => o.attributes[sortAttr]).filter(Boolean)));
+  return values.map(v => ({
+    label: v.charAt(0).toUpperCase() + v.slice(1),
+    rule: { [sortAttr]: v },
+  }));
+}
+
+// ============================================================================
+// Sub-generators — one LLM call each, focused prompt + simple schema
+// ============================================================================
+
+async function generateSortChallenges(
+  topic: string,
+  gradeLevel: string,
+  sortType: 'sort-by-one' | 'sort-by-attribute' | 'tally-record',
+  count: number,
+): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
+  const typeGuide = {
+    'sort-by-one':
+      'Each challenge sorts by ONE attribute (color, shape, size, or type). ' +
+      'Use a DIFFERENT sorting attribute for each challenge to create variety. ' +
+      'Instruction MUST ask students to sort/group — NEVER ask "which has more" or "which doesn\'t belong".',
+    'sort-by-attribute':
+      'Objects have multiple interesting attributes. Student picks HOW to sort. ' +
+      'Give objects at least 2-3 meaningful attributes so there are multiple valid sort criteria.',
+    'tally-record':
+      'Sort objects and tally the count of each group. ' +
+      'Each challenge sorts by ONE attribute. Every object MUST match a group. ' +
+      'Instruction should mention tallying or recording counts.',
+  }[sortType];
+
+  const prompt = `
+Create a sorting activity for teaching "${topic}" to ${gradeLevel} students.
+${gradeGuidance(gradeLevel)}
+
+TASK TYPE: ${sortType}
+${typeGuide}
+
+Generate exactly ${count} challenges. Each challenge needs:
+- A warm, encouraging instruction for young children
+- A sortingAttribute (one of: color, shape, size, type)
+- 4-8 objects with a label, emoji, and attributes (color, shape, size, type as relevant)
+- Objects MUST have at least 2 distinct values for the sortingAttribute so there are 2+ groups
+- Use fun kid-friendly emojis and themes kids love (animals, food, toys, nature)
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: sortSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) throw new Error(`No ${sortType} challenges returned`);
+
+  const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
+    (ch: { instruction: string; sortingAttribute: string; objects: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }> }, i: number) => {
+      const sortAttr = ch.sortingAttribute || 'type';
+      const objects = toLuminaObjects(ch.objects || [], i * 10);
+      const categories = deriveCategories(objects, sortAttr);
+
+      return {
+        id: `c${i + 1}`,
+        type: sortType,
+        instruction: ch.instruction,
+        sortingAttribute: sortAttr,
+        objects,
+        categories: categories.length >= 2 ? categories : deriveCategories(objects, 'type'),
+      } as SortingStationChallenge;
+    },
+  );
+
+  return { title: data.title, description: data.description, challenges };
+}
+
+async function generateCountCompareChallenges(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
+  const prompt = `
+Create a count-and-compare activity for teaching "${topic}" to ${gradeLevel} students.
+${gradeGuidance(gradeLevel)}
+
+TASK: Objects are pre-sorted into groups. Student counts each group and answers a comparison question.
+
+Generate exactly ${count} challenges. Each challenge needs:
+- A warm instruction
+- A sortingAttribute (color, shape, size, or type)
+- 4-8 objects with attributes — groups MUST have DIFFERENT counts so there's a clear answer
+- A comparisonQuestion (e.g., "Are there more red things or blue things?")
+- correctComparison: 'more', 'fewer', or 'equal'
+
+Make sure the groups have unequal sizes for 'more'/'fewer' answers.
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: countCompareSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) throw new Error('No count-and-compare challenges returned');
+
+  const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
+    (ch: { instruction: string; sortingAttribute: string; objects: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }>; comparisonQuestion: string; correctComparison: string }, i: number) => {
+      const sortAttr = ch.sortingAttribute || 'type';
+      const objects = toLuminaObjects(ch.objects || [], i * 10);
+      const categories = deriveCategories(objects, sortAttr);
+      const validComparisons = ['more', 'fewer', 'equal'];
+
+      return {
+        id: `c${i + 1}`,
+        type: 'count-and-compare' as const,
+        instruction: ch.instruction,
+        sortingAttribute: sortAttr,
+        objects,
+        categories,
+        comparisonQuestion: ch.comparisonQuestion || 'Which group has more?',
+        correctComparison: (validComparisons.includes(ch.correctComparison)
+          ? ch.correctComparison
+          : 'more') as 'more' | 'fewer' | 'equal',
+      } satisfies SortingStationChallenge;
+    },
+  );
+
+  return { title: data.title, description: data.description, challenges };
+}
+
+async function generateOddOneOutChallenges(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
+  const prompt = `
+Create an odd-one-out activity for teaching "${topic}" to ${gradeLevel} students.
+${gradeGuidance(gradeLevel)}
+
+TASK: Show a group of objects where ONE doesn't belong. Student finds it.
+
+Generate exactly ${count} challenges. Each challenge needs:
+- A warm instruction asking "Which one doesn't belong?"
+- 4-6 objects where ALL but ONE share a common attribute
+- oddOneOutIndex: the ZERO-BASED INDEX of the object that doesn't belong
+- oddOneOutReason: a kid-friendly explanation (e.g., "It's the only one that isn't round")
+
+The odd object must be CLEARLY different from the majority group.
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: oddOneOutSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) throw new Error('No odd-one-out challenges returned');
+
+  const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
+    (ch: { instruction: string; objects: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }>; oddOneOutIndex: number; oddOneOutReason: string }, i: number) => {
+      const objects = toLuminaObjects(ch.objects || [], i * 10);
+      const idx = Math.max(0, Math.min(ch.oddOneOutIndex ?? 0, objects.length - 1));
+
+      return {
+        id: `c${i + 1}`,
+        type: 'odd-one-out' as const,
+        instruction: ch.instruction,
+        objects,
+        oddOneOut: objects[idx]?.id,
+        oddOneOutReason: ch.oddOneOutReason || 'This one is different from the others.',
+      } satisfies SortingStationChallenge;
+    },
+  );
+
+  return { title: data.title, description: data.description, challenges };
+}
+
+async function generateTwoAttributesChallenges(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
+  const prompt = `
+Create a two-attribute classification activity for teaching "${topic}" to ${gradeLevel} students.
+${gradeGuidance(gradeLevel)}
+
+TASK: Student finds objects matching TWO attributes at once (e.g., "Find red fruits").
+
+Generate exactly ${count} challenges. Each challenge needs:
+- A warm instruction (e.g., "Can you find all the red fruits?")
+- 6-8 objects with BOTH a color AND a type attribute — use visually distinct emojis
+- targetColor: the color to match (e.g., 'red')
+- targetType: the type to match (e.g., 'fruit')
+- categoryLabel: human label (e.g., 'Red Fruits')
+
+Objects must include:
+- Some matching BOTH attributes (correct answers)
+- Some matching only color (distractors)
+- Some matching only type (distractors)
+- Some matching neither (distractors)
+
+Do NOT use "size" — it's not visually distinguishable via emoji.
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: twoAttributesSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) throw new Error('No two-attributes challenges returned');
+
+  const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
+    (ch: { instruction: string; objects: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }>; targetColor: string; targetType: string; categoryLabel: string }, i: number) => {
+      const objects = toLuminaObjects(ch.objects || [], i * 10);
+      // Strip "size" from objects
+      for (const obj of objects) delete obj.attributes.size;
+
+      const targetRule: Record<string, string> = {
+        color: ch.targetColor || 'red',
+        type: ch.targetType || 'fruit',
+      };
+
+      // Verify at least 1 object matches both and at least 1 doesn't
+      const matchCount = objects.filter(o =>
+        Object.entries(targetRule).every(([k, v]) => o.attributes[k] === v),
+      ).length;
+
+      // If the split is trivial, fall back to sort-by-one
+      if (matchCount === 0 || matchCount === objects.length) {
+        const categories = deriveCategories(objects, 'type');
+        return {
+          id: `c${i + 1}`,
+          type: 'sort-by-one' as const,
+          instruction: ch.instruction,
+          sortingAttribute: 'type',
+          objects,
+          categories,
+        } satisfies SortingStationChallenge;
+      }
+
+      return {
+        id: `c${i + 1}`,
+        type: 'two-attributes' as const,
+        instruction: ch.instruction,
+        objects,
+        categories: [
+          { label: ch.categoryLabel || `${ch.targetColor} ${ch.targetType}`, rule: targetRule },
+          { label: 'Others', rule: {} }, // component uses "doesn't match first rule" logic
+        ],
+      } satisfies SortingStationChallenge;
+    },
+  );
+
+  return { title: data.title, description: data.description, challenges };
+}
+
+// ============================================================================
+// Generator dispatch map
+// ============================================================================
+
+type SubGenerator = (
+  topic: string,
+  gradeLevel: string,
+  count: number,
+) => Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }>;
+
+const GENERATOR_MAP: Record<string, SubGenerator> = {
+  'sort-by-one': (t, g, n) => generateSortChallenges(t, g, 'sort-by-one', n),
+  'sort-by-attribute': (t, g, n) => generateSortChallenges(t, g, 'sort-by-attribute', n),
+  'tally-record': (t, g, n) => generateSortChallenges(t, g, 'tally-record', n),
+  'count-and-compare': generateCountCompareChallenges,
+  'odd-one-out': generateOddOneOutChallenges,
+  'two-attributes': generateTwoAttributesChallenges,
+};
+
+// ============================================================================
+// Orchestrator — delegates to sub-generators, runs in parallel, combines
+// ============================================================================
+
 interface SortingStationConfig {
   difficulty?: number;
   challengeTypes?: string[];
   maxCategories?: number;
-  /** Target eval mode from the IRT calibration system. */
   targetEvalMode?: string;
 }
 
 export const generateSortingStation = async (
   topic: string,
   gradeLevel: string,
-  config?: SortingStationConfig
+  config?: SortingStationConfig,
 ): Promise<SortingStationData> => {
-  // Resolve eval mode constraint (null = mixed difficulty)
   const evalConstraint = resolveEvalModeConstraint(
     'sorting-station',
     config?.targetEvalMode,
@@ -244,338 +529,52 @@ export const generateSortingStation = async (
   );
   logEvalModeResolution('SortingStation', config?.targetEvalMode, evalConstraint);
 
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(sortingStationSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
-    : sortingStationSchema;
+  const gradeBand = resolveGradeBand(gradeLevel);
+  const allowedTypes = evalConstraint?.allowedTypes ?? Object.keys(GENERATOR_MAP);
 
-  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  // Determine how many challenges each sub-generator should produce.
+  // Constrained (single type): 4 challenges from one generator.
+  // Mixed (unconstrained): 1 challenge per type, run all in parallel.
+  const isSingleMode = allowedTypes.length === 1;
+  const challengesPerType = isSingleMode ? 4 : 1;
 
-  const prompt = `
-Create an educational sorting and categorization activity for teaching "${topic}" to ${gradeLevel} students.
-
-CONTEXT:
-- A sorting station is a workspace where students drag objects into categories
-- Students learn to classify, sort by attributes, compare groups, and record data
-- Key skills: attribute recognition, categorization, data organization, comparison, tallying
-- Each challenge has its own set of objects and sorting rules
-
-GUIDELINES FOR GRADE LEVELS:
-- Kindergarten (gradeBand "K"):
-  * Sort by ONE visible attribute at a time (color, shape, or size)
-  * Use 2-3 categories maximum
-  * 4-8 objects per challenge (keep it manageable)
-  * Use very familiar, concrete objects kids know (animals, fruits, toys)
-  * Simple, warm language ("Can you put the red ones together?")
-
-- Grade 1 (gradeBand "1"):
-  * Sort by one or two attributes
-  * Use 2-4 categories
-  * 5-10 objects per challenge
-  * Introduce reasoning ("Why doesn't this one belong?")
-  * Connect sorting to data collection and graphing concepts
-
-${challengeTypeSection}
-
-ADDITIONAL RULES FOR CHALLENGE TYPES:
-- "sort-by-one": MUST have ≥2 categories. Every object MUST match exactly one category via its attributes. The instruction MUST ask students to sort/group — NEVER ask "which group has more" (that's count-and-compare) or "which doesn't belong" (that's odd-one-out).
-- "sort-by-attribute": Same rules as sort-by-one — every object must fit a category.
-- "two-attributes": Both attributes must be VISUALLY DISTINGUISHABLE through different emojis. Prefer color + type. Do NOT use "size". Use distinct emojis per combination.
-- "count-and-compare": correctComparison must be 'more', 'fewer', or 'equal'.
-- "odd-one-out": oddOneOut must be an object ID that appears in the objects array.
-- "tally-record": set showTallyChart to true. Every object must match exactly one category. Category labels must match what the rule actually selects (e.g., if rule is {type: insect}, label must be "Insects", NOT "Insects & Amphibians").
-
-${config ? `
-CONFIGURATION HINTS:
-${config.difficulty !== undefined ? `- Difficulty level (1-3): ${config.difficulty}` : ''}
-${config.maxCategories !== undefined ? `- Max categories: ${config.maxCategories}` : ''}
-` : ''}
-
-REQUIREMENTS:
-1. Generate 3-5 challenges${!evalConstraint ? ' that progress in difficulty' : ' all using the allowed challenge type(s) above'}
-2. Use FUN, kid-friendly emojis for every object (single emoji per object)
-3. Give each object a clear label and meaningful attributes
-4. Object IDs should be unique across all challenges (e.g., 'obj1', 'obj2', ...)
-5. Use warm, encouraging instruction text for young children
-6. Every category rule must use attribute keys that exist on the objects
-7. Make sure each challenge's objects have the attributes needed for sorting
-8. Use age-appropriate vocabulary and themes kids love (animals, food, toys, nature)
-9. Set maxCategories to the highest number of categories used across all challenges
-10. Set showCounts to true so students see how many objects are in each bin
-11. Set showTallyChart to true if any tally-record challenges are included
-
-Return the complete sorting station configuration.
-`;
-
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema
-    },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-
-  if (!data) {
-    throw new Error('No valid sorting station data returned from Gemini API');
-  }
-
-  // Validation: ensure gradeBand is valid
-  if (data.gradeBand !== 'K' && data.gradeBand !== '1') {
-    data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
-  }
-
-  // Validation: ensure maxCategories is sensible
-  if (!data.maxCategories || data.maxCategories < 2) {
-    data.maxCategories = data.gradeBand === 'K' ? 3 : 4;
-  }
-  if (data.maxCategories > 6) {
-    data.maxCategories = data.gradeBand === 'K' ? 3 : 4;
-  }
-
-  // Validation: ensure showCounts has a default
-  if (data.showCounts === undefined || data.showCounts === null) {
-    data.showCounts = true;
-  }
-
-  // Validation: ensure showTallyChart has a default
-  if (data.showTallyChart === undefined || data.showTallyChart === null) {
-    data.showTallyChart = false;
-  }
-
-  // Validate challenge types
-  const validChallengeTypes = evalConstraint?.allowedTypes ?? [
-    'sort-by-one', 'sort-by-attribute', 'count-and-compare',
-    'two-attributes', 'odd-one-out', 'tally-record'
-  ];
-
-  data.challenges = (data.challenges || []).filter(
-    (c: { type: string }) => validChallengeTypes.includes(c.type)
+  // Launch all allowed sub-generators in parallel
+  const results = await Promise.all(
+    allowedTypes
+      .filter(t => GENERATOR_MAP[t])
+      .map(t => GENERATOR_MAP[t](topic, gradeLevel, challengesPerType)),
   );
 
-  // Per-challenge validation
-  for (const challenge of data.challenges) {
-    // Ensure objects array exists
-    if (!Array.isArray(challenge.objects)) {
-      challenge.objects = [];
-    }
+  // Combine: flatten challenges, re-number IDs, pick first title
+  let allChallenges: SortingStationChallenge[] = [];
+  let title = '';
+  let description = '';
+  let globalObjId = 0;
 
-    // Ensure each object has required fields
-    for (const obj of challenge.objects) {
-      if (!obj.id) obj.id = `obj_${Math.random().toString(36).slice(2, 7)}`;
-      if (!obj.label) obj.label = obj.emoji || 'Object';
-      if (!obj.emoji) obj.emoji = '⭐';
-      if (!obj.attributes || typeof obj.attributes !== 'object') {
-        obj.attributes = {};
-      }
-      // Strip "size" from two-attributes objects — not visually distinguishable
-      if (challenge.type === 'two-attributes') {
-        delete obj.attributes.size;
-      }
-    }
+  for (const result of results) {
+    if (!title && result.title) title = result.title;
+    if (!description && result.description) description = result.description;
 
-    // Ensure categories have valid structure when present
-    if (Array.isArray(challenge.categories)) {
-      for (const cat of challenge.categories) {
-        if (!cat.label) cat.label = 'Group';
-        if (!cat.rule || typeof cat.rule !== 'object') {
-          cat.rule = {};
-        }
-      }
-    }
+    for (const ch of result.challenges) {
+      // Re-number challenge IDs sequentially
+      const idx = allChallenges.length;
+      ch.id = `c${idx + 1}`;
 
-    // ── Fix: sort-by-one / tally-record must have ≥2 categories covering ALL objects ──
-    if (
-      (challenge.type === 'sort-by-one' || challenge.type === 'sort-by-attribute' || challenge.type === 'tally-record') &&
-      Array.isArray(challenge.categories) &&
-      challenge.objects.length > 0
-    ) {
-      const sortAttr = challenge.sortingAttribute || 'type';
-
-      // Rebuild categories from actual object attribute values so every object has a bin
-      const valueSet = new Set<string>();
-      for (const obj of challenge.objects) {
-        const val = obj.attributes[sortAttr];
-        if (val) valueSet.add(val);
+      // Re-number object IDs to be globally unique
+      for (const obj of ch.objects) {
+        globalObjId++;
+        obj.id = `obj${globalObjId}`;
       }
 
-      // Only rebuild if fewer categories than distinct values (i.e. some objects are orphaned)
-      if (valueSet.size > challenge.categories.length || challenge.categories.length < 2) {
-        challenge.categories = Array.from(valueSet).map((val: string) => ({
-          label: val.charAt(0).toUpperCase() + val.slice(1),
-          rule: { [sortAttr]: val },
-        }));
-      } else {
-        // Even if category count looks right, verify every object matches at least one
-        const orphaned = challenge.objects.filter((obj: { attributes: Record<string, string> }) =>
-          !challenge.categories.some((cat: { rule: Record<string, string> }) =>
-            Object.entries(cat.rule).every(([k, v]) => obj.attributes[k] === v)
-          )
-        );
-        if (orphaned.length > 0) {
-          // Add missing categories for orphaned objects' attribute values
-          const missingValues = new Set<string>();
-          for (const obj of orphaned) {
-            const val = obj.attributes[sortAttr];
-            if (val) missingValues.add(val);
-          }
-          for (const val of missingValues) {
-            if (!challenge.categories.some((c: { rule: Record<string, string> }) => c.rule[sortAttr] === val)) {
-              challenge.categories.push({
-                label: val.charAt(0).toUpperCase() + val.slice(1),
-                rule: { [sortAttr]: val },
-              });
-            }
-          }
-        }
-      }
-    }
-
-    // ── Fix: sort-by-one instructions must not contain patterns from other modes ──
-    if (challenge.type === 'sort-by-one' && challenge.instruction) {
-      const lowerInst = challenge.instruction.toLowerCase();
-      // If instruction asks "which group has more" → retype as count-and-compare
-      if (lowerInst.includes('which group has more') || lowerInst.includes('which has more') || lowerInst.includes('are there more')) {
-        if (evalConstraint?.allowedTypes.includes('count-and-compare')) {
-          challenge.type = 'count-and-compare';
-          if (!challenge.correctComparison) challenge.correctComparison = 'more';
-          if (!challenge.comparisonQuestion) challenge.comparisonQuestion = challenge.instruction;
-        } else {
-          // Can't retype — rewrite instruction to match sort-by-one
-          const attr = challenge.sortingAttribute || 'type';
-          challenge.instruction = `Can you sort these by ${attr}?`;
-        }
-      }
-      // If instruction asks "odd one out" / "doesn't belong" → retype or rewrite
-      if (lowerInst.includes('odd one out') || lowerInst.includes("doesn't belong") || lowerInst.includes('does not belong')) {
-        if (evalConstraint?.allowedTypes.includes('odd-one-out')) {
-          challenge.type = 'odd-one-out';
-          if (!challenge.oddOneOut && challenge.objects.length > 0) {
-            challenge.oddOneOut = challenge.objects[challenge.objects.length - 1].id;
-          }
-          if (!challenge.oddOneOutReason) challenge.oddOneOutReason = 'This one is different from the others.';
-        } else {
-          const attr = challenge.sortingAttribute || 'type';
-          challenge.instruction = `Can you sort these by ${attr}?`;
-        }
-      }
-    }
-
-    // Validate two-attributes challenges
-    if (challenge.type === 'two-attributes' && Array.isArray(challenge.categories)) {
-      // Collect the set of attribute keys that actually exist on objects
-      const objectAttrKeys = new Set<string>();
-      for (const obj of challenge.objects) {
-        for (const k of Object.keys(obj.attributes)) {
-          if (obj.attributes[k]) objectAttrKeys.add(k); // skip empty values
-        }
-      }
-      const availableKeys = Array.from(objectAttrKeys);
-
-      for (const cat of challenge.categories) {
-        if (!cat.rule || typeof cat.rule !== 'object') {
-          cat.rule = {};
-        }
-
-        // Strip "size" from rules (already stripped from objects above)
-        delete cat.rule.size;
-
-        // Remove rule keys that don't exist on any object or have empty values
-        for (const key of Object.keys(cat.rule)) {
-          if (!objectAttrKeys.has(key) || !cat.rule[key]) {
-            delete cat.rule[key];
-          }
-        }
-
-        // If rule has fewer than 2 valid keys, rebuild from object attributes
-        if (Object.keys(cat.rule).length < 2 && availableKeys.length >= 2) {
-          // Find an object that produces a non-trivial split (some match, some don't)
-          let bestRule: Record<string, string> | null = null;
-          for (const obj of challenge.objects) {
-            const candidateRule: Record<string, string> = {};
-            candidateRule[availableKeys[0]] = obj.attributes[availableKeys[0]] || '';
-            candidateRule[availableKeys[1]] = obj.attributes[availableKeys[1]] || '';
-            // Skip if either value is empty
-            if (!candidateRule[availableKeys[0]] || !candidateRule[availableKeys[1]]) continue;
-            const matchCount = challenge.objects.filter((o: { attributes: Record<string, string> }) =>
-              Object.entries(candidateRule).every(([k, v]) => o.attributes[k] === v)
-            ).length;
-            // Good split: some match, some don't
-            if (matchCount > 0 && matchCount < challenge.objects.length) {
-              bestRule = candidateRule;
-              break;
-            }
-          }
-          if (bestRule) {
-            cat.rule = bestRule;
-            cat.label = `${bestRule[availableKeys[0]]} ${bestRule[availableKeys[1]]}`.trim();
-          }
-        }
-      }
-
-      // Final safety: verify that the first category rule matches at least 1 (but not all) objects
-      const cats = challenge.categories;
-      if (cats.length > 0) {
-        const rule = cats[0].rule;
-        const ruleKeys = Object.keys(rule);
-        const matchCount = challenge.objects.filter((o: { attributes: Record<string, string> }) =>
-          ruleKeys.length >= 2 && ruleKeys.every(k => o.attributes[k] === rule[k])
-        ).length;
-        if (matchCount === 0 || matchCount === challenge.objects.length) {
-          // Unsolvable or trivial — downgrade to sort-by-one so it's still usable
-          challenge.type = 'sort-by-one';
-          const firstKey = availableKeys[0] || 'type';
-          challenge.sortingAttribute = firstKey;
-          const values = new Set(
-            challenge.objects.map((o: { attributes: Record<string, string> }) => o.attributes[firstKey]).filter(Boolean)
-          );
-          challenge.categories = Array.from(values).map((val: unknown) => {
-            const v = String(val);
-            return {
-              label: v.charAt(0).toUpperCase() + v.slice(1),
-              rule: { [firstKey]: v },
-            };
-          });
-        }
-      }
-    }
-
-    // Validate odd-one-out challenges
-    if (challenge.type === 'odd-one-out') {
-      const objectIds = challenge.objects.map((o: { id: string }) => o.id);
-      if (challenge.oddOneOut && !objectIds.includes(challenge.oddOneOut)) {
-        // Fall back to first object if the specified ID doesn't exist
-        challenge.oddOneOut = objectIds[0] || undefined;
-      }
-      if (!challenge.oddOneOutReason) {
-        challenge.oddOneOutReason = 'This one is different from the others.';
-      }
-    }
-
-    // Validate count-and-compare challenges
-    if (challenge.type === 'count-and-compare') {
-      const validComparisons = ['more', 'fewer', 'equal'];
-      if (!validComparisons.includes(challenge.correctComparison)) {
-        challenge.correctComparison = 'more';
-      }
-      if (!challenge.comparisonQuestion) {
-        challenge.comparisonQuestion = 'Which group has more?';
-      }
-    }
-
-    // Enable tally chart if tally-record challenges exist
-    if (challenge.type === 'tally-record') {
-      data.showTallyChart = true;
+      allChallenges.push(ch);
     }
   }
 
-  // Ensure at least one challenge
-  if (data.challenges.length === 0) {
-    const fallbackType = (evalConstraint?.allowedTypes[0] ?? 'sort-by-one') as 'sort-by-one';
-    data.challenges = [{
+  // Fallback if all generators failed
+  if (allChallenges.length === 0) {
+    allChallenges = [{
       id: 'c1',
-      type: fallbackType,
+      type: 'sort-by-one',
       instruction: 'Can you sort these by color?',
       sortingAttribute: 'color',
       objects: [
@@ -589,14 +588,25 @@ Return the complete sorting station configuration.
         { label: 'Yellow', rule: { color: 'yellow' } },
       ],
     }];
+    title = 'Sorting Station';
+    description = 'Sort objects into groups!';
   }
 
-  // Apply config overrides
-  if (config) {
-    if (config.maxCategories !== undefined) {
-      data.maxCategories = config.maxCategories;
-    }
-  }
+  // Compute maxCategories from actual data
+  const maxCategories = Math.max(
+    config?.maxCategories ?? 2,
+    ...allChallenges
+      .filter(ch => ch.categories)
+      .map(ch => ch.categories!.length),
+  );
 
-  return data as SortingStationData;
+  return {
+    title: title || 'Sorting Station',
+    description: description || 'Sort objects into groups!',
+    challenges: allChallenges,
+    maxCategories: Math.min(maxCategories, gradeBand === 'K' ? 3 : 4),
+    showCounts: true,
+    showTallyChart: allChallenges.some(ch => ch.type === 'tally-record'),
+    gradeBand,
+  };
 };
