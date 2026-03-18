@@ -44,8 +44,11 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   add: {
     promptDoc:
-      `"add": Student shows addition result on the frame (can span to second frame for double). `
-      + `targetCount = sum. Use numbers that encourage the make-ten strategy (e.g., 8+5, 7+6).`,
+      `"add": The frame starts EMPTY — no counters are pre-placed. `
+      + `Student places both addends themselves. targetCount = sum. startCount is NOT used for add. `
+      + `Instruction MUST tell the student to place both groups (e.g., "Place 8 counters, then add 5 more to show 13!"). `
+      + `Do NOT say counters are "already" on the frame — the student places everything. `
+      + `Use numbers that encourage the make-ten strategy (e.g., 8+5, 7+6).`,
     schemaDescription: "'add' (addition)",
   },
   subtract: {
@@ -297,7 +300,7 @@ REQUIREMENTS:
 10. For Grades 1-2: can include make_ten, add, subtract, and double frame
 11. Set showOptions appropriately:
     - showCount: true for build challenges, false for subitize
-    - showEmptyCount: true for make_ten
+    - showEmptyCount: false for make_ten (showing empty count leaks the complement answer)
     - showEquation: true for add/subtract
 
 Return the complete ten frame configuration.

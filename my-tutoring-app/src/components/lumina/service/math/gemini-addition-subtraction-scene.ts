@@ -10,6 +10,26 @@ import {
 } from "../evalMode";
 
 // ---------------------------------------------------------------------------
+// Valid object types — must match OBJECT_EMOJI in AdditionSubtractionScene.tsx
+// ---------------------------------------------------------------------------
+
+const VALID_OBJECT_TYPES = [
+  'ducks', 'frogs', 'apples', 'birds', 'fish',
+  'butterflies', 'dogs', 'cats', 'stars', 'flowers',
+  'cookies', 'cupcakes', 'rockets', 'bunnies',
+];
+
+/** Scene-appropriate defaults when Gemini produces an invalid objectType */
+const SCENE_DEFAULT_OBJECTS: Record<string, string> = {
+  pond: 'ducks',
+  farm: 'dogs',
+  playground: 'cats',
+  space: 'rockets',
+  kitchen: 'cookies',
+  garden: 'flowers',
+};
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
@@ -89,7 +109,8 @@ const additionSubtractionSceneSchema: Schema = {
           },
           objectType: {
             type: Type.STRING,
-            description: "Type of objects in the story (e.g., 'ducks', 'apples', 'rockets')"
+            enum: VALID_OBJECT_TYPES,
+            description: "Type of objects in the story — MUST be one of the valid types"
           },
           operation: {
             type: Type.STRING,
@@ -239,7 +260,7 @@ REQUIREMENTS:
 5. CRITICAL: Equation strings MUST be mathematically accurate (e.g., "3 + 2 = 5", "7 - 3 = 4")
 6. CRITICAL: resultCount must equal startCount + changeCount for addition, startCount - changeCount for subtraction
 7. Generate unique IDs for each challenge (e.g., 'ch1', 'ch2', etc.)
-8. Match objectType to the scene (ducks for pond, apples for farm, rockets for space, etc.)
+8. objectType MUST be from this set: ${VALID_OBJECT_TYPES.join(', ')}. Match to scene (ducks for pond, rockets for space, cookies for kitchen, flowers for garden, etc.)
 9. Progress from easier to harder
 10. Use warm, child-friendly instruction text
 11. Mix addition and subtraction operations across challenges
@@ -307,6 +328,19 @@ Return the complete addition/subtraction scene configuration.
 
     if (!validStoryTypes.includes(challenge.storyType)) {
       challenge.storyType = challenge.operation === 'addition' ? 'join' : 'separate';
+    }
+
+    // AS-2: Derive operation from storyType — join→addition, separate→subtraction
+    // compare & part-whole can be either, so leave as-is
+    if (challenge.storyType === 'join') {
+      challenge.operation = 'addition';
+    } else if (challenge.storyType === 'separate') {
+      challenge.operation = 'subtraction';
+    }
+
+    // AS-1: Clamp objectType to valid emoji set
+    if (!VALID_OBJECT_TYPES.includes(challenge.objectType)) {
+      challenge.objectType = SCENE_DEFAULT_OBJECTS[challenge.scene] || 'stars';
     }
 
     if (challenge.unknownPosition && !validUnknownPositions.includes(challenge.unknownPosition)) {

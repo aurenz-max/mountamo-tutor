@@ -136,15 +136,27 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
+  // BT-1/BT-3 fix: Initialize from first challenge type, not top-level interactionMode (SP-5)
   const initialColumns = useMemo(() => {
+    const firstChallenge = challenges[0];
+    if (firstChallenge) {
+      const t = firstChallenge.type;
+      if (t === 'read_blocks' || t === 'regroup') {
+        return decomposeNumber(firstChallenge.targetNumber, activePlaces);
+      }
+      // build_number, add_with_blocks, subtract_with_blocks → start empty
+      const empty: Record<string, number> = {};
+      activePlaces.forEach(p => { empty[p] = 0; });
+      return empty as Record<PlaceValue, number>;
+    }
+    // No challenges — fall back to top-level interactionMode
     if (interactionMode === 'decompose' || interactionMode === 'regroup') {
       return decomposeNumber(numberValue, activePlaces);
     }
-    // For 'build' and 'operate', start empty
     const empty: Record<string, number> = {};
     activePlaces.forEach(p => { empty[p] = 0; });
     return empty as Record<PlaceValue, number>;
-  }, [numberValue, interactionMode, activePlaces]);
+  }, [challenges, numberValue, interactionMode, activePlaces]);
 
   const [columns, setColumns] = useState<Record<PlaceValue, number>>(initialColumns);
   const [regroupAnimating, setRegroupAnimating] = useState<PlaceValue | null>(null);
@@ -187,6 +199,9 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   const blocksInteractive = currentChallenge
     ? currentChallenge.type !== 'read_blocks'
     : supplyTray;
+
+  // BT-2: Hide digit counts and total for read_blocks — showing them leaks the answer
+  const hideBlockCounts = currentChallenge?.type === 'read_blocks';
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -556,7 +571,9 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
                   <span className={`text-xs font-mono uppercase tracking-wider ${config.color}`}>
                     {config.label}
                   </span>
-                  <div className={`text-2xl font-bold ${config.color}`}>{count}</div>
+                  {!hideBlockCounts && (
+                    <div className={`text-2xl font-bold ${config.color}`}>{count}</div>
+                  )}
                 </div>
 
                 {/* Block Visual */}
@@ -620,11 +637,13 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
           })}
         </div>
 
-        {/* Running Total from blocks (helper display) */}
-        <div className="flex items-center justify-center gap-4 bg-slate-800/30 rounded-lg p-3 border border-white/5">
-          <span className="text-slate-400 text-sm">Blocks Total:</span>
-          <span className="text-white font-bold text-2xl font-mono">{currentTotal}</span>
-        </div>
+        {/* Running Total from blocks (helper display) — hidden for read_blocks (BT-2) */}
+        {!hideBlockCounts && (
+          <div className="flex items-center justify-center gap-4 bg-slate-800/30 rounded-lg p-3 border border-white/5">
+            <span className="text-slate-400 text-sm">Blocks Total:</span>
+            <span className="text-white font-bold text-2xl font-mono">{currentTotal}</span>
+          </div>
+        )}
 
         {/* Calculator Input for answer submission */}
         {challengesWithIds.length > 0 && !allChallengesComplete && (

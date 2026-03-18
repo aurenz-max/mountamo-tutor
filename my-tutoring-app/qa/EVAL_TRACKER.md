@@ -15,7 +15,7 @@
 | tape-diagram | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/tape-diagram-2026-03-15.md) |
 | sorting-station | 6 | 6 | 0 | 2026-03-15 | [report](eval-reports/sorting-station-2026-03-15.md) |
 | number-sequencer | 5 | 4 | 1 | 2026-03-15 | [report](eval-reports/number-sequencer-2026-03-15.md) |
-| base-ten-blocks | 4 | 2 | 2 | 2026-03-15 | [report](eval-reports/base-ten-blocks-2026-03-15.md) |
+| base-ten-blocks | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/base-ten-blocks-2026-03-15.md) |
 | phonics-blender | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phonics-blender-2026-03-15.md) |
 | rhyme-studio | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/rhyme-studio-2026-03-15.md) |
 | syllable-clapper | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/syllable-clapper-2026-03-15.md) |
@@ -34,8 +34,11 @@
 | sentence-builder | 4 | 2 | 2 | 2026-03-15 | [report](eval-reports/sentence-builder-2026-03-15.md) |
 | area-model | 4 | 3 | 1 | 2026-03-15 | [report](eval-reports/area-model-2026-03-15.md) |
 | counting-board | 5 | 5 | 0 | 2026-03-15 | [report](eval-reports/counting-board-2026-03-15.md) |
+| ten-frame | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/ten-frame-2026-03-16.md) |
+| factor-tree | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/factor-tree-2026-03-16.md) |
+| addition-subtraction-scene | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/addition-subtraction-scene-2026-03-16.md) |
 
-**Totals:** 81/101 modes passing (80%) | 27 open issues (15 CRITICAL, 11 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 95/113 modes passing (84%) | 23 open issues (12 CRITICAL, 10 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -67,7 +70,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-5: First challenge uses top-level data props instead of per-challenge config
 
-**Affected:** base-ten-blocks (read_blocks: initialColumns from interactionMode='build' instead of decomposing first challenge targetNumber; regroup: initialColumns from numberValue=45 instead of first challenge targetNumber=23)
+**Affected:** ~~base-ten-blocks (read_blocks, regroup)~~
 **Risk:** Any multi-challenge primitive where initial state is set once from top-level props but advanceChallenge correctly resets per challenge. First challenge is always wrong.
 **Root cause:** Component initializes state from top-level data props (numberValue, interactionMode) in useState. The advanceChallenge function correctly handles subsequent challenges, but no equivalent initialization runs for the first challenge.
 **Fix pattern:** Component should check challengesWithIds[0] type/targetNumber during initialization, or run the same per-challenge setup logic that advanceChallenge uses.
@@ -116,10 +119,6 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | ID | Primitive | Mode | Severity | Category | Summary | Fix Type |
 |----|-----------|------|----------|----------|---------|----------|
 | NS-1 | number-sequencer | decade_fill | CRITICAL | Render/check mismatch | Renderer uses correctAnswers to determine blanks but check logic uses blankIndices (from sequence nulls); 3/5 challenges have fewer nulls than answers → impossible | GENERATOR + COMPONENT |
-| BT-1 | base-ten-blocks | read_blocks | CRITICAL | Empty initial state | Generator sets interactionMode='build' so first challenge has empty blocks; student told to "count blocks" but none exist | GENERATOR + COMPONENT |
-| BT-2 | base-ten-blocks | read_blocks | CRITICAL | Answer leakage | Column headers show digit counts and "Blocks Total" displays targetNumber; student copies displayed value instead of reading block visuals | COMPONENT |
-| BT-3 | base-ten-blocks | regroup | CRITICAL | Wrong initial blocks | First challenge uses top-level numberValue (45) for initialColumns, not challenge targetNumber (23); wrong blocks displayed | COMPONENT |
-| BT-4 | base-ten-blocks | regroup | HIGH | Non-standard arrangement impossible | Generator describes "23 ones blocks" but decomposeNumber() always produces standard form (2 tens + 3 ones); regrouping starting states can't be rendered | GENERATOR + COMPONENT |
 | SW-1 | sound-swap | addition | CRITICAL | Wrong content | Adding /s/ to "on" should produce "son" not "sun" — vowel changes (substitution not addition) | GENERATOR |
 | SW-2 | sound-swap | deletion | CRITICAL | Wrong content | 5/9 result words are nonsense syllables (un, ig, ap) — catalog requires real words | GENERATOR |
 | SW-3 | sound-swap | addition | HIGH | Notation mismatch | Generator uses /ɹ/ but component DISTRACTOR_PHONEMES uses /r/ — both may appear as options | GENERATOR |
@@ -148,6 +147,8 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| TF-1 | ten-frame | 2026-03-16 | Prompt updated: `showEmptyCount: false for make_ten` — previously told Gemini to set true, leaking the complement answer. |
+| TF-2 | ten-frame | 2026-03-16 | `add` promptDoc rewritten: frame starts empty, instruction must say "Place X, then add Y more" — not "You already have X counters." |
 | PB-1 | percent-bar | 2026-03-15 | Generator prompt updated: addition challenge type docs now explicitly require percentage questions, not dollar amounts. Added rule #7 to CRITICAL REQUIREMENTS. |
 | MT-1 | measurement-tools | 2026-03-15 | Estimate mode removed (product decision: not pedagogically sound). |
 | MT-2 | measurement-tools | 2026-03-15 | Compare mode implemented: ordering panel after all shapes measured. Student clicks shapes shortest→longest. |
@@ -184,6 +185,12 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | SS-1 | sorting-station | 2026-03-15 | Generator refactored to orchestrator pattern with per-mode sub-generators. Categories derived deterministically from object attributes — no orphans possible (SP-3). |
 | SS-2 | sorting-station | 2026-03-15 | Per-mode sub-generators only describe their own type — cross-contamination eliminated at source (SP-3). |
 | SS-3 | sorting-station | 2026-03-15 | Tally-record uses shared sort sub-generator with derived categories. Label/rule mismatch impossible. |
+| AS-1 | addition-subtraction-scene | 2026-03-16 | Schema enum + post-process clamp constrains objectType to 14 valid OBJECT_EMOJI keys. Scene-appropriate defaults for invalid values. |
+| AS-2 | addition-subtraction-scene | 2026-03-16 | Post-process derives operation from storyType: join→addition, separate→subtraction. Existing math recomputation cascades correctly. |
+| BT-1 | base-ten-blocks | 2026-03-17 | Component initialColumns now checks challenges[0].type — decomposes from first challenge targetNumber for read_blocks/regroup. Generator post-process forces interactionMode='decompose' for read_blocks (SP-5). |
+| BT-2 | base-ten-blocks | 2026-03-17 | Component hides digit counts and "Blocks Total" display when challenge type is read_blocks — student must count visual blocks. |
+| BT-3 | base-ten-blocks | 2026-03-17 | Same SP-5 fix as BT-1 — initialColumns uses challenges[0].targetNumber instead of top-level numberValue. |
+| BT-4 | base-ten-blocks | 2026-03-17 | Generator regroup promptDoc rewritten: challenges start from standard form, instructions describe the trade. Product decision #6 resolved as Option B. |
 
 ---
 
@@ -198,5 +205,5 @@ Decisions that need product input before engineering can proceed.
 | 3 | regrouping-workbench | Should component enforce maxPlace as hard cap or expand dynamically? | A) Hard cap (safer) B) Dynamic but suppress leading zeros C) Trust generator | Option A — component should never exceed maxPlace |
 | 4 | measurement-tools | **RESOLVED** — estimate removed, compare and convert modes implemented (2026-03-15) | — | — |
 | 5 | tape-diagram | **RESOLVED** — generator rewritten with 4 mode-specific sub-generators; component has 4 render methods; all 4 modes pass (2026-03-15) | — | — |
-| 6 | base-ten-blocks | regroup mode requires non-standard block arrangements (e.g., "23 ones") but component only supports standard decomposition | A) Add per-challenge `initialColumns` field to schema (MEDIUM) B) Generator describes challenges starting from standard form (SMALL) C) Component adds a regroupDown step automatically before showing (MEDIUM) | Option A for full flexibility; Option B as quick fix |
+| 6 | base-ten-blocks | **RESOLVED** — Option B implemented: generator regroup prompt requires standard-form starting states; component initializes from first challenge targetNumber (2026-03-17) | — | — |
 | 7 | phoneme-explorer | **MITIGATED** — hardcoded quality fallbacks + sanitization replace "???" placeholders (2026-03-15). Flash-lite root cause remains; model upgrade still recommended for reliability | A) Switch to gemini-flash (not lite) for these modes (SMALL) | Option A for long-term reliability |

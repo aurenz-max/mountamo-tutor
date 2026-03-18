@@ -1,7 +1,7 @@
 # PRD: Eval Modes Rollout — Math Primitives
 
 **Status:** Active
-**Last Updated:** 2026-03-14
+**Last Updated:** 2026-03-16
 **Skill:** `/add-eval-modes`
 **Reference:** `lumina_difficulty_calibration_prd.md` (scaffolding mode taxonomy, IRT β priors)
 
@@ -718,65 +718,158 @@ Upper-grade and specialized primitives. Lower urgency.
 
 ---
 
-## Progress Tracker
+## Progress Tracker — Implementation & QA Status
 
-| # | Primitive | Status | Pattern | Modes | Wave | Completed |
-|---|-----------|--------|---------|-------|------|-----------|
-| 1 | TenFrame | DONE | — | 4 | — | Yes |
-| 2 | CountingBoard | DONE | — | 5 | — | Yes |
-| 3 | BaseTenBlocks | DONE | — | 4 | — | Yes |
-| 4 | NumberLine | DONE | — | 4 | 1 | Yes |
-| 5 | FractionCircles | DONE | — | 4 | 1 | Yes |
-| 6 | NumberBond | DONE | — | 4 | 1 | Yes |
-| 7 | PatternBuilder | DONE | — | 5 | 1 | Yes |
-| 8 | ComparisonBuilder | DONE | — | 4 | 1 | Yes |
-| 9 | AdditionSubtractionScene | DONE | — | 4 | 1 | Yes |
-| 10 | BalanceScale | DONE | — | 3 | 1 | Yes |
-| 11 | OrdinalLine | DONE | — | 5 | 1 | Yes |
-| 12 | ShapeSorter | DONE | — | 3 | 1 | Yes |
-| 13 | MathFactFluency | DONE | — | 5 | 2 | Yes |
-| 14 | MultiplicationExplorer | DONE | — | 6 | 2 | Yes |
-| 15 | SkipCountingRunner | DONE | — | 5 | 2 | Yes |
-| 16 | NumberSequencer | DONE | — | 5 | 2 | Yes |
-| 17 | ShapeBuilder | DONE | — | 6 | 2 | Yes |
-| 18 | ShapeTracer | DONE | — | 4 | 2 | Yes |
-| 19 | SortingStation | DONE | — | 6 | 2 | Yes |
-| 20 | 3DShapeExplorer | DONE | — | 5 | 2 | Yes |
-| 21 | StrategyPicker | DONE | — | 5 | 2 | Yes |
-| 22 | RatioTable | DONE | — | 4 | 2 | Yes |
-| 23 | RegroupingWorkbench | DONE | A | 4 | 3a | Yes |
-| 24 | Matrix | DONE | A | 4 | 3a | Yes |
-| 25 | PercentBar | DONE | A | 4 | 3a | Yes |
-| 26 | DoubleNumberLine | DONE | B | 3 | 3b | Yes |
-| 27 | PlaceValueChart | DONE | B | 4 | 3b | Yes |
-| 28 | FractionBar | DONE | B | 4 | 3b | Yes |
-| 29 | TapeDiagram | DONE | B | 4 | 3b | Yes |
-| 30 | FunctionMachine | DONE | C | 4 | 3c | Yes |
-| 31 | AreaModel | DONE | C | 4 | 3c | Yes |
-| 32 | ArrayGrid | DONE | C | 3 | 3c | Yes |
-| 33 | MeasurementTools | DONE | C | 4 | 3c | Yes |
-| 34 | FactorTree | NEEDS TYPES | C | 4 | 3d | |
-| 35 | CoordinateGraph | NEEDS TYPES | C | 4 | 3d | |
-| 36 | DotPlot | NEEDS TYPES | C | 3 | 3d | |
-| 37 | Histogram | NEEDS TYPES | C | 3 | 3d | |
-| 38 | SlopeTriangle | NEEDS TYPES | C | 3 | 3d | |
-| 39 | SystemsEquations | NEEDS TYPES | C | 3 | 3d | |
-| 40 | TwoWayTable | NEEDS TYPES | C | 3 | 3d | |
-| 41 | BarModel | SKIP | — | 0 | — | N/A |
+**Last Updated:** 2026-03-16
+
+### Feature Key
+
+- **Eval Modes** — Challenge type enum wired in catalog + generator + registry
+- **Phase Summary** — `usePhaseResults` + `PhaseSummaryPanel` for multi-phase progression
+- **AI Scaffold** — `useLuminaAI` for real-time tutoring hints and feedback
+
+### QA Status Key
+
+- **PASS** — All eval modes pass `/eval-test`
+- **PARTIAL** — Some modes pass, some have open issues
+- **FAIL** — All modes failing or untested with critical issues
+- **NOT TESTED** — No eval-test run yet
+
+---
+
+### Tier A–C: Fully Implemented (33 primitives)
+
+| # | Primitive | Eval Modes | Phase Summary | AI Scaffold | QA Status | Modes Pass/Total | Open Issues |
+|---|-----------|:----------:|:-------------:|:-----------:|:---------:|:----------------:|:-----------:|
+| 1 | TenFrame | Yes (5) | Yes | Yes | PASS | 4/4 | — |
+| 2 | CountingBoard | Yes (5) | Yes | Yes | PASS | 5/5 | — |
+| 3 | BaseTenBlocks | Yes (5) | Yes | Yes | PARTIAL | 2/4 | BT-1, BT-2, BT-3, BT-4 |
+| 4 | NumberLine | Yes (4) | Yes | Yes | NOT TESTED | — | — |
+| 5 | FractionCircles | Yes (4) | Yes | Yes | NOT TESTED | — | — |
+| 6 | NumberBond | Yes (4) | Yes | Yes | NOT TESTED | — | — |
+| 7 | PatternBuilder | Yes (5) | Yes | Yes | NOT TESTED | — | — |
+| 8 | ComparisonBuilder | Yes (4) | Yes | Yes | NOT TESTED | — | — |
+| 9 | AdditionSubtractionScene | Yes (4) | Yes | Yes | PASS | 4/4 | — |
+| 10 | BalanceScale | Yes (3) | No | Yes | NOT TESTED | — | — |
+| 11 | OrdinalLine | Yes (5) | Yes | Yes | NOT TESTED | — | — |
+| 12 | ShapeSorter | Yes (3) | Yes | Yes | NOT TESTED | — | — |
+| 13 | MathFactFluency | Yes (5) | Yes | Yes | NOT TESTED | — | — |
+| 14 | MultiplicationExplorer | Yes (6) | No | Yes | NOT TESTED | — | — |
+| 15 | SkipCountingRunner | Yes (5) | No | Yes | NOT TESTED | — | — |
+| 16 | NumberSequencer | Yes (5) | Yes | Yes | PARTIAL | 4/5 | NS-1 |
+| 17 | ShapeBuilder | Yes (6) | Yes | Yes | NOT TESTED | — | — |
+| 18 | ShapeTracer | Yes (4) | Yes | Yes | NOT TESTED | — | — |
+| 19 | SortingStation | Yes (6) | Yes | Yes | PASS | 6/6 | — |
+| 20 | 3DShapeExplorer | Yes (5) | Yes | Yes | NOT TESTED | — | — |
+| 21 | StrategyPicker | Yes (5) | Yes | Yes | NOT TESTED | — | — |
+| 22 | RatioTable | Yes (4) | Yes | Yes | NOT TESTED | — | — |
+| 23 | RegroupingWorkbench | Yes (4) | Yes | Yes | PASS | 4/4 | — |
+| 24 | Matrix | Yes (4) | No | No | NOT TESTED | — | — |
+| 25 | PercentBar | Yes (4) | Yes | Yes | PASS | 4/4 | — |
+| 26 | DoubleNumberLine | Yes (3) | No | No | NOT TESTED | — | — |
+| 27 | PlaceValueChart | No | Yes | Yes | NOT TESTED | — | — |
+| 28 | FractionBar | No | Yes | Yes | PASS | 4/4 | — |
+| 29 | TapeDiagram | Yes (4) | No | No | PASS | 4/4 | — |
+| 30 | FunctionMachine | Yes (4) | Yes | Yes | NOT TESTED | — | — |
+| 31 | AreaModel | Yes (4) | No | Yes | PARTIAL | 3/4 | AM-1 |
+| 32 | ArrayGrid | Yes (3) | No | No | PASS | 3/3 | — |
+| 33 | MeasurementTools | Yes (4) | Yes | Yes | PASS | 3/3 | — |
+
+### Tier D: Schema Work Required (7 primitives)
+
+| # | Primitive | Eval Modes | Phase Summary | AI Scaffold | Pattern | QA Status |
+|---|-----------|:----------:|:-------------:|:-----------:|:-------:|:---------:|
+| 34 | FactorTree | No | No | Yes | C | PASS (4/4)* |
+| 35 | CoordinateGraph | No | No | No | C | NOT TESTED |
+| 36 | DotPlot | No | No | No | C | NOT TESTED |
+| 37 | Histogram | No | No | No | C | NOT TESTED |
+| 38 | SlopeTriangle | No | No | No | C | NOT TESTED |
+| 39 | SystemsEquations | No | No | No | C | NOT TESTED |
+| 40 | TwoWayTable | No | No | No | C | NOT TESTED |
+
+\* FactorTree passed eval-test (2026-03-16) but does not yet have formal eval modes or phase summary wired.
+
+### SKIP
+
+| Primitive | Reason |
+|-----------|--------|
+| BarModel | Display-only visualization — no interactive challenge or scorable task |
+
+---
+
+## QA Summary (from EVAL_TRACKER.md)
+
+**Math primitives tested:** 14 of 34 (41%)
+**Overall math mode pass rate:** 54/60 modes passing (90%)
+
+### Passing (all modes green)
+
+TenFrame, CountingBoard, AdditionSubtractionScene, SortingStation, RegroupingWorkbench, PercentBar, MeasurementTools, ArrayGrid, FractionBar, TapeDiagram, FactorTree
+
+### Partial (some modes failing)
+
+| Primitive | Pass/Total | Open Issue IDs | Severity |
+|-----------|:----------:|----------------|----------|
+| BaseTenBlocks | 2/4 | BT-1 (CRITICAL), BT-2 (CRITICAL), BT-3 (CRITICAL), BT-4 (HIGH) | read_blocks + regroup broken |
+| NumberSequencer | 4/5 | NS-1 (CRITICAL) | decade_fill render/check mismatch |
+| AreaModel | 3/4 | AM-1 (HIGH) | factor mode — hallucinated product in description |
+
+### Not Yet Tested (math)
+
+NumberLine, FractionCircles, NumberBond, PatternBuilder, ComparisonBuilder, BalanceScale, OrdinalLine, ShapeSorter, MathFactFluency, MultiplicationExplorer, SkipCountingRunner, ShapeBuilder, ShapeTracer, 3DShapeExplorer, StrategyPicker, RatioTable, Matrix, DoubleNumberLine, PlaceValueChart, FunctionMachine
+
+---
+
+## Open Math Issues — Fix Priority
+
+Issues from EVAL_TRACKER that affect math primitives, sorted by severity.
+
+### CRITICAL (fix before next release)
+
+| ID | Primitive | Mode | Summary | Fix Type | Systemic Pattern |
+|----|-----------|------|---------|----------|------------------|
+| BT-1 | BaseTenBlocks | read_blocks | Empty initial state — interactionMode='build' shows no blocks | GEN + COMP | SP-5 |
+| BT-2 | BaseTenBlocks | read_blocks | Answer leakage — column headers show digit counts | COMP | — |
+| BT-3 | BaseTenBlocks | regroup | Wrong initial blocks — uses top-level numberValue not challenge target | COMP | SP-5 |
+| NS-1 | NumberSequencer | decade_fill | Render uses correctAnswers but check uses blankIndices — impossible challenges | GEN + COMP | SP-4 |
+
+### HIGH (fix soon)
+
+| ID | Primitive | Mode | Summary | Fix Type | Systemic Pattern |
+|----|-----------|------|---------|----------|------------------|
+| BT-4 | BaseTenBlocks | regroup | Non-standard arrangement impossible — decomposeNumber always standard form | GEN + COMP | — |
+| AM-1 | AreaModel | factor | Gemini description contains hallucinated product number | GEN | — |
+
+---
+
+## Feature Gap Summary
+
+Primitives with eval modes but missing phase summary or AI scaffolding.
+
+| Primitive | Missing | Notes |
+|-----------|---------|-------|
+| BalanceScale | Phase Summary | Has eval modes + AI, but no PhaseSummaryPanel |
+| MultiplicationExplorer | Phase Summary | Has eval modes + AI, no multi-phase progression |
+| SkipCountingRunner | Phase Summary | Has eval modes + AI, no multi-phase progression |
+| Matrix | Phase Summary, AI Scaffold | Has eval modes only — no useLuminaAI |
+| DoubleNumberLine | Phase Summary, AI Scaffold | Has eval modes only — missing both |
+| ArrayGrid | Phase Summary, AI Scaffold | Has eval modes but minimal hooks |
+| TapeDiagram | Phase Summary, AI Scaffold | Has eval modes, uses usePrimitiveEvaluation only |
+| PlaceValueChart | Eval Modes | Has phase summary + AI, but no formal eval mode wiring |
+| FractionBar | Eval Modes | Has phase summary + AI, but no formal eval mode wiring |
 
 ---
 
 ## Totals
 
-| Category | Count | Eval Modes | Est. Time |
-|----------|-------|------------|-----------|
-| DONE (Waves 1-2) | 22 | 100 | — |
-| Wave 3a (ADAPT) | 3 | 12 | ~1 hr |
-| Wave 3b (PHASE-CONVERT) | 4 | 15 | ~2-3 hrs |
-| Wave 3c (SINGLE-VIZ, high priority) | 4 | 15 | ~3-4 hrs |
-| Wave 3d (SINGLE-VIZ, lower priority) | 7 | 23 | ~5-7 hrs |
-| SKIP | 1 | 0 | — |
-| **Total** | **41** | **165** | — |
+| Category | Count | Eval Modes | Tested | Passing |
+|----------|-------|------------|--------|---------|
+| DONE (Waves 1-3c) | 33 | 139 | 14 | 11 fully, 3 partial |
+| Wave 3d (NEEDS TYPES) | 7 | 23 (planned) | 1* | 1* |
+| SKIP | 1 | 0 | — | — |
+| **Total** | **41** | **162 (active)** | **15** | **12 fully, 3 partial** |
+
+\* FactorTree tested but not formally wired with eval modes yet.
 
 ---
 

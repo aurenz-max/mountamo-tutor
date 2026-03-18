@@ -236,6 +236,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "solve_comparison":  PriorConfig(3.5, "Pictorial: comparison problems"),
         "multi_step":        PriorConfig(5.0, "Transitional: multi-step word problems"),
     },
+    "factor-tree": {
+        "guided_small":      PriorConfig(1.5, "Concrete: small composites (4-24) with factor pair hints"),
+        "guided_medium":     PriorConfig(2.5, "Pictorial: medium composites (24-60) with hints"),
+        "unguided":          PriorConfig(3.5, "Pictorial: medium composites (20-60) without hints"),
+        "assessment":        PriorConfig(6.5, "Symbolic: large composites (40-100), no hints, no reset"),
+    },
     "bar-model":                  {"default": PriorConfig(3.0, "Bar model comparison")},
     "ordinal-line": {
         "identify":           PriorConfig(1.5, "Concrete: name ordinal position"),

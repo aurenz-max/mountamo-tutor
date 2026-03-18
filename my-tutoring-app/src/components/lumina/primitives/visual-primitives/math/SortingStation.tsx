@@ -760,7 +760,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         )}
 
         {/* Objects pile and bins */}
-        {(currentChallenge.type === 'sort-by-one' || selectedAttribute) && (
+        {(currentChallenge.type === 'sort-by-one' || currentChallenge.type === 'tally-record' || selectedAttribute) && (
           <>
             {/* Unsorted objects */}
             <div className="bg-slate-800/20 rounded-xl p-4 border border-white/5">

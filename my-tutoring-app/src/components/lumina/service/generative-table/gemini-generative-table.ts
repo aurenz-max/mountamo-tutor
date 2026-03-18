@@ -12,6 +12,7 @@ export interface GenerativeTableData {
   title?: string;
   headers: string[];
   rows: string[][];
+  layout: 'wide' | 'tall';
   type: 'table';
 }
 
@@ -37,10 +38,11 @@ export const generateGenerativeTable = async (
     type: Type.OBJECT,
     properties: {
       title: { type: Type.STRING },
+      layout: { type: Type.STRING, enum: ["wide", "tall"] },
       headers: { type: Type.ARRAY, items: { type: Type.STRING } },
       rows: { type: Type.ARRAY, items: { type: Type.ARRAY, items: { type: Type.STRING } } }
     },
-    required: ["headers", "rows"]
+    required: ["headers", "rows", "layout"]
   };
 
   const response = await ai.models.generateContent({
@@ -50,7 +52,11 @@ export const generateGenerativeTable = async (
 TARGET AUDIENCE: ${gradeContext}
 INTENT: ${config?.intent || 'Organize and present information clearly'}
 
-Generate a table with headers and rows.`,
+Choose a layout:
+- "wide": Few rows (2-3), many columns (4-6). Best for comparing a small set of items across many attributes.
+- "tall": Few columns (2-3), many rows (4-8). Best for listing many items with a couple of key details each.
+
+Pick the layout that best fits the data. Then generate headers and rows accordingly.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: schema,

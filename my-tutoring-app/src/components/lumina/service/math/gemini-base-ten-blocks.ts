@@ -49,8 +49,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"regroup": Student regroups blocks by trading between place values. `
       + `E.g., trade 10 ones for 1 ten, or 10 tens for 1 hundred. `
       + `Set targetNumber to the number being regrouped. `
-      + `Instruction should name the trade: "Regroup 15 ones into tens and ones." `
-      + `Focus on the trading mechanic. Grades 2-3 primary. Include non-trivial trades (e.g., 24 ones).`,
+      + `IMPORTANT: The blocks always START in standard form (e.g., 125 = 1 hundred, 2 tens, 5 ones). `
+      + `The instruction tells the student WHICH trade to make: "You have 1 hundred, 2 tens, and 5 ones. Trade 1 ten for 10 ones." `
+      + `Do NOT describe non-standard starting arrangements like "23 ones blocks" — the component cannot render those. `
+      + `Focus on the trading mechanic. Grades 2-3 primary. Include trades in both directions (up and down).`,
     schemaDescription: "'regroup' (trade between place values)",
   },
   add_with_blocks: {
@@ -276,6 +278,21 @@ Return the complete base-ten blocks data structure.`;
   if (data.gradeBand === 'K-1' && data.numberValue > 20) data.numberValue = Math.min(data.numberValue, 20);
   if (data.gradeBand === '2-3' && data.numberValue > 999) data.numberValue = Math.min(data.numberValue, 999);
   if (data.gradeBand === '4-5' && data.numberValue > 9999) data.numberValue = Math.min(data.numberValue, 9999);
+
+  // ── Fix interactionMode based on actual challenge types (BT-1/BT-3) ──
+  // When all challenges are read_blocks or regroup, the top-level interactionMode
+  // must match so the component initializes blocks correctly for the first challenge.
+  if (data.challenges.length > 0) {
+    const typeList = (data.challenges as BaseTenBlocksChallenge[]).map(c => c.type);
+    const types = new Set(typeList);
+    if (types.size === 1) {
+      const onlyType = typeList[0];
+      if (onlyType === 'read_blocks') data.interactionMode = 'decompose';
+      else if (onlyType === 'regroup') data.interactionMode = 'regroup';
+      else if (onlyType === 'add_with_blocks' || onlyType === 'subtract_with_blocks') data.interactionMode = 'operate';
+      else if (onlyType === 'build_number') data.interactionMode = 'build';
+    }
+  }
 
   // Validate challenges
   data.challenges = data.challenges.map((c: BaseTenBlocksChallenge) => ({

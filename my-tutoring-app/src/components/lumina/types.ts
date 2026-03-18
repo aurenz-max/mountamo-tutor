@@ -272,6 +272,7 @@ export interface TableData {
   headers: string[];
   rows: string[][];
   title?: string;
+  layout?: 'wide' | 'tall';
 }
 
 export interface QuizOption {
