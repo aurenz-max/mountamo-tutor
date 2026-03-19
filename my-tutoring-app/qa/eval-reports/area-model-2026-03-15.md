@@ -13,7 +13,7 @@
 
 _No open issues._
 
-## Previously Fixed (this session)
+## Previously Fixed
 
 | Issue | Fix |
 |-------|-----|
@@ -22,4 +22,4 @@ _No open issues._
 | factor — Title product doesn't match actual product | Post-validation recalculates and rewrites title with correct product |
 | factor — Dimensions shown defeat the challenge | Post-validation forces `showDimensions: false` |
 | factor — Generator still leaks dimensions | Same fix as above |
-| factor — Description contains hallucinated product number | Post-validation scans description for numbers not matching actual product/factors, rewrites if found |
+| AM-1: factor — Description contains hallucinated product number | Post-process scans description for numbers not in validNums set (product, factor totals, factor parts), replaces with actual product. Verified 3/3 stochastic runs clean. |

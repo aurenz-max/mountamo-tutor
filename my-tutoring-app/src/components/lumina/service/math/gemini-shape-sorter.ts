@@ -1,7 +1,20 @@
 import { Type, Schema } from "@google/genai";
 import type { ShapeSorterData } from "../../primitives/visual-primitives/math/ShapeSorter";
-import { SHAPE_PROPERTIES } from "../../primitives/visual-primitives/math/ShapeSorter";
 import { ai } from "../geminiClient";
+
+// Local copy of shape properties — duplicated from ShapeSorter.tsx to avoid
+// importing a 'use client' module into server-side eval-test routes (SS-1).
+const SHAPE_PROPERTIES: Record<string, { sides: number; corners: number; curved: boolean }> = {
+  circle:    { sides: 0, corners: 0, curved: true },
+  oval:      { sides: 0, corners: 0, curved: true },
+  triangle:  { sides: 3, corners: 3, curved: false },
+  square:    { sides: 4, corners: 4, curved: false },
+  rectangle: { sides: 4, corners: 4, curved: false },
+  diamond:   { sides: 4, corners: 4, curved: false },
+  rhombus:   { sides: 4, corners: 4, curved: false },
+  hexagon:   { sides: 6, corners: 6, curved: false },
+  pentagon:  { sides: 5, corners: 5, curved: false },
+};
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,

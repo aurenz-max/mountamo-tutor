@@ -322,6 +322,32 @@ Return the complete number sequencer configuration.
       }
     }
 
+    // For fill-missing / before-after: ensure null count in sequence matches correctAnswers length
+    if (challenge.type === 'fill-missing' || challenge.type === 'before-after') {
+      const nullCount = challenge.sequence.filter((v: number | null) => v === null).length;
+      const answerCount = challenge.correctAnswers.length;
+      if (nullCount !== answerCount && answerCount > 0) {
+        // Rebuild sequence: place nulls at positions corresponding to correctAnswers
+        const fullSeq = challenge.sequence.filter((v: number | null) => v !== null) as number[];
+        const rebuilt: (number | null)[] = [];
+        let ansIdx = 0;
+        for (const num of fullSeq) {
+          // Insert null before this number if it matches the next expected answer
+          while (ansIdx < answerCount && challenge.correctAnswers[ansIdx] <= num) {
+            rebuilt.push(null);
+            ansIdx++;
+          }
+          rebuilt.push(num);
+        }
+        // Append remaining nulls
+        while (ansIdx < answerCount) {
+          rebuilt.push(null);
+          ansIdx++;
+        }
+        challenge.sequence = rebuilt;
+      }
+    }
+
     // Validate order-cards has no nulls in sequence
     if (challenge.type === 'order-cards') {
       challenge.sequence = challenge.sequence.filter((n: number | null) => n !== null);

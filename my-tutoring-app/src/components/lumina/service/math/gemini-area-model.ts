@@ -478,6 +478,19 @@ Return the complete area model configuration.
         console.warn(`factor: corrected title product from stated value to ${actualProduct}`);
       }
     }
+    // Fix description if it contains hallucinated numbers (AM-1)
+    const f1Total = data.factor1Parts.reduce((s: number, v: number) => s + v, 0);
+    const f2Total = data.factor2Parts.reduce((s: number, v: number) => s + v, 0);
+    const validNums = new Set([actualProduct, f1Total, f2Total, ...data.factor1Parts, ...data.factor2Parts]);
+    const descNums = data.description?.match(/\d+/g)?.map(Number) ?? [];
+    const wrongNums = descNums.filter((n: number) => n > 1 && !validNums.has(n));
+    if (wrongNums.length > 0) {
+      // Replace each wrong number with the actual product
+      for (const wrong of wrongNums) {
+        data.description = data.description.replace(String(wrong), String(actualProduct));
+      }
+      console.warn(`factor: corrected hallucinated numbers in description: ${wrongNums.join(', ')} → ${actualProduct}`);
+    }
   }
 
   return data;

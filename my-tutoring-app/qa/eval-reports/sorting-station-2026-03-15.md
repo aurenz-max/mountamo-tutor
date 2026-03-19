@@ -13,6 +13,9 @@
 
 ## Resolved Issues
 
+### SS-4 (HIGH) — odd_one_out: Can't change answer after wrong selection
+- **Fixed by:** Added `setSelectedOddOne(null)` on wrong answer — clears the amber highlight and disables "Check Answer" until student picks a new object. Previously the wrong selection stayed highlighted, making it look locked in.
+
 ### SS-1 (CRITICAL) — sort_one: Impossible challenge — only 1 category for 4 objects
 - **Fixed by:** Orchestrator refactor — dedicated `generateSortChallenges()` sub-generator with focused prompt. Categories derived deterministically from actual object attribute values via `deriveCategories()`, guaranteeing every object has a matching bin and ≥2 categories exist.
 

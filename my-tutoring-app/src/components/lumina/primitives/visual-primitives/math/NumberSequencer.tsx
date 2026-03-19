@@ -278,14 +278,28 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
 
     switch (currentChallenge.type) {
       case 'fill-missing':
-      case 'before-after':
-      case 'decade-fill': {
+      case 'before-after': {
         const studentValues = blankIndices.map(idx => parseInt(fillAnswers[idx] || '', 10));
         correct = currentChallenge.correctAnswers.every(
           (ans, i) => studentValues[i] === ans
         );
         studentAnswerStr = studentValues.join(', ');
         if (correct) setCorrectSlots(new Set(blankIndices));
+        break;
+      }
+      case 'decade-fill': {
+        // Decade-fill renderer keys inputs by correctAnswers index (answerIdx),
+        // not by sequence null positions — so read fillAnswers the same way.
+        const dfValues = currentChallenge.correctAnswers.map(
+          (_, i) => parseInt(fillAnswers[i] || '', 10)
+        );
+        correct = currentChallenge.correctAnswers.every(
+          (ans, i) => dfValues[i] === ans
+        );
+        studentAnswerStr = dfValues.join(', ');
+        if (correct) {
+          setCorrectSlots(new Set(currentChallenge.correctAnswers.map((_, i) => i)));
+        }
         break;
       }
       case 'order-cards': {
@@ -440,8 +454,10 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
     switch (currentChallenge.type) {
       case 'fill-missing':
       case 'before-after':
-      case 'decade-fill':
         return blankIndices.every(idx => fillAnswers[idx]?.trim());
+      case 'decade-fill':
+        // Decade-fill keys inputs by correctAnswers index, not blankIndices
+        return currentChallenge.correctAnswers.every((_, i) => fillAnswers[i]?.trim());
       case 'order-cards':
         return orderedCards.length === currentChallenge.correctAnswers.length;
       case 'count-from':
@@ -731,8 +747,8 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
               ).map(num => {
                 const answerIdx = currentChallenge.correctAnswers.indexOf(num);
                 const isBlank = answerIdx >= 0;
-                const blankIdx = isBlank ? blankIndices[answerIdx] : -1;
-                const isCorrectlyFilled = isBlank && correctSlots.has(blankIdx);
+                // Key by answerIdx directly — decade-fill doesn't use blankIndices
+                const isCorrectlyFilled = isBlank && correctSlots.has(answerIdx);
                 const isDecade = num % 10 === 0;
 
                 return (
@@ -754,8 +770,8 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
                     {isBlank ? (
                       <input
                         type="number"
-                        value={fillAnswers[blankIdx] || ''}
-                        onChange={e => setFillAnswers(prev => ({ ...prev, [blankIdx]: e.target.value }))}
+                        value={fillAnswers[answerIdx] || ''}
+                        onChange={e => setFillAnswers(prev => ({ ...prev, [answerIdx]: e.target.value }))}
                         className="w-8 h-7 bg-transparent text-center text-sm font-bold text-slate-100 focus:outline-none rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         disabled={isCurrentChallengeComplete || hasSubmittedEvaluation}
                         onKeyDown={e => e.key === 'Enter' && canCheckAnswer && handleCheckAnswer()}

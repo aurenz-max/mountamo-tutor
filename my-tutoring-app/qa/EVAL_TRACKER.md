@@ -14,7 +14,7 @@
 | measurement-tools | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/measurement-tools-2026-03-15.md) |
 | tape-diagram | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/tape-diagram-2026-03-15.md) |
 | sorting-station | 6 | 6 | 0 | 2026-03-15 | [report](eval-reports/sorting-station-2026-03-15.md) |
-| number-sequencer | 5 | 4 | 1 | 2026-03-15 | [report](eval-reports/number-sequencer-2026-03-15.md) |
+| number-sequencer | 5 | 5 | 0 | 2026-03-18 | [report](eval-reports/number-sequencer-2026-03-15.md) |
 | base-ten-blocks | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/base-ten-blocks-2026-03-15.md) |
 | phonics-blender | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phonics-blender-2026-03-15.md) |
 | rhyme-studio | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/rhyme-studio-2026-03-15.md) |
@@ -32,13 +32,33 @@
 | opinion-builder | 2 | 1 | 1 | 2026-03-15 | [report](eval-reports/opinion-builder-2026-03-15.md) |
 | revision-workshop | 6 | 5 | 1 | 2026-03-15 | [report](eval-reports/revision-workshop-2026-03-15.md) |
 | sentence-builder | 4 | 2 | 2 | 2026-03-15 | [report](eval-reports/sentence-builder-2026-03-15.md) |
-| area-model | 4 | 3 | 1 | 2026-03-15 | [report](eval-reports/area-model-2026-03-15.md) |
+| area-model | 4 | 4 | 0 | 2026-03-18 | [report](eval-reports/area-model-2026-03-15.md) |
 | counting-board | 5 | 5 | 0 | 2026-03-15 | [report](eval-reports/counting-board-2026-03-15.md) |
 | ten-frame | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/ten-frame-2026-03-16.md) |
 | factor-tree | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/factor-tree-2026-03-16.md) |
 | addition-subtraction-scene | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/addition-subtraction-scene-2026-03-16.md) |
+| number-line | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/number-line-2026-03-17.md) |
+| fraction-circles | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/fraction-circles-2026-03-17.md) |
+| number-bond | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/number-bond-2026-03-17.md) |
+| pattern-builder | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/pattern-builder-2026-03-17.md) |
+| comparison-builder | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/comparison-builder-2026-03-17.md) |
+| balance-scale | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/balance-scale-2026-03-17.md) |
+| ordinal-line | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/ordinal-line-2026-03-17.md) |
+| shape-sorter | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/shape-sorter-2026-03-17.md) |
+| math-fact-fluency | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/math-fact-fluency-2026-03-17.md) |
+| multiplication-explorer | 6 | 6 | 0 | 2026-03-17 | [report](eval-reports/multiplication-explorer-2026-03-17.md) |
+| skip-counting-runner | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/skip-counting-runner-2026-03-17.md) |
+| shape-builder | 6 | 6 | 0 | 2026-03-17 | [report](eval-reports/shape-builder-2026-03-17.md) |
+| shape-tracer | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/shape-tracer-2026-03-17.md) |
+| 3d-shape-explorer | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/3d-shape-explorer-2026-03-17.md) |
+| strategy-picker | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/strategy-picker-2026-03-17.md) |
+| ratio-table | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/ratio-table-2026-03-17.md) |
+| matrix-display | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/matrix-2026-03-17.md) |
+| double-number-line | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/double-number-line-2026-03-17.md) |
+| place-value-chart | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/place-value-chart-2026-03-17.md) |
+| function-machine | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/function-machine-2026-03-17.md) |
 
-**Totals:** 95/113 modes passing (84%) | 23 open issues (12 CRITICAL, 10 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 184/200 modes passing (92%) | 20 open issues (11 CRITICAL, 9 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -118,7 +138,6 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 | ID | Primitive | Mode | Severity | Category | Summary | Fix Type |
 |----|-----------|------|----------|----------|---------|----------|
-| NS-1 | number-sequencer | decade_fill | CRITICAL | Render/check mismatch | Renderer uses correctAnswers to determine blanks but check logic uses blankIndices (from sequence nulls); 3/5 challenges have fewer nulls than answers → impossible | GENERATOR + COMPONENT |
 | SW-1 | sound-swap | addition | CRITICAL | Wrong content | Adding /s/ to "on" should produce "son" not "sun" — vowel changes (substitution not addition) | GENERATOR |
 | SW-2 | sound-swap | deletion | CRITICAL | Wrong content | 5/9 result words are nonsense syllables (un, ig, ap) — catalog requires real words | GENERATOR |
 | SW-3 | sound-swap | addition | HIGH | Notation mismatch | Generator uses /ɹ/ but component DISTRACTOR_PHONEMES uses /r/ — both may appear as options | GENERATOR |
@@ -139,7 +158,6 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | RV-1 | revision-workshop | reorganize | HIGH | Interaction mismatch | Reorganize expects drag-to-reorder but component only offers textareas — students must retype sentences | COMPONENT |
 | SB-1 | sentence-builder | complex, compound_complex | CRITICAL | Impossible challenge | Duplicate tile IDs in validArrangements — student can't match with only 1 copy per tile; compound_complex ch2 unsolvable | GENERATOR |
 | SB-2 | sentence-builder | complex, compound_complex | HIGH | Wrong content | Alternative arrangements are ungrammatical (mid-sentence capitals, misplaced punctuation) — accepted as correct | GENERATOR |
-| AM-1 | area-model | factor | HIGH | Wrong content | Gemini description contains hallucinated product number (e.g., "532") that contradicts the correct product in the title | GENERATOR |
 
 ---
 
@@ -191,6 +209,11 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | BT-2 | base-ten-blocks | 2026-03-17 | Component hides digit counts and "Blocks Total" display when challenge type is read_blocks — student must count visual blocks. |
 | BT-3 | base-ten-blocks | 2026-03-17 | Same SP-5 fix as BT-1 — initialColumns uses challenges[0].targetNumber instead of top-level numberValue. |
 | BT-4 | base-ten-blocks | 2026-03-17 | Generator regroup promptDoc rewritten: challenges start from standard form, instructions describe the trade. Product decision #6 resolved as Option B. |
+| MX-1 | matrix-display | 2026-03-17 | Eval-test was called with wrong componentId (`matrix` instead of `matrix-display`). Re-ran with correct ID — all 4 modes pass. No code changes needed. |
+| SS-1 | shape-sorter | 2026-03-18 | Duplicated SHAPE_PROPERTIES into generator to avoid importing 'use client' module on server. All 3 modes pass. |
+| SS-4 | sorting-station | 2026-03-18 | Added `setSelectedOddOne(null)` on wrong answer in odd-one-out — clears selection so student must pick a new object before re-checking. |
+| NS-1 | number-sequencer | 2026-03-18 | Separated decade-fill from fill-missing/before-after in component — decade-fill now keys inputs by correctAnswers index directly instead of blankIndices. Added generator post-process to align sequence nulls for fill-missing/before-after. All 5 modes pass. |
+| AM-1 | area-model | 2026-03-18 | Post-process scans factor-mode description for hallucinated numbers not in valid set (product, factor totals, parts), replaces with actual product. 3/3 stochastic runs clean. |
 
 ---
 

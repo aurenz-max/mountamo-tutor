@@ -8,12 +8,12 @@
 | before_after | PASS | — |
 | order_cards | PASS | — |
 | fill_missing | PASS | — |
-| decade_fill | FAIL | 1 |
+| decade_fill | PASS | — |
 
-## Issues
+## Notes
 
-### decade_fill — Sequence null count doesn't match correctAnswers length (3/5 challenges impossible)
-- **Severity:** CRITICAL
-- **What's broken:** The decade-fill renderer determines blanks from `correctAnswers.indexOf(num)`, but the check logic validates via `blankIndices` (derived from sequence null positions). When correctAnswers has more entries than sequence has nulls, the check iterates past the end of studentValues and always fails. Challenges c2 (2 nulls, 3 answers), c3 (3 nulls, 4 answers), and c5 (4 nulls, 5 answers) are impossible.
-- **Data:** `c2: 2 nulls vs 3 answers, c3: 3 nulls vs 4 answers, c5: 4 nulls vs 5 answers`
-- **Fix in:** GENERATOR + COMPONENT (generator must ensure sequence null count == correctAnswers.length; component should use correctAnswers directly for decade-fill validation instead of blankIndices)
+### NS-1 (RESOLVED) — decade-fill impossible due to blankIndices/correctAnswers mismatch
+- **Root cause:** The decade-fill renderer determines blanks from `correctAnswers.indexOf(num)` but the check logic and input keying used `blankIndices` (derived from sequence nulls). When the LLM produced fewer nulls in `sequence` than entries in `correctAnswers`, inputs wrote to wrong keys and the checker couldn't read them back.
+- **Fix (COMPONENT):** Separated decade-fill from fill-missing/before-after in the check handler, canCheckAnswer, and renderer. Decade-fill now keys inputs and reads answers by `answerIdx` (index into correctAnswers) directly, bypassing `blankIndices` entirely. The renderer already used `correctAnswers` to determine blanks, so this makes it self-consistent.
+- **Fix (GENERATOR):** Added post-process safety net for fill-missing/before-after to rebuild `sequence` if null count doesn't match `correctAnswers.length`.
+- **Verification:** All 5 modes pass after fix. No regressions.

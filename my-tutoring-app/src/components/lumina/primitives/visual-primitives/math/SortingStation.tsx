@@ -527,6 +527,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         const attempt = currentAttempts + 1;
         setFeedback('That one fits in! Look for the one that is different.');
         setFeedbackType('error');
+        setSelectedOddOne(null);
         sendText(
           `[ANSWER_INCORRECT] Student chose wrong object for odd-one-out. `
           + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "Most of these are the same kind of thing. One is totally different. Which one?"` : attempt >= 2 ? 'Hint: "Look at what makes most of them similar. One doesn\'t share that."' : 'Hint: "What do most of these have in common?"'}`,
