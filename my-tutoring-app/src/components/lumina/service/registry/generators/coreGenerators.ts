@@ -71,7 +71,11 @@ import { generateSentenceAnalyzer } from '../../sentence-analyzer/gemini-sentenc
 // Assessment Component Imports (from dedicated service files)
 // ============================================================================
 import { generateKnowledgeCheck } from '../../knowledge-check/gemini-knowledge-check';
-import { generateFastFact } from '../../fast-fact/gemini-fast-fact';
+import { generateFastFact } from '../../core/gemini-fast-fact';
+import { generateFactFile } from '../../core/gemini-fact-file';
+import { generateHowItWorks } from '../../core/gemini-how-it-works';
+import { generateTimelineExplorer } from '../../core/gemini-timeline-explorer';
+import { generateVocabularyExplorer } from '../../core/gemini-vocabulary-explorer';
 
 
 // ============================================================================
@@ -550,8 +554,36 @@ registerGenerator('fast-fact', async (item, topic, gradeContext) => {
   };
 });
 
+// Fact File (magazine-style profile card with self-check questions)
+registerGenerator('fact-file', async (item, topic, gradeContext) => ({
+  type: 'fact-file',
+  instanceId: item.instanceId,
+  data: await generateFactFile(topic, gradeContext, item.config),
+}));
+
+// How It Works (step-by-step process breakdown with comprehension challenges)
+registerGenerator('how-it-works', async (item, topic, gradeContext) => ({
+  type: 'how-it-works',
+  instanceId: item.instanceId,
+  data: await generateHowItWorks(topic, gradeContext, item.config),
+}));
+
+// Timeline Explorer (chronological event exploration with comprehension challenges)
+registerGenerator('timeline-explorer', async (item, topic, gradeContext) => ({
+  type: 'timeline-explorer',
+  instanceId: item.instanceId,
+  data: await generateTimelineExplorer(topic, gradeContext, item.config),
+}));
+
+// Vocabulary Explorer (topic-specific vocabulary with contextual definitions and challenges)
+registerGenerator('vocabulary-explorer', async (item, topic, gradeContext) => ({
+  type: 'vocabulary-explorer',
+  instanceId: item.instanceId,
+  data: await generateVocabularyExplorer(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 22 core components registered from dedicated service files
+// Migration status: 25 core components registered from dedicated service files
 // Math primitives (bar-model, number-line, etc.) moved to mathGenerators.ts
 // NO IMPORTS FROM geminiService.ts - all generators use dedicated files
 // ============================================================================

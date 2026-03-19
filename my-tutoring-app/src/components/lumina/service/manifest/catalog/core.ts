@@ -396,4 +396,354 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'fact-file',
+    description: 'Magazine-style profile card with key stats, quick facts, deep dive sections, records, and "did you know?" callouts. Students explore tabbed sections then answer self-check questions. Works for ANY topic — trash trucks, volcanoes, ancient civilizations, animals. ESSENTIAL for K-8 general content delivery.',
+    constraints: 'Best for topics with concrete facts and stats. Not ideal for purely narrative content.',
+    evalModes: [
+      {
+        evalMode: 'explore',
+        label: 'Explore & Recall (Guided)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['recall_easy'],
+        description: 'Student explores all sections, then answers 3 easy recall questions with section hints visible',
+      },
+      {
+        evalMode: 'recall',
+        label: 'Recall (Unguided)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['recall_easy', 'recall_medium'],
+        description: 'Student reads the Fact File, then answers 4 questions without section hints. Mix of easy and medium.',
+      },
+      {
+        evalMode: 'apply',
+        label: 'Apply & Analyze',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['recall_medium', 'recall_hard'],
+        description: 'Student answers harder questions requiring inference, comparison, or application of facts to new scenarios',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Guide the student through a Fact File about "{{title}}" ({{category}}). '
+        + 'The student explores key stats, quick facts, deep dive sections, records, and "did you know" callouts. '
+        + 'Currently viewing: {{activeTab}}. Sections explored: {{sectionsExplored}} of {{totalSections}}. '
+        + 'Self-check progress: {{checksCompleted}} of {{totalChecks}}.',
+      contextKeys: [
+        'title', 'category', 'activeTab', 'sectionsExplored', 'totalSections',
+        'checksCompleted', 'totalChecks', 'currentKeyStats',
+      ],
+      scaffoldingLevels: {
+        level1: '"Look at the key stats at the top. What number surprises you the most?"',
+        level2: '"Click on the {{activeTab}} tab and read through the details. '
+          + 'What connection do you see between this and the key stats?"',
+        level3: '"Let me walk you through this. Start with the key stats — {{title}} has some amazing numbers. '
+          + 'Now click Deep Dive to understand WHY those numbers matter. '
+          + 'Finally, check the Records section for the most extreme examples."',
+      },
+      commonStruggles: [
+        { pattern: 'Student only looks at key stats and skips other tabs', response: 'The key stats are just the beginning! Click on the other tabs — Deep Dive has the best details, and Did You Know has surprising facts.' },
+        { pattern: 'Student clicks through tabs too quickly without reading', response: 'Slow down and read each section carefully. There are some amazing details hidden in there that you will want to remember.' },
+        { pattern: 'Student struggles with self-check questions', response: 'Go back and re-read the section related to this question. The answer is in the facts you just explored.' },
+        { pattern: 'Student does not connect facts across sections', response: 'Try to connect what you learned in different sections. How do the key stats relate to the deep dive details?' },
+      ],
+      aiDirectives: [
+        {
+          title: 'TAB EXPLORATION',
+          instruction:
+            'When you receive [TAB_OPENED], briefly introduce the section the student opened. '
+            + 'Highlight one interesting detail to look for. If this is Deep Dive, connect it to a key stat. '
+            + 'If this is Did You Know, build excitement. Keep to 1-2 sentences.',
+        },
+        {
+          title: 'KEY STAT REACTION',
+          instruction:
+            'When you receive [STAT_TAPPED], react to the specific stat the student tapped. '
+            + 'Provide a relatable comparison (e.g., "That is as heavy as 8 elephants!"). '
+            + 'Keep to 1-2 sentences.',
+        },
+        {
+          title: 'SELF-CHECK FEEDBACK',
+          instruction:
+            'When you receive [CHECK_CORRECT], celebrate briefly and reinforce the fact. '
+            + 'When you receive [CHECK_INCORRECT], hint at which section contains the answer '
+            + 'without revealing it. Keep to 1-2 sentences.',
+        },
+        {
+          title: 'ALL EXPLORED',
+          instruction:
+            'When you receive [ALL_SECTIONS_EXPLORED], congratulate the student on reading everything. '
+            + 'Ask them what their favorite fact was. If self-checks are coming, preview them. '
+            + 'Keep to 2-3 sentences.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'how-it-works',
+    description: 'Interactive step-by-step process diagram. Students navigate through 4-6 sequential stages learning how something works (garbage collection, water cycle, digestion, bill-making). Each step has description, optional "What\'s Happening?" deeper explanation, key terms, and fun facts. Comprehension challenges test understanding via sequencing, identifying, predicting, and explaining. ESSENTIAL for K-8 procedural knowledge across all subjects.',
+    constraints: 'Best for processes with clear sequential steps (4-6). Not ideal for non-linear or branching processes.',
+    evalModes: [
+      {
+        evalMode: 'guided',
+        label: 'Guided Walkthrough (Easy)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['identify'],
+        description: 'Student walks through all steps with full guidance, then answers 3 "identify" questions with steps still visible',
+      },
+      {
+        evalMode: 'sequence',
+        label: 'Sequence & Identify (Medium)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['sequence', 'identify'],
+        description: 'Student must drag steps into correct order AND answer identify questions without step details visible',
+      },
+      {
+        evalMode: 'predict',
+        label: 'Predict & Explain (Hard)',
+        beta: 5.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['predict', 'explain'],
+        description: 'Student sees partial process and must predict next step or explain why a step happens. Requires inference beyond memorization.',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Guide the student through a step-by-step process: "{{title}}". '
+        + 'Overview: {{overview}}. Currently on Step {{currentStep}} of {{totalSteps}}: "{{currentStepTitle}}". '
+        + 'Steps explored: {{stepsExplored}} of {{totalSteps}}. '
+        + 'Detail expanded: {{detailExpanded}}. '
+        + 'Challenges completed: {{challengesCompleted}} of {{totalChallenges}}.',
+      contextKeys: [
+        'title', 'overview', 'totalSteps', 'currentStep', 'currentStepTitle',
+        'detailExpanded', 'stepsExplored', 'challengesCompleted', 'totalChallenges',
+      ],
+      scaffoldingLevels: {
+        level1: '"Look at this step carefully. What do you think is happening here?"',
+        level2: '"Read the description of Step {{currentStep}}: \\"{{currentStepTitle}}\\". '
+          + 'How does this connect to what happened in the previous step?"',
+        level3: '"Let me walk you through this. First, read the step description carefully. '
+          + 'Then open the \\"What\'s Happening?\\" section for deeper details. '
+          + 'Think about WHY this step needs to happen before the next one."',
+      },
+      commonStruggles: [
+        { pattern: 'Student clicks Next rapidly without reading step descriptions', response: 'Slow down! Each step builds on the last. Go back and read the description — the details matter for understanding the whole process.' },
+        { pattern: 'Student never opens "What\'s Happening?" sections', response: 'Try opening the "What\'s Happening?" section — it explains the science and mechanics behind each step with cool details.' },
+        { pattern: 'Student struggles with sequence challenges', response: 'Think about cause and effect. What has to happen BEFORE this step? What would break if you swapped these two?' },
+        { pattern: 'Student gets predict question wrong', response: 'Go back and re-read the step before this one. The clue is in how it ends — each step sets up the next.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'STEP NAVIGATION',
+          instruction:
+            'When you receive [STEP_NAVIGATION], briefly introduce the new step and connect it to the previous one '
+            + 'with "Now that X happened..." transitions. If student skipped steps, gently remind them. '
+            + 'Keep to 1-2 sentences.',
+        },
+        {
+          title: 'DETAIL EXPANSION',
+          instruction:
+            'When you receive [DETAIL_EXPANDED], react with enthusiasm about the deeper explanation. '
+            + 'Add a relatable comparison or real-world context. Keep to 1-2 sentences.',
+        },
+        {
+          title: 'CHALLENGE FEEDBACK',
+          instruction:
+            'When you receive [CHALLENGE_CORRECT], celebrate and reinforce understanding. '
+            + 'When you receive [CHALLENGE_INCORRECT], hint at the relevant step without giving the answer. '
+            + 'For sequence challenges, ask "What needs to happen BEFORE this?" '
+            + 'Keep to 1-2 sentences.',
+        },
+        {
+          title: 'PROCESS COMPLETE',
+          instruction:
+            'When you receive [ALL_COMPLETE], celebrate understanding. '
+            + 'Summarize the full process in one sentence. Highlight the most important takeaway. '
+            + 'Keep to 2-3 sentences.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'timeline-explorer',
+    description: 'Interactive chronological timeline with 5-8 event cards. Students explore events spanning a time period, reading descriptions, impact callouts, and connections between events. Comprehension challenges test chronological understanding via ordering, identification, dating, and cause-effect reasoning. Works for ANY chronological topic — history of aviation, evolution of computers, life of a city, scientific discoveries. ESSENTIAL for K-8 chronological understanding across all subjects.',
+    constraints: 'Best for topics with clear chronological progression (5-8 events). Not ideal for non-sequential topics.',
+    evalModes: [
+      {
+        evalMode: 'explore',
+        label: 'Guided Exploration (Easy)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['identify'],
+        description: 'Student explores all events with full guidance, then answers 3 "which event?" identification questions with timeline visible',
+      },
+      {
+        evalMode: 'order',
+        label: 'Chronological Ordering (Medium)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['order', 'identify'],
+        description: 'Student must arrange events chronologically AND identify events by description, timeline hidden during challenges',
+      },
+      {
+        evalMode: 'connect',
+        label: 'Cause & Effect (Hard)',
+        beta: 5.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['cause_effect', 'date'],
+        description: 'Student matches causes to effects across events and places events in correct time periods. Requires understanding WHY things happened, not just WHEN.',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Guide the student through a timeline: "{{title}}" spanning {{timeSpan}}. '
+        + 'Total events: {{totalEvents}}. Currently viewing event {{currentEventIndex}}: "{{currentEventTitle}}" ({{currentEventDate}}). '
+        + 'Events explored: {{eventsExplored}} of {{totalEvents}}. '
+        + 'Challenge progress: {{challengesCompleted}} of {{totalChallenges}}.',
+      contextKeys: [
+        'title', 'timeSpan', 'totalEvents', 'currentEventIndex',
+        'currentEventTitle', 'currentEventDate', 'eventsExplored',
+        'challengesCompleted', 'totalChallenges',
+      ],
+      scaffoldingLevels: {
+        level1: '"Look at event {{currentEventIndex}}. When did this happen? What changed?"',
+        level2: '"Read about {{currentEventTitle}} ({{currentEventDate}}). '
+          + 'How is it different from the event before it? What made it possible?"',
+        level3: '"Let me help you connect the dots. {{currentEventTitle}} happened in {{currentEventDate}}. '
+          + 'Look at the Impact section — it tells you why this was a turning point. '
+          + 'Now think about what came before and what came after."',
+      },
+      commonStruggles: [
+        { pattern: 'Student jumps to the end without reading middle events', response: 'The middle events are where the most interesting changes happen. Go back and explore them — each one builds on the last.' },
+        { pattern: 'Student struggles with chronological ordering', response: 'Think about what technology or idea had to exist FIRST before the next one could happen. Cause comes before effect.' },
+        { pattern: 'Student confuses similar events', response: 'Look at the dates and the key difference between those two events. What changed between them?' },
+        { pattern: 'Student does not read the Impact sections', response: 'The Impact line tells you WHY this event mattered. Read it — it helps you understand the whole timeline story.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'EVENT EXPLORATION',
+          instruction:
+            'When you receive [EVENT_SELECTED], introduce the event with historical context. '
+            + 'Connect it to the previous event with "X years later..." or "Building on..." '
+            + 'Highlight the impact. Keep to 1-2 sentences.',
+        },
+        {
+          title: 'CHALLENGE FEEDBACK',
+          instruction:
+            'When you receive [CHALLENGE_CORRECT], reinforce the chronological connection. '
+            + 'When you receive [CHALLENGE_INCORRECT], ask about cause-and-effect to guide thinking. '
+            + 'For ordering: "Think about what had to happen first." '
+            + 'Keep to 1-2 sentences.',
+        },
+        {
+          title: 'TIMELINE COMPLETE',
+          instruction:
+            'When you receive [ALL_COMPLETE], summarize the arc of the timeline in one sentence. '
+            + 'Highlight the key theme and ask the student what they think comes next. '
+            + 'Keep to 2-3 sentences.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'vocabulary-explorer',
+    description: 'Topic-specific vocabulary explorer with rich contextual definitions, example sentences, word origins, related words, and pronunciation guides. Students explore 5-8 terms through an interactive card interface, then demonstrate comprehension via matching, fill-in-blank, context usage, and identification challenges. Natural complement to any content primitive. ESSENTIAL for K-8 vocabulary building across all subjects.',
+    constraints: 'Best for topics with specialized terminology (5-8 terms). Not ideal for topics without distinct vocabulary.',
+    evalModes: [
+      {
+        evalMode: 'explore',
+        label: 'Explore & Match (Guided)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['match'],
+        description: 'Student explores all terms, then matches terms to definitions with term cards still visible',
+      },
+      {
+        evalMode: 'recall',
+        label: 'Recall & Fill (Unguided)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['match', 'fill_blank'],
+        description: 'Student matches terms AND fills in blanks in sentences, without definitions visible',
+      },
+      {
+        evalMode: 'apply',
+        label: 'Apply in Context (Hard)',
+        beta: 5.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['fill_blank', 'context'],
+        description: 'Student fills blanks and uses terms in new sentences/scenarios. Requires transferring vocabulary to novel contexts.',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Guide the student through vocabulary exploration for "{{topic}}". '
+        + 'Total terms: {{totalTerms}}. Currently viewing: "{{currentWord}}" ({{partOfSpeech}}). '
+        + 'Terms explored: {{termsExplored}} of {{totalTerms}}. '
+        + 'Challenge progress: {{challengesCompleted}} of {{totalChallenges}}.',
+      contextKeys: [
+        'topic', 'totalTerms', 'currentWord', 'partOfSpeech',
+        'termsExplored', 'challengesCompleted', 'totalChallenges',
+      ],
+      scaffoldingLevels: {
+        level1: '"Read the definition of {{currentWord}}. Have you heard this word before?"',
+        level2: '"Look at the example sentence for {{currentWord}}. '
+          + 'Can you see how it connects to the related words listed below?"',
+        level3: '"Let me help you learn {{currentWord}}. First, read the definition out loud. '
+          + 'Then read the example sentence. Now look at the Word Origin section — '
+          + 'knowing where a word comes from helps you remember what it means."',
+      },
+      commonStruggles: [
+        { pattern: 'Student skips reading definitions and goes straight to challenges', response: 'Go back and read each definition carefully first. The challenges will be much easier if you understand the terms.' },
+        { pattern: 'Student confuses similar terms', response: 'Compare those two terms side by side. Read both definitions and example sentences — what makes them different?' },
+        { pattern: 'Student struggles with fill-in-blank challenges', response: 'Think about which word makes the sentence make sense. Try reading the sentence with each option and see which one sounds right.' },
+        { pattern: 'Student does not read example sentences', response: 'The example sentence shows you how the word is actually used. Read it out loud — it makes the definition click.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'TERM INTRODUCTION',
+          instruction:
+            'When you receive [TERM_SELECTED], pronounce the word and give a brief, '
+            + 'kid-friendly introduction. Connect it to something the student might already know. '
+            + 'If the word has an interesting origin, tease it. Keep to 1-2 sentences.',
+        },
+        {
+          title: 'RELATED WORD CONNECTION',
+          instruction:
+            'When you receive [RELATED_WORD_CLICKED], briefly explain how the two terms '
+            + 'connect to each other. Build a mental web of vocabulary. Keep to 1-2 sentences.',
+        },
+        {
+          title: 'CHALLENGE FEEDBACK',
+          instruction:
+            'When you receive [CHALLENGE_CORRECT], celebrate and use the word in a new sentence. '
+            + 'When you receive [CHALLENGE_INCORRECT], give a contextual hint using the word\'s '
+            + 'definition or origin without revealing the answer. Keep to 1-2 sentences.',
+        },
+        {
+          title: 'ALL TERMS EXPLORED',
+          instruction:
+            'When you receive [ALL_TERMS_EXPLORED], congratulate the student and challenge them '
+            + 'to use one of the new words in their own sentence. Preview the challenges. '
+            + 'Keep to 2-3 sentences.',
+        },
+        {
+          title: 'VOCABULARY MASTERY',
+          instruction:
+            'When you receive [ALL_COMPLETE], celebrate vocabulary mastery. '
+            + 'Mention the total terms learned and encourage using them in conversation. '
+            + 'Keep to 2-3 sentences.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

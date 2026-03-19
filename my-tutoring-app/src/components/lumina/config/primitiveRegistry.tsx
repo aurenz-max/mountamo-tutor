@@ -52,7 +52,11 @@ import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
 import NumberTracer from '../primitives/visual-primitives/math/NumberTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
 import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker';
+import FactFile from '../primitives/visual-primitives/core/FactFile';
+import HowItWorks from '../primitives/visual-primitives/core/HowItWorks';
 import FastFact from '../primitives/visual-primitives/core/FastFact';
+import TimelineExplorer from '../primitives/visual-primitives/core/TimelineExplorer';
+import VocabularyExplorer from '../primitives/visual-primitives/core/VocabularyExplorer';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -220,9 +224,49 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'grid grid-cols-1 lg:grid-cols-3 gap-8 justify-items-center max-w-7xl mx-auto mb-20',
   },
 
+  'fact-file': {
+    component: FactFile,
+    sectionTitle: 'Fact File',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'how-it-works': {
+    component: HowItWorks,
+    sectionTitle: 'How It Works',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   'fast-fact': {
     component: FastFact,
     sectionTitle: 'Fast Fact',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'timeline-explorer': {
+    component: TimelineExplorer,
+    sectionTitle: 'Timeline Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'vocabulary-explorer': {
+    component: VocabularyExplorer,
+    sectionTitle: 'Vocabulary Explorer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

@@ -14,7 +14,9 @@ This skill is designed for **context efficiency**. The main agent handles the cr
 
 ## Phase 1: Gather Requirements (Main Agent)
 
-Ask the user for:
+**If a PRD file is passed as an argument**, extract all requirements from it instead of asking the user. Read the PRD, identify the primitive(s) defined, and confirm with the user which one(s) to build. PRDs typically specify: name, domain, data structure, eval modes, challenge types, tutoring scaffold, and metrics — skip any questions already answered by the PRD.
+
+**Otherwise**, ask the user for:
 - **Primitive name** (e.g., "CountingBoard", "FractionBar")
 - **Domain** (math, engineering, literacy, astronomy, physics, science, media, assessment, core)
 - **Purpose** (what it teaches)
@@ -37,6 +39,8 @@ Pick one from the same domain:
 | astronomy | `lumina/primitives/visual-primitives/astronomy/MissionPlanner.tsx` |
 | literacy | `lumina/primitives/visual-primitives/literacy/PhonicsBlender.tsx` |
 | physics | `lumina/primitives/visual-primitives/physics/InclinedPlane.tsx` |
+| core (explore+challenge) | `lumina/primitives/visual-primitives/core/FactFile.tsx` |
+| core (timed drill) | `lumina/primitives/visual-primitives/core/FastFact.tsx` |
 
 ### 2b. Write the component
 
@@ -171,7 +175,7 @@ After writing the component, note:
 
 ## Phase 3: Parallel Subagent Handoffs
 
-After the component is written, launch **4 parallel subagents** using the Task tool. Each reads only the files it needs.
+After the component is written, launch **4-5 parallel subagents** using the Task tool. Each reads only the files it needs. Launch Subagent E only if the primitive has eval modes.
 
 ### Subagent A: "Register types & primitive UI"
 
@@ -221,6 +225,7 @@ Import path: `../../primitives/visual-primitives/<domain>/<Name>`
 Domain: `<domain>`
 Purpose: <what the primitive teaches>
 Grade range: <grade range>
+Eval mode constraint target: <which field on which array the challenge types map to, e.g., `challenges[].type` or `selfChecks[].difficulty`>
 
 Tasks:
 1. Read one existing generator from the same domain for the pattern:
@@ -232,11 +237,20 @@ Tasks:
    - If the primitive has 2+ challenge types, also import eval mode utilities:
      `import { resolveEvalModeConstraint, constrainChallengeTypeEnum, buildChallengeTypePromptSection, type ChallengeTypeDoc } from '../evalMode';`
    - If using eval modes, define a `CHALLENGE_TYPE_DOCS` record at the top with `promptDoc` + `schemaDescription` per challenge type (see `gemini-ten-frame.ts` for the pattern)
-   - Define a Gemini JSON schema matching the data interface
+   - Define a Gemini JSON schema matching the data interface.
+     **IMPORTANT — Flatten arrays inside challenge/item objects** to avoid malformed LLM JSON:
+     - `options: string[]` → `option0`, `option1`, `option2`, `option3` (separate STRING fields)
+     - `sequenceItems: {id, text}[]` → `orderItem0Id`/`orderItem0Text` through `orderItem4Id`/`orderItem4Text`
+     - `matchPairs: {term, def}[]` → `matchTerm0`/`matchDef0` through `matchTerm3`/`matchDef3`
+     - `relatedWords: string[]` → `relatedWord0`, `relatedWord1`, `relatedWord2`
+     - `correctOrder: string[]` → `correctOrderCsv` (comma-separated string)
+     - `correctPairs: [n,n][]` → `correctPairsCsv` (format: `"0-0,1-1,2-2"`)
+     The validation function then reconstructs the nested arrays from flat fields.
+     See `gemini-fact-file.ts` or `gemini-how-it-works.ts` for concrete examples.
    - Export `generate<Name>` function with signature: `(topic: string, gradeLevel: string, config?: Partial<...>) => Promise<<Name>Data>`
    - Config type should include `targetEvalMode?: string` if eval modes are used
    - Use model `"gemini-flash-lite-latest"` with `responseMimeType: "application/json"`
-   - If eval modes: call `resolveEvalModeConstraint()`, `constrainChallengeTypeEnum()`, and `buildChallengeTypePromptSection()` before the Gemini call. Pass `activeSchema` (not base schema) to Gemini.
+   - If eval modes: call `resolveEvalModeConstraint()`, `constrainChallengeTypeEnum()`, and `buildChallengeTypePromptSection()` before the Gemini call. `constrainChallengeTypeEnum()` targets the enum field specified by the eval mode constraint target (e.g., the `type` enum on `challenges[]` items, or `difficulty` enum on `selfChecks[]` items). Pass `activeSchema` (not base schema) to Gemini.
    - Add validation/defaults after parsing
 
 3. Read `my-tutoring-app/src/components/lumina/service/registry/generators/<domain>Generators.ts`
@@ -343,6 +357,31 @@ Tasks:
    - Add render case in the component (follow existing pattern — do NOT pass onEvaluationSubmit to avoid double submission)
 ```
 
+### Subagent E: "Backend problem type registry" (only if eval modes)
+
+Prompt template:
+```
+Register eval mode prior betas for a new Lumina primitive in the backend calibration registry.
+
+Component ID: `<id>`
+Eval modes: <list of { evalMode, beta, description }>
+
+Tasks:
+1. Read `backend/app/services/calibration/problem_type_registry.py`
+   - Find the `PROBLEM_TYPE_REGISTRY` dict
+   - Add a new entry at the end (before the closing `}`), in the appropriate section:
+     ```python
+     "<id>": {
+         "<eval_mode>": PriorConfig(<beta>, "<description>"),
+         # ... more modes
+     },
+     ```
+   - Beta values MUST match the catalog entry exactly
+   - Use the existing comment-section style (e.g., `# Core / general-content primitives`)
+
+Write the edit. Do not just describe the change.
+```
+
 ---
 
 ## Phase 4: Type Check (Main Agent)
@@ -353,6 +392,8 @@ Fix any errors. Common issues:
 - Missing `ComponentId` entry in types.ts
 - Import path typos
 - Metrics not added to PrimitiveMetrics union
+
+**Known pre-existing error to IGNORE:** `ManifestViewer.tsx` has an incomplete `Record<ComponentId, string>` that is missing 140+ component IDs. This error predates your changes — do not try to fix it.
 
 ## Phase 5: Smoke Test via Eval-Test API (Main Agent)
 
@@ -370,13 +411,19 @@ curl -s "http://localhost:3000/api/lumina/eval-test?componentId=<id>&evalMode=<m
 
 If connection refused, tell the user: `cd my-tutoring-app && npm run dev` and wait for them to confirm the dev server is running before retrying.
 
+**Tip:** To extract summary fields from curl JSON on Windows (no python3), use node:
+```bash
+curl -s "URL" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(JSON.stringify({status:d.status,evalMode:d.evalMode,validation:d.validation},null,2))"
+```
+
 ### 5b. Analyze the response
 
 For each response, check:
 
 1. **Status**: `status` field should be `"pass"`. If `"fail"` or `"error"`, report the error immediately.
-2. **Challenge types**: `validation.typesFound` should only contain types from `validation.disallowedTypes` should be empty/absent.
+2. **Challenge types**: `validation.typesFound` should only contain allowed types. `validation.disallowedTypes` should be empty/absent.
 3. **Challenge count**: `validation.challengeCount` should be > 0 (generator actually produced challenges).
+   - **Note:** The eval-test API only detects arrays named `challenges`, `words`, `instances`, `questions`, `items`, or `problems`. If your primitive uses a different array name (e.g., `selfChecks`, `events`, `terms`), `challengeCount: 0` is expected — verify the data shape manually in `fullData` instead.
 4. **Data shape**: Read the component source and verify that `fullData` contains the fields the component destructures from its `Data` interface. Flag any missing required fields.
 5. **Answer integrity**: Check that correct answers are not leaked in title, description, or hint fields visible before interaction.
 6. **Math correctness**: For math primitives, spot-check that operands produce the claimed results.
@@ -411,7 +458,7 @@ Report to the user:
 - Tutoring scaffold added (or why skipped for display-only)
 - Eval modes added (if 2+ challenge types — list each mode with β value)
 - Eval-test smoke results (pass/fail per mode)
-- If eval modes added, remind user to also add entries to `backend/app/services/calibration/problem_type_registry.py` if not already present
+- Backend problem_type_registry.py updated (if eval modes — confirm beta values match catalog)
 
 ---
 

@@ -382,6 +382,29 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "reaction-lab":               {"default": PriorConfig(4.0, "Chemical reaction simulation")},
     "rocket-builder":             {"default": PriorConfig(4.5, "Design and launch rocket")},
     "orbit-mechanics-lab":        {"default": PriorConfig(5.0, "Orbital mechanics simulation")},
+    # -----------------------------------------------------------------
+    # Core / general-content primitives
+    # -----------------------------------------------------------------
+    "fact-file": {
+        "explore":  PriorConfig(1.5, "Guided exploration with easy recall questions"),
+        "recall":   PriorConfig(3.5, "Unguided recall, mix of easy and medium"),
+        "apply":    PriorConfig(5.0, "Inference and synthesis across sections"),
+    },
+    "how-it-works": {
+        "guided":   PriorConfig(1.5, "Guided walkthrough with identify questions"),
+        "sequence": PriorConfig(3.5, "Sequence ordering and identify questions"),
+        "predict":  PriorConfig(5.5, "Predict next step and explain reasoning"),
+    },
+    "timeline-explorer": {
+        "explore":  PriorConfig(1.5, "Guided exploration with identify questions"),
+        "order":    PriorConfig(3.5, "Chronological ordering and identify questions"),
+        "connect":  PriorConfig(5.5, "Cause-effect matching and date placement"),
+    },
+    "vocabulary-explorer": {
+        "explore":  PriorConfig(1.5, "Guided exploration with term matching"),
+        "recall":   PriorConfig(3.5, "Unguided recall with matching and fill-in-blank"),
+        "apply":    PriorConfig(5.5, "Contextual usage and fill-in-blank"),
+    },
 }
 
 # Default prior for unregistered primitive_type/eval_mode combinations

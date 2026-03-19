@@ -1046,6 +1046,10 @@ export type ComponentId =
   | 'fast-fact'          // Interactive fast fact display
   | 'feature-exhibit'    // The deep dive editorial
   | 'detail-drawer'      // (Usually triggered by interaction, but can be pre-seeded)
+  | 'fact-file'          // Interactive fact file display
+  | 'how-it-works'       // Interactive how-it-works explainer
+  | 'timeline-explorer'  // Interactive timeline explorer
+  | 'vocabulary-explorer' // Interactive vocabulary exploration
 
   // Data & Analysis
   | 'comparison-panel'   // A vs B
@@ -1515,9 +1519,13 @@ export interface PracticeSessionSummary {
 }
 
 // Re-export component data types for external use
+export type { FactFileData } from './primitives/visual-primitives/core/FactFile';
+export type { HowItWorksData } from './primitives/visual-primitives/core/HowItWorks';
 export type { CounterexamplePairData } from './primitives/visual-primitives/core/CounterexamplePair';
 export type { FastFactData } from './primitives/visual-primitives/core/FastFact';
 export type { DecisionFlowchartData, DecisionNode } from './primitives/visual-primitives/core/DecisionFlowchart';
+export type { TimelineExplorerData } from './primitives/visual-primitives/core/TimelineExplorer';
+export type { VocabularyExplorerData } from './primitives/visual-primitives/core/VocabularyExplorer';
 export type { ScaleComparatorData, CelestialObject, ReferenceObject } from './primitives/visual-primitives/astronomy/ScaleComparator';
 export type { DayNightSeasonsData, LocationMarker } from './primitives/visual-primitives/astronomy/DayNightSeasons';
 export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './primitives/visual-primitives/astronomy/MoonPhasesLab';

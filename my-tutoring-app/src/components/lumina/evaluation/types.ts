@@ -2899,6 +2899,57 @@ export interface VehicleDesignStudioMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+// -----------------------------------------------------------------------------
+// Core Primitives
+// -----------------------------------------------------------------------------
+
+export interface FactFileMetrics extends BasePrimitiveMetrics {
+  type: 'fact-file';
+  sectionsExplored: number;
+  totalSections: number;
+  explorationCompleteness: number;
+  selfCheckAccuracy: number;
+  selfCheckAttempts: number;
+  averageTimePerSection: number;
+  tabsVisitedOrder: string[];
+}
+
+export interface HowItWorksMetrics extends BasePrimitiveMetrics {
+  type: 'how-it-works';
+  stepsExplored: number;
+  totalSteps: number;
+  detailsExpanded: number;
+  sequenceAccuracy: number;
+  identifyAccuracy: number;
+  predictAccuracy: number;
+  challengeAttempts: number;
+  averageTimePerStep: number;
+}
+
+export interface TimelineExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'timeline-explorer';
+  eventsExplored: number;
+  totalEvents: number;
+  orderingAccuracy: number;
+  identifyAccuracy: number;
+  causeEffectAccuracy: number;
+  challengeAttempts: number;
+  averageTimePerEvent: number;
+  explorationPattern: string;
+}
+
+export interface VocabularyExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'vocabulary-explorer';
+  termsExplored: number;
+  totalTerms: number;
+  matchAccuracy: number;
+  fillBlankAccuracy: number;
+  contextAccuracy: number;
+  challengeAttempts: number;
+  averageTimePerTerm: number;
+  relatedWordClicks: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -3041,7 +3092,12 @@ export type PrimitiveMetrics =
   | LetterSoundLinkMetrics
   | CvcSpellerMetrics
   // Literacy (Wave 5)
-  | WordWorkoutMetrics;
+  | WordWorkoutMetrics
+  // Core
+  | FactFileMetrics
+  | HowItWorksMetrics
+  | TimelineExplorerMetrics
+  | VocabularyExplorerMetrics;
 
 // =============================================================================
 // Session & Summary Types

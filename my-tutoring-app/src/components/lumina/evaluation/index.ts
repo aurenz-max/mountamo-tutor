@@ -155,6 +155,11 @@ export type {
   LetterSoundLinkMetrics,
   CvcSpellerMetrics,
   WordWorkoutMetrics,
+  // Core metrics
+  FactFileMetrics,
+  HowItWorksMetrics,
+  TimelineExplorerMetrics,
+  VocabularyExplorerMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,
