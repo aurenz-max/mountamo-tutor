@@ -22,3 +22,6 @@ ENV/
 .history/
 *.code-workspace
 .claude\settings.local.json
+
+# Generated reports
+backend/reports/

@@ -228,6 +228,12 @@ class MasteryLifecycleEngine:
                 avg_a=avg_a or 1.4,
             )
 
+            # Also check P(correct) alone (without sigma) for the fallback
+            p_threshold = GATE_P_THRESHOLDS.get(1, 0.70)
+            ref_fraction = GATE_REF_FRACTIONS.get(1, 0.0)
+            ref_beta = min_beta + (max_beta - min_beta) * ref_fraction
+            p = p_correct(theta, avg_a or 1.4, ref_beta)
+
             if gate_passed:
                 lifecycle.current_gate = MasteryGate.INITIAL_MASTERY
                 lifecycle.completion_pct = 0.25
@@ -246,9 +252,33 @@ class MasteryLifecycleEngine:
                     f"theta={theta:.2f}, sigma={sigma:.3f}, "
                     f"next retest: {lifecycle.next_retest_eligible}"
                 )
+            elif (p >= p_threshold
+                    and lifecycle.lesson_eval_count >= GATE_1_MIN_LESSON_EVALS):
+                # Sigma too high but P(correct) passes and enough lesson evals
+                # observed — advance using lesson-count evidence as confidence proxy
+                lifecycle.current_gate = MasteryGate.INITIAL_MASTERY
+                lifecycle.completion_pct = 0.25
+                lifecycle.gate_mode = "probability"
+                lifecycle.theta_at_gate_entry = theta
+                lifecycle.sigma_at_gate_entry = sigma
+                lifecycle.gate_theta_threshold = skill_beta_median
+
+                base_interval, _ = RETEST_INTERVALS[(1, 2)]
+                retest_date = datetime.fromisoformat(timestamp) + timedelta(days=base_interval)
+                lifecycle.next_retest_eligible = retest_date.isoformat()
+                lifecycle.retest_interval_days = base_interval
+
+                logger.info(
+                    f"[MASTERY_ENGINE] Gate 1 CLEARED (probability+lesson fallback) "
+                    f"for {lifecycle.subskill_id} — P={p:.3f}>={p_threshold}, "
+                    f"lesson_count={lifecycle.lesson_eval_count}, sigma={sigma:.3f} "
+                    f"(above threshold but sufficient evidence), "
+                    f"next retest: {lifecycle.next_retest_eligible}"
+                )
             else:
                 logger.info(
                     f"[MASTERY_ENGINE] Probability gate check not met — "
+                    f"P={p:.3f}, sigma={sigma:.3f}, "
                     f"lesson_eval_count={lifecycle.lesson_eval_count}"
                 )
 

@@ -32,6 +32,7 @@ from ..models.pulse import (
     LEAPFROG_INFERRED_SIGMA,
     LEAPFROG_INFERRED_THETA,
     LEAPFROG_RETEST_DAYS,
+    MAX_CURRENT_ITEMS_PER_SKILL,
     PRIMITIVE_HISTORY_WINDOW,
     REVIEW_BAND_PCT,
     CreatePulseSessionRequest,
@@ -343,7 +344,10 @@ class PulseEngine:
         current_candidate_ids = frontier_skills | learning_skills
 
         # FRONTIER PROBE candidates (BFS 1-5 jumps ahead)
-        mastered_ids = {sid for sid, gate in gate_map.items() if gate >= 1}
+        # Only exclude skills that have survived at least one retest (gate >= 3).
+        # Gate 1-2 skills (initial mastery, leapfrog-inferred) are still probe-eligible
+        # so the BFS can reach beyond them for gifted/accelerating students.
+        mastered_ids = {sid for sid, gate in gate_map.items() if gate >= 3}
         probe_candidate_ids = self._gather_probe_candidates(
             frontier_skills, mastered_ids, all_edges, node_map,
         )
@@ -451,7 +455,8 @@ class PulseEngine:
             node = node_map.get(sid, {})
             skill_id = node.get("skill_id", lc.get("skill_id", ""))
             theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
-            mode = theta_to_mode(theta)
+            prim_type = node.get("primitive_type", "ten-frame")
+            mode, beta, eval_mode = self.select_best_mode(theta, prim_type)
             items.append(PulseItemSpec(
                 item_id=f"pulse-item-{len(items):03d}",
                 band=PulseBand.REVIEW,
@@ -460,7 +465,9 @@ class PulseEngine:
                 subject=subject,
                 description=node.get("description", "") or node.get("label", ""),
                 target_mode=mode,
-                target_beta=mode_to_beta(mode),
+                target_beta=beta,
+                eval_mode_name=eval_mode if eval_mode != "default" else None,
+                primitive_affinity=prim_type,
                 lesson_group_id=f"review-{skill_id}",
             ))
         return items
@@ -503,8 +510,11 @@ class PulseEngine:
 
         items: List[PulseItemSpec] = []
         item_offset = 100
+        skill_counts: Dict[str, int] = defaultdict(int)
 
         if blocks:
+            # First pass: add items respecting per-skill cap
+            deferred: List[tuple] = []  # (block, ss) pairs skipped due to cap
             for block in blocks:
                 if len(items) >= count:
                     break
@@ -515,8 +525,13 @@ class PulseEngine:
                     ss_id = ss.get("subskill_id", "") if isinstance(ss, dict) else getattr(ss, 'subskill_id', '')
                     node = node_map.get(ss_id, {})
                     skill_id = node.get("skill_id", "")
+                    if skill_counts[skill_id] >= MAX_CURRENT_ITEMS_PER_SKILL:
+                        deferred.append((block_id, ss))
+                        continue
                     theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
-                    mode = theta_to_mode(theta)
+                    prim_type = node.get("primitive_type", "ten-frame")
+                    mode, beta, eval_mode = self.select_best_mode(theta, prim_type)
+                    skill_counts[skill_id] += 1
                     items.append(PulseItemSpec(
                         item_id=f"pulse-item-{item_offset + len(items):03d}",
                         band=PulseBand.CURRENT,
@@ -525,9 +540,35 @@ class PulseEngine:
                         subject=subject,
                         description=node.get("description", "") or node.get("label", ""),
                         target_mode=mode,
-                        target_beta=mode_to_beta(mode),
+                        target_beta=beta,
+                        eval_mode_name=eval_mode if eval_mode != "default" else None,
+                        primitive_affinity=prim_type,
                         lesson_group_id=block_id,
                     ))
+            # Second pass: fill remaining slots from deferred items if needed
+            for block_id, ss in deferred:
+                if len(items) >= count:
+                    break
+                ss_id = ss.get("subskill_id", "") if isinstance(ss, dict) else getattr(ss, 'subskill_id', '')
+                node = node_map.get(ss_id, {})
+                skill_id = node.get("skill_id", "")
+                theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
+                prim_type = node.get("primitive_type", "ten-frame")
+                mode, beta, eval_mode = self.select_best_mode(theta, prim_type)
+                skill_counts[skill_id] += 1
+                items.append(PulseItemSpec(
+                    item_id=f"pulse-item-{item_offset + len(items):03d}",
+                    band=PulseBand.CURRENT,
+                    subskill_id=ss_id,
+                    skill_id=skill_id,
+                    subject=subject,
+                    description=node.get("description", "") or node.get("label", ""),
+                    target_mode=mode,
+                    target_beta=beta,
+                    eval_mode_name=eval_mode if eval_mode != "default" else None,
+                    primitive_affinity=prim_type,
+                    lesson_group_id=block_id,
+                ))
         else:
             # Fallback: group by parent skill
             skill_groups: Dict[str, List[str]] = defaultdict(list)
@@ -542,9 +583,13 @@ class PulseEngine:
                 for sid in subskills:
                     if len(items) >= count:
                         break
+                    if skill_counts[skill_id] >= MAX_CURRENT_ITEMS_PER_SKILL:
+                        continue
                     node = node_map.get(sid, {})
                     theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
-                    mode = theta_to_mode(theta)
+                    prim_type = node.get("primitive_type", "ten-frame")
+                    mode, beta, eval_mode = self.select_best_mode(theta, prim_type)
+                    skill_counts[skill_id] += 1
                     items.append(PulseItemSpec(
                         item_id=f"pulse-item-{item_offset + len(items):03d}",
                         band=PulseBand.CURRENT,
@@ -553,7 +598,9 @@ class PulseEngine:
                         subject=subject,
                         description=node.get("description", "") or node.get("label", ""),
                         target_mode=mode,
-                        target_beta=mode_to_beta(mode),
+                        target_beta=beta,
+                        eval_mode_name=eval_mode if eval_mode != "default" else None,
+                        primitive_affinity=prim_type,
                         lesson_group_id=f"current-{skill_id}",
                     ))
 
@@ -948,6 +995,16 @@ class PulseEngine:
             earned_level=earned_level,
         )
 
+        # Build IRT probability data from calibration result
+        irt_data = None
+        if cal_result.get("p_correct") is not None:
+            irt_data = IrtProbabilityData(
+                p_correct=cal_result["p_correct"],
+                item_information=cal_result.get("item_information", 0.0),
+                discrimination_a=cal_result.get("discrimination_a", 1.4),
+                guessing_c=cal_result.get("guessing_c", 0.0),
+            )
+
         # 4. Update mastery gate — pass pre-fetched lifecycle to avoid re-read
         gate_update = None
         eval_source = self._get_eval_source(band, old_gate)
@@ -1035,16 +1092,6 @@ class PulseEngine:
                     if scored else 0
                 ),
             }
-
-        # Build IRT probability data from calibration result
-        irt_data = None
-        if cal_result.get("p_correct") is not None:
-            irt_data = IrtProbabilityData(
-                p_correct=cal_result["p_correct"],
-                item_information=cal_result.get("item_information", 0.0),
-                discrimination_a=cal_result.get("discrimination_a", 1.4),
-                guessing_c=cal_result.get("guessing_c", 0.0),
-            )
 
         return PulseResultResponse(
             item_id=result.item_id,

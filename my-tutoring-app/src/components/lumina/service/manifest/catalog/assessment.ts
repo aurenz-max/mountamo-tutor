@@ -9,8 +9,78 @@ import { ComponentDefinition } from '../../../types';
 export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
   {
     id: 'knowledge-check',
-    description: 'Multiple choice quiz question. RECOMMENDED: Include at the end to assess understanding.',
+    description: 'Assessment checkpoint with single or multiple problems of various types (multiple choice, true/false, fill-in-blanks, matching, sequencing, categorization, scenario, short answer).',
     constraints: 'Typically one per exhibit, at the end',
+    tutoring: {
+      taskDescription:
+        'Guide the student through an assessment checkpoint. '
+        + 'Problem count: {{problemCount}}. Current problem: {{currentProblemIndex}} of {{problemCount}}. '
+        + 'Problem type: {{currentProblemType}}. Question: "{{currentQuestion}}". '
+        + 'The student must answer each problem. Encourage careful thinking without revealing answers.',
+      contextKeys: [
+        'problemCount', 'currentProblemIndex', 'currentProblemType',
+        'currentQuestion', 'attemptNumber', 'lastAnswerCorrect',
+        'completedCount', 'correctCount',
+      ],
+      scaffoldingLevels: {
+        level1:
+          '"Read the question carefully. What do you already know about this topic?"',
+        level2:
+          '"Let\'s break this down. Think about {{currentQuestion}} — '
+          + 'what key words or concepts stand out? Can you eliminate any options that don\'t fit?"',
+        level3:
+          '"Let me walk you through this step by step. First, re-read the question. '
+          + 'Now think about what we learned earlier in the lesson. '
+          + 'Focus on the most important detail in the question and match it to what you know."',
+      },
+      commonStruggles: [
+        { pattern: 'Student selects an answer very quickly without reading all options', response: 'Slow down and read every option before choosing. Sometimes the best answer isn\'t the first one you see.' },
+        { pattern: 'Student makes the same mistake repeatedly after reset', response: 'Let\'s try a different approach. Instead of jumping to an answer, tell me what the question is asking in your own words.' },
+        { pattern: 'Student requests hints without attempting an answer first', response: 'Give it your best try first! Even a guess helps you learn. You can always try again.' },
+        { pattern: 'Student is stuck between two plausible options', response: 'Good narrowing! Now compare those two options side by side. Which one more precisely answers what the question is asking?' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ANSWER FEEDBACK',
+          instruction:
+            'When you receive [ANSWER_CORRECT], briefly celebrate the student\'s success. '
+            + 'Reinforce WHY the answer is correct in 1-2 sentences. Do not be overly verbose. '
+            + 'If there are more problems, smoothly transition to encouraging them for the next one.',
+        },
+        {
+          title: 'INCORRECT ANSWER GUIDANCE',
+          instruction:
+            'When you receive [ANSWER_INCORRECT], do NOT reveal the correct answer. '
+            + 'Provide encouragement and a focused hint based on the scaffolding level. '
+            + 'If the student has attempted multiple times, escalate to a more specific hint '
+            + 'but still do not give the answer directly.',
+        },
+        {
+          title: 'HINT WALKTHROUGH',
+          instruction:
+            'When you receive [HINT_REQUESTED], provide a progressive hint based on the level indicated. '
+            + 'Level 1: Ask a guiding question to redirect thinking. '
+            + 'Level 2: Break the problem into smaller parts and point to key details. '
+            + 'Level 3: Walk through the reasoning step by step, stopping just short of the answer. '
+            + 'NEVER reveal the correct answer in any hint level.',
+        },
+        {
+          title: 'PROBLEM INTRODUCTION',
+          instruction:
+            'When you receive [PROBLEM_SHOWN], briefly read the question aloud in an encouraging way. '
+            + 'For multi-problem sets, acknowledge the student\'s progress. '
+            + 'Keep it to 1-2 sentences. Do NOT hint at the answer.',
+        },
+        {
+          title: 'ASSESSMENT COMPLETION',
+          instruction:
+            'When you receive [ALL_COMPLETE], celebrate the student\'s effort. '
+            + 'Mention how many they got correct out of the total. '
+            + 'Highlight their growth if they improved over multiple attempts. '
+            + 'Keep it to 2-3 encouraging sentences.',
+        },
+      ],
+    },
     supportsEvaluation: true,
     evalModes: [
       {

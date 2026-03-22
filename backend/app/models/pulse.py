@@ -41,6 +41,9 @@ LEAPFROG_INFERRED_THETA = 7.0
 LEAPFROG_INFERRED_SIGMA = 1.5
 LEAPFROG_RETEST_DAYS = 3
 
+# Per-skill cap in current-band selection — prevents one skill dominating a session
+MAX_CURRENT_ITEMS_PER_SKILL = 3
+
 # θ → mode mapping thresholds (PRD §3.1)
 THETA_TO_MODE = [
     (2.0, 1),           # θ < 2.0  → mode 1 (concrete, β ≈ 1.5)

@@ -71,6 +71,7 @@ import { generateSentenceAnalyzer } from '../../sentence-analyzer/gemini-sentenc
 // Assessment Component Imports (from dedicated service files)
 // ============================================================================
 import { generateKnowledgeCheck, type BloomsTier } from '../../knowledge-check/gemini-knowledge-check';
+import { getComponentById } from '../../manifest/catalog';
 import { generateFastFact } from '../../core/gemini-fast-fact';
 import { generateFactFile } from '../../core/gemini-fact-file';
 import { generateHowItWorks } from '../../core/gemini-how-it-works';
@@ -523,8 +524,25 @@ registerGenerator('sentence-analyzer', async (item, topic, gradeContext) => {
 // Knowledge Check (multiple problem types: MC, T/F, Fill-in, Matching, Sequencing, Categorization)
 registerGenerator('knowledge-check', async (item, topic, gradeContext) => {
   const config = getConfig(item);
+
+  // When an eval mode is set but no explicit problemType, pick a random
+  // allowed challenge type from the catalog so eval-test exercises all types.
+  let problemType = config.problemType;
+  if (!problemType && config.targetEvalMode) {
+    const catalogEntry = getComponentById('knowledge-check');
+    const modeDefn = catalogEntry?.evalModes?.find(
+      (m) => m.evalMode === config.targetEvalMode
+    );
+    if (modeDefn?.challengeTypes?.length) {
+      problemType =
+        modeDefn.challengeTypes[
+          Math.floor(Math.random() * modeDefn.challengeTypes.length)
+        ];
+    }
+  }
+
   const problems = await generateKnowledgeCheck(topic, gradeContext, {
-    problemType: config.problemType,
+    problemType: problemType,
     count: config.count || config.problemCount || 1,
     difficulty: config.difficulty,
     context: config.context,
@@ -536,7 +554,7 @@ registerGenerator('knowledge-check', async (item, topic, gradeContext) => {
     instanceId: item.instanceId,
     data: {
       problems,
-      problemType: config.problemType || 'multiple_choice',
+      problemType: problemType || 'multiple_choice',
       topic,
       gradeContext
     }

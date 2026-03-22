@@ -57,8 +57,9 @@
 | double-number-line | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/double-number-line-2026-03-17.md) |
 | place-value-chart | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/place-value-chart-2026-03-17.md) |
 | function-machine | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/function-machine-2026-03-17.md) |
+| knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
 
-**Totals:** 183/200 modes passing (91.5%) | 21 open issues (12 CRITICAL, 9 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 187/204 modes passing (91.7%) | 21 open issues (12 CRITICAL, 9 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
