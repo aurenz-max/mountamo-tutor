@@ -529,5 +529,9 @@ Return the complete 3D shape explorer configuration.
     if (config.description !== undefined) data.description = config.description;
   }
 
+  // Final summary log (matches pattern from other generators)
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
+  console.log(`[3DShapeExplorer] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
+
   return data;
 };

@@ -28,7 +28,8 @@
       "Read",
       "Bash(npx tsc*)",
       "Bash(pip show pytest)",
-      "Bash(curl -s \"http://localhost:3000/api/lumina/eval-test*)"
+      "Bash(curl -s \"http://localhost:3000/api/lumina/eval-test*)",
+      "Bash(python -m json.tool)"
     ],
     "deny": [],
     "ask": []

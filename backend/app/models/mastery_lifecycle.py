@@ -44,10 +44,13 @@ class GateHistoryEntry(BaseModel):
     gate: int = Field(..., ge=0, le=4, description="Gate being attempted")
     timestamp: str = Field(..., description="ISO-8601 timestamp")
     score: float = Field(..., ge=0, le=10, description="Score on 0-10 scale")
-    passed: bool = Field(..., description="Whether the score met the 9.0 threshold")
+    passed: bool = Field(..., description="Whether the score met the threshold")
     source: Literal["lesson", "practice", "diagnostic"] = Field(
         ..., description="Eval source: lesson-mode, practice-mode, or diagnostic-mode"
     )
+    # Theta-based gate tracking (populated when gate_mode="theta")
+    theta: Optional[float] = Field(default=None, description="Student theta at eval time")
+    sigma: Optional[float] = Field(default=None, description="Student sigma at eval time")
 
 
 # ---------------------------------------------------------------------------
@@ -100,6 +103,21 @@ class MasteryLifecycle(BaseModel):
         description="Count of lesson-mode evals scoring ≥ 90% for this subskill",
     )
 
+    # Theta-based gate tracking (ADAPT model — replaces score-based gates)
+    gate_mode: str = Field(
+        default="legacy",
+        description="Gate advancement mode: 'legacy' (3-evals-at-9.0) or 'theta' (confidence-based)",
+    )
+    theta_at_gate_entry: Optional[float] = Field(
+        default=None, description="Student theta when gate was last advanced",
+    )
+    sigma_at_gate_entry: Optional[float] = Field(
+        default=None, description="Student sigma when gate was last advanced",
+    )
+    gate_theta_threshold: Optional[float] = Field(
+        default=None, description="Skill beta median used for gate threshold computation",
+    )
+
     # History
     gate_history: List[GateHistoryEntry] = Field(default_factory=list)
 
@@ -131,4 +149,49 @@ RETEST_INTERVALS = {
     (1, 2): (3, 3),
     (2, 3): (7, 3),
     (3, 4): (14, 7),
+}
+
+# ---------------------------------------------------------------------------
+# Theta-based gate constants (ADAPT model — legacy theta-offset mode)
+# ---------------------------------------------------------------------------
+
+# Sigma thresholds per gate — confidence requirement tightens at higher gates.
+# Lower sigma = more confident estimate. Must have sigma BELOW this value to advance.
+GATE_SIGMA_THRESHOLDS = {
+    1: 1.5,   # Gate 0→1: "probably passes easy items"
+    2: 1.2,   # Gate 1→2: "likely passes medium items"
+    3: 1.0,   # Gate 2→3: "strong chance at hard items"
+    4: 0.8,   # Gate 3→4: "near-certain at everything"
+}
+
+# Theta must exceed skill_beta_median + offset for each gate.
+# (Legacy mode — replaced by P(correct) thresholds in probability mode)
+GATE_THETA_OFFSETS = {
+    1: 0.0,   # Gate 0→1: theta > skill beta median
+    2: 0.0,   # Gate 1→2: retention check (same threshold)
+    3: 0.5,   # Gate 2→3: slightly above median
+    4: 0.5,   # Gate 3→4: same as G3
+}
+
+# ---------------------------------------------------------------------------
+# Probability-based gate constants (2PL/3PL ADAPT model)
+#
+# Gate pass: P(correct | ref_b, avg_a) >= p_threshold AND sigma <= sigma_max
+# ref_b = min_beta + (max_beta - min_beta) * ref_fraction
+# ---------------------------------------------------------------------------
+
+# P(correct) thresholds per gate
+GATE_P_THRESHOLDS = {
+    1: 0.70,  # Gate 0→1: 70% chance at easiest mode
+    2: 0.75,  # Gate 1→2: 75% chance at mid difficulty
+    3: 0.80,  # Gate 2→3: 80% chance at hard difficulty
+    4: 0.90,  # Gate 3→4: 90% chance at hardest mode
+}
+
+# Reference difficulty fraction within the primitive's beta range
+GATE_REF_FRACTIONS = {
+    1: 0.0,   # Easiest mode (min β)
+    2: 0.5,   # Mid difficulty
+    3: 0.8,   # 80th percentile β
+    4: 1.0,   # Hardest mode (max β)
 }

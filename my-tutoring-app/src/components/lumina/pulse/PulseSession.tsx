@@ -29,6 +29,8 @@ import type {
   RecentPrimitive,
   SkillDetail,
   SkillUnlockProgress,
+  SessionFrontierContext,
+  SessionIrtSummary,
 } from './types';
 import { BAND_LABELS, BAND_COLORS } from './types';
 
@@ -108,6 +110,7 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
   // Summary data (set after session completes)
   const [summary, setSummary] = useState<PulseSessionSummary | null>(null);
   const [sessionLeapfrogs, setSessionLeapfrogs] = useState<LeapfrogEvent[]>([]);
+  const [sessionFrontierContext, setSessionFrontierContext] = useState<SessionFrontierContext | null>(null);
 
   // Resume detection
   const [savedSession, setSavedSession] = useState<PulseSessionStorage | null>(null);
@@ -134,6 +137,7 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
       setSessionItems(response.items);
       setRecentPrimitives(response.recent_primitives ?? []);
       setIsColdStart(response.is_cold_start);
+      setSessionFrontierContext(response.frontier_context ?? null);
       setSelectedSubject(subject);
 
       saveToStorage({
@@ -242,6 +246,7 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
     setIsColdStart(false);
     setSummary(null);
     setSessionLeapfrogs([]);
+    setSessionFrontierContext(null);
     setError(null);
     setStreamingMessage('');
     setSavedSession(null);
@@ -328,6 +333,8 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
               items={sessionItems}
               gradeLevel={gradeLevel}
               recentPrimitives={recentPrimitives}
+              isColdStart={isColdStart}
+              sessionFrontierContext={sessionFrontierContext}
               onSessionComplete={handleSessionComplete}
             />
           )}
@@ -590,6 +597,9 @@ function PulseSummaryCard({ summary, leapfrogs, isColdStart, onDone, onPlayAgain
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-violet-300">
                           &#128640; Skipped {lf.inferred_skills.length} {lf.inferred_skills.length === 1 ? 'skill' : 'skills'}
+                          {lf.inferred_details && lf.inferred_details.length > 0 && lf.inferred_details[0].skill_description && (
+                            <span className="text-slate-500 text-xs font-normal"> in {lf.inferred_details[0].skill_description}</span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-slate-500">Score: {Math.round(lf.aggregate_score * 10)}%</span>
@@ -623,6 +633,10 @@ function PulseSummaryCard({ summary, leapfrogs, isColdStart, onDone, onPlayAgain
 
           {summary && summary.theta_changes.length > 0 && (
             <ThetaGrowthSection thetaChanges={summary.theta_changes} />
+          )}
+
+          {summary?.irt_summary && (
+            <IrtInsightsSection irt={summary.irt_summary} />
           )}
 
           {summary && (
@@ -859,6 +873,50 @@ function SkillsAdvancedSection({ skillsAdvanced }: { skillsAdvanced: PulseSessio
 // ---------------------------------------------------------------------------
 // Frontier Delta Section (Knowledge Map with skill progress)
 // ---------------------------------------------------------------------------
+
+function IrtInsightsSection({ irt }: { irt: SessionIrtSummary }) {
+  const sigmaReduced = irt.sigma_reduction > 0;
+  const accuracyDelta = irt.total_items > 0
+    ? irt.actual_correct - irt.predicted_correct
+    : 0;
+  const accuracyLabel = accuracyDelta >= 0 ? 'above' : 'below';
+
+  return (
+    <div className="space-y-3 mt-4">
+      <h4 className="text-[10px] uppercase tracking-widest font-mono text-cyan-400 flex items-center gap-2">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        Measurement Insights
+      </h4>
+      <div className="grid grid-cols-3 gap-2">
+        {/* Sigma reduction */}
+        <div className="glass-panel rounded-lg border border-white/10 p-3 text-center">
+          <div className={`text-lg font-bold ${sigmaReduced ? 'text-emerald-400' : 'text-slate-400'}`}>
+            {sigmaReduced ? `-${irt.sigma_reduction.toFixed(2)}` : '0'}
+          </div>
+          <div className="text-[10px] text-slate-500 mt-0.5">Uncertainty reduced</div>
+        </div>
+        {/* Predicted vs actual */}
+        <div className="glass-panel rounded-lg border border-white/10 p-3 text-center">
+          <div className="text-lg font-bold text-blue-400">
+            {irt.actual_correct}/{irt.total_items}
+          </div>
+          <div className="text-[10px] text-slate-500 mt-0.5">
+            {Math.abs(accuracyDelta).toFixed(1)} {accuracyLabel} predicted
+          </div>
+        </div>
+        {/* Average information */}
+        <div className="glass-panel rounded-lg border border-white/10 p-3 text-center">
+          <div className="text-lg font-bold text-violet-400">
+            {irt.avg_information.toFixed(2)}
+          </div>
+          <div className="text-[10px] text-slate-500 mt-0.5">Avg measurement signal</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function FrontierDeltaSection({ summary, leapfrogs }: { summary: PulseSessionSummary; leapfrogs: LeapfrogEvent[] }) {
   const gateAdvances = summary.skills_advanced.length;

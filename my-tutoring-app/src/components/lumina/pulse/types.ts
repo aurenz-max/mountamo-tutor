@@ -35,6 +35,33 @@ export const BAND_BG_COLORS: Record<PulseBand, string> = {
 // Session Assembly (from backend)
 // ---------------------------------------------------------------------------
 
+export interface ItemFrontierContext {
+  dag_distance: number;
+  ancestors_if_passed: number;
+  ancestor_skill_names: string[];
+  unit_name: string;
+  unit_mastered: number;
+  unit_total: number;
+  next_skill_name: string;
+  last_tested_ago: string;
+}
+
+export interface UnitProgress {
+  unit_name: string;
+  skill_id: string;
+  mastered: number;
+  total: number;
+  branches_remaining: number;
+}
+
+export interface SessionFrontierContext {
+  frontier_depth: number;
+  max_depth: number;
+  total_mastered: number;
+  total_nodes: number;
+  units_in_progress: UnitProgress[];
+}
+
 export interface PulseItemSpec {
   item_id: string;
   band: PulseBand;
@@ -44,8 +71,10 @@ export interface PulseItemSpec {
   description: string;
   target_mode: number;          // 1-6
   target_beta: number;
+  eval_mode_name?: string;      // e.g. 'recall', 'apply', 'analyze', 'evaluate'
   lesson_group_id: string;
   primitive_affinity?: string;
+  frontier_context?: ItemFrontierContext;
 }
 
 export interface RecentPrimitive {
@@ -63,6 +92,7 @@ export interface PulseSessionResponse {
   items: PulseItemSpec[];
   recent_primitives: RecentPrimitive[];
   session_meta: Record<string, unknown>;
+  frontier_context?: SessionFrontierContext;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,6 +111,7 @@ export interface ThetaUpdate {
   skill_id: string;
   old_theta: number;
   new_theta: number;
+  sigma?: number;
   earned_level: number;
 }
 
@@ -132,12 +163,21 @@ export interface GateProgress {
   max_beta: number;
 }
 
+/** IRT probability data returned with each result */
+export interface IrtProbabilityData {
+  p_correct: number;         // P(correct) at current theta
+  item_information: number;  // Fisher information at current theta
+  discrimination_a: number;  // Item discrimination parameter
+  guessing_c: number;        // Guessing floor (0 for constructed response)
+}
+
 export interface PulseResultResponse {
   item_id: string;
   theta_update: ThetaUpdate;
   gate_update?: GateUpdate;
   leapfrog?: LeapfrogEvent;
   gate_progress?: GateProgress;
+  irt?: IrtProbabilityData;
   session_progress: {
     items_completed: number;
     items_total: number;
@@ -157,6 +197,17 @@ export interface PulseBandSummary {
   avg_score: number;
 }
 
+/** Session-level IRT summary — sigma reduction, accuracy vs predicted */
+export interface SessionIrtSummary {
+  start_sigma: number;
+  end_sigma: number;
+  sigma_reduction: number;
+  predicted_correct: number;  // sum of P(correct) for all items
+  actual_correct: number;     // count of items scored >= 9.0
+  total_items: number;
+  avg_information: number;    // mean item information across session
+}
+
 export interface PulseSessionSummary {
   session_id: string;
   subject: string;
@@ -171,4 +222,5 @@ export interface PulseSessionSummary {
   frontier_expanded: boolean;
   celebration_message: string;
   skill_progress?: SkillUnlockProgress[];
+  irt_summary?: SessionIrtSummary;
 }

@@ -12,6 +12,17 @@ import { ai } from "../geminiClient";
 import { buildPracticeVisualCatalogContext } from "./practice-visual-catalog";
 
 /**
+ * Map target_beta to nearest Bloom's tier when eval_mode_name is not available.
+ * Thresholds are midpoints between adjacent tier betas (1.5, 3.0, 4.5, 6.0).
+ */
+function betaToBloomsTier(beta: number): string {
+  if (beta <= 2.25) return 'recall';
+  if (beta <= 3.75) return 'apply';
+  if (beta <= 5.25) return 'analyze';
+  return 'evaluate';
+}
+
+/**
  * Progress callback for practice manifest generation streaming
  */
 export interface PracticeManifestProgressCallback {
@@ -499,6 +510,7 @@ export interface PulseManifestItemInput {
   band: string;       // 'frontier' | 'current' | 'review'
   target_mode: number; // 1-6
   target_beta: number;
+  eval_mode_name?: string; // e.g. 'recall', 'apply', 'analyze', 'evaluate'
   skill_id: string;
   subskill_id: string;
   subject: string;
@@ -636,20 +648,34 @@ Return ONLY valid JSON matching the schema.`;
     manifest.items[i].instanceId = items[i].item_id;
   }
 
+  // Inject Bloom's tier eval mode into standard problems for IRT-adaptive difficulty.
+  // Uses eval_mode_name from backend if available, otherwise derives from target_beta.
+  for (let i = 0; i < manifest.items.length && i < items.length; i++) {
+    const item = manifest.items[i];
+    const input = items[i];
+    if (item.standardProblem) {
+      const tier = input.eval_mode_name || betaToBloomsTier(input.target_beta);
+      item.standardProblem.evalMode = tier;
+    }
+  }
+
   // Post-manifest diversity enforcement: convert duplicate visual primitives
   const seenVisuals = new Set<string>();
   const fallbackTypes = ['multiple_choice', 'true_false', 'fill_in_blanks', 'matching_activity'];
   let fallbackIdx = 0;
-  for (const item of manifest.items) {
+  for (let i = 0; i < manifest.items.length; i++) {
+    const item = manifest.items[i];
     if (item.visualPrimitive) {
       const cid = item.visualPrimitive.componentId;
       if (seenVisuals.has(cid)) {
         const fallback = fallbackTypes[fallbackIdx % fallbackTypes.length];
         fallbackIdx++;
+        const input = i < items.length ? items[i] : undefined;
         console.log(`[Pulse] Diversity: duplicate visual "${cid}" → standard "${fallback}" for ${item.instanceId}`);
         item.standardProblem = {
           problemType: fallback as any,
           generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
+          evalMode: input ? (input.eval_mode_name || betaToBloomsTier(input.target_beta)) : undefined,
         };
         item.visualPrimitive = null;
       } else {
@@ -661,14 +687,17 @@ Return ONLY valid JSON matching the schema.`;
   // Safety net: items with neither visual nor standard
   const orphanFallbacks = ['multiple_choice', 'true_false', 'fill_in_blanks'];
   let orphanIdx = 0;
-  for (const item of manifest.items) {
+  for (let i = 0; i < manifest.items.length; i++) {
+    const item = manifest.items[i];
     if (!item.visualPrimitive && !item.standardProblem) {
       const fallback = orphanFallbacks[orphanIdx % orphanFallbacks.length];
       orphanIdx++;
+      const input = i < items.length ? items[i] : undefined;
       console.log(`[Pulse] Item ${item.instanceId} missing type — assigning ${fallback}`);
       item.standardProblem = {
         problemType: fallback as any,
         generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
+        evalMode: input ? (input.eval_mode_name || betaToBloomsTier(input.target_beta)) : undefined,
       };
     }
   }

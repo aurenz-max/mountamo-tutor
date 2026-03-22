@@ -31,9 +31,11 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   classify: {
     promptDoc:
-      `"classify": Sort multiple preloaded shapes into categories (e.g., triangles, quadrilaterals). `
-      + `Set classificationCategories (e.g. ['Triangles', 'Quadrilaterals', 'Pentagons']). `
+      `"classify": Sort multiple preloaded shapes into categories. `
+      + `Set classificationCategories (e.g. ['Triangles', 'Quadrilaterals', 'Other Shapes']). `
       + `Include 4-6 preloaded shapes spread across the grid. `
+      + `CRITICAL: Each preloadedShape MUST have a "correctCategory" field set to one of the classificationCategories values — `
+      + `this is how the component knows the answer. `
       + `Pictorial with reduced prompts — identify shape properties to sort.`,
     schemaDescription: "'classify' (identify shape properties)",
   },
@@ -181,6 +183,10 @@ const shapeBuilderSchema: Schema = {
           locked: {
             type: Type.BOOLEAN,
             description: "Whether the shape cannot be modified by the student"
+          },
+          correctCategory: {
+            type: Type.STRING,
+            description: "For classify mode: which classificationCategories value this shape belongs to. MUST match one of the classificationCategories exactly."
           }
         },
         required: ["id", "vertices", "name", "locked"]
@@ -532,6 +538,30 @@ Return the complete shape builder configuration.
   // Ensure classificationCategories is an array
   if (!Array.isArray(data.classificationCategories)) {
     data.classificationCategories = [];
+  }
+
+  // For classify mode: ensure every preloaded shape has a valid correctCategory
+  const hasClassifyChallenge = (data.challenges as Array<{ type: string }>).some(
+    (c: { type: string }) => c.type === 'classify'
+  );
+  if (hasClassifyChallenge && data.classificationCategories.length > 0) {
+    const categories = data.classificationCategories as string[];
+    for (const shape of data.preloadedShapes as Array<{ correctCategory?: string; vertices: Array<{ x: number; y: number }>; name: string }>) {
+      if (!shape.correctCategory || !categories.includes(shape.correctCategory)) {
+        // Fallback: assign based on side count if correctCategory missing/invalid
+        const sides = shape.vertices.length;
+        shape.correctCategory = categories.find(c => {
+          const cl = c.toLowerCase();
+          // Match common side-count patterns
+          if (sides === 3 && (cl.includes('triangle') || cl.includes('3 side') || cl.includes('three'))) return true;
+          if (sides === 4 && (cl.includes('quadrilateral') || cl.includes('4 side') || cl.includes('four'))) return true;
+          if (sides === 5 && (cl.includes('pentagon') || cl.includes('5 side') || cl.includes('five'))) return true;
+          if (sides === 6 && (cl.includes('hexagon') || cl.includes('6 side') || cl.includes('six'))) return true;
+          return false;
+        }) || categories[categories.length - 1]; // default to last category (often "Other")
+        console.warn(`[ShapeBuilder] Assigned fallback correctCategory "${shape.correctCategory}" to "${shape.name}"`);
+      }
+    }
   }
 
   // Ensure patternBlocks has valid defaults if present

@@ -1,17 +1,22 @@
 """
 Mastery Lifecycle Engine
 
-Implements the 4-gate mastery lifecycle model (PRD Sections 3, 4, 5, 8).
-This is a pure algorithmic service — no LLM or external API calls.
+Implements the 4-gate mastery lifecycle model with ADAPT-style theta-based
+gate advancement. Gate transitions are driven by student ability confidence
+(theta + sigma thresholds) rather than raw score counts.
 
 Entry point:  process_eval_result()
 Called from:   CompetencyService.update_competency_from_problem() as a hook
 
-Gate transitions:
+Gate transitions (theta mode):
+  Gate 0 → 1:  theta > skill_beta_median AND sigma < 1.0
+  Gate 1 → 2:  retest after 3d, theta > threshold AND sigma < 1.5
+  Gate 2 → 3:  retest after 7d, theta > threshold + 0.5 AND sigma < 1.2
+  Gate 3 → 4:  retest after 14d, theta > threshold + 0.5 AND sigma < 1.0
+
+Legacy gate transitions (backward compat, gate_mode="legacy"):
   Gate 0 → 1:  source="lesson", lesson_eval_count >= 3, score >= 9.0
-  Gate 1 → 2:  source="practice", retest eligible, score >= 9.0, +3d interval
-  Gate 2 → 3:  source="practice", retest eligible, score >= 9.0, +7d interval
-  Gate 3 → 4:  source="practice", retest eligible, score >= 9.0, +14d interval
+  Gate 1 → 4:  source="practice", retest eligible, score >= 9.0
 """
 
 import logging
@@ -26,12 +31,17 @@ from ..db.firestore_service import FirestoreService
 from ..models.mastery_lifecycle import (
     CREDIBILITY_STANDARD,
     GATE_1_MIN_LESSON_EVALS,
+    GATE_P_THRESHOLDS,
+    GATE_REF_FRACTIONS,
+    GATE_SIGMA_THRESHOLDS,
+    GATE_THETA_OFFSETS,
     MASTERY_THRESHOLD,
     RETEST_INTERVALS,
     GateHistoryEntry,
     MasteryGate,
     MasteryLifecycle,
 )
+from ..services.calibration_engine import CalibrationEngine, p_correct
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +71,10 @@ class MasteryLifecycleEngine:
         timestamp: Optional[str] = None,
         *,
         prefetched_lifecycle: Optional[Dict] = None,
+        theta: Optional[float] = None,
+        sigma: Optional[float] = None,
+        primitive_type: Optional[str] = None,
+        avg_a: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
         Process a single evaluation event and update the mastery lifecycle.
@@ -74,6 +88,10 @@ class MasteryLifecycleEngine:
             source: "lesson" or "practice".
             timestamp: ISO-8601 timestamp (defaults to now).
             prefetched_lifecycle: Pre-loaded lifecycle doc to skip a Firestore read.
+            theta: Freshly-updated student ability (from CalibrationEngine).
+            sigma: Freshly-updated uncertainty (from CalibrationEngine).
+            primitive_type: Primitive type for beta range lookup (2PL gate checks).
+            avg_a: Average discrimination for the skill's items (2PL gate checks).
 
         Returns:
             Updated mastery lifecycle dict.
@@ -84,7 +102,8 @@ class MasteryLifecycleEngine:
 
         logger.info(
             f"[MASTERY_ENGINE] Processing eval: student={student_id}, "
-            f"subskill={subskill_id}, score={score}, source={source}, passed={passed}"
+            f"subskill={subskill_id}, score={score}, source={source}, "
+            f"passed={passed}, theta={theta}, sigma={sigma}"
         )
 
         # Fetch or initialise the lifecycle document (skip read if pre-fetched)
@@ -109,14 +128,34 @@ class MasteryLifecycleEngine:
         if skill_id and not lifecycle.skill_id:
             lifecycle.skill_id = skill_id
 
+        # Compute skill beta median for theta-based checks (if theta available)
+        skill_beta_median: Optional[float] = None
+        if theta is not None and sigma is not None:
+            ability_doc = await self.firestore.get_student_ability(student_id, skill_id)
+            skill_beta_median = CalibrationEngine.compute_skill_beta_median(ability_doc)
+
+        # Compute beta range for probability-based gate checks
+        min_beta: Optional[float] = None
+        max_beta: Optional[float] = None
+        if primitive_type:
+            from .calibration.problem_type_registry import get_primitive_beta_range
+            min_beta, max_beta = get_primitive_beta_range(primitive_type)
+
         # Route based on source
         if source == "lesson":
-            lifecycle = self._handle_lesson_eval(lifecycle, score, passed, ts)
+            lifecycle = self._handle_lesson_eval(
+                lifecycle, score, passed, ts, theta, sigma, skill_beta_median,
+                min_beta=min_beta, max_beta=max_beta, avg_a=avg_a,
+            )
         elif source == "practice":
             # Fetch actual global pass rate for credibility blending (PRD 4.3)
             global_rate_data = await self.firestore.get_global_practice_pass_rate(student_id)
             global_rate = global_rate_data.get("global_practice_pass_rate", 0.8)
-            lifecycle = self._handle_practice_eval(lifecycle, score, passed, ts, now, global_rate)
+            lifecycle = self._handle_practice_eval(
+                lifecycle, score, passed, ts, now, global_rate,
+                theta, sigma, skill_beta_median,
+                min_beta=min_beta, max_beta=max_beta, avg_a=avg_a,
+            )
 
         # Append to gate history (capped to prevent unbounded doc growth)
         lifecycle.gate_history.append(
@@ -126,6 +165,8 @@ class MasteryLifecycleEngine:
                 score=score,
                 passed=passed,
                 source=source,
+                theta=theta,
+                sigma=sigma,
             )
         )
         if len(lifecycle.gate_history) > MAX_GATE_HISTORY:
@@ -141,6 +182,7 @@ class MasteryLifecycleEngine:
 
         logger.info(
             f"[MASTERY_ENGINE] Result: gate={lifecycle.current_gate}, "
+            f"mode={lifecycle.gate_mode}, "
             f"completion={lifecycle.completion_pct:.3f}, "
             f"next_retest={lifecycle.next_retest_eligible}"
         )
@@ -157,45 +199,107 @@ class MasteryLifecycleEngine:
         score: float,
         passed: bool,
         timestamp: str,
+        theta: Optional[float] = None,
+        sigma: Optional[float] = None,
+        skill_beta_median: Optional[float] = None,
+        min_beta: Optional[float] = None,
+        max_beta: Optional[float] = None,
+        avg_a: Optional[float] = None,
     ) -> MasteryLifecycle:
         """Handle a lesson-mode evaluation. Only affects Gate 0 → 1 transition."""
 
         if lifecycle.current_gate > MasteryGate.NOT_STARTED:
-            # Already past initial mastery — lesson evals don't affect later gates
             logger.info(
                 f"[MASTERY_ENGINE] Lesson eval for {lifecycle.subskill_id} "
                 f"at gate {lifecycle.current_gate} — no lifecycle effect"
             )
             return lifecycle
 
-        # Track passing lesson evals toward Gate 1
+        # Still track lesson eval count (for display/legacy compat)
         if passed:
             lifecycle.lesson_eval_count += 1
-            logger.info(
-                f"[MASTERY_ENGINE] Lesson eval passed — "
-                f"lesson_eval_count now {lifecycle.lesson_eval_count}/{GATE_1_MIN_LESSON_EVALS}"
+
+        # --- Probability-based gate check (2PL/3PL ADAPT model) ---
+        if (theta is not None and sigma is not None
+                and min_beta is not None and max_beta is not None):
+            gate_passed = self._check_probability_gate(
+                target_gate=1, theta=theta, sigma=sigma,
+                min_beta=min_beta, max_beta=max_beta,
+                avg_a=avg_a or 1.4,
             )
 
-            # Check if Gate 1 threshold met
-            if lifecycle.lesson_eval_count >= GATE_1_MIN_LESSON_EVALS:
+            if gate_passed:
                 lifecycle.current_gate = MasteryGate.INITIAL_MASTERY
-                lifecycle.completion_pct = 0.25  # Base 25% credit for Gate 1
+                lifecycle.completion_pct = 0.25
+                lifecycle.gate_mode = "probability"
+                lifecycle.theta_at_gate_entry = theta
+                lifecycle.sigma_at_gate_entry = sigma
+                lifecycle.gate_theta_threshold = skill_beta_median
 
-                # Schedule first retest in 3 days
                 base_interval, _ = RETEST_INTERVALS[(1, 2)]
                 retest_date = datetime.fromisoformat(timestamp) + timedelta(days=base_interval)
                 lifecycle.next_retest_eligible = retest_date.isoformat()
                 lifecycle.retest_interval_days = base_interval
 
                 logger.info(
-                    f"[MASTERY_ENGINE] Gate 1 CLEARED for {lifecycle.subskill_id} — "
-                    f"next retest eligible: {lifecycle.next_retest_eligible}"
+                    f"[MASTERY_ENGINE] Gate 1 CLEARED (probability mode) for {lifecycle.subskill_id} — "
+                    f"theta={theta:.2f}, sigma={sigma:.3f}, "
+                    f"next retest: {lifecycle.next_retest_eligible}"
+                )
+            else:
+                logger.info(
+                    f"[MASTERY_ENGINE] Probability gate check not met — "
+                    f"lesson_eval_count={lifecycle.lesson_eval_count}"
+                )
+
+        # --- Theta-offset fallback (legacy theta mode) ---
+        elif theta is not None and sigma is not None and skill_beta_median is not None:
+            threshold = skill_beta_median + GATE_THETA_OFFSETS[1]
+            sigma_max = GATE_SIGMA_THRESHOLDS[1]
+
+            logger.info(
+                f"[MASTERY_ENGINE] Theta gate check: theta={theta:.2f} vs "
+                f"threshold={threshold:.2f} (β_median={skill_beta_median:.2f}), "
+                f"sigma={sigma:.3f} vs max={sigma_max}"
+            )
+
+            if theta > threshold and sigma < sigma_max:
+                lifecycle.current_gate = MasteryGate.INITIAL_MASTERY
+                lifecycle.completion_pct = 0.25
+                lifecycle.gate_mode = "theta"
+                lifecycle.theta_at_gate_entry = theta
+                lifecycle.sigma_at_gate_entry = sigma
+                lifecycle.gate_theta_threshold = skill_beta_median
+
+                base_interval, _ = RETEST_INTERVALS[(1, 2)]
+                retest_date = datetime.fromisoformat(timestamp) + timedelta(days=base_interval)
+                lifecycle.next_retest_eligible = retest_date.isoformat()
+                lifecycle.retest_interval_days = base_interval
+
+                logger.info(
+                    f"[MASTERY_ENGINE] Gate 1 CLEARED (theta mode) for {lifecycle.subskill_id} — "
+                    f"theta={theta:.2f}, sigma={sigma:.3f}, "
+                    f"next retest: {lifecycle.next_retest_eligible}"
                 )
         else:
-            logger.info(
-                f"[MASTERY_ENGINE] Lesson eval did not pass (score {score}) — "
-                f"lesson_eval_count stays at {lifecycle.lesson_eval_count}"
-            )
+            # --- Legacy fallback: score-based gate check ---
+            if passed:
+                logger.info(
+                    f"[MASTERY_ENGINE] Lesson eval passed (legacy) — "
+                    f"lesson_eval_count now {lifecycle.lesson_eval_count}/{GATE_1_MIN_LESSON_EVALS}"
+                )
+                if lifecycle.lesson_eval_count >= GATE_1_MIN_LESSON_EVALS:
+                    lifecycle.current_gate = MasteryGate.INITIAL_MASTERY
+                    lifecycle.completion_pct = 0.25
+
+                    base_interval, _ = RETEST_INTERVALS[(1, 2)]
+                    retest_date = datetime.fromisoformat(timestamp) + timedelta(days=base_interval)
+                    lifecycle.next_retest_eligible = retest_date.isoformat()
+                    lifecycle.retest_interval_days = base_interval
+
+                    logger.info(
+                        f"[MASTERY_ENGINE] Gate 1 CLEARED (legacy) for {lifecycle.subskill_id}"
+                    )
 
         return lifecycle
 
@@ -211,21 +315,25 @@ class MasteryLifecycleEngine:
         timestamp: str,
         now: datetime,
         global_pass_rate: float,
+        theta: Optional[float] = None,
+        sigma: Optional[float] = None,
+        skill_beta_median: Optional[float] = None,
+        min_beta: Optional[float] = None,
+        max_beta: Optional[float] = None,
+        avg_a: Optional[float] = None,
     ) -> MasteryLifecycle:
         """Handle a practice-mode evaluation. Affects retest gates 2-4."""
 
         gate = lifecycle.current_gate
 
         if gate == MasteryGate.NOT_STARTED:
-            # Practice evals before initial mastery don't affect the lifecycle
             logger.info(
                 f"[MASTERY_ENGINE] Practice eval at Gate 0 — "
-                f"no lifecycle effect (need lesson mastery first)"
+                f"no lifecycle effect (need initial mastery first)"
             )
             return lifecycle
 
         if gate >= MasteryGate.RETEST_3:
-            # Already at Gate 4 — fully mastered
             logger.info(
                 f"[MASTERY_ENGINE] Practice eval for {lifecycle.subskill_id} "
                 f"already at Gate 4 — no lifecycle effect"
@@ -237,7 +345,6 @@ class MasteryLifecycleEngine:
             retest_eligible_dt = datetime.fromisoformat(
                 lifecycle.next_retest_eligible.replace("Z", "+00:00")
             )
-            # Make now timezone-aware if it isn't
             if now.tzinfo is None:
                 now = now.replace(tzinfo=timezone.utc)
             if retest_eligible_dt.tzinfo is None:
@@ -251,12 +358,39 @@ class MasteryLifecycleEngine:
                 )
                 return lifecycle
 
-        # This is an eligible retest — process it
-        next_gate = gate + 1  # The gate being attempted
-        transition_key = (gate, next_gate)
+        # --- Determine pass/fail based on gate mode ---
+        target_gate = gate + 1
+        transition_key = (gate, target_gate)
+
+        if (lifecycle.gate_mode == "probability"
+                and theta is not None and sigma is not None
+                and min_beta is not None and max_beta is not None):
+            # Probability-based retest check (2PL/3PL)
+            passed = self._check_probability_gate(
+                target_gate=target_gate, theta=theta, sigma=sigma,
+                min_beta=min_beta, max_beta=max_beta,
+                avg_a=avg_a or 1.4,
+            )
+
+        elif lifecycle.gate_mode == "theta" and theta is not None and sigma is not None:
+            # Legacy theta-offset retest check
+            gate_threshold = lifecycle.gate_theta_threshold or skill_beta_median or 3.0
+            threshold = gate_threshold + GATE_THETA_OFFSETS.get(target_gate, 0.5)
+            sigma_max = GATE_SIGMA_THRESHOLDS.get(target_gate, 1.0)
+            theta_passed = theta > threshold and sigma < sigma_max
+
+            logger.info(
+                f"[MASTERY_ENGINE] Theta retest check: theta={theta:.2f} vs "
+                f"threshold={threshold:.2f}, sigma={sigma:.3f} vs max={sigma_max} "
+                f"→ {'PASS' if theta_passed else 'FAIL'}"
+            )
+            passed = theta_passed
+        # else: use the score-based `passed` from caller (legacy)
 
         if passed:
-            lifecycle = self._handle_retest_pass(lifecycle, transition_key, timestamp)
+            lifecycle = self._handle_retest_pass(
+                lifecycle, transition_key, timestamp, theta, sigma,
+            )
         else:
             lifecycle = self._handle_retest_fail(lifecycle, transition_key, timestamp)
 
@@ -264,6 +398,46 @@ class MasteryLifecycleEngine:
         lifecycle = self._recalculate_completion_factor(lifecycle, global_pass_rate)
 
         return lifecycle
+
+    # ------------------------------------------------------------------
+    # Probability-based gate check (2PL/3PL ADAPT model)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_probability_gate(
+        target_gate: int,
+        theta: float,
+        sigma: float,
+        min_beta: float,
+        max_beta: float,
+        avg_a: float = 1.4,
+    ) -> bool:
+        """
+        Check if a student passes a gate using P(correct) at a reference difficulty.
+
+        Gate pass condition:
+          P(correct | ref_b, avg_a) >= p_threshold  AND  sigma <= sigma_max
+
+        Where ref_b = min_beta + (max_beta - min_beta) * ref_fraction.
+        """
+        p_threshold = GATE_P_THRESHOLDS.get(target_gate, 0.90)
+        ref_fraction = GATE_REF_FRACTIONS.get(target_gate, 1.0)
+        sigma_max = GATE_SIGMA_THRESHOLDS.get(target_gate, 0.8)
+
+        ref_beta = min_beta + (max_beta - min_beta) * ref_fraction
+        p = p_correct(theta, avg_a, ref_beta)
+
+        gate_passed = p >= p_threshold and sigma <= sigma_max
+
+        logger.info(
+            f"[MASTERY_ENGINE] Probability gate check: gate={target_gate}, "
+            f"P(correct)={p:.3f} vs threshold={p_threshold}, "
+            f"ref_beta={ref_beta:.2f} (fraction={ref_fraction}), "
+            f"sigma={sigma:.3f} vs max={sigma_max}, avg_a={avg_a:.2f} "
+            f"→ {'PASS' if gate_passed else 'FAIL'}"
+        )
+
+        return gate_passed
 
     # ------------------------------------------------------------------
     # Retest pass / fail handlers
@@ -274,11 +448,19 @@ class MasteryLifecycleEngine:
         lifecycle: MasteryLifecycle,
         transition_key: tuple,
         timestamp: str,
+        theta: Optional[float] = None,
+        sigma: Optional[float] = None,
     ) -> MasteryLifecycle:
-        """Handle a passing retest (score >= 9.0)."""
+        """Handle a passing retest."""
         lifecycle.passes += 1
         new_gate = transition_key[1]
         lifecycle.current_gate = new_gate
+
+        # Record theta/sigma at gate entry
+        if theta is not None:
+            lifecycle.theta_at_gate_entry = theta
+        if sigma is not None:
+            lifecycle.sigma_at_gate_entry = sigma
 
         logger.info(
             f"[MASTERY_ENGINE] Retest PASSED — advancing to Gate {new_gate}"

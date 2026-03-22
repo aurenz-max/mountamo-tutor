@@ -43,6 +43,7 @@ export interface PreloadedShape {
   vertices: Point[];
   name: string;
   locked: boolean;
+  correctCategory?: string;
 }
 
 export interface ShapeBuilderData {
@@ -647,68 +648,22 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
       setClassifications((prev) => ({ ...prev, [selectedShapeId]: category }));
 
-      const shapeProps = computeShapeProperties(shape.vertices);
-      const shapeName = identifyShape(shapeProps);
-
-      // Determine correctness: support both side-count categories (e.g. "Triangles")
-      // and property-based categories from the AI generator (e.g. "Has 4 Right Angles")
-      const catLower = category.toLowerCase();
-      const sideCountMap: Record<string, number[]> = {
-        triangles: [3],
-        quadrilaterals: [4],
-        pentagons: [5],
-        hexagons: [6],
-        polygons: [5, 6, 7, 8],
-      };
-
-      let isCorrect = false;
-      if (sideCountMap[catLower]) {
-        // Side-count based category
-        isCorrect = sideCountMap[catLower].includes(shapeProps.sides);
-      } else {
-        // Property-based category: match keywords in the category name against shape properties
-        const hasRight = catLower.includes('right angle');
-        const hasParallel = catLower.includes('parallel');
-        const hasEqual = catLower.includes('equal');
-        const isNegative = catLower.includes('not') || catLower.includes('no ');
-
-        if (hasRight) {
-          // Extract number from category if present (e.g. "Has 4 Right Angles")
-          const numMatch = category.match(/(\d+)\s*right/i);
-          const requiredCount = numMatch ? parseInt(numMatch[1]) : 1;
-          const shapeHasProperty = shapeProps.rightAngles >= requiredCount;
-          isCorrect = isNegative ? !shapeHasProperty : shapeHasProperty;
-        } else if (hasParallel) {
-          const numMatch = category.match(/(\d+)\s*parallel/i);
-          const requiredCount = numMatch ? parseInt(numMatch[1]) : 1;
-          const shapeHasProperty = shapeProps.parallelPairs >= requiredCount;
-          isCorrect = isNegative ? !shapeHasProperty : shapeHasProperty;
-        } else if (hasEqual) {
-          const shapeHasProperty = shapeProps.equalSides === 'all' || shapeProps.equalSides === 'pairs';
-          isCorrect = isNegative ? !shapeHasProperty : shapeHasProperty;
-        } else {
-          // Fallback: check if shape name matches category text
-          isCorrect = catLower.includes(shapeName.toLowerCase())
-            || shapeName.toLowerCase().includes(catLower.replace(/s$/, ''));
-        }
-      }
+      // Correctness is determined by the generator — each shape has a correctCategory
+      const isCorrect = shape.correctCategory === category;
 
       if (isCorrect) {
         setClassificationsCorrect((prev) => prev + 1);
-        setFeedback(`Correct! ${shape.name} (${shapeName}) belongs in "${category}".`);
+        setFeedback(`Correct! ${shape.name} belongs in "${category}".`);
         setFeedbackType('success');
         sendText(
-          `[CLASSIFY_CORRECT] Student correctly classified "${shape.name}" (${shapeName}) as "${category}". `
-          + `Properties: ${shapeProps.sides} sides, ${shapeProps.rightAngles} right angles, `
-          + `${shapeProps.parallelPairs} parallel pairs, equal sides: ${shapeProps.equalSides}. Celebrate briefly.`,
+          `[CLASSIFY_CORRECT] Student correctly classified "${shape.name}" as "${category}". Celebrate briefly.`,
           { silent: true },
         );
       } else {
         setFeedback(`Not quite. Look at the properties of ${shape.name} again.`);
         setFeedbackType('error');
         sendText(
-          `[CLASSIFY_INCORRECT] Student put "${shape.name}" (${shapeName}: ${shapeProps.rightAngles} right angles, `
-          + `${shapeProps.parallelPairs} parallel pairs, sides: ${shapeProps.equalSides}) in "${category}". `
+          `[CLASSIFY_INCORRECT] Student put "${shape.name}" in "${category}" but it belongs in "${shape.correctCategory}". `
           + `Guide the student to examine the shape's properties.`,
           { silent: true },
         );

@@ -297,9 +297,10 @@ export const generateKnowledgeCheckProblems = async (
   topic: string,
   gradeLevel: string,
   problemType: ProblemType,
-  count: number
+  count: number,
+  bloomsTier?: string
 ): Promise<ProblemData[]> => {
-  return callAPI('generateKnowledgeCheckProblems', { topic, gradeLevel, problemType, count });
+  return callAPI('generateKnowledgeCheckProblems', { topic, gradeLevel, problemType, count, bloomsTier });
 };
 
 export const generateProblemHint = async (

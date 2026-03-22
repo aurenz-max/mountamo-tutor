@@ -5,6 +5,21 @@ import { KnowledgeCheck } from '../primitives/KnowledgeCheck';
 import { ProblemData, ProblemType, ProblemDifficulty } from '../types';
 import { PROBLEM_TYPE_REGISTRY, getAllProblemTypes } from '../config/problemTypeRegistry';
 import { generateKnowledgeCheckProblems } from '../service/geminiClient-api';
+import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
+
+// ---------------------------------------------------------------------------
+// Bloom's Taxonomy Tiers (IRT §6.8)
+// ---------------------------------------------------------------------------
+
+type BloomsTier = 'recall' | 'apply' | 'analyze' | 'evaluate';
+
+const BLOOMS_TIERS: { value: BloomsTier | ''; label: string; beta: number | null; a: number | null; c: number | null; description: string }[] = [
+  { value: '',         label: 'Auto (no tier)',   beta: null, a: null, c: null, description: 'Generic difficulty — no Bloom\'s constraint applied.' },
+  { value: 'recall',   label: 'Recall (Tier 1)',  beta: 1.5,  a: 1.6, c: 0.25, description: '"What is X?" — fact retrieval, obvious distractors, 4 options.' },
+  { value: 'apply',    label: 'Apply (Tier 2)',   beta: 3.0,  a: 1.4, c: 0.25, description: '"Use X to solve Y" — standard application, procedural-error distractors, 4 options.' },
+  { value: 'analyze',  label: 'Analyze (Tier 3)', beta: 4.5,  a: 1.6, c: 0.20, description: '"Why does X happen?" — multi-step reasoning, highly plausible distractors, 4-5 options.' },
+  { value: 'evaluate', label: 'Evaluate (Tier 4)', beta: 6.0, a: 1.8, c: 0.15, description: '"Which approach is best?" — expert reasoning, defensible-but-inferior distractors, 5 options.' },
+];
 
 interface KnowledgeCheckTesterProps {
   onBack: () => void;
@@ -20,29 +35,32 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
   const [difficulty, setDifficulty] = useState<ProblemDifficulty>('medium');
   const [gradeLevel, setGradeLevel] = useState<string>('elementary');
   const [problemCount, setProblemCount] = useState<number>(3);
+  const [bloomsTier, setBloomsTier] = useState<BloomsTier | ''>('');
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generationKey, setGenerationKey] = useState(0);
 
   // Use universal generateKnowledgeCheckProblems for all problem types
   const generateProblemsForType = async (
     problemType: ProblemType,
     topic: string,
     gradeLevel: string,
-    count: number
+    count: number,
+    bloomsTier?: BloomsTier
   ): Promise<any[]> => {
-    return generateKnowledgeCheckProblems(topic, gradeLevel, problemType, count);
+    return generateKnowledgeCheckProblems(topic, gradeLevel, problemType, count, bloomsTier);
   };
 
   // Map problem types to their generator functions
-  const generatorMap: Partial<Record<ProblemType, (topic: string, gradeLevel: string, count: number, context?: string) => Promise<any[]>>> = {
-    'multiple_choice': (topic, gradeLevel, count) => generateProblemsForType('multiple_choice', topic, gradeLevel, count),
-    'true_false': (topic, gradeLevel, count) => generateProblemsForType('true_false', topic, gradeLevel, count),
-    'fill_in_blanks': (topic, gradeLevel, count) => generateProblemsForType('fill_in_blanks', topic, gradeLevel, count),
-    'categorization_activity': (topic, gradeLevel, count) => generateProblemsForType('categorization_activity', topic, gradeLevel, count),
-    'sequencing_activity': (topic, gradeLevel, count) => generateProblemsForType('sequencing_activity', topic, gradeLevel, count),
-    'matching_activity': (topic, gradeLevel, count) => generateProblemsForType('matching_activity', topic, gradeLevel, count),
+  const generatorMap: Partial<Record<ProblemType, (topic: string, gradeLevel: string, count: number, context?: string, bloomsTier?: BloomsTier) => Promise<any[]>>> = {
+    'multiple_choice': (topic, gradeLevel, count, _ctx, bt) => generateProblemsForType('multiple_choice', topic, gradeLevel, count, bt),
+    'true_false': (topic, gradeLevel, count, _ctx, bt) => generateProblemsForType('true_false', topic, gradeLevel, count, bt),
+    'fill_in_blanks': (topic, gradeLevel, count, _ctx, bt) => generateProblemsForType('fill_in_blanks', topic, gradeLevel, count, bt),
+    'categorization_activity': (topic, gradeLevel, count, _ctx, bt) => generateProblemsForType('categorization_activity', topic, gradeLevel, count, bt),
+    'sequencing_activity': (topic, gradeLevel, count, _ctx, bt) => generateProblemsForType('sequencing_activity', topic, gradeLevel, count, bt),
+    'matching_activity': (topic, gradeLevel, count, _ctx, bt) => generateProblemsForType('matching_activity', topic, gradeLevel, count, bt),
   };
 
   const handleGenerate = async () => {
@@ -65,7 +83,8 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
         topic,
         gradeLevel,
         problemCount,
-        context || undefined
+        context || undefined,
+        bloomsTier || undefined
       );
 
       // Add type discriminator if not present
@@ -76,6 +95,7 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
       }));
 
       setProblems(typedProblems);
+      setGenerationKey(k => k + 1);
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate problems');
@@ -108,7 +128,8 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
         topic,
         gradeLevel,
         problemCount,
-        context || undefined
+        context || undefined,
+        bloomsTier || undefined
       );
 
       // Add type discriminator if not present
@@ -134,6 +155,7 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
 
   const config = PROBLEM_TYPE_REGISTRY[selectedProblemType];
   const isGeneratorAvailable = !!generatorMap[selectedProblemType];
+  const selectedTierInfo = BLOOMS_TIERS.find(t => t.value === bloomsTier) || BLOOMS_TIERS[0];
 
   return (
     <div className="min-h-screen">
@@ -219,6 +241,59 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
                 )}
               </div>
             )}
+          </div>
+
+          {/* Bloom's Taxonomy Tier (IRT §6.8) */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Bloom&apos;s Cognitive Tier
+              <span className="ml-2 text-xs text-slate-500 font-normal">(IRT adaptive difficulty)</span>
+            </label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {BLOOMS_TIERS.map((tier) => (
+                <button
+                  key={tier.value || 'auto'}
+                  onClick={() => setBloomsTier(tier.value as BloomsTier | '')}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium transition-all border ${
+                    bloomsTier === tier.value
+                      ? tier.value === 'recall'
+                        ? 'bg-green-600/30 border-green-500/60 text-green-300'
+                        : tier.value === 'apply'
+                        ? 'bg-blue-600/30 border-blue-500/60 text-blue-300'
+                        : tier.value === 'analyze'
+                        ? 'bg-amber-600/30 border-amber-500/60 text-amber-300'
+                        : tier.value === 'evaluate'
+                        ? 'bg-red-600/30 border-red-500/60 text-red-300'
+                        : 'bg-slate-600/30 border-slate-500/60 text-slate-300'
+                      : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {tier.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 p-3 bg-slate-900/50 rounded-lg">
+              <p className="text-xs text-slate-400">{selectedTierInfo.description}</p>
+              {selectedTierInfo.beta !== null && (
+                <div className="flex gap-4 mt-1.5">
+                  <span className="text-[10px] font-mono text-slate-500">
+                    <span className="text-slate-400">beta</span>={selectedTierInfo.beta}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    <span className="text-slate-400">a</span>={selectedTierInfo.a}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    <span className="text-slate-400">c</span>={selectedTierInfo.c}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    <span className="text-slate-400">I(peak)</span>=
+                    {selectedTierInfo.value === 'recall' ? '0.396' :
+                     selectedTierInfo.value === 'apply' ? '0.303' :
+                     selectedTierInfo.value === 'analyze' ? '0.436' : '0.710'}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Common Fields Grid */}
@@ -314,9 +389,21 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
 
         {/* Right Column: Preview */}
         <div className="bg-slate-900/50 rounded-2xl p-6 border border-slate-700">
-          <h3 className="text-2xl font-bold text-white mb-6">
-            Live Preview {problems.length > 0 && `(${problems.length} problem${problems.length > 1 ? 's' : ''})`}
-          </h3>
+          <div className="flex items-center gap-3 mb-6">
+            <h3 className="text-2xl font-bold text-white">
+              Live Preview {problems.length > 0 && `(${problems.length} problem${problems.length > 1 ? 's' : ''})`}
+            </h3>
+            {problems.length > 0 && bloomsTier && (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                bloomsTier === 'recall' ? 'bg-green-600/20 text-green-400 border border-green-500/30' :
+                bloomsTier === 'apply' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' :
+                bloomsTier === 'analyze' ? 'bg-amber-600/20 text-amber-400 border border-amber-500/30' :
+                'bg-red-600/20 text-red-400 border border-red-500/30'
+              }`}>
+                {bloomsTier.charAt(0).toUpperCase() + bloomsTier.slice(1)}
+              </span>
+            )}
+          </div>
           {problems.length === 0 ? (
             <div className="flex items-center justify-center h-96 text-slate-500">
               <div className="text-center max-w-sm">
@@ -329,7 +416,9 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
             </div>
           ) : (
             <div className="overflow-y-auto max-h-[600px]">
-              <KnowledgeCheck data={{ problems }} />
+              <LuminaAIProvider>
+                <KnowledgeCheck key={generationKey} data={{ problems }} />
+              </LuminaAIProvider>
             </div>
           )}
         </div>
@@ -347,8 +436,9 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
               <ul className="text-slate-300 text-sm space-y-1">
                 <li>• <strong>Generate & Preview:</strong> Replace current preview with newly generated problems</li>
                 <li>• <strong>Add to List:</strong> Add new problems to existing collection for multi-problem testing</li>
+                <li>• <strong>Bloom&apos;s Tiers:</strong> Select a cognitive tier to control question difficulty via IRT parameters (a, c, beta)</li>
+                <li>• <strong>Recall:</strong> Fact retrieval, 4 options &middot; <strong>Apply:</strong> Use knowledge, 4 options &middot; <strong>Analyze:</strong> Multi-step, 4-5 options &middot; <strong>Evaluate:</strong> Expert, 5 options</li>
                 <li>• <strong>Available Generators:</strong> Multiple Choice, True/False, Fill in Blanks, Categorization, Sequencing, Matching</li>
-                <li>• <strong>Coming Soon:</strong> Scenario, Short Answer</li>
               </ul>
             </div>
           </div>

@@ -70,7 +70,7 @@ import { generateSentenceAnalyzer } from '../../sentence-analyzer/gemini-sentenc
 // ============================================================================
 // Assessment Component Imports (from dedicated service files)
 // ============================================================================
-import { generateKnowledgeCheck } from '../../knowledge-check/gemini-knowledge-check';
+import { generateKnowledgeCheck, type BloomsTier } from '../../knowledge-check/gemini-knowledge-check';
 import { generateFastFact } from '../../core/gemini-fast-fact';
 import { generateFactFile } from '../../core/gemini-fact-file';
 import { generateHowItWorks } from '../../core/gemini-how-it-works';
@@ -528,7 +528,8 @@ registerGenerator('knowledge-check', async (item, topic, gradeContext) => {
     count: config.count || config.problemCount || 1,
     difficulty: config.difficulty,
     context: config.context,
-    objectiveText: config.objectiveText
+    objectiveText: config.objectiveText,
+    bloomsTier: config.targetEvalMode as BloomsTier | undefined,
   });
   return {
     type: 'knowledge-check',

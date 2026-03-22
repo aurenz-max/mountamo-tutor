@@ -27,6 +27,112 @@ import {
 } from "../../types";
 
 // ============================================================================
+// BLOOM'S TAXONOMY TIERS (IRT §6.8)
+// ============================================================================
+
+/**
+ * Bloom's taxonomy-aligned cognitive tiers for adaptive difficulty.
+ * Maps to IRT parameters: recall (β=1.5, a=1.6), apply (β=3.0, a=1.4),
+ * analyze (β=4.5, a=1.6), evaluate (β=6.0, a=1.8).
+ */
+export type BloomsTier = 'recall' | 'apply' | 'analyze' | 'evaluate';
+
+/**
+ * Tier-specific prompt instructions injected into each generator.
+ * Controls cognitive demand, distractor quality, and option count.
+ */
+const BLOOMS_TIER_PROMPTS: Record<BloomsTier, {
+  label: string;
+  questionGuidance: string;
+  distractorGuidance: string;
+  mcOptionCount: number;
+}> = {
+  recall: {
+    label: 'Recall (Bloom\'s Tier 1, β=1.5)',
+    questionGuidance:
+      'Generate questions testing DIRECT RECALL of facts, definitions, or simple recognition. '
+      + 'Questions should start with "What is...", "Which of the following is...", "Name the...", '
+      + '"True or false: [simple factual statement]". '
+      + 'Test whether the student can retrieve basic information from memory.',
+    distractorGuidance:
+      'Distractors should be CLEARLY WRONG to someone who studied the material. '
+      + 'They may be related terms but should not require deep reasoning to eliminate. '
+      + 'The correct answer should be unambiguous.',
+    mcOptionCount: 4,
+  },
+  apply: {
+    label: 'Apply (Bloom\'s Tier 2, β=3.0)',
+    questionGuidance:
+      'Generate questions that ask students to USE a concept, procedure, or rule to solve a concrete problem. '
+      + 'Good patterns: "What happens when…", "Which step comes next if…", "A student measured X — what is Y?", '
+      + '"Which example shows [concept] in action?". '
+      + 'Ground questions in realistic, specific situations — not hypothetical thought experiments. '
+      + 'Do NOT use phrases like "apply what you know" or "how would you use" — just pose the problem directly.',
+    distractorGuidance:
+      'Distractors should be PLAUSIBLE results of common procedural errors or misconceptions. '
+      + 'Each wrong answer should represent a specific mistake a student might make '
+      + '(e.g., forgetting a step, applying the wrong formula, confusing similar concepts).',
+    mcOptionCount: 4,
+  },
+  analyze: {
+    label: 'Analyze (Bloom\'s Tier 3, β=4.5)',
+    questionGuidance:
+      'Generate questions requiring ANALYSIS, comparison, or multi-step reasoning. '
+      + 'Questions should start with "Why does...", "What would happen if...", "Compare...", '
+      + '"What is the relationship between...", "Which factor most influences...". '
+      + 'Test whether the student can break down concepts and identify relationships.',
+    distractorGuidance:
+      'ALL distractors must be HIGHLY PLAUSIBLE, representing common analytical errors. '
+      + 'Each wrong answer should sound defensible at first glance but fail under careful analysis. '
+      + 'Students who don\'t deeply understand should be drawn to specific distractors.',
+    mcOptionCount: 5,
+  },
+  evaluate: {
+    label: 'Evaluate (Bloom\'s Tier 4, β=6.0)',
+    questionGuidance:
+      'Generate questions requiring JUDGMENT between competing approaches or SYNTHESIS of multiple concepts. '
+      + 'Questions should start with "Which approach is most effective for...", "Evaluate whether...", '
+      + '"What is the strongest argument for...", "Given [complex scenario], which strategy would...". '
+      + 'Test whether the student can make informed judgments based on deep understanding.',
+    distractorGuidance:
+      'Distractors must be GENUINELY DEFENSIBLE but ultimately inferior positions. '
+      + 'Each wrong answer should represent a reasonable viewpoint that fails under expert scrutiny. '
+      + 'The distinction between correct and incorrect should require nuanced understanding. '
+      + 'Random guessing should be nearly impossible — students are drawn to plausible-looking answers.',
+    mcOptionCount: 5,
+  },
+};
+
+/**
+ * Build the Bloom's tier prompt section for injection into any generator.
+ * Returns empty string when no tier is specified (backward compatible).
+ */
+function buildBloomsTierPrompt(tier?: BloomsTier): string {
+  if (!tier) return '';
+  const t = BLOOMS_TIER_PROMPTS[tier];
+  return `
+## ADAPTIVE DIFFICULTY CONSTRAINT (IRT calibration)
+**Cognitive Level: ${t.label}**
+
+### QUESTION COGNITIVE DEMAND
+${t.questionGuidance}
+
+### DISTRACTOR / WRONG-ANSWER QUALITY
+${t.distractorGuidance}
+
+IMPORTANT: Every question in this batch MUST be at the ${tier.toUpperCase()} cognitive level. Do NOT mix tiers.
+`;
+}
+
+/**
+ * Get MC option letters for a given tier (4 or 5 options).
+ */
+function getMcOptionLabels(tier?: BloomsTier): string[] {
+  const count = tier ? BLOOMS_TIER_PROMPTS[tier].mcOptionCount : 4;
+  return count === 5 ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
+}
+
+// ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
@@ -61,9 +167,12 @@ export const generateMultipleChoiceProblems = async (
   topic: string,
   gradeLevel: string,
   count: number = 1,
-  context?: string
+  context?: string,
+  bloomsTier?: BloomsTier
 ): Promise<MultipleChoiceProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const optionLabels = getMcOptionLabels(bloomsTier);
+  const optionCount = optionLabels.length;
 
   const multipleChoiceSchema: Schema = {
     type: Type.OBJECT,
@@ -89,11 +198,11 @@ export const generateMultipleChoiceProblems = async (
             },
             options: {
               type: Type.ARRAY,
-              description: "Array of 4 answer options",
+              description: `Array of ${optionCount} answer options`,
               items: {
                 type: Type.OBJECT,
                 properties: {
-                  id: { type: Type.STRING, description: "Option letter (A, B, C, D)" },
+                  id: { type: Type.STRING, description: `Option letter (${optionLabels.join(', ')})` },
                   text: { type: Type.STRING, description: "Option text" }
                 },
                 required: ["id", "text"]
@@ -101,7 +210,7 @@ export const generateMultipleChoiceProblems = async (
             },
             correctOptionId: {
               type: Type.STRING,
-              description: "The correct option ID (A, B, C, or D)"
+              description: `The correct option ID (${optionLabels.join(', ')})`
             },
             rationale: {
               type: Type.STRING,
@@ -124,13 +233,15 @@ export const generateMultipleChoiceProblems = async (
     required: ["problems"]
   };
 
+  const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+
   const prompt = `You are an expert educational assessment designer creating multiple choice questions for a knowledge check.
 
 TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-
+${bloomsPrompt}
 ## Your Mission:
 Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".
 
@@ -143,7 +254,7 @@ Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} tha
 - Questions should test genuine comprehension, not trick students
 
 ### 2. ANSWER OPTIONS
-- Provide exactly 4 options labeled A, B, C, D
+- Provide exactly ${optionCount} options labeled ${optionLabels.join(', ')}
 - Make all distractors (wrong answers) plausible but clearly incorrect
 - Avoid "all of the above" or "none of the above" options
 - Ensure options are parallel in structure and length
@@ -222,7 +333,8 @@ export const generateTrueFalseProblems = async (
   topic: string,
   gradeLevel: string,
   count: number = 1,
-  context?: string
+  context?: string,
+  bloomsTier?: BloomsTier
 ): Promise<TrueFalseProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -273,13 +385,15 @@ export const generateTrueFalseProblems = async (
     required: ["problems"]
   };
 
+  const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+
   const prompt = `You are an expert educational assessment designer creating true/false questions for a knowledge check.
 
 TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-
+${bloomsPrompt}
 ## Your Mission:
 Create ${count} high-quality true/false statement${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".
 
@@ -362,7 +476,8 @@ export const generateFillInBlanksProblems = async (
   topic: string,
   gradeLevel: string,
   count: number = 1,
-  context?: string
+  context?: string,
+  bloomsTier?: BloomsTier
 ): Promise<FillInBlanksProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -436,13 +551,15 @@ export const generateFillInBlanksProblems = async (
     required: ["problems"]
   };
 
+  const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+
   const prompt = `You are an expert educational assessment designer creating fill-in-the-blank questions with drag-and-drop word banks.
 
 TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-
+${bloomsPrompt}
 ## Your Mission:
 Create ${count} high-quality fill-in-the-blank problem${count > 1 ? 's' : ''} with word banks that effectively assess understanding of "${topic}".
 
@@ -530,7 +647,8 @@ export const generateCategorizationProblems = async (
   topic: string,
   gradeLevel: string,
   count: number = 1,
-  context?: string
+  context?: string,
+  bloomsTier?: BloomsTier
 ): Promise<CategorizationActivityProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -600,13 +718,15 @@ export const generateCategorizationProblems = async (
     required: ["problems"]
   };
 
+  const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+
   const prompt = `You are an expert educational assessment designer creating categorization activities for a knowledge check.
 
 TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-
+${bloomsPrompt}
 ## Your Mission:
 Create ${count} high-quality categorization activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".
 
@@ -698,7 +818,8 @@ export const generateMatchingProblems = async (
   topic: string,
   gradeLevel: string,
   count: number = 1,
-  context?: string
+  context?: string,
+  bloomsTier?: BloomsTier
 ): Promise<MatchingActivityProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -800,13 +921,15 @@ export const generateMatchingProblems = async (
     required: ["problems"]
   };
 
+  const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+
   const prompt = `You are an expert educational assessment designer creating matching activities for knowledge checks.
 
 TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-
+${bloomsPrompt}
 ## Your Mission:
 Create ${count} high-quality matching activity problem${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".
 
@@ -905,7 +1028,8 @@ export const generateSequencingProblems = async (
   topic: string,
   gradeLevel: string,
   count: number = 1,
-  context?: string
+  context?: string,
+  bloomsTier?: BloomsTier
 ): Promise<SequencingActivityProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -957,13 +1081,15 @@ export const generateSequencingProblems = async (
     required: ["problems"]
   };
 
+  const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+
   const prompt = `You are an expert educational assessment designer creating sequencing activities for a knowledge check.
 
 TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-
+${bloomsPrompt}
 ## Your Mission:
 Create ${count} high-quality sequencing activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".
 
@@ -1067,34 +1193,30 @@ export const generateKnowledgeCheck = async (
     difficulty?: string;
     context?: string;
     objectiveText?: string;
+    bloomsTier?: BloomsTier;
   }
 ): Promise<ProblemData[]> => {
   const problemType = config?.problemType || 'multiple_choice';
   const count = config?.count || 1;
   const context = config?.context || config?.objectiveText;
+  const bloomsTier = config?.bloomsTier;
 
-  // Extract grade level from context (reverse the context -> grade mapping for internal use)
-  // The gradeContext is already the descriptive string, we need to extract the grade level for the problem
-  let gradeLevel = 'elementary';
-  if (gradeContext.includes('toddler')) gradeLevel = 'toddler';
-  else if (gradeContext.includes('preschool')) gradeLevel = 'preschool';
-  else if (gradeContext.includes('kindergarten')) gradeLevel = 'kindergarten';
-  else if (gradeContext.includes('elementary') || gradeContext.includes('grades 1-5')) gradeLevel = 'elementary';
-  else if (gradeContext.includes('middle school') || gradeContext.includes('grades 6-8')) gradeLevel = 'middle-school';
-  else if (gradeContext.includes('high school') || gradeContext.includes('grades 9-12')) gradeLevel = 'high-school';
-  else if (gradeContext.includes('undergraduate')) gradeLevel = 'undergraduate';
-  else if (gradeContext.includes('graduate') || gradeContext.includes('Master')) gradeLevel = 'graduate';
-  else if (gradeContext.includes('doctoral') || gradeContext.includes('PhD')) gradeLevel = 'phd';
+  // gradeContext is a grade-level key (e.g., "middle-school"). If it's a valid
+  // key in getGradeLevelContext, use it directly; otherwise default to elementary.
+  const VALID_GRADE_KEYS = new Set(['toddler', 'preschool', 'kindergarten', 'elementary', 'middle-school', 'high-school', 'undergraduate', 'graduate', 'phd']);
+  const gradeLevel = VALID_GRADE_KEYS.has(gradeContext) ? gradeContext : 'elementary';
 
   console.log('[Knowledge Check] Starting problem generation from dedicated service:');
   console.log('  Topic:', topic);
   console.log('  Grade Level:', gradeLevel);
   console.log('  Problem Type:', problemType);
   console.log('  Count:', count);
+  console.log('  Bloom\'s Tier:', bloomsTier || '(none — generic)');
   console.log('  Context:', context || '(none)');
 
-  // Map problem types to their generator functions
-  const generatorMap: Record<ProblemType, (topic: string, gradeLevel: string, count: number, context?: string) => Promise<ProblemData[]>> = {
+  // Map problem types to their generator functions (bloomsTier passed as 5th arg)
+  type GenFn = (topic: string, gradeLevel: string, count: number, context?: string, bloomsTier?: BloomsTier) => Promise<ProblemData[]>;
+  const generatorMap: Record<ProblemType, GenFn> = {
     'multiple_choice': generateMultipleChoiceProblems,
     'true_false': generateTrueFalseProblems,
     'fill_in_blanks': generateFillInBlanksProblems,
@@ -1112,7 +1234,7 @@ export const generateKnowledgeCheck = async (
   }
 
   try {
-    const problems = await generator(topic, gradeLevel, count, context);
+    const problems = await generator(topic, gradeLevel, count, context, bloomsTier);
     console.log(`  Successfully generated ${problems.length} problem(s) of type: ${problemType}`);
     return problems;
   } catch (error) {

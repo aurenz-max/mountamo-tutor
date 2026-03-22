@@ -319,5 +319,9 @@ Return the complete measurement tools configuration.
     if (config.gradeBand) data.gradeBand = config.gradeBand;
   }
 
+  // Final summary log (matches pattern from other generators)
+  const challengeTypes = (data.shapes as MeasurementShape[]).map((s: MeasurementShape) => s.label || s.type).join(', ');
+  console.log(`[MeasurementTools] Final: ${(data.shapes as MeasurementShape[]).length} shape(s) → [${challengeTypes}]`);
+
   return data as MeasurementToolsData;
 };

@@ -36,6 +36,9 @@ from ..models.pulse import (
     REVIEW_BAND_PCT,
     CreatePulseSessionRequest,
     GateUpdate,
+    IrtProbabilityData,
+    ItemFrontierContext,
+    SessionIrtSummary,
     LeapfrogEvent,
     PulseBand,
     PulseBandSummary,
@@ -45,13 +48,20 @@ from ..models.pulse import (
     PulseSessionResponse,
     PulseSessionSummary,
     RecentPrimitive,
+    SessionFrontierContext,
     SkillDetail,
     SkillUnlockProgress,
     ThetaUpdate,
+    UnitProgress,
     mode_to_beta,
     theta_to_mode,
 )
-from ..services.calibration_engine import CalibrationEngine
+from ..services.calibration_engine import CalibrationEngine, item_information, p_correct
+from ..services.calibration.problem_type_registry import (
+    PROBLEM_TYPE_REGISTRY,
+    get_item_discrimination,
+    get_prior_beta,
+)
 from ..services.dag_analysis import DAGAnalysisEngine
 from ..services.learning_paths import LearningPathsService
 from ..services.lesson_group_service import LessonGroupService
@@ -79,6 +89,44 @@ class PulseEngine:
         self.mastery = mastery_lifecycle_engine
         self.learning_paths = learning_paths_service
         logger.info("PulseEngine initialized")
+
+    # ------------------------------------------------------------------
+    # Max-information mode selection (replaces theta_to_mode for 2PL/3PL)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def select_best_mode(
+        theta: float, primitive_type: str
+    ) -> tuple[int, float, str]:
+        """Select the eval mode that gives maximum Fisher information.
+
+        Returns (mode_number, target_beta, eval_mode_name). Falls back to
+        theta_to_mode() for primitives not in the registry.
+        """
+        modes = PROBLEM_TYPE_REGISTRY.get(primitive_type)
+        if not modes:
+            mode = theta_to_mode(theta)
+            return mode, mode_to_beta(mode), "default"
+
+        best_mode_num = 1
+        best_beta = 3.5
+        best_info = -1.0
+        best_name = "default"
+
+        # Eval modes are keyed by name; we need to map them to mode numbers.
+        # Sort by beta (ascending) and assign mode 1, 2, 3, ...
+        sorted_modes = sorted(modes.items(), key=lambda x: x[1].prior_beta)
+
+        for idx, (eval_mode_name, config) in enumerate(sorted_modes, start=1):
+            a, c = get_item_discrimination(primitive_type, eval_mode_name)
+            info = item_information(theta, a, config.prior_beta, c)
+            if info > best_info:
+                best_info = info
+                best_mode_num = idx
+                best_beta = config.prior_beta
+                best_name = eval_mode_name
+
+        return best_mode_num, best_beta, best_name
 
     # ------------------------------------------------------------------
     # Session assembly
@@ -164,7 +212,13 @@ class PulseEngine:
                 node_map, node_ids, gate_map, lifecycle_map, theta_map, now,
             )
 
-        # 4. Persist session
+        # 4. Compute frontier context (graph position data for the frontend)
+        session_frontier_ctx = self._compute_frontier_context(
+            items, all_nodes, all_edges, node_map,
+            gate_map, lifecycle_map, is_cold_start, now,
+        )
+
+        # 5. Persist session
         band_counts = {b.value: 0 for b in PulseBand}
         for item in items:
             band_counts[item.band.value] += 1
@@ -204,6 +258,7 @@ class PulseEngine:
                 "total_items": len(items),
                 "total_nodes_in_subject": len(all_nodes),
             },
+            frontier_context=session_frontier_ctx,
         )
 
     def _assemble_cold_start(
@@ -282,9 +337,9 @@ class PulseEngine:
             if gate == 0:
                 frontier_skills.add(sid)
             elif gate == 1:
-                lc = lifecycle_map.get(sid, {})
-                if lc.get("lesson_eval_count", 0) < 3:
-                    learning_skills.add(sid)
+                # Gate 1 = initial mastery achieved but still building.
+                # In theta mode, no lesson_eval_count filter needed.
+                learning_skills.add(sid)
         current_candidate_ids = frontier_skills | learning_skills
 
         # FRONTIER PROBE candidates (BFS 1-5 jumps ahead)
@@ -511,7 +566,18 @@ class PulseEngine:
         all_edges: List[Dict],
         node_map: Dict[str, Dict],
     ) -> List[Tuple[str, int]]:
-        """BFS from frontier 1-5 edges forward. Returns (node_id, depth) sorted by depth."""
+        """
+        BFS from frontier 1-5 edges forward.
+
+        Returns (node_id, depth) sorted by proximity to the midpoint of the
+        reachable depth range — giving binary-search-like convergence rather
+        than always probing at depth 1.
+
+        Examples:
+          candidates at depths 1-5 → prefers depth 2-3 (midpoint)
+          candidates at depths 1-2 → prefers depth 1 (conservative)
+          candidates at depths 1-4 → prefers depth 2
+        """
         forward: Dict[str, List[str]] = defaultdict(list)
         for edge in all_edges:
             forward[edge["source"]].append(edge["target"])
@@ -537,7 +603,17 @@ class PulseEngine:
                     if child not in visited:
                         queue.append((child, depth + 1))
 
-        probe_candidates.sort(key=lambda x: x[1])
+        # Midpoint probing: prefer candidates near the middle of the
+        # reachable depth range for binary-search convergence.
+        if probe_candidates:
+            max_depth = max(d for _, d in probe_candidates)
+            midpoint = max(1, (max_depth + 1) // 2)
+            probe_candidates.sort(key=lambda x: (abs(x[1] - midpoint), x[1]))
+            logger.info(
+                f"[PULSE] Probe candidates: depths 1-{max_depth}, "
+                f"midpoint={midpoint}, top pick depth={probe_candidates[0][1]}"
+            )
+
         return probe_candidates
 
     def _select_frontier_probes_from_candidates(
@@ -614,6 +690,195 @@ class PulseEngine:
         return result
 
     # ------------------------------------------------------------------
+    # Frontier context computation
+    # ------------------------------------------------------------------
+
+    def _compute_frontier_context(
+        self,
+        items: List[PulseItemSpec],
+        all_nodes: List[Dict],
+        all_edges: List[Dict],
+        node_map: Dict[str, Dict],
+        gate_map: Dict[str, int],
+        lifecycle_map: Dict[str, Dict],
+        is_cold_start: bool,
+        now: datetime,
+    ) -> SessionFrontierContext:
+        """
+        Enrich each item with graph-position context and build session summary.
+
+        All data comes from already-loaded state — no new DB calls.
+        """
+        if not items:
+            return SessionFrontierContext()
+
+        # --- Pre-compute unit-level stats ---
+        # Group ALL subskill nodes by skill_id (= unit)
+        unit_nodes: Dict[str, List[Dict]] = defaultdict(list)
+        for node in all_nodes:
+            skill_id = node.get("skill_id", "")
+            if skill_id:
+                unit_nodes[skill_id].append(node)
+
+        unit_stats: Dict[str, Dict] = {}
+        for skill_id, nodes in unit_nodes.items():
+            total = len(nodes)
+            mastered = sum(
+                1 for n in nodes if gate_map.get(n["id"], 0) >= 1
+            )
+            # Use best available label
+            label = (
+                nodes[0].get("skill_description", "")
+                or nodes[0].get("parent_label", "")
+                or nodes[0].get("unit_title", "")
+                or skill_id
+            )
+            unit_stats[skill_id] = {
+                "total": total,
+                "mastered": mastered,
+                "label": label,
+                "remaining": total - mastered,
+            }
+
+        # --- Pre-compute forward edges for downstream lookups ---
+        forward: Dict[str, List[str]] = defaultdict(list)
+        for edge in all_edges:
+            forward[edge["source"]].append(edge["target"])
+
+        # --- Pre-compute topological depth ---
+        topo_order = DAGAnalysisEngine.topological_sort(all_nodes, all_edges)
+        metrics = DAGAnalysisEngine.compute_node_metrics(
+            all_nodes, all_edges, topo_order
+        )
+        max_depth = max((m.depth for m in metrics.values()), default=0)
+
+        # Frontier depth = avg depth of frontier-band items
+        frontier_depths = []
+
+        # --- Per-item context ---
+        mastered_ids = {sid for sid, gate in gate_map.items() if gate >= 1}
+
+        for item in items:
+            skill_id = item.skill_id
+            us = unit_stats.get(skill_id, {})
+            unit_name = us.get("label", skill_id)
+            unit_mastered = us.get("mastered", 0)
+            unit_total = us.get("total", 0)
+
+            ctx = ItemFrontierContext(
+                unit_name=unit_name,
+                unit_mastered=unit_mastered,
+                unit_total=unit_total,
+            )
+
+            if item.band == PulseBand.FRONTIER:
+                # Compute dag_distance from probe candidates (BFS depth)
+                # Re-derive depth via node metrics
+                node_metric = metrics.get(item.subskill_id)
+                ctx.dag_distance = node_metric.depth if node_metric else 0
+                frontier_depths.append(ctx.dag_distance)
+
+                # Find ancestors that would be inferred on leapfrog
+                if not is_cold_start:
+                    ancestors = DAGAnalysisEngine.get_ancestors(
+                        item.subskill_id, all_edges
+                    )
+                    # Filter to non-mastered ancestors (would be inferred)
+                    inferable = [
+                        a for a in ancestors
+                        if gate_map.get(a, 0) < 2 and a in node_map
+                    ]
+                    ctx.ancestors_if_passed = len(inferable)
+                    # Human-readable names (max 5)
+                    ctx.ancestor_skill_names = [
+                        node_map[a].get("description", "")
+                        or node_map[a].get("label", a)
+                        for a in inferable[:5]
+                    ]
+
+            elif item.band == PulseBand.CURRENT:
+                # Find next downstream skill name
+                children = forward.get(item.subskill_id, [])
+                for child_id in children:
+                    child_node = node_map.get(child_id, {})
+                    child_skill = child_node.get("skill_id", "")
+                    if child_skill and child_skill != skill_id:
+                        child_us = unit_stats.get(child_skill, {})
+                        ctx.next_skill_name = child_us.get("label", child_skill)
+                        break
+                    elif child_node:
+                        ctx.next_skill_name = (
+                            child_node.get("description", "")
+                            or child_node.get("label", "")
+                        )
+                        break
+
+            elif item.band == PulseBand.REVIEW:
+                # Compute time-ago for last tested
+                lc = lifecycle_map.get(item.subskill_id, {})
+                last_tested = lc.get("last_tested_at") or lc.get("updated_at")
+                if last_tested:
+                    ctx.last_tested_ago = self._format_time_ago(last_tested, now)
+
+            item.frontier_context = ctx
+
+        # --- Session-level context ---
+        total_mastered = sum(1 for gate in gate_map.values() if gate >= 1)
+        total_nodes = len(all_nodes)
+
+        # Build units_in_progress (units with at least one mastered but not all)
+        units_in_progress = []
+        for skill_id, stats in unit_stats.items():
+            if 0 < stats["mastered"] < stats["total"]:
+                units_in_progress.append(UnitProgress(
+                    unit_name=stats["label"],
+                    skill_id=skill_id,
+                    mastered=stats["mastered"],
+                    total=stats["total"],
+                    branches_remaining=stats["remaining"],
+                ))
+        # Sort by completion ratio ascending (most work remaining first)
+        units_in_progress.sort(
+            key=lambda u: u.mastered / u.total if u.total > 0 else 0
+        )
+
+        frontier_depth = (
+            round(sum(frontier_depths) / len(frontier_depths))
+            if frontier_depths else 0
+        )
+
+        return SessionFrontierContext(
+            frontier_depth=frontier_depth,
+            max_depth=max_depth,
+            total_mastered=total_mastered,
+            total_nodes=total_nodes,
+            units_in_progress=units_in_progress[:10],  # cap at 10
+        )
+
+    @staticmethod
+    def _format_time_ago(iso_string: str, now: datetime) -> str:
+        """Convert an ISO timestamp to a human-readable 'X ago' string."""
+        try:
+            dt = datetime.fromisoformat(iso_string.replace("Z", "+00:00"))
+            delta = now - dt
+            days = delta.days
+            if days == 0:
+                hours = delta.seconds // 3600
+                if hours == 0:
+                    return "just now"
+                return f"{hours}h ago"
+            if days == 1:
+                return "yesterday"
+            if days < 7:
+                return f"{days} days ago"
+            weeks = days // 7
+            if weeks == 1:
+                return "1 week ago"
+            return f"{weeks} weeks ago"
+        except (ValueError, TypeError):
+            return ""
+
+    # ------------------------------------------------------------------
     # Result processing
     # ------------------------------------------------------------------
 
@@ -679,6 +944,7 @@ class PulseEngine:
             skill_id=skill_id,
             old_theta=old_theta,
             new_theta=new_theta,
+            sigma=cal_result.get("sigma"),
             earned_level=earned_level,
         )
 
@@ -694,6 +960,10 @@ class PulseEngine:
             score=result.score,
             source=eval_source,
             prefetched_lifecycle=old_lifecycle,
+            theta=new_theta,
+            sigma=cal_result.get("sigma"),
+            primitive_type=result.primitive_type,
+            avg_a=cal_result.get("discrimination_a"),
         )
 
         new_gate = mastery_result.get("current_gate", old_gate)
@@ -719,6 +989,8 @@ class PulseEngine:
         items[item_index]["duration_ms"] = result.duration_ms
         items[item_index]["completed_at"] = now.isoformat()
         items[item_index]["theta_update"] = theta_update.model_dump()
+        if irt_data:
+            items[item_index]["irt"] = irt_data.model_dump()
         if gate_update:
             items[item_index]["gate_update"] = gate_update.model_dump()
 
@@ -764,12 +1036,23 @@ class PulseEngine:
                 ),
             }
 
+        # Build IRT probability data from calibration result
+        irt_data = None
+        if cal_result.get("p_correct") is not None:
+            irt_data = IrtProbabilityData(
+                p_correct=cal_result["p_correct"],
+                item_information=cal_result.get("item_information", 0.0),
+                discrimination_a=cal_result.get("discrimination_a", 1.4),
+                guessing_c=cal_result.get("guessing_c", 0.0),
+            )
+
         return PulseResultResponse(
             item_id=result.item_id,
             theta_update=theta_update,
             gate_update=gate_update,
             leapfrog=leapfrog,
             gate_progress=cal_result.get("gate_progress"),
+            irt=irt_data,
             session_progress={
                 "items_completed": completed_count,
                 "items_total": total_count,
@@ -881,6 +1164,9 @@ class PulseEngine:
                 lesson_eval_count=3,
                 next_retest_eligible=retest_date,
                 retest_interval_days=LEAPFROG_RETEST_DAYS,
+                gate_mode="theta",
+                theta_at_gate_entry=LEAPFROG_INFERRED_THETA,
+                gate_theta_threshold=3.0,  # conservative default for inferred skills
                 gate_history=[
                     GateHistoryEntry(
                         gate=LEAPFROG_INFERRED_GATE,
@@ -888,6 +1174,7 @@ class PulseEngine:
                         score=avg_score,
                         passed=True,
                         source="diagnostic",
+                        theta=LEAPFROG_INFERRED_THETA,
                     )
                 ],
             ).model_dump()
@@ -1090,6 +1377,30 @@ class PulseEngine:
         else:
             msg = "Keep going — you're making progress!"
 
+        # Compute IRT session summary from per-item IRT data
+        irt_summary = None
+        irt_items = [it for it in scored_items if it.get("irt")]
+        if irt_items:
+            sigmas = [
+                tu.get("sigma", 0) for it in scored_items
+                if (tu := it.get("theta_update")) and tu.get("sigma") is not None
+            ]
+            irt_summary = SessionIrtSummary(
+                start_sigma=sigmas[0] if sigmas else 0.0,
+                end_sigma=sigmas[-1] if sigmas else 0.0,
+                sigma_reduction=round((sigmas[0] - sigmas[-1]), 3) if len(sigmas) >= 2 else 0.0,
+                predicted_correct=round(
+                    sum(it["irt"].get("p_correct", 0) for it in irt_items), 2
+                ),
+                actual_correct=sum(
+                    1 for it in scored_items if it.get("score", 0) >= 9.0
+                ),
+                total_items=len(scored_items),
+                avg_information=round(
+                    sum(it["irt"].get("item_information", 0) for it in irt_items) / len(irt_items), 4
+                ) if irt_items else 0.0,
+            )
+
         return PulseSessionSummary(
             session_id=session_id,
             subject=subject,
@@ -1104,6 +1415,7 @@ class PulseEngine:
             frontier_expanded=n_inferred > 0,
             celebration_message=msg,
             skill_progress=skill_progress,
+            irt_summary=irt_summary,
         )
 
     # ------------------------------------------------------------------

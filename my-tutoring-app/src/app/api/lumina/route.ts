@@ -108,7 +108,8 @@ export async function POST(request: NextRequest) {
           params.gradeLevel,
           {
             problemType: params.problemType,
-            count: params.count
+            count: params.count,
+            bloomsTier: params.bloomsTier,
           }
         );
         return NextResponse.json(kcProblems);

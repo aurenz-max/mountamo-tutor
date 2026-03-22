@@ -1,8 +1,9 @@
 """
 Calibration Data Models
 
-Implements the 1PL IRT item calibration and student ability estimation
-models from the Difficulty Calibration PRD §5–6.
+Implements the 2PL/3PL IRT item calibration and student ability estimation
+models from the Difficulty Calibration PRD §5–6 and the Pulse IRT
+Probability System project plan.
 
 Item calibration: item_calibration/{primitive_type}_{eval_mode}  (top-level, shared)
 Student ability:  students/{student_id}/ability/{skill_id}       (per-student)
@@ -37,6 +38,13 @@ DEFAULT_THETA_SIGMA = 2.0
 THETA_GRID_MIN = 0.0
 THETA_GRID_MAX = 10.0
 THETA_GRID_STEP = 0.1
+
+# Process noise τ for dynamic θ model (Kalman-style drift).
+# Before each update: σ_prior = √(σ² + τ²)
+# This allows old observations to lose weight over time, so recovery
+# from failures happens faster. τ=0.1 means ~0.32 accumulated drift
+# over 10 items — enough to let 8 correct answers overcome 4 earlier failures.
+THETA_PROCESS_NOISE = 0.1
 
 # Maximum θ history entries per ability document
 MAX_THETA_HISTORY = 100
@@ -73,10 +81,36 @@ class ItemCalibration(BaseModel):
         default=0.0,
         description="Running sum of θ values of all students who attempted this item",
     )
+    sum_correct_theta: float = Field(
+        default=0.0,
+        description="Running sum of θ for correct responses only (for empirical a)",
+    )
+    sum_theta_squared: float = Field(
+        default=0.0,
+        description="Running sum of θ² for variance computation (for empirical a)",
+    )
 
     # Credibility blending (PRD §5.2)
     credibility_z: float = Field(default=0.0, ge=0.0, le=1.0)
     calibrated_beta: float = Field(..., ge=0.0, le=10.0)
+
+    # IRT 2PL/3PL parameters (Pulse IRT Probability System)
+    discrimination_a: float = Field(
+        default=1.4,
+        description="Item discrimination — how sharply this item separates mastery levels",
+    )
+    guessing_c: float = Field(
+        default=0.0, ge=0.0, le=1.0,
+        description="Guessing floor — P(correct) by pure chance (0 for constructed response)",
+    )
+    a_source: str = Field(
+        default="categorical_prior",
+        description="Source of current a value: categorical_prior | empirical",
+    )
+    a_credibility: float = Field(
+        default=0.0, ge=0.0, le=1.0,
+        description="Credibility weight for empirical a (0 = pure prior, 1 = pure empirical)",
+    )
 
     # Timestamps
     created_at: str = Field(

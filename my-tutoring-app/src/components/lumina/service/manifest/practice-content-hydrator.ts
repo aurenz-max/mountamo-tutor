@@ -10,7 +10,7 @@
 
 import { PracticeManifest, HydratedPracticeItem, ProblemType } from '../../types';
 import { generateComponentContent } from '../geminiService';
-import { generateKnowledgeCheck } from '../knowledge-check/gemini-knowledge-check';
+import { generateKnowledgeCheck, BloomsTier } from '../knowledge-check/gemini-knowledge-check';
 
 /**
  * Callback fired each time an individual item finishes hydrating.
@@ -75,6 +75,7 @@ export async function hydratePracticeManifest(
           {
             problemType: item.standardProblem.problemType,
             count: 1,
+            bloomsTier: item.standardProblem.evalMode as BloomsTier | undefined,
           }
         );
 

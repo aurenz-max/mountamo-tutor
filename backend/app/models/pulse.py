@@ -69,6 +69,36 @@ class PulseBand(str, Enum):
 # Session Assembly Models
 # ---------------------------------------------------------------------------
 
+class ItemFrontierContext(BaseModel):
+    """Per-item graph context for frontier visibility during practice."""
+    dag_distance: int = 0                          # edges from current frontier (frontier band)
+    ancestors_if_passed: int = 0                   # skills that would be inferred on leapfrog
+    ancestor_skill_names: List[str] = Field(default_factory=list)  # human-readable (max 5)
+    unit_name: str = ""                            # parent skill/unit name
+    unit_mastered: int = 0                         # subskills mastered in this unit
+    unit_total: int = 0                            # total subskills in this unit
+    next_skill_name: str = ""                      # downstream skill (current band)
+    last_tested_ago: str = ""                      # "2 days ago" (review band)
+
+
+class UnitProgress(BaseModel):
+    """Per-unit mastery summary for session-level context."""
+    unit_name: str
+    skill_id: str
+    mastered: int = 0
+    total: int = 0
+    branches_remaining: int = 0
+
+
+class SessionFrontierContext(BaseModel):
+    """Session-level graph position summary."""
+    frontier_depth: int = 0
+    max_depth: int = 0
+    total_mastered: int = 0
+    total_nodes: int = 0
+    units_in_progress: List[UnitProgress] = Field(default_factory=list)
+
+
 class PulseItemSpec(BaseModel):
     """Single item the frontend needs to generate and render."""
     item_id: str
@@ -79,8 +109,10 @@ class PulseItemSpec(BaseModel):
     description: str
     target_mode: int = Field(ge=1, le=6)
     target_beta: float = Field(ge=0.0, le=10.0)
+    eval_mode_name: Optional[str] = None
     lesson_group_id: str = ""
     primitive_affinity: Optional[str] = None
+    frontier_context: Optional[ItemFrontierContext] = None
 
 
 class CreatePulseSessionRequest(BaseModel):
@@ -106,6 +138,7 @@ class PulseSessionResponse(BaseModel):
     items: List[PulseItemSpec]
     recent_primitives: List[RecentPrimitive] = Field(default_factory=list)
     session_meta: Dict[str, Any] = Field(default_factory=dict)
+    frontier_context: Optional[SessionFrontierContext] = None
 
 
 # ---------------------------------------------------------------------------
@@ -126,6 +159,7 @@ class ThetaUpdate(BaseModel):
     skill_id: str
     old_theta: float
     new_theta: float
+    sigma: Optional[float] = None
     earned_level: float
 
 
@@ -163,6 +197,14 @@ class SkillUnlockProgress(BaseModel):
     unlocked_subskills: int = 0
 
 
+class IrtProbabilityData(BaseModel):
+    """IRT probability data for a single item result."""
+    p_correct: float = Field(description="P(correct) at current theta")
+    item_information: float = Field(description="Fisher information at current theta")
+    discrimination_a: float = Field(description="Item discrimination parameter")
+    guessing_c: float = Field(default=0.0, description="Guessing floor")
+
+
 class PulseResultResponse(BaseModel):
     """Returned after each item result."""
     item_id: str
@@ -170,6 +212,7 @@ class PulseResultResponse(BaseModel):
     gate_update: Optional[GateUpdate] = None
     leapfrog: Optional[LeapfrogEvent] = None
     gate_progress: Optional[Dict[str, Any]] = None
+    irt: Optional[IrtProbabilityData] = None
     session_progress: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -183,6 +226,17 @@ class PulseBandSummary(BaseModel):
     items_total: int = 0
     items_completed: int = 0
     avg_score: float = 0.0
+
+
+class SessionIrtSummary(BaseModel):
+    """Session-level IRT summary — sigma reduction, accuracy vs predicted."""
+    start_sigma: float = 0.0
+    end_sigma: float = 0.0
+    sigma_reduction: float = 0.0
+    predicted_correct: float = 0.0   # sum of P(correct) for all items
+    actual_correct: int = 0          # count of items scored >= 9.0
+    total_items: int = 0
+    avg_information: float = 0.0     # mean item information across session
 
 
 class PulseSessionSummary(BaseModel):
@@ -200,6 +254,7 @@ class PulseSessionSummary(BaseModel):
     frontier_expanded: bool = False
     celebration_message: str = "Great work!"
     skill_progress: List[SkillUnlockProgress] = Field(default_factory=list)
+    irt_summary: Optional[SessionIrtSummary] = None
 
 
 # ---------------------------------------------------------------------------

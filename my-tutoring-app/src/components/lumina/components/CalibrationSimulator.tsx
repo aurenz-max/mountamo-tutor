@@ -3,20 +3,41 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, TrendingUp, Zap, Target, ChevronDown } from 'lucide-react';
+import { RotateCcw, TrendingUp, Zap, Target, ChevronDown, Info, AlertTriangle } from 'lucide-react';
 
 // ============================================================================
-// IRT Math — ported from backend/app/services/calibration_engine.py
+// IRT Math — 2PL/3PL model with discrimination parameter
 // ============================================================================
 
 const IRT_CORRECT_THRESHOLD = 9.0;
-const DEFAULT_THETA = 3.0;
 const DEFAULT_SIGMA = 2.0;
 const THETA_GRID_MIN = 0.0;
 const THETA_GRID_MAX = 10.0;
 const THETA_GRID_STEP = 0.1;
+const ITEM_CREDIBILITY_STANDARD = 200;
 
-// θ → mode mapping (from pulse.py)
+// Process noise τ for dynamic θ model (Kalman-style drift).
+// Before each update: σ_prior = √(σ² + τ²)
+// Old observations lose weight over time → faster recovery from failures.
+const THETA_PROCESS_NOISE = 0.15;
+
+// ── 3PL probability: P(correct) = c + (1-c) / (1 + exp(-a(θ-b))) ──────────
+function pCorrect(theta: number, a: number, b: number, c: number = 0): number {
+  const logit = Math.max(-20, Math.min(20, a * (theta - b)));
+  return c + (1 - c) / (1 + Math.exp(-logit));
+}
+
+// ── Item information: how much this item reduces uncertainty about θ ────────
+function itemInformation(theta: number, a: number, b: number, c: number = 0): number {
+  const p = pCorrect(theta, a, b, c);
+  const q = 1 - p;
+  if (p <= c || q <= 0) return 0;
+  const numerator = Math.pow(a, 2) * Math.pow(p - c, 2) * q;
+  const denominator = p * Math.pow(1 - c, 2);
+  return denominator > 0 ? numerator / denominator : 0;
+}
+
+// ── θ → mode mapping (from pulse.py) ───────────────────────────────────────
 const THETA_TO_MODE: [number, number][] = [
   [2.0, 1], [3.0, 2], [4.5, 3], [6.0, 4], [7.5, 5], [Infinity, 6],
 ];
@@ -38,60 +59,131 @@ const MODE_LABELS: Record<number, { label: string; beta: number; color: string }
 };
 
 // ============================================================================
-// Relative gate thresholds — derived from primitive's max beta
+// Probability-based gate thresholds
 // ============================================================================
 
 interface GateThreshold {
   gate: number;
-  minTheta: number;
   label: string;
+  description: string;
+  pThreshold: number;
+  sigmaMax: number;
+  refBetaFraction: number;
   color: string;
   strokeColor: string;
 }
 
-const GATE_META = [
-  { gate: 1, label: 'Gate 1: Emerging', color: 'bg-emerald-500', strokeColor: '#10b981' },
-  { gate: 2, label: 'Gate 2: Developing', color: 'bg-blue-500', strokeColor: '#3b82f6' },
-  { gate: 3, label: 'Gate 3: Proficient', color: 'bg-violet-500', strokeColor: '#8b5cf6' },
-  { gate: 4, label: 'Gate 4: Mastered', color: 'bg-purple-500', strokeColor: '#a855f7' },
+const GATE_DEFINITIONS: GateThreshold[] = [
+  {
+    gate: 1, label: 'Emerging', description: '70% chance at easiest mode',
+    pThreshold: 0.70, sigmaMax: 1.5, refBetaFraction: 0.0,
+    color: 'bg-emerald-500', strokeColor: '#10b981',
+  },
+  {
+    gate: 2, label: 'Developing', description: '75% chance at mid difficulty',
+    pThreshold: 0.75, sigmaMax: 1.2, refBetaFraction: 0.5,
+    color: 'bg-blue-500', strokeColor: '#3b82f6',
+  },
+  {
+    gate: 3, label: 'Proficient', description: '80% chance at hard difficulty',
+    pThreshold: 0.80, sigmaMax: 1.0, refBetaFraction: 0.8,
+    color: 'bg-violet-500', strokeColor: '#8b5cf6',
+  },
+  {
+    gate: 4, label: 'Mastered', description: '90% chance at hardest mode',
+    pThreshold: 0.90, sigmaMax: 0.8, refBetaFraction: 1.0,
+    color: 'bg-purple-500', strokeColor: '#a855f7',
+  },
 ];
 
-/**
- * Compute gate thresholds from a primitive's beta range.
- *
- * Uses proportional placement with a minimum spread to ensure:
- *  1. Gates are always monotonically increasing
- *  2. Easy primitives still require meaningful evidence (~6-8 correct)
- *  3. Hard primitives require proportionally more (~10-14 correct)
- *
- * MIN_SPREAD prevents the gate range from collapsing for easy/single-mode
- * primitives where maxBeta - minBeta is small. Without it, Sorting Station
- * (single mode, beta=1.5) has a 1.0-unit spread and clears G4 in 2-3 attempts.
- *
- * Starting theta = min_beta, so no gate is pre-passed.
- */
-const MIN_GATE_SPREAD = 2.5;
-
-function computeGateThresholds(maxBeta: number, minBeta: number): GateThreshold[] {
-  const rawSpread = maxBeta + 1.0 - minBeta;
-  const spread = Math.max(MIN_GATE_SPREAD, rawSpread);
-
-  const thresholds = [
-    minBeta + spread * 0.20,  // G1: 20% of journey
-    minBeta + spread * 0.45,  // G2: 45% of journey
-    minBeta + spread * 0.75,  // G3: 75% of journey
-    minBeta + spread * 1.00,  // G4: full mastery
-  ];
-  return GATE_META.map((g, i) => ({
-    ...g,
-    minTheta: Math.round(thresholds[i] * 100) / 100,
-  }));
+function getGateRefBeta(gate: GateThreshold, minBeta: number, maxBeta: number): number {
+  return minBeta + (maxBeta - minBeta) * gate.refBetaFraction;
 }
+
+function isGatePassed(
+  theta: number, sigma: number,
+  gate: GateThreshold,
+  minBeta: number, maxBeta: number,
+  refA: number,
+): boolean {
+  const refBeta = getGateRefBeta(gate, minBeta, maxBeta);
+  const p = pCorrect(theta, refA, refBeta);
+  return p >= gate.pThreshold && sigma <= gate.sigmaMax;
+}
+
+// ============================================================================
+// Phase 6: σ floor constants (model-mismatch detection)
+// ============================================================================
+
+const MISMATCH_WINDOW = 10;
+const MISMATCH_MIN_ITEMS = 5;
+const MISMATCH_THRESHOLD = 0.15;
+const MISMATCH_SIGMA_FLOOR = 0.5;
+
+// Mastery acceleration: when a student has a long consecutive-correct streak,
+// process noise τ is amplified so θ converges faster — redundant evidence
+// shouldn't force the student to keep proving what's already demonstrated.
+const MASTERY_STREAK_THRESHOLD = 5;
+const TAU_CAP = 0.5;
+
+// ============================================================================
+// Phase 6: Empirical a constants (point-biserial correlation)
+// ============================================================================
+
+const A_CREDIBILITY_K = 30;
+const A_MIN_OBSERVATIONS = 20;
+const A_MIN_P_OBS = 0.1;
+const A_MAX_P_OBS = 0.9;
+const A_CLAMP_MIN = 0.3;
+const A_CLAMP_MAX = 3.0;
+
+// ============================================================================
+// Item Calibration State (Phase 6: tracks per-mode empirical parameters)
+// ============================================================================
+
+interface ItemCalibrationState {
+  priorBeta: number;
+  empiricalBeta: number | null;
+  calibratedBeta: number;
+  credibilityZ: number;
+  priorA: number;          // original categorical prior
+  currentA: number;        // may update via empirical calibration
+  aCredibility: number;
+  aSource: 'categorical_prior' | 'empirical';
+  c: number;
+  totalObservations: number;
+  totalCorrect: number;
+  sumRespondentTheta: number;
+  sumCorrectTheta: number;
+  sumThetaSquared: number;
+}
+
+function makeItemCalibration(mode: EvalModeConfig): ItemCalibrationState {
+  return {
+    priorBeta: mode.priorBeta,
+    empiricalBeta: null,
+    calibratedBeta: mode.priorBeta,
+    credibilityZ: 0,
+    priorA: mode.a,
+    currentA: mode.a,
+    aCredibility: 0,
+    aSource: 'categorical_prior',
+    c: mode.c,
+    totalObservations: 0,
+    totalCorrect: 0,
+    sumRespondentTheta: 0,
+    sumCorrectTheta: 0,
+    sumThetaSquared: 0,
+  };
+}
+
+// ============================================================================
+// Ability state & Bayesian update (2PL likelihood + Phase 6 σ floor)
+// ============================================================================
 
 interface AbilityState {
   theta: number;
   sigma: number;
-  earnedLevel: number;
   totalItemsSeen: number;
 }
 
@@ -99,43 +191,122 @@ interface SubmissionRecord {
   index: number;
   score: number;
   isCorrect: boolean;
-  itemBeta: number;
+  itemBeta: number;         // calibrated beta used for this submission
+  itemPriorBeta: number;    // original prior for comparison
+  itemA: number;            // current a (may be empirical)
+  itemPriorA: number;       // original categorical prior for comparison
+  itemC: number;
   mode: number;
   thetaBefore: number;
   thetaAfter: number;
   sigmaBefore: number;
   sigmaAfter: number;
-  earnedLevel: number;
+  pCorrectBefore: number;
+  information: number;
+  mismatchDetected: boolean;
+  streak: number;
+  effectiveTau: number;
+  aCredibility: number;
+  betaCredibility: number;
 }
 
 /**
- * Bayesian grid-approximation EAP update.
- * Exact port of CalibrationEngine._update_student_theta().
+ * Compute model mismatch using stored per-item predictions.
+ * Uses each item's actual P(correct) from submission time, not a retrospective
+ * calculation with current parameters. This prevents mismatch from "disappearing"
+ * as θ rises — the original predictions capture the model's state when the item
+ * was administered.
+ */
+function computeMismatch(recentHistory: SubmissionRecord[]): number {
+  const recent = recentHistory.slice(-MISMATCH_WINDOW);
+  if (recent.length < MISMATCH_MIN_ITEMS) return 0;
+
+  let predictedSum = 0;
+  let actualSum = 0;
+  for (const h of recent) {
+    predictedSum += h.pCorrectBefore;
+    actualSum += h.isCorrect ? 1 : 0;
+  }
+
+  const n = recent.length;
+  return (actualSum / n) - (predictedSum / n);
+}
+
+/**
+ * Count consecutive correct answers from the end of history.
+ */
+function consecutiveCorrectStreak(history: SubmissionRecord[]): number {
+  let streak = 0;
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].isCorrect) streak++;
+    else break;
+  }
+  return streak;
+}
+
+/**
+ * Bayesian grid-approximation EAP update — 2PL/3PL likelihood
+ * with Phase 6.3 adaptive σ floor + mastery streak acceleration.
+ *
+ * Key improvements over original Phase 6:
+ * - Mismatch uses stored per-item predictions (not retrospective)
+ * - τ scales proportionally to mismatch magnitude
+ * - Consecutive-correct streaks amplify τ (redundant evidence → faster convergence)
  */
 function updateTheta(
   ability: AbilityState,
   itemBeta: number,
+  itemA: number,
+  itemC: number,
   isCorrect: boolean,
-): AbilityState {
+  recentHistory: SubmissionRecord[],
+): { ability: AbilityState; mismatchDetected: boolean; streak: number; effectiveTau: number } {
   const gridSize = Math.round((THETA_GRID_MAX - THETA_GRID_MIN) / THETA_GRID_STEP) + 1;
   const gridPoints: number[] = [];
   for (let i = 0; i < gridSize; i++) {
     gridPoints.push(Math.round((THETA_GRID_MIN + i * THETA_GRID_STEP) * 10) / 10);
   }
 
+  // Mismatch detection using stored per-item predictions
+  const mismatchValue = computeMismatch(recentHistory);
+  const isMismatch = mismatchValue > MISMATCH_THRESHOLD;
+
+  // Count consecutive correct streak (including current submission)
+  const streak = consecutiveCorrectStreak(recentHistory) + (isCorrect ? 1 : 0);
+
+  // Scaled process noise: τ proportional to mismatch magnitude
+  // + mastery streak acceleration for consecutive correct answers.
+  // When mismatch is large (student WAY outperforming), τ grows so the
+  // Bayesian prior widens and θ can jump more per observation.
+  let effectiveTau = 0;
+  if (isMismatch) {
+    const mismatchScale = Math.min(3.0, mismatchValue / MISMATCH_THRESHOLD);
+    effectiveTau = THETA_PROCESS_NOISE * mismatchScale;
+
+    // Mastery acceleration: long streaks = redundant evidence.
+    // Each correct beyond the threshold adds 0.4× to the τ multiplier.
+    if (streak >= MASTERY_STREAK_THRESHOLD) {
+      const streakBonus = 1 + (streak - MASTERY_STREAK_THRESHOLD) * 0.4;
+      effectiveTau *= Math.min(3.0, streakBonus);
+    }
+
+    effectiveTau = Math.min(TAU_CAP, effectiveTau);
+  }
+
+  const priorSigma = Math.sqrt(ability.sigma ** 2 + effectiveTau ** 2);
+
   // Prior: normal centered on current θ
   let prior = gridPoints.map((t) => {
-    const z = (t - ability.theta) / ability.sigma;
+    const z = (t - ability.theta) / priorSigma;
     return Math.exp(-0.5 * z * z);
   });
   const priorSum = prior.reduce((a, b) => a + b, 0);
   if (priorSum > 0) prior = prior.map((p) => p / priorSum);
 
-  // Likelihood: 1PL Rasch
+  // Likelihood: 2PL/3PL using item's discrimination
   const likelihood = gridPoints.map((t) => {
-    const logit = Math.max(-20, Math.min(20, t - itemBeta));
-    const pCorrect = 1 / (1 + Math.exp(-logit));
-    return isCorrect ? pCorrect : 1 - pCorrect;
+    const p = pCorrect(t, itemA, itemBeta, itemC);
+    return isCorrect ? p : 1 - p;
   });
 
   // Posterior
@@ -153,96 +324,215 @@ function updateTheta(
     (sum, t, i) => sum + posterior[i] * (t - newTheta) ** 2,
     0,
   );
-  const newSigma =
+  let newSigma =
     Math.round(Math.max(0.1, Math.min(5, Math.sqrt(variance))) * 1000) / 1000;
 
+  // τ-induced σ correction: process noise widens the prior to let θ jump
+  // more, but the extra variance is artificial — it shouldn't inflate the
+  // student's measurement uncertainty. Subtract the τ contribution from
+  // posterior σ so that σ converges at the same rate as without τ.
+  if (effectiveTau > 0) {
+    const corrected = Math.sqrt(Math.max(0.01, newSigma ** 2 - effectiveTau ** 2));
+    newSigma = Math.round(Math.max(0.1, Math.min(5, corrected)) * 1000) / 1000;
+  }
+
+  // σ floor with mismatch detection
+  let mismatchDetected = false;
+  if (mismatchValue > MISMATCH_THRESHOLD) {
+    const floored = Math.max(newSigma, MISMATCH_SIGMA_FLOOR);
+    if (floored > newSigma) mismatchDetected = true;
+    newSigma = floored;
+  }
+
   return {
-    theta: newTheta,
-    sigma: newSigma,
-    earnedLevel: Math.round(newTheta * 10) / 10,
-    totalItemsSeen: ability.totalItemsSeen + 1,
+    ability: {
+      theta: newTheta,
+      sigma: newSigma,
+      totalItemsSeen: ability.totalItemsSeen + 1,
+    },
+    mismatchDetected,
+    streak,
+    effectiveTau,
   };
 }
 
 // ============================================================================
-// Problem Type Registry (subset from backend)
+// Phase 6.1 + 6.2: Item calibration update
 // ============================================================================
+
+/**
+ * Update item calibration with 2PL β MLE (6.1) and empirical a (6.2).
+ * Mirrors CalibrationEngine._update_item_beta() + _update_empirical_a().
+ */
+function updateItemCalibration(
+  item: ItemCalibrationState,
+  studentTheta: number,
+  isCorrect: boolean,
+): ItemCalibrationState {
+  const updated = { ...item };
+
+  // Increment counters
+  updated.totalObservations += 1;
+  if (isCorrect) {
+    updated.totalCorrect += 1;
+    updated.sumCorrectTheta += studentTheta;
+  }
+  updated.sumRespondentTheta += studentTheta;
+  updated.sumThetaSquared += studentTheta ** 2;
+
+  // --- β update (6.1: 2PL-adjusted MLE) ---
+  const n = updated.totalObservations;
+  const correct = updated.totalCorrect;
+  const incorrect = n - correct;
+  const meanTheta = updated.sumRespondentTheta / n;
+
+  if (correct > 0 && incorrect > 0) {
+    const a = Math.max(0.3, updated.currentA);
+    updated.empiricalBeta = meanTheta - (1.0 / a) * Math.log(correct / incorrect);
+  } else if (correct === 0) {
+    updated.empiricalBeta = meanTheta + 2.0;
+  } else {
+    updated.empiricalBeta = meanTheta - 2.0;
+  }
+  updated.empiricalBeta = Math.max(0, Math.min(10, updated.empiricalBeta));
+
+  // β credibility blending
+  updated.credibilityZ = Math.min(1.0, Math.sqrt(n / ITEM_CREDIBILITY_STANDARD));
+  const z = updated.credibilityZ;
+  updated.calibratedBeta = Math.round(
+    (z * updated.empiricalBeta + (1 - z) * updated.priorBeta) * 1000
+  ) / 1000;
+  updated.calibratedBeta = Math.max(0, Math.min(10, updated.calibratedBeta));
+
+  // --- Empirical a update (6.2: point-biserial correlation) ---
+  if (n >= A_MIN_OBSERVATIONS) {
+    const pObs = updated.totalCorrect / n;
+    if (pObs > A_MIN_P_OBS && pObs < A_MAX_P_OBS && incorrect > 0) {
+      const meanCorrect = updated.sumCorrectTheta / updated.totalCorrect;
+      const meanIncorrect = (updated.sumRespondentTheta - updated.sumCorrectTheta) / incorrect;
+      const thetaVariance = (updated.sumThetaSquared / n) - (updated.sumRespondentTheta / n) ** 2;
+
+      if (thetaVariance > 0.01) {
+        let rPb = ((meanCorrect - meanIncorrect) / Math.sqrt(thetaVariance))
+          * Math.sqrt(pObs * (1.0 - pObs));
+        rPb = Math.max(-0.95, Math.min(0.95, rPb));
+
+        if (rPb > 0) {
+          // Lord's formula: correlation → IRT discrimination
+          let aEmpirical = rPb * 1.7 / Math.sqrt(1.0 - rPb ** 2);
+          aEmpirical = Math.max(A_CLAMP_MIN, Math.min(A_CLAMP_MAX, aEmpirical));
+
+          // Bühlmann credibility blending
+          const zA = n / (n + A_CREDIBILITY_K);
+          let aUpdated = zA * aEmpirical + (1.0 - zA) * updated.priorA;
+          aUpdated = Math.max(A_CLAMP_MIN, Math.min(A_CLAMP_MAX,
+            Math.round(aUpdated * 1000) / 1000));
+
+          updated.currentA = aUpdated;
+          updated.aCredibility = Math.round(zA * 1000) / 1000;
+          updated.aSource = zA > 0.5 ? 'empirical' : 'categorical_prior';
+        }
+      }
+    }
+  }
+
+  return updated;
+}
+
+// ============================================================================
+// Problem Type Registry — with discrimination (a) and guessing (c)
+// ============================================================================
+
+interface EvalModeConfig {
+  evalMode: string;
+  label: string;
+  priorBeta: number;
+  a: number;
+  c: number;
+  aSource: 'categorical_prior' | 'llm_seeded' | 'empirical';
+}
 
 interface PrimitiveConfig {
   label: string;
-  modes: { evalMode: string; label: string; priorBeta: number }[];
+  modes: EvalModeConfig[];
 }
 
 const PRIMITIVE_REGISTRY: Record<string, PrimitiveConfig> = {
   'ten-frame': {
     label: 'Ten Frame',
     modes: [
-      { evalMode: 'build', label: 'Build (concrete)', priorBeta: 1.5 },
-      { evalMode: 'subitize', label: 'Subitize (perceptual)', priorBeta: 2.5 },
-      { evalMode: 'make_ten', label: 'Make Ten (strategy)', priorBeta: 3.5 },
-      { evalMode: 'operate', label: 'Operate (symbolic)', priorBeta: 5.0 },
+      { evalMode: 'build', label: 'Build (concrete)', priorBeta: 1.5, a: 1.8, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'subitize', label: 'Subitize (perceptual)', priorBeta: 2.5, a: 1.6, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'make_ten', label: 'Make Ten (strategy)', priorBeta: 3.5, a: 1.4, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'operate', label: 'Operate (symbolic)', priorBeta: 5.0, a: 1.6, c: 0, aSource: 'categorical_prior' },
     ],
   },
   'number-line': {
     label: 'Number Line',
     modes: [
-      { evalMode: 'explore', label: 'Explore', priorBeta: 1.5 },
-      { evalMode: 'plot', label: 'Plot values', priorBeta: 2.0 },
-      { evalMode: 'compare', label: 'Compare/order', priorBeta: 3.0 },
-      { evalMode: 'jump', label: 'Show jumps', priorBeta: 3.5 },
+      { evalMode: 'explore', label: 'Explore', priorBeta: 1.5, a: 1.4, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'plot', label: 'Plot values', priorBeta: 2.0, a: 1.6, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'compare', label: 'Compare/order', priorBeta: 3.0, a: 1.4, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'jump', label: 'Show jumps', priorBeta: 3.5, a: 1.2, c: 0, aSource: 'categorical_prior' },
     ],
   },
   'counting-board': {
     label: 'Counting Board',
     modes: [
-      { evalMode: 'count', label: 'Count objects', priorBeta: 1.0 },
-      { evalMode: 'subitize', label: 'Quick-count', priorBeta: 2.0 },
-      { evalMode: 'group', label: 'Group by attribute', priorBeta: 2.0 },
-      { evalMode: 'compare', label: 'Compare groups', priorBeta: 2.5 },
-      { evalMode: 'count_on', label: 'Count on', priorBeta: 2.5 },
+      { evalMode: 'count', label: 'Count objects', priorBeta: 1.0, a: 1.8, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'subitize', label: 'Quick-count', priorBeta: 2.0, a: 1.6, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'group', label: 'Group by attribute', priorBeta: 2.0, a: 1.4, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'compare', label: 'Compare groups', priorBeta: 2.5, a: 1.4, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'count_on', label: 'Count on', priorBeta: 2.5, a: 1.6, c: 0, aSource: 'categorical_prior' },
     ],
   },
   'function-machine': {
     label: 'Function Machine',
     modes: [
-      { evalMode: 'observe', label: 'Observe I/O', priorBeta: 2.5 },
-      { evalMode: 'predict', label: 'Predict output', priorBeta: 3.0 },
-      { evalMode: 'discover', label: 'Discover rule', priorBeta: 3.5 },
-      { evalMode: 'create', label: 'Create function', priorBeta: 4.5 },
+      { evalMode: 'observe', label: 'Observe I/O', priorBeta: 2.5, a: 1.2, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'predict', label: 'Predict output', priorBeta: 3.0, a: 1.6, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'discover', label: 'Discover rule', priorBeta: 3.5, a: 1.4, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'create', label: 'Create function', priorBeta: 4.5, a: 1.0, c: 0, aSource: 'categorical_prior' },
     ],
   },
   'pattern-builder': {
     label: 'Pattern Builder',
     modes: [
-      { evalMode: 'identify', label: 'Identify pattern', priorBeta: 2.5 },
-      { evalMode: 'extend', label: 'Extend pattern', priorBeta: 3.0 },
-      { evalMode: 'create', label: 'Create pattern', priorBeta: 3.5 },
-      { evalMode: 'translate', label: 'Translate pattern', priorBeta: 4.0 },
+      { evalMode: 'identify', label: 'Identify pattern', priorBeta: 2.5, a: 1.4, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'extend', label: 'Extend pattern', priorBeta: 3.0, a: 1.6, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'create', label: 'Create pattern', priorBeta: 3.5, a: 1.2, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'translate', label: 'Translate pattern', priorBeta: 4.0, a: 1.0, c: 0, aSource: 'categorical_prior' },
     ],
   },
   'sorting-station': {
     label: 'Sorting Station',
-    modes: [{ evalMode: 'default', label: 'Sort by attribute', priorBeta: 1.5 }],
+    modes: [
+      { evalMode: 'default', label: 'Sort by attribute', priorBeta: 1.5, a: 1.4, c: 0, aSource: 'categorical_prior' },
+    ],
   },
-  'math-fact-fluency': {
-    label: 'Math Fact Fluency',
-    modes: [{ evalMode: 'default', label: 'Timed recall', priorBeta: 4.0 }],
-  },
-  'area-model': {
-    label: 'Area Model',
-    modes: [{ evalMode: 'default', label: 'Multiplication', priorBeta: 5.0 }],
-  },
-  'strategy-picker': {
-    label: 'Strategy Picker',
-    modes: [{ evalMode: 'default', label: 'Choose strategy', priorBeta: 5.0 }],
+  'shape-sorter': {
+    label: 'Shape Sorter',
+    modes: [
+      { evalMode: 'identify', label: 'Identify shapes', priorBeta: 1.5, a: 1.6, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'count', label: 'Count sides/vertices', priorBeta: 2.0, a: 1.4, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'sort', label: 'Sort by property', priorBeta: 2.5, a: 1.4, c: 0, aSource: 'categorical_prior' },
+      { evalMode: 'compare', label: 'Compare shapes', priorBeta: 3.0, a: 1.2, c: 0, aSource: 'categorical_prior' },
+    ],
   },
   'knowledge-check': {
-    label: 'Knowledge Check',
-    modes: [{ evalMode: 'default', label: 'Multiple choice', priorBeta: 3.0 }],
+    label: 'Knowledge Check (MC)',
+    modes: [
+      { evalMode: 'recall', label: 'Recall (easy MC)', priorBeta: 1.5, a: 1.6, c: 0.25, aSource: 'categorical_prior' },
+      { evalMode: 'apply', label: 'Apply (medium MC)', priorBeta: 3.0, a: 1.4, c: 0.25, aSource: 'categorical_prior' },
+      { evalMode: 'analyze', label: 'Analyze (hard MC)', priorBeta: 4.5, a: 1.6, c: 0.20, aSource: 'categorical_prior' },
+      { evalMode: 'evaluate', label: 'Evaluate (expert MC)', priorBeta: 6.0, a: 1.8, c: 0.15, aSource: 'categorical_prior' },
+    ],
   },
   'true-false': {
     label: 'True / False',
-    modes: [{ evalMode: 'default', label: 'True/false', priorBeta: 2.0 }],
+    modes: [
+      { evalMode: 'default', label: 'True/false', priorBeta: 2.0, a: 1.0, c: 0.5, aSource: 'categorical_prior' },
+    ],
   },
 };
 
@@ -252,21 +542,236 @@ function getPrimitiveBetaRange(key: string): { min: number; max: number } {
   return { min: Math.min(...betas), max: Math.max(...betas) };
 }
 
+/** Build initial item calibration map for a primitive */
+function makeInitialCalibrations(primitiveKey: string): Record<string, ItemCalibrationState> {
+  const prim = PRIMITIVE_REGISTRY[primitiveKey];
+  const cals: Record<string, ItemCalibrationState> = {};
+  for (const mode of prim.modes) {
+    cals[mode.evalMode] = makeItemCalibration(mode);
+  }
+  return cals;
+}
+
+// ============================================================================
+// Probability Curve (SVG) — shows P(correct) for each eval mode
+// ============================================================================
+
+const ProbabilityCurve: React.FC<{
+  theta: number;
+  sigma: number;
+  modes: EvalModeConfig[];
+  calibrations: Record<string, ItemCalibrationState>;
+  width?: number;
+  height?: number;
+}> = ({ theta, sigma, modes, calibrations, width = 600, height = 200 }) => {
+  const pad = { top: 20, right: 80, bottom: 30, left: 40 };
+  const w = width - pad.left - pad.right;
+  const h = height - pad.top - pad.bottom;
+
+  const xMin = 0;
+  const xMax = 10;
+  const xScale = (v: number) => pad.left + ((v - xMin) / (xMax - xMin)) * w;
+  const yScale = (v: number) => pad.top + h - v * h;
+
+  // Generate curves using calibrated parameters
+  const curvePoints = 50;
+  const curves = modes.map((mode) => {
+    const cal = calibrations[mode.evalMode];
+    const useA = cal?.currentA ?? mode.a;
+    const useB = cal?.calibratedBeta ?? mode.priorBeta;
+    const useC = cal?.c ?? mode.c;
+    const points: string[] = [];
+    for (let i = 0; i <= curvePoints; i++) {
+      const t = xMin + (i / curvePoints) * (xMax - xMin);
+      const p = pCorrect(t, useA, useB, useC);
+      points.push(`${xScale(t)},${yScale(p)}`);
+    }
+    return { mode, path: `M${points.join(' L')}`, useA, useB, useC };
+  });
+
+  const modeColors = ['#34d399', '#2dd4bf', '#22d3ee', '#60a5fa', '#a78bfa', '#c084fc'];
+  const yTicks = [0, 0.25, 0.5, 0.75, 1.0];
+  const thetaX = xScale(theta);
+  const sigmaLeft = xScale(Math.max(xMin, theta - sigma));
+  const sigmaRight = xScale(Math.min(xMax, theta + sigma));
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxHeight: height }}>
+      {yTicks.map((v) => (
+        <g key={v}>
+          <line
+            x1={pad.left} y1={yScale(v)} x2={width - pad.right} y2={yScale(v)}
+            stroke="rgba(148,163,184,0.15)" strokeDasharray="4,4"
+          />
+          <text x={pad.left - 8} y={yScale(v) + 4} textAnchor="end" className="fill-slate-500" fontSize={10}>
+            {(v * 100).toFixed(0)}%
+          </text>
+        </g>
+      ))}
+
+      {GATE_DEFINITIONS.map((g) => (
+        <g key={g.gate}>
+          <line
+            x1={pad.left} y1={yScale(g.pThreshold)} x2={width - pad.right} y2={yScale(g.pThreshold)}
+            stroke={g.strokeColor} strokeWidth={1} strokeDasharray="3,3" opacity={0.4}
+          />
+          <text x={pad.left + 4} y={yScale(g.pThreshold) - 3} fontSize={8} fill={g.strokeColor} opacity={0.6}>
+            G{g.gate} ({(g.pThreshold * 100).toFixed(0)}%)
+          </text>
+        </g>
+      ))}
+
+      <rect
+        x={sigmaLeft} y={pad.top} width={sigmaRight - sigmaLeft} height={h}
+        fill="rgba(99,102,241,0.08)" rx={2}
+      />
+
+      <line
+        x1={thetaX} y1={pad.top} x2={thetaX} y2={pad.top + h}
+        stroke="#818cf8" strokeWidth={2} strokeDasharray="4,4" opacity={0.8}
+      />
+      <text x={thetaX} y={pad.top - 5} textAnchor="middle" fontSize={10} className="fill-indigo-400" fontWeight="bold">
+        θ={theta.toFixed(2)}
+      </text>
+
+      {curves.map((c, i) => (
+        <g key={c.mode.evalMode}>
+          <path d={c.path} fill="none" stroke={modeColors[i % modeColors.length]} strokeWidth={2} opacity={0.8} />
+          <text
+            x={width - pad.right + 4}
+            y={yScale(pCorrect(xMax, c.useA, c.useB, c.useC)) + 4}
+            fontSize={9}
+            fill={modeColors[i % modeColors.length]}
+          >
+            {c.mode.evalMode}
+          </text>
+          <circle
+            cx={thetaX}
+            cy={yScale(pCorrect(theta, c.useA, c.useB, c.useC))}
+            r={4}
+            fill={modeColors[i % modeColors.length]}
+            stroke="rgba(0,0,0,0.4)"
+            strokeWidth={1}
+          />
+        </g>
+      ))}
+
+      {[0, 2, 4, 6, 8, 10].map((v) => (
+        <text key={v} x={xScale(v)} y={height - 4} textAnchor="middle" fontSize={10} className="fill-slate-500">
+          {v}
+        </text>
+      ))}
+      <text x={pad.left + w / 2} y={height - 16} textAnchor="middle" fontSize={9} className="fill-slate-600">
+        θ (ability)
+      </text>
+    </svg>
+  );
+};
+
+// ============================================================================
+// Item Information Chart
+// ============================================================================
+
+const InformationChart: React.FC<{
+  theta: number;
+  modes: EvalModeConfig[];
+  calibrations: Record<string, ItemCalibrationState>;
+  width?: number;
+  height?: number;
+}> = ({ theta, modes, calibrations, width = 600, height = 140 }) => {
+  const pad = { top: 15, right: 80, bottom: 25, left: 40 };
+  const w = width - pad.left - pad.right;
+  const h = height - pad.top - pad.bottom;
+
+  const xMin = 0;
+  const xMax = 10;
+  const xScale = (v: number) => pad.left + ((v - xMin) / (xMax - xMin)) * w;
+
+  let globalMaxInfo = 0;
+  const curvePoints = 50;
+  const curves = modes.map((mode) => {
+    const cal = calibrations[mode.evalMode];
+    const useA = cal?.currentA ?? mode.a;
+    const useB = cal?.calibratedBeta ?? mode.priorBeta;
+    const useC = cal?.c ?? mode.c;
+    const points: { t: number; info: number }[] = [];
+    for (let i = 0; i <= curvePoints; i++) {
+      const t = xMin + (i / curvePoints) * (xMax - xMin);
+      const info = itemInformation(t, useA, useB, useC);
+      if (info > globalMaxInfo) globalMaxInfo = info;
+      points.push({ t, info });
+    }
+    return { mode, points, useA, useB, useC };
+  });
+
+  const yScale = (v: number) => pad.top + h - (v / Math.max(0.1, globalMaxInfo)) * h;
+
+  const modeColors = ['#34d399', '#2dd4bf', '#22d3ee', '#60a5fa', '#a78bfa', '#c084fc'];
+  const thetaX = xScale(theta);
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxHeight: height }}>
+      {[0, 0.25, 0.5, 0.75, 1.0].map((frac) => {
+        const v = frac * globalMaxInfo;
+        return (
+          <g key={frac}>
+            <line
+              x1={pad.left} y1={yScale(v)} x2={width - pad.right} y2={yScale(v)}
+              stroke="rgba(148,163,184,0.1)" strokeDasharray="2,3"
+            />
+          </g>
+        );
+      })}
+
+      <line
+        x1={thetaX} y1={pad.top} x2={thetaX} y2={pad.top + h}
+        stroke="#818cf8" strokeWidth={1.5} strokeDasharray="3,3" opacity={0.6}
+      />
+
+      {curves.map((c, i) => {
+        const pathStr = `M${c.points.map((p) => `${xScale(p.t)},${yScale(p.info)}`).join(' L')}`;
+        const infoAtTheta = itemInformation(theta, c.useA, c.useB, c.useC);
+        return (
+          <g key={c.mode.evalMode}>
+            <path d={pathStr} fill="none" stroke={modeColors[i % modeColors.length]} strokeWidth={1.5} opacity={0.7} />
+            <circle
+              cx={thetaX} cy={yScale(infoAtTheta)} r={3}
+              fill={modeColors[i % modeColors.length]} stroke="rgba(0,0,0,0.3)" strokeWidth={1}
+            />
+            <text
+              x={width - pad.right + 4}
+              y={yScale(c.points[curvePoints].info) + 4}
+              fontSize={8} fill={modeColors[i % modeColors.length]}
+            >
+              {c.mode.evalMode}
+            </text>
+          </g>
+        );
+      })}
+
+      <text x={12} y={pad.top + h / 2} textAnchor="middle" fontSize={9} className="fill-slate-500"
+        transform={`rotate(-90, 12, ${pad.top + h / 2})`}>
+        I(θ)
+      </text>
+      <text x={pad.left + w / 2} y={height - 4} textAnchor="middle" fontSize={9} className="fill-slate-600">
+        Item Information — peaks where measurement is most valuable
+      </text>
+    </svg>
+  );
+};
+
 // ============================================================================
 // Trajectory Chart (SVG)
 // ============================================================================
 
 const ThetaChart: React.FC<{
   history: SubmissionRecord[];
-  gates: GateThreshold[];
-  maxBeta: number;
   width?: number;
   height?: number;
-}> = ({ history, gates, maxBeta, width = 600, height = 240 }) => {
+}> = ({ history, width = 600, height = 220 }) => {
   if (history.length === 0) return null;
 
-  // Dynamic Y-axis: scale to show all gates + headroom
-  const yMax = Math.max(10, gates[gates.length - 1].minTheta + 2);
+  const yMax = 10;
   const yMin = 0;
 
   const pad = { top: 20, right: 30, bottom: 30, left: 40 };
@@ -276,11 +781,9 @@ const ThetaChart: React.FC<{
   const xScale = (i: number) => pad.left + (i / Math.max(1, history.length - 1)) * w;
   const yScale = (v: number) => pad.top + h - ((v - yMin) / (yMax - yMin)) * h;
 
-  // Build theta path
   const thetaPoints = history.map((r, i) => `${xScale(i)},${yScale(r.thetaAfter)}`);
   const thetaPath = `M${thetaPoints.join(' L')}`;
 
-  // Sigma band
   const bandUp = history.map(
     (r, i) => `${xScale(i)},${yScale(Math.min(yMax, r.thetaAfter + r.sigmaAfter))}`,
   );
@@ -291,126 +794,60 @@ const ThetaChart: React.FC<{
     .reverse();
   const bandPath = `M${bandUp.join(' L')} L${bandDown.join(' L')} Z`;
 
-  // Y-axis ticks
   const yTicks: number[] = [];
   for (let v = 0; v <= yMax; v += 2) yTicks.push(v);
 
+  // Find mismatch-detected points
+  const mismatchPoints = history
+    .map((r, i) => ({ i, r }))
+    .filter(({ r }) => r.mismatchDetected);
+
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxHeight: height }}>
-      {/* Y-axis gridlines + labels */}
       {yTicks.map((v) => (
         <g key={v}>
-          <line
-            x1={pad.left}
-            y1={yScale(v)}
-            x2={width - pad.right}
-            y2={yScale(v)}
-            stroke="rgba(148,163,184,0.15)"
-            strokeDasharray="4,4"
-          />
-          <text
-            x={pad.left - 8}
-            y={yScale(v) + 4}
-            textAnchor="end"
-            className="fill-slate-500"
-            fontSize={10}
-          >
+          <line x1={pad.left} y1={yScale(v)} x2={width - pad.right} y2={yScale(v)}
+            stroke="rgba(148,163,184,0.15)" strokeDasharray="4,4" />
+          <text x={pad.left - 8} y={yScale(v) + 4} textAnchor="end" className="fill-slate-500" fontSize={10}>
             {v}
           </text>
         </g>
       ))}
 
-      {/* Gate threshold lines (dynamic per-primitive) */}
-      {gates.map((g) => (
-        <g key={g.gate}>
-          <line
-            x1={pad.left}
-            y1={yScale(g.minTheta)}
-            x2={width - pad.right}
-            y2={yScale(g.minTheta)}
-            stroke={g.strokeColor}
-            strokeWidth={1.5}
-            strokeDasharray="6,4"
-            opacity={0.6}
+      <path d={bandPath} fill="rgba(99,102,241,0.15)" />
+      <path d={thetaPath} fill="none" stroke="#818cf8" strokeWidth={2} />
+
+      {/* Mismatch detection indicators */}
+      {mismatchPoints.map(({ i, r }) => (
+        <g key={`mm-${i}`}>
+          <circle
+            cx={xScale(i)} cy={yScale(r.thetaAfter)} r={7}
+            fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="2,2" opacity={0.7}
           />
-          <text
-            x={width - pad.right + 3}
-            y={yScale(g.minTheta) + 3}
-            fontSize={9}
-            className="fill-slate-400"
-          >
-            G{g.gate}
-          </text>
         </g>
       ))}
 
-      {/* Max beta reference line */}
-      <line
-        x1={pad.left}
-        y1={yScale(maxBeta)}
-        x2={width - pad.right}
-        y2={yScale(maxBeta)}
-        stroke="#f59e0b"
-        strokeWidth={1}
-        strokeDasharray="2,3"
-        opacity={0.5}
-      />
-      <text
-        x={width - pad.right + 3}
-        y={yScale(maxBeta) + 3}
-        fontSize={8}
-        className="fill-amber-500"
-      >
-        Bmax
-      </text>
-
-      {/* Sigma confidence band */}
-      <path d={bandPath} fill="rgba(99,102,241,0.15)" />
-
-      {/* Theta line */}
-      <path d={thetaPath} fill="none" stroke="#818cf8" strokeWidth={2} />
-
-      {/* Score dots */}
       {history.map((r, i) => (
         <circle
-          key={i}
-          cx={xScale(i)}
-          cy={yScale(r.thetaAfter)}
-          r={3.5}
+          key={i} cx={xScale(i)} cy={yScale(r.thetaAfter)} r={3.5}
           fill={r.isCorrect ? '#34d399' : '#f87171'}
-          stroke="rgba(0,0,0,0.3)"
-          strokeWidth={1}
+          stroke="rgba(0,0,0,0.3)" strokeWidth={1}
         />
       ))}
 
-      {/* X-axis label */}
-      <text
-        x={pad.left + w / 2}
-        y={height - 4}
-        textAnchor="middle"
-        fontSize={10}
-        className="fill-slate-500"
-      >
+      <text x={pad.left + w / 2} y={height - 4} textAnchor="middle" fontSize={10} className="fill-slate-500">
         Submissions ({history.length})
       </text>
-
-      {/* Y-axis label */}
-      <text
-        x={12}
-        y={pad.top + h / 2}
-        textAnchor="middle"
-        fontSize={10}
-        className="fill-slate-500"
-        transform={`rotate(-90, 12, ${pad.top + h / 2})`}
-      >
-        theta
+      <text x={12} y={pad.top + h / 2} textAnchor="middle" fontSize={10} className="fill-slate-500"
+        transform={`rotate(-90, 12, ${pad.top + h / 2})`}>
+        θ
       </text>
     </svg>
   );
 };
 
 // ============================================================================
-// Presets — scripted sequences to demonstrate different scenarios
+// Presets
 // ============================================================================
 
 interface Preset {
@@ -422,51 +859,77 @@ interface Preset {
 
 const PRESETS: Preset[] = [
   {
-    label: 'Counting Board: Full Mastery',
-    desc: 'Escalate through all counting modes. Spread clamped to 3.0 minimum.',
-    primitiveKey: 'counting-board',
+    label: 'Ten Frame: Full Mastery',
+    desc: 'Escalate through all 4 modes with high discrimination. Watch sigma collapse and gates unlock.',
+    primitiveKey: 'ten-frame',
     steps: [
-      ...Array.from({ length: 3 }, () => ({ modeIdx: 0, score: 10 })), // count B=1.0
-      ...Array.from({ length: 3 }, () => ({ modeIdx: 1, score: 10 })), // subitize B=2.0
-      ...Array.from({ length: 3 }, () => ({ modeIdx: 3, score: 10 })), // compare B=2.5
-      ...Array.from({ length: 5 }, () => ({ modeIdx: 4, score: 10 })), // count_on B=2.5
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 0, score: 10 })),
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 1, score: 10 })),
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 2, score: 10 })),
+      ...Array.from({ length: 5 }, () => ({ modeIdx: 3, score: 10 })),
     ],
   },
   {
-    label: 'Ten Frame: Scaled Mastery',
-    desc: 'Build through all 4 modes. Wide beta range uses natural spread.',
+    label: 'P(correct) Plateau Fix (Phase 6)',
+    desc: '12× correct on jump mode (b=3.5, a=1.2). Streak acceleration + calibrated gate betas push through Gate 4 without wasting student time.',
+    primitiveKey: 'number-line',
+    steps: Array.from({ length: 12 }, () => ({ modeIdx: 3, score: 10 })),
+  },
+  {
+    label: 'Mastery Sprint (10× Hardest)',
+    desc: 'Student aces the hardest ten-frame mode 10×. Streak acceleration kicks in at item 5 — watch τ amplify and gates unlock rapidly.',
     primitiveKey: 'ten-frame',
-    steps: [
-      ...Array.from({ length: 3 }, () => ({ modeIdx: 0, score: 10 })), // build B=1.5
-      ...Array.from({ length: 3 }, () => ({ modeIdx: 1, score: 10 })), // subitize B=2.5
-      ...Array.from({ length: 3 }, () => ({ modeIdx: 2, score: 10 })), // make_ten B=3.5
-      ...Array.from({ length: 5 }, () => ({ modeIdx: 3, score: 10 })), // operate B=5.0
-    ],
+    steps: Array.from({ length: 10 }, () => ({ modeIdx: 3, score: 10 })),
   },
   {
     label: 'Ten Frame: Grind Easy (stalls)',
-    desc: 'Only Build mode (B=1.5), never escalates. Can never reach Gate 3+.',
+    desc: 'Only Build mode (B=1.5). σ collapses but θ caps at ~1.5 — never reaches Gate 2+.',
     primitiveKey: 'ten-frame',
-    steps: Array.from({ length: 20 }, () => ({ modeIdx: 0, score: 10 })),
+    steps: Array.from({ length: 15 }, () => ({ modeIdx: 0, score: 10 })),
   },
   {
-    label: 'Function Machine: Struggle + Recovery',
-    desc: 'Overreach at Create mode, fail, drop back, then climb properly.',
-    primitiveKey: 'function-machine',
+    label: 'Knowledge Check: Escalate MC Tiers',
+    desc: 'Recall → Apply → Analyze → Evaluate. Higher tiers have better discrimination and lower guessing floors — watch σ converge faster on harder items.',
+    primitiveKey: 'knowledge-check',
     steps: [
-      ...Array.from({ length: 3 }, () => ({ modeIdx: 0, score: 10 })), // observe B=2.5
-      { modeIdx: 3, score: 3 }, // overreach: create B=4.5
-      { modeIdx: 3, score: 4 },
-      ...Array.from({ length: 3 }, () => ({ modeIdx: 1, score: 10 })), // recover: predict B=3.0
-      ...Array.from({ length: 3 }, () => ({ modeIdx: 2, score: 10 })), // discover B=3.5
-      ...Array.from({ length: 5 }, () => ({ modeIdx: 3, score: 10 })), // create B=4.5
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 0, score: 10 })),
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 1, score: 10 })),
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 2, score: 10 })),
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 3, score: 10 })),
     ],
   },
   {
-    label: 'Sorting Station: Ceiling Demo',
-    desc: 'Only 1 mode (B=1.5). Min spread forces G4 to 4.5 — grinding stalls without harder modes.',
-    primitiveKey: 'sorting-station',
-    steps: Array.from({ length: 12 }, () => ({ modeIdx: 0, score: 10 })),
+    label: 'True/False: High Noise',
+    desc: 'c=0.5 guessing floor + low discrimination (a=1.0). Very noisy — σ stays high.',
+    primitiveKey: 'true-false',
+    steps: [
+      { modeIdx: 0, score: 10 }, { modeIdx: 0, score: 10 },
+      { modeIdx: 0, score: 3 }, { modeIdx: 0, score: 10 },
+      { modeIdx: 0, score: 10 }, { modeIdx: 0, score: 3 },
+      { modeIdx: 0, score: 10 }, { modeIdx: 0, score: 10 },
+    ],
+  },
+  {
+    label: 'Function Machine: Struggle + Recovery',
+    desc: 'Overreach at Create (low a=1.0), fail, drop back, then climb. Low-a failures hurt θ less.',
+    primitiveKey: 'function-machine',
+    steps: [
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 0, score: 10 })),
+      { modeIdx: 3, score: 3 }, { modeIdx: 3, score: 4 },
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 1, score: 10 })),
+      ...Array.from({ length: 3 }, () => ({ modeIdx: 2, score: 10 })),
+      ...Array.from({ length: 5 }, () => ({ modeIdx: 3, score: 10 })),
+    ],
+  },
+  {
+    label: 'Shape Sorter: Discrimination Contrast',
+    desc: 'Identify (a=1.6) vs Sort (a=1.4) — higher-a items move θ faster per observation.',
+    primitiveKey: 'shape-sorter',
+    steps: [
+      ...Array.from({ length: 4 }, () => ({ modeIdx: 0, score: 10 })),
+      ...Array.from({ length: 4 }, () => ({ modeIdx: 2, score: 10 })),
+      ...Array.from({ length: 4 }, () => ({ modeIdx: 3, score: 10 })),
+    ],
   },
 ];
 
@@ -479,107 +942,223 @@ interface CalibrationSimulatorProps {
 }
 
 function makeInitialAbility(startTheta: number): AbilityState {
-  return {
-    theta: startTheta,
-    sigma: DEFAULT_SIGMA,
-    earnedLevel: Math.round(startTheta * 10) / 10,
-    totalItemsSeen: 0,
-  };
+  return { theta: startTheta, sigma: DEFAULT_SIGMA, totalItemsSeen: 0 };
 }
 
 const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) => {
-  // Input state
   const [selectedPrimitive, setSelectedPrimitive] = useState('ten-frame');
   const [selectedModeIdx, setSelectedModeIdx] = useState(0);
   const [score, setScore] = useState(10);
 
-  // Relative gate thresholds for the current primitive
   const { min: minBeta, max: maxBeta } = useMemo(
     () => getPrimitiveBetaRange(selectedPrimitive),
     [selectedPrimitive],
   );
-  const gates = useMemo(
-    () => computeGateThresholds(maxBeta, minBeta),
-    [maxBeta, minBeta],
-  );
-
-  // Student state — starting theta = min_beta of selected primitive
   const [ability, setAbility] = useState<AbilityState>(() =>
     makeInitialAbility(getPrimitiveBetaRange('ten-frame').min),
   );
   const [history, setHistory] = useState<SubmissionRecord[]>([]);
-
-  // Preset playback
-  const [playingPreset, setPlayingPreset] = useState<string | null>(null);
+  const [itemCalibrations, setItemCalibrations] = useState<Record<string, ItemCalibrationState>>(
+    () => makeInitialCalibrations('ten-frame'),
+  );
 
   const currentPrimitive = PRIMITIVE_REGISTRY[selectedPrimitive];
   const currentMode = currentPrimitive.modes[selectedModeIdx];
   const currentStudentMode = thetaToMode(ability.theta);
+  const currentCal = itemCalibrations[currentMode.evalMode];
+
+  // Use calibrated parameters for display
+  const effectiveA = currentCal?.currentA ?? currentMode.a;
+  const effectiveBeta = currentCal?.calibratedBeta ?? currentMode.priorBeta;
+  const effectiveC = currentCal?.c ?? currentMode.c;
+
+  const currentPCorrect = useMemo(
+    () => pCorrect(ability.theta, effectiveA, effectiveBeta, effectiveC),
+    [ability.theta, effectiveA, effectiveBeta, effectiveC],
+  );
+  const currentInformation = useMemo(
+    () => itemInformation(ability.theta, effectiveA, effectiveBeta, effectiveC),
+    [ability.theta, effectiveA, effectiveBeta, effectiveC],
+  );
+
+  // Gate status uses calibrated avg a AND calibrated beta range.
+  // As items get answered correctly, their calibrated β drifts down,
+  // making gate reference difficulties more achievable.
+  const calibratedAvgA = useMemo(() => {
+    const prim = PRIMITIVE_REGISTRY[selectedPrimitive];
+    const total = prim.modes.reduce((sum, m) => {
+      const cal = itemCalibrations[m.evalMode];
+      return sum + (cal?.currentA ?? m.a);
+    }, 0);
+    return total / prim.modes.length;
+  }, [selectedPrimitive, itemCalibrations]);
+
+  const calibratedBetaRange = useMemo(() => {
+    const prim = PRIMITIVE_REGISTRY[selectedPrimitive];
+    const betas = prim.modes.map((m) => {
+      const cal = itemCalibrations[m.evalMode];
+      return cal?.calibratedBeta ?? m.priorBeta;
+    });
+    return { min: Math.min(...betas), max: Math.max(...betas) };
+  }, [selectedPrimitive, itemCalibrations]);
+
+  const gateStatus = useMemo(() => {
+    const gateMinBeta = calibratedBetaRange.min;
+    const gateMaxBeta = calibratedBetaRange.max;
+    return GATE_DEFINITIONS.map((g) => {
+      const refBeta = getGateRefBeta(g, gateMinBeta, gateMaxBeta);
+      const p = pCorrect(ability.theta, calibratedAvgA, refBeta);
+      const passed = isGatePassed(ability.theta, ability.sigma, g, gateMinBeta, gateMaxBeta, calibratedAvgA);
+      const sigmaOk = ability.sigma <= g.sigmaMax;
+      const pOk = p >= g.pThreshold;
+      return { ...g, refBeta, currentP: p, passed, sigmaOk, pOk };
+    });
+  }, [ability.theta, ability.sigma, calibratedBetaRange, calibratedAvgA]);
+
+  const maxGateReached = useMemo(() => {
+    let gate = 0;
+    for (const g of gateStatus) {
+      if (g.passed) gate = g.gate;
+    }
+    return gate;
+  }, [gateStatus]);
+
+  const bestMeasurementMode = useMemo(() => {
+    let best = currentPrimitive.modes[0];
+    let bestInfo = 0;
+    for (const mode of currentPrimitive.modes) {
+      const cal = itemCalibrations[mode.evalMode];
+      const useA = cal?.currentA ?? mode.a;
+      const useB = cal?.calibratedBeta ?? mode.priorBeta;
+      const useC = cal?.c ?? mode.c;
+      const info = itemInformation(ability.theta, useA, useB, useC);
+      if (info > bestInfo) {
+        bestInfo = info;
+        best = mode;
+      }
+    }
+    return { mode: best, info: bestInfo };
+  }, [ability.theta, currentPrimitive.modes, itemCalibrations]);
+
+  // Count mismatch detections
+  const mismatchCount = useMemo(
+    () => history.filter((r) => r.mismatchDetected).length,
+    [history],
+  );
 
   const handleSubmit = useCallback(
-    (overrideScore?: number, overrideBeta?: number) => {
+    (overrideScore?: number, overrideMode?: EvalModeConfig) => {
       const s = overrideScore ?? score;
-      const beta = overrideBeta ?? currentMode.priorBeta;
+      const mode = overrideMode ?? currentMode;
       const isCorrect = s >= IRT_CORRECT_THRESHOLD;
 
-      setAbility((prev) => {
-        const updated = updateTheta(prev, beta, isCorrect);
+      // Compute everything synchronously from current state — no side effects
+      // inside state updaters (React strict mode calls updaters twice).
+      const cal = itemCalibrations[mode.evalMode];
+      const useA = cal?.currentA ?? mode.a;
+      const useBeta = cal?.calibratedBeta ?? mode.priorBeta;
+      const useC = cal?.c ?? mode.c;
 
-        const record: SubmissionRecord = {
-          index: prev.totalItemsSeen,
-          score: s,
-          isCorrect,
-          itemBeta: beta,
-          mode: thetaToMode(prev.theta),
-          thetaBefore: prev.theta,
-          thetaAfter: updated.theta,
-          sigmaBefore: prev.sigma,
-          sigmaAfter: updated.sigma,
-          earnedLevel: updated.earnedLevel,
-        };
+      const pBefore = pCorrect(ability.theta, useA, useBeta, useC);
+      const info = itemInformation(ability.theta, useA, useBeta, useC);
 
-        setHistory((h) => [...h, record]);
-        return updated;
-      });
+      const { ability: updated, mismatchDetected, streak, effectiveTau } = updateTheta(
+        ability, useBeta, useA, useC, isCorrect, history,
+      );
+
+      const updatedCal = updateItemCalibration(
+        cal ?? makeItemCalibration(mode), ability.theta, isCorrect,
+      );
+
+      const record: SubmissionRecord = {
+        index: ability.totalItemsSeen,
+        score: s,
+        isCorrect,
+        itemBeta: useBeta,
+        itemPriorBeta: mode.priorBeta,
+        itemA: useA,
+        itemPriorA: mode.a,
+        itemC: useC,
+        mode: thetaToMode(ability.theta),
+        thetaBefore: ability.theta,
+        thetaAfter: updated.theta,
+        sigmaBefore: ability.sigma,
+        sigmaAfter: updated.sigma,
+        pCorrectBefore: pBefore,
+        information: info,
+        mismatchDetected,
+        streak,
+        effectiveTau,
+        aCredibility: updatedCal.aCredibility,
+        betaCredibility: updatedCal.credibilityZ,
+      };
+
+      // Set all three states atomically — no nested state setters
+      setAbility(updated);
+      setItemCalibrations((cals) => ({ ...cals, [mode.evalMode]: updatedCal }));
+      setHistory((h) => [...h, record]);
     },
-    [score, currentMode],
+    [score, currentMode, ability, history, itemCalibrations],
   );
 
   const handleReset = useCallback(() => {
     const { min } = getPrimitiveBetaRange(selectedPrimitive);
     setAbility(makeInitialAbility(min));
     setHistory([]);
-    setPlayingPreset(null);
+    setItemCalibrations(makeInitialCalibrations(selectedPrimitive));
   }, [selectedPrimitive]);
 
   const handlePreset = useCallback(
     (preset: Preset) => {
-      // Switch to preset's primitive
       setSelectedPrimitive(preset.primitiveKey);
       setSelectedModeIdx(0);
 
-      // Start theta at the preset primitive's min_beta
       const { min: presetMinBeta } = getPrimitiveBetaRange(preset.primitiveKey);
       let state: AbilityState = makeInitialAbility(presetMinBeta);
       const records: SubmissionRecord[] = [];
       const prim = PRIMITIVE_REGISTRY[preset.primitiveKey];
+      let cals = makeInitialCalibrations(preset.primitiveKey);
 
       for (const step of preset.steps) {
         const mode = prim.modes[step.modeIdx];
         const isCorrect = step.score >= IRT_CORRECT_THRESHOLD;
-        const updated = updateTheta(state, mode.priorBeta, isCorrect);
+        const cal = cals[mode.evalMode];
+        const useA = cal.currentA;
+        const useBeta = cal.calibratedBeta;
+        const useC = cal.c;
+
+        const pBefore = pCorrect(state.theta, useA, useBeta, useC);
+        const info = itemInformation(state.theta, useA, useBeta, useC);
+
+        const { ability: updated, mismatchDetected, streak, effectiveTau } = updateTheta(
+          state, useBeta, useA, useC, isCorrect, records,
+        );
+
+        // Update item calibration
+        const updatedCal = updateItemCalibration(cal, state.theta, isCorrect);
+        cals = { ...cals, [mode.evalMode]: updatedCal };
 
         records.push({
           index: state.totalItemsSeen,
           score: step.score,
           isCorrect,
-          itemBeta: mode.priorBeta,
+          itemBeta: useBeta,
+          itemPriorBeta: mode.priorBeta,
+          itemA: useA,
+          itemPriorA: mode.a,
+          itemC: useC,
           mode: thetaToMode(state.theta),
           thetaBefore: state.theta,
           thetaAfter: updated.theta,
           sigmaBefore: state.sigma,
           sigmaAfter: updated.sigma,
-          earnedLevel: updated.earnedLevel,
+          pCorrectBefore: pBefore,
+          information: info,
+          mismatchDetected,
+          streak,
+          effectiveTau,
+          aCredibility: updatedCal.aCredibility,
+          betaCredibility: updatedCal.credibilityZ,
         });
 
         state = updated;
@@ -587,29 +1166,10 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
 
       setAbility(state);
       setHistory(records);
-      setPlayingPreset(null);
+      setItemCalibrations(cals);
     },
     [],
   );
-
-  // Derived stats
-  const maxGateReached = useMemo(() => {
-    let gate = 0;
-    for (const g of gates) {
-      if (ability.theta >= g.minTheta) gate = g.gate;
-    }
-    return gate;
-  }, [ability.theta, gates]);
-
-  const submissionsToNextGate = useMemo(() => {
-    const nextGate = gates.find((g) => ability.theta < g.minTheta);
-    if (!nextGate) return null;
-    return {
-      gate: nextGate.gate,
-      needed: nextGate.minTheta,
-      delta: +(nextGate.minTheta - ability.theta).toFixed(2),
-    };
-  }, [ability.theta, gates]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
@@ -625,6 +1185,9 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
               <TrendingUp className="w-6 h-6 text-indigo-400" />
               IRT Calibration Simulator
             </h1>
+            <span className="text-xs px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-300 ml-2">
+              2PL / 3PL + Empirical Calibration
+            </span>
           </div>
           <Button
             variant="ghost"
@@ -654,60 +1217,99 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                   const newPrim = e.target.value;
                   setSelectedPrimitive(newPrim);
                   setSelectedModeIdx(0);
-                  // Reset ability to new primitive's starting theta
                   const { min } = getPrimitiveBetaRange(newPrim);
                   setAbility(makeInitialAbility(min));
                   setHistory([]);
+                  setItemCalibrations(makeInitialCalibrations(newPrim));
                 }}
                 className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none"
               >
                 {Object.entries(PRIMITIVE_REGISTRY).map(([key, config]) => {
-                  const { max } = getPrimitiveBetaRange(key);
+                  const { min, max } = getPrimitiveBetaRange(key);
                   return (
                     <option key={key} value={key}>
-                      {config.label} (Bmax={max})
+                      {config.label} (b={min}–{max})
                     </option>
                   );
                 })}
               </select>
               <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>
-            {/* Beta range summary */}
-            <div className="mt-3 flex items-center gap-2 text-xs">
-              <span className="text-slate-500">Beta range:</span>
-              <span className="font-mono text-amber-400">{minBeta}</span>
-              <span className="text-slate-600">&rarr;</span>
-              <span className="font-mono text-amber-400">{maxBeta}</span>
-              <span className="text-slate-600 ml-auto">G4 = {gates[3]?.minTheta.toFixed(1)}</span>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+              <div className="text-center">
+                <div className="text-slate-500">b range</div>
+                <div className="font-mono text-amber-400">{minBeta}–{maxBeta}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-slate-500">avg a</div>
+                <div className="font-mono text-cyan-400">{calibratedAvgA.toFixed(2)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-slate-500">modes</div>
+                <div className="font-mono text-slate-300">{currentPrimitive.modes.length}</div>
+              </div>
             </div>
           </Card>
 
-          {/* Eval Mode / Difficulty */}
+          {/* Eval Mode / Difficulty with calibrated params */}
           <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
             <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
-              Eval Mode (difficulty)
+              Eval Mode
             </h3>
             <div className="space-y-1.5">
-              {currentPrimitive.modes.map((mode, idx) => (
-                <button
-                  key={mode.evalMode}
-                  onClick={() => setSelectedModeIdx(idx)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
-                    selectedModeIdx === idx
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <span>{mode.label}</span>
-                    <span
-                      className={`text-xs font-mono ${selectedModeIdx === idx ? 'text-indigo-200' : 'text-slate-500'}`}
-                    >
-                      B={mode.priorBeta}
-                    </span>
-                  </div>
-                </button>
-              ))}
+              {currentPrimitive.modes.map((mode, idx) => {
+                const cal = itemCalibrations[mode.evalMode];
+                const useA = cal?.currentA ?? mode.a;
+                const useB = cal?.calibratedBeta ?? mode.priorBeta;
+                const useC = cal?.c ?? mode.c;
+                const modeP = pCorrect(ability.theta, useA, useB, useC);
+                const modeInfo = itemInformation(ability.theta, useA, useB, useC);
+                const isBestMeasurement = mode.evalMode === bestMeasurementMode.mode.evalMode;
+                const hasCalibrated = cal && cal.totalObservations > 0;
+                return (
+                  <button
+                    key={mode.evalMode}
+                    onClick={() => setSelectedModeIdx(idx)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                      selectedModeIdx === idx
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="flex items-center gap-1.5">
+                        {mode.label}
+                        {isBestMeasurement && (
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                            MAX INFO
+                          </span>
+                        )}
+                        {hasCalibrated && (
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-cyan-500/20 text-cyan-300">
+                            n={cal.totalObservations}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className={`flex justify-between text-[10px] mt-1 ${
+                      selectedModeIdx === idx ? 'text-indigo-200' : 'text-slate-500'
+                    }`}>
+                      <span>
+                        b={useB.toFixed(1)}
+                        {hasCalibrated && useB !== mode.priorBeta && (
+                          <span className="text-amber-400"> ({mode.priorBeta})</span>
+                        )}
+                        {' '}a={useA.toFixed(2)}
+                        {hasCalibrated && Math.abs(useA - mode.a) > 0.01 && (
+                          <span className="text-amber-400"> ({mode.a})</span>
+                        )}
+                        {mode.c > 0 ? ` c=${mode.c}` : ''}
+                      </span>
+                      <span>P={(modeP * 100).toFixed(0)}% I={modeInfo.toFixed(2)}</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </Card>
 
@@ -718,32 +1320,64 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
             </h3>
             <div className="space-y-3">
               <input
-                type="range"
-                min={0}
-                max={10}
-                step={0.5}
-                value={score}
+                type="range" min={0} max={10} step={0.5} value={score}
                 onChange={(e) => setScore(parseFloat(e.target.value))}
                 className="w-full accent-indigo-500"
               />
               <div className="flex justify-between items-center">
-                <span
-                  className={`text-2xl font-bold font-mono ${
-                    score >= IRT_CORRECT_THRESHOLD ? 'text-green-400' : 'text-red-400'
-                  }`}
-                >
+                <span className={`text-2xl font-bold font-mono ${
+                  score >= IRT_CORRECT_THRESHOLD ? 'text-green-400' : 'text-red-400'
+                }`}>
                   {score.toFixed(1)}
                 </span>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    score >= IRT_CORRECT_THRESHOLD
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-red-500/20 text-red-400'
-                  }`}
-                >
-                  {score >= IRT_CORRECT_THRESHOLD ? 'CORRECT (IRT)' : 'INCORRECT (IRT)'}
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  score >= IRT_CORRECT_THRESHOLD
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-red-500/20 text-red-400'
+                }`}>
+                  {score >= IRT_CORRECT_THRESHOLD ? 'CORRECT' : 'INCORRECT'}
                 </span>
               </div>
+
+              <div className="p-2 rounded-lg bg-slate-800/50 border border-white/5 text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">P(correct) before submit:</span>
+                  <span className={`font-mono font-bold ${
+                    currentPCorrect >= 0.7 ? 'text-green-400' : currentPCorrect >= 0.4 ? 'text-amber-400' : 'text-red-400'
+                  }`}>
+                    {(currentPCorrect * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Information value:</span>
+                  <span className="font-mono text-cyan-400">{currentInformation.toFixed(3)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Discrimination (a):</span>
+                  <span className="font-mono text-slate-300">
+                    {effectiveA.toFixed(2)}
+                    {currentCal && Math.abs(effectiveA - currentMode.a) > 0.01 && (
+                      <span className="text-amber-400 ml-1">(prior: {currentMode.a})</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Calibrated β:</span>
+                  <span className="font-mono text-slate-300">
+                    {effectiveBeta.toFixed(2)}
+                    {currentCal && Math.abs(effectiveBeta - currentMode.priorBeta) > 0.01 && (
+                      <span className="text-amber-400 ml-1">(prior: {currentMode.priorBeta})</span>
+                    )}
+                  </span>
+                </div>
+                {currentMode.c > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Guessing floor (c):</span>
+                    <span className="font-mono text-amber-400">{(currentMode.c * 100).toFixed(0)}%</span>
+                  </div>
+                )}
+              </div>
+
               <Button
                 className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold"
                 onClick={() => handleSubmit()}
@@ -764,8 +1398,7 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                 <button
                   key={preset.label}
                   onClick={() => handlePreset(preset)}
-                  disabled={playingPreset !== null}
-                  className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white transition-all text-sm disabled:opacity-50"
+                  className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white transition-all text-sm"
                 >
                   <div className="font-medium">{preset.label}</div>
                   <div className="text-xs text-slate-500 mt-0.5">{preset.desc}</div>
@@ -776,42 +1409,41 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
         </div>
 
         {/* ============================================================ */}
-        {/* Center — Chart + Stats */}
+        {/* Center — Charts + Stats */}
         {/* ============================================================ */}
         <div className="col-span-6 space-y-4">
           {/* Current State Dashboard */}
           <div className="grid grid-cols-4 gap-3">
             {[
               {
-                label: 'theta (ability)',
+                label: 'θ (ability)',
                 value: ability.theta.toFixed(2),
-                sub: `sigma = ${ability.sigma.toFixed(3)}`,
+                sub: `σ = ${ability.sigma.toFixed(3)}`,
                 color: 'text-indigo-400',
               },
               {
-                label: 'Earned Level',
-                value: ability.earnedLevel.toFixed(1),
-                sub: `/ 10.0`,
+                label: 'P(correct) current',
+                value: `${(currentPCorrect * 100).toFixed(0)}%`,
+                sub: `${currentMode.label}`,
+                color: currentPCorrect >= 0.7 ? 'text-green-400' : currentPCorrect >= 0.4 ? 'text-amber-400' : 'text-red-400',
+              },
+              {
+                label: 'Best Measurement',
+                value: bestMeasurementMode.mode.evalMode,
+                sub: `I=${bestMeasurementMode.info.toFixed(2)}`,
                 color: 'text-cyan-400',
               },
               {
-                label: 'Current Mode',
-                value: `${currentStudentMode}`,
-                sub: MODE_LABELS[currentStudentMode].label,
-                color: MODE_LABELS[currentStudentMode].color,
-              },
-              {
-                label: 'Gate Eligible',
+                label: 'Gate Reached',
                 value: `Gate ${maxGateReached}`,
-                sub: submissionsToNextGate
-                  ? `Next: G${submissionsToNextGate.gate} needs +${submissionsToNextGate.delta}`
-                  : 'Max gate reached',
-                color:
-                  maxGateReached >= 4
-                    ? 'text-purple-400'
-                    : maxGateReached >= 2
-                      ? 'text-blue-400'
-                      : 'text-emerald-400',
+                sub: maxGateReached >= 4
+                  ? '90%+ at hardest mode'
+                  : `Next: G${maxGateReached + 1}`,
+                color: maxGateReached >= 4
+                  ? 'text-purple-400'
+                  : maxGateReached >= 2
+                    ? 'text-blue-400'
+                    : 'text-emerald-400',
               },
             ].map((stat) => (
               <Card
@@ -821,15 +1453,80 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                 <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">
                   {stat.label}
                 </div>
-                <div className={`text-3xl font-bold font-mono ${stat.color}`}>{stat.value}</div>
+                <div className={`text-2xl font-bold font-mono ${stat.color}`}>{stat.value}</div>
                 <div className="text-xs text-slate-500 mt-1">{stat.sub}</div>
               </Card>
             ))}
           </div>
 
-          {/* Theta Trajectory Chart */}
+          {/* Phase 6 Status Banner */}
+          {(mismatchCount > 0 || Object.values(itemCalibrations).some((c) => c.totalObservations >= A_MIN_OBSERVATIONS)) && (
+            <Card className="backdrop-blur-xl bg-amber-900/20 border-amber-500/20 p-3">
+              <div className="flex items-start gap-2 text-xs">
+                <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <div className="text-amber-300 font-semibold">Phase 6: Empirical Calibration Active</div>
+                  <div className="flex flex-wrap gap-3 text-slate-400">
+                    {mismatchCount > 0 && (
+                      <span>
+                        <span className="text-amber-400 font-mono">{mismatchCount}×</span> σ floor triggered (mismatch detection)
+                      </span>
+                    )}
+                    {Object.entries(itemCalibrations)
+                      .filter(([, c]) => c.totalObservations > 0)
+                      .map(([mode, cal]) => (
+                        <span key={mode}>
+                          <span className="text-cyan-400">{mode}</span>: b={cal.calibratedBeta.toFixed(2)}
+                          {Math.abs(cal.currentA - cal.priorA) > 0.01 && (
+                            <span className="text-amber-400"> a={cal.currentA.toFixed(2)}</span>
+                          )}
+                          <span className="text-slate-600"> (n={cal.totalObservations})</span>
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* ICC Probability Curves */}
           <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                Item Characteristic Curves — P(correct) vs θ
+              </h3>
+              <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                <span className="flex items-center gap-1">
+                  <span className="w-4 h-0.5 bg-indigo-500" /> θ
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-4 h-2 bg-indigo-500/10" /> ±σ
+                </span>
+              </div>
+            </div>
+            <ProbabilityCurve
+              theta={ability.theta}
+              sigma={ability.sigma}
+              modes={currentPrimitive.modes}
+              calibrations={itemCalibrations}
+            />
+          </Card>
+
+          {/* Item Information Curves */}
+          <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Item Information — I(θ) per mode
+            </h3>
+            <InformationChart
+              theta={ability.theta}
+              modes={currentPrimitive.modes}
+              calibrations={itemCalibrations}
+            />
+          </Card>
+
+          {/* Theta Trajectory */}
+          <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
                 Ability Trajectory
               </h3>
@@ -840,109 +1537,93 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-red-400" /> incorrect
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-0.5 bg-amber-500/60" /> Bmax
-                </span>
+                {mismatchCount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-full border border-amber-400 border-dashed" /> σ floor
+                  </span>
+                )}
               </div>
             </div>
             {history.length === 0 ? (
-              <div className="flex items-center justify-center h-48 text-slate-600 text-sm">
+              <div className="flex items-center justify-center h-40 text-slate-600 text-sm">
                 Submit results or run a preset to see the trajectory
               </div>
             ) : (
-              <ThetaChart history={history} gates={gates} maxBeta={maxBeta} />
+              <ThetaChart history={history} />
             )}
           </Card>
 
-          {/* EL Progress Bar — relative to this primitive's Gate 4 */}
+          {/* Probability-Based Gate Status */}
           <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 mb-3">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-                Earned Level Progress
+                Probability-Based Gates
               </h3>
-              <span className="text-xs text-slate-500 font-mono">
-                Start: {minBeta} | G4: {gates[3].minTheta.toFixed(1)} (spread {Math.max(MIN_GATE_SPREAD, maxBeta + 1.0 - minBeta).toFixed(1)})
-              </span>
-            </div>
-            <div className="relative h-8 bg-slate-800 rounded-full overflow-hidden">
-              {/* Gate markers — scaled to Gate 4 target */}
-              {gates.map((g) => {
-                const pct = Math.min(100, (g.minTheta / gates[3].minTheta) * 100);
-                return (
-                  <div
-                    key={g.gate}
-                    className="absolute top-0 h-full w-px bg-white/30"
-                    style={{ left: `${pct}%` }}
-                  >
-                    <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] text-slate-500 whitespace-nowrap">
-                      G{g.gate} ({g.minTheta})
-                    </span>
-                  </div>
-                );
-              })}
-              {/* Fill */}
-              <div
-                className="h-full bg-gradient-to-r from-indigo-600 to-violet-500 rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(100, (ability.earnedLevel / gates[3].minTheta) * 100)}%`,
-                }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-bold text-white drop-shadow">
-                  EL {ability.earnedLevel.toFixed(1)}
-                </span>
+              <div className="group relative">
+                <Info className="w-3.5 h-3.5 text-slate-500 cursor-help" />
+                <div className="hidden group-hover:block absolute left-0 top-5 z-10 w-72 p-3 rounded-lg bg-slate-800 border border-white/10 text-xs text-slate-300 shadow-xl">
+                  Gates require BOTH conditions:
+                  <br />1. P(correct) at the reference difficulty exceeds the threshold
+                  <br />2. σ (uncertainty) is low enough that we trust the estimate
+                  <br /><br />This means: &quot;we&apos;re statistically confident the student would pass at this level.&quot;
+                </div>
               </div>
             </div>
-          </Card>
-
-          {/* Gate Thresholds Table */}
-          <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
-              Gate Thresholds for {currentPrimitive.label}
-            </h3>
             <div className="grid grid-cols-4 gap-2">
-              {gates.map((g) => {
-                const reached = ability.theta >= g.minTheta;
-                return (
-                  <div
-                    key={g.gate}
-                    className={`p-3 rounded-lg border text-center transition-all ${
-                      reached
-                        ? 'bg-indigo-600/20 border-indigo-500/50 ring-1 ring-indigo-500/30'
-                        : 'bg-slate-800/30 border-white/5'
-                    }`}
-                  >
-                    <div
-                      className={`text-lg font-bold font-mono ${reached ? 'text-white' : 'text-slate-600'}`}
-                    >
-                      G{g.gate}
-                    </div>
-                    <div className={`text-xs mt-1 ${reached ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {g.label.split(': ')[1]}
-                    </div>
-                    <div
-                      className={`text-sm font-mono mt-1 ${reached ? 'text-indigo-400' : 'text-slate-700'}`}
-                    >
-                      theta {g.minTheta}
-                    </div>
-                    {reached && (
-                      <div className="text-[10px] text-green-400 mt-1">REACHED</div>
-                    )}
+              {gateStatus.map((g) => (
+                <div
+                  key={g.gate}
+                  className={`p-3 rounded-lg border text-center transition-all ${
+                    g.passed
+                      ? 'bg-indigo-600/20 border-indigo-500/50 ring-1 ring-indigo-500/30'
+                      : 'bg-slate-800/30 border-white/5'
+                  }`}
+                >
+                  <div className={`text-lg font-bold font-mono ${g.passed ? 'text-white' : 'text-slate-600'}`}>
+                    G{g.gate}
                   </div>
-                );
-              })}
+                  <div className={`text-[10px] mt-1 ${g.passed ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {g.label}
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    <div className={`text-xs font-mono ${g.pOk ? 'text-green-400' : 'text-slate-600'}`}>
+                      P={( g.currentP * 100).toFixed(0)}%
+                      <span className="text-slate-600"> / {(g.pThreshold * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className={`text-[10px] font-mono ${g.sigmaOk ? 'text-green-400' : 'text-amber-500'}`}>
+                      σ={ability.sigma.toFixed(2)}
+                      <span className="text-slate-600"> / {g.sigmaMax}</span>
+                    </div>
+                    <div className={`text-[10px] ${g.passed ? 'text-slate-400' : 'text-slate-600'}`}>
+                      ref b={g.refBeta.toFixed(1)}
+                    </div>
+                  </div>
+                  {g.passed && (
+                    <div className="text-[10px] text-green-400 mt-1 font-semibold">PASSED</div>
+                  )}
+                  {!g.passed && g.pOk && !g.sigmaOk && (
+                    <div className="text-[10px] text-amber-400 mt-1">need more data</div>
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="mt-3 text-xs text-slate-500 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              Formula: spread = max({MIN_GATE_SPREAD}, Bmax+1−Bmin) = {Math.max(MIN_GATE_SPREAD, maxBeta + 1.0 - minBeta).toFixed(1)}.
-              Gates at 20/45/75/100% of spread from Bmin ({minBeta}).
+            <div className="mt-3 text-xs text-slate-500 flex items-start gap-2">
+              <Target className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-amber-400" />
+              <span>
+                Each gate tests P(correct) at a reference difficulty using avg discrimination a={calibratedAvgA.toFixed(2)}.
+                G1 checks the easiest mode (b={calibratedBetaRange.min.toFixed(1)}), G4 checks the hardest (b={calibratedBetaRange.max.toFixed(1)}).
+                {calibratedBetaRange.max < maxBeta && (
+                  <span className="text-amber-400"> (prior: {minBeta}–{maxBeta}, calibrated: {calibratedBetaRange.min.toFixed(1)}–{calibratedBetaRange.max.toFixed(1)})</span>
+                )}
+                {' '}Both P threshold AND σ ceiling must be met — high probability is meaningless without confidence.
+              </span>
             </div>
           </Card>
 
           {/* Mode Mapping Reference */}
           <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
             <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
-              Mode Mapping (theta to difficulty)
+              Mode Mapping (θ to difficulty)
             </h3>
             <div className="grid grid-cols-6 gap-2">
               {Object.entries(MODE_LABELS).map(([mode, info]) => {
@@ -957,18 +1638,14 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                         : 'bg-slate-800/30 border-white/5'
                     }`}
                   >
-                    <div
-                      className={`text-lg font-bold font-mono ${isActive ? info.color : 'text-slate-600'}`}
-                    >
+                    <div className={`text-lg font-bold font-mono ${isActive ? info.color : 'text-slate-600'}`}>
                       {mode}
                     </div>
                     <div className={`text-[10px] mt-1 ${isActive ? 'text-slate-300' : 'text-slate-600'}`}>
                       {info.label}
                     </div>
-                    <div
-                      className={`text-[10px] font-mono ${isActive ? 'text-slate-400' : 'text-slate-700'}`}
-                    >
-                      B={info.beta}
+                    <div className={`text-[10px] font-mono ${isActive ? 'text-slate-400' : 'text-slate-700'}`}>
+                      b={info.beta}
                     </div>
                   </div>
                 );
@@ -999,55 +1676,98 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                     }`}
                   >
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-mono text-slate-400">#{r.index + 1}</span>
+                      <span className="font-mono text-slate-400 flex items-center gap-1">
+                        #{r.index + 1}
+                        {r.mismatchDetected && (
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                            σ FLOOR
+                          </span>
+                        )}
+                        {r.streak >= MASTERY_STREAK_THRESHOLD && (
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-green-500/20 text-green-300">
+                            STREAK {r.streak}
+                          </span>
+                        )}
+                        {r.effectiveTau > 0 && (
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-violet-500/20 text-violet-300">
+                            τ={r.effectiveTau.toFixed(2)}
+                          </span>
+                        )}
+                      </span>
                       <span className={`font-bold ${r.isCorrect ? 'text-green-400' : 'text-red-400'}`}>
                         {r.score.toFixed(1)}
                       </span>
                     </div>
                     <div className="flex justify-between text-slate-500">
-                      <span>B={r.itemBeta}</span>
+                      <span>
+                        b={r.itemBeta.toFixed(1)}
+                        {Math.abs(r.itemBeta - r.itemPriorBeta) > 0.01 && (
+                          <span className="text-amber-400"> ({r.itemPriorBeta})</span>
+                        )}
+                        {' '}a={r.itemA.toFixed(2)}
+                        {Math.abs(r.itemA - r.itemPriorA) > 0.01 && (
+                          <span className="text-amber-400"> ({r.itemPriorA})</span>
+                        )}
+                        {r.itemC > 0 ? ` c=${r.itemC}` : ''}
+                      </span>
                       <span>Mode {r.mode}</span>
                     </div>
                     <div className="flex justify-between mt-1">
-                      <span className="text-slate-500">theta: {r.thetaBefore.toFixed(2)}</span>
-                      <span className="text-indigo-400 font-mono">
-                        &rarr; {r.thetaAfter.toFixed(2)}
-                      </span>
+                      <span className="text-slate-500">P(pre): {(r.pCorrectBefore * 100).toFixed(0)}%</span>
+                      <span className="text-cyan-400 font-mono">I={r.information.toFixed(3)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">sigma: {r.sigmaBefore.toFixed(3)}</span>
-                      <span className="text-slate-400 font-mono">
+                      <span className="text-slate-500">θ: {r.thetaBefore.toFixed(2)}</span>
+                      <span className="text-indigo-400 font-mono">&rarr; {r.thetaAfter.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">σ: {r.sigmaBefore.toFixed(3)}</span>
+                      <span className={`font-mono ${r.mismatchDetected ? 'text-amber-400' : 'text-slate-400'}`}>
                         &rarr; {r.sigmaAfter.toFixed(3)}
                       </span>
                     </div>
+                    {(r.betaCredibility > 0 || r.aCredibility > 0) && (
+                      <div className="flex justify-between mt-0.5 text-slate-600">
+                        <span>β Z={r.betaCredibility.toFixed(2)}</span>
+                        <span>a Z={r.aCredibility.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
           </Card>
 
-          {/* Key Insight */}
+          {/* Key Insights */}
           <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
             <div className="flex items-start gap-2">
               <Target className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
               <div className="text-xs text-slate-400 space-y-2">
                 <p>
-                  <span className="text-amber-300 font-semibold">Proportional gates:</span>{' '}
-                  <span className="text-white font-medium">
-                    {currentPrimitive.label}
-                  </span>{' '}
-                  starts at θ={minBeta}, G4={gates[3].minTheta}.
-                  Spread = max({MIN_GATE_SPREAD}, Bmax+1−Bmin) = {Math.max(MIN_GATE_SPREAD, maxBeta + 1.0 - minBeta).toFixed(1)}.
+                  <span className="text-amber-300 font-semibold">Phase 6 — Empirical Calibration:</span>{' '}
+                  Item parameters learn from observed data. β drifts from priors, `a` updates via
+                  point-biserial correlation (n≥20). Gate checks now use calibrated betas — as β
+                  drifts down, gate thresholds become more achievable.
                 </p>
                 <p>
-                  Min spread ({MIN_GATE_SPREAD}) prevents easy/single-mode primitives from
-                  clearing all gates in 2-3 attempts. Hard primitives use their natural
-                  wider spread.
+                  <span className="text-green-300 font-semibold">Mastery Streak Acceleration:</span>{' '}
+                  When a student gets {MASTERY_STREAK_THRESHOLD}+ consecutive correct, process noise τ is
+                  amplified proportional to streak length and mismatch magnitude. This widens
+                  the Bayesian prior so θ can jump faster — redundant evidence shouldn&apos;t force
+                  students to keep proving what&apos;s already demonstrated. Look for green &quot;STREAK&quot;
+                  and violet &quot;τ=&quot; badges in the log.
                 </p>
                 <p>
-                  Theta stalls when item beta is far below theta. Escalate
-                  difficulty to keep climbing — grinding easy modes alone
-                  can&apos;t reach G4.
+                  <span className="text-cyan-300 font-semibold">Stored-prediction mismatch:</span>{' '}
+                  Mismatch detection now uses each item&apos;s actual P(correct) from submission time,
+                  not a retrospective calculation. This prevents mismatch from &quot;disappearing&quot; as
+                  θ rises — the original predictions capture the model&apos;s state when administered.
+                </p>
+                <p>
+                  <span className="text-violet-300 font-semibold">Calibrated gate betas:</span>{' '}
+                  Gate reference difficulties use calibrated (not prior) item betas. When a student
+                  repeatedly aces an item mode, its β drifts down, and the gate threshold follows.
+                  Watch the gate footer for prior vs calibrated β range.
                 </p>
               </div>
             </div>

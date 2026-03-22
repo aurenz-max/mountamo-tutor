@@ -1431,6 +1431,8 @@ export interface VisualPrimitiveSpec {
 export interface StandardProblemSpec {
   problemType: ProblemType;
   generationIntent: string;
+  /** Bloom's tier for IRT-adaptive difficulty (recall/apply/analyze/evaluate) */
+  evalMode?: string;
 }
 
 /**

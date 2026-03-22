@@ -16,6 +16,11 @@ Prior assignments follow the PRD §5.3 mode-to-difficulty mapping:
 
 from typing import Dict, Optional, Tuple
 
+from ...config.discrimination_priors import (
+    DEFAULT_DISCRIMINATION_PRIOR,
+    get_discrimination_prior,
+)
+
 
 class PriorConfig:
     """Configuration for a single problem-type's prior difficulty."""
@@ -253,7 +258,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     # Assessment primitives
     # -----------------------------------------------------------------
-    "knowledge-check":            {"default": PriorConfig(3.0, "Multiple choice assessment")},
+    "knowledge-check": {
+        "recall":   PriorConfig(1.5, "Bloom's recall: fact retrieval, obvious distractors"),
+        "apply":    PriorConfig(3.0, "Bloom's apply: use knowledge to solve problems"),
+        "analyze":  PriorConfig(4.5, "Bloom's analyze: multi-step reasoning, plausible distractors"),
+        "evaluate": PriorConfig(6.0, "Bloom's evaluate: expert reasoning, strong distractors"),
+    },
     "fill-in-blanks":             {"default": PriorConfig(3.5, "Fill in missing values")},
     "matching-activity":          {"default": PriorConfig(2.5, "Match pairs")},
     "sequencing-activity":        {"default": PriorConfig(3.0, "Order items correctly")},
@@ -445,3 +455,14 @@ def get_item_key(primitive_type: str, eval_mode: str) -> str:
     Example: get_item_key('ten-frame', 'subitize') → 'ten-frame_subitize'
     """
     return f"{primitive_type}_{eval_mode}"
+
+
+def get_item_discrimination(
+    primitive_type: str, eval_mode: str
+) -> Tuple[float, float]:
+    """Look up (a, c) for a (primitive_type, eval_mode) pair.
+
+    Returns (discrimination_a, guessing_c).
+    """
+    prior = get_discrimination_prior(primitive_type, eval_mode)
+    return (prior.a, prior.c)

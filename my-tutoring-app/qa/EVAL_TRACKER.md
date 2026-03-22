@@ -48,7 +48,7 @@
 | math-fact-fluency | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/math-fact-fluency-2026-03-17.md) |
 | multiplication-explorer | 6 | 6 | 0 | 2026-03-17 | [report](eval-reports/multiplication-explorer-2026-03-17.md) |
 | skip-counting-runner | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/skip-counting-runner-2026-03-17.md) |
-| shape-builder | 6 | 6 | 0 | 2026-03-17 | [report](eval-reports/shape-builder-2026-03-17.md) |
+| shape-builder | 6 | 5 | 1 | 2026-03-18 | [report](eval-reports/shape-builder-2026-03-18.md) |
 | shape-tracer | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/shape-tracer-2026-03-17.md) |
 | 3d-shape-explorer | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/3d-shape-explorer-2026-03-17.md) |
 | strategy-picker | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/strategy-picker-2026-03-17.md) |
@@ -58,7 +58,7 @@
 | place-value-chart | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/place-value-chart-2026-03-17.md) |
 | function-machine | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/function-machine-2026-03-17.md) |
 
-**Totals:** 184/200 modes passing (92%) | 20 open issues (11 CRITICAL, 9 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 183/200 modes passing (91.5%) | 21 open issues (12 CRITICAL, 9 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -158,6 +158,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | RV-1 | revision-workshop | reorganize | HIGH | Interaction mismatch | Reorganize expects drag-to-reorder but component only offers textareas — students must retype sentences | COMPONENT |
 | SB-1 | sentence-builder | complex, compound_complex | CRITICAL | Impossible challenge | Duplicate tile IDs in validArrangements — student can't match with only 1 copy per tile; compound_complex ch2 unsolvable | GENERATOR |
 | SB-2 | sentence-builder | complex, compound_complex | HIGH | Wrong content | Alternative arrangements are ungrammatical (mid-sentence capitals, misplaced punctuation) — accepted as correct | GENERATOR |
+| SHB-1 | shape-builder | classify | CRITICAL | Wrong evaluation | Generator produces free-text category names ("Four-Sided Shapes", "Shapes with 4 Sides") that don't match component's hardcoded sideCountMap keys ("triangles", "quadrilaterals") — correct answers marked wrong | GENERATOR + COMPONENT |
 
 ---
 

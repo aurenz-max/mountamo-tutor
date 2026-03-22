@@ -18,10 +18,13 @@ import type {
   PulseBand,
   PulseResultResponse,
   GateProgress,
+  IrtProbabilityData,
   LeapfrogEvent,
   RecentPrimitive,
+  SessionFrontierContext,
 } from './types';
 import { BAND_LABELS, BAND_COLORS, BAND_BG_COLORS } from './types';
+import { FrontierContextCard } from './FrontierContextCard';
 
 // ---------------------------------------------------------------------------
 // Logging prefix
@@ -59,6 +62,8 @@ interface RendererState {
   items: ItemState[];
   streamingMessage: string;
   latestGateProgress: GateProgress | null;
+  latestIrt: IrtProbabilityData | null;
+  latestSigma: number | null;
   leapfrogs: LeapfrogEvent[];
   error: string | null;
   /** How many items the stream has finished hydrating so far */
@@ -104,6 +109,8 @@ function initState(specs: PulseItemSpec[]): RendererState {
     })),
     streamingMessage: 'Preparing your activities...',
     latestGateProgress: null,
+    latestIrt: null,
+    latestSigma: null,
     leapfrogs: [],
     error: null,
     hydratedCount: 0,
@@ -162,6 +169,8 @@ function reducer(state: RendererState, action: RendererAction): RendererState {
         ...state,
         items,
         latestGateProgress: shouldClearGate ? null : gateProgress,
+        latestIrt: action.response.irt ?? state.latestIrt,
+        latestSigma: action.response.theta_update?.sigma ?? state.latestSigma,
         pendingEval: null,
       };
     }
@@ -207,6 +216,8 @@ export interface PulseActivityRendererProps {
   items: PulseItemSpec[];
   gradeLevel: GradeLevel;
   recentPrimitives?: RecentPrimitive[];
+  isColdStart?: boolean;
+  sessionFrontierContext?: SessionFrontierContext | null;
   onSessionComplete: (leapfrogs: LeapfrogEvent[], results: PulseResultResponse[]) => void;
   onError?: (error: string) => void;
 }
@@ -220,6 +231,8 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
   items: itemSpecs,
   gradeLevel,
   recentPrimitives,
+  isColdStart = false,
+  sessionFrontierContext,
   onSessionComplete,
 }) => {
   const [state, dispatch] = useReducer(reducer, itemSpecs, initState);
@@ -247,6 +260,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
         band: spec.band,
         target_mode: spec.target_mode,
         target_beta: spec.target_beta,
+        eval_mode_name: spec.eval_mode_name,
         skill_id: spec.skill_id,
         subskill_id: spec.subskill_id,
         subject: spec.subject,
@@ -367,6 +381,8 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
 
     const primitiveType = String(evalResult.primitiveType || currentItem.primitiveId || 'unknown');
     const evalMode = evalResult.metrics?.evalMode
+      || currentItem.hydrated?.manifestItem.standardProblem?.evalMode
+      || currentSpec.eval_mode_name
       || (currentItem.hydrated?.manifestItem.visualPrimitive ? 'visual' : 'standard');
     const scoreOn10 = score / 10;
 
@@ -662,6 +678,17 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
                 <GateProgressIndicator gateProgress={state.latestGateProgress} skillLabel={formatSkillLabel(currentSpec.subskill_id)} />
               )}
             </div>
+
+            {/* Frontier context card — graph position visibility */}
+            <FrontierContextCard
+              band={currentSpec.band}
+              itemContext={currentSpec.frontier_context}
+              sessionContext={sessionFrontierContext ?? undefined}
+              isColdStart={isColdStart}
+              irt={state.latestIrt ?? undefined}
+              gateProgress={state.latestGateProgress ?? undefined}
+              sigma={state.latestSigma ?? undefined}
+            />
 
             {/* Primitive (rendered directly from registry) */}
             {renderPrimitive()}
@@ -1121,7 +1148,12 @@ function PulseLeapfrogCelebration({ leapfrog }: { leapfrog: LeapfrogEvent }) {
             </div>
             <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="space-y-2">
               <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-amber-300">Leapfrog!</h2>
-              <p className="text-slate-400 text-sm">Score: {scorePercent}%</p>
+              {leapfrog.inferred_skills.length > 0 && (
+                <p className="text-violet-300/80 text-sm font-medium">
+                  You just skipped {leapfrog.inferred_skills.length} {leapfrog.inferred_skills.length === 1 ? 'skill' : 'skills'}!
+                </p>
+              )}
+              <p className="text-slate-500 text-xs">Score: {scorePercent}%</p>
             </motion.div>
             {leapfrog.probed_skills.length > 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="w-full space-y-2">
