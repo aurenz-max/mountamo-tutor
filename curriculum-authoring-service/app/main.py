@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.database import db
 from app.db.firestore_graph_service import firestore_graph_service
 from app.db.firestore_curriculum_service import firestore_curriculum_sync
-from app.api import curriculum, prerequisites, publishing, ai, graph
+from app.api import curriculum, prerequisites, publishing, ai, graph, edges, agent
 
 # Configure logging
 logging.basicConfig(
@@ -39,6 +39,31 @@ async def lifespan(app: FastAPI):
 
         # Initialize Firestore curriculum dual-write sync
         firestore_curriculum_sync.initialize()
+
+        # Initialize agentic graph analysis service
+        try:
+            from app.services.edge_manager import edge_manager
+            from app.services.graph_cache_manager import graph_cache_manager
+            from app.services.graph_analysis import GraphAnalysisEngine
+            from app.services.suggestion_engine import SuggestionEngine
+            from app.services.graph_agent import CurriculumGraphAgentService
+
+            analysis_engine = GraphAnalysisEngine()
+            suggestion_engine = SuggestionEngine(
+                firestore_client=firestore_curriculum_sync.client,
+            )
+            graph_agent = CurriculumGraphAgentService(
+                edge_manager=edge_manager,
+                graph_cache=graph_cache_manager,
+                suggestion_engine=suggestion_engine,
+                analysis_engine=analysis_engine,
+                firestore_client=firestore_curriculum_sync.client,
+            )
+            app.state.graph_agent = graph_agent
+            logger.info("✅ Graph agent service initialized")
+        except Exception as e:
+            logger.warning(f"Graph agent service initialization failed (non-blocking): {e}")
+            app.state.graph_agent = None
 
         logger.info("✅ Service startup complete")
 
@@ -110,6 +135,18 @@ app.include_router(
     tags=["Curriculum Graph & Caching"]
 )
 
+app.include_router(
+    edges.router,
+    prefix="/api",
+    tags=["Knowledge Graph Edges"]
+)
+
+app.include_router(
+    agent.router,
+    prefix="/api/agent",
+    tags=["Agentic Graph Analysis"]
+)
+
 
 # Root endpoints
 @app.get("/")
@@ -129,12 +166,16 @@ async def root():
             "Lumina primitive assignment",
             "Version control and publishing",
             "Firestore subcollection deployment (curriculum_published/{grade}/subjects/{id})",
+            "Knowledge graph edges (prerequisite, builds_on, reinforces, parallel, applies)",
+            "Agentic graph analysis (health metrics, anomaly detection, connection suggestions)",
             "Graph caching",
             "RESTful API"
         ],
         "endpoints": {
             "curriculum": "/api/curriculum",
             "prerequisites": "/api/prerequisites",
+            "edges": "/api/edges",
+            "agent": "/api/agent",
             "publishing": "/api/publishing",
             "ai_assistant": "/api/ai",
             "graph": "/api/graph"

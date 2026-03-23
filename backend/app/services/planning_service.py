@@ -76,8 +76,22 @@ class PlanningService:
         logger.info("PlanningService initialized")
 
     # ====================================================================
-    # Gate-to-status mapping (PRD §5.1)
+    # Status mapping (PRD §16.5 — stability-based retention model)
     # ====================================================================
+
+    @staticmethod
+    def _derive_retention_state(lc: Dict[str, Any]) -> str:
+        """Derive retention_state from lifecycle doc, with legacy gate fallback."""
+        rs = lc.get("retention_state")
+        if rs and rs in ("not_started", "active", "mastered"):
+            return rs
+        # Legacy fallback from gate field
+        gate = lc.get("current_gate", 0)
+        if gate >= 4:
+            return "mastered"
+        elif gate >= 1:
+            return "active"
+        return "not_started"
 
     @staticmethod
     def _count_by_gate_status(
@@ -85,23 +99,28 @@ class PlanningService:
     ) -> Tuple[int, int, int, int, List[Dict[str, Any]]]:
         """
         Count closed / in_review / learning / not_started from mastery
-        lifecycle gate values for a given subject.
+        lifecycle state for a given subject.
 
-        Gate mapping (PRD §5.1):
-          Gate 4          → closed
-          Gate 1, 2, 3    → in_review
-          Gate 0 + evals  → learning
-          No document     → not_started (handled by caller)
+        Retention state mapping (PRD §16.5):
+          mastered (or gate >= 4)           → closed
+          active (or gate 1-3)              → in_review
+          not_started + evals (or gate 0)   → learning
+          No document                       → not_started (handled by caller)
 
         Returns: (closed, in_review, learning, total_subskills_in_subject, subj_lifecycles)
         """
         subj_lcs = [lc for lc in lifecycles if lc.get("subject") == subject]
-        closed = sum(1 for lc in subj_lcs if lc.get("current_gate", 0) >= 4)
-        in_review = sum(1 for lc in subj_lcs if 1 <= lc.get("current_gate", 0) <= 3)
-        learning = sum(
-            1 for lc in subj_lcs
-            if lc.get("current_gate", 0) == 0 and lc.get("lesson_eval_count", 0) > 0
-        )
+        closed = 0
+        in_review = 0
+        learning = 0
+        for lc in subj_lcs:
+            rs = PlanningService._derive_retention_state(lc)
+            if rs == "mastered":
+                closed += 1
+            elif rs == "active":
+                in_review += 1
+            elif lc.get("lesson_eval_count", 0) > 0:
+                learning += 1
         return closed, in_review, learning, len(subj_lcs), subj_lcs
 
     # ====================================================================
@@ -168,11 +187,11 @@ class PlanningService:
             else:
                 weekly_new_target = not_started
 
-            # Review reserve: sum of estimated_remaining_attempts for in-pipeline skills
+            # Review reserve: sum of estimated_remaining_attempts for active skills
             review_reserve = sum(
                 lc.get("estimated_remaining_attempts", 0)
                 for lc in subj_lcs
-                if 0 < lc.get("current_gate", 0) < 4
+                if PlanningService._derive_retention_state(lc) == "active"
             )
 
             total_in_pipeline += in_review + learning_count
@@ -279,7 +298,10 @@ class PlanningService:
             )
 
             # Confidence bands from mastery lifecycle pass rates
-            closed_lcs = [lc for lc in subj_lcs if lc.get("current_gate", 0) >= 4]
+            closed_lcs = [
+                lc for lc in subj_lcs
+                if PlanningService._derive_retention_state(lc) == "mastered"
+            ]
             if len(closed_lcs) >= 3:
                 pass_rates = [lc.get("blended_pass_rate", 0.8) for lc in closed_lcs]
                 mean_pr = sum(pass_rates) / len(pass_rates)
@@ -289,30 +311,36 @@ class PlanningService:
                 mean_pr = 0.8
                 stddev_pr = 0.15
 
-            # Pipeline delay model (PRD §5.5: mastery lifecycle intervals 3d/7d/14d)
-            # Perfect: 24 days (3+7+14), Typical: ~30 days (~1 fail), Struggling: ~40 days (2+ fails)
-            weeks_to_close_opt = 4    # ceil(24/7) — perfect, no failures
-            weeks_to_close_best = 5   # ceil(30/7) — typical, ~1 failure
-            weeks_to_close_pess = 6   # ceil(40/7) — struggling, 2+ failures
+            # Pipeline delay model (PRD §16 stability model)
+            # Strong learner: ~30 days (3 reviews: 3d→7.5d→18.75d→mastered)
+            # Typical: ~40 days (4 reviews with partial recall)
+            # Struggling: ~55 days (6+ reviews with failures)
+            weeks_to_close_opt = 4    # ceil(30/7) — strong, no failures
+            weeks_to_close_best = 6   # ceil(40/7) — typical, some partial recall
+            weeks_to_close_pess = 8   # ceil(55/7) — struggling, multiple failures
 
             # Lesson sessions per new introduction (PRD §3.2)
             sessions_per_intro = 3
 
-            # Build known-review schedule from in-pipeline mastery lifecycles
+            # Build known-review schedule from active mastery lifecycles
             known_reviews_by_week: dict[int, int] = {}
             in_pipeline_lcs = [
                 lc for lc in subj_lcs
-                if 1 <= lc.get("current_gate", 0) <= 3 and lc.get("next_retest_eligible")
+                if PlanningService._derive_retention_state(lc) == "active"
+                and lc.get("last_reviewed")
             ]
             for lc in in_pipeline_lcs:
+                # Estimate next review from stability (review surfaces when P < 0.85)
+                stability = lc.get("stability", 3.0)
                 try:
-                    retest_date = date.fromisoformat(lc["next_retest_eligible"][:10])
+                    last_reviewed = date.fromisoformat(lc["last_reviewed"][:10])
+                    next_review = last_reviewed + timedelta(days=stability)
                 except (ValueError, TypeError):
                     continue
-                if retest_date <= today:
+                if next_review <= today:
                     week_num = 1  # overdue
                 else:
-                    delta_days = (retest_date - today).days
+                    delta_days = (next_review - today).days
                     week_num = max(1, (delta_days // 7) + 1)
                 if week_num <= weeks_remaining:
                     known_reviews_by_week[week_num] = known_reviews_by_week.get(week_num, 0) + 1
@@ -320,18 +348,19 @@ class PlanningService:
             # Pacing target
             pacing_target = math.ceil(not_started / weeks_remaining) if weeks_remaining > 0 else not_started
 
-            # Build existing closure pipeline from gate-based remaining intervals
+            # Build existing closure pipeline from stability-based projections
             existing_closures_by_week: dict[int, int] = {}
             for lc in subj_lcs:
-                gate = lc.get("current_gate", 0)
-                if 1 <= gate <= 3:
-                    # Remaining days based on actual gate intervals
-                    if gate == 1:
-                        remaining_days = 3 + 7 + 14  # Gates 2, 3, 4
-                    elif gate == 2:
-                        remaining_days = 7 + 14  # Gates 3, 4
-                    else:  # gate == 3
-                        remaining_days = 14  # Gate 4 only
+                rs = PlanningService._derive_retention_state(lc)
+                if rs == "active":
+                    stability = lc.get("stability", 3.0)
+                    # Project days until stability > 30 (mastered)
+                    # Assume strong recall (×2.5) per review at interval ~= stability
+                    projected_s = stability
+                    remaining_days = 0.0
+                    while projected_s < 30.0 and remaining_days < 365:
+                        remaining_days += projected_s
+                        projected_s *= 2.5
                     weeks_until_close = max(1, math.ceil(remaining_days / 7))
                     if weeks_until_close <= weeks_remaining:
                         existing_closures_by_week[weeks_until_close] = (
@@ -594,15 +623,19 @@ class PlanningService:
                 not_started_ids = [
                     sid for sid in unlocked
                     if sid not in lifecycle_by_id
-                    or lifecycle_by_id[sid].get("current_gate", 0) == 0
+                    or PlanningService._derive_retention_state(
+                        lifecycle_by_id[sid]
+                    ) == "not_started"
                 ]
 
-                # Separate gate-eligible vs gate-blocked candidates
+                # Separate eligible vs blocked candidates
                 eligible = []
                 blocked_with_score = []
                 for sid in not_started_ids:
                     prereq_lc = lifecycle_by_id.get(sid)
-                    if prereq_lc and prereq_lc.get("current_gate", 0) < 4:
+                    if prereq_lc and PlanningService._derive_retention_state(
+                        prereq_lc
+                    ) != "mastered":
                         blocked_with_score.append(
                             (sid, prereq_lc.get("completion_pct", 0.0))
                         )
@@ -814,8 +847,8 @@ class PlanningService:
                 added = 0
                 for sid in unlocked:
                     lc   = lc_by_id.get(sid)
-                    gate = lc.get("current_gate", 0) if lc else 0
-                    if gate < 4:
+                    rs = PlanningService._derive_retention_state(lc) if lc else "not_started"
+                    if rs != "mastered":
                         all_candidates.append({
                             "skill_id":     sid,
                             "subject":      subj,
@@ -1228,16 +1261,18 @@ class PlanningService:
                         if source_status in ("IN_PROGRESS", "MASTERED"):
                             active_prereq_count += 1
 
-                        # Enrich with mastery gate from lifecycle
+                        # Enrich with mastery state from lifecycle
                         lc = lifecycle_map.get(source_id, {})
                         current_gate = lc.get("current_gate", 0)
                         completion_pct = lc.get("completion_pct", 0.0)
+                        rs = PlanningService._derive_retention_state(lc) if lc else "not_started"
 
                         # For in-progress prereqs with no lifecycle completion_pct,
-                        # derive progress from gate or proficiency
+                        # derive progress from stability or proficiency
                         if completion_pct == 0.0 and source_status == "IN_PROGRESS":
-                            if current_gate > 0:
-                                completion_pct = current_gate / 4.0
+                            stability = lc.get("stability", 0.0) if lc else 0.0
+                            if rs == "active" and stability > 0:
+                                completion_pct = min(stability / 30.0, 0.99)
                             elif source_prof > 0 and threshold > 0:
                                 completion_pct = min(source_prof / threshold, 0.99)
 
@@ -1273,11 +1308,11 @@ class PlanningService:
 
                     node_id = node["id"]
                     lc = lifecycle_map.get(node_id, {})
-                    gate = lc.get("current_gate", 0)
+                    rs = PlanningService._derive_retention_state(lc) if lc else "not_started"
                     eval_count = lc.get("lesson_eval_count", 0)
 
-                    # Skip if already started (has evals or gate > 0)
-                    if gate > 0 or eval_count > 0:
+                    # Skip if already started (has evals or past not_started)
+                    if rs != "not_started" or eval_count > 0:
                         continue
 
                     almost_ready_candidates.append(AlmostReadyItem(

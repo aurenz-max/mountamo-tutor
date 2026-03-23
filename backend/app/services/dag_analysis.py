@@ -647,3 +647,164 @@ class DAGAnalysisEngine:
                 frontier.append(subskill_id)
 
         return frontier
+
+    # ------------------------------------------------------------------
+    # Knowledge-graph helpers (prerequisite vs. discovery subgraphs)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def filter_prerequisite_edges(edges: List[Dict]) -> List[Dict]:
+        """Return only edges that enforce mastery gates.
+
+        Edges missing ``is_prerequisite`` (pre-migration caches) default to
+        True for backward compatibility.
+        """
+        return [e for e in edges if e.get("is_prerequisite", True)]
+
+    @staticmethod
+    def filter_discovery_edges(edges: List[Dict]) -> List[Dict]:
+        """Return all edges (the full knowledge graph is navigable for BFS
+        discovery)."""
+        return edges
+
+    @staticmethod
+    def bfs_reach(
+        start_ids: Set[str],
+        edges: List[Dict],
+        max_hops: int = 5,
+    ) -> Set[str]:
+        """BFS on the full knowledge graph, returning all reachable node IDs.
+
+        Uses both ``source->target`` and (for ``parallel`` edges) the reverse
+        direction since parallel edges are stored bidirectionally.
+        """
+        forward: Dict[str, List[str]] = defaultdict(list)
+        for edge in edges:
+            forward[edge["source"]].append(edge["target"])
+
+        visited: Set[str] = set()
+        queue: deque = deque()
+        for sid in start_ids:
+            queue.append((sid, 0))
+
+        while queue:
+            nid, depth = queue.popleft()
+            if nid in visited or depth > max_hops:
+                continue
+            visited.add(nid)
+            if depth < max_hops:
+                for child in forward.get(nid, []):
+                    if child not in visited:
+                        queue.append((child, depth + 1))
+
+        return visited - start_ids  # Exclude the seeds themselves
+
+    @staticmethod
+    def compute_health_metrics(
+        nodes: List[Dict],
+        edges: List[Dict],
+    ) -> Dict:
+        """Compute structural health metrics for the knowledge graph.
+
+        Returns a dict suitable for serialization:
+          node_count, edge_count, edge_density, component_count,
+          cross_unit_ratio, avg_bfs_reach, dead_end_ratio, orphan_count,
+          bottleneck_nodes.
+        """
+        node_ids = {n["id"] for n in nodes}
+        node_count = len(node_ids)
+
+        if node_count == 0:
+            return {
+                "node_count": 0, "edge_count": 0, "edge_density": 0.0,
+                "component_count": 0, "cross_unit_ratio": 0.0,
+                "avg_bfs_reach": 0.0, "dead_end_ratio": 0.0,
+                "orphan_count": 0, "bottleneck_nodes": [],
+            }
+
+        edge_count = len(edges)
+        edge_density = edge_count / node_count if node_count else 0.0
+
+        # Union-Find for connected components
+        parent: Dict[str, str] = {nid: nid for nid in node_ids}
+
+        def find(x: str) -> str:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a: str, b: str) -> None:
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[ra] = rb
+
+        for edge in edges:
+            s, t = edge["source"], edge["target"]
+            if s in node_ids and t in node_ids:
+                union(s, t)
+
+        component_count = len({find(nid) for nid in node_ids})
+
+        # Cross-unit ratio
+        node_unit: Dict[str, str] = {}
+        for n in nodes:
+            node_unit[n["id"]] = n.get("unit_id", "")
+
+        cross_unit = sum(
+            1 for e in edges
+            if node_unit.get(e["source"], "") and node_unit.get(e["target"], "")
+            and node_unit[e["source"]] != node_unit[e["target"]]
+        )
+        cross_unit_ratio = cross_unit / edge_count if edge_count else 0.0
+
+        # Dead-end ratio (nodes with no outgoing edges)
+        has_outgoing: Set[str] = set()
+        has_incoming: Set[str] = set()
+        for edge in edges:
+            has_outgoing.add(edge["source"])
+            has_incoming.add(edge["target"])
+
+        dead_ends = node_ids - has_outgoing
+        dead_end_ratio = len(dead_ends) / node_count
+
+        # Orphan nodes (no edges at all)
+        connected_nodes = has_outgoing | has_incoming
+        orphans = node_ids - connected_nodes
+        orphan_count = len(orphans)
+
+        # Avg BFS reach from each root (no incoming prerequisite edges)
+        prereq_edges = [e for e in edges if e.get("is_prerequisite", True)]
+        prereq_targets = {e["target"] for e in prereq_edges}
+        roots = node_ids - prereq_targets
+
+        if roots:
+            total_reach = 0
+            for root in roots:
+                reached = DAGAnalysisEngine.bfs_reach({root}, edges, max_hops=5)
+                total_reach += len(reached)
+            avg_bfs_reach = total_reach / len(roots)
+        else:
+            avg_bfs_reach = 0.0
+
+        # Bottleneck nodes: prerequisite edges where removing the node
+        # disconnects parts of the prereq subgraph. Simplified: nodes that
+        # are the sole prerequisite for multiple dependents.
+        prereq_target_counts: Dict[str, int] = defaultdict(int)
+        for e in prereq_edges:
+            prereq_target_counts[e["source"]] += 1
+        bottleneck_nodes = [
+            nid for nid, cnt in prereq_target_counts.items() if cnt >= 3
+        ]
+
+        return {
+            "node_count": node_count,
+            "edge_count": edge_count,
+            "edge_density": round(edge_density, 3),
+            "component_count": component_count,
+            "cross_unit_ratio": round(cross_unit_ratio, 3),
+            "avg_bfs_reach": round(avg_bfs_reach, 2),
+            "dead_end_ratio": round(dead_end_ratio, 3),
+            "orphan_count": orphan_count,
+            "bottleneck_nodes": bottleneck_nodes,
+        }

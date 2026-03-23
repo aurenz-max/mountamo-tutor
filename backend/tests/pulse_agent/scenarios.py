@@ -58,15 +58,25 @@ class GiftedStrategy(ScoreStrategy):
 
 
 class SteadyStrategy(ScoreStrategy):
-    """Moderate scores (7.0-8.5). Passes gates slowly but reliably."""
+    """Scores centred around 9.0 with difficulty-aware variance.
+
+    Frontier items are harder (base 8.5, wider spread) so some miss the
+    mastery threshold; current/review items pass more reliably.  Overall
+    the student progresses — just slower than gifted.
+    """
 
     def score_item(self, item: PulseItemSpec) -> float:
         base = {
-            PulseBand.FRONTIER: 6.0,    # Usually fails frontier
-            PulseBand.CURRENT: 7.5,
-            PulseBand.REVIEW: 8.0,       # Retention is good
+            PulseBand.FRONTIER: 8.5,     # Harder — sometimes misses 9.0
+            PulseBand.CURRENT: 9.0,
+            PulseBand.REVIEW: 9.2,       # Retention is solid
         }[item.band]
-        return self._jitter(base, spread=1.0)
+        spread = {
+            PulseBand.FRONTIER: 1.2,     # Wider variance on new material
+            PulseBand.CURRENT: 1.0,
+            PulseBand.REVIEW: 0.8,
+        }[item.band]
+        return self._jitter(base, spread=spread)
 
 
 class StrugglingStrategy(ScoreStrategy):
@@ -113,6 +123,33 @@ class ColdStartStrategy(ScoreStrategy):
         return self._jitter(6.5, spread=1.5)
 
 
+class ForgetfulStrategy(ScoreStrategy):
+    """Similar to Steady (~9.0 base) but 20% chance of forgetting review items.
+
+    When forgetting triggers, review scores drop to 4-6 range, simulating
+    a student who learns well but has poor retention.
+    """
+
+    FORGET_CHANCE = 0.20
+
+    def score_item(self, item: PulseItemSpec) -> float:
+        if item.band == PulseBand.REVIEW and self.rng.random() < self.FORGET_CHANCE:
+            # Forgot — score craters
+            return self._jitter(5.0, spread=1.0)
+
+        base = {
+            PulseBand.FRONTIER: 8.5,
+            PulseBand.CURRENT: 9.0,
+            PulseBand.REVIEW: 9.2,
+        }[item.band]
+        spread = {
+            PulseBand.FRONTIER: 1.2,
+            PulseBand.CURRENT: 1.0,
+            PulseBand.REVIEW: 0.8,
+        }[item.band]
+        return self._jitter(base, spread=spread)
+
+
 class AcceleratingStrategy(ScoreStrategy):
     """Starts weak, improves ~0.3 per session. Models a student gaining fluency."""
 
@@ -135,6 +172,7 @@ STRATEGY_MAP: Dict[str, type] = {
     "struggling": StrugglingStrategy,
     "selective_weakness": SelectiveWeaknessStrategy,
     "cold_start": ColdStartStrategy,
+    "forgetful": ForgetfulStrategy,
     "accelerating": AcceleratingStrategy,
 }
 

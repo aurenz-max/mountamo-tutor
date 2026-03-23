@@ -1,8 +1,8 @@
 # Lumina Pulse — Adaptive Learning Loop
 
-**Version:** 1.4
-**Date:** 2026-03-05
-**Status:** Phase 2 Polish — In Progress
+**Version:** 2.0
+**Date:** 2026-03-22
+**Status:** Phase 2 Polish + Retention Model Redesign
 
 ---
 
@@ -82,11 +82,11 @@ Every Pulse session assembles items from three bands:
 
 **Purpose:** Spaced repetition for retention. Ensure previously-learned skills don't decay.
 
-**Selection:** Query mastery_lifecycle for `next_retest_eligible ≤ now` AND gate 1-3. Sort by most overdue first, then lowest gate. Group via `LessonGroupService`.
+**Selection:** For all subskills in `retention_state="active"`, compute `effective_theta` using the stability-based forgetting model (see §16.3). Items whose predicted P(correct) drops below `TARGET_RETENTION` (0.85) become review candidates. Sort by information value descending — most informative reviews first. Group via `LessonGroupService`.
 
-**Mode:** Derived from θ (should be higher since student has seen this content before — typically mode 4-6).
+**Mode:** Derived from effective_θ (accounts for time-based decay — a skill last reviewed 7 days ago may warrant a lower mode than its tested θ suggests).
 
-**Gate processing:** Always source="practice". Pass → gate advances. Fail → shorter retest interval, re-queue.
+**Retention processing:** On review completion, update stability: strong recall (≥9.0) → S×2.5, partial (≥7.0) → S×1.5, fail (<7.0) → S×0.5. When stability exceeds 30 days → `mastered` (no further reviews). See §16.4.
 
 ### 2.4 Unified Grouper
 
@@ -140,18 +140,15 @@ Condition:
 
 Action:
   For each ancestor skill between probed node and current frontier:
-    1. mastery_lifecycle → Gate 2, completion_pct = 0.5,
-       next_retest_eligible = now + 3d, lesson_eval_count = 3
+    1. mastery_lifecycle → retention_state="active",
+       stability=INITIAL_STABILITY (3.0 days), last_reviewed=now,
+       lesson_eval_count=3, review_count=0
     2. ability → θ = 7.0, σ = 1.5, prior_source = "pulse_leapfrog"
-    3. gate_history entry: { source: "diagnostic", gate: 2 }
-       (uses "diagnostic" source because GateHistoryEntry.source is
-        Literal["lesson", "practice", "diagnostic"] — leapfrog inference
-        is semantically equivalent to diagnostic inference)
 
   Then: recalculate_unlocks(student_id, subject)
 ```
 
-The conservative bias matches diagnostic placement: inferred mastery skips to Gate 2 (practice/verification), not Gate 4 (fully mastered). The 3-day retest will verify the inference.
+The conservative bias matches diagnostic placement: inferred mastery enters the stability-based retention model with S=3.0 days — the same initial interval. The forgetting model will naturally surface these for review after ~3 days without blocking forward progress. If the inference was wrong, the review will fail, stability halves to 1.5 days, and a follow-up review surfaces quickly.
 
 ### 3.4 Per-Primitive Gate Thresholds
 
@@ -213,19 +210,20 @@ This eliminates the need for a separate diagnostic onboarding flow. The first Pu
    - If frontier is empty and gate_0 is empty:
        all mastered → enrichment mode (stretch only)
 
-4. SELECT REVIEW ITEMS (15%)
-   - retests_due = [lc for lc in lifecycles
-                    if lc.current_gate in (1,2,3)
-                    and lc.next_retest_eligible <= now]
-   - Sort by: days_overdue DESC, then current_gate ASC
+4. SELECT REVIEW ITEMS (15%) — stability-based (§16)
+   - For each lifecycle with retention_state="active":
+       compute effective_theta(θ_tested, days_since_last_review, stability)
+       compute P(correct) and information from effective_theta
+   - review_due = [lc where P(correct|effective_θ) < TARGET_RETENTION (0.85)]
+   - Sort by: information value DESC (most informative first)
    - Take top ceil(item_count * 0.15) subskills
    - Group via LessonGroupService
-   - Set mode per subskill: θ→mode mapping
+   - Set mode per subskill: effective_θ → mode mapping
 
 5. SELECT CURRENT ITEMS (65%)
-   - candidates = frontier + [lc for lc in lifecycles
-                              if lc.current_gate in (0,1)
-                              and lc.lesson_eval_count < 3]
+   - candidates = unlocked subskills with retention_state="not_started"
+                  or "active" with lesson_eval_count < 3
+   - Filter out trivial items: skip if P(correct|θ) > 0.95 (§16.6B)
    - Group via LessonGroupService with type="new"
    - Set mode per subskill: θ→mode mapping
    - Take enough to fill ceil(item_count * 0.65)
@@ -285,13 +283,21 @@ Per-item processing pipeline:
      )
    - Returns: { calibrated_beta, student_theta, earned_level }
 
-3. MASTERY GATE UPDATE
-   - source = _get_eval_source(item.band, lifecycle.current_gate)
-   - MasteryLifecycleEngine.process_eval_result(
-       student_id, subskill_id, subject, skill_id,
-       result.score, source
-     )
-   - Returns: updated lifecycle with potential gate change
+3. RETENTION UPDATE (replaces gate transitions — see §16.7)
+   - If retention_state == "not_started" AND band == CURRENT:
+       process as lesson eval (increment lesson_eval_count)
+       if lesson_eval_count >= 3 and all scores >= 9.0:
+         transition to retention_state="active"
+         set stability = INITIAL_STABILITY (3.0 days)
+         set last_reviewed = now
+   - If retention_state == "active":
+       update stability based on score:
+         score >= 9.0 → stability *= 2.5
+         score >= 7.0 → stability *= 1.5
+         score < 7.0  → stability *= 0.5
+       set last_reviewed = now
+       if stability > MASTERY_STABILITY_THRESHOLD (30 days):
+         transition to retention_state="mastered"
 
 4. LEAPFROG CHECK (frontier band only)
    - If item.band == FRONTIER:
@@ -300,7 +306,9 @@ Per-item processing pipeline:
        - If yes AND aggregate ≥ 75%:
            - Walk DAG upstream from probed nodes
            - Collect ancestor skills not yet mastered
-           - For each: seed mastery_lifecycle (Gate 2) + ability (θ=7.0)
+           - For each: seed mastery_lifecycle with
+               retention_state="active", stability=3.0, last_reviewed=now
+             + ability (θ=7.0)
            - recalculate_unlocks(student_id, subject)
            - Return leapfrog event
 
@@ -316,19 +324,19 @@ Per-item processing pipeline:
    - session_progress: { items_completed, items_total, bands_summary }
 ```
 
-### 6.2 Source Mapping for Mastery Lifecycle
+### 6.2 Eval Classification
 
 ```python
-def _get_eval_source(band: PulseBand, gate: int) -> str:
-    """Map Pulse band + current gate to mastery lifecycle source."""
+def _classify_eval(band: PulseBand, retention_state: str) -> str:
+    """Classify evaluation for retention processing."""
     if band == PulseBand.REVIEW:
-        return "practice"   # retests always → practice handler
+        return "review"         # stability update (§16.4)
     if band == PulseBand.FRONTIER:
-        return "practice"   # frontier probes → practice handler (leapfrog handles gate skip separately)
+        return "probe"          # leapfrog logic handles separately
     # CURRENT band:
-    if gate == 0:
-        return "lesson"     # first encounter → lesson handler (needs 3 evals ≥ 9.0)
-    return "practice"       # Gate 1+ → practice handler
+    if retention_state == "not_started":
+        return "lesson"         # counts toward initial mastery (3 evals ≥ 9.0)
+    return "review"             # active subskill → stability update
 ```
 
 ---
@@ -388,8 +396,17 @@ pulse_sessions/{session_id}
 }
 ```
 
-**Existing collections used (not modified):**
-- `students/{id}/mastery_lifecycle/{subskill_id}` — gate transitions, completion factor
+**Existing collections used (modified for retention model):**
+- `students/{id}/mastery_lifecycle/{subskill_id}` — retention tracking (replaces gate transitions)
+  - **New fields:**
+    - `retention_state`: `"not_started" | "active" | "mastered"` (replaces `current_gate` 0-4)
+    - `stability`: `float` — memory strength in days (grows with successful reviews)
+    - `last_reviewed`: `str (ISO datetime)` — timestamp of last assessment
+    - `review_count`: `int` — number of successful reviews completed
+  - **Deprecated fields** (kept for migration, not used in new logic):
+    - `current_gate` — superseded by `retention_state`
+    - `next_retest_eligible` — superseded by stability-based scheduling
+    - `retest_interval_days` — superseded by `stability`
 - `students/{id}/ability/{skill_id}` — θ, σ, earned_level, theta_history
 - `item_calibration/{primitive_type}_{eval_mode}` — calibrated β
 - `curriculum_graphs/{subject}/published` — DAG nodes + edges
@@ -803,14 +820,21 @@ PulseEngine.process_result()
 | Review band allocation | 15% (~2-3 items) | Capped; excess deferred |
 | Frontier probe mode | 3 (pictorial, reduced prompts) | Fixed for fair probing |
 | Frontier pass threshold | 75% aggregate (≥7.5/10 avg) | Matches diagnostic threshold |
-| Inferred mastery gate | Gate 2 (RETEST_1) | Conservative; requires verification |
+| Inferred mastery state | `active`, stability=3.0 days | Conservative; requires verification via retention model |
 | Inferred mastery θ | 7.0 | Same as diagnostic inference |
-| Inferred mastery completion_pct | 0.5 | Same as diagnostic inference |
-| Inferred retest interval | 3 days | Same as diagnostic inference |
 | Default θ (new skill) | 3.0 | From CalibrationEngine |
 | IRT correct threshold | 9.0 / 10 | From CalibrationEngine |
 | Cold start detection | 0 mastery_lifecycle docs for subject | First session = all probes |
 | θ → mode mapping | See §3.1 | 6 tiers matching prior β scale |
+| **Retention model (§16)** | | |
+| INITIAL_STABILITY | 3.0 days | First review surfaces after ~3 days |
+| DECAY_RATE | 1.5 | Calibrated for P≈0.85 at t=S |
+| TARGET_RETENTION | 0.85 | P(correct) threshold for review candidacy |
+| TRIVIAL_THRESHOLD | 0.95 | Current-band items above this P are skipped |
+| STABILITY_GROWTH_STRONG | ×2.5 | Score ≥ 9.0 |
+| STABILITY_GROWTH_PARTIAL | ×1.5 | Score 7.0-8.9 |
+| STABILITY_SHRINK_FAIL | ×0.5 | Score < 7.0 |
+| MASTERY_STABILITY_THRESHOLD | 30 days | Stability above this → mastered |
 
 ---
 
@@ -975,6 +999,324 @@ When a frontier probe triggers leapfrog:
 
 ---
 
+## 16. Retention Model — Stability-Based Forgetting (replaces Gates 1-4)
+
+### 16.1 Why Gates Failed
+
+The 4-gate retest cycle (Gate 1 → wait 3d → Gate 2 → wait 7d → Gate 3 → wait 14d → Gate 4) is a calendar-based checkpoint system, not a spaced repetition algorithm. It has three fatal flaws:
+
+1. **It blocks forward progress.** A gifted student who masters addition instantly still waits 24 calendar days of retests before the system considers it "mastered." During the wait, the engine has nothing better to serve — it feeds P(correct)=0.99 busywork.
+
+2. **It doesn't model forgetting.** A 3-day wait is the same whether the student barely passed or aced it. Real memory decay is continuous and student-dependent — strong learners retain longer, weak learners need sooner review.
+
+3. **It wastes session capacity.** Trivial items (P > 0.95, Info < 0.05) consume 60-80% of session slots for advanced students. A static worksheet would provide more variety.
+
+**Evidence:** Pulse Agent testing (Gifted Grace, 15 sessions) showed 48% of all items were P(correct)=0.989 busywork. The student touched 7/163 skills in 90 items. The engine served the same 6 items for 14 consecutive sessions.
+
+### 16.2 The Replacement: Stability + Effective Theta
+
+Instead of calendar gates, model forgetting directly in the IRT probability estimate. Every mastered subskill gets a **stability** value (S) — how many days the memory is expected to last before retrieval probability drops below target. Theta decays over time, and the engine's existing information-maximizing logic automatically schedules reviews when items become informative again.
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    RETENTION MODEL                               │
+│                                                                  │
+│   theta_tested ─────┐                                            │
+│                      ├─► effective_theta(t) = θ - d·√(t/S)       │
+│   days_since_test ──┘                                            │
+│   stability ────────┘                                            │
+│                                                                  │
+│   P(correct) computed from effective_theta → if P < 0.85,        │
+│   item becomes a review candidate automatically                  │
+│                                                                  │
+│   On successful review: S *= growth_factor (memory strengthens)  │
+│   On failed review:     S *= shrink_factor (review sooner)       │
+│   When S > 30 days:     mastered = true (stop reviewing)         │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**No gates block forward progress.** Reviews are pulled by the engine when informative, not pushed by a calendar.
+
+### 16.3 Effective Theta — The Forgetting Function
+
+At session assembly time, compute the **effective theta** for every subskill that has been mastered (post-Gate 1):
+
+```python
+def effective_theta(theta_tested: float, days_since_test: float, stability: float) -> float:
+    """
+    Model memory decay as theta erosion over time.
+
+    Uses power-law decay (√t) rather than exponential — matches Ebbinghaus
+    forgetting curve research showing memory decays quickly at first,
+    then plateaus. Stability (S) controls the rate: higher S = slower decay.
+
+    Args:
+        theta_tested: θ at last successful assessment
+        days_since_test: calendar days since last assessment
+        stability: memory strength in days (higher = more durable)
+
+    Returns:
+        effective θ reflecting predicted current ability
+    """
+    if days_since_test <= 0:
+        return theta_tested
+
+    decay = DECAY_RATE * math.sqrt(days_since_test / stability)
+    floor = max(DEFAULT_STUDENT_THETA, theta_tested * 0.5)
+    return max(floor, theta_tested - decay)
+```
+
+**Parameters:**
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| `DECAY_RATE` | 1.5 | Calibrated so that at t=S days, a student with θ=7.0 and β=5.0 drops to P≈0.85 — the target retention threshold |
+| `DEFAULT_STUDENT_THETA` | 3.0 | Floor — never decay below "untaught" level |
+| `theta * 0.5` floor | — | Prevents high-θ students from decaying to absurdly low values |
+
+**Example — Grace (θ=7.7, β=5.0, S=3 days):**
+
+| Day | effective_θ | P(correct) | Information | Engine action |
+|-----|------------|------------|-------------|---------------|
+| 0 | 7.70 | 0.989 | 0.028 (negligible) | **Skip** — trivial |
+| 1 | 6.83 | 0.943 | 0.090 | Skip — still above target |
+| 3 | 6.20 | 0.858 | 0.183 | **Review candidate** — informative |
+| 5 | 5.76 | 0.788 | 0.241 | High-priority review |
+| 7 | 5.41 | 0.724 | 0.280 | Urgent review |
+
+After successful review on day 3: S = 3 × 2.5 = 7.5 days. The next review naturally surfaces around day 10-11.
+
+**Example — Sam (θ=4.0, β=3.5, S=3 days):**
+
+| Day | effective_θ | P(correct) | Information | Engine action |
+|-----|------------|------------|-------------|---------------|
+| 0 | 4.00 | 0.622 | 0.356 | **Serve** — already informative |
+| 1 | 3.13 | 0.411 | 0.365 | Serve — current work |
+| 3 | 2.50 | 0.269 | 0.296 | Review candidate |
+
+Sam's items are already informative at θ=4.0 — the decay model doesn't change his experience, it just handles review scheduling naturally.
+
+### 16.4 Stability Lifecycle
+
+Stability starts low and grows with each successful review, modeling the well-established finding that memories strengthen with spaced retrieval practice.
+
+```
+Initial mastery (Gate 0 → Gate 1):
+  stability = S₀ = 3.0 days
+  last_reviewed = now
+
+After each review:
+  if score >= 9.0:    stability *= 2.5   (strong recall → much longer interval)
+  elif score >= 7.0:  stability *= 1.5   (partial recall → modest increase)
+  else:               stability *= 0.5   (failed recall → halve interval, review sooner)
+
+  last_reviewed = now
+  review_count += 1
+
+Mastery threshold:
+  if stability > MASTERY_STABILITY_THRESHOLD (30 days):
+    mastered = true
+    → Stop scheduling reviews
+    → Equivalent to old Gate 4
+```
+
+**Typical progression for a strong learner:**
+
+| Review # | Stability (days) | Approx. review interval | Cumulative days |
+|----------|-----------------|------------------------|-----------------|
+| 0 (initial mastery) | 3.0 | — | 0 |
+| 1 | 7.5 | ~3 days | 3 |
+| 2 | 18.75 | ~8 days | 11 |
+| 3 | 46.9 → **mastered** | ~19 days | 30 |
+
+Three successful reviews over ~30 days → mastered. Compare to the old gate model: 4 retests over 24 days, but **blocking forward progress the entire time**. The stability model achieves the same verification in roughly the same calendar time, but never blocks.
+
+**Typical progression for a struggling learner:**
+
+| Review # | Score | Stability | Next review |
+|----------|-------|-----------|-------------|
+| 0 | — | 3.0 | — |
+| 1 | 6.5 (fail) | 1.5 | ~1-2 days |
+| 2 | 7.2 (partial) | 2.25 | ~2 days |
+| 3 | 8.0 (partial) | 3.4 | ~3 days |
+| 4 | 9.5 (strong) | 8.4 | ~8 days |
+| 5 | 9.0 (strong) | 21.0 | ~21 days |
+| 6 | 9.2 (strong) | 52.5 → **mastered** | done |
+
+More reviews, shorter intervals, same destination. The model adapts to the learner.
+
+### 16.5 Simplified State Model
+
+The 5-gate state machine (Gate 0/1/2/3/4) reduces to 3 states:
+
+```
+OLD:  Gate 0 ──3 evals──► Gate 1 ──3d──► Gate 2 ──7d──► Gate 3 ──14d──► Gate 4
+                                    ▲ BLOCKS FORWARD PROGRESS ▲
+
+NEW:  not_started ──3 evals──► active ──stability grows──► mastered
+                                  │
+                                  └─ never blocks forward progress
+                                     reviews surface by information value
+```
+
+| State | Meaning | Transition |
+|-------|---------|------------|
+| `not_started` | Student hasn't been introduced to this subskill | → `active` when 3 lesson evals ≥ 9.0 (same as old Gate 0→1) |
+| `active` | Student has initial mastery; retention is being tracked | → `mastered` when stability > 30 days |
+| `mastered` | Long-term retention verified; no more reviews scheduled | Terminal state (can regress if future evidence contradicts) |
+
+Gate 0 → 1 transition is preserved because it serves a different purpose: **introduction verification** ("has the student been taught this and demonstrated basic competence?"). This is not spaced repetition — it's curriculum progress. The stability model handles everything after.
+
+### 16.6 Impact on Session Assembly
+
+The `_assemble_normal()` method changes in two ways:
+
+**A. Review candidate selection (replaces gate-based retest queries)**
+
+```python
+# OLD: query lifecycle for next_retest_eligible <= now AND gate 1-3
+# NEW: compute effective_theta for all active subskills, select by information
+
+def _gather_review_candidates(self, lifecycle_map, theta_map, node_map, subject, now):
+    candidates = []
+    for sid, lc in lifecycle_map.items():
+        state = lc.get("retention_state", "not_started")
+        if state != "active":
+            continue
+
+        stability = lc.get("stability", INITIAL_STABILITY)
+        last_reviewed = lc.get("last_reviewed")
+        if not last_reviewed:
+            continue
+
+        days_elapsed = (now - parse_datetime(last_reviewed)).total_seconds() / 86400
+        theta_tested = theta_map.get(lc.get("skill_id", ""), DEFAULT_STUDENT_THETA)
+
+        eff_theta = effective_theta(theta_tested, days_elapsed, stability)
+
+        node = node_map.get(sid, {})
+        prim_type = node.get("primitive_type", "ten-frame")
+        a = get_item_discrimination(prim_type)
+        _, beta, _ = self.select_best_mode(eff_theta, prim_type)
+        p = p_correct(eff_theta, beta, a)
+        info = item_information(eff_theta, beta, a)
+
+        if p < TARGET_RETENTION:  # 0.85
+            candidates.append((sid, lc, eff_theta, info, days_elapsed))
+
+    # Sort by information value descending — most informative reviews first
+    candidates.sort(key=lambda x: -x[3])
+    return candidates
+```
+
+**B. Current band trivial-item filter**
+
+```python
+# When selecting current-band items, skip any with P > 0.95
+# This prevents the engine from serving busywork when all current items are trivial
+
+for sid in current_candidate_ids:
+    node = node_map.get(sid, {})
+    skill_id = node.get("skill_id", "")
+    theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
+    prim_type = node.get("primitive_type", "ten-frame")
+    _, beta, _ = self.select_best_mode(theta, prim_type)
+    a = get_item_discrimination(prim_type)
+    p = p_correct(theta, beta, a)
+    if p > TRIVIAL_THRESHOLD:  # 0.95
+        continue  # Skip — no pedagogical value
+    filtered_current.add(sid)
+```
+
+Freed slots flow to frontier probes via existing surplus redistribution. Gifted students get more exploration; no busywork.
+
+### 16.7 Impact on Result Processing
+
+When `process_result()` runs after a student completes an item:
+
+```
+OLD flow:
+  1. IRT update (θ, β)
+  2. Gate transition check (score >= 9.0? increment lesson_eval_count, check gate thresholds)
+  3. Leapfrog check (frontier only)
+
+NEW flow:
+  1. IRT update (θ, β) — unchanged
+  2. Retention update:
+     - If subskill is "not_started" and this is a lesson eval:
+         increment lesson_eval_count; if count >= 3 and all scores >= 9.0:
+           transition to "active", set stability = S₀, last_reviewed = now
+     - If subskill is "active":
+         update stability based on score (see §16.4)
+         update last_reviewed = now
+         check mastery threshold (stability > 30 → "mastered")
+  3. Leapfrog check — unchanged, except inferred skills start at
+     retention_state="active", stability=INITIAL_STABILITY
+```
+
+### 16.8 Impact on Leapfrog Inference
+
+When leapfrog seeds inferred skills, the seeded state changes:
+
+```
+OLD: Gate 2, completion_pct=0.5, next_retest_eligible=now+3d
+NEW: retention_state="active", stability=3.0, last_reviewed=now
+```
+
+This means inferred skills don't block anything. Their effective_theta will naturally decay, and when they become informative, the engine will surface them as review candidates. If the inference was wrong (student doesn't actually know this), the review will fail, stability halves, and the engine schedules a quicker follow-up.
+
+### 16.9 Migration from Gates
+
+Existing mastery_lifecycle documents with gate values can be migrated:
+
+| Current Gate | New State | Stability | Rationale |
+|-------------|-----------|-----------|-----------|
+| 0 | `not_started` | — | Not yet mastered |
+| 1 | `active` | 3.0 | Just cleared initial mastery |
+| 2 | `active` | 7.5 | Survived one retest |
+| 3 | `active` | 18.75 | Survived two retests |
+| 4 | `mastered` | 47.0 | Fully verified |
+
+Migration is a one-time batch update on existing lifecycle documents. New documents use the retention model from creation.
+
+### 16.10 New Parameters
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| `INITIAL_STABILITY` | 3.0 days | Matches old Gate 1→2 interval; first review surfaces after ~3 days |
+| `DECAY_RATE` | 1.5 | At t=S, drops high-θ students to P≈0.85 |
+| `TARGET_RETENTION` | 0.85 | Items below this P become review candidates. Standard in spaced repetition literature (Anki default: 0.90, FSRS default: 0.90). We use 0.85 for fewer, more informative reviews |
+| `TRIVIAL_THRESHOLD` | 0.95 | Current-band items above this P are skipped — zero pedagogical value |
+| `STABILITY_GROWTH_STRONG` | 2.5 | Score ≥ 9.0 — strong recall, large interval increase |
+| `STABILITY_GROWTH_PARTIAL` | 1.5 | Score 7.0-8.9 — partial recall, modest increase |
+| `STABILITY_SHRINK_FAIL` | 0.5 | Score < 7.0 — failed recall, halve interval |
+| `MASTERY_STABILITY_THRESHOLD` | 30 days | Stability above this → mastered (predicted retention > 90% at 30 days) |
+| `THETA_DECAY_FLOOR_FACTOR` | 0.5 | Never decay below 50% of tested theta |
+
+### 16.11 Cross-Archetype Behavior
+
+| Archetype | Old Behavior | New Behavior |
+|-----------|-------------|-------------|
+| **Gifted Grace** | Trapped on P=0.989 busywork for 14 sessions. 7/163 skills in 90 items. | Trivial items skipped immediately. Freed slots go to frontier probes. Races through DAG. Reviews surface naturally after ~3 days. |
+| **Steady Sam** | Can't clear gates because P(correct) stuck at 0.22 vs 0.7 threshold (IRT-gate mismatch). | No gate thresholds to clear. Stability grows based on score alone. Items are already informative (P≈0.5-0.7), so the engine serves them correctly. |
+| **Struggling Sophia** | Gets stuck at Gate 0 indefinitely — can't score 9.0 three times. | Gate 0→active transition unchanged (still needs 3 evals ≥ 9.0). But once active, stability model handles reviews with shorter intervals (failed reviews → S×0.5). |
+| **Cold Start** | Uses `_assemble_cold_start()` — 100% frontier probes. | **Unchanged.** Cold start doesn't use the retention model. |
+
+### 16.12 Comparison to Established Systems
+
+| Property | Lumina Gates (old) | Anki/SM-2 | FSRS | Lumina Stability (new) |
+|----------|-------------------|-----------|------|----------------------|
+| Forgetting model | None (fixed calendar) | Exponential intervals | Power-law (optimized) | Power-law (√t/S) |
+| Blocks forward progress | Yes | No | No | No |
+| Per-student adaptation | None | Ease factor per card | Per-card stability + difficulty | Per-subskill stability, leverages IRT θ |
+| Review trigger | Calendar date | Calendar date | Calendar date | Information value (P < target) |
+| Integration with ability model | Separate (gates ≠ θ) | N/A (no ability model) | N/A | Unified (decay modifies θ directly) |
+| Mastery definition | Gate 4 (3 retests passed) | Mature interval > N days | Stability > threshold | Stability > 30 days |
+
+The key innovation over Anki/FSRS: **reviews are triggered by information value, not calendar dates.** Because we have a full IRT model, we can compute exactly how informative a review would be and let the engine's existing selection logic handle scheduling. No separate scheduler needed.
+
+---
+
 ## Appendix A: Existing Service Interfaces Used
 
 ### CalibrationEngine
@@ -1030,3 +1372,5 @@ def get_prior_beta(primitive_type: str, eval_mode: str) -> float
 | 2026-03-05 | 1.2 | Phase 2 progress: LessonGroupService integrated into band assembly, adaptive band proportions, session resume flow (localStorage + backend fetch), summary now populates skills_advanced and theta_changes from per-item data. |
 | 2026-03-05 | 1.3 | Phase 2 UI polish: Enhanced leapfrog celebration with framer-motion staggered skill chips, animated SVG score ring, probed/inferred skill breakdown. Added ThetaGrowthSection (recharts line chart or animated bars based on skill count). Added FrontierDeltaSection with gate advance + leapfrog skip breakdown and frontier expansion message. |
 | 2026-03-05 | 1.4 | Added §9.4 Session-Aware Hydration: sessionHistory (componentId + difficulty + score) passed to Gemini for diversity + difficulty calibration. Soft guidance, no hard blocking. Added §9.5 Primitive Coverage as Mastery Signal: breadth across applicable primitives accelerates Gate 0→1 (Phase 3). |
+| 2026-03-22 | 2.0 | **Retention model redesign.** Replaced Gates 1-4 with stability-based forgetting model (§16). Gates blocked forward progress and served P=0.989 busywork to gifted students. New model: effective_theta decays over time via power-law forgetting; reviews surface by information value, never blocking progression. Stability grows with successful reviews (×2.5/×1.5/×0.5), mastery at S>30 days. Updated §2.3 (review selection), §3.3 (leapfrog seeding), §5.1 (assembly algorithm), §6 (result processing), §7 (data model — new retention_state/stability/last_reviewed fields), §11 (parameters). Gate 0→1 transition preserved for initial mastery verification. Identified via Pulse Agent — Gifted Grace stagnation (48% trivial items, 7/163 skills in 90 items). |
+| 2026-03-22 | 2.1 | **§16 implemented.** All backend changes complete: `mastery_lifecycle.py` — added retention_state/stability/last_reviewed/review_count fields + 10 retention constants (INITIAL_STABILITY, DECAY_RATE, TARGET_RETENTION, TRIVIAL_THRESHOLD, growth multipliers, MASTERY_STABILITY_THRESHOLD, GATE_TO_STABILITY migration map). `mastery_lifecycle_engine.py` — full rewrite: added `effective_theta()` power-law forgetting function, `derive_retention_state()` lazy migration helper, `_activate_retention()` for Gate 0→1 transition, replaced `_handle_practice_eval()` with stability updates (×2.5/×1.5/×0.5), removed `_handle_retest_pass()`/`_handle_retest_fail()`, updated forecasting to stability-based projections. `pulse_engine.py` — replaced `_gather_review_candidates()` with information-value selection (effective_theta decay → P < 0.85 → review candidate), added trivial-item filter (P > 0.95 → skip), updated band logic to use retention_map, updated leapfrog seeding to retention_state="active" + stability=3.0. `planning_service.py` — added `_derive_retention_state()` with legacy gate fallback, updated `_count_by_gate_status()`, monthly projection (stability-based closure pipeline), daily planner blocking. All backward-compat gate fields kept in sync for consumers. Lazy migration — no batch script needed. Verified: effective_theta matches PRD §16.3 examples, derive_retention_state handles all gate values, stability growth reaches mastery in 3 reviews. |

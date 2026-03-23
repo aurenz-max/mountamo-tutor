@@ -58,8 +58,9 @@
 | place-value-chart | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/place-value-chart-2026-03-17.md) |
 | function-machine | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/function-machine-2026-03-17.md) |
 | knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
+| how-it-works | 3 | 3 | 0 | 2026-03-22 | [report](eval-reports/how-it-works-2026-03-22.md) |
 
-**Totals:** 187/204 modes passing (91.7%) | 21 open issues (12 CRITICAL, 9 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 190/207 modes passing (91.8%) | 21 open issues (12 CRITICAL, 9 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -216,6 +217,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | SS-4 | sorting-station | 2026-03-18 | Added `setSelectedOddOne(null)` on wrong answer in odd-one-out — clears selection so student must pick a new object before re-checking. |
 | NS-1 | number-sequencer | 2026-03-18 | Separated decade-fill from fill-missing/before-after in component — decade-fill now keys inputs by correctAnswers index directly instead of blankIndices. Added generator post-process to align sequence nulls for fill-missing/before-after. All 5 modes pass. |
 | AM-1 | area-model | 2026-03-18 | Post-process scans factor-mode description for hallucinated numbers not in valid set (product, factor totals, parts), replaces with actual product. 3/3 stochastic runs clean. |
+| HW-1 | how-it-works | 2026-03-22 | Converted "explain" challenge from free-form textarea with `.includes()` keyword matching to MC format ("Why is Step X important?" + 4 options). Reuses existing MC rendering. Generator prompt, schema, validation + component updated. |
 
 ---
 
@@ -232,3 +234,4 @@ Decisions that need product input before engineering can proceed.
 | 5 | tape-diagram | **RESOLVED** — generator rewritten with 4 mode-specific sub-generators; component has 4 render methods; all 4 modes pass (2026-03-15) | — | — |
 | 6 | base-ten-blocks | **RESOLVED** — Option B implemented: generator regroup prompt requires standard-form starting states; component initializes from first challenge targetNumber (2026-03-17) | — | — |
 | 7 | phoneme-explorer | **MITIGATED** — hardcoded quality fallbacks + sanitization replace "???" placeholders (2026-03-15). Flash-lite root cause remains; model upgrade still recommended for reliability | A) Switch to gemini-flash (not lite) for these modes (SMALL) | Option A for long-term reliability |
+| 8 | how-it-works | **RESOLVED** — Option A implemented: explain converted to MC format "Why is Step X important?" with 4 options, reusing existing MC rendering (2026-03-22) | — | — |

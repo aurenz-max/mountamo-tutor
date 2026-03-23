@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from app.models.pulse import PulseItemSpec, PulseResultRequest, PulseResultResponse
@@ -24,6 +25,9 @@ from .scenarios import ScoreStrategy, get_strategy
 from .journey_recorder import ItemResult, JourneyRecorder, JourneyTimeline
 
 logger = logging.getLogger(__name__)
+
+# Default time gap between simulated sessions (1 day = realistic pacing)
+DEFAULT_SESSION_GAP_DAYS = 1.0
 
 
 class PulseAgentRunner:
@@ -37,10 +41,12 @@ class PulseAgentRunner:
         pulse_engine: PulseEngine,
         firestore_service: FirestoreService,
         seed: Optional[int] = None,
+        session_gap_days: float = DEFAULT_SESSION_GAP_DAYS,
     ):
         self.engine = pulse_engine
         self.recorder = JourneyRecorder(firestore_service)
         self.seed = seed
+        self.session_gap_days = session_gap_days
 
     async def run_profile(
         self,
@@ -64,9 +70,13 @@ class PulseAgentRunner:
         strategy = strategy_override or get_strategy(profile, seed=self.seed)
         num_sessions = session_limit or profile.target_sessions
 
+        # Virtual clock: each session advances by session_gap_days
+        virtual_now = datetime.now(timezone.utc)
+
         logger.info(
             f">> Starting journey: {profile.name} (id={profile.student_id}, "
-            f"archetype={profile.archetype}, sessions={num_sessions})"
+            f"archetype={profile.archetype}, sessions={num_sessions}, "
+            f"gap={self.session_gap_days}d/session)"
         )
 
         timeline = await self.recorder.create_timeline(
@@ -85,10 +95,11 @@ class PulseAgentRunner:
                     strategy=strategy,
                     timeline=timeline,
                     session_number=session_num,
+                    virtual_now=virtual_now,
                 )
 
                 logger.info(
-                    f"  Session {session_num}/{num_sessions}: "
+                    f"  Session {session_num}/{num_sessions} (day {(session_num - 1) * self.session_gap_days:.0f}): "
                     f"avg={snapshot.avg_score:.1f}, "
                     f"leapfrogs={snapshot.total_leapfrogs}, "
                     f"gate_advances={snapshot.total_gate_advances}, "
@@ -106,7 +117,9 @@ class PulseAgentRunner:
                 # Continue to next session — don't abort the whole journey
                 continue
 
-        from datetime import datetime, timezone
+            # Advance virtual clock for next session
+            virtual_now += timedelta(days=self.session_gap_days)
+
         timeline.completed_at = datetime.now(timezone.utc).isoformat()
 
         logger.info(
@@ -126,14 +139,16 @@ class PulseAgentRunner:
         strategy: ScoreStrategy,
         timeline: JourneyTimeline,
         session_number: int,
+        virtual_now: datetime,
     ) -> Any:
         """Assemble a session, submit scores for each item, snapshot state."""
 
-        # 1. Assemble session
+        # 1. Assemble session (use virtual clock for decay calculations)
         session_resp = await self.engine.assemble_session(
             student_id=profile.student_id,
             subject=profile.subject,
             item_count=profile.items_per_session,
+            now_override=virtual_now,
         )
 
         session_id = session_resp.session_id
@@ -176,6 +191,7 @@ class PulseAgentRunner:
                 student_id=profile.student_id,
                 session_id=session_id,
                 result=result_req,
+                now_override=virtual_now,
             )
 
             # Extract IRT data from result
@@ -232,6 +248,24 @@ class PulseAgentRunner:
         )
 
         return snapshot
+
+    async def fetch_graph(self, subject: str) -> Dict[str, Any]:
+        """
+        Fetch the curriculum graph (nodes + edges) from Firestore,
+        using the same path as PulseEngine.
+
+        Returns:
+            {"nodes": [...], "edges": [...]}
+        """
+        graph_data = await self.engine.learning_paths._get_graph(subject)
+        graph = graph_data["graph"]
+        # Filter to subskill nodes only (same as PulseEngine.assemble_session)
+        all_nodes = [
+            n for n in graph.get("nodes", [])
+            if n.get("type", n.get("entity_type", "")) == "subskill"
+        ]
+        all_edges = graph.get("edges", [])
+        return {"nodes": all_nodes, "edges": all_edges}
 
     async def cleanup_student(self, student_id: int) -> None:
         """

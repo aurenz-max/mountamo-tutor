@@ -50,7 +50,7 @@ GIFTED_STUDENT = SyntheticProfile(
 STEADY_LEARNER = SyntheticProfile(
     student_id=900_002,
     name="Steady Sam",
-    description="Scores 7-8 consistently. Linear gate progression, no leapfrogs.",
+    description="Scores ~9 with variance. Steady gate progression, rare leapfrogs.",
     archetype="steady",
     target_sessions=20,
 )
@@ -72,6 +72,14 @@ FRACTION_WEAKNESS = SyntheticProfile(
         # These will be matched by substring against skill descriptions
     },
     target_sessions=20,
+)
+
+FORGETFUL_STUDENT = SyntheticProfile(
+    student_id=900_007,
+    name="Forgetful Fred",
+    description="Learns well (~9 scores) but 20% chance of forgetting review items. Tests retention/stability model.",
+    archetype="forgetful",
+    target_sessions=15,
 )
 
 COLD_START = SyntheticProfile(
@@ -99,5 +107,6 @@ ALL_PROFILES: Dict[str, SyntheticProfile] = {
     "struggling": STRUGGLING_STUDENT,
     "fraction_weakness": FRACTION_WEAKNESS,
     "cold_start": COLD_START,
+    "forgetful": FORGETFUL_STUDENT,
     "accelerating": ACCELERATOR,
 }

@@ -51,6 +51,7 @@ from tests.pulse_agent.assertions import run_assertions_for_archetype
 from tests.pulse_agent.journey_recorder import JourneyRecorder
 from tests.pulse_agent.reports import (
     generate_journey_report,
+    generate_graph_report,
     generate_comparison_report,
     save_report,
 )
@@ -86,6 +87,7 @@ async def run_single_profile(
     session_limit: int | None = None,
     clean: bool = False,
     output_dir: Path | None = None,
+    include_graph: bool = False,
 ) -> None:
     """Run one profile and print results."""
 
@@ -125,6 +127,15 @@ async def run_single_profile(
     # Save reports
     if output_dir:
         report = generate_journey_report(timeline, results)
+
+        # Append graph analysis if requested
+        if include_graph:
+            print("  Fetching curriculum graph...")
+            graph = await runner.fetch_graph(profile.subject)
+            graph_section = generate_graph_report(graph, timeline)
+            report += "\n\n" + graph_section
+            print(f"  Graph: {len(graph['nodes'])} nodes, {len(graph['edges'])} edges")
+
         save_report(report, output_dir, profile.name.replace(" ", "_"))
         JourneyRecorder.save_timeline(timeline, output_dir)
 
@@ -134,6 +145,7 @@ async def run_all_profiles(
     session_limit: int | None = None,
     clean: bool = False,
     output_dir: Path | None = None,
+    include_graph: bool = False,
 ) -> None:
     """Run all profiles and generate a comparison report."""
     from .journey_recorder import JourneyTimeline
@@ -168,6 +180,12 @@ async def run_all_profiles(
         for timeline in timelines:
             results = run_assertions_for_archetype(timeline, timeline.archetype)
             report = generate_journey_report(timeline, results)
+
+            if include_graph:
+                graph = await runner.fetch_graph(timeline.subject)
+                graph_section = generate_graph_report(graph, timeline)
+                report += "\n\n" + graph_section
+
             save_report(report, output_dir, timeline.profile_name.replace(" ", "_"))
             JourneyRecorder.save_timeline(timeline, output_dir)
 
@@ -214,6 +232,17 @@ def main():
         help="Random seed for reproducible runs (default: 42)",
     )
     parser.add_argument(
+        "--graph",
+        action="store_true",
+        help="Include curriculum DAG analysis in the report (nodes, edges, traversal)",
+    )
+    parser.add_argument(
+        "--gap",
+        type=float,
+        default=1.0,
+        help="Simulated days between sessions (default: 1.0)",
+    )
+    parser.add_argument(
         "--list",
         action="store_true",
         help="List available profiles and exit",
@@ -235,15 +264,25 @@ def main():
 
     # Build engine
     pulse_engine, firestore_service = build_engine()
-    runner = PulseAgentRunner(pulse_engine, firestore_service, seed=args.seed)
+    runner = PulseAgentRunner(
+        pulse_engine, firestore_service,
+        seed=args.seed,
+        session_gap_days=args.gap,
+    )
 
     # Run
     if args.all:
-        asyncio.run(run_all_profiles(runner, args.sessions, args.clean, output_dir))
+        asyncio.run(run_all_profiles(
+            runner, args.sessions, args.clean, output_dir,
+            include_graph=args.graph,
+        ))
     else:
         profile = ALL_PROFILES[args.profile]
         asyncio.run(
-            run_single_profile(runner, profile, args.sessions, args.clean, output_dir)
+            run_single_profile(
+                runner, profile, args.sessions, args.clean, output_dir,
+                include_graph=args.graph,
+            )
         )
 
 

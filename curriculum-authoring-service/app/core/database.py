@@ -103,6 +103,29 @@ class BigQueryDatabase:
             bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED"),
         ]
 
+    def get_edges_schema(self) -> List[bigquery.SchemaField]:
+        """Schema for curriculum_edges table (knowledge graph edges)"""
+        return [
+            bigquery.SchemaField("edge_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("subject_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("source_entity_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("source_entity_type", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("target_entity_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("target_entity_type", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("relationship", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("strength", "FLOAT", mode="REQUIRED"),
+            bigquery.SchemaField("is_prerequisite", "BOOLEAN", mode="REQUIRED"),
+            bigquery.SchemaField("min_proficiency_threshold", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("rationale", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("authored_by", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("confidence", "FLOAT", mode="NULLABLE"),
+            bigquery.SchemaField("version_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("is_draft", "BOOLEAN", mode="REQUIRED"),
+            bigquery.SchemaField("created_at", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("updated_at", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("pair_id", "STRING", mode="NULLABLE"),
+        ]
+
     def get_versions_schema(self) -> List[bigquery.SchemaField]:
         """Schema for curriculum_versions table"""
         return [
@@ -161,6 +184,7 @@ class BigQueryDatabase:
             (settings.TABLE_SKILLS, self.get_skills_schema()),
             (settings.TABLE_SUBSKILLS, self.get_subskills_schema()),
             (settings.TABLE_PREREQUISITES, self.get_prerequisites_schema()),
+            (settings.TABLE_EDGES, self.get_edges_schema()),
             (settings.TABLE_VERSIONS, self.get_versions_schema()),
             (settings.TABLE_PRIMITIVES, self.get_primitives_schema()),
             (settings.TABLE_SUBSKILL_PRIMITIVES, self.get_subskill_primitives_schema()),

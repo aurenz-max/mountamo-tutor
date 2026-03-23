@@ -248,6 +248,10 @@ class LearningPathsService:
         """
         Get all prerequisite edges pointing to a target entity.
 
+        Only considers edges where ``is_prerequisite`` is true (or absent,
+        for backward compatibility with caches written before the knowledge-
+        graph migration).
+
         Returns:
             [(source_id, threshold), ...]
         """
@@ -256,7 +260,7 @@ class LearningPathsService:
         for graph_data in self._graph_cache.values():
             graph_edges = graph_data.get("graph", {}).get("edges", [])
             for edge in graph_edges:
-                if edge["target"] == target_entity_id:
+                if edge["target"] == target_entity_id and edge.get("is_prerequisite", True):
                     edges.append((
                         edge["source"],
                         edge.get("threshold", self.DEFAULT_MASTERY_THRESHOLD)
@@ -272,6 +276,40 @@ class LearningPathsService:
                 pass
 
         return edges
+
+    async def get_related_entities(
+        self,
+        entity_id: str,
+        subject: str,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all entities connected to ``entity_id`` via any edge type.
+
+        Returns edge metadata (relationship, strength, is_prerequisite) for
+        each connection — used by Pulse for discovery and by frontend for
+        "related skills" display.
+        """
+        graph = await self._get_graph(subject)
+        graph_edges = graph.get("graph", {}).get("edges", [])
+        related = []
+        for edge in graph_edges:
+            if edge["source"] == entity_id:
+                related.append({
+                    "entity_id": edge["target"],
+                    "direction": "outgoing",
+                    "relationship": edge.get("relationship", "prerequisite"),
+                    "strength": edge.get("strength", 1.0),
+                    "is_prerequisite": edge.get("is_prerequisite", True),
+                })
+            elif edge["target"] == entity_id:
+                related.append({
+                    "entity_id": edge["source"],
+                    "direction": "incoming",
+                    "relationship": edge.get("relationship", "prerequisite"),
+                    "strength": edge.get("strength", 1.0),
+                    "is_prerequisite": edge.get("is_prerequisite", True),
+                })
+        return related
 
     async def get_unlocked_entities(
         self,
@@ -1191,10 +1229,17 @@ class LearningPathsService:
     ) -> Dict[str, List[Tuple[str, float]]]:
         """
         Build map of node_id -> [(prerequisite_node_id, threshold), ...]
+
+        Only considers edges where ``is_prerequisite`` is true.  Edges without
+        the field (pre-migration caches) default to True for backward compat.
         """
         prereqs_map = {}
 
         for edge in edges:
+            # Knowledge-graph filter: only prerequisite edges gate unlock
+            if not edge.get("is_prerequisite", True):
+                continue
+
             target_id = edge["target"]
             source_id = edge["source"]
             threshold = edge.get("threshold", self.DEFAULT_MASTERY_THRESHOLD)

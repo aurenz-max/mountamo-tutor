@@ -51,11 +51,9 @@ export interface HowItWorksData {
     // For sequence: items to reorder
     sequenceItems?: Array<{ id: string; text: string }>;
     correctOrder?: string[];
-    // For identify/predict: multiple choice
+    // For identify/predict/explain: multiple choice
     options?: string[];
     correctIndex?: number;
-    // For explain: key points to mention
-    keyPoints?: string[];
     explanation: string;
     relatedStep: number;
   }>;
@@ -120,9 +118,6 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   const [sequenceOrder, setSequenceOrder] = useState<string[]>([]);
   const [sequenceChecked, setSequenceChecked] = useState(false);
   const [sequenceCorrect, setSequenceCorrect] = useState(false);
-
-  // Explain challenge state
-  const [explainText, setExplainText] = useState('');
 
   // Timing
   const [stepEntryTime, setStepEntryTime] = useState(Date.now());
@@ -337,36 +332,11 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     }
   }, [currentChallenge, sequenceOrder, currentAttempts, isConnected, sendText]);
 
-  const handleExplainSubmit = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'explain') return;
-
-    // For explain type, we check if any key points are mentioned
-    const keyPoints = currentChallenge.keyPoints || [];
-    const lowerText = explainText.toLowerCase();
-    const pointsHit = keyPoints.filter(kp => lowerText.includes(kp.toLowerCase())).length;
-    const correct = pointsHit >= Math.ceil(keyPoints.length / 2);
-    const attempts = currentAttempts + 1;
-    setCurrentAttempts(attempts);
-
-    setChallengeAnswers(prev => [...prev, { correct, attempts }]);
-    setShowChallengeFeedback(true);
-
-    if (isConnected) {
-      sendText(
-        `[EXPLAIN_SUBMITTED] Explain challenge: "${currentChallenge.question}" — `
-        + `Student wrote: "${explainText}". Key points hit: ${pointsHit}/${keyPoints.length}. `
-        + `${correct ? 'Good explanation! Reinforce their understanding.' : 'Partial explanation. Guide them to think about the missing key points.'}`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, explainText, currentAttempts, isConnected, sendText]);
-
   const handleNextChallenge = useCallback(() => {
     setSelectedOption(null);
     setShowChallengeFeedback(false);
     setSequenceChecked(false);
     setSequenceCorrect(false);
-    setExplainText('');
     setCurrentAttempts(0);
 
     if (currentChallengeIndex + 1 >= challenges.length) {
@@ -565,8 +535,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
 
         <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
 
-        {/* Multiple choice (identify / predict) */}
-        {(currentChallenge.type === 'identify' || currentChallenge.type === 'predict') && currentChallenge.options && (
+        {/* Multiple choice (identify / predict / explain) */}
+        {(currentChallenge.type === 'identify' || currentChallenge.type === 'predict' || currentChallenge.type === 'explain') && currentChallenge.options && (
           <div className="space-y-2">
             {currentChallenge.options.map((opt, i) => {
               const isSelected = selectedOption === i;
@@ -654,32 +624,6 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             )}
             {sequenceChecked && !sequenceCorrect && !showChallengeFeedback && (
               <p className="text-amber-400 text-xs text-center">Not quite — try rearranging and check again!</p>
-            )}
-          </div>
-        )}
-
-        {/* Explain challenge */}
-        {currentChallenge.type === 'explain' && (
-          <div className="space-y-3">
-            {!showChallengeFeedback && (
-              <>
-                <textarea
-                  value={explainText}
-                  onChange={(e) => setExplainText(e.target.value)}
-                  placeholder="Type your explanation here..."
-                  className="w-full h-24 p-3 rounded-lg bg-white/5 border border-white/10 text-slate-200 text-sm placeholder:text-slate-600 focus:outline-none focus:border-blue-400/50 resize-none"
-                />
-                <div className="flex justify-center">
-                  <Button
-                    variant="ghost"
-                    className="bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300"
-                    onClick={handleExplainSubmit}
-                    disabled={explainText.trim().length < 10}
-                  >
-                    Submit Explanation
-                  </Button>
-                </div>
-              </>
             )}
           </div>
         )}

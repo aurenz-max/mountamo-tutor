@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, TrendingUp, Zap, Target, ChevronDown, Info, AlertTriangle } from 'lucide-react';
+import { RotateCcw, TrendingUp, Zap, Target, ChevronDown, Info, AlertTriangle, Clock, Shield } from 'lucide-react';
 
 // ============================================================================
 // IRT Math — 2PL/3PL model with discrimination parameter
@@ -35,6 +35,111 @@ function itemInformation(theta: number, a: number, b: number, c: number = 0): nu
   const numerator = Math.pow(a, 2) * Math.pow(p - c, 2) * q;
   const denominator = p * Math.pow(1 - c, 2);
   return denominator > 0 ? numerator / denominator : 0;
+}
+
+// ============================================================================
+// Retention Model — Stability-Based Forgetting (§16)
+// ============================================================================
+
+const DEFAULT_DECAY_RATE = 1.5;
+const DEFAULT_INITIAL_STABILITY = 3.0;   // days
+const DEFAULT_MASTERY_THRESHOLD = 30.0;  // days — S > this → mastered
+const DEFAULT_STUDENT_THETA = 3.0;       // floor — never decay below "untaught"
+const DEFAULT_STRONG_GROWTH = 2.5;       // S *= this on score >= 9.0
+const DEFAULT_PARTIAL_GROWTH = 1.5;      // S *= this on score >= 7.0
+const DEFAULT_SHRINK_FACTOR = 0.5;       // S *= this on score < 7.0
+const DEFAULT_TARGET_RETENTION = 0.85;   // P below this → review candidate
+
+interface RetentionParams {
+  decayRate: number;
+  initialStability: number;
+  masteryThreshold: number;
+  strongGrowth: number;
+  partialGrowth: number;
+  shrinkFactor: number;
+  targetRetention: number;
+}
+
+const DEFAULT_RETENTION_PARAMS: RetentionParams = {
+  decayRate: DEFAULT_DECAY_RATE,
+  initialStability: DEFAULT_INITIAL_STABILITY,
+  masteryThreshold: DEFAULT_MASTERY_THRESHOLD,
+  strongGrowth: DEFAULT_STRONG_GROWTH,
+  partialGrowth: DEFAULT_PARTIAL_GROWTH,
+  shrinkFactor: DEFAULT_SHRINK_FACTOR,
+  targetRetention: DEFAULT_TARGET_RETENTION,
+};
+
+/**
+ * Compute effective theta reflecting memory decay over time.
+ * Uses power-law decay (√t) — matches Ebbinghaus forgetting curve research.
+ * Stability (S) controls the rate: higher S = slower decay.
+ */
+function effectiveTheta(
+  thetaTested: number,
+  daysSinceTest: number,
+  stability: number,
+  decayRate: number = DEFAULT_DECAY_RATE,
+): number {
+  if (daysSinceTest <= 0) return thetaTested;
+  const decay = decayRate * Math.sqrt(daysSinceTest / stability);
+  const floor = Math.max(DEFAULT_STUDENT_THETA, thetaTested * 0.5);
+  return Math.max(floor, thetaTested - decay);
+}
+
+/** Compute how stability changes after a review */
+function updateStability(
+  currentStability: number,
+  score: number,
+  params: RetentionParams,
+): number {
+  if (score >= 9.0) return currentStability * params.strongGrowth;
+  if (score >= 7.0) return currentStability * params.partialGrowth;
+  return currentStability * params.shrinkFactor;
+}
+
+/** Determine retention state label */
+function retentionStateLabel(stability: number, masteryThreshold: number): string {
+  if (stability >= masteryThreshold) return 'mastered';
+  return 'active';
+}
+
+/** Simulate a full review lifecycle given a sequence of review scores */
+interface ReviewEvent {
+  reviewNum: number;
+  score: number;
+  stabilityBefore: number;
+  stabilityAfter: number;
+  approxInterval: number;  // days until this review fires
+  cumulativeDays: number;
+  state: string;
+}
+
+function simulateReviewLifecycle(
+  scores: number[],
+  params: RetentionParams,
+): ReviewEvent[] {
+  const events: ReviewEvent[] = [];
+  let stability = params.initialStability;
+  let cumDays = 0;
+
+  for (let i = 0; i < scores.length; i++) {
+    const interval = i === 0 ? 0 : stability;  // first review at ~S days
+    cumDays += interval;
+    const newStability = updateStability(stability, scores[i], params);
+    events.push({
+      reviewNum: i,
+      score: scores[i],
+      stabilityBefore: stability,
+      stabilityAfter: newStability,
+      approxInterval: interval,
+      cumulativeDays: cumDays,
+      state: retentionStateLabel(newStability, params.masteryThreshold),
+    });
+    stability = newStability;
+    if (newStability >= params.masteryThreshold) break;
+  }
+  return events;
 }
 
 // ── θ → mode mapping (from pulse.py) ───────────────────────────────────────
@@ -847,6 +952,268 @@ const ThetaChart: React.FC<{
 };
 
 // ============================================================================
+// Retention Model Charts
+// ============================================================================
+
+/** Shows effective theta + P(correct) decay over time for given parameters */
+const RetentionDecayChart: React.FC<{
+  thetaTested: number;
+  stability: number;
+  itemA: number;
+  itemBeta: number;
+  itemC: number;
+  decayRate: number;
+  targetRetention: number;
+  width?: number;
+  height?: number;
+}> = ({ thetaTested, stability, itemA, itemBeta, itemC, decayRate, targetRetention, width = 600, height = 280 }) => {
+  const pad = { top: 25, right: 90, bottom: 35, left: 50 };
+  const w = width - pad.left - pad.right;
+  const h = height - pad.top - pad.bottom;
+
+  const maxDays = Math.max(14, Math.min(60, stability * 5));
+  const numPoints = 100;
+
+  // Compute decay data
+  const data = useMemo(() => {
+    const points: { day: number; effTheta: number; p: number; info: number }[] = [];
+    for (let i = 0; i <= numPoints; i++) {
+      const day = (i / numPoints) * maxDays;
+      const effT = effectiveTheta(thetaTested, day, stability, decayRate);
+      const p = pCorrect(effT, itemA, itemBeta, itemC);
+      const info = itemInformation(effT, itemA, itemBeta, itemC);
+      points.push({ day, effTheta: effT, p, info });
+    }
+    return points;
+  }, [thetaTested, stability, itemA, itemBeta, itemC, decayRate, maxDays]);
+
+  // Find the day where P crosses target retention
+  const crossDay = useMemo(() => {
+    for (let i = 1; i < data.length; i++) {
+      if (data[i - 1].p >= targetRetention && data[i].p < targetRetention) {
+        // Linear interpolation
+        const frac = (targetRetention - data[i].p) / (data[i - 1].p - data[i].p);
+        return data[i].day - frac * (data[i].day - data[i - 1].day);
+      }
+    }
+    return null;
+  }, [data, targetRetention]);
+
+  const xScale = (d: number) => pad.left + (d / maxDays) * w;
+  const yScaleTheta = (t: number) => pad.top + h - ((t - 0) / 10) * h;
+  const yScaleP = (p: number) => pad.top + h - p * h;
+
+  // Theta path
+  const thetaPath = `M${data.map((d) => `${xScale(d.day)},${yScaleTheta(d.effTheta)}`).join(' L')}`;
+  // P(correct) path
+  const pPath = `M${data.map((d) => `${xScale(d.day)},${yScaleP(d.p)}`).join(' L')}`;
+
+  const yTicksTheta = [0, 2, 4, 6, 8, 10];
+  const yTicksP = [0, 0.25, 0.5, 0.75, 1.0];
+
+  // Day ticks
+  const dayTicks: number[] = [];
+  const dayStep = maxDays <= 14 ? 2 : maxDays <= 30 ? 5 : 10;
+  for (let d = 0; d <= maxDays; d += dayStep) dayTicks.push(d);
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxHeight: height }}>
+      {/* Grid lines */}
+      {yTicksP.map((v) => (
+        <g key={`p-${v}`}>
+          <line x1={pad.left} y1={yScaleP(v)} x2={pad.left + w} y2={yScaleP(v)}
+            stroke="rgba(148,163,184,0.1)" strokeDasharray="3,3" />
+        </g>
+      ))}
+
+      {/* Left axis (θ) labels */}
+      {yTicksTheta.map((v) => (
+        <text key={`tl-${v}`} x={pad.left - 8} y={yScaleTheta(v) + 4} textAnchor="end"
+          fontSize={9} className="fill-slate-500">{v}</text>
+      ))}
+
+      {/* Right axis (P) labels */}
+      {yTicksP.map((v) => (
+        <text key={`pr-${v}`} x={pad.left + w + 8} y={yScaleP(v) + 4} textAnchor="start"
+          fontSize={9} className="fill-slate-500">{(v * 100).toFixed(0)}%</text>
+      ))}
+
+      {/* Target retention line */}
+      <line x1={pad.left} y1={yScaleP(targetRetention)} x2={pad.left + w} y2={yScaleP(targetRetention)}
+        stroke="#f59e0b" strokeWidth={1} strokeDasharray="4,3" opacity={0.6} />
+      <text x={pad.left + w + 8} y={yScaleP(targetRetention) + 4} fontSize={8} fill="#f59e0b">
+        target {(targetRetention * 100).toFixed(0)}%
+      </text>
+
+      {/* Cross-day indicator */}
+      {crossDay !== null && (
+        <g>
+          <line x1={xScale(crossDay)} y1={pad.top} x2={xScale(crossDay)} y2={pad.top + h}
+            stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="3,3" opacity={0.5} />
+          <text x={xScale(crossDay)} y={pad.top - 5} textAnchor="middle" fontSize={9} fill="#f59e0b" fontWeight="bold">
+            review ~day {crossDay.toFixed(1)}
+          </text>
+        </g>
+      )}
+
+      {/* Original theta line */}
+      <line x1={pad.left} y1={yScaleTheta(thetaTested)} x2={pad.left + w} y2={yScaleTheta(thetaTested)}
+        stroke="#818cf8" strokeWidth={1} strokeDasharray="2,4" opacity={0.3} />
+
+      {/* Effective theta curve */}
+      <path d={thetaPath} fill="none" stroke="#818cf8" strokeWidth={2.5} opacity={0.9} />
+
+      {/* P(correct) curve */}
+      <path d={pPath} fill="none" stroke="#34d399" strokeWidth={2} opacity={0.8} />
+
+      {/* Day axis */}
+      {dayTicks.map((d) => (
+        <text key={`d-${d}`} x={xScale(d)} y={height - 6} textAnchor="middle" fontSize={9} className="fill-slate-500">
+          {d}d
+        </text>
+      ))}
+
+      {/* Axis labels */}
+      <text x={12} y={pad.top + h / 2} textAnchor="middle" fontSize={9} fill="#818cf8"
+        transform={`rotate(-90, 12, ${pad.top + h / 2})`}>θ_eff</text>
+      <text x={width - 8} y={pad.top + h / 2} textAnchor="middle" fontSize={9} fill="#34d399"
+        transform={`rotate(90, ${width - 8}, ${pad.top + h / 2})`}>P(correct)</text>
+      <text x={pad.left + w / 2} y={height - 18} textAnchor="middle" fontSize={9} className="fill-slate-600">
+        Days since last assessment
+      </text>
+
+      {/* Legend */}
+      <g transform={`translate(${pad.left + 10}, ${pad.top + 5})`}>
+        <line x1={0} y1={0} x2={16} y2={0} stroke="#818cf8" strokeWidth={2} />
+        <text x={20} y={4} fontSize={8} fill="#818cf8">θ_eff (ability decay)</text>
+        <line x1={0} y1={14} x2={16} y2={14} stroke="#34d399" strokeWidth={2} />
+        <text x={20} y={18} fontSize={8} fill="#34d399">P(correct)</text>
+      </g>
+    </svg>
+  );
+};
+
+/** Shows stability progression through multiple reviews */
+const StabilityTimelineChart: React.FC<{
+  events: ReviewEvent[];
+  masteryThreshold: number;
+  width?: number;
+  height?: number;
+}> = ({ events, masteryThreshold, width = 600, height = 160 }) => {
+  if (events.length === 0) return null;
+
+  const pad = { top: 20, right: 30, bottom: 30, left: 50 };
+  const w = width - pad.left - pad.right;
+  const h = height - pad.top - pad.bottom;
+
+  const maxDays = Math.max(events[events.length - 1].cumulativeDays * 1.1, masteryThreshold);
+  const maxStability = Math.max(masteryThreshold * 1.2, ...events.map((e) => e.stabilityAfter));
+
+  const xScale = (d: number) => pad.left + (d / maxDays) * w;
+  const yScale = (s: number) => pad.top + h - (s / maxStability) * h;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxHeight: height }}>
+      {/* Mastery threshold line */}
+      <line x1={pad.left} y1={yScale(masteryThreshold)} x2={pad.left + w} y2={yScale(masteryThreshold)}
+        stroke="#a855f7" strokeWidth={1} strokeDasharray="4,3" opacity={0.5} />
+      <text x={pad.left + w + 4} y={yScale(masteryThreshold) + 4} fontSize={8} fill="#a855f7">
+        mastered ({masteryThreshold}d)
+      </text>
+
+      {/* Stability bars + connecting line */}
+      {events.map((e, i) => {
+        const x = xScale(e.cumulativeDays);
+        const barColor = e.score >= 9.0 ? '#34d399' : e.score >= 7.0 ? '#f59e0b' : '#f87171';
+        const nextEvent = events[i + 1];
+        return (
+          <g key={i}>
+            {/* Connecting line to next */}
+            {nextEvent && (
+              <line x1={x} y1={yScale(e.stabilityAfter)} x2={xScale(nextEvent.cumulativeDays)} y2={yScale(nextEvent.stabilityBefore)}
+                stroke="rgba(148,163,184,0.3)" strokeWidth={1} strokeDasharray="2,2" />
+            )}
+            {/* Stability point */}
+            <circle cx={x} cy={yScale(e.stabilityAfter)} r={5} fill={barColor} stroke="rgba(0,0,0,0.3)" strokeWidth={1} />
+            {/* Score label */}
+            <text x={x} y={yScale(e.stabilityAfter) - 10} textAnchor="middle" fontSize={8} fill={barColor} fontWeight="bold">
+              {e.score.toFixed(1)}
+            </text>
+            {/* Stability value */}
+            <text x={x} y={yScale(e.stabilityAfter) + 16} textAnchor="middle" fontSize={7} className="fill-slate-500">
+              S={e.stabilityAfter.toFixed(1)}
+            </text>
+            {/* Day label on axis */}
+            <text x={x} y={height - 6} textAnchor="middle" fontSize={8} className="fill-slate-500">
+              d{Math.round(e.cumulativeDays)}
+            </text>
+            {/* Mastered badge */}
+            {e.state === 'mastered' && (
+              <text x={x} y={yScale(e.stabilityAfter) - 22} textAnchor="middle" fontSize={7} fill="#a855f7" fontWeight="bold">
+                MASTERED
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Axis labels */}
+      <text x={12} y={pad.top + h / 2} textAnchor="middle" fontSize={9} className="fill-slate-500"
+        transform={`rotate(-90, 12, ${pad.top + h / 2})`}>S (days)</text>
+      <text x={pad.left + w / 2} y={height - 16} textAnchor="middle" fontSize={9} className="fill-slate-600">
+        Cumulative days
+      </text>
+    </svg>
+  );
+};
+
+// ============================================================================
+// Retention Presets
+// ============================================================================
+
+interface RetentionPreset {
+  label: string;
+  desc: string;
+  thetaTested: number;
+  itemBeta: number;
+  itemA: number;
+  reviewScores: number[];
+}
+
+const RETENTION_PRESETS: RetentionPreset[] = [
+  {
+    label: 'Gifted Grace (θ=7.7, β=5.0)',
+    desc: 'Strong learner — high θ, P decays from 0.989. Reviews surface ~day 3. Three strong reviews → mastered in ~30 days.',
+    thetaTested: 7.7, itemBeta: 5.0, itemA: 1.6,
+    reviewScores: [9.5, 9.5, 9.5],
+  },
+  {
+    label: 'Steady Sam (θ=4.0, β=3.5)',
+    desc: 'Average learner — items already informative at θ=4.0. Needs more reviews with mixed results.',
+    thetaTested: 4.0, itemBeta: 3.5, itemA: 1.4,
+    reviewScores: [6.5, 7.2, 8.0, 9.5, 9.0, 9.2],
+  },
+  {
+    label: 'Strong Start, Quick Mastery',
+    desc: 'High-ability student aces every review. S triples each time: 3→7.5→18.75→46.9 → mastered.',
+    thetaTested: 8.0, itemBeta: 5.0, itemA: 1.6,
+    reviewScores: [10, 10, 10],
+  },
+  {
+    label: 'Struggle + Recovery',
+    desc: 'Student fails first review (S halves), partially recovers, then builds momentum.',
+    thetaTested: 5.0, itemBeta: 4.0, itemA: 1.4,
+    reviewScores: [5.0, 7.5, 8.5, 9.5, 9.0, 9.5],
+  },
+  {
+    label: 'Repeated Failure',
+    desc: 'Student keeps failing. Stability shrinks: 3→1.5→0.75→0.375. Reviews become very frequent.',
+    thetaTested: 4.5, itemBeta: 5.0, itemA: 1.6,
+    reviewScores: [4.0, 5.0, 4.5, 6.0, 7.5, 9.0, 9.5, 9.5],
+  },
+];
+
+// ============================================================================
 // Presets
 // ============================================================================
 
@@ -946,9 +1313,37 @@ function makeInitialAbility(startTheta: number): AbilityState {
 }
 
 const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) => {
+  const [activeTab, setActiveTab] = useState<'irt' | 'retention'>('irt');
+
+  // ── IRT tab state ──
   const [selectedPrimitive, setSelectedPrimitive] = useState('ten-frame');
   const [selectedModeIdx, setSelectedModeIdx] = useState(0);
   const [score, setScore] = useState(10);
+
+  // ── Retention tab state ──
+  const [retParams, setRetParams] = useState<RetentionParams>(DEFAULT_RETENTION_PARAMS);
+  const [retThetaTested, setRetThetaTested] = useState(7.7);
+  const [retItemBeta, setRetItemBeta] = useState(5.0);
+  const [retItemA, setRetItemA] = useState(1.6);
+  const [retItemC] = useState(0);
+  const [retReviewScores, setRetReviewScores] = useState<number[]>([9.5, 9.5, 9.5]);
+  const [retNewScore, setRetNewScore] = useState(9.5);
+
+  const retentionEvents = useMemo(
+    () => simulateReviewLifecycle(retReviewScores, retParams),
+    [retReviewScores, retParams],
+  );
+
+  // Effective theta at various time points for the info table
+  const retentionSnapshots = useMemo(() => {
+    const days = [0, 1, 3, 5, 7, 10, 14, 21, 30];
+    return days.map((d) => {
+      const effT = effectiveTheta(retThetaTested, d, retParams.initialStability, retParams.decayRate);
+      const p = pCorrect(effT, retItemA, retItemBeta, retItemC);
+      const info = itemInformation(effT, retItemA, retItemBeta, retItemC);
+      return { day: d, effTheta: effT, p, info };
+    });
+  }, [retThetaTested, retItemA, retItemBeta, retItemC, retParams.initialStability, retParams.decayRate]);
 
   const { min: minBeta, max: maxBeta } = useMemo(
     () => getPrimitiveBetaRange(selectedPrimitive),
@@ -1183,23 +1578,494 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
             <div className="h-6 w-px bg-slate-700" />
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-indigo-400" />
-              IRT Calibration Simulator
+              Calibration Simulator
             </h1>
-            <span className="text-xs px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-300 ml-2">
-              2PL / 3PL + Empirical Calibration
-            </span>
+            {/* Tabs */}
+            <div className="flex gap-1 ml-4">
+              <button
+                onClick={() => setActiveTab('irt')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'irt'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 inline mr-1.5" />
+                IRT / 2PL-3PL
+              </button>
+              <button
+                onClick={() => setActiveTab('retention')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'retention'
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5 inline mr-1.5" />
+                Retention Model
+              </button>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            className="bg-white/5 border border-white/20 hover:bg-white/10"
-            onClick={handleReset}
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset
-          </Button>
+          {activeTab === 'irt' && (
+            <Button
+              variant="ghost"
+              className="bg-white/5 border border-white/20 hover:bg-white/10"
+              onClick={handleReset}
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Reset
+            </Button>
+          )}
         </div>
       </div>
 
+      {/* ============================================================ */}
+      {/* RETENTION MODEL TAB */}
+      {/* ============================================================ */}
+      {activeTab === 'retention' && (
+        <div className="max-w-[1920px] mx-auto p-6 grid grid-cols-12 gap-6">
+          {/* Left — Controls */}
+          <div className="col-span-3 space-y-4">
+            {/* Student & Item Parameters */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+                Student &amp; Item
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">θ tested</span>
+                    <span className="font-mono text-indigo-400">{retThetaTested.toFixed(1)}</span>
+                  </div>
+                  <input type="range" min={1} max={10} step={0.1} value={retThetaTested}
+                    onChange={(e) => setRetThetaTested(parseFloat(e.target.value))}
+                    className="w-full accent-indigo-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">Item β (difficulty)</span>
+                    <span className="font-mono text-amber-400">{retItemBeta.toFixed(1)}</span>
+                  </div>
+                  <input type="range" min={0.5} max={9} step={0.5} value={retItemBeta}
+                    onChange={(e) => setRetItemBeta(parseFloat(e.target.value))}
+                    className="w-full accent-amber-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">Item a (discrimination)</span>
+                    <span className="font-mono text-cyan-400">{retItemA.toFixed(1)}</span>
+                  </div>
+                  <input type="range" min={0.5} max={3} step={0.1} value={retItemA}
+                    onChange={(e) => setRetItemA(parseFloat(e.target.value))}
+                    className="w-full accent-cyan-500" />
+                </div>
+                <div className="p-2 rounded-lg bg-slate-800/50 border border-white/5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">P(correct) at t=0:</span>
+                    <span className="font-mono text-green-400 font-bold">
+                      {(pCorrect(retThetaTested, retItemA, retItemBeta, retItemC) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-slate-500">Information at t=0:</span>
+                    <span className="font-mono text-cyan-400">
+                      {itemInformation(retThetaTested, retItemA, retItemBeta, retItemC).toFixed(3)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Retention Parameters */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+                Retention Parameters
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">Decay rate (d)</span>
+                    <span className="font-mono text-rose-400">{retParams.decayRate.toFixed(1)}</span>
+                  </div>
+                  <input type="range" min={0.5} max={3} step={0.1} value={retParams.decayRate}
+                    onChange={(e) => setRetParams((p) => ({ ...p, decayRate: parseFloat(e.target.value) }))}
+                    className="w-full accent-rose-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">Initial stability S₀ (days)</span>
+                    <span className="font-mono text-violet-400">{retParams.initialStability.toFixed(1)}</span>
+                  </div>
+                  <input type="range" min={1} max={10} step={0.5} value={retParams.initialStability}
+                    onChange={(e) => setRetParams((p) => ({ ...p, initialStability: parseFloat(e.target.value) }))}
+                    className="w-full accent-violet-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">Mastery threshold (days)</span>
+                    <span className="font-mono text-purple-400">{retParams.masteryThreshold.toFixed(0)}</span>
+                  </div>
+                  <input type="range" min={14} max={60} step={1} value={retParams.masteryThreshold}
+                    onChange={(e) => setRetParams((p) => ({ ...p, masteryThreshold: parseFloat(e.target.value) }))}
+                    className="w-full accent-purple-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">Target retention P</span>
+                    <span className="font-mono text-amber-400">{(retParams.targetRetention * 100).toFixed(0)}%</span>
+                  </div>
+                  <input type="range" min={0.7} max={0.95} step={0.05} value={retParams.targetRetention}
+                    onChange={(e) => setRetParams((p) => ({ ...p, targetRetention: parseFloat(e.target.value) }))}
+                    className="w-full accent-amber-500" />
+                </div>
+              </div>
+            </Card>
+
+            {/* Stability Growth/Shrink */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+                Stability Multipliers
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">Strong recall (≥9.0) ×</span>
+                    <span className="font-mono text-green-400">{retParams.strongGrowth.toFixed(1)}</span>
+                  </div>
+                  <input type="range" min={1.5} max={4} step={0.1} value={retParams.strongGrowth}
+                    onChange={(e) => setRetParams((p) => ({ ...p, strongGrowth: parseFloat(e.target.value) }))}
+                    className="w-full accent-green-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">Partial recall (≥7.0) ×</span>
+                    <span className="font-mono text-amber-400">{retParams.partialGrowth.toFixed(1)}</span>
+                  </div>
+                  <input type="range" min={1.0} max={2.5} step={0.1} value={retParams.partialGrowth}
+                    onChange={(e) => setRetParams((p) => ({ ...p, partialGrowth: parseFloat(e.target.value) }))}
+                    className="w-full accent-amber-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500">Failed recall (&lt;7.0) ×</span>
+                    <span className="font-mono text-red-400">{retParams.shrinkFactor.toFixed(2)}</span>
+                  </div>
+                  <input type="range" min={0.2} max={0.8} step={0.05} value={retParams.shrinkFactor}
+                    onChange={(e) => setRetParams((p) => ({ ...p, shrinkFactor: parseFloat(e.target.value) }))}
+                    className="w-full accent-red-500" />
+                </div>
+              </div>
+            </Card>
+
+            {/* Presets */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+                Preset Scenarios
+              </h3>
+              <div className="space-y-2">
+                {RETENTION_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => {
+                      setRetThetaTested(preset.thetaTested);
+                      setRetItemBeta(preset.itemBeta);
+                      setRetItemA(preset.itemA);
+                      setRetReviewScores(preset.reviewScores);
+                      setRetParams(DEFAULT_RETENTION_PARAMS);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white transition-all text-sm"
+                  >
+                    <div className="font-medium">{preset.label}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{preset.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          {/* Center — Charts */}
+          <div className="col-span-6 space-y-4">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                {
+                  label: 'θ tested',
+                  value: retThetaTested.toFixed(1),
+                  sub: `β=${retItemBeta}, a=${retItemA}`,
+                  color: 'text-indigo-400',
+                },
+                {
+                  label: 'Initial Stability',
+                  value: `${retParams.initialStability.toFixed(1)}d`,
+                  sub: `decay rate = ${retParams.decayRate}`,
+                  color: 'text-violet-400',
+                },
+                {
+                  label: 'Reviews to Master',
+                  value: retentionEvents.some((e) => e.state === 'mastered')
+                    ? `${retentionEvents.findIndex((e) => e.state === 'mastered') + 1}`
+                    : `${retReviewScores.length}+`,
+                  sub: retentionEvents.some((e) => e.state === 'mastered')
+                    ? `~${Math.round(retentionEvents.find((e) => e.state === 'mastered')!.cumulativeDays)} days`
+                    : 'not yet mastered',
+                  color: retentionEvents.some((e) => e.state === 'mastered') ? 'text-green-400' : 'text-amber-400',
+                },
+                {
+                  label: 'Final Stability',
+                  value: retentionEvents.length > 0
+                    ? `${retentionEvents[retentionEvents.length - 1].stabilityAfter.toFixed(1)}d`
+                    : '—',
+                  sub: `threshold: ${retParams.masteryThreshold}d`,
+                  color: (retentionEvents.length > 0 && retentionEvents[retentionEvents.length - 1].stabilityAfter >= retParams.masteryThreshold)
+                    ? 'text-purple-400' : 'text-slate-400',
+                },
+              ].map((stat) => (
+                <Card key={stat.label} className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4 text-center">
+                  <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{stat.label}</div>
+                  <div className={`text-2xl font-bold font-mono ${stat.color}`}>{stat.value}</div>
+                  <div className="text-xs text-slate-500 mt-1">{stat.sub}</div>
+                </Card>
+              ))}
+            </div>
+
+            {/* Decay Chart */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                  Memory Decay — θ_eff &amp; P(correct) over time
+                </h3>
+                <span className="text-xs text-slate-500">
+                  θ_eff = θ - d·√(t/S)
+                </span>
+              </div>
+              <RetentionDecayChart
+                thetaTested={retThetaTested}
+                stability={retParams.initialStability}
+                itemA={retItemA}
+                itemBeta={retItemBeta}
+                itemC={retItemC}
+                decayRate={retParams.decayRate}
+                targetRetention={retParams.targetRetention}
+              />
+            </Card>
+
+            {/* Day-by-Day Table */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+                Decay Snapshots (S = {retParams.initialStability.toFixed(1)} days)
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left text-slate-500 py-1.5 px-2">Day</th>
+                      <th className="text-right text-slate-500 py-1.5 px-2">θ_eff</th>
+                      <th className="text-right text-slate-500 py-1.5 px-2">P(correct)</th>
+                      <th className="text-right text-slate-500 py-1.5 px-2">Information</th>
+                      <th className="text-left text-slate-500 py-1.5 px-2">Engine Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {retentionSnapshots.map((snap) => {
+                      let action = '';
+                      let actionColor = 'text-slate-600';
+                      if (snap.p >= 0.95) { action = 'Skip — trivial'; actionColor = 'text-slate-600'; }
+                      else if (snap.p >= retParams.targetRetention) { action = 'Skip — above target'; actionColor = 'text-slate-500'; }
+                      else if (snap.p >= 0.7) { action = 'Review candidate'; actionColor = 'text-amber-400'; }
+                      else if (snap.p >= 0.5) { action = 'High-priority review'; actionColor = 'text-orange-400'; }
+                      else { action = 'Urgent review'; actionColor = 'text-red-400'; }
+                      return (
+                        <tr key={snap.day} className="border-b border-white/5">
+                          <td className="py-1.5 px-2 font-mono text-slate-300">{snap.day}</td>
+                          <td className="py-1.5 px-2 text-right font-mono text-indigo-400">{snap.effTheta.toFixed(2)}</td>
+                          <td className={`py-1.5 px-2 text-right font-mono font-bold ${
+                            snap.p >= retParams.targetRetention ? 'text-green-400' : snap.p >= 0.5 ? 'text-amber-400' : 'text-red-400'
+                          }`}>{(snap.p * 100).toFixed(1)}%</td>
+                          <td className="py-1.5 px-2 text-right font-mono text-cyan-400">{snap.info.toFixed(3)}</td>
+                          <td className={`py-1.5 px-2 ${actionColor}`}>{action}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            {/* Stability Timeline */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                  Stability Lifecycle — Review Progression
+                </h3>
+                <span className="text-xs text-slate-500">
+                  S₀={retParams.initialStability} → mastery at S&gt;{retParams.masteryThreshold}
+                </span>
+              </div>
+              {retentionEvents.length === 0 ? (
+                <div className="flex items-center justify-center h-32 text-slate-600 text-sm">
+                  Add review scores to see the stability timeline
+                </div>
+              ) : (
+                <StabilityTimelineChart
+                  events={retentionEvents}
+                  masteryThreshold={retParams.masteryThreshold}
+                />
+              )}
+            </Card>
+
+            {/* Review Events Table */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+                Review History
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left text-slate-500 py-1.5 px-2">#</th>
+                      <th className="text-right text-slate-500 py-1.5 px-2">Score</th>
+                      <th className="text-right text-slate-500 py-1.5 px-2">S before</th>
+                      <th className="text-right text-slate-500 py-1.5 px-2">S after</th>
+                      <th className="text-right text-slate-500 py-1.5 px-2">Interval</th>
+                      <th className="text-right text-slate-500 py-1.5 px-2">Cum. days</th>
+                      <th className="text-left text-slate-500 py-1.5 px-2">State</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {retentionEvents.map((e) => (
+                      <tr key={e.reviewNum} className="border-b border-white/5">
+                        <td className="py-1.5 px-2 font-mono text-slate-400">{e.reviewNum + 1}</td>
+                        <td className={`py-1.5 px-2 text-right font-mono font-bold ${
+                          e.score >= 9.0 ? 'text-green-400' : e.score >= 7.0 ? 'text-amber-400' : 'text-red-400'
+                        }`}>{e.score.toFixed(1)}</td>
+                        <td className="py-1.5 px-2 text-right font-mono text-slate-400">{e.stabilityBefore.toFixed(1)}</td>
+                        <td className="py-1.5 px-2 text-right font-mono text-violet-400">{e.stabilityAfter.toFixed(1)}</td>
+                        <td className="py-1.5 px-2 text-right font-mono text-slate-400">~{e.approxInterval.toFixed(1)}d</td>
+                        <td className="py-1.5 px-2 text-right font-mono text-slate-300">{e.cumulativeDays.toFixed(0)}</td>
+                        <td className="py-1.5 px-2">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            e.state === 'mastered' ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'
+                          }`}>
+                            {e.state}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+
+          {/* Right — Review Score Builder + Insights */}
+          <div className="col-span-3 space-y-4">
+            {/* Review Score Builder */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+                Review Scores
+              </h3>
+              <div className="space-y-2">
+                {retReviewScores.map((s, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500 w-6">#{i + 1}</span>
+                    <input type="range" min={0} max={10} step={0.5} value={s}
+                      onChange={(e) => {
+                        const newScores = [...retReviewScores];
+                        newScores[i] = parseFloat(e.target.value);
+                        setRetReviewScores(newScores);
+                      }}
+                      className="flex-1 accent-indigo-500" />
+                    <span className={`text-sm font-mono w-8 text-right font-bold ${
+                      s >= 9.0 ? 'text-green-400' : s >= 7.0 ? 'text-amber-400' : 'text-red-400'
+                    }`}>{s.toFixed(1)}</span>
+                    <button
+                      onClick={() => setRetReviewScores((scores) => scores.filter((_, idx) => idx !== i))}
+                      className="text-slate-600 hover:text-red-400 text-xs px-1"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 mt-2">
+                  <input type="range" min={0} max={10} step={0.5} value={retNewScore}
+                    onChange={(e) => setRetNewScore(parseFloat(e.target.value))}
+                    className="flex-1 accent-violet-500" />
+                  <span className="text-sm font-mono w-8 text-right text-slate-400">{retNewScore.toFixed(1)}</span>
+                  <Button
+                    variant="ghost"
+                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-xs px-2 py-1 h-auto"
+                    onClick={() => setRetReviewScores((scores) => [...scores, retNewScore])}
+                  >
+                    + Add
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Comparison: Old Gates vs New */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+                Old Gates vs Stability Model
+              </h3>
+              <div className="space-y-3 text-xs">
+                <div className="p-2 rounded-lg bg-red-500/5 border border-red-500/10">
+                  <div className="text-red-400 font-semibold mb-1">Old: 4-Gate Retest Cycle</div>
+                  <div className="text-slate-500">
+                    G1 → wait 3d → G2 → wait 7d → G3 → wait 14d → G4
+                    <br />= 24 calendar days minimum, blocks forward progress
+                  </div>
+                </div>
+                <div className="p-2 rounded-lg bg-green-500/5 border border-green-500/10">
+                  <div className="text-green-400 font-semibold mb-1">New: Stability Model</div>
+                  <div className="text-slate-500">
+                    S₀={retParams.initialStability}d
+                    {retentionEvents.some((e) => e.state === 'mastered') && (
+                      <> → mastered in ~{Math.round(retentionEvents.find((e) => e.state === 'mastered')!.cumulativeDays)} days</>
+                    )}
+                    <br />Reviews surface by information value, never blocks
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Insights */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <div className="flex items-start gap-2">
+                <Shield className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-slate-400 space-y-2">
+                  <p>
+                    <span className="text-violet-300 font-semibold">Forgetting function:</span>{' '}
+                    θ_eff = θ - d·√(t/S). Power-law decay (√t) matches Ebbinghaus research — memory decays
+                    quickly at first, then plateaus. Higher stability (S) = slower decay.
+                  </p>
+                  <p>
+                    <span className="text-amber-300 font-semibold">Auto-scheduling:</span>{' '}
+                    When P(correct) drops below {(retParams.targetRetention * 100).toFixed(0)}%, the item becomes a
+                    review candidate automatically. No calendar gates needed — the engine&apos;s existing
+                    information-maximizing logic handles scheduling.
+                  </p>
+                  <p>
+                    <span className="text-green-300 font-semibold">Stability growth:</span>{' '}
+                    Strong recall (≥9.0) multiplies S by {retParams.strongGrowth}×. Three strong reviews:
+                    {' '}{retParams.initialStability} → {(retParams.initialStability * retParams.strongGrowth).toFixed(1)} → {(retParams.initialStability * retParams.strongGrowth ** 2).toFixed(1)} → {(retParams.initialStability * retParams.strongGrowth ** 3).toFixed(1)}
+                    {retParams.initialStability * retParams.strongGrowth ** 3 >= retParams.masteryThreshold ? ' → mastered' : ''}.
+                  </p>
+                  <p>
+                    <span className="text-red-300 font-semibold">Failed recall:</span>{' '}
+                    S shrinks to {(retParams.shrinkFactor * 100).toFixed(0)}% — the student gets reviewed sooner,
+                    not punished with a gate block. The model adapts to the learner.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* IRT CALIBRATION TAB */}
+      {/* ============================================================ */}
+      {activeTab === 'irt' && (
       <div className="max-w-[1920px] mx-auto p-6 grid grid-cols-12 gap-6">
         {/* ============================================================ */}
         {/* Left Panel — Controls */}
@@ -1774,6 +2640,7 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
           </Card>
         </div>
       </div>
+      )}
     </div>
   );
 };

@@ -8,6 +8,7 @@ Run synthetic student profiles through the Pulse adaptive loop to validate progr
 - `/pulse-agent all` — run all 6 profiles with comparison report
 - `/pulse-agent gifted --sessions 3` — quick smoke test (fewer sessions)
 - `/pulse-agent gifted --clean` — wipe Firestore data before running
+- `/pulse-agent gifted --graph` — include curriculum DAG analysis in the report
 
 ## Required Reading
 
@@ -41,6 +42,7 @@ Parse the user's command. Map to CLI flags:
 | `/pulse-agent gifted` | `--profile gifted --clean --output ./reports` |
 | `/pulse-agent all` | `--all --clean --output ./reports` |
 | `/pulse-agent steady --sessions 5` | `--profile steady --sessions 5 --clean --output ./reports` |
+| `/pulse-agent gifted --graph` | `--profile gifted --graph --clean --output ./reports` |
 
 Default behavior:
 - Always use `--clean` (clean slate is safer for reproducibility)
@@ -75,6 +77,11 @@ For a single profile:
 cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --clean --sessions <N> --seed 42 --output ./reports
 ```
 
+For a single profile with graph analysis:
+```bash
+cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --graph --clean --sessions <N> --seed 42 --output ./reports
+```
+
 For all profiles:
 ```bash
 cd backend && python -m tests.pulse_agent.run_scenarios --all --clean --seed 42 --output ./reports
@@ -93,7 +100,12 @@ After the run completes, present a clear summary:
 1. Show the assertion results (PASS/FAIL table)
 2. Read the generated report file and show the Session Timeline table
 3. Highlight any notable events (leapfrogs, rapid theta growth, stuck skills)
-4. If any assertions failed, explain what went wrong and what to investigate
+4. If `--graph` was used, read the Curriculum DAG Analysis section and discuss:
+   - Whether the nodes/edges in the DAG match expected skill progression
+   - Whether leapfrog ancestor chains follow valid prerequisite paths
+   - What the next-step candidates are and whether they make sense
+   - Any orphan inferences (skills inferred that aren't in the DAG ancestor chain)
+5. If any assertions failed, explain what went wrong and what to investigate
 
 **For all profiles:**
 1. Show the comparison table from the comparison report

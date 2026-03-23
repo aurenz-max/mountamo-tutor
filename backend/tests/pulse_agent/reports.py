@@ -136,17 +136,16 @@ def _session_irt_commentary(s: SessionSnapshot) -> List[str]:
             "new territory. This limits leapfrog opportunities."
         )
 
-    # 5. Gate advance vs score mismatch
+    # 5. Gate advance vs score mismatch (gate > 0 only — at gate 0 all bands
+    #    now route through the lesson handler, so this would be a real issue)
     high_scores_no_gate = [
         it for it in s.items
-        if it.score >= 9.0 and it.gate_before == it.gate_after and it.gate_before == 0
+        if it.score >= 9.0 and it.gate_before == it.gate_after and it.gate_before > 0
     ]
     if high_scores_no_gate:
         notes.append(
-            f"**High scores, no gate progress:** {len(high_scores_no_gate)} items scored "
-            f"9.0+ but stayed at Gate 0. This happens when items are `practice` source "
-            f"(not `lesson`) at Gate 0 — mastery engine requires `lesson` evals for initial "
-            f"gate advancement. Check eval_source assignment logic."
+            f"**High scores, no stability progress:** {len(high_scores_no_gate)} items scored "
+            f"9.0+ but gate didn't advance. Check stability growth thresholds."
         )
 
     return notes
@@ -213,47 +212,56 @@ def generate_journey_report(
         )
     _h("")
 
-    # ── IRT Decision Context (per session) ──
+    # ── IRT Decision Context (only sessions with anomalies get full tables) ──
     _h("## IRT Decision Context")
-    _h("")
-    _h("> Shows what the IRT model predicted for each item vs what happened.")
-    _h("> P(correct) near 1.0 means the item was trivially easy for this student;")
-    _h("> Fisher Information near 0.0 means we learned almost nothing from the response.")
     _h("")
 
     for s in timeline.sessions:
-        _h(f"### Session {s.session_number}" + (" (Cold Start)" if s.is_cold_start else ""))
-        _h("")
-        _h("| Band | Subskill | Mode | Beta | theta | P(correct) | Info | Score | Verdict |")
-        _h("|------|----------|------|------|-------|------------|------|-------|---------|")
-
-        for item in s.items:
-            p = item.p_correct
-            info = item.item_information
-            p_str = f"{p:.3f}" if p is not None else "--"
-            info_str = f"{info:.4f}" if info is not None else "--"
-            verdict = _p_label(p)
-            dag_note = f" d={item.dag_distance}" if item.dag_distance is not None else ""
-
-            _h(
-                f"| {item.band}{dag_note} "
-                f"| {item.subskill_id} "
-                f"| {item.target_mode} "
-                f"| {item.target_beta:.1f} "
-                f"| {item.theta_before:.2f} "
-                f"| {p_str} ({verdict}) "
-                f"| {info_str} ({_info_label(info)}) "
-                f"| {item.score:.1f} "
-                f"| {'G' + str(item.gate_before) + '->' + 'G' + str(item.gate_after) if item.gate_before != item.gate_after else '--'} |"
-            )
-        _h("")
-
-        # Add narrative commentary
         commentary = _session_irt_commentary(s)
+        p_values = [it.p_correct for it in s.items if it.p_correct is not None]
+        avg_p = sum(p_values) / len(p_values) if p_values else 0
+        gate_advances = sum(1 for it in s.items if it.gate_before != it.gate_after)
+
         if commentary:
+            # Session has anomalies — show full IRT table
+            _h(f"### Session {s.session_number}" + (" (Cold Start)" if s.is_cold_start else ""))
+            _h("")
+            _h("| Band | Subskill | Mode | Beta | theta | P(correct) | Info | Score | Verdict |")
+            _h("|------|----------|------|------|-------|------------|------|-------|---------|")
+
+            for item in s.items:
+                p = item.p_correct
+                info = item.item_information
+                p_str = f"{p:.3f}" if p is not None else "--"
+                info_str = f"{info:.4f}" if info is not None else "--"
+                verdict = _p_label(p)
+                dag_note = f" d={item.dag_distance}" if item.dag_distance is not None else ""
+
+                _h(
+                    f"| {item.band}{dag_note} "
+                    f"| {item.subskill_id} "
+                    f"| {item.target_mode} "
+                    f"| {item.target_beta:.1f} "
+                    f"| {item.theta_before:.2f} "
+                    f"| {p_str} ({verdict}) "
+                    f"| {info_str} ({_info_label(info)}) "
+                    f"| {item.score:.1f} "
+                    f"| {'G' + str(item.gate_before) + '->' + 'G' + str(item.gate_after) if item.gate_before != item.gate_after else '--'} |"
+                )
+            _h("")
             for note in commentary:
                 _h(f"- {note}")
             _h("")
+        else:
+            # Clean session — one-line summary
+            _h(
+                f"- **Session {s.session_number}:** "
+                f"avg P={avg_p:.2f}, "
+                f"{gate_advances} gate advances, "
+                f"avg score {s.avg_score:.1f} — no anomalies"
+            )
+
+    _h("")
 
     # ── theta progression table ──
     if timeline.sessions:
@@ -319,44 +327,45 @@ def generate_journey_report(
                 _h(f"| {s.session_number} | " + " | ".join(vals) + " |")
             _h("")
 
-    # ── Leapfrog details ──
-    leapfrog_sessions = [
-        s for s in timeline.sessions if s.total_leapfrogs > 0
+    # ── Leapfrog summary ──
+    _h("## Leapfrog Events")
+    _h("")
+    leapfrog_items = [
+        (s.session_number, item)
+        for s in timeline.sessions
+        for item in s.items
+        if item.leapfrog_triggered
     ]
-    if leapfrog_sessions:
-        _h("## Leapfrog Events")
+    if leapfrog_items:
+        total_inferred = sum(len(it.inferred_skills) for _, it in leapfrog_items)
+        _h(f"**{len(leapfrog_items)} leapfrogs**, inferring {total_inferred} total ancestor skills.")
         _h("")
-        for s in leapfrog_sessions:
-            for item in s.items:
-                if item.leapfrog_triggered:
-                    p_str = f", P(correct)={item.p_correct:.3f}" if item.p_correct is not None else ""
-                    ancestors_str = f", would infer {item.ancestors_if_passed} ancestors" if item.ancestors_if_passed else ""
-                    _h(
-                        f"- **Session {s.session_number}**: "
-                        f"Probed `{item.subskill_id}` at DAG depth {item.dag_distance or '?'} "
-                        f"(score {item.score:.1f}{p_str}{ancestors_str}), "
-                        f"inferred {len(item.inferred_skills)} skills:"
-                    )
-                    for inf in item.inferred_skills[:8]:
-                        _h(f"  - `{inf}`")
-                    if len(item.inferred_skills) > 8:
-                        _h(f"  - ... and {len(item.inferred_skills) - 8} more")
+
+        # Show up to 5 examples
+        _h("| Session | Probe | Depth | Score | P(c) | Inferred |")
+        _h("|---------|-------|-------|-------|------|----------|")
+        for sess_num, item in leapfrog_items[:5]:
+            p_str = f"{item.p_correct:.3f}" if item.p_correct is not None else "--"
+            _h(
+                f"| {sess_num} "
+                f"| {item.subskill_id} "
+                f"| {item.dag_distance or '?'} "
+                f"| {item.score:.1f} "
+                f"| {p_str} "
+                f"| {len(item.inferred_skills)} skills |"
+            )
+        if len(leapfrog_items) > 5:
+            _h(f"| ... | {len(leapfrog_items) - 5} more | | | | |")
         _h("")
     else:
-        _h("## Leapfrog Events")
-        _h("")
         _h("No leapfrogs triggered during this journey.")
         _h("")
-        # Diagnose why
         frontier_count = sum(
             sum(1 for it in s.items if it.band == "frontier")
             for s in timeline.sessions
         )
         if frontier_count == 0:
-            _h("> **Why?** No frontier probes were included in any session. "
-               "Leapfrogs require frontier-band items. Check that the probe "
-               "candidate pool is not empty and that frontier allocation "
-               "percentage is > 0.")
+            _h("> **Why?** No frontier probes in any session.")
         else:
             avg_frontier_score = 0.0
             total_frontier = 0
@@ -367,15 +376,8 @@ def generate_journey_report(
                         total_frontier += 1
             if total_frontier > 0:
                 avg_frontier_score /= total_frontier
-                if avg_frontier_score < 7.5:
-                    _h(f"> **Why?** {total_frontier} frontier probes fired but "
-                       f"avg score was {avg_frontier_score:.1f} (threshold: 7.5). "
-                       f"Student didn't score high enough to trigger leapfrog.")
-                else:
-                    _h(f"> **Why?** {total_frontier} frontier probes with avg score "
-                       f"{avg_frontier_score:.1f} >= 7.5, but no leapfrog. "
-                       f"Check lesson_group_id grouping — leapfrogs require all "
-                       f"items in a group to be scored.")
+                _h(f"> **Why?** {total_frontier} frontier probes, avg score {avg_frontier_score:.1f} "
+                   f"({'below 7.5 threshold' if avg_frontier_score < 7.5 else 'check lesson group scoring'}).")
         _h("")
 
     # ── Selection Analysis (why these skills?) ──
@@ -414,32 +416,222 @@ def generate_journey_report(
         )
     _h("")
 
-    # ── Item-level detail for each session ──
-    if timeline.sessions:
-        _h("## Full Session Details")
-        _h("")
+    return "\n".join(lines)
+
+
+def generate_graph_report(
+    graph: Dict[str, Any],
+    timeline: Optional[JourneyTimeline] = None,
+) -> str:
+    """
+    Generate a DAG analysis section showing nodes, edges, and journey overlay.
+
+    Shows:
+    - Full node inventory grouped by skill (with gate status from journey)
+    - Edge list (prerequisite -> dependent)
+    - Which nodes were directly touched, leapfrog-inferred, or untouched
+    - Traversal path analysis: did the student follow expected edges?
+    """
+    lines: List[str] = []
+    _h = lines.append
+
+    nodes = graph.get("nodes", [])
+    edges = graph.get("edges", [])
+
+    # Build lookup structures
+    node_map = {n["id"]: n for n in nodes}
+    forward: Dict[str, List[str]] = defaultdict(list)
+    reverse: Dict[str, List[str]] = defaultdict(list)
+    for edge in edges:
+        src, tgt = edge["source"], edge["target"]
+        forward[src].append(tgt)
+        reverse[tgt].append(src)
+
+    # Collect journey data if available
+    touched_directly: set = set()      # subskills that appeared as items
+    leapfrog_inferred: set = set()     # subskills inferred via leapfrog
+    leapfrog_probes: set = set()       # subskills that triggered a leapfrog
+    gate_map: Dict[str, int] = {}      # latest gate per subskill
+    skill_scores: Dict[str, List[float]] = defaultdict(list)
+
+    if timeline and timeline.sessions:
         for s in timeline.sessions:
-            _h(f"### Session {s.session_number}")
-            _h("")
-            _h("| # | Band | Subskill | Group | Mode | Score | theta B->A | Gate | P(c) | Info |")
-            _h("|---|------|----------|-------|------|-------|------------|------|------|------|")
-            for i, item in enumerate(s.items, 1):
-                p_str = f"{item.p_correct:.3f}" if item.p_correct is not None else "--"
-                info_str = f"{item.item_information:.4f}" if item.item_information is not None else "--"
-                group = item.lesson_group_id[:15] if item.lesson_group_id else "--"
-                _h(
-                    f"| {i} "
-                    f"| {item.band} "
-                    f"| {item.subskill_id} "
-                    f"| {group} "
-                    f"| {item.target_mode} "
-                    f"| {item.score:.1f} "
-                    f"| {item.theta_before:.1f}->{item.theta_after:.1f} "
-                    f"| G{item.gate_before}->G{item.gate_after} "
-                    f"| {p_str} "
-                    f"| {info_str} |"
-                )
-            _h("")
+            for item in s.items:
+                touched_directly.add(item.subskill_id)
+                skill_scores[item.subskill_id].append(item.score)
+                if item.leapfrog_triggered:
+                    leapfrog_probes.add(item.subskill_id)
+                    for inf in item.inferred_skills:
+                        leapfrog_inferred.add(inf)
+            # Use latest mastery snapshot for gates
+            for sid, lc in s.mastery_snapshot.items():
+                gate_map[sid] = lc.get("current_gate", 0)
+
+    _h("## Curriculum DAG Analysis")
+    _h("")
+    _h(f"**Total nodes:** {len(nodes)} subskills")
+    _h(f"**Total edges:** {len(edges)} prerequisites")
+    if timeline:
+        _h(f"**Touched directly:** {len(touched_directly)} nodes")
+        _h(f"**Leapfrog-inferred:** {len(leapfrog_inferred)} nodes")
+        _h(f"**Untouched:** {len(nodes) - len(touched_directly) - len(leapfrog_inferred - touched_directly)} nodes")
+    _h("")
+
+    # ── Nodes grouped by skill ──
+    skill_groups: Dict[str, List[Dict]] = defaultdict(list)
+    for node in nodes:
+        skill_id = node.get("skill_id", node.get("parent_id", "unknown"))
+        skill_groups[skill_id].append(node)
+
+    _h("### Nodes by Skill")
+    _h("")
+    _h("| Skill | Subskill | Description | Status | Gate | Avg Score |")
+    _h("|-------|----------|-------------|--------|------|-----------|")
+
+    for skill_id in sorted(skill_groups.keys()):
+        group = sorted(skill_groups[skill_id], key=lambda n: n["id"])
+        for node in group:
+            nid = node["id"]
+            desc = node.get("description", node.get("label", ""))[:40]
+            # Determine status
+            if nid in leapfrog_probes:
+                status = "PROBED+LEAP"
+            elif nid in touched_directly:
+                status = "TOUCHED"
+            elif nid in leapfrog_inferred:
+                status = "INFERRED"
+            elif timeline:
+                status = "untouched"
+            else:
+                status = "--"
+
+            gate = f"G{gate_map[nid]}" if nid in gate_map else "--"
+            avg = ""
+            if nid in skill_scores:
+                avg = f"{sum(skill_scores[nid])/len(skill_scores[nid]):.1f}"
+
+            _h(f"| {skill_id} | {nid} | {desc} | {status} | {gate} | {avg} |")
+    _h("")
+
+    # ── Edge list with traversal annotation ──
+    _h("### Prerequisite Edges")
+    _h("")
+    _h("> source -> target means source must be mastered before target unlocks.")
+    _h("")
+    _h("| Source | Target | Threshold | Traversed? |")
+    _h("|--------|--------|-----------|------------|")
+
+    all_known = touched_directly | leapfrog_inferred
+    for edge in sorted(edges, key=lambda e: (e["source"], e["target"])):
+        src = edge["source"]
+        tgt = edge["target"]
+        threshold = edge.get("threshold", edge.get("proficiency_threshold", 0.8))
+        # Edge was "traversed" if source was mastered/inferred AND target was touched/inferred
+        if timeline:
+            src_known = src in all_known
+            tgt_known = tgt in all_known
+            if src_known and tgt_known:
+                traversal = "YES"
+            elif src_known and not tgt_known:
+                traversal = "frontier"
+            else:
+                traversal = "--"
+        else:
+            traversal = "--"
+        _h(f"| {src} | {tgt} | {threshold} | {traversal} |")
+    _h("")
+
+    # ── Leapfrog path analysis ──
+    if leapfrog_probes and timeline:
+        _h("### Leapfrog Path Analysis")
+        _h("")
+        _h("> For each leapfrog probe, shows the ancestor chain that was inferred.")
+        _h("")
+
+        for s in timeline.sessions:
+            for item in s.items:
+                if not item.leapfrog_triggered:
+                    continue
+                _h(f"**Session {s.session_number} — `{item.subskill_id}`** "
+                   f"(depth {item.dag_distance or '?'}, score {item.score:.1f})")
+                _h("")
+
+                # Walk ancestors via reverse edges
+                ancestors_in_dag = set()
+                queue = list(reverse.get(item.subskill_id, []))
+                visited = set()
+                while queue:
+                    cur = queue.pop(0)
+                    if cur in visited:
+                        continue
+                    visited.add(cur)
+                    ancestors_in_dag.add(cur)
+                    queue.extend(p for p in reverse.get(cur, []) if p not in visited)
+
+                # Show which ancestors were inferred vs already known
+                inferred_set = set(item.inferred_skills)
+                _h("| Ancestor | In DAG | Inferred? | Was Known? |")
+                _h("|----------|--------|-----------|------------|")
+
+                for anc in sorted(ancestors_in_dag):
+                    in_inferred = "YES" if anc in inferred_set else "no"
+                    was_known = "already" if (anc in touched_directly and anc not in inferred_set) else "--"
+                    _h(f"| {anc} | yes | {in_inferred} | {was_known} |")
+
+                # Flag any inferred skills NOT in DAG ancestors (shouldn't happen)
+                orphans = inferred_set - ancestors_in_dag - {item.subskill_id}
+                if orphans:
+                    _h("")
+                    _h(f"**WARNING:** {len(orphans)} inferred skills not in DAG ancestor chain:")
+                    for o in sorted(orphans):
+                        _h(f"  - `{o}`")
+                _h("")
+
+    # ── Next-step analysis (what SHOULD come next?) ──
+    if timeline:
+        _h("### Next-Step Candidates")
+        _h("")
+        _h("> Nodes reachable from current frontier (1-3 edges ahead) that haven't been touched.")
+        _h("")
+
+        # Frontier = nodes that are known but whose children are not all known
+        frontier = set()
+        for nid in all_known:
+            children = forward.get(nid, [])
+            if children and not all(c in all_known for c in children):
+                frontier.add(nid)
+
+        # BFS forward from frontier, 1-3 hops
+        next_candidates: List[tuple] = []  # (node_id, depth, parent)
+        bfs_queue = []
+        for fid in frontier:
+            for child in forward.get(fid, []):
+                if child not in all_known:
+                    bfs_queue.append((child, 1, fid))
+
+        bfs_visited = set()
+        while bfs_queue:
+            nid, depth, parent = bfs_queue.pop(0)
+            if nid in bfs_visited or depth > 3:
+                continue
+            bfs_visited.add(nid)
+            next_candidates.append((nid, depth, parent))
+            if depth < 3:
+                for child in forward.get(nid, []):
+                    if child not in bfs_visited and child not in all_known:
+                        bfs_queue.append((child, depth + 1, nid))
+
+        if next_candidates:
+            _h("| Candidate | Depth | From (frontier) | Skill | Description |")
+            _h("|-----------|-------|-----------------|-------|-------------|")
+            for nid, depth, parent in sorted(next_candidates, key=lambda x: (x[1], x[0])):
+                node = node_map.get(nid, {})
+                desc = node.get("description", node.get("label", ""))[:40]
+                skill = node.get("skill_id", "?")
+                _h(f"| {nid} | {depth} | {parent} | {skill} | {desc} |")
+        else:
+            _h("No next-step candidates found — student may have reached the end of the DAG.")
+        _h("")
 
     return "\n".join(lines)
 

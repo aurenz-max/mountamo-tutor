@@ -6,9 +6,11 @@ import logging
 from typing import Optional, Dict, Any
 from datetime import datetime
 
+from app.services.edge_manager import edge_manager
 from app.services.prerequisite_manager import prerequisite_manager
 from app.db.firestore_graph_service import firestore_graph_service
 from app.models.prerequisites import PrerequisiteGraph
+from app.models.edges import CurriculumGraph
 
 logger = logging.getLogger(__name__)
 
@@ -81,17 +83,32 @@ class GraphCacheManager:
         include_drafts: bool,
         version_type: str
     ) -> PrerequisiteGraph:
-        """Generate graph from BigQuery and cache in Firestore"""
+        """Generate graph from BigQuery and cache in Firestore.
+
+        Tries the EdgeManager (curriculum_edges table) first.  Falls back to
+        the legacy PrerequisiteManager if the edges table doesn't exist yet
+        (pre-migration).
+        """
         try:
-            # Generate enriched graph from BigQuery
-            graph = await prerequisite_manager.build_enriched_graph(
-                subject_id,
-                include_drafts
-            )
+            # Try EdgeManager first (knowledge-graph enriched edges)
+            try:
+                kg_graph: CurriculumGraph = await edge_manager.get_subject_graph(
+                    subject_id, include_drafts
+                )
+                graph = PrerequisiteGraph(nodes=kg_graph.nodes, edges=kg_graph.edges)
+            except Exception as e:
+                logger.warning(f"EdgeManager failed, falling back to PrerequisiteManager: {e}")
+                graph = await prerequisite_manager.build_enriched_graph(
+                    subject_id, include_drafts
+                )
 
             # Calculate metadata
             skill_count = sum(1 for n in graph.nodes if n.get("type") == "skill")
             subskill_count = sum(1 for n in graph.nodes if n.get("type") == "subskill")
+
+            # Edge counts by relationship type
+            from collections import Counter
+            rel_counts = Counter(e.get("relationship", "prerequisite") for e in graph.edges)
 
             metadata = {
                 "entity_counts": {
@@ -100,6 +117,14 @@ class GraphCacheManager:
                     "total": len(graph.nodes)
                 },
                 "edge_count": len(graph.edges),
+                "edge_counts": {
+                    "total": len(graph.edges),
+                    "prerequisite": rel_counts.get("prerequisite", 0),
+                    "builds_on": rel_counts.get("builds_on", 0),
+                    "reinforces": rel_counts.get("reinforces", 0),
+                    "parallel": rel_counts.get("parallel", 0),
+                    "applies": rel_counts.get("applies", 0),
+                },
                 "include_drafts": include_drafts
             }
 

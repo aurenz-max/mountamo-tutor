@@ -65,6 +65,7 @@ class FirestoreCurriculumSync:
                 "versions": self.client.collection("curriculum_versions"),
                 "primitives": self.client.collection("curriculum_primitives"),
                 "subskill_primitives": self.client.collection("curriculum_subskill_primitives"),
+                "edges": self.client.collection("curriculum_edges"),
             }
 
             logger.info("Firestore curriculum sync initialized")
@@ -206,6 +207,38 @@ class FirestoreCurriculumSync:
             logger.error(f"Firestore delete failed for prerequisite {prerequisite_id}: {e}")
 
     # ========================================================================
+    # EDGE SYNC (knowledge graph edges)
+    # ========================================================================
+
+    async def sync_edge(self, edge_data: Dict[str, Any]) -> None:
+        """Sync an edge document to Firestore."""
+        try:
+            doc_id = edge_data["edge_id"]
+            data = self._prepare(edge_data)
+            self._collections["edges"].document(doc_id).set(data)
+            logger.info(f"Synced edge {doc_id} to Firestore")
+        except Exception as e:
+            logger.error(f"Firestore sync failed for edge: {e}")
+
+    async def delete_edge(self, edge_id: str) -> None:
+        """Delete an edge document from Firestore."""
+        try:
+            self._collections["edges"].document(edge_id).delete()
+            logger.info(f"Deleted edge {edge_id} from Firestore")
+        except Exception as e:
+            logger.error(f"Firestore delete failed for edge {edge_id}: {e}")
+
+    async def delete_edge_by_pair(self, pair_id: str) -> None:
+        """Delete all edges sharing a pair_id (parallel edge pairs)."""
+        try:
+            docs = self._collections["edges"].where("pair_id", "==", pair_id).stream()
+            for doc in docs:
+                doc.reference.delete()
+            logger.info(f"Deleted edges with pair_id {pair_id} from Firestore")
+        except Exception as e:
+            logger.error(f"Firestore delete failed for pair {pair_id}: {e}")
+
+    # ========================================================================
     # VERSION SYNC
     # ========================================================================
 
@@ -321,6 +354,10 @@ class FirestoreCurriculumSync:
 
             # 6. Update prerequisite docs (have subject_id directly)
             for doc in self._collections["prerequisites"].where("subject_id", "==", subject_id).stream():
+                operations.append((doc.reference, publish_update))
+
+            # 6b. Update edge docs (knowledge graph edges)
+            for doc in self._collections["edges"].where("subject_id", "==", subject_id).stream():
                 operations.append((doc.reference, publish_update))
 
             # 7. Update subskill-primitive associations

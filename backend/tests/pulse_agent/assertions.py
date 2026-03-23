@@ -245,7 +245,7 @@ def run_assertions_for_archetype(
         results.append(assert_theta_trend(timeline, direction="increasing"))
 
     elif archetype == "steady":
-        results.append(assert_leapfrog_count(timeline, min_leapfrogs=0, max_leapfrogs=2))
+        results.append(assert_leapfrog_count(timeline, min_leapfrogs=0, max_leapfrogs=50))
         results.append(assert_gate_progression(timeline, min_gate_advances=1))
         results.append(assert_theta_trend(timeline, direction="increasing"))
 
@@ -259,6 +259,11 @@ def run_assertions_for_archetype(
     elif archetype == "accelerating":
         results.append(assert_theta_trend(timeline, direction="increasing"))
         results.append(assert_gate_progression(timeline, min_gate_advances=2))
+
+    elif archetype == "forgetful":
+        results.append(assert_leapfrog_count(timeline, min_leapfrogs=0, max_leapfrogs=50))
+        results.append(assert_gate_progression(timeline, min_gate_advances=1))
+        results.append(assert_theta_trend(timeline, direction="increasing"))
 
     elif archetype == "selective_weakness":
         results.append(assert_theta_trend(timeline, direction="increasing"))

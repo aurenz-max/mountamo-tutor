@@ -37,7 +37,7 @@ class Settings(BaseSettings):
 
     # Gemini AI Configuration
     GEMINI_API_KEY: str
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-3-flash-preview"
     GEMINI_TEMPERATURE: float = 0.7
     GEMINI_MAX_TOKENS: int = 2048
 
@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     TABLE_SKILLS: str = "curriculum_skills"
     TABLE_SUBSKILLS: str = "curriculum_subskills"
     TABLE_PREREQUISITES: str = "curriculum_prerequisites"
+    TABLE_EDGES: str = "curriculum_edges"
     TABLE_VERSIONS: str = "curriculum_versions"
     TABLE_PRIMITIVES: str = "curriculum_primitives"
     TABLE_SUBSKILL_PRIMITIVES: str = "curriculum_subskill_primitives"

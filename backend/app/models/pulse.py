@@ -34,12 +34,13 @@ FRONTIER_MAX_JUMP = 5            # max DAG edges ahead
 # Primitive history: rolling window size (number of recent entries to keep)
 PRIMITIVE_HISTORY_WINDOW = 30
 
-# Leapfrog seeding (PRD §3.3) — matches diagnostic inference
-LEAPFROG_INFERRED_GATE = 2
+# Leapfrog seeding (PRD §3.3 + §16.8) — matches diagnostic inference
+# Gate field kept for backward compat; retention_state="active" is the new source of truth
+LEAPFROG_INFERRED_GATE = 1           # backward compat: maps to Gate 1 (initial mastery)
 LEAPFROG_INFERRED_COMPLETION = 0.5
 LEAPFROG_INFERRED_THETA = 7.0
 LEAPFROG_INFERRED_SIGMA = 1.5
-LEAPFROG_RETEST_DAYS = 3
+LEAPFROG_INFERRED_STABILITY = 3.0   # §16.8: inferred skills start with S₀
 
 # Per-skill cap in current-band selection — prevents one skill dominating a session
 MAX_CURRENT_ITEMS_PER_SKILL = 3

@@ -45,10 +45,11 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   explain: {
     promptDoc:
-      `"explain": Student explains why a step is necessary. `
-      + `Provide 2-3 key points that a good explanation should mention. `
-      + `Used for open-ended comprehension checking.`,
-    schemaDescription: "'explain' (explain why a step matters)",
+      `"explain": Ask "Why is Step X important?" or "Why does this step need to happen?" `
+      + `Student selects from 4 options. Provide option0-option3 and correctIndex (0-3). `
+      + `The correct option should explain the PURPOSE or CONSEQUENCE of the step. `
+      + `Distractors should be plausible but incorrect reasons.`,
+    schemaDescription: "'explain' (why a step matters — multiple choice)",
   },
 };
 
@@ -114,10 +115,6 @@ const challengeSchema: Schema = {
     sequenceItem4Id: { type: Type.STRING, description: "ID for sequence item 4 (e.g. 's4')" },
     sequenceItem4Text: { type: Type.STRING, description: "Text for sequence item 4" },
     correctOrderCsv: { type: Type.STRING, description: "Comma-separated correct order of IDs (e.g. 's0,s1,s2,s3')" },
-    // For explain (key points)
-    keyPoint0: { type: Type.STRING, description: "First key point for explain challenge" },
-    keyPoint1: { type: Type.STRING, description: "Second key point for explain challenge" },
-    keyPoint2: { type: Type.STRING, description: "Third key point for explain challenge" },
     // Common
     explanation: { type: Type.STRING, description: "Explanation shown after answering (1-2 sentences)" },
     relatedStep: { type: Type.NUMBER, description: "Step number this challenge relates to (1-based)" },
@@ -222,7 +219,7 @@ function validateHowItWorksData(raw: any): HowItWorksData {
         relatedStep: typeof c.relatedStep === 'number' ? c.relatedStep : 1,
       };
 
-      if (type === 'identify' || type === 'predict') {
+      if (type === 'identify' || type === 'predict' || type === 'explain') {
         // Reconstruct options array from flat fields
         const options = [
           String(c.option0 || c.options?.[0] || 'Option A'),
@@ -263,21 +260,7 @@ function validateHowItWorksData(raw: any): HowItWorksData {
         return { ...base, sequenceItems, correctOrder };
       }
 
-      if (type === 'explain') {
-        // Reconstruct keyPoints from flat fields
-        const keyPoints: string[] = [];
-        for (let i = 0; i < 3; i++) {
-          const kp = c[`keyPoint${i}`];
-          if (kp) keyPoints.push(String(kp));
-        }
-        // Fallback: check if keyPoints array exists
-        if (keyPoints.length === 0 && Array.isArray(c.keyPoints)) {
-          for (const kp of c.keyPoints.slice(0, 3)) {
-            keyPoints.push(String(kp));
-          }
-        }
-        return { ...base, keyPoints };
-      }
+      // explain is now handled as MC above (same as identify/predict)
 
       return base;
     });
@@ -400,8 +383,11 @@ For "predict" challenges:
 - Question should describe a point in the process and ask what happens next
 
 For "explain" challenges:
-- Provide keyPoint0, keyPoint1, keyPoint2 (2-3 key points a good answer should mention)
-- Question asks student to explain why a step is important or necessary
+- Provide option0, option1, option2, option3 (4 multiple choice options)
+- Provide correctIndex (0-3)
+- Question should ask WHY a step is important or necessary (e.g. "Why is Step 3 important?")
+- The correct option explains the PURPOSE or CONSEQUENCE of the step
+- Distractors should be plausible but incorrect reasons
 
 ## Grade-Level Adaptation:
 - For K-2: Simple vocabulary, 4 steps max, very concrete everyday processes, relatable comparisons

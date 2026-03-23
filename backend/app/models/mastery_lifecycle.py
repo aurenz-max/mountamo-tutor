@@ -1,16 +1,16 @@
 """
 Mastery Lifecycle Data Models
 
-Implements the 4-gate mastery lifecycle model from the Competency–Planner
-Integration PRD.  Each subskill follows a lifecycle:
+Implements the stability-based retention model (PRD §16), replacing Gates 1-4
+with continuous forgetting + spaced review.  Each subskill follows:
 
-  Gate 0 (Not Started)
-    → Gate 1 (Initial Mastery — 3 lesson evals ≥ 90%)
-    → Gate 2 (Retest 1 — practice eval ≥ 90% after 3-day interval)
-    → Gate 3 (Retest 2 — practice eval ≥ 90% after 7-day interval)
-    → Gate 4 (Retest 3 — practice eval ≥ 90% after 14-day interval)
+  not_started  (Gate 0 — student hasn't been introduced)
+    → active   (Gate 1 — initial mastery achieved, retention tracked via stability)
+    → mastered (stability > 30 days — long-term retention verified)
 
-A student at Gate 4 with 100% completion has **durable mastery**.
+Gate 0→1 transition preserved for initial mastery verification.
+Reviews surface by information value (P < 0.85), never blocking progression.
+Stability grows with successful reviews (×2.5/×1.5/×0.5).
 """
 
 from __future__ import annotations
@@ -118,6 +118,24 @@ class MasteryLifecycle(BaseModel):
         default=None, description="Skill beta median used for gate threshold computation",
     )
 
+    # Retention model (PRD §16 — replaces Gates 1-4)
+    retention_state: str = Field(
+        default="not_started",
+        description="Retention state: 'not_started' | 'active' | 'mastered'",
+    )
+    stability: float = Field(
+        default=0.0, ge=0.0,
+        description="Memory strength in days — how long before P drops below target",
+    )
+    last_reviewed: Optional[str] = Field(
+        default=None,
+        description="ISO-8601 timestamp of last stability-updating review",
+    )
+    review_count: int = Field(
+        default=0, ge=0,
+        description="Number of stability-updating reviews completed",
+    )
+
     # History
     gate_history: List[GateHistoryEntry] = Field(default_factory=list)
 
@@ -194,4 +212,41 @@ GATE_REF_FRACTIONS = {
     2: 0.5,   # Mid difficulty
     3: 0.8,   # 80th percentile β
     4: 1.0,   # Hardest mode (max β)
+}
+
+# ---------------------------------------------------------------------------
+# Retention model constants (PRD §16 — replaces Gates 1-4)
+# ---------------------------------------------------------------------------
+
+# Initial memory stability after first mastery (Gate 0→1 cleared)
+INITIAL_STABILITY = 3.0  # days
+
+# Forgetting function: effective_theta = θ - DECAY_RATE * √(t / S)
+# Calibrated so at t=S days, θ=7.0 drops to P≈0.85
+DECAY_RATE = 1.5
+
+# Review trigger: items with P(correct) below this become review candidates
+TARGET_RETENTION = 0.85
+
+# Current-band filter: items above this P are trivial busywork — skip them
+TRIVIAL_THRESHOLD = 0.95
+
+# Stability growth multipliers based on review score
+STABILITY_GROWTH_STRONG = 2.5   # score >= 9.0 — strong recall
+STABILITY_GROWTH_PARTIAL = 1.5  # score >= 7.0 — partial recall
+STABILITY_SHRINK_FAIL = 0.5     # score < 7.0 — failed recall, review sooner
+
+# Stability above this → mastered (equivalent to old Gate 4)
+MASTERY_STABILITY_THRESHOLD = 30.0  # days
+
+# Never decay effective_theta below this fraction of tested theta
+THETA_DECAY_FLOOR_FACTOR = 0.5
+
+# Gate-to-stability migration mapping for existing Firestore docs
+GATE_TO_STABILITY = {
+    0: 0.0,     # not_started
+    1: 3.0,     # just cleared initial mastery
+    2: 7.5,     # survived one retest
+    3: 18.75,   # survived two retests
+    4: 47.0,    # fully verified
 }
