@@ -82,6 +82,13 @@ async def basic_logging(request: Request, call_next):
 
 app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
 
+# Curriculum read endpoints are public — catalog data, not student state
+app.include_router(
+    curriculum.public_router,
+    prefix="/api/curriculum",
+    tags=["curriculum"]
+)
+
 # ============================================================================
 # AUTHENTICATED ENDPOINTS - Simple consistent pattern
 # ============================================================================
@@ -103,9 +110,9 @@ app.include_router(
 )
 
 app.include_router(
-    curriculum.router, 
-    prefix="/api/curriculum", 
-    tags=["curriculum"],
+    curriculum.router,
+    prefix="/api/curriculum",
+    tags=["curriculum-admin"],
     dependencies=[Depends(get_user_context)]
 )
 

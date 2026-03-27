@@ -28,13 +28,17 @@ class GraphCacheManager:
         Get curriculum graph - returns cached version if available, otherwise generates and caches
 
         Args:
-            subject_id: Subject identifier
+            subject_id: Subject identifier (normalized to UPPER_SNAKE_CASE for Firestore consistency)
             include_drafts: Include draft entities in graph
             force_refresh: Force regeneration even if cached version exists
 
         Returns:
             PrerequisiteGraph with nodes and edges
         """
+        # Normalize to UPPER_SNAKE_CASE to match backend convention
+        # e.g. "Mathematics" → "MATHEMATICS", "Language Arts" → "LANGUAGE_ARTS"
+        subject_id = subject_id.upper().replace(" ", "_")
+
         version_type = "draft" if include_drafts else "published"
 
         # Check cache first (unless forced refresh)
@@ -166,6 +170,7 @@ class GraphCacheManager:
         Returns:
             Number of documents deleted
         """
+        subject_id = subject_id.upper().replace(" ", "_")
         try:
             deleted_count = await firestore_graph_service.delete_graph_documents(
                 subject_id,
@@ -194,6 +199,7 @@ class GraphCacheManager:
         Returns:
             Newly generated PrerequisiteGraph
         """
+        subject_id = subject_id.upper().replace(" ", "_")
         version_type = "draft" if include_drafts else "published"
 
         logger.info(f"🔄 Force regenerating graph for {subject_id} ({version_type})")
@@ -212,6 +218,8 @@ class GraphCacheManager:
     ) -> Dict[str, PrerequisiteGraph]:
         """
         Regenerate both draft and published graphs for a subject
+
+        subject_id is normalized to UPPER_SNAKE_CASE.
 
         Useful after publishing changes or major curriculum updates.
 

@@ -38,9 +38,16 @@ PRIMITIVE_HISTORY_WINDOW = 30
 # Gate field kept for backward compat; retention_state="active" is the new source of truth
 LEAPFROG_INFERRED_GATE = 1           # backward compat: maps to Gate 1 (initial mastery)
 LEAPFROG_INFERRED_COMPLETION = 0.5
-LEAPFROG_INFERRED_THETA = 7.0
 LEAPFROG_INFERRED_SIGMA = 1.5
 LEAPFROG_INFERRED_STABILITY = 3.0   # §16.8: inferred skills start with S₀
+
+# Credibility-based theta shrinkage for leapfrog-inferred skills.
+# Instead of a flat theta, inferred ancestors get:
+#   θ_inferred = prior + (probe_θ - prior) × (1 / CREDIBILITY_STANDARD)
+# With prior=3.0 and probe_θ≈6.0 → θ_inferred≈3.3.
+# Reuses the same CREDIBILITY_STANDARD=10 from mastery_lifecycle
+# (Z = attempts/10). One indirect observation = Z=0.1.
+LEAPFROG_CREDIBILITY_WEIGHT = 1  # indirect observations credited per leapfrog
 
 # Per-skill cap in current-band selection — prevents one skill dominating a session
 MAX_CURRENT_ITEMS_PER_SKILL = 3

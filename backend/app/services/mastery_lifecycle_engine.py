@@ -43,6 +43,9 @@ from ..models.mastery_lifecycle import (
     STABILITY_GROWTH_PARTIAL,
     STABILITY_GROWTH_STRONG,
     STABILITY_SHRINK_FAIL,
+    FAST_TRACK_P_THRESHOLD,
+    FAST_TRACK_SIGMA_MAX,
+    FAST_TRACK_STABILITY,
     THETA_DECAY_FLOOR_FACTOR,
     GateHistoryEntry,
     MasteryGate,
@@ -225,6 +228,7 @@ class MasteryLifecycleEngine:
             global_rate = global_rate_data.get("global_practice_pass_rate", 0.8)
             lifecycle = self._handle_practice_eval(
                 lifecycle, score, passed, ts, now, global_rate,
+                theta=theta, sigma=sigma, primitive_type=primitive_type, avg_a=avg_a,
             )
 
         # Append to gate history (capped to prevent unbounded doc growth)
@@ -402,12 +406,22 @@ class MasteryLifecycleEngine:
         timestamp: str,
         now: datetime,
         global_pass_rate: float,
+        *,
+        theta: Optional[float] = None,
+        sigma: Optional[float] = None,
+        primitive_type: Optional[str] = None,
+        avg_a: Optional[float] = None,
     ) -> MasteryLifecycle:
         """
         Handle a practice-mode evaluation using the stability model.
 
         Instead of gate 1→2→3→4 calendar retests, stability grows or shrinks
         based on score. Reviews surface naturally via effective_theta decay.
+
+        Ability-aware fast-track: if P(correct) on the hardest available mode
+        exceeds FAST_TRACK_P_THRESHOLD (0.95), stability floors at
+        FAST_TRACK_STABILITY (18.75) — skipping intermediate gates for students
+        who demonstrably know the material.
         """
         if lifecycle.retention_state == "not_started":
             logger.info(
@@ -435,6 +449,34 @@ class MasteryLifecycleEngine:
         else:  # failed recall
             lifecycle.stability *= STABILITY_SHRINK_FAIL
             lifecycle.fails += 1
+
+        # --- Ability-aware fast-track (multi-gate jump) ---
+        # If the model predicts P(correct) >= 0.95 on the hardest mode AND
+        # the student scored well, skip intermediate stability gates.
+        # Only applies to strong-recall scores — partial/fail still grow normally.
+        # Guard: σ must be below FAST_TRACK_SIGMA_MAX (1.0) so leapfrog-inferred
+        # skills (σ=1.5) can't fast-track until the IRT model has enough real
+        # observations to reduce uncertainty. This is the Pulse-native signal
+        # for "we're confident this theta is earned, not fabricated."
+        if (score >= MASTERY_THRESHOLD
+                and theta is not None and primitive_type is not None
+                and sigma is not None and sigma < FAST_TRACK_SIGMA_MAX):
+            try:
+                from .calibration.problem_type_registry import get_primitive_beta_range
+                _, max_beta = get_primitive_beta_range(primitive_type)
+                a = avg_a or 1.4
+                p_hardest = p_correct(theta, a, max_beta)
+                if p_hardest >= FAST_TRACK_P_THRESHOLD:
+                    pre_fast = lifecycle.stability
+                    lifecycle.stability = max(lifecycle.stability, FAST_TRACK_STABILITY)
+                    if lifecycle.stability > pre_fast:
+                        logger.info(
+                            f"[MASTERY_ENGINE] FAST-TRACK for {lifecycle.subskill_id}: "
+                            f"P(hardest)={p_hardest:.3f} >= {FAST_TRACK_P_THRESHOLD}, "
+                            f"stability {pre_fast:.1f} → {lifecycle.stability:.1f}"
+                        )
+            except Exception as e:
+                logger.debug(f"[MASTERY_ENGINE] Fast-track check skipped: {e}")
 
         lifecycle.last_reviewed = timestamp
         lifecycle.review_count += 1

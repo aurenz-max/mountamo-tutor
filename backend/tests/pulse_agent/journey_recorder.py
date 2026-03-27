@@ -87,6 +87,7 @@ class JourneyTimeline:
     sessions: List[SessionSnapshot] = field(default_factory=list)
     started_at: str = ""
     completed_at: str = ""
+    total_curriculum_nodes: int = 0  # total subskill nodes in the DAG
 
     @property
     def total_sessions(self) -> int:

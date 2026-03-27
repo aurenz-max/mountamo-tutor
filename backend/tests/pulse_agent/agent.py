@@ -86,6 +86,16 @@ class PulseAgentRunner:
             subject=profile.subject,
         )
 
+        # Fetch curriculum size for coverage tracking
+        try:
+            graph = await self.fetch_graph(profile.subject)
+            timeline.total_curriculum_nodes = len(graph.get("nodes", []))
+            logger.info(
+                f"   Curriculum: {timeline.total_curriculum_nodes} subskill nodes"
+            )
+        except Exception as e:
+            logger.warning(f"   Could not fetch curriculum graph: {e}")
+
         for session_num in range(1, num_sessions + 1):
             strategy.advance_session()
 

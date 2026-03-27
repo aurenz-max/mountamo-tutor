@@ -178,6 +178,17 @@ def generate_journey_report(
     _h(f"**Completed:** {timeline.completed_at}")
     _h("")
 
+    # ── Curriculum coverage headline ──
+    total_cur = timeline.total_curriculum_nodes
+    if total_cur > 0 and timeline.sessions:
+        final_snap = timeline.sessions[-1].mastery_snapshot
+        known = sum(1 for lc in final_snap.values() if lc.get("current_gate", 0) >= 1)
+        mastered = sum(1 for lc in final_snap.values() if lc.get("current_gate", 0) >= 4)
+        _h(f"**Curriculum:** {total_cur} subskills total")
+        _h(f"**Coverage (final):** {known}/{total_cur} known ({known*100/total_cur:.0f}%), "
+           f"{mastered}/{total_cur} mastered ({mastered*100/total_cur:.0f}%)")
+        _h("")
+
     # ── Assertion results ──
     if assertion_results:
         _h("## Assertions")
@@ -196,20 +207,48 @@ def generate_journey_report(
     # ── Session-by-session summary ──
     _h("## Session Timeline")
     _h("")
-    _h("| # | Avg Score | Bands (F/C/R) | Leapfrogs | Gate Advances | Skills in State |")
-    _h("|---|-----------|---------------|-----------|---------------|-----------------|")
+    if total_cur > 0:
+        _h("| # | Avg Score | Bands (F/C/R) | Leapfrogs | Gate Advances | Known | % Known | Gates (G0/G1/G2/G3/G4) | % Mastered |")
+        _h("|---|-----------|---------------|-----------|---------------|-------|---------|------------------------|------------|")
+    else:
+        _h("| # | Avg Score | Bands (F/C/R) | Leapfrogs | Gate Advances | Skills in State |")
+        _h("|---|-----------|---------------|-----------|---------------|-----------------|")
 
     for s in timeline.sessions:
         bands = f"{s.band_counts.get('frontier', 0)}/{s.band_counts.get('current', 0)}/{s.band_counts.get('review', 0)}"
         skills_in_state = len(s.mastery_snapshot)
-        _h(
-            f"| {s.session_number} "
-            f"| {s.avg_score:.1f} "
-            f"| {bands} "
-            f"| {s.total_leapfrogs} "
-            f"| {s.total_gate_advances} "
-            f"| {skills_in_state} |"
-        )
+
+        if total_cur > 0:
+            # Compute gate distribution from mastery snapshot
+            gate_counts = [0, 0, 0, 0, 0]  # G0, G1, G2, G3, G4
+            for lc in s.mastery_snapshot.values():
+                g = min(lc.get("current_gate", 0), 4)
+                gate_counts[g] += 1
+            known = sum(gate_counts[1:])  # gate >= 1
+            mastered_g4 = gate_counts[4]
+            pct_known = known * 100 / total_cur
+            pct_mastered = mastered_g4 * 100 / total_cur
+            gate_str = "/".join(str(c) for c in gate_counts)
+            _h(
+                f"| {s.session_number} "
+                f"| {s.avg_score:.1f} "
+                f"| {bands} "
+                f"| {s.total_leapfrogs} "
+                f"| {s.total_gate_advances} "
+                f"| {known}/{total_cur} "
+                f"| {pct_known:.0f}% "
+                f"| {gate_str} "
+                f"| {pct_mastered:.0f}% |"
+            )
+        else:
+            _h(
+                f"| {s.session_number} "
+                f"| {s.avg_score:.1f} "
+                f"| {bands} "
+                f"| {s.total_leapfrogs} "
+                f"| {s.total_gate_advances} "
+                f"| {skills_in_state} |"
+            )
     _h("")
 
     # ── IRT Decision Context (only sessions with anomalies get full tables) ──

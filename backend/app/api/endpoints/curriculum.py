@@ -4,9 +4,19 @@ from typing import Dict, Any, List, Optional
 from app.dependencies import get_curriculum_service
 from app.services.curriculum_service import CurriculumService
 
+# Public router — read-only catalog queries, no auth required
+# Curriculum structure is reference data (same for everyone), not student state.
+public_router = APIRouter()
+
+# Protected router — admin/write operations, requires auth
 router = APIRouter()
 
-@router.get("/subjects")
+
+# ============================================================================
+# PUBLIC ENDPOINTS — Read-only curriculum catalog
+# ============================================================================
+
+@public_router.get("/subjects")
 async def get_available_subjects(
     grade: Optional[str] = None,
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
@@ -17,8 +27,8 @@ async def get_available_subjects(
         return {"subjects": subjects}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-@router.get("/curriculum/{subject}")
+
+@public_router.get("/curriculum/{subject}")
 async def get_subject_curriculum(
     subject: str,
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
@@ -28,7 +38,7 @@ async def get_subject_curriculum(
         curriculum = await curriculum_service.get_curriculum(subject)
         if not curriculum:
             raise HTTPException(status_code=404, detail=f"Curriculum not found for subject: {subject}")
-            
+
         return {
             "subject": subject,
             "curriculum": curriculum
@@ -38,7 +48,7 @@ async def get_subject_curriculum(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/subskills/{subject}")
+@public_router.get("/subskills/{subject}")
 async def get_subskills(
     subject: str,
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
@@ -54,9 +64,9 @@ async def get_subskills(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/objectives/{subject}/{subskill_id}")
+@public_router.get("/objectives/{subject}/{subskill_id}")
 async def get_detailed_objectives(
-    subject: str, 
+    subject: str,
     subskill_id: str,
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
 ) -> Dict[str, Any]:
@@ -65,10 +75,10 @@ async def get_detailed_objectives(
         objectives = await curriculum_service.get_detailed_objectives(subject, subskill_id)
         if not objectives:
             raise HTTPException(
-                status_code=404, 
+                status_code=404,
                 detail=f"No objectives found for subskill {subskill_id}"
             )
-        
+
         return {
             "subject": subject,
             "subskill_id": subskill_id,
@@ -78,18 +88,31 @@ async def get_detailed_objectives(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Error loading objectives: {str(e)}"
         )
 
-# Additional cloud-specific endpoints
+@public_router.get("/stats")
+async def get_curriculum_stats(
+    curriculum_service: CurriculumService = Depends(get_curriculum_service)
+):
+    """Get curriculum statistics"""
+    try:
+        return await curriculum_service.get_curriculum_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/health")
+@public_router.get("/health")
 async def curriculum_health_check(
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
 ):
     """Check curriculum service health"""
     return await curriculum_service.health_check()
+
+
+# ============================================================================
+# PROTECTED ENDPOINTS — Admin/write operations (require auth)
+# ============================================================================
 
 @router.get("/files")
 async def list_curriculum_files(
@@ -98,19 +121,19 @@ async def list_curriculum_files(
 ):
     """List all curriculum files in cloud storage"""
     result = await curriculum_service.list_curriculum_files()
-    
+
     # Filter by subject if specified
     if subject and result["success"]:
         filtered_files = [
-            f for f in result["files"] 
+            f for f in result["files"]
             if f.get("subject", "").lower() == subject.lower()
         ]
         result["files"] = filtered_files
         result["total_count"] = len(filtered_files)
-    
+
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
-    
+
     return result
 
 @router.post("/upload/{subject}")
@@ -125,28 +148,28 @@ async def upload_curriculum_file(
         # Validate file type
         if not file.filename.endswith('.csv'):
             raise HTTPException(status_code=400, detail="Only CSV files are supported")
-        
+
         if file_type not in ["syllabus", "detailed_objectives"]:
             raise HTTPException(status_code=400, detail="file_type must be 'syllabus' or 'detailed_objectives'")
-        
+
         # Read file content
         content = await file.read()
-        
+
         # Upload to cloud storage
         result = await curriculum_service.upload_curriculum_csv(
             subject=subject,
             csv_content=content,
             file_type=file_type
         )
-        
+
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result["error"])
-        
+
         return {
             "message": f"Successfully uploaded {file_type} for {subject}",
             "result": result
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -164,10 +187,10 @@ async def preview_curriculum_data(
         df = await curriculum_service.download_curriculum_csv(subject, file_type)
         if df is None:
             raise HTTPException(status_code=404, detail=f"No {file_type} data found for {subject}")
-        
+
         # Return preview with basic statistics
         preview_data = df.head(limit).to_dict(orient='records')
-        
+
         return {
             "subject": subject,
             "file_type": file_type,
@@ -176,7 +199,7 @@ async def preview_curriculum_data(
             "preview": preview_data,
             "preview_limit": limit
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -189,18 +212,8 @@ async def refresh_curriculum_cache(
 ):
     """Manually refresh curriculum cache"""
     result = await curriculum_service.refresh_curriculum_cache(subject)
-    
+
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["error"])
-    
-    return result
 
-@router.get("/stats")
-async def get_curriculum_stats(
-    curriculum_service: CurriculumService = Depends(get_curriculum_service)
-):
-    """Get curriculum statistics"""
-    try:
-        return await curriculum_service.get_curriculum_stats()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return result

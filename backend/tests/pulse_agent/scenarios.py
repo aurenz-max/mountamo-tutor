@@ -164,6 +164,57 @@ class AcceleratingStrategy(ScoreStrategy):
         return self._jitter(base, spread=0.8)
 
 
+class ShallowRootsStrategy(ScoreStrategy):
+    """Aces frontier probes but fails on leapfrog-inferred prerequisites.
+
+    Models a student who "gets the hard stuff" but has gaps in foundational
+    knowledge. Like learning quantum mechanics by answering one double-slit
+    question right — doesn't mean you understand wave functions.
+
+    Behavior:
+    - Frontier probes: scores 9-10 (triggers leapfrog, infers ancestors)
+    - Directly-tested subskills (seen as frontier): scores 8.5-10 on review
+    - Inferred subskills (never directly tested): 60% chance of scoring 4-6,
+      simulating the "weak roots" — prerequisites the student never actually learned
+
+    This profile is adversarial: it exposes whether the algorithm detects and
+    fills gaps in wide-prerequisite branches where a student passes a deep
+    descendant but never proved competence on sibling prerequisites.
+    """
+
+    # Probability that an inferred (never directly tested) skill fails
+    INFERRED_FAIL_CHANCE = 0.60
+
+    def __init__(self, profile: "SyntheticProfile", seed: Optional[int] = None):
+        super().__init__(profile, seed)
+        # Track subskills this student has directly encountered as frontier probes
+        self._directly_tested: set = set()
+
+    def score_item(self, item: PulseItemSpec) -> float:
+        if item.band == PulseBand.FRONTIER:
+            # Record this as directly tested — the student actually faced it
+            self._directly_tested.add(item.subskill_id)
+            # Ace frontier probes — this triggers leapfrog
+            return self._jitter(9.5, spread=0.5)
+
+        # Current or review band — check if the student actually learned this
+        if item.subskill_id in self._directly_tested:
+            # Directly tested before — genuine knowledge, strong retention
+            return self._jitter(9.0, spread=0.8)
+
+        # Inferred skill (leapfrog-assigned, never directly tested)
+        # 60% chance: the student has a gap here — weak roots
+        if self.rng.random() < self.INFERRED_FAIL_CHANCE:
+            return self._jitter(4.5, spread=1.5)  # Fails badly
+        else:
+            # 40% chance: the prerequisite was genuinely understood
+            return self._jitter(8.5, spread=1.0)
+
+    @property
+    def directly_tested_count(self) -> int:
+        return len(self._directly_tested)
+
+
 # ── Strategy registry ──────────────────────────────────────────────────────
 
 STRATEGY_MAP: Dict[str, type] = {
@@ -174,6 +225,7 @@ STRATEGY_MAP: Dict[str, type] = {
     "cold_start": ColdStartStrategy,
     "forgetful": ForgetfulStrategy,
     "accelerating": AcceleratingStrategy,
+    "shallow_roots": ShallowRootsStrategy,
 }
 
 

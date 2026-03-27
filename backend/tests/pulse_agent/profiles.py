@@ -99,6 +99,18 @@ ACCELERATOR = SyntheticProfile(
     target_sessions=20,
 )
 
+SHALLOW_ROOTS = SyntheticProfile(
+    student_id=900_008,
+    name="Shallow-Roots Ravi",
+    description=(
+        "Aces hard frontier probes but fails on leapfrog-inferred prerequisites. "
+        "A tree that grows fast without strong roots — tests whether the algorithm "
+        "detects and fills gaps in wide-prerequisite branches."
+    ),
+    archetype="shallow_roots",
+    target_sessions=20,
+)
+
 
 # Registry for CLI lookup
 ALL_PROFILES: Dict[str, SyntheticProfile] = {
@@ -109,4 +121,5 @@ ALL_PROFILES: Dict[str, SyntheticProfile] = {
     "cold_start": COLD_START,
     "forgetful": FORGETFUL_STUDENT,
     "accelerating": ACCELERATOR,
+    "shallow_roots": SHALLOW_ROOTS,
 }

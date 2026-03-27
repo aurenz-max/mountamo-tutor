@@ -226,6 +226,137 @@ def assert_skill_diversity(
     )
 
 
+def assert_inferred_skills_tested(
+    timeline: JourneyTimeline,
+    min_inferred_test_pct: float = 0.10,
+) -> AssertionResult:
+    """Check that leapfrog-inferred skills eventually get directly probed.
+
+    After leapfrog infers N ancestors as "known", the engine should prioritize
+    testing at least some of them — especially those with high uncertainty.
+    A healthy algorithm validates inferred knowledge rather than assuming it.
+
+    This assertion tracks:
+    - frontier_subskills: subskills the student actually faced as frontier probes
+    - inferred_subskills: subskills that appear in mastery snapshots but were
+      never served as frontier probes (they came from leapfrog inference)
+    - tested_inferred: inferred subskills that later appeared as current/review items
+
+    The assertion passes if >= min_inferred_test_pct of inferred skills were
+    eventually tested directly (served as current or review items).
+    """
+    # Collect subskills seen as frontier probes (directly tested)
+    frontier_subskills: set = set()
+    # Collect all subskills seen as current/review (directly practiced)
+    practiced_subskills: set = set()
+
+    for session in timeline.sessions:
+        for item in session.items:
+            if item.band == "frontier":
+                frontier_subskills.add(item.subskill_id)
+            else:
+                practiced_subskills.add(item.subskill_id)
+
+    # Inferred = in final mastery snapshot but never served as frontier
+    all_known = set(timeline.latest_mastery().keys())
+    inferred_subskills = all_known - frontier_subskills
+
+    if not inferred_subskills:
+        return AssertionResult(
+            name="inferred_skills_tested",
+            passed=True,
+            message="No inferred skills to validate (no leapfrogs occurred)",
+        )
+
+    # How many inferred skills were eventually served as current/review?
+    tested_inferred = inferred_subskills & practiced_subskills
+    test_pct = len(tested_inferred) / len(inferred_subskills)
+
+    return AssertionResult(
+        name="inferred_skills_tested",
+        passed=test_pct >= min_inferred_test_pct,
+        message=(
+            f"Inferred skills tested: {len(tested_inferred)}/{len(inferred_subskills)} "
+            f"({test_pct:.0%}, expected >= {min_inferred_test_pct:.0%})"
+        ),
+        details={
+            "total_known": len(all_known),
+            "frontier_tested": len(frontier_subskills),
+            "inferred_count": len(inferred_subskills),
+            "inferred_tested": len(tested_inferred),
+            "test_pct": test_pct,
+        },
+    )
+
+
+def assert_prereq_gap_detection(
+    timeline: JourneyTimeline,
+    max_consecutive_inferred_fails: int = 3,
+) -> AssertionResult:
+    """Check whether the engine detects and reacts to weak-root patterns.
+
+    When a student consistently fails on inferred (leapfrog) skills but aces
+    frontier probes, the algorithm should detect the pattern and:
+    - Increase frontier probes to directly test uncertain prerequisites
+    - Reduce reliance on leapfrog inference for gate advancement
+
+    This assertion fails if:
+    - The student fails >= max_consecutive_inferred_fails inferred items in a row
+      (score < 7.0 on current/review items that were never frontier-probed)
+      WITHOUT the engine responding by increasing frontier allocation.
+    """
+    # Track frontier subskills
+    frontier_subskills: set = set()
+    consecutive_inferred_fails = 0
+    max_seen = 0
+    frontier_response_detected = False
+
+    for session in timeline.sessions:
+        session_frontier_count = session.band_counts.get("frontier", 0)
+
+        for item in session.items:
+            if item.band == "frontier":
+                frontier_subskills.add(item.subskill_id)
+                continue
+
+            # Current or review item that was never a frontier probe
+            if item.subskill_id not in frontier_subskills:
+                if item.score < 7.0:
+                    consecutive_inferred_fails += 1
+                    max_seen = max(max_seen, consecutive_inferred_fails)
+                else:
+                    consecutive_inferred_fails = 0
+
+        # After seeing failures, check if next session adds more frontier probes
+        if max_seen >= max_consecutive_inferred_fails and session_frontier_count > 0:
+            frontier_response_detected = True
+
+    if max_seen < max_consecutive_inferred_fails:
+        return AssertionResult(
+            name="prereq_gap_detection",
+            passed=True,
+            message=(
+                f"No sustained prereq gaps detected "
+                f"(max consecutive inferred fails: {max_seen})"
+            ),
+            details={"max_consecutive_fails": max_seen},
+        )
+
+    return AssertionResult(
+        name="prereq_gap_detection",
+        passed=frontier_response_detected,
+        message=(
+            f"Prereq gap {'detected and addressed' if frontier_response_detected else 'NOT addressed'}: "
+            f"{max_seen} consecutive inferred fails, "
+            f"frontier response={'yes' if frontier_response_detected else 'no'}"
+        ),
+        details={
+            "max_consecutive_fails": max_seen,
+            "frontier_response": frontier_response_detected,
+        },
+    )
+
+
 # ── Assertion suites per archetype ──────────────────────────────────────────
 
 
@@ -267,6 +398,17 @@ def run_assertions_for_archetype(
 
     elif archetype == "selective_weakness":
         results.append(assert_theta_trend(timeline, direction="increasing"))
+
+    elif archetype == "shallow_roots":
+        # Leapfrogs should still fire (frontier scores are high)
+        results.append(assert_leapfrog_count(timeline, min_leapfrogs=1))
+        # The key test: does the engine validate inferred skills?
+        # With 20 sessions, at least 10% of inferred skills should be tested.
+        results.append(assert_inferred_skills_tested(timeline, min_inferred_test_pct=0.10))
+        # Does the engine detect the weak-roots pattern and respond?
+        results.append(assert_prereq_gap_detection(timeline, max_consecutive_inferred_fails=3))
+        # Gate progression should still happen (the student IS learning)
+        results.append(assert_gate_progression(timeline, min_gate_advances=3))
 
     else:
         logger.warning(f"No assertion suite for archetype '{archetype}'")

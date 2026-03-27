@@ -236,6 +236,16 @@ STABILITY_GROWTH_STRONG = 2.5   # score >= 9.0 — strong recall
 STABILITY_GROWTH_PARTIAL = 1.5  # score >= 7.0 — partial recall
 STABILITY_SHRINK_FAIL = 0.5     # score < 7.0 — failed recall, review sooner
 
+# Ability-aware fast-track: if the model predicts P(correct) >= this threshold
+# on the hardest available mode, the student demonstrably knows the material.
+# Skip intermediate stability gates by flooring stability at FAST_TRACK_STABILITY.
+# Path: S=3.0 → 18.75 → 46.9 (mastered) — 3 evals instead of 4.
+FAST_TRACK_P_THRESHOLD = 0.95
+FAST_TRACK_STABILITY = 18.75    # gate 3 equivalent (skips gates 1→2→3)
+FAST_TRACK_SIGMA_MAX = 1.0      # σ must be below this for fast-track to fire;
+                                # leapfrog-inferred skills start at σ=1.5 and
+                                # need real practice to shrink below 1.0
+
 # Stability above this → mastered (equivalent to old Gate 4)
 MASTERY_STABILITY_THRESHOLD = 30.0  # days
 

@@ -524,6 +524,20 @@ class VersionControl:
         """, parameters)
         logger.info(f"✅ Updated subskill_primitives to version {new_version.version_id}")
 
+        # 7. Curriculum edges (knowledge graph) - direct match on subject_id
+        await db.execute_query(f"""
+            MERGE `{settings.get_table_id(settings.TABLE_EDGES)}` T
+            USING (
+                SELECT edge_id
+                FROM `{settings.get_table_id(settings.TABLE_EDGES)}`
+                WHERE subject_id = @subject_id
+            ) AS S
+            ON T.edge_id = S.edge_id
+            WHEN MATCHED THEN
+              UPDATE SET T.is_draft = false, T.version_id = @version_id
+        """, parameters)
+        logger.info(f"✅ Updated curriculum_edges to version {new_version.version_id}")
+
         logger.info(f"✅ Published version {new_version.version_number} for subject {publish_request.subject_id}")
 
         # Dual-write: sync the new version doc and all entity updates to Firestore

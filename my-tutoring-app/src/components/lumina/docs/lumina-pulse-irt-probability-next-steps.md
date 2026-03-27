@@ -1,14 +1,16 @@
 # Pulse IRT Probability System — Project Plan
 
-## Status: Phases 1–6 + Mastery Convergence Fix Implemented
+## Status: Phases 1–7 Implemented
 
-**Last updated:** 2026-03-21
+**Last updated:** 2026-03-27
 
-Phases 1–3 (backend core), Phase 4 (Pulse engine infrastructure), Phase 5 (frontend integration), and Phase 6 (empirical calibration) are implemented and type-checked. The CalibrationEngine now runs the full 2PL/3PL model with empirical parameter learning. Mastery gates use P(correct) thresholds. The Pulse UI surfaces probability data, confidence indicators, and session-level IRT insights.
+Phases 1–3 (backend core), Phase 4 (Pulse engine infrastructure), Phase 5 (frontend integration), Phase 6 (empirical calibration), and Phase 7 (leapfrog credibility + adaptive session assembly) are implemented and type-checked. The CalibrationEngine now runs the full 2PL/3PL model with empirical parameter learning. Mastery gates use P(correct) thresholds. The Pulse UI surfaces probability data, confidence indicators, and session-level IRT insights.
 
 **Phase 6 implemented.** The "P(correct) plateau" problem (§6.0) is now addressed by three interlocking fixes: adaptive σ floor with model-mismatch detection (6.3), 2PL-adjusted β MLE (6.1), and empirical discrimination calibration via point-biserial correlation (6.2). Item parameters now learn from observed student performance.
 
 **Mastery convergence fix (§6.7).** Simulator testing revealed that even with Phase 6 fixes, students who clearly demonstrate mastery (e.g., 10+ correct on hardest items) still required too many items to reach Gate 4. Three additional fixes now accelerate convergence for demonstrated mastery: stored-prediction mismatch detection (6.7a), proportional process noise with streak acceleration (6.7b), and calibrated gate betas (6.7c). See §6.7 below.
+
+**Phase 7: Leapfrog credibility + adaptive assembly (§7).** Pulse Agent testing with the "Shallow-Roots Ravi" archetype (aces frontier probes, fails inferred prerequisites) exposed three compounding issues: leapfrog-inferred skills received fabricated θ=7.0 with no credibility discount, fast-track mastery fired on unvalidated skills, and static band allocation never adapted to failure patterns. Four fixes using existing IRT/credibility math — see §7 below.
 
 ---
 
@@ -527,6 +529,109 @@ This remains deferred — the three fixes above address the immediate plateau pr
 
 ---
 
+## Phase 7: Leapfrog Credibility & Adaptive Session Assembly — DONE
+
+**Goal:** Leapfrog inference uses the same credibility math as the rest of the platform, and session assembly adapts when inferred skills fail.
+
+**Discovered via:** Pulse Agent "Shallow-Roots Ravi" profile — a student who aces frontier probes (score 9-10) but fails 60% of leapfrog-inferred prerequisites. Over 20 sessions: 94% coverage but only 6% mastered. 134 inferred skills, only 17 (13%) ever directly tested. Band allocation static at 2F/3C/1R every session.
+
+### 7.1 Credibility-Shrunk Leapfrog Theta — DONE
+
+**Problem:** Leapfrog set `LEAPFROG_INFERRED_THETA = 7.0` for all inferred ancestor skills — a hardcoded constant with no IRT basis. A real ADAPT exam reaching θ=7.0 requires ~10-15 correct responses at increasing difficulty. Leapfrog handed out θ=7.0 to 146 skills from a single frontier probe.
+
+**Fix:** Replace the flat theta with Empirical Bayes shrinkage using the platform's existing `CREDIBILITY_STANDARD = 10` (Z = attempts/10):
+
+```python
+Z = LEAPFROG_CREDIBILITY_WEIGHT / CREDIBILITY_STANDARD  # 1/10 = 0.1
+inferred_theta = DEFAULT_STUDENT_THETA + (probe_theta - DEFAULT_STUDENT_THETA) * Z
+```
+
+Where `probe_theta` is the frontier probe skill's **actual post-update theta** from the CalibrationEngine (not a constant). With prior=3.0 and probe_θ≈6.0 after one observation:
+
+```
+inferred_theta = 3.0 + (6.0 - 3.0) × 0.1 = 3.3
+```
+
+**Why this works:** The inferred skill gets 10% credit for the indirect evidence. The high σ=1.5 means the first direct test moves θ by ~2 points in either direction — self-correction is fast. Combined with validation probes (§7.3), the system systematically discovers which inferred skills the student actually knows.
+
+**IRT justification:** In Bayesian IRT, θ updates are proportional to σ². One observation at σ=2.0 can move θ significantly, but the posterior is still wide (σ≈1.2-1.5). Propagating that uncertain estimate to 146 ancestors without credibility discounting violates the same Bayesian principles the rest of the system follows.
+
+**Constants:** `LEAPFROG_CREDIBILITY_WEIGHT = 1` (in `pulse.py`). Removed `LEAPFROG_INFERRED_THETA = 7.0`.
+
+**Files:** `backend/app/models/pulse.py`, `backend/app/services/pulse_engine.py` — `_check_leapfrog()`
+
+### 7.2 Sigma-Gated Fast-Track — DONE
+
+**Problem:** The fast-track mechanism (§6.7d, `FAST_TRACK_STABILITY = 18.75`) skips intermediate stability gates when P(correct|hardest) ≥ 0.95. Leapfrog-inferred skills at fabricated θ=7.0 easily passed this check, jumping from stability 3.0 → 18.75 (gate 1→3) on their first practice encounter. Two strong practice evals = full mastery — "single-shot mastery" from fabricated data.
+
+**Fix:** Gate fast-track on σ < `FAST_TRACK_SIGMA_MAX` (1.0). This is the Pulse-native signal for "we're confident this θ is earned, not fabricated."
+
+```python
+# Only fast-track when the IRT model has enough real observations
+# to reduce uncertainty below the threshold
+if (score >= MASTERY_THRESHOLD
+        and theta is not None and primitive_type is not None
+        and sigma is not None and sigma < FAST_TRACK_SIGMA_MAX):
+```
+
+**Why σ, not review_count:** σ is the IRT model's own measure of estimation precision. Leapfrog-inferred skills start at σ=1.5 — the model is saying "I have very low confidence in this estimate." After 2-3 real observations, σ drops below 1.0 and fast-track becomes available. This connects to the same framework as the σ thresholds in gate checks (§3.1), not a brittle observation count.
+
+**Constants:** `FAST_TRACK_SIGMA_MAX = 1.0` (in `mastery_lifecycle.py`)
+
+**Files:** `backend/app/models/mastery_lifecycle.py`, `backend/app/services/mastery_lifecycle_engine.py` — `_handle_practice_eval()`
+
+### 7.3 Validation Probes in Current Band — DONE
+
+**Problem:** `_select_current_items()` ranks all current candidates by Fisher information. Skills with low θ (recently failed, θ≈1.5) produce high Fisher info and dominate every session. 117 inferred skills at θ=7.0 (now θ≈3.3 with §7.1) never compete — the same 3-4 crumbling skills monopolize all current slots.
+
+**Fix:** Reserve `ceil(current_count × 0.33)` current-band slots for "validation probes" — inferred-but-untested skills (gate ≥ 1, review_count = 0). These are promoted to the front of the Fisher-info ranking, ensuring systematic validation of leapfrog assumptions.
+
+```python
+# Identify unvalidated inferred skills
+unvalidated_ids = {sid for sid in current_candidates
+                   if lifecycle.gate >= 1 and lifecycle.review_count == 0}
+
+# In _select_current_items: promote top-info unvalidated to front
+validation_slots = min(max(1, ceil(count * 0.33)), len(unvalidated))
+info_scored = promoted_unvalidated + validated + remaining_unvalidated
+```
+
+**Why this also benefits from §7.1:** With shrunk θ=3.3 (instead of 7.0), inferred skills have *higher* Fisher information — they're closer to the peak of the information curve. This makes validation probes more informative and helps the IRT model converge faster when they are tested.
+
+**Files:** `backend/app/services/pulse_engine.py` — `_assemble_normal()`, `_select_current_items()`
+
+### 7.4 Adaptive Band Allocation (Inferred Stress) — DONE
+
+**Problem:** Band allocation uses fixed percentages (`FRONTIER_BAND_PCT=0.20`, `CURRENT_BAND_PCT=0.65`, `REVIEW_BAND_PCT=0.15`). With 6 items, this is always 2F/3C/1R. When inferred skills are failing, the engine should slow frontier expansion — instead it keeps pushing 2 frontier probes per session, adding more inferred skills to an already-shaky base.
+
+**Fix:** Before computing band targets, scan for "inferred stress" — leapfrog-seeded skills (identified by `lesson_eval_count == 3, gate_mode == "probability"`) whose θ has dropped below 5.0 (tested and failed). When 3+ skills are stressed, reduce frontier by 1 slot:
+
+```python
+if stressed_inferred >= 3:
+    frontier_pct = max(0.10, FRONTIER_BAND_PCT - 0.15)  # 0.20 → 0.05 → clamped to 0.10
+    current_pct += (FRONTIER_BAND_PCT - frontier_pct)     # 0.65 → 0.75
+    # Result: 1F/4C/1R instead of 2F/3C/1R
+```
+
+**Why conservative:** Still sends at least 1 frontier probe per session. Only activates when there's clear evidence of inferred failure (3+ skills with cratered θ). Gifted students rarely have low-θ inferred skills → no effect.
+
+**Files:** `backend/app/services/pulse_engine.py` — `_assemble_normal()`
+
+### 7.5 How These Four Fixes Work Together
+
+Consider the Shallow-Roots archetype (aces hard probes, fails prerequisites):
+
+| Session | Without §7 | With §7 |
+|---|---|---|
+| 1 (cold start) | 6 frontier probes → leapfrog infers 146 skills at θ=7.0 | Same probes → inferred at θ≈3.3 |
+| 2 | 2F/3C/1R. Current band: same 3 failing skills (high info at θ≈1.5). Inferred at θ=7.0 invisible | 2F/3C/1R. Current band: 1 validation probe (untested inferred) + 2 high-info. Inferred at θ≈3.3 compete better |
+| 3-5 | Pattern repeats. 117 inferred skills never tested. Frontier probes fast-track to G4 | Validation probes systematically test inferred skills. Fast-track blocked (σ>1.0). Frontier probes progress normally |
+| 6+ | Still 2F/3C/1R. Coverage high (94%) but mastery low (6%) | Inferred stress detected → 1F/4C/1R. More current-band capacity for validation + remediation |
+
+**Key insight:** All four fixes use existing platform math — credibility (Z=attempts/10), sigma (IRT uncertainty), Fisher information (measurement value), stability (retention model). No new concepts introduced.
+
+---
+
 ## Implementation Order
 
 | Step | What | Files | Status |
@@ -557,6 +662,10 @@ This remains deferred — the three fixes above address the immediate plateau pr
 | **6.7c** | **Calibrated gate betas** | `CalibrationSimulator.tsx`, `route.ts` | **DONE** |
 | **6.8** | **MC difficulty tiers (Bloom's-aligned)** | `CalibrationSimulator.tsx`, `route.ts` | **DONE** |
 | 6.6 | Response time signal | `calibration_engine.py` | DEFERRED |
+| **7.1** | **Credibility-shrunk leapfrog theta** | `pulse.py`, `pulse_engine.py` | **DONE** |
+| **7.2** | **Sigma-gated fast-track** | `mastery_lifecycle.py`, `mastery_lifecycle_engine.py` | **DONE** |
+| **7.3** | **Validation probes in current band** | `pulse_engine.py` | **DONE** |
+| **7.4** | **Adaptive band allocation (inferred stress)** | `pulse_engine.py` | **DONE** |
 
 **Critical path completed:** 1.1 → 1.2 → 2.1 → 2.2 → 3.1 → 3.2 (probability gates live)
 
@@ -572,6 +681,12 @@ This remains deferred — the three fixes above address the immediate plateau pr
 - 6.7b: Proportional τ with streak acceleration + σ correction (θ moves faster, σ still converges)
 - 6.7c: Calibrated gate betas (gate references track empirical item difficulty)
 - 6.8: MC difficulty tiers — Bloom's-aligned recall/apply/analyze/evaluate with tier-specific a and c values. Expert MC (a=1.8, c=0.15) reaches Gate 4 in 10 items, matching constructed response.
+
+**Phase 7 complete.** Four fixes address leapfrog credibility and adaptive session assembly:
+- 7.1: Credibility-shrunk theta — inferred skills get Z=0.1 credit (θ≈3.3 instead of 7.0), using probe's actual post-update θ and existing CREDIBILITY_STANDARD=10
+- 7.2: Sigma-gated fast-track — fast-track requires σ < 1.0 (IRT confidence signal), blocks fabricated-theta skills
+- 7.3: Validation probes — reserves 33% of current-band slots for untested inferred skills, systematic leapfrog validation
+- 7.4: Adaptive band allocation — detects inferred stress (3+ skills with θ < 5.0), shifts 1 frontier slot to current
 
 **Remaining:**
 - 2.3: Unit tests for 2PL calibration functions
@@ -601,7 +716,7 @@ This remains deferred — the three fixes above address the immediate plateau pr
 
 1. **σ floor threshold tuning.** The mismatch detection in §6.3 uses a 15% threshold and σ floor of 0.5. These may need tuning per-primitive or per-skill. High-a items (a≥1.6) converge faster, so their σ floor could be lower. Low-a items (a≤1.0) are inherently noisy and may need a higher floor. Should the floor be a function of the item's discrimination?
 
-2. **Correlation propagation with `a`.** When transferring θ priors across correlated skills (e.g., leapfrog seeding), should the transferred estimate carry a discount based on the average `a` of the items that measured it? A θ estimated from low-a items is inherently noisier.
+2. **~~Correlation propagation with `a`.~~** RESOLVED (§7.1). Leapfrog-inferred skills now use credibility-shrunk theta: `θ_inferred = prior + (probe_θ - prior) × Z` where Z = 1/CREDIBILITY_STANDARD. The probe's actual post-update θ (not a constant) is used as the basis, and the high σ=1.5 ensures the IRT model self-corrects rapidly on first direct test. The credibility framework (Z=attempts/10) already accounts for measurement precision implicitly — low-a items produce wider posteriors (higher σ), which means the probe_θ itself is more conservative.
 
 3. **~~Adaptive `c` for mixed formats.~~** RESOLVED (§6.8). MC now has tiered c values (0.25/0.20/0.15) based on cognitive level. Information-maximizing selection (`select_best_mode()`) will naturally pick the format with highest I(θ) at the student's current ability — for low θ, recall MC (peak near b=1.5) may outperform constructed response; for high θ, evaluate MC (a=1.8, c=0.15) approaches constructed response in information. No need to enforce format diversity — let information guide it.
 
@@ -624,6 +739,8 @@ This remains deferred — the three fixes above address the immediate plateau pr
 - **Seed Script:** `backend/scripts/seed_discrimination_priors.py`
 - **Frontend Types:** `my-tutoring-app/src/components/lumina/pulse/types.ts`
 - **Frontend UI:** `FrontierContextCard.tsx`, `PulseActivityRenderer.tsx`, `PulseSession.tsx`
+- **Pulse Agent Reports:** `backend/reports/journey_report_*.md` — per-archetype journey diagnostics
+- **Pulse Agent Profiles:** `backend/tests/pulse_agent/profiles.py` — synthetic student archetypes
 - **Pulse PRD:** `my-tutoring-app/src/components/lumina/docs/Lumina_PRD_Pulse.md`
 - **Eval Modes PRD:** `my-tutoring-app/src/components/lumina/docs/PRD_EVAL_MODES_ROLLOUT.md`
 - **Architecture Reference:** `my-tutoring-app/src/components/lumina/docs/PULSE_ARCHITECTURE_REFERENCE.md`
