@@ -3,8 +3,11 @@ Curriculum knowledge graph edge management service.
 
 Manages typed edges (prerequisite, builds_on, reinforces, parallel, applies).
 
-Reads: Firestore-native via firestore_reader
-Writes: Firestore-first (source of truth)
+Reads: Firestore-native via firestore_reader (hierarchical graph subcollections)
+Writes: Firestore-first via firestore_curriculum_sync
+
+Storage path:
+  curriculum_graphs/{grade}/subjects/{subject_id}/edges/{edge_id}
 
 For parallel relationships, auto-creates a reverse edge (A->B + B->A)
 linked by pair_id for atomic creation/deletion.
@@ -86,9 +89,12 @@ class EdgeManager:
         *,
         pair_id: Optional[str] = None,
     ) -> CurriculumEdge:
-        """Write edge to Firestore (source of truth)."""
+        """Write edge to Firestore graph subcollection (source of truth)."""
         now = datetime.utcnow()
         edge_id = str(uuid.uuid4())
+
+        # Resolve grade for hierarchical storage
+        grade = await firestore_reader.resolve_grade(subject_id)
 
         row = {
             "edge_id": edge_id,
@@ -111,10 +117,12 @@ class EdgeManager:
             "pair_id": pair_id,
         }
 
-        # Firestore is source of truth
-        await firestore_curriculum_sync.sync_edge(row)
+        # Write to hierarchical graph subcollection
+        await firestore_curriculum_sync.sync_edge(row, grade=grade)
 
-        return CurriculumEdge(**row, created_at=now, updated_at=now)
+        row["created_at"] = now
+        row["updated_at"] = now
+        return CurriculumEdge(**row)
 
     # ------------------------------------------------------------------ #
     #  DELETE
@@ -129,22 +137,22 @@ class EdgeManager:
     ) -> bool:
         """
         Delete an edge. If it has a pair_id (parallel), deletes the paired
-        reverse edge too. (Firestore-first)
+        reverse edge too.
         """
-        # Look up pair_id and subject_id (Firestore-native read)
-        edge_doc = await firestore_reader.get_edge(edge_id)
+        # Look up the edge (use subject_id for scoped lookup if available)
+        edge_doc = await firestore_reader.get_edge(edge_id, subject_id=subject_id)
         if not edge_doc:
             logger.warning(f"Edge {edge_id} not found")
             return False
 
         pair_id = edge_doc.get("pair_id")
         resolved_subject = subject_id or edge_doc.get("subject_id")
+        grade = await firestore_reader.resolve_grade(resolved_subject) if resolved_subject else None
 
         try:
-            # Firestore is source of truth
-            await firestore_curriculum_sync.delete_edge(edge_id)
+            await firestore_curriculum_sync.delete_edge(edge_id, subject_id=resolved_subject, grade=grade)
             if pair_id:
-                await firestore_curriculum_sync.delete_edge_by_pair(pair_id)
+                await firestore_curriculum_sync.delete_edge_by_pair(pair_id, subject_id=resolved_subject, grade=grade)
 
             logger.info(f"Deleted edge {edge_id}" + (f" (+ pair {pair_id})" if pair_id else ""))
 
@@ -167,10 +175,13 @@ class EdgeManager:
         self,
         entity_id: str,
         entity_type: EntityType,
+        subject_id: Optional[str] = None,
         include_drafts: bool = False,
     ) -> EntityEdges:
-        """Get all edges where entity is source or target (Firestore-native read)."""
-        result = await firestore_reader.get_entity_edges(entity_id, entity_type, include_drafts=include_drafts)
+        """Get all edges where entity is source or target."""
+        result = await firestore_reader.get_entity_edges(
+            entity_id, entity_type, subject_id=subject_id, include_drafts=include_drafts
+        )
 
         outgoing = [CurriculumEdge(**e) for e in result["outgoing"]]
         incoming = [CurriculumEdge(**e) for e in result["incoming"]]
@@ -187,17 +198,16 @@ class EdgeManager:
         subject_id: str,
         include_drafts: bool = False,
     ) -> CurriculumGraph:
-        """Build the full knowledge graph for a subject (Firestore-native reads)."""
+        """Build the full knowledge graph for a subject."""
         logger.info(f"Building knowledge graph for {subject_id} (drafts={include_drafts})")
 
         # Nodes via the reader's enriched helper
         nodes = await firestore_reader.get_subject_graph_nodes(subject_id, include_drafts=include_drafts)
 
-        # Edges
+        # Edges from hierarchical subcollection
         raw_edges = await firestore_reader.get_edges_for_subject(subject_id, include_drafts=include_drafts)
 
-        # Build enriched edges (superset of old format — includes source/target/threshold
-        # for backward compat plus new knowledge-graph fields)
+        # Build enriched edges
         edges = []
         for e in raw_edges:
             edges.append({
@@ -248,11 +258,9 @@ class EdgeManager:
         )
 
         # Load all prerequisite edges for the subject into memory
-        # (typically <500 edges — fast enough for in-memory DFS)
         if subject_id:
             prereq_edges = await firestore_reader.get_prerequisite_edges(subject_id)
         else:
-            # Fallback: load edges for the entity's subject by checking both directions
             prereq_edges = []
             for eid in (edge.source_entity_id, edge.target_entity_id):
                 result = await firestore_reader.get_entity_edges(eid, edge.source_entity_type)
@@ -293,15 +301,12 @@ class EdgeManager:
     # ------------------------------------------------------------------ #
 
     async def get_base_skills(self, subject_id: str) -> List[Dict[str, Any]]:
-        """Get entry-point entities with no prerequisite edges targeting them (Firestore-native)."""
-        # Load all nodes and prerequisite edges
+        """Get entry-point entities with no prerequisite edges targeting them."""
         nodes = await firestore_reader.get_subject_graph_nodes(subject_id, include_drafts=False)
         prereq_edges = await firestore_reader.get_prerequisite_edges(subject_id)
 
-        # Set of entity IDs that have incoming prerequisite edges
         has_prereqs = {e["target_entity_id"] for e in prereq_edges if not e.get("is_draft")}
 
-        # Filter nodes to those without prerequisites
         return [
             {"entity_id": n["id"], "entity_type": n["type"]}
             for n in nodes

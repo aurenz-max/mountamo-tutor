@@ -9,6 +9,9 @@ The author defines exactly which skills/subskills to analyze. No full-subject
 sweeps, no embedding pipeline. Goes directly to a single rich LLM call with
 full context.
 
+Storage:
+  curriculum_graphs/{grade}/subjects/{subject_id}/suggestions/{suggestion_id}
+
 See docs/prds/GRAPH_AWARE_AUTHORING.md for the full design.
 """
 
@@ -24,6 +27,7 @@ from google.genai import types
 
 from app.core.config import settings
 from app.db.firestore_curriculum_reader import firestore_reader
+from app.db.firestore_curriculum_service import firestore_curriculum_sync
 from app.models.edges import RelationshipType
 from app.models.scoped_suggestions import (
     AcceptScopedSuggestionsRequest,
@@ -43,6 +47,41 @@ from app.services.edge_manager import EdgeManager
 logger = logging.getLogger(__name__)
 
 LLM_MODEL = "gemini-3-flash-preview"
+
+
+def _parse_json_lenient(text: str) -> list:
+    """Parse a JSON array, recovering partial results from truncated output.
+
+    Gemini sometimes truncates long structured-output responses mid-object,
+    producing invalid JSON.  This salvages all complete objects before the
+    truncation point.
+    """
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Strategy: find the last complete object by looking for "},\n" or "}\n]"
+    # and truncate there, closing the array.
+    last_complete = text.rfind("}")
+    while last_complete > 0:
+        candidate = text[: last_complete + 1].rstrip().rstrip(",") + "\n]"
+        # Ensure it starts with '['
+        start = candidate.find("[")
+        if start >= 0:
+            try:
+                result = json.loads(candidate[start:])
+                logger.warning(
+                    f"Recovered {len(result)} items from truncated Gemini JSON "
+                    f"(original {len(text)} chars, used {last_complete + 1})"
+                )
+                return result
+            except json.JSONDecodeError:
+                pass
+        last_complete = text.rfind("}", 0, last_complete)
+
+    logger.error("Could not recover any items from malformed Gemini JSON")
+    raise ValueError(f"Unparseable Gemini response ({len(text)} chars)")
 
 
 class ScopedSuggestionService:
@@ -73,7 +112,7 @@ class ScopedSuggestionService:
         """
         start = time.monotonic()
 
-        # 1. Load scoped nodes
+        # 1. Load scoped nodes (subject_id passed for O(1) lookup)
         source_nodes = await self._load_scoped_nodes(
             request.subject_id,
             request.scope.skill_ids,
@@ -114,9 +153,13 @@ class ScopedSuggestionService:
             request.options.depth,
         )
 
-        # 4. Store suggestions in Firestore
+        # 4. Store suggestions in hierarchical subcollection
         for s in suggestions:
-            await self._store_suggestion(request.subject_id, s)
+            data = s.model_dump(mode="json")
+            data["origin"] = "scoped"
+            data["status"] = "pending"
+            data["created_at"] = datetime.utcnow().isoformat()
+            await firestore_curriculum_sync.sync_suggestion(request.subject_id, data)
 
         elapsed = int((time.monotonic() - start) * 1000)
 
@@ -141,7 +184,7 @@ class ScopedSuggestionService:
         """Find all subskill-level connections between exactly two skills."""
         start = time.monotonic()
 
-        # Load both skills' subskill trees
+        # Load both skills' subskill trees (subject_id for O(1) lookups)
         source_nodes = await self._load_skill_subskills(
             request.source_subject_id, request.source_skill_id
         )
@@ -173,7 +216,7 @@ class ScopedSuggestionService:
             request.relationship_types,
         )
 
-        # Store as suggestions in Firestore (using source subject)
+        # Store as suggestions (using source subject)
         subject_id = request.source_subject_id
         for conn in connections:
             suggestion = ScopedEdgeSuggestion(
@@ -190,7 +233,11 @@ class ScopedSuggestionService:
                 rationale=conn.rationale,
                 confidence=conn.confidence,
             )
-            await self._store_suggestion(subject_id, suggestion)
+            data = suggestion.model_dump(mode="json")
+            data["origin"] = "connect_skills"
+            data["status"] = "pending"
+            data["created_at"] = datetime.utcnow().isoformat()
+            await firestore_curriculum_sync.sync_suggestion(subject_id, data)
 
         elapsed = int((time.monotonic() - start) * 1000)
 
@@ -223,7 +270,7 @@ class ScopedSuggestionService:
         edge_ids: List[str] = []
 
         for suggestion_id in request.suggestion_ids:
-            suggestion = await self._get_suggestion(
+            suggestion = await firestore_reader.get_suggestion(
                 request.subject_id, suggestion_id
             )
             if not suggestion:
@@ -249,9 +296,12 @@ class ScopedSuggestionService:
             )
             edge_ids.append(created.edge_id)
 
-            # Mark as accepted in Firestore
-            await self._update_suggestion_status(
-                request.subject_id, suggestion_id, "accepted"
+            # Mark as accepted
+            await firestore_curriculum_sync.update_suggestion(
+                request.subject_id, suggestion_id, {
+                    "status": "accepted",
+                    "reviewed_at": datetime.utcnow().isoformat(),
+                }
             )
 
         return AcceptScopedSuggestionsResponse(
@@ -260,7 +310,7 @@ class ScopedSuggestionService:
         )
 
     # ================================================================== #
-    #  Data Loading
+    #  Data Loading (all subject-scoped for O(1) lookups)
     # ================================================================== #
 
     async def _load_scoped_nodes(
@@ -273,7 +323,6 @@ class ScopedSuggestionService:
         nodes: List[Dict] = []
 
         if skill_ids:
-            # Load subskills for each scoped skill
             for skill_id in skill_ids:
                 skill_nodes = await self._load_skill_subskills(
                     subject_id, skill_id
@@ -281,7 +330,6 @@ class ScopedSuggestionService:
                 nodes.extend(skill_nodes)
 
         if subskill_ids:
-            # Load specific subskills
             for ss_id in subskill_ids:
                 node = await self._load_subskill(subject_id, ss_id)
                 if node:
@@ -300,14 +348,20 @@ class ScopedSuggestionService:
     async def _load_skill_subskills(
         self, subject_id: str, skill_id: str
     ) -> List[Dict]:
-        """Load all subskills for a skill with full hierarchy context (Firestore-native)."""
-        # Get skill + its parent unit for context
-        skill_doc = await firestore_reader.get_skill(skill_id)
+        """Load all subskills for a skill with full hierarchy context.
+
+        Uses subject_id for O(1) document lookup instead of scanning all subjects.
+        """
+        skill_doc = await firestore_reader.get_skill(skill_id, subject_id=subject_id)
         if not skill_doc:
             return []
 
-        unit_doc = await firestore_reader.get_unit(skill_doc.get("unit_id", ""))
-        subskill_docs = await firestore_reader.get_subskills_by_skill(skill_id, include_drafts=True)
+        unit_doc = await firestore_reader.get_unit(
+            skill_doc.get("unit_id", ""), subject_id=subject_id
+        )
+        subskill_docs = await firestore_reader.get_subskills_by_skill(
+            skill_id, subject_id=subject_id, include_drafts=True
+        )
 
         return [
             {
@@ -332,13 +386,17 @@ class ScopedSuggestionService:
     async def _load_subskill(
         self, subject_id: str, subskill_id: str
     ) -> Optional[Dict]:
-        """Load a single subskill with full hierarchy context (Firestore-native)."""
-        ss = await firestore_reader.get_subskill(subskill_id)
+        """Load a single subskill with full hierarchy context."""
+        ss = await firestore_reader.get_subskill(subskill_id, subject_id=subject_id)
         if not ss:
             return None
 
-        skill_doc = await firestore_reader.get_skill(ss.get("skill_id", ""))
-        unit_doc = await firestore_reader.get_unit(skill_doc.get("unit_id", "")) if skill_doc else None
+        skill_doc = await firestore_reader.get_skill(
+            ss.get("skill_id", ""), subject_id=subject_id
+        )
+        unit_doc = await firestore_reader.get_unit(
+            skill_doc.get("unit_id", ""), subject_id=subject_id
+        ) if skill_doc else None
 
         return {
             "id": ss["subskill_id"],
@@ -358,16 +416,14 @@ class ScopedSuggestionService:
         }
 
     async def _load_subject_nodes(self, subject_id: str) -> List[Dict]:
-        """Load all subskills for a subject (Firestore-native, for cross-grade context)."""
-        # Use the reader's enriched graph node helper (returns subskill-type nodes with hierarchy)
+        """Load all subskills for a subject (for cross-grade context)."""
         all_nodes = await firestore_reader.get_subject_graph_nodes(subject_id, include_drafts=False)
-        # Filter to subskills only (cross-grade context doesn't need skills)
         return [n for n in all_nodes if n["type"] == "subskill"]
 
     async def _load_existing_edges(
         self, subject_id: str, node_ids: set
     ) -> List[Dict]:
-        """Load existing edges between scoped nodes (Firestore-native, for dedup)."""
+        """Load existing edges between scoped nodes (for dedup)."""
         if not node_ids:
             return []
 
@@ -392,7 +448,6 @@ class ScopedSuggestionService:
         depth: str,
     ) -> List[ScopedEdgeSuggestion]:
         """Single Gemini call to generate scoped edge suggestions."""
-        # Build context strings
         nodes_text = self._format_nodes_for_prompt(nodes)
         edges_text = self._format_edges_for_prompt(existing_edges)
         types_text = ", ".join(relationship_types)
@@ -458,17 +513,16 @@ For each connection, specify:
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.3,
-                    max_output_tokens=16000,
+                    max_output_tokens=65536,
                     response_mime_type="application/json",
                     response_schema=schema,
                 ),
             )
-            raw = json.loads(response.text)
+            raw = _parse_json_lenient(response.text)
         except Exception as e:
             logger.error(f"Scoped suggestion LLM call failed: {e}")
             return []
 
-        # Build node lookup for labels/context
         node_map = {n["id"]: n for n in nodes}
 
         suggestions: List[ScopedEdgeSuggestion] = []
@@ -476,7 +530,6 @@ For each connection, specify:
             src_id = item.get("source_id", "")
             tgt_id = item.get("target_id", "")
 
-            # Validate IDs exist in scope
             if src_id not in node_map or tgt_id not in node_map:
                 continue
 
@@ -519,7 +572,6 @@ For each connection, specify:
         edges_text = self._format_edges_for_prompt(existing_edges)
         types_text = ", ".join(relationship_types)
 
-        # Include grade context if cross-grade
         source_subject = source_nodes[0].get("subject_id", "") if source_nodes else ""
         target_subject = target_nodes[0].get("subject_id", "") if target_nodes else ""
 
@@ -589,17 +641,16 @@ For each connection, specify:
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.3,
-                    max_output_tokens=16000,
+                    max_output_tokens=65536,
                     response_mime_type="application/json",
                     response_schema=schema,
                 ),
             )
-            raw = json.loads(response.text)
+            raw = _parse_json_lenient(response.text)
         except Exception as e:
             logger.error(f"Pairwise connection LLM call failed: {e}")
             return []
 
-        # Validate IDs against actual nodes
         source_ids = {n["id"] for n in source_nodes}
         target_ids = {n["id"] for n in target_nodes}
         node_map = {n["id"]: n for n in source_nodes + target_nodes}
@@ -660,7 +711,7 @@ For each connection, specify:
             tgt = e.get("target_entity_id", e.get("target", ""))
             rel = e.get("relationship", "prerequisite")
             lines.append(f"- {src} -> {tgt} ({rel})")
-        return "\n".join(lines[:30])  # Cap to avoid prompt bloat
+        return "\n".join(lines[:30])
 
     @staticmethod
     def _node_context(node: Dict) -> str:
@@ -676,65 +727,3 @@ For each connection, specify:
         if skill_desc:
             parts.append(skill_desc)
         return " > ".join(parts)
-
-    # ================================================================== #
-    #  Firestore Persistence
-    # ================================================================== #
-
-    def _suggestions_collection(self, subject_id: str):
-        """Scoped suggestions stored alongside bulk suggestions with origin field."""
-        if not self.firestore:
-            return None
-        return (
-            self.firestore
-            .collection("edge_suggestions")
-            .document(subject_id)
-            .collection("pending")
-        )
-
-    async def _store_suggestion(
-        self, subject_id: str, suggestion: ScopedEdgeSuggestion
-    ) -> None:
-        """Store a scoped suggestion in Firestore."""
-        coll = self._suggestions_collection(subject_id)
-        if not coll:
-            logger.warning("No Firestore client — suggestion not persisted")
-            return
-        try:
-            data = suggestion.model_dump(mode="json")
-            data["origin"] = "scoped"
-            data["status"] = "pending"
-            data["created_at"] = datetime.utcnow().isoformat()
-            coll.document(suggestion.suggestion_id).set(data)
-        except Exception as e:
-            logger.error(f"Failed to store scoped suggestion: {e}")
-
-    async def _get_suggestion(
-        self, subject_id: str, suggestion_id: str
-    ) -> Optional[Dict]:
-        """Retrieve a suggestion from Firestore."""
-        coll = self._suggestions_collection(subject_id)
-        if not coll:
-            return None
-        try:
-            doc = coll.document(suggestion_id).get()
-            if doc.exists:
-                return doc.to_dict()
-        except Exception as e:
-            logger.error(f"Failed to get suggestion: {e}")
-        return None
-
-    async def _update_suggestion_status(
-        self, subject_id: str, suggestion_id: str, status: str
-    ) -> None:
-        """Update suggestion status in Firestore."""
-        coll = self._suggestions_collection(subject_id)
-        if not coll:
-            return
-        try:
-            coll.document(suggestion_id).update({
-                "status": status,
-                "reviewed_at": datetime.utcnow().isoformat(),
-            })
-        except Exception as e:
-            logger.error(f"Failed to update suggestion status: {e}")

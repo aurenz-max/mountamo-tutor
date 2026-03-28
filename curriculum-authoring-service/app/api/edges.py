@@ -63,9 +63,12 @@ async def create_edge(edge: CurriculumEdgeCreate, subject_id: Optional[str] = No
 
 
 @router.delete("/edges/{edge_id}")
-async def delete_edge(edge_id: str):
-    """Delete an edge (and its paired reverse if parallel)."""
-    success = await edge_manager.delete_edge(edge_id)
+async def delete_edge(edge_id: str, subject_id: Optional[str] = None):
+    """Delete an edge (and its paired reverse if parallel).
+
+    Providing subject_id enables O(1) lookup instead of scanning all subjects.
+    """
+    success = await edge_manager.delete_edge(edge_id, subject_id=subject_id)
     if not success:
         raise HTTPException(status_code=404, detail="Edge not found")
     return {"message": "Edge deleted successfully"}
@@ -75,16 +78,22 @@ async def delete_edge(edge_id: str):
 async def get_entity_edges(
     entity_id: str,
     entity_type: EntityType,
+    subject_id: Optional[str] = None,
     include_drafts: bool = False,
 ):
-    """Get all edges (incoming and outgoing) for an entity."""
-    return await edge_manager.get_entity_edges(entity_id, entity_type, include_drafts)
+    """Get all edges (incoming and outgoing) for an entity.
+
+    Providing subject_id enables scoped subcollection query instead of scanning.
+    """
+    return await edge_manager.get_entity_edges(
+        entity_id, entity_type, subject_id=subject_id, include_drafts=include_drafts
+    )
 
 
 @router.post("/edges/validate")
-async def validate_edge(edge: CurriculumEdgeCreate):
+async def validate_edge(edge: CurriculumEdgeCreate, subject_id: Optional[str] = None):
     """Validate an edge without creating it (cycle check on prerequisite subgraph)."""
-    is_valid, error = await edge_manager.validate_edge(edge)
+    is_valid, error = await edge_manager.validate_edge(edge, subject_id=subject_id)
     return {"valid": is_valid, "error": error}
 
 

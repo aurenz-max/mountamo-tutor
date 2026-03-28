@@ -49,35 +49,47 @@
       ]
     },
     {
-      "collectionGroup": "curriculum_edges",
-      "queryScope": "COLLECTION",
+      "collectionGroup": "edges",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
-        { "fieldPath": "subject_id", "order": "ASCENDING" },
-        { "fieldPath": "is_prerequisite", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "curriculum_edges",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "subject_id", "order": "ASCENDING" },
         { "fieldPath": "is_draft", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "curriculum_edges",
-      "queryScope": "COLLECTION",
+      "collectionGroup": "edges",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "is_prerequisite", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "edges",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "source_entity_id", "order": "ASCENDING" },
         { "fieldPath": "is_draft", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "curriculum_edges",
-      "queryScope": "COLLECTION",
+      "collectionGroup": "edges",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "target_entity_id", "order": "ASCENDING" },
         { "fieldPath": "is_draft", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "edges",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "pair_id", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "suggestions",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" }
       ]
     },
     {

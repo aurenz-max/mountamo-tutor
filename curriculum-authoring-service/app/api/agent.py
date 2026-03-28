@@ -60,8 +60,21 @@ async def generate_suggestions(
 @router.get("/{subject_id}/suggestions", response_model=List[EdgeSuggestion])
 async def list_pending_suggestions(subject_id: str, request: Request):
     """List all pending suggestions for a subject."""
-    agent = _get_agent(request)
-    return await agent._list_pending_suggestions(subject_id)
+    from app.db.firestore_curriculum_reader import firestore_reader
+    _get_agent(request)  # Ensure agent is initialized
+    data = await firestore_reader.get_suggestions_for_subject(subject_id, status="pending")
+    results = []
+    for d in data:
+        # Inject subject_id (scoped suggestions don't store it)
+        d.setdefault("subject_id", subject_id)
+        # Provide defaults for fields that may be missing from scoped origin
+        d.setdefault("rationale", "")
+        d.setdefault("confidence", 0.0)
+        try:
+            results.append(EdgeSuggestion(**d))
+        except Exception as e:
+            logger.warning(f"Skipping malformed suggestion {d.get('suggestion_id', '?')}: {e}")
+    return results
 
 
 @router.post("/{subject_id}/suggestions/accept-all")
@@ -125,37 +138,18 @@ async def reclassify_suggestions(
     """
     agent = _get_agent(request)
 
-    # Rules encoding the reviewed thresholds from analysis
+    # Domain-agnostic rules — domain context is now read from curriculum metadata
     rules = {
         "combo_promote_threshold": 0.76,
         "combo_drop_threshold": 0.60,
-        "strong_domain_paths": {
-            ("NumSense", "NumSense"),
-            ("NumSense", "MeasData"),
-            ("NumSense", "Time"),
-            ("MeasData", "NumSense"),
-            ("MeasData", "Patterns"),
-            ("MeasData", "Time"),
-            ("Patterns", "Time"),
-        },
-        "weak_domain_paths": {
-            ("Geometry", "MeasData"),
-            ("Geometry", "Patterns"),
-            ("Geometry", "Time"),
-            ("NumSense", "Patterns"),
-            ("Patterns", "NumSense"),
-            ("Time", "MeasData"),
-        },
         "redundancy_cap": 2,
     }
 
     if dry_run:
-        # For dry run, we'd need a separate path — for now just document it
         return {"message": "Use dry_run=false to apply. Rules applied:", "rules": {
             "tier1_promote": "strength * confidence >= 0.76 → prerequisite",
             "tier2_same_unit": "0.60-0.75 + same unit → prerequisite",
-            "tier2_strong_cross": "0.60-0.75 + strong domain path → prerequisite",
-            "tier2_weak_cross": "0.60-0.75 + weak domain path → drop gate",
+            "tier2_cross_unit": "0.60-0.75 + cross unit → drop gate",
             "tier3_drop": "strength * confidence < 0.60 → drop gate",
             "redundancy_cap": "max 2 gated targets per source node",
         }}
