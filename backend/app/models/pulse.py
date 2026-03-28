@@ -245,7 +245,7 @@ class SessionIrtSummary(BaseModel):
     end_sigma: float = 0.0
     sigma_reduction: float = 0.0
     predicted_correct: float = 0.0   # sum of P(correct) for all items
-    actual_correct: int = 0          # count of items scored >= 9.0
+    actual_correct: float = 0.0     # sum of continuous response weights (score/10)
     total_items: int = 0
     avg_information: float = 0.0     # mean item information across session
 

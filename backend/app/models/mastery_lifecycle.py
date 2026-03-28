@@ -80,9 +80,9 @@ class MasteryLifecycle(BaseModel):
     # Completion factor (actuarial model — PRD Section 4)
     completion_pct: float = Field(default=0.0, ge=0.0, le=1.0)
 
-    # Practice-mode pass/fail accounting (Gates 2-4 only)
-    passes: int = Field(default=0, ge=0)
-    fails: int = Field(default=0, ge=0)
+    # Practice-mode pass/fail accounting — continuous weights (score/10)
+    passes: float = Field(default=0.0, ge=0.0)
+    fails: float = Field(default=0.0, ge=0.0)
     subskill_pass_rate: float = Field(default=0.0, ge=0.0, le=1.0)
     blended_pass_rate: float = Field(default=0.0, ge=0.0, le=1.0)
     credit_per_pass: float = Field(default=0.25, ge=0.0, le=0.25)

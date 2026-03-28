@@ -38,35 +38,23 @@ function itemInformation(theta: number, a: number, b: number, c: number = 0): nu
 }
 
 // ============================================================================
-// Retention Model — Stability-Based Forgetting (§16)
+// Retention & Mastery Model — IRT-Derived Gates + Memory Decay
 // ============================================================================
 
 const DEFAULT_DECAY_RATE = 1.5;
-const DEFAULT_INITIAL_STABILITY = 3.0;   // days
-const DEFAULT_MASTERY_THRESHOLD = 30.0;  // days — S > this → mastered
+const DEFAULT_INITIAL_STABILITY = 3.0;   // days (display only — derived from gate)
 const DEFAULT_STUDENT_THETA = 3.0;       // floor — never decay below "untaught"
-const DEFAULT_STRONG_GROWTH = 2.5;       // S *= this on score >= 9.0
-const DEFAULT_PARTIAL_GROWTH = 1.5;      // S *= this on score >= 7.0
-const DEFAULT_SHRINK_FACTOR = 0.5;       // S *= this on score < 7.0
 const DEFAULT_TARGET_RETENTION = 0.85;   // P below this → review candidate
 
 interface RetentionParams {
   decayRate: number;
   initialStability: number;
-  masteryThreshold: number;
-  strongGrowth: number;
-  partialGrowth: number;
-  shrinkFactor: number;
   targetRetention: number;
 }
 
 const DEFAULT_RETENTION_PARAMS: RetentionParams = {
   decayRate: DEFAULT_DECAY_RATE,
   initialStability: DEFAULT_INITIAL_STABILITY,
-  masteryThreshold: DEFAULT_MASTERY_THRESHOLD,
-  strongGrowth: DEFAULT_STRONG_GROWTH,
-  partialGrowth: DEFAULT_PARTIAL_GROWTH,
-  shrinkFactor: DEFAULT_SHRINK_FACTOR,
   targetRetention: DEFAULT_TARGET_RETENTION,
 };
 
@@ -87,57 +75,118 @@ function effectiveTheta(
   return Math.max(floor, thetaTested - decay);
 }
 
-/** Compute how stability changes after a review */
-function updateStability(
-  currentStability: number,
-  score: number,
-  params: RetentionParams,
-): number {
-  if (score >= 9.0) return currentStability * params.strongGrowth;
-  if (score >= 7.0) return currentStability * params.partialGrowth;
-  return currentStability * params.shrinkFactor;
+/**
+ * Derive mastery gate from IRT state alone — the core of the simplified model.
+ * Checks gates 4→1 (highest first), returns the highest passing gate.
+ * This is the TypeScript mirror of backend derive_gate_from_irt().
+ */
+function deriveGateFromIrt(
+  theta: number, sigma: number,
+  minBeta: number, maxBeta: number, avgA: number = 1.4,
+): { gate: number; state: string; p: number; gateName: string } {
+  for (const gd of [...GATE_DEFINITIONS].reverse()) {
+    const refBeta = minBeta + (maxBeta - minBeta) * gd.refBetaFraction;
+    const p = pCorrect(theta, avgA, refBeta);
+    if (p >= gd.pThreshold && sigma <= gd.sigmaMax) {
+      return {
+        gate: gd.gate,
+        state: gd.gate >= 4 ? 'mastered' : 'active',
+        p,
+        gateName: gd.label,
+      };
+    }
+  }
+  return { gate: 0, state: 'not_started', p: pCorrect(theta, avgA, minBeta), gateName: 'Not Started' };
 }
 
-/** Determine retention state label */
-function retentionStateLabel(stability: number, masteryThreshold: number): string {
-  if (stability >= masteryThreshold) return 'mastered';
-  return 'active';
-}
-
-/** Simulate a full review lifecycle given a sequence of review scores */
-interface ReviewEvent {
-  reviewNum: number;
+/** Simulate IRT mastery progression: a sequence of scores updating θ/σ → gate */
+interface MasteryProgressionEvent {
+  itemNum: number;
   score: number;
-  stabilityBefore: number;
-  stabilityAfter: number;
-  approxInterval: number;  // days until this review fires
-  cumulativeDays: number;
+  isCorrect: boolean;
+  thetaBefore: number;
+  thetaAfter: number;
+  sigmaBefore: number;
+  sigmaAfter: number;
+  gate: number;
+  gateName: string;
   state: string;
+  pAtGateRef: number;
 }
 
-function simulateReviewLifecycle(
+function simulateMasteryProgression(
   scores: number[],
-  params: RetentionParams,
-): ReviewEvent[] {
-  const events: ReviewEvent[] = [];
-  let stability = params.initialStability;
-  let cumDays = 0;
+  minBeta: number,
+  maxBeta: number,
+  avgA: number,
+  primitiveKey: string,
+): MasteryProgressionEvent[] {
+  const events: MasteryProgressionEvent[] = [];
+  const prim = PRIMITIVE_REGISTRY[primitiveKey];
+  if (!prim) return events;
+
+  // Start with default ability
+  let ability: AbilityState = { theta: DEFAULT_STUDENT_THETA, sigma: DEFAULT_SIGMA, totalItemsSeen: 0 };
+  const history: SubmissionRecord[] = [];
+  let cals = makeInitialCalibrations(primitiveKey);
 
   for (let i = 0; i < scores.length; i++) {
-    const interval = i === 0 ? 0 : stability;  // first review at ~S days
-    cumDays += interval;
-    const newStability = updateStability(stability, scores[i], params);
-    events.push({
-      reviewNum: i,
-      score: scores[i],
-      stabilityBefore: stability,
-      stabilityAfter: newStability,
-      approxInterval: interval,
-      cumulativeDays: cumDays,
-      state: retentionStateLabel(newStability, params.masteryThreshold),
+    const score = scores[i];
+    const isCorrect = score >= IRT_CORRECT_THRESHOLD;
+
+    // Select best mode for current theta
+    let bestMode = prim.modes[0];
+    let bestInfo = 0;
+    for (const mode of prim.modes) {
+      const cal = cals[mode.evalMode];
+      const info = itemInformation(ability.theta, cal.currentA, cal.calibratedBeta, cal.c);
+      if (info > bestInfo) { bestInfo = info; bestMode = mode; }
+    }
+
+    const cal = cals[bestMode.evalMode];
+    const useBeta = cal.calibratedBeta;
+    const useA = cal.currentA;
+    const useC = cal.c;
+
+    const pBefore = pCorrect(ability.theta, useA, useBeta, useC);
+    const info = itemInformation(ability.theta, useA, useBeta, useC);
+
+    const { ability: updated, mismatchDetected, streak, effectiveTau } = updateTheta(
+      ability, useBeta, useA, useC, isCorrect, history,
+    );
+
+    const updatedCal = updateItemCalibration(cal, ability.theta, isCorrect);
+    cals = { ...cals, [bestMode.evalMode]: updatedCal };
+
+    history.push({
+      index: i, score, isCorrect, itemBeta: useBeta, itemPriorBeta: bestMode.priorBeta,
+      itemA: useA, itemPriorA: bestMode.a, itemC: useC,
+      mode: thetaToMode(ability.theta),
+      thetaBefore: ability.theta, thetaAfter: updated.theta,
+      sigmaBefore: ability.sigma, sigmaAfter: updated.sigma,
+      pCorrectBefore: pBefore, information: info,
+      mismatchDetected, streak, effectiveTau,
+      aCredibility: updatedCal.aCredibility, betaCredibility: updatedCal.credibilityZ,
     });
-    stability = newStability;
-    if (newStability >= params.masteryThreshold) break;
+
+    const gateResult = deriveGateFromIrt(updated.theta, updated.sigma, minBeta, maxBeta, avgA);
+
+    events.push({
+      itemNum: i,
+      score,
+      isCorrect,
+      thetaBefore: ability.theta,
+      thetaAfter: updated.theta,
+      sigmaBefore: ability.sigma,
+      sigmaAfter: updated.sigma,
+      gate: gateResult.gate,
+      gateName: gateResult.gateName,
+      state: gateResult.state,
+      pAtGateRef: gateResult.p,
+    });
+
+    ability = updated;
+    if (gateResult.state === 'mastered') break;
   }
   return events;
 }
@@ -1093,76 +1142,120 @@ const RetentionDecayChart: React.FC<{
   );
 };
 
-/** Shows stability progression through multiple reviews */
-const StabilityTimelineChart: React.FC<{
-  events: ReviewEvent[];
-  masteryThreshold: number;
+/** Shows IRT mastery progression: theta/sigma/gate through items */
+const MasteryProgressionChart: React.FC<{
+  events: MasteryProgressionEvent[];
   width?: number;
   height?: number;
-}> = ({ events, masteryThreshold, width = 600, height = 160 }) => {
+}> = ({ events, width = 600, height = 220 }) => {
   if (events.length === 0) return null;
 
-  const pad = { top: 20, right: 30, bottom: 30, left: 50 };
+  const pad = { top: 25, right: 40, bottom: 35, left: 50 };
   const w = width - pad.left - pad.right;
   const h = height - pad.top - pad.bottom;
 
-  const maxDays = Math.max(events[events.length - 1].cumulativeDays * 1.1, masteryThreshold);
-  const maxStability = Math.max(masteryThreshold * 1.2, ...events.map((e) => e.stabilityAfter));
+  const xScale = (i: number) => pad.left + (i / Math.max(1, events.length - 1)) * w;
+  const yMin = 0;
+  const yMax = 10;
+  const yScale = (v: number) => pad.top + h - ((v - yMin) / (yMax - yMin)) * h;
 
-  const xScale = (d: number) => pad.left + (d / maxDays) * w;
-  const yScale = (s: number) => pad.top + h - (s / maxStability) * h;
+  // Theta line
+  const thetaPoints = events.map((e, i) => `${xScale(i)},${yScale(e.thetaAfter)}`);
+  const thetaPath = `M${thetaPoints.join(' L')}`;
+
+  // Sigma band
+  const bandUp = events.map((e, i) => `${xScale(i)},${yScale(Math.min(yMax, e.thetaAfter + e.sigmaAfter))}`);
+  const bandDown = events.map((e, i) => `${xScale(i)},${yScale(Math.max(yMin, e.thetaAfter - e.sigmaAfter))}`).reverse();
+  const bandPath = `M${bandUp.join(' L')} L${bandDown.join(' L')} Z`;
+
+  // Gate color helper
+  const gateColor = (gate: number): string => {
+    const gd = GATE_DEFINITIONS.find((g) => g.gate === gate);
+    return gd ? gd.strokeColor : '#64748b';
+  };
+
+  // Find gate transition points
+  const transitions: { idx: number; gate: number; gateName: string }[] = [];
+  let prevGate = 0;
+  for (let i = 0; i < events.length; i++) {
+    if (events[i].gate !== prevGate) {
+      transitions.push({ idx: i, gate: events[i].gate, gateName: events[i].gateName });
+      prevGate = events[i].gate;
+    }
+  }
+
+  const yTicks = [0, 2, 4, 6, 8, 10];
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxHeight: height }}>
-      {/* Mastery threshold line */}
-      <line x1={pad.left} y1={yScale(masteryThreshold)} x2={pad.left + w} y2={yScale(masteryThreshold)}
-        stroke="#a855f7" strokeWidth={1} strokeDasharray="4,3" opacity={0.5} />
-      <text x={pad.left + w + 4} y={yScale(masteryThreshold) + 4} fontSize={8} fill="#a855f7">
-        mastered ({masteryThreshold}d)
-      </text>
+      {/* Y grid */}
+      {yTicks.map((v) => (
+        <g key={v}>
+          <line x1={pad.left} y1={yScale(v)} x2={width - pad.right} y2={yScale(v)}
+            stroke="rgba(148,163,184,0.15)" strokeDasharray="4,4" />
+          <text x={pad.left - 8} y={yScale(v) + 4} textAnchor="end" className="fill-slate-500" fontSize={10}>
+            {v}
+          </text>
+        </g>
+      ))}
 
-      {/* Stability bars + connecting line */}
-      {events.map((e, i) => {
-        const x = xScale(e.cumulativeDays);
-        const barColor = e.score >= 9.0 ? '#34d399' : e.score >= 7.0 ? '#f59e0b' : '#f87171';
-        const nextEvent = events[i + 1];
-        return (
-          <g key={i}>
-            {/* Connecting line to next */}
-            {nextEvent && (
-              <line x1={x} y1={yScale(e.stabilityAfter)} x2={xScale(nextEvent.cumulativeDays)} y2={yScale(nextEvent.stabilityBefore)}
-                stroke="rgba(148,163,184,0.3)" strokeWidth={1} strokeDasharray="2,2" />
-            )}
-            {/* Stability point */}
-            <circle cx={x} cy={yScale(e.stabilityAfter)} r={5} fill={barColor} stroke="rgba(0,0,0,0.3)" strokeWidth={1} />
-            {/* Score label */}
-            <text x={x} y={yScale(e.stabilityAfter) - 10} textAnchor="middle" fontSize={8} fill={barColor} fontWeight="bold">
-              {e.score.toFixed(1)}
-            </text>
-            {/* Stability value */}
-            <text x={x} y={yScale(e.stabilityAfter) + 16} textAnchor="middle" fontSize={7} className="fill-slate-500">
-              S={e.stabilityAfter.toFixed(1)}
-            </text>
-            {/* Day label on axis */}
-            <text x={x} y={height - 6} textAnchor="middle" fontSize={8} className="fill-slate-500">
-              d{Math.round(e.cumulativeDays)}
-            </text>
-            {/* Mastered badge */}
-            {e.state === 'mastered' && (
-              <text x={x} y={yScale(e.stabilityAfter) - 22} textAnchor="middle" fontSize={7} fill="#a855f7" fontWeight="bold">
-                MASTERED
-              </text>
-            )}
-          </g>
-        );
-      })}
+      {/* Sigma band */}
+      <path d={bandPath} fill="rgba(99,102,241,0.12)" />
+
+      {/* Theta line */}
+      <path d={thetaPath} fill="none" stroke="#818cf8" strokeWidth={2} />
+
+      {/* Gate transition labels */}
+      {transitions.map((t) => (
+        <g key={`gate-${t.idx}`}>
+          <line x1={xScale(t.idx)} y1={pad.top} x2={xScale(t.idx)} y2={pad.top + h}
+            stroke={gateColor(t.gate)} strokeWidth={1} strokeDasharray="3,3" opacity={0.5} />
+          <text x={xScale(t.idx)} y={pad.top - 5} textAnchor="middle" fontSize={8}
+            fill={gateColor(t.gate)} fontWeight="bold">
+            G{t.gate}
+          </text>
+        </g>
+      ))}
+
+      {/* Dots color-coded by gate */}
+      {events.map((e, i) => (
+        <g key={i}>
+          <circle
+            cx={xScale(i)} cy={yScale(e.thetaAfter)} r={4}
+            fill={gateColor(e.gate)} stroke="rgba(0,0,0,0.3)" strokeWidth={1}
+          />
+          {/* Error bars (sigma) */}
+          <line
+            x1={xScale(i)} y1={yScale(Math.min(yMax, e.thetaAfter + e.sigmaAfter))}
+            x2={xScale(i)} y2={yScale(Math.max(yMin, e.thetaAfter - e.sigmaAfter))}
+            stroke={gateColor(e.gate)} strokeWidth={1} opacity={0.3}
+          />
+        </g>
+      ))}
+
+      {/* X axis labels */}
+      {events.map((_, i) => (
+        i % Math.max(1, Math.floor(events.length / 10)) === 0 && (
+          <text key={`x-${i}`} x={xScale(i)} y={height - 6} textAnchor="middle" fontSize={9} className="fill-slate-500">
+            {i + 1}
+          </text>
+        )
+      ))}
 
       {/* Axis labels */}
-      <text x={12} y={pad.top + h / 2} textAnchor="middle" fontSize={9} className="fill-slate-500"
-        transform={`rotate(-90, 12, ${pad.top + h / 2})`}>S (days)</text>
-      <text x={pad.left + w / 2} y={height - 16} textAnchor="middle" fontSize={9} className="fill-slate-600">
-        Cumulative days
+      <text x={12} y={pad.top + h / 2} textAnchor="middle" fontSize={9} fill="#818cf8"
+        transform={`rotate(-90, 12, ${pad.top + h / 2})`}>theta</text>
+      <text x={pad.left + w / 2} y={height - 18} textAnchor="middle" fontSize={9} className="fill-slate-600">
+        Item number
       </text>
+
+      {/* Legend */}
+      <g transform={`translate(${pad.left + 10}, ${pad.top + 5})`}>
+        <line x1={0} y1={0} x2={16} y2={0} stroke="#818cf8" strokeWidth={2} />
+        <text x={20} y={4} fontSize={8} fill="#818cf8">theta (ability)</text>
+        <rect x={0} y={10} width={16} height={6} fill="rgba(99,102,241,0.12)" />
+        <text x={20} y={17} fontSize={8} className="fill-slate-500">+/- sigma</text>
+      </g>
     </svg>
   );
 };
@@ -1174,42 +1267,43 @@ const StabilityTimelineChart: React.FC<{
 interface RetentionPreset {
   label: string;
   desc: string;
+  primitiveKey: string;
+  scores: number[];
   thetaTested: number;
   itemBeta: number;
   itemA: number;
-  reviewScores: number[];
 }
 
 const RETENTION_PRESETS: RetentionPreset[] = [
   {
-    label: 'Gifted Grace (θ=7.7, β=5.0)',
-    desc: 'Strong learner — high θ, P decays from 0.989. Reviews surface ~day 3. Three strong reviews → mastered in ~30 days.',
-    thetaTested: 7.7, itemBeta: 5.0, itemA: 1.6,
-    reviewScores: [9.5, 9.5, 9.5],
+    label: 'Gifted: Quick Mastery',
+    desc: 'Strong student aces 6 items — theta rises fast, sigma drops, gates 1->2->3->4.',
+    primitiveKey: 'ten-frame', thetaTested: 7.7, itemBeta: 5.0, itemA: 1.6,
+    scores: [10, 10, 10, 10, 10, 10],
   },
   {
-    label: 'Steady Sam (θ=4.0, β=3.5)',
-    desc: 'Average learner — items already informative at θ=4.0. Needs more reviews with mixed results.',
-    thetaTested: 4.0, itemBeta: 3.5, itemA: 1.4,
-    reviewScores: [6.5, 7.2, 8.0, 9.5, 9.0, 9.2],
+    label: 'Steady Learner',
+    desc: 'Average student with mixed scores — theta rises slowly, sigma drops gradually, reaches gate 2.',
+    primitiveKey: 'ten-frame', thetaTested: 4.0, itemBeta: 3.5, itemA: 1.4,
+    scores: [6.5, 7.2, 8.0, 9.5, 9.0, 9.2, 9.5, 9.5],
   },
   {
-    label: 'Strong Start, Quick Mastery',
-    desc: 'High-ability student aces every review. S triples each time: 3→7.5→18.75→46.9 → mastered.',
-    thetaTested: 8.0, itemBeta: 5.0, itemA: 1.6,
-    reviewScores: [10, 10, 10],
-  },
-  {
-    label: 'Struggle + Recovery',
-    desc: 'Student fails first review (S halves), partially recovers, then builds momentum.',
-    thetaTested: 5.0, itemBeta: 4.0, itemA: 1.4,
-    reviewScores: [5.0, 7.5, 8.5, 9.5, 9.0, 9.5],
+    label: 'Struggle then Recovery',
+    desc: 'Student fails early items, then improves — theta dips then recovers, sigma stays high initially.',
+    primitiveKey: 'ten-frame', thetaTested: 5.0, itemBeta: 4.0, itemA: 1.4,
+    scores: [3.0, 4.0, 5.0, 7.5, 8.5, 9.5, 9.5, 9.5, 9.5, 9.5],
   },
   {
     label: 'Repeated Failure',
-    desc: 'Student keeps failing. Stability shrinks: 3→1.5→0.75→0.375. Reviews become very frequent.',
-    thetaTested: 4.5, itemBeta: 5.0, itemA: 1.6,
-    reviewScores: [4.0, 5.0, 4.5, 6.0, 7.5, 9.0, 9.5, 9.5],
+    desc: 'Student keeps failing — theta drops, sigma stays wide, stuck at gate 0.',
+    primitiveKey: 'ten-frame', thetaTested: 4.5, itemBeta: 5.0, itemA: 1.6,
+    scores: [4.0, 3.0, 5.0, 4.5, 3.0, 5.0, 4.0, 3.5],
+  },
+  {
+    label: 'MC Expert Track',
+    desc: 'Knowledge check MC from recall->evaluate — tests tiered MC convergence.',
+    primitiveKey: 'knowledge-check', thetaTested: 5.0, itemBeta: 3.0, itemA: 1.4,
+    scores: [10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
   },
 ];
 
@@ -1321,17 +1415,24 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
   const [score, setScore] = useState(10);
 
   // ── Retention tab state ──
+  const [retPrimitiveKey, setRetPrimitiveKey] = useState('ten-frame');
+  const [retScores, setRetScores] = useState<number[]>([9.5, 9.5, 9.5, 9.5, 9.5, 9.5]);
+  const [retNewScore, setRetNewScore] = useState(9.5);
   const [retParams, setRetParams] = useState<RetentionParams>(DEFAULT_RETENTION_PARAMS);
   const [retThetaTested, setRetThetaTested] = useState(7.7);
   const [retItemBeta, setRetItemBeta] = useState(5.0);
   const [retItemA, setRetItemA] = useState(1.6);
   const [retItemC] = useState(0);
-  const [retReviewScores, setRetReviewScores] = useState<number[]>([9.5, 9.5, 9.5]);
-  const [retNewScore, setRetNewScore] = useState(9.5);
 
-  const retentionEvents = useMemo(
-    () => simulateReviewLifecycle(retReviewScores, retParams),
-    [retReviewScores, retParams],
+  const retBetaRange = useMemo(() => getPrimitiveBetaRange(retPrimitiveKey), [retPrimitiveKey]);
+  const retAvgA = useMemo(() => {
+    const prim = PRIMITIVE_REGISTRY[retPrimitiveKey];
+    return prim ? prim.modes.reduce((s, m) => s + m.a, 0) / prim.modes.length : 1.4;
+  }, [retPrimitiveKey]);
+
+  const masteryEvents = useMemo(
+    () => simulateMasteryProgression(retScores, retBetaRange.min, retBetaRange.max, retAvgA, retPrimitiveKey),
+    [retScores, retBetaRange, retAvgA, retPrimitiveKey],
   );
 
   // Effective theta at various time points for the info table
@@ -1634,7 +1735,7 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-500">θ tested</span>
+                    <span className="text-slate-500">theta tested</span>
                     <span className="font-mono text-indigo-400">{retThetaTested.toFixed(1)}</span>
                   </div>
                   <input type="range" min={1} max={10} step={0.1} value={retThetaTested}
@@ -1643,7 +1744,7 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                 </div>
                 <div>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-500">Item β (difficulty)</span>
+                    <span className="text-slate-500">Item beta (difficulty)</span>
                     <span className="font-mono text-amber-400">{retItemBeta.toFixed(1)}</span>
                   </div>
                   <input type="range" min={0.5} max={9} step={0.5} value={retItemBeta}
@@ -1676,6 +1777,33 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
               </div>
             </Card>
 
+            {/* Primitive Selector for Mastery Progression */}
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
+                Mastery Primitive
+              </h3>
+              <div className="relative">
+                <select
+                  value={retPrimitiveKey}
+                  onChange={(e) => setRetPrimitiveKey(e.target.value)}
+                  className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 appearance-none"
+                >
+                  {Object.entries(PRIMITIVE_REGISTRY).map(([key, config]) => {
+                    const { min, max } = getPrimitiveBetaRange(key);
+                    return (
+                      <option key={key} value={key}>
+                        {config.label} (b={min}-{max})
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
+              <div className="mt-2 text-xs text-slate-500">
+                beta range: {retBetaRange.min}-{retBetaRange.max}, avg a: {retAvgA.toFixed(2)}
+              </div>
+            </Card>
+
             {/* Retention Parameters */}
             <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
@@ -1693,66 +1821,12 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                 </div>
                 <div>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-500">Initial stability S₀ (days)</span>
-                    <span className="font-mono text-violet-400">{retParams.initialStability.toFixed(1)}</span>
-                  </div>
-                  <input type="range" min={1} max={10} step={0.5} value={retParams.initialStability}
-                    onChange={(e) => setRetParams((p) => ({ ...p, initialStability: parseFloat(e.target.value) }))}
-                    className="w-full accent-violet-500" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-500">Mastery threshold (days)</span>
-                    <span className="font-mono text-purple-400">{retParams.masteryThreshold.toFixed(0)}</span>
-                  </div>
-                  <input type="range" min={14} max={60} step={1} value={retParams.masteryThreshold}
-                    onChange={(e) => setRetParams((p) => ({ ...p, masteryThreshold: parseFloat(e.target.value) }))}
-                    className="w-full accent-purple-500" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
                     <span className="text-slate-500">Target retention P</span>
                     <span className="font-mono text-amber-400">{(retParams.targetRetention * 100).toFixed(0)}%</span>
                   </div>
                   <input type="range" min={0.7} max={0.95} step={0.05} value={retParams.targetRetention}
                     onChange={(e) => setRetParams((p) => ({ ...p, targetRetention: parseFloat(e.target.value) }))}
                     className="w-full accent-amber-500" />
-                </div>
-              </div>
-            </Card>
-
-            {/* Stability Growth/Shrink */}
-            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
-              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
-                Stability Multipliers
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-500">Strong recall (≥9.0) ×</span>
-                    <span className="font-mono text-green-400">{retParams.strongGrowth.toFixed(1)}</span>
-                  </div>
-                  <input type="range" min={1.5} max={4} step={0.1} value={retParams.strongGrowth}
-                    onChange={(e) => setRetParams((p) => ({ ...p, strongGrowth: parseFloat(e.target.value) }))}
-                    className="w-full accent-green-500" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-500">Partial recall (≥7.0) ×</span>
-                    <span className="font-mono text-amber-400">{retParams.partialGrowth.toFixed(1)}</span>
-                  </div>
-                  <input type="range" min={1.0} max={2.5} step={0.1} value={retParams.partialGrowth}
-                    onChange={(e) => setRetParams((p) => ({ ...p, partialGrowth: parseFloat(e.target.value) }))}
-                    className="w-full accent-amber-500" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-500">Failed recall (&lt;7.0) ×</span>
-                    <span className="font-mono text-red-400">{retParams.shrinkFactor.toFixed(2)}</span>
-                  </div>
-                  <input type="range" min={0.2} max={0.8} step={0.05} value={retParams.shrinkFactor}
-                    onChange={(e) => setRetParams((p) => ({ ...p, shrinkFactor: parseFloat(e.target.value) }))}
-                    className="w-full accent-red-500" />
                 </div>
               </div>
             </Card>
@@ -1770,7 +1844,8 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                       setRetThetaTested(preset.thetaTested);
                       setRetItemBeta(preset.itemBeta);
                       setRetItemA(preset.itemA);
-                      setRetReviewScores(preset.reviewScores);
+                      setRetPrimitiveKey(preset.primitiveKey);
+                      setRetScores(preset.scores);
                       setRetParams(DEFAULT_RETENTION_PARAMS);
                     }}
                     className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white transition-all text-sm"
@@ -1787,55 +1862,55 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
           <div className="col-span-6 space-y-4">
             {/* Summary Stats */}
             <div className="grid grid-cols-4 gap-3">
-              {[
-                {
-                  label: 'θ tested',
-                  value: retThetaTested.toFixed(1),
-                  sub: `β=${retItemBeta}, a=${retItemA}`,
-                  color: 'text-indigo-400',
-                },
-                {
-                  label: 'Initial Stability',
-                  value: `${retParams.initialStability.toFixed(1)}d`,
-                  sub: `decay rate = ${retParams.decayRate}`,
-                  color: 'text-violet-400',
-                },
-                {
-                  label: 'Reviews to Master',
-                  value: retentionEvents.some((e) => e.state === 'mastered')
-                    ? `${retentionEvents.findIndex((e) => e.state === 'mastered') + 1}`
-                    : `${retReviewScores.length}+`,
-                  sub: retentionEvents.some((e) => e.state === 'mastered')
-                    ? `~${Math.round(retentionEvents.find((e) => e.state === 'mastered')!.cumulativeDays)} days`
-                    : 'not yet mastered',
-                  color: retentionEvents.some((e) => e.state === 'mastered') ? 'text-green-400' : 'text-amber-400',
-                },
-                {
-                  label: 'Final Stability',
-                  value: retentionEvents.length > 0
-                    ? `${retentionEvents[retentionEvents.length - 1].stabilityAfter.toFixed(1)}d`
-                    : '—',
-                  sub: `threshold: ${retParams.masteryThreshold}d`,
-                  color: (retentionEvents.length > 0 && retentionEvents[retentionEvents.length - 1].stabilityAfter >= retParams.masteryThreshold)
-                    ? 'text-purple-400' : 'text-slate-400',
-                },
-              ].map((stat) => (
-                <Card key={stat.label} className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4 text-center">
-                  <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{stat.label}</div>
-                  <div className={`text-2xl font-bold font-mono ${stat.color}`}>{stat.value}</div>
-                  <div className="text-xs text-slate-500 mt-1">{stat.sub}</div>
-                </Card>
-              ))}
+              {(() => {
+                const lastEvent = masteryEvents.length > 0 ? masteryEvents[masteryEvents.length - 1] : null;
+                const masteredEvent = masteryEvents.find((ev) => ev.state === 'mastered');
+                const currentGate = lastEvent ? lastEvent.gate : 0;
+                const currentGateDef = GATE_DEFINITIONS.find((g) => g.gate === currentGate);
+                const stats = [
+                  {
+                    label: 'theta tested',
+                    value: retThetaTested.toFixed(1),
+                    sub: `beta=${retItemBeta}, a=${retItemA}`,
+                    color: 'text-indigo-400',
+                  },
+                  {
+                    label: 'Current Gate',
+                    value: `G${currentGate}`,
+                    sub: currentGateDef ? currentGateDef.label : 'Not Started',
+                    color: currentGate >= 4 ? 'text-purple-400' : currentGate >= 2 ? 'text-blue-400' : currentGate >= 1 ? 'text-emerald-400' : 'text-slate-400',
+                  },
+                  {
+                    label: 'Items to Mastery',
+                    value: masteredEvent ? `${masteredEvent.itemNum + 1}` : `${retScores.length}+`,
+                    sub: masteredEvent ? 'mastered' : 'not yet mastered',
+                    color: masteredEvent ? 'text-green-400' : 'text-amber-400',
+                  },
+                  {
+                    label: 'Final sigma',
+                    value: lastEvent ? lastEvent.sigmaAfter.toFixed(3) : '-',
+                    sub: lastEvent ? `theta=${lastEvent.thetaAfter.toFixed(2)}` : 'no data',
+                    color: lastEvent && lastEvent.sigmaAfter <= 1.0 ? 'text-green-400' : 'text-slate-400',
+                  },
+                ];
+                return stats.map((stat) => (
+                  <Card key={stat.label} className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4 text-center">
+                    <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">{stat.label}</div>
+                    <div className={`text-2xl font-bold font-mono ${stat.color}`}>{stat.value}</div>
+                    <div className="text-xs text-slate-500 mt-1">{stat.sub}</div>
+                  </Card>
+                ));
+              })()}
             </div>
 
             {/* Decay Chart */}
             <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-                  Memory Decay — θ_eff &amp; P(correct) over time
+                  Memory Decay — theta_eff &amp; P(correct) over time
                 </h3>
                 <span className="text-xs text-slate-500">
-                  θ_eff = θ - d·√(t/S)
+                  theta_eff = theta - d * sqrt(t/S)
                 </span>
               </div>
               <RetentionDecayChart
@@ -1859,7 +1934,7 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                   <thead>
                     <tr className="border-b border-white/10">
                       <th className="text-left text-slate-500 py-1.5 px-2">Day</th>
-                      <th className="text-right text-slate-500 py-1.5 px-2">θ_eff</th>
+                      <th className="text-right text-slate-500 py-1.5 px-2">theta_eff</th>
                       <th className="text-right text-slate-500 py-1.5 px-2">P(correct)</th>
                       <th className="text-right text-slate-500 py-1.5 px-2">Information</th>
                       <th className="text-left text-slate-500 py-1.5 px-2">Engine Action</th>
@@ -1869,8 +1944,8 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                     {retentionSnapshots.map((snap) => {
                       let action = '';
                       let actionColor = 'text-slate-600';
-                      if (snap.p >= 0.95) { action = 'Skip — trivial'; actionColor = 'text-slate-600'; }
-                      else if (snap.p >= retParams.targetRetention) { action = 'Skip — above target'; actionColor = 'text-slate-500'; }
+                      if (snap.p >= 0.95) { action = 'Skip -- trivial'; actionColor = 'text-slate-600'; }
+                      else if (snap.p >= retParams.targetRetention) { action = 'Skip -- above target'; actionColor = 'text-slate-500'; }
                       else if (snap.p >= 0.7) { action = 'Review candidate'; actionColor = 'text-amber-400'; }
                       else if (snap.p >= 0.5) { action = 'High-priority review'; actionColor = 'text-orange-400'; }
                       else { action = 'Urgent review'; actionColor = 'text-red-400'; }
@@ -1891,98 +1966,110 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
               </div>
             </Card>
 
-            {/* Stability Timeline */}
+            {/* Mastery Progression Chart */}
             <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-                  Stability Lifecycle — Review Progression
+                  Mastery Progression — theta/sigma/Gate per Item
                 </h3>
                 <span className="text-xs text-slate-500">
-                  S₀={retParams.initialStability} → mastery at S&gt;{retParams.masteryThreshold}
+                  {PRIMITIVE_REGISTRY[retPrimitiveKey]?.label ?? retPrimitiveKey}
                 </span>
               </div>
-              {retentionEvents.length === 0 ? (
+              {masteryEvents.length === 0 ? (
                 <div className="flex items-center justify-center h-32 text-slate-600 text-sm">
-                  Add review scores to see the stability timeline
+                  Add scores to see mastery progression
                 </div>
               ) : (
-                <StabilityTimelineChart
-                  events={retentionEvents}
-                  masteryThreshold={retParams.masteryThreshold}
-                />
+                <MasteryProgressionChart events={masteryEvents} />
               )}
             </Card>
 
-            {/* Review Events Table */}
+            {/* Mastery Progression Table */}
             <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
-                Review History
+                Item-by-Item Mastery Progression
               </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left text-slate-500 py-1.5 px-2">#</th>
-                      <th className="text-right text-slate-500 py-1.5 px-2">Score</th>
-                      <th className="text-right text-slate-500 py-1.5 px-2">S before</th>
-                      <th className="text-right text-slate-500 py-1.5 px-2">S after</th>
-                      <th className="text-right text-slate-500 py-1.5 px-2">Interval</th>
-                      <th className="text-right text-slate-500 py-1.5 px-2">Cum. days</th>
-                      <th className="text-left text-slate-500 py-1.5 px-2">State</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {retentionEvents.map((e) => (
-                      <tr key={e.reviewNum} className="border-b border-white/5">
-                        <td className="py-1.5 px-2 font-mono text-slate-400">{e.reviewNum + 1}</td>
-                        <td className={`py-1.5 px-2 text-right font-mono font-bold ${
-                          e.score >= 9.0 ? 'text-green-400' : e.score >= 7.0 ? 'text-amber-400' : 'text-red-400'
-                        }`}>{e.score.toFixed(1)}</td>
-                        <td className="py-1.5 px-2 text-right font-mono text-slate-400">{e.stabilityBefore.toFixed(1)}</td>
-                        <td className="py-1.5 px-2 text-right font-mono text-violet-400">{e.stabilityAfter.toFixed(1)}</td>
-                        <td className="py-1.5 px-2 text-right font-mono text-slate-400">~{e.approxInterval.toFixed(1)}d</td>
-                        <td className="py-1.5 px-2 text-right font-mono text-slate-300">{e.cumulativeDays.toFixed(0)}</td>
-                        <td className="py-1.5 px-2">
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                            e.state === 'mastered' ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'
-                          }`}>
-                            {e.state}
-                          </span>
-                        </td>
+              {masteryEvents.length === 0 ? (
+                <div className="text-center py-4 text-slate-600 text-sm">No mastery events yet</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="text-left text-slate-500 py-1.5 px-2">#</th>
+                        <th className="text-right text-slate-500 py-1.5 px-2">Score</th>
+                        <th className="text-right text-slate-500 py-1.5 px-2">theta</th>
+                        <th className="text-right text-slate-500 py-1.5 px-2">sigma</th>
+                        <th className="text-right text-slate-500 py-1.5 px-2">P(gate)</th>
+                        <th className="text-left text-slate-500 py-1.5 px-2">Gate</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {masteryEvents.map((ev) => {
+                        const gateDef = GATE_DEFINITIONS.find((g) => g.gate === ev.gate);
+                        return (
+                          <tr key={ev.itemNum} className="border-b border-white/5">
+                            <td className="py-1.5 px-2 font-mono text-slate-400">{ev.itemNum + 1}</td>
+                            <td className={`py-1.5 px-2 text-right font-mono font-bold ${
+                              ev.isCorrect ? 'text-green-400' : 'text-red-400'
+                            }`}>{ev.score.toFixed(1)}</td>
+                            <td className="py-1.5 px-2 text-right font-mono text-indigo-400">
+                              {ev.thetaBefore.toFixed(2)} &rarr; {ev.thetaAfter.toFixed(2)}
+                            </td>
+                            <td className="py-1.5 px-2 text-right font-mono text-slate-400">
+                              {ev.sigmaBefore.toFixed(3)} &rarr; {ev.sigmaAfter.toFixed(3)}
+                            </td>
+                            <td className="py-1.5 px-2 text-right font-mono text-green-400">
+                              {(ev.pAtGateRef * 100).toFixed(0)}%
+                            </td>
+                            <td className="py-1.5 px-2">
+                              <span
+                                className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                                style={{
+                                  backgroundColor: gateDef ? `${gateDef.strokeColor}20` : 'rgba(100,116,139,0.2)',
+                                  color: gateDef ? gateDef.strokeColor : '#94a3b8',
+                                }}
+                              >
+                                G{ev.gate} {ev.gateName}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </Card>
           </div>
 
-          {/* Right — Review Score Builder + Insights */}
+          {/* Right — Score Builder + Insights */}
           <div className="col-span-3 space-y-4">
-            {/* Review Score Builder */}
+            {/* Score Builder */}
             <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
-                Review Scores
+                Score Builder
               </h3>
               <div className="space-y-2">
-                {retReviewScores.map((s, i) => (
+                {retScores.map((s, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="text-xs text-slate-500 w-6">#{i + 1}</span>
                     <input type="range" min={0} max={10} step={0.5} value={s}
                       onChange={(e) => {
-                        const newScores = [...retReviewScores];
+                        const newScores = [...retScores];
                         newScores[i] = parseFloat(e.target.value);
-                        setRetReviewScores(newScores);
+                        setRetScores(newScores);
                       }}
                       className="flex-1 accent-indigo-500" />
                     <span className={`text-sm font-mono w-8 text-right font-bold ${
                       s >= 9.0 ? 'text-green-400' : s >= 7.0 ? 'text-amber-400' : 'text-red-400'
                     }`}>{s.toFixed(1)}</span>
                     <button
-                      onClick={() => setRetReviewScores((scores) => scores.filter((_, idx) => idx !== i))}
+                      onClick={() => setRetScores((scores) => scores.filter((_: number, idx: number) => idx !== i))}
                       className="text-slate-600 hover:text-red-400 text-xs px-1"
                     >
-                      ×
+                      x
                     </button>
                   </div>
                 ))}
@@ -1994,7 +2081,7 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                   <Button
                     variant="ghost"
                     className="bg-white/5 border border-white/20 hover:bg-white/10 text-xs px-2 py-1 h-auto"
-                    onClick={() => setRetReviewScores((scores) => [...scores, retNewScore])}
+                    onClick={() => setRetScores((scores) => [...scores, retNewScore])}
                   >
                     + Add
                   </Button>
@@ -2002,27 +2089,27 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
               </div>
             </Card>
 
-            {/* Comparison: Old Gates vs New */}
+            {/* Comparison: Old vs New */}
             <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-4">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
-                Old Gates vs Stability Model
+                Old vs New Model
               </h3>
               <div className="space-y-3 text-xs">
                 <div className="p-2 rounded-lg bg-red-500/5 border border-red-500/10">
-                  <div className="text-red-400 font-semibold mb-1">Old: 4-Gate Retest Cycle</div>
+                  <div className="text-red-400 font-semibold mb-1">Old: Stability Multipliers</div>
                   <div className="text-slate-500">
-                    G1 → wait 3d → G2 → wait 7d → G3 → wait 14d → G4
-                    <br />= 24 calendar days minimum, blocks forward progress
+                    Fixed multipliers (strong x2.5, partial x1.5, fail x0.5).
+                    <br />Stability is a single number with no statistical grounding.
+                    <br />Gates derived from arbitrary day thresholds.
                   </div>
                 </div>
                 <div className="p-2 rounded-lg bg-green-500/5 border border-green-500/10">
-                  <div className="text-green-400 font-semibold mb-1">New: Stability Model</div>
+                  <div className="text-green-400 font-semibold mb-1">New: IRT-Derived Gates</div>
                   <div className="text-slate-500">
-                    S₀={retParams.initialStability}d
-                    {retentionEvents.some((e) => e.state === 'mastered') && (
-                      <> → mastered in ~{Math.round(retentionEvents.find((e) => e.state === 'mastered')!.cumulativeDays)} days</>
-                    )}
-                    <br />Reviews surface by information value, never blocks
+                    Gates derived from P(correct) at reference difficulties.
+                    <br />theta and sigma update via Bayesian EAP with 2PL/3PL likelihood.
+                    <br />sigma (uncertainty) must be low enough to trust the estimate.
+                    <br />No arbitrary multipliers -- the math determines readiness.
                   </div>
                 </div>
               </div>
@@ -2034,26 +2121,25 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                 <Shield className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0" />
                 <div className="text-xs text-slate-400 space-y-2">
                   <p>
-                    <span className="text-violet-300 font-semibold">Forgetting function:</span>{' '}
-                    θ_eff = θ - d·√(t/S). Power-law decay (√t) matches Ebbinghaus research — memory decays
-                    quickly at first, then plateaus. Higher stability (S) = slower decay.
+                    <span className="text-violet-300 font-semibold">IRT-derived gates:</span>{' '}
+                    Each gate checks P(correct) at a reference difficulty within the primitive&apos;s beta range.
+                    G1 checks the easiest mode, G4 checks the hardest. Both P threshold AND sigma ceiling must be met.
                   </p>
                   <p>
-                    <span className="text-amber-300 font-semibold">Auto-scheduling:</span>{' '}
-                    When P(correct) drops below {(retParams.targetRetention * 100).toFixed(0)}%, the item becomes a
-                    review candidate automatically. No calendar gates needed — the engine&apos;s existing
-                    information-maximizing logic handles scheduling.
+                    <span className="text-amber-300 font-semibold">Decay model:</span>{' '}
+                    theta_eff = theta - d * sqrt(t/S). When P(correct) drops below{' '}
+                    {(retParams.targetRetention * 100).toFixed(0)}%, the item becomes a review candidate.
+                    No calendar gates needed.
                   </p>
                   <p>
-                    <span className="text-green-300 font-semibold">Stability growth:</span>{' '}
-                    Strong recall (≥9.0) multiplies S by {retParams.strongGrowth}×. Three strong reviews:
-                    {' '}{retParams.initialStability} → {(retParams.initialStability * retParams.strongGrowth).toFixed(1)} → {(retParams.initialStability * retParams.strongGrowth ** 2).toFixed(1)} → {(retParams.initialStability * retParams.strongGrowth ** 3).toFixed(1)}
-                    {retParams.initialStability * retParams.strongGrowth ** 3 >= retParams.masteryThreshold ? ' → mastered' : ''}.
+                    <span className="text-green-300 font-semibold">Sigma convergence:</span>{' '}
+                    Each correct answer on an informative item reduces sigma. High-discrimination items
+                    (large a) reduce sigma faster. Once sigma is low, we trust the theta estimate.
                   </p>
                   <p>
-                    <span className="text-red-300 font-semibold">Failed recall:</span>{' '}
-                    S shrinks to {(retParams.shrinkFactor * 100).toFixed(0)}% — the student gets reviewed sooner,
-                    not punished with a gate block. The model adapts to the learner.
+                    <span className="text-cyan-300 font-semibold">Gate progression:</span>{' '}
+                    G1 (Emerging, 70% at easiest) &rarr; G2 (Developing, 75% at mid) &rarr;
+                    G3 (Proficient, 80% at hard) &rarr; G4 (Mastered, 90% at hardest).
                   </p>
                 </div>
               </div>

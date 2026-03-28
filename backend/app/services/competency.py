@@ -417,6 +417,7 @@ class CompetencyService:
             cal_theta = None
             cal_sigma = None
             cal_disc_a = None
+            cal_item_beta = None
             if self.calibration_engine and source != "diagnostic" and primitive_type:
                 try:
                     cal_result = await self.calibration_engine.process_submission(
@@ -431,6 +432,7 @@ class CompetencyService:
                     cal_theta = cal_result.get("student_theta")
                     cal_sigma = cal_result.get("sigma")
                     cal_disc_a = cal_result.get("discrimination_a")
+                    cal_item_beta = cal_result.get("calibrated_beta")
                     logger.info(f"✅ COMPETENCY_SERVICE: Calibration engine processed submission")
                 except Exception as cal_err:
                     logger.error(f"⚠️ COMPETENCY_SERVICE: Calibration engine error (non-fatal): {cal_err}")
@@ -449,6 +451,7 @@ class CompetencyService:
                         source=source,
                         theta=cal_theta,
                         sigma=cal_sigma,
+                        item_beta=cal_item_beta,
                         primitive_type=primitive_type,
                         avg_a=cal_disc_a,
                     )

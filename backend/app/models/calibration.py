@@ -21,7 +21,8 @@ from pydantic import BaseModel, Field
 # Constants
 # ---------------------------------------------------------------------------
 
-# Score threshold for treating a response as "correct" in IRT (0–10 scale)
+# Legacy binary threshold — retained only for backward-compatible reporting.
+# The IRT engine now uses continuous response weights (score / 10.0).
 IRT_CORRECT_THRESHOLD = 9.0
 
 # Full-credibility threshold for item calibration (PRD §5.2)
@@ -76,7 +77,11 @@ class ItemCalibration(BaseModel):
     # Empirical tracking
     empirical_beta: Optional[float] = None
     total_observations: int = Field(default=0, ge=0)
-    total_correct: int = Field(default=0, ge=0)
+    total_correct: float = Field(
+        default=0.0, ge=0.0,
+        description="Sum of continuous response weights (score/10). "
+                    "Not an integer count — a score of 8.5 contributes 0.85.",
+    )
     sum_respondent_theta: float = Field(
         default=0.0,
         description="Running sum of θ values of all students who attempted this item",

@@ -13,6 +13,7 @@ Core formulas:
   I(θ) = a² × (P - c)² × (1 - P) / (P × (1 - c)²)
 """
 
+import asyncio
 import logging
 import math
 from datetime import datetime, timezone
@@ -22,7 +23,6 @@ from ..db.firestore_service import FirestoreService
 from ..models.calibration import (
     DEFAULT_STUDENT_THETA,
     DEFAULT_THETA_SIGMA,
-    IRT_CORRECT_THRESHOLD,
     ITEM_CREDIBILITY_STANDARD,
     MAX_THETA_HISTORY,
     THETA_GRID_MAX,
@@ -101,6 +101,7 @@ class CalibrationEngine:
         source: str = "practice",
         *,
         prefetched_ability: Optional[Dict] = None,
+        prefetched_item_calibration: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """
         Process a single submission: update item β and student θ inline.
@@ -114,18 +115,23 @@ class CalibrationEngine:
             score:          Score on 0–10 scale.
             source:         "lesson" | "practice".
             prefetched_ability: Pre-loaded ability doc to skip a Firestore read.
+            prefetched_item_calibration: Pre-loaded item calibration doc to skip
+                a Firestore read. Useful when multiple items share the same
+                primitive_type+eval_mode within a session.
 
         Returns:
             Dict with updated calibrated_beta, credibility_z,
             student_theta, and earned_level.
         """
         now = datetime.now(timezone.utc)
-        is_correct = score >= IRT_CORRECT_THRESHOLD
+        # Continuous response weight: 0.0 (wrong) to 1.0 (perfect)
+        # Replaces the old binary is_correct = score >= 9.0
+        response_weight = max(0.0, min(1.0, score / 10.0))
         item_key = get_item_key(primitive_type, eval_mode)
 
         logger.info(
             f"[CALIBRATION] Processing: student={student_id}, "
-            f"item={item_key}, score={score}, correct={is_correct}"
+            f"item={item_key}, score={score}, weight={response_weight:.2f}"
         )
 
         # 1. Fetch or create student ability doc (skip read if pre-fetched)
@@ -134,28 +140,33 @@ class CalibrationEngine:
         else:
             ability = await self._get_or_create_ability(student_id, skill_id)
 
-        # 2. Fetch or create item calibration doc
-        item_cal = await self._get_or_create_item_calibration(
-            item_key, primitive_type, eval_mode
-        )
+        # 2. Fetch or create item calibration doc (skip read if pre-fetched)
+        if prefetched_item_calibration is not None:
+            item_cal = ItemCalibration(**prefetched_item_calibration)
+        else:
+            item_cal = await self._get_or_create_item_calibration(
+                item_key, primitive_type, eval_mode
+            )
 
         # 3. Update item β (uses student's current θ for ability adjustment)
-        item_cal = self._update_item_beta(item_cal, ability.theta, is_correct)
+        item_cal = self._update_item_beta(item_cal, ability.theta, response_weight)
 
         # 4. Update student θ (uses item's calibrated β with 2PL/3PL likelihood)
         ability = self._update_student_theta(
-            ability, item_cal.calibrated_beta, is_correct,
+            ability, item_cal.calibrated_beta, response_weight,
             now, primitive_type, eval_mode, score,
             item_a=item_cal.discrimination_a,
             item_c=item_cal.guessing_c,
         )
 
-        # 5. Persist both documents
-        await self.firestore.upsert_item_calibration(
-            item_key, item_cal.model_dump()
-        )
-        await self.firestore.upsert_student_ability(
-            student_id, skill_id, ability.model_dump()
+        # 5. Persist both documents (parallel — independent writes)
+        await asyncio.gather(
+            self.firestore.upsert_item_calibration(
+                item_key, item_cal.model_dump()
+            ),
+            self.firestore.upsert_student_ability(
+                student_id, skill_id, ability.model_dump()
+            ),
         )
 
         # 6. Compute per-primitive gate progress
@@ -192,6 +203,8 @@ class CalibrationEngine:
             "p_correct": round(p_corr, 4),
             "item_information": round(info, 4),
             "gate_progress": gate_progress.model_dump(),
+            "ability_doc": ability.model_dump(),
+            "item_calibration_doc": item_cal.model_dump(),
         }
 
     # ------------------------------------------------------------------
@@ -280,33 +293,35 @@ class CalibrationEngine:
         self,
         item: ItemCalibration,
         student_theta: float,
-        is_correct: bool,
+        response_weight: float,
     ) -> ItemCalibration:
         """Update item difficulty and discrimination using credibility-weighted IRT.
+
+        Uses continuous response weights (0-1) instead of binary correct/incorrect.
+        total_correct accumulates fractional weights for MLE β estimation.
 
         Phase 6 upgrades:
         - 6.1: 2PL-adjusted β MLE (divides log-odds by a)
         - 6.2: Empirical a via point-biserial correlation with credibility blending
         """
-        # Increment counters
+        # Increment counters — total_correct accumulates continuous weights
         item.total_observations += 1
-        if is_correct:
-            item.total_correct += 1
-            item.sum_correct_theta += student_theta
+        item.total_correct += response_weight
+        item.sum_correct_theta += response_weight * student_theta
         item.sum_respondent_theta += student_theta
         item.sum_theta_squared += student_theta ** 2
 
         # --- β update (6.1: 2PL-adjusted MLE) ---
         n = item.total_observations
-        correct = item.total_correct
+        correct = item.total_correct      # now a float (sum of weights)
         incorrect = n - correct
         mean_theta = item.sum_respondent_theta / n
 
-        if correct > 0 and incorrect > 0:
+        if correct > 0.01 and incorrect > 0.01:
             # 2PL MLE: β = mean(θ) - (1/a) × ln(correct / incorrect)
             a = max(0.3, item.discrimination_a)
             item.empirical_beta = mean_theta - (1.0 / a) * math.log(correct / incorrect)
-        elif correct == 0:
+        elif correct <= 0.01:
             item.empirical_beta = mean_theta + 2.0
         else:
             item.empirical_beta = mean_theta - 2.0
@@ -328,23 +343,27 @@ class CalibrationEngine:
         return item
 
     def _update_empirical_a(self, item: ItemCalibration) -> None:
-        """Compute empirical discrimination via point-biserial correlation.
+        """Compute empirical discrimination via weighted correlation.
 
-        Requires sufficient observations (≥20) with non-extreme pass rates
-        (0.1 < p < 0.9) and positive θ variance. Uses Bühlmann credibility
-        blending (k=30) to smoothly transition from categorical prior to
-        empirical estimate.
+        With continuous response weights, this generalizes point-biserial
+        correlation: sum_correct_theta accumulates weight × θ, and
+        total_correct accumulates weights. The formula produces a weighted
+        mean-difference estimate of discrimination.
+
+        Requires sufficient observations (≥20) with non-extreme average
+        weights (0.1 < avg_weight < 0.9) and positive θ variance.
+        Uses Bühlmann credibility blending (k=30).
         """
         n = item.total_observations
         if n < self.A_MIN_OBSERVATIONS:
             return
 
-        p_obs = item.total_correct / n
+        p_obs = item.total_correct / n  # average response weight
         if p_obs <= self.A_MIN_P_OBS or p_obs >= self.A_MAX_P_OBS:
             return
 
-        incorrect = n - item.total_correct
-        if incorrect == 0:
+        incorrect = n - item.total_correct  # sum of (1 - weight)
+        if incorrect < 0.01:
             return
 
         mean_correct = item.sum_correct_theta / item.total_correct
@@ -395,7 +414,7 @@ class CalibrationEngine:
         self,
         ability: StudentAbility,
         item_beta: float,
-        is_correct: bool,
+        response_weight: float,
         now: datetime,
         primitive_type: str,
         eval_mode: str,
@@ -403,7 +422,16 @@ class CalibrationEngine:
         item_a: float = 1.0,
         item_c: float = 0.0,
     ) -> StudentAbility:
-        """Update student ability using Bayesian grid-approximation EAP with 2PL/3PL likelihood."""
+        """Update student ability using Bayesian grid-approximation EAP with
+        continuous Beta response model.
+
+        Instead of binary correct/incorrect, uses:
+            L(x|θ) = P(θ)^x × (1 - P(θ))^(1-x)
+        where x = response_weight ∈ [0, 1].
+
+        This naturally interpolates: x=1.0 is fully correct, x=0.0 is fully
+        wrong, x=0.85 (score 8.5) is mostly correct with partial pull.
+        """
         # Build grid: 0.0, 0.1, 0.2, ..., 10.0 (101 points)
         grid_size = int((THETA_GRID_MAX - THETA_GRID_MIN) / THETA_GRID_STEP) + 1
         grid_points = [
@@ -430,11 +458,15 @@ class CalibrationEngine:
         if prior_sum > 0:
             prior = [p / prior_sum for p in prior]
 
-        # Likelihood: 2PL/3PL model (upgrades from 1PL Rasch)
+        # Likelihood: continuous Beta response model
+        # L(x|θ) = P(θ)^x × (1-P(θ))^(1-x)
+        # Clamp x away from exact 0/1 for numerical stability
+        x = max(1e-6, min(1.0 - 1e-6, response_weight))
         likelihood = []
         for theta in grid_points:
             p = p_correct(theta, item_a, item_beta, item_c)
-            likelihood.append(p if is_correct else 1.0 - p)
+            p = max(1e-10, min(1.0 - 1e-10, p))
+            likelihood.append(p ** x * (1.0 - p) ** (1.0 - x))
 
         # Posterior ∝ prior × likelihood
         posterior = [pr * lk for pr, lk in zip(prior, likelihood)]
@@ -505,7 +537,11 @@ class CalibrationEngine:
         item_beta: float,
         item_c: float,
     ) -> float:
-        """Compute actual - predicted accuracy over recent items. Returns 0 if insufficient data."""
+        """Compute actual - predicted accuracy over recent items.
+
+        Uses continuous response weights (score/10) instead of binary threshold.
+        Returns 0 if insufficient data.
+        """
         recent = ability.theta_history[-CalibrationEngine.MISMATCH_WINDOW:]
         if len(recent) < CalibrationEngine.MISMATCH_MIN_ITEMS:
             return 0.0
@@ -514,7 +550,7 @@ class CalibrationEngine:
         actual_sum = 0.0
         for h in recent:
             predicted_sum += p_correct(h.theta, item_a, item_beta, item_c)
-            actual_sum += 1.0 if (h.score is not None and h.score >= IRT_CORRECT_THRESHOLD) else 0.0
+            actual_sum += (h.score / 10.0) if h.score is not None else 0.0
 
         n = len(recent)
         return (actual_sum / n) - (predicted_sum / n)

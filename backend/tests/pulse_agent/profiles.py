@@ -103,9 +103,10 @@ SHALLOW_ROOTS = SyntheticProfile(
     student_id=900_008,
     name="Shallow-Roots Ravi",
     description=(
-        "Aces hard frontier probes but fails on leapfrog-inferred prerequisites. "
-        "A tree that grows fast without strong roots — tests whether the algorithm "
-        "detects and fills gaps in wide-prerequisite branches."
+        "Aces hard frontier probes but fails on leapfrog-unlocked prerequisites. "
+        "Leapfrog seeds competency docs (not_started) — the unified selector "
+        "should prioritize them via high σ (uncertainty). Tests whether utility "
+        "scoring naturally fills gaps in wide-prerequisite branches."
     ),
     archetype="shallow_roots",
     target_sessions=20,

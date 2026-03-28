@@ -12,6 +12,7 @@ Usage:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
@@ -151,7 +152,17 @@ class PulseAgentRunner:
         session_number: int,
         virtual_now: datetime,
     ) -> Any:
-        """Assemble a session, submit scores for each item, snapshot state."""
+        """Assemble a session, submit scores for each item, snapshot state.
+
+        Optimized to minimise Firestore round-trips:
+        - Session doc loaded once (from assemble), passed in-memory to all items
+        - Session doc saved once at end (deferred)
+        - Primitive history saved once at end (deferred)
+        - Competency writes batched and flushed once at end (deferred)
+        - Global pass rate prefetched once, reused for all items
+        - Item calibration docs cached across items sharing same primitive+mode
+        - No duplicate get_all_mastery_lifecycles call
+        """
 
         # 1. Assemble session (use virtual clock for decay calculations)
         session_resp = await self.engine.assemble_session(
@@ -169,17 +180,20 @@ class PulseAgentRunner:
         for item in session_resp.items:
             band_counts[item.band.value] = band_counts.get(item.band.value, 0) + 1
 
-        # 2. Build gate map for accurate fallback tracking
-        lifecycles = await self.recorder.firestore.get_all_mastery_lifecycles(
-            profile.student_id
+        # 2. Pre-fetch session doc + global pass rate in parallel
+        session_doc, global_rate_data = await asyncio.gather(
+            self.engine.firestore.get_pulse_session(session_id),
+            self.engine.firestore.get_global_practice_pass_rate(profile.student_id),
         )
-        gate_map: Dict[str, int] = {
-            lc.get("subskill_id", ""): lc.get("current_gate", 0)
-            for lc in lifecycles
-        }
+        global_pass_rate = global_rate_data.get("global_practice_pass_rate", 0.8)
 
-        # 3. Submit results for each item
+        # Shared item calibration cache — avoids re-reading the same
+        # primitive_type+eval_mode doc when multiple items share it
+        item_calibration_cache: Dict[str, Dict] = {}
+
+        # 3. Submit results for each item (deferred writes)
         item_results: List[ItemResult] = []
+        primitive_entries: List[Dict] = []  # accumulated for batch write
 
         for item in session_resp.items:
             score = strategy.score_item(item)
@@ -202,16 +216,45 @@ class PulseAgentRunner:
                 session_id=session_id,
                 result=result_req,
                 now_override=virtual_now,
+                prefetched_session=session_doc,
+                defer_session_save=True,
+                defer_primitive_history=True,
+                defer_competency=True,
+                prefetched_global_pass_rate=global_pass_rate,
+                item_calibration_cache=item_calibration_cache,
             )
+
+            # Accumulate primitive entry for batch write
+            primitive_entries.append({
+                "primitive_type": primitive_type,
+                "eval_mode": eval_mode,
+                "score": score,
+                "subskill_id": item.subskill_id,
+                "timestamp": virtual_now.isoformat(),
+            })
 
             # Extract IRT data from result
             irt = result_resp.irt
             fc = item.frontier_context
 
-            # Use actual gate from lifecycle when gate_update is None
-            actual_gate = gate_map.get(item.subskill_id, 0)
-
             # Build item result for the recorder
+            old_theta = result_resp.theta_update.old_theta
+            new_theta = result_resp.theta_update.new_theta
+            theta_delta = new_theta - old_theta
+            gate_before = result_resp.gate_update.old_gate if result_resp.gate_update else 0
+            gate_after = result_resp.gate_update.new_gate if result_resp.gate_update else gate_before
+            leapfrog_fired = result_resp.leapfrog is not None
+
+            # Compact per-item line
+            gate_str = f"G{gate_before}→G{gate_after}" if gate_before != gate_after else f"G{gate_before}"
+            leap_str = f" LEAPFROG({len(result_resp.leapfrog.inferred_skills)} inferred)" if leapfrog_fired else ""
+            p_str = f"P={irt.p_correct:.2f}" if irt else "P=?"
+            logger.info(
+                f"    [{item.band.value:8s}] {item.subskill_id:20s} "
+                f"score={score:.1f}  θ={old_theta:+.2f}→{new_theta:+.2f} (Δ{theta_delta:+.3f})  "
+                f"{gate_str}  {p_str}{leap_str}"
+            )
+
             item_result = ItemResult(
                 item_id=item.item_id,
                 band=item.band.value,
@@ -221,17 +264,11 @@ class PulseAgentRunner:
                 target_mode=item.target_mode,
                 target_beta=item.target_beta,
                 score=score,
-                theta_before=result_resp.theta_update.old_theta,
-                theta_after=result_resp.theta_update.new_theta,
-                gate_before=(
-                    result_resp.gate_update.old_gate
-                    if result_resp.gate_update else actual_gate
-                ),
-                gate_after=(
-                    result_resp.gate_update.new_gate
-                    if result_resp.gate_update else actual_gate
-                ),
-                leapfrog_triggered=result_resp.leapfrog is not None,
+                theta_before=old_theta,
+                theta_after=new_theta,
+                gate_before=gate_before,
+                gate_after=gate_after,
+                leapfrog_triggered=leapfrog_fired,
                 inferred_skills=(
                     result_resp.leapfrog.inferred_skills
                     if result_resp.leapfrog else []
@@ -247,7 +284,15 @@ class PulseAgentRunner:
             )
             item_results.append(item_result)
 
-        # 3. Snapshot state
+        # 4. Flush deferred writes (session + unlock refresh + primitive history)
+        await self.engine.save_deferred_session(
+            session_id, session_doc, student_id=profile.student_id,
+        )
+        await self.engine.flush_primitive_history(
+            profile.student_id, primitive_entries,
+        )
+
+        # 5. Snapshot state
         snapshot = await self.recorder.snapshot_session(
             timeline=timeline,
             session_number=session_number,
@@ -279,20 +324,27 @@ class PulseAgentRunner:
 
     async def cleanup_student(self, student_id: int) -> None:
         """
-        Remove all Firestore data for a synthetic student.
-        Call this before re-running a scenario for a clean slate.
+        Remove all data for a synthetic student.
 
-        Uses direct subcollection listing (not service queries) to ensure
-        every document is found and deleted, regardless of field values.
+        Supports both real Firestore and InMemoryFirestoreService.
+        For in-memory: calls clear_student() (instant).
+        For Firestore: walks subcollections and deletes documents.
         """
         logger.info(f"Cleaning up synthetic student {student_id}...")
 
         fs = self.recorder.firestore
+
+        # Fast path: in-memory store has a direct clear method
+        if hasattr(fs, "clear_student"):
+            fs.clear_student(student_id)
+            logger.info(f"  Cleanup complete (in-memory) for student {student_id}")
+            return
+
+        # Firestore path: walk subcollections
         student_ref = fs.client.collection("students").document(str(student_id))
 
-        # Delete ALL docs in each subcollection by listing doc refs directly
         subcollections = [
-            "mastery_lifecycle",   # singular — matches FirestoreService
+            "mastery_lifecycle",
             "abilities",
             "pulse_state",
         ]
@@ -308,7 +360,6 @@ class PulseAgentRunner:
             if deleted:
                 logger.info(f"  Deleted {deleted} docs from {subcol_name}")
 
-        # Delete pulse sessions (top-level collection, filtered by student_id)
         deleted_sessions = 0
         try:
             sessions_ref = fs.client.collection("pulse_sessions")

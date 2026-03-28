@@ -1158,13 +1158,13 @@ class LearningPathsService:
         try:
             logger.info(f"Recalculating unlocks for student {student_id}, subject {subject_id}")
 
-            # Get previous state
-            previous = await self.firestore.get_learning_path(student_id, subject_id)
+            # Get previous state + proficiency map in parallel (independent reads)
+            graph_data = await self._get_graph(subject_id)  # cached in-memory
+            previous, prof_map = await asyncio.gather(
+                self.firestore.get_learning_path(student_id, subject_id),
+                self.firestore.get_student_proficiency_map(student_id, subject=subject_id),
+            )
             previous_unlocked = set(previous.get("unlocked_entities", [])) if previous else set()
-
-            # Get current graph and proficiency
-            graph_data = await self._get_graph(subject_id)
-            prof_map = await self.firestore.get_student_proficiency_map(student_id, subject=subject_id)
 
             graph = graph_data["graph"]
             nodes = graph["nodes"]

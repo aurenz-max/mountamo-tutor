@@ -46,6 +46,7 @@ from app.services.pulse_engine import PulseEngine
 from app.core.config import settings
 
 from tests.pulse_agent.agent import PulseAgentRunner
+from tests.pulse_agent.in_memory_firestore import InMemoryFirestoreService
 from tests.pulse_agent.profiles import ALL_PROFILES, SyntheticProfile
 from tests.pulse_agent.assertions import run_assertions_for_archetype
 from tests.pulse_agent.journey_recorder import JourneyRecorder
@@ -61,11 +62,15 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
 )
+# Suppress noisy Firestore update logs so pulse agent output is readable
+logging.getLogger("app.db.firestore_service").setLevel(logging.WARNING)
+logging.getLogger("app.services.calibration_engine").setLevel(logging.WARNING)
+logging.getLogger("app.services.mastery_lifecycle_engine").setLevel(logging.WARNING)
 logger = logging.getLogger("pulse_agent")
 
 
 def build_engine() -> tuple:
-    """Instantiate PulseEngine and its dependencies from config."""
+    """Instantiate PulseEngine and its dependencies from config (Firestore)."""
     firestore_service = FirestoreService()
     calibration_engine = CalibrationEngine(firestore_service)
     mastery_lifecycle_engine = MasteryLifecycleEngine(firestore_service)
@@ -79,6 +84,56 @@ def build_engine() -> tuple:
         learning_paths_service=learning_paths_service,
     )
     return pulse_engine, firestore_service
+
+
+async def build_engine_in_memory(subject: str = "Mathematics") -> tuple:
+    """Instantiate PulseEngine backed by in-memory storage.
+
+    Fetches the curriculum graph from Firestore ONCE, then runs everything
+    in-memory. A 15-item session completes in <100ms vs 10-30s with Firestore.
+
+    Args:
+        subject: Subject to pre-load the graph for (default: "Mathematics")
+
+    Returns:
+        (pulse_engine, in_memory_firestore_service)
+    """
+    # Fetch graph from real Firestore (one-time bootstrap)
+    real_fs = FirestoreService()
+    subject_id = subject.upper().replace(" ", "_")
+    graph_data = await real_fs.get_curriculum_graph(
+        subject_id=subject_id, version_type="published"
+    )
+    if not graph_data:
+        raise ValueError(
+            f"No published curriculum graph for {subject_id} in Firestore. "
+            f"The in-memory engine needs a real graph to run against."
+        )
+
+    # Build in-memory store with the graph pre-loaded
+    mem_fs = InMemoryFirestoreService()
+    mem_fs.load_curriculum_graph(subject_id, graph_data)
+
+    # Wire up all services with the in-memory store
+    calibration_engine = CalibrationEngine(mem_fs)
+    mastery_lifecycle_engine = MasteryLifecycleEngine(mem_fs)
+    learning_paths_service = LearningPathsService(
+        mem_fs, project_id="in-memory"
+    )
+    pulse_engine = PulseEngine(
+        firestore_service=mem_fs,
+        calibration_engine=calibration_engine,
+        mastery_lifecycle_engine=mastery_lifecycle_engine,
+        learning_paths_service=learning_paths_service,
+    )
+
+    node_count = len(graph_data.get("graph", {}).get("nodes", []))
+    logger.info(
+        f"[InMemory] Engine ready: {node_count} nodes for {subject_id}, "
+        f"0 Firestore calls from here on"
+    )
+
+    return pulse_engine, mem_fs
 
 
 async def run_single_profile(
@@ -243,6 +298,11 @@ def main():
         help="Simulated days between sessions (default: 1.0)",
     )
     parser.add_argument(
+        "--in-memory",
+        action="store_true",
+        help="Use in-memory storage (fetches graph once, then 0 Firestore calls). ~100x faster.",
+    )
+    parser.add_argument(
         "--list",
         action="store_true",
         help="List available profiles and exit",
@@ -263,7 +323,17 @@ def main():
     output_dir = Path(args.output) if args.output else None
 
     # Build engine
-    pulse_engine, firestore_service = build_engine()
+    if args.in_memory:
+        print("[InMemory] Bootstrapping — fetching graph from Firestore once...")
+        pulse_engine, firestore_service = asyncio.run(
+            build_engine_in_memory(subject="Mathematics")
+        )
+        # In-memory mode: always clean (start fresh) and skip Firestore cleanup
+        args.clean = False
+        print("[InMemory] Ready — all subsequent operations are in-memory\n")
+    else:
+        pulse_engine, firestore_service = build_engine()
+
     runner = PulseAgentRunner(
         pulse_engine, firestore_service,
         seed=args.seed,

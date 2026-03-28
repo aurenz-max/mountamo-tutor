@@ -165,24 +165,25 @@ class AcceleratingStrategy(ScoreStrategy):
 
 
 class ShallowRootsStrategy(ScoreStrategy):
-    """Aces frontier probes but fails on leapfrog-inferred prerequisites.
+    """Aces frontier probes but fails on leapfrog-unlocked prerequisites.
 
     Models a student who "gets the hard stuff" but has gaps in foundational
     knowledge. Like learning quantum mechanics by answering one double-slit
     question right — doesn't mean you understand wave functions.
 
     Behavior:
-    - Frontier probes: scores 9-10 (triggers leapfrog, infers ancestors)
+    - Frontier probes: scores 9-10 (triggers leapfrog, seeds competency docs)
     - Directly-tested subskills (seen as frontier): scores 8.5-10 on review
-    - Inferred subskills (never directly tested): 60% chance of scoring 4-6,
+    - Unlocked subskills (never directly tested): 60% chance of scoring 4-6,
       simulating the "weak roots" — prerequisites the student never actually learned
 
-    This profile is adversarial: it exposes whether the algorithm detects and
-    fills gaps in wide-prerequisite branches where a student passes a deep
-    descendant but never proved competence on sibling prerequisites.
+    With the unified selector (utility = information × urgency), unlocked skills
+    have high σ → high urgency → they get selected. After failures, θ drops →
+    Fisher information shifts → the selector naturally deprioritizes them in
+    favour of frontier probes on genuinely uncertain prerequisites.
     """
 
-    # Probability that an inferred (never directly tested) skill fails
+    # Probability that an unlocked (never directly tested) skill fails
     INFERRED_FAIL_CHANCE = 0.60
 
     def __init__(self, profile: "SyntheticProfile", seed: Optional[int] = None):
@@ -202,7 +203,7 @@ class ShallowRootsStrategy(ScoreStrategy):
             # Directly tested before — genuine knowledge, strong retention
             return self._jitter(9.0, spread=0.8)
 
-        # Inferred skill (leapfrog-assigned, never directly tested)
+        # Unlocked skill (leapfrog-seeded, never directly tested)
         # 60% chance: the student has a gap here — weak roots
         if self.rng.random() < self.INFERRED_FAIL_CHANCE:
             return self._jitter(4.5, spread=1.5)  # Fails badly

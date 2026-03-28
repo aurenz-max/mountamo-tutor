@@ -1,8 +1,8 @@
 # Lumina Pulse — Adaptive Learning Loop
 
-**Version:** 2.0
-**Date:** 2026-03-22
-**Status:** Phase 2 Polish + Retention Model Redesign
+**Version:** 3.0
+**Date:** 2026-03-27
+**Status:** Phase 7 — IRT-Driven Mastery + Unified Item Selection
 
 ---
 
@@ -10,167 +10,218 @@
 
 ### 1.1 The Velocity Problem
 
-The current system produces a linear experience where a student who completes one problem set advances ~2.3% through the knowledge graph in ~6 minutes. At this rate, full coverage of 674 K-level subskills requires ~290 problem sets or ~29 hours of pure problem-solving time — before accounting for the 4-gate retest cycle that multiplies each skill by 4x.
+The original system produced a linear experience where a student who completes one problem set advances ~2.3% through the knowledge graph in ~6 minutes. At this rate, full coverage of 674 K-level subskills requires ~290 problem sets or ~29 hours of pure problem-solving time — before accounting for the retest cycle that multiplies each skill by 4x.
 
-The root cause: three nearly independent systems control a student's time, and none of them allow for acceleration.
+The root cause: three nearly independent systems controlled a student's time, and none allowed acceleration.
 
 | System | Purpose | Limitation |
 |--------|---------|------------|
 | Diagnostic Placement | One-time onboarding, binary-search the DAG | Only runs once; no continuous probing |
 | Daily Learning Planner | Sequential lesson groups, 75-min daily budget | 100% of time is scheduled; no room for stretch |
-| Difficulty Calibration (IRT) | Continuous θ/β estimation | Parallel system — θ doesn't drive gates or planning |
-
-A student who already understands addition cannot skip to multiplication. They must complete every lesson, pass 3 evals at ≥9.0, wait for 3-day/7-day/14-day retests, and only then does the planner move forward. There is no mechanism for a student who "gets it" to vault ahead.
+| Difficulty Calibration (IRT) | Continuous θ/β estimation | Parallel system — θ didn't drive gates or planning |
 
 ### 1.2 The Fragmentation Problem
 
-Three frontend components (`DiagnosticSession`, `PlannerDashboard`, `PracticeModeEnhanced`) each have separate item selection logic, separate session management, and separate result pipelines. The lesson grouper for daily learning differs from practice mode's item selection, creating divergent student experiences for what should be the same underlying activity.
+Three frontend components (`DiagnosticSession`, `PlannerDashboard`, `PracticeModeEnhanced`) each had separate item selection logic, separate session management, and separate result pipelines.
 
 ### 1.3 The Vision
 
-**Practice becomes learning.** Every session is simultaneously diagnosis, instruction, and assessment. Students can jump 1-5 skills ahead on the knowledge graph. If they succeed, DAG inference triggers massive skips. If they fail, the system calibrates them to the right difficulty and provides scaffolded instruction. Spaced repetition handles the trailing edge automatically.
+**Practice becomes learning.** Every session is simultaneously diagnosis, instruction, and assessment. Students can jump 1-5 skills ahead on the knowledge graph. If they succeed, DAG inference triggers massive skips. If they fail, the system calibrates them to the right difficulty. Spaced retention handles the trailing edge automatically.
 
-One component. One grouper. One loop.
+One component. One selection function. One loop.
 
 ---
 
-## 2. Core Architecture — The Three-Band Model
+## 2. Core Architecture — Unified Information-Maximizing Selection
 
-Every Pulse session assembles items from three bands:
+### 2.1 Design Principle
+
+Every Pulse session assembles items from a single ranking function. All candidate skills — new, in-progress, and review — compete on the same utility score:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    PULSE SESSION                         │
-│                                                          │
-│   FRONTIER PROBES  (20%)  ← DAG walk 1-5 jumps ahead    │
-│   CURRENT WORK     (65%)  ← IRT β ≈ θ+0.5, frontier     │
-│   TRAILING REVIEW  (15%)  ← spaced rep, retests due      │
-│                                                          │
-│   All items use calibrated β → all update θ → all can    │
-│   trigger gate transitions                               │
-└─────────────────────────────────────────────────────────┘
+utility = Fisher_information(θ_eff, a, β) × urgency(state, decay, stability)
 ```
 
-### 2.1 Frontier Probes (20% of session, ~3 items)
+**Band labels (frontier/current/review) are derived from student state for frontend display, not used for selection.** The information-maximizing utility function naturally produces the right mix:
+- New skills have high prior σ → high information → selected early
+- Overdue reviews have decayed θ → high information → selected when informative
+- Trivial items have P→1 → near-zero information → naturally filtered out
 
-**Purpose:** Force multiplier. Test skills 1-5 DAG edges ahead of the student's current frontier — skills they have NOT been taught.
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    PULSE SESSION                                  │
+│                                                                   │
+│   Every candidate skill scored by:                                │
+│     utility = information(θ_eff, a, β) × urgency                 │
+│                                                                   │
+│   Band labels derived from state (for frontend display):          │
+│     FRONTIER  ← not yet unlocked, discovered via BFS             │
+│     CURRENT   ← not_started or active without decay              │
+│     REVIEW    ← active with elapsed time > 0.5 × stability       │
+│                                                                   │
+│   All items use calibrated β → all update θ → all can            │
+│   trigger gate transitions                                       │
+└──────────────────────────────────────────────────────────────────┘
+```
 
-**Selection:** BFS walk from frontier nodes along DAG descendant edges. Skip already-mastered or already-in-frontier nodes. Pick 1-2 lesson groups from the ahead-of-frontier pool.
+### 2.2 Urgency Multipliers
 
-**Mode:** Fixed at mode 3 (pictorial, reduced prompts, β ≈ 3.5). Enough scaffolding to give a fair test, not so much that it's trivial.
+Urgency modulates Fisher information without overriding it:
 
-**On pass (≥75% aggregate across lesson group):**
-- Run DAG inference: all ancestor skills between probed node and current frontier → INFERRED_MASTERED
-- Seed mastery_lifecycle for each inferred skill: Gate 2, completion_pct = 0.5, next_retest_eligible = now + 3 days
-- Seed ability θ = 7.0 for each inferred skill (same conservative estimate as diagnostic inference)
-- Refresh frontier via `LearningPathsService.recalculate_unlocks()`
-- One 6-minute frontier probe can skip 5+ skills = weeks of lesson time saved
+| State | Urgency | Rationale |
+|-------|---------|-----------|
+| `not_started` | 1.5 | Mild boost for new skills — exploration is valuable |
+| `active`, not overdue | 1.0 | Default — let information drive |
+| `active`, overdue | `1.0 + min(2.0, days_elapsed / stability)` | Peaks at 3.0 when review is 2× overdue. Caps to avoid runaway dominance over frontier items |
+| Frontier probe | `2.0 / (1.0 + 0.2 × depth)` | Closer probes slightly preferred; decays with DAG distance |
 
-**On fail:** No penalty. θ was already at default (3.0) for untaught skills. The system simply learned where the student's ceiling is. Calibrate β for the probed items and move on.
+### 2.3 Band Derivation Rules
 
-### 2.2 Current Work (65% of session, ~9-10 items)
+Band labels are assigned after utility ranking, based on student state:
 
-**Purpose:** Core learning at the zone of proximal development. This IS the lesson — scaffolding comes from mode selection, not a separate "lesson" flow.
+```python
+if retention_state == "not_started":
+    band = CURRENT
+elif retention_state == "active" and days_since > stability * 0.5:
+    band = REVIEW
+else:
+    band = CURRENT
 
-**Selection:** Frontier skills (Gate 0 unlocked but not started, or Gate 1 still accumulating lesson evals). Grouped via `LessonGroupService.group_subskills_into_blocks()`.
+# Frontier probes (not yet unlocked, discovered via BFS):
+band = FRONTIER
+```
 
-**Mode:** Derived from student's θ per subskill (see §3.1 θ→Mode Mapping). Low θ → low modes with full scaffolding (concrete manipulatives). High θ → symbolic multi-step.
+### 2.4 Diversity Cap
 
-**Gate processing:** Gate 0 items → source="lesson" (needs 3 evals ≥ 9.0 for Gate 1 advancement). Gate 1+ items → source="practice" (retest logic).
+To prevent a single skill from monopolizing a session:
 
-### 2.3 Trailing Review (15% of session, ~2-3 items)
+```python
+MAX_CURRENT_ITEMS_PER_SKILL = 3  # per skill_id
+```
 
-**Purpose:** Spaced repetition for retention. Ensure previously-learned skills don't decay.
-
-**Selection:** For all subskills in `retention_state="active"`, compute `effective_theta` using the stability-based forgetting model (see §16.3). Items whose predicted P(correct) drops below `TARGET_RETENTION` (0.85) become review candidates. Sort by information value descending — most informative reviews first. Group via `LessonGroupService`.
-
-**Mode:** Derived from effective_θ (accounts for time-based decay — a skill last reviewed 7 days ago may warrant a lower mode than its tested θ suggests).
-
-**Retention processing:** On review completion, update stability: strong recall (≥9.0) → S×2.5, partial (≥7.0) → S×1.5, fail (<7.0) → S×0.5. When stability exceeds 30 days → `mastered` (no further reviews). See §16.4.
-
-### 2.4 Unified Grouper
-
-The same `LessonGroupService.group_subskills_into_blocks()` drives all three bands. The grouper clusters 2-5 related subskills by (subject, unit_title, skill_description), sorts by Bloom's taxonomy (Identify → Explain → Apply), and assigns block type + duration.
-
-What was previously three separate concepts:
-- **"Lesson"** = Current Work at low θ (mode 1-2, full scaffolding)
-- **"Practice"** = Current Work at rising θ (mode 3-4, reduced scaffolding)
-- **"Retest"** = Trailing Review at high θ (mode 5-6, symbolic)
-
-All use the same grouper. The only variable is the mode, which is determined by θ.
+Items are selected in utility-descending order; once a skill_id hits the cap, remaining items for that skill are skipped.
 
 ---
 
 ## 3. IRT Integration
 
-### 3.1 θ → Mode Mapping
+### 3.1 Max-Information Mode Selection
 
-Student ability (θ) determines the scaffolding mode for each item:
+Instead of a fixed θ→mode mapping table, the engine selects the eval mode that maximizes Fisher information for the student's current θ:
+
+```python
+@staticmethod
+def select_best_mode(theta: float, primitive_type: str) -> tuple[int, float, str]:
+    """Select the eval mode that gives maximum Fisher information.
+
+    Returns (mode_number, target_beta, eval_mode_name).
+    Falls back to theta_to_mode() for primitives not in the registry.
+    """
+    modes = PROBLEM_TYPE_REGISTRY.get(primitive_type)
+    if not modes:
+        mode = theta_to_mode(theta)
+        return mode, mode_to_beta(mode), "default"
+
+    # Sort eval modes by beta ascending, assign mode numbers 1, 2, 3, ...
+    sorted_modes = sorted(modes.items(), key=lambda x: x[1].prior_beta)
+    best = max(sorted_modes, key=lambda m: item_information(theta, a, m.prior_beta, c))
+    return best_mode_num, best_beta, best_eval_mode_name
+```
+
+Each primitive type registers its eval modes in the `ProblemTypeRegistry` with per-mode discrimination (a) and guessing floor (c). The engine picks the mode where the student's θ lands closest to the inflection point of the ICC curve — maximum information extraction per item.
+
+**Fallback θ→mode table** (used when primitive not in registry):
 
 | θ Range | Mode | Description | Prior β |
 |---------|------|-------------|---------|
-| θ < 2.0 | 1 | Concrete manipulatives, full visual + haptic guidance | 1.5 |
+| θ < 2.0 | 1 | Concrete manipulatives | 1.5 |
 | 2.0 ≤ θ < 3.0 | 2 | Pictorial with prompts | 2.5 |
 | 3.0 ≤ θ < 4.5 | 3 | Pictorial, reduced prompts | 3.5 |
-| 4.5 ≤ θ < 6.0 | 4 | Mixed symbolic/pictorial, transitional | 5.0 |
+| 4.5 ≤ θ < 6.0 | 4 | Mixed symbolic/pictorial | 5.0 |
 | 6.0 ≤ θ < 7.5 | 5 | Fully symbolic, single operation | 6.5 |
-| θ ≥ 7.5 | 6 | Symbolic, multi-step / cross-concept | 8.0 |
-
-Default θ for new skills: 3.0 (mode 3). Default σ: 2.0.
+| θ ≥ 7.5 | 6 | Symbolic, multi-step | 8.0 |
 
 ### 3.2 Per-Item IRT Update Cycle
 
-Every item result triggers the full IRT update:
+Every item result triggers the full 2PL/3PL IRT update:
 
-1. **β update** (item difficulty): `CalibrationEngine._update_item_beta()` — 1PL MLE with credibility blending (Z = min(1, sqrt(n/200)))
-2. **θ update** (student ability): `CalibrationEngine._update_student_theta()` — Bayesian grid-approximation EAP over θ ∈ [0, 10] with 0.1 step
-3. **EL update**: Earned Level = round(θ, 1), displayed to student as 0.0-10.0 trajectory
+1. **β update** (item difficulty): `CalibrationEngine._update_item_beta()` — MLE with credibility blending
+2. **θ update** (student ability): `CalibrationEngine._update_student_theta()` — Bayesian EAP over θ ∈ [0, 10]
+3. **σ update** (uncertainty): posterior variance from the EAP grid
+4. **P(correct)** and **Fisher information** returned per item
 
-Score threshold: score ≥ 9.0 on 0-10 scale → "correct" for IRT purposes.
+Core formulas:
+```
+P(correct) = c + (1 - c) / (1 + exp(-a(θ - b)))
+I(θ) = a² × (P - c)² × (1 - P) / (P × (1 - c)²)
+```
 
-### 3.3 Leapfrog Logic
+**Continuous scoring model:** Scores are normalized to a response weight `x = score / 10.0 ∈ [0, 1]` and used directly in the Bayesian likelihood via the Beta response model:
+```
+L(x|θ) = P(θ)^x × (1 - P(θ))^(1 - x)
+```
+This replaces the prior binary threshold (score ≥ 9.0 = "correct"). A score of 8.5 (x=0.85) now produces a mostly-correct likelihood, pushing θ upward proportionally. Item β estimation uses the same continuous weights — `total_correct` accumulates fractional weights, not integer counts.
 
-Leapfrog triggers when a frontier probe lesson group passes:
+### 3.3 Leapfrog Logic — Lightweight Unlock
+
+Leapfrog triggers when a frontier probe lesson group passes. **Key design decision: leapfrog only seeds competency docs for unlock propagation — no fabricated θ, σ, lifecycle, or ability docs.**
 
 ```
 Condition:
   - Band = FRONTIER
   - All items in the lesson group have been scored
-  - Aggregate score ≥ 75% (i.e., ≥ 7.5 on 0-10 scale average)
+  - Aggregate score ≥ 75% (≥ 7.5 on 0-10 scale average)
 
 Action:
   For each ancestor skill between probed node and current frontier:
-    1. mastery_lifecycle → retention_state="active",
-       stability=INITIAL_STABILITY (3.0 days), last_reviewed=now,
-       lesson_eval_count=3, review_count=0
-    2. ability → θ = 7.0, σ = 1.5, prior_source = "pulse_leapfrog"
+    1. Seed ONLY competency doc:
+       - score = aggregate_score
+       - credibility = 0.1 (minimal — just enough for unlock propagation)
+       - total_attempts = 0
+    2. NO lifecycle doc — student hasn't been tested yet
+    3. NO ability doc — no fabricated θ/σ
+    4. Track inferred skills in session-level dedup set
+       (_session_inferred_skills) to avoid redundant writes
 
-  Then: recalculate_unlocks(student_id, subject)
+  Then: mark subject for deferred unlock refresh
+        (recalculate_unlocks batched once per session, not per leapfrog)
+
+Why lightweight:
+  The unified selector will see newly-unlocked skills as:
+    - not_started (no lifecycle)
+    - DEFAULT_STUDENT_THETA (3.0, high uncertainty)
+    - Max prior σ → high Fisher information
+  → Naturally prioritized for testing without fabricated state.
+
+  If the inference was wrong, the student will score poorly when
+  actually tested → low θ, no gate advance, skill stays at frontier.
 ```
 
-The conservative bias matches diagnostic placement: inferred mastery enters the stability-based retention model with S=3.0 days — the same initial interval. The forgetting model will naturally surface these for review after ~3 days without blocking forward progress. If the inference was wrong, the review will fail, stability halves to 1.5 days, and a follow-up review surfaces quickly.
+**Deduplication:** Multiple frontier probes in the same session often share ancestors. The engine tracks `_session_inferred_skills` (a set on the in-memory session dict) and skips already-inferred skills on subsequent leapfrogs.
 
-### 3.4 Per-Primitive Gate Thresholds
+### 3.4 IRT-Derived Gate System (replaces stability multipliers)
 
-Each primitive has a different difficulty ceiling determined by its available evaluation modes (beta range). Gate thresholds are computed per-primitive using a proportional formula with a minimum spread floor. This ensures:
+Mastery gates are derived directly from IRT state (θ + σ) via probability thresholds at reference difficulty levels. This is the single source of truth for mastery progression:
 
-1. Easy primitives (Sorting Station β=1.5, Counting Board β=1.0–2.5) require ~5-8 correct answers for mastery, not 2-3.
-2. Hard primitives (Ten Frame β=1.5–5.0, Area Model β=5.0) require proportionally more (~10-20 correct answers).
-3. Gates are always monotonically increasing, even for single-mode primitives.
-
-```
-MIN_GATE_SPREAD = 2.5
-
-spread = max(MIN_GATE_SPREAD, maxBeta + 1.0 - minBeta)
-G1 = minBeta + spread × 0.20
-G2 = minBeta + spread × 0.45
-G3 = minBeta + spread × 0.75
-G4 = minBeta + spread × 1.00
+```python
+def derive_gate_from_irt(theta, sigma, min_beta, max_beta, avg_a=1.4):
+    """Check gates 4→3→2→1 (highest first), return highest passed."""
+    for gate in (4, 3, 2, 1):
+        ref_beta = min_beta + (max_beta - min_beta) * GATE_REF_FRACTIONS[gate]
+        p = p_correct(theta, avg_a, ref_beta)
+        if p >= GATE_P_THRESHOLDS[gate] and sigma <= GATE_SIGMA_THRESHOLDS[gate]:
+            return gate, retention_state, p
+    return 0, "not_started", p
 ```
 
-**This directly influences session assembly:** primitives with low beta ceilings (Counting Board G4=3.5) are naturally selected for students with low θ, while primitives with high ceilings (Ten Frame G4=6.0) are selected for students with higher θ. The gate threshold formula and the θ→mode mapping (§3.1) use the same underlying beta values, keeping difficulty selection and mastery assessment aligned.
+| Gate | P(correct) Threshold | Reference β Fraction | σ Max | Meaning |
+|------|---------------------|---------------------|-------|---------|
+| 1 | ≥ 0.70 | 0.0 (easiest mode) | ≤ 1.5 | "Probably passes easy items" |
+| 2 | ≥ 0.75 | 0.5 (mid difficulty) | ≤ 1.2 | "Likely passes medium items" |
+| 3 | ≥ 0.80 | 0.8 (hard difficulty) | ≤ 1.0 | "Strong chance at hard items" |
+| 4 | ≥ 0.90 | 1.0 (hardest mode) | ≤ 0.8 | "Near-certain at everything" |
 
-See `lumina_difficulty_calibration_prd.md` §6.5.4 for the full per-primitive gate table, IRT ceiling effect analysis, and calibration simulator details.
+**Gate can only advance or hold — never regress on a single eval.** A bad score lowers θ (via CalibrationEngine), which naturally lowers the derived gate on the NEXT eval. This prevents jarring gate drops from momentary slips.
 
 ---
 
@@ -179,12 +230,11 @@ See `lumina_difficulty_calibration_prd.md` §6.5.4 for the full per-primitive ga
 When a student has no mastery_lifecycle docs for a subject, Pulse enters **cold start mode**:
 
 - **100% frontier probes** — no current work or reviews (nothing to review yet)
-- **Probe selection:** Same topological midpoint strategy as DiagnosticService — select nodes at median depth of longest DAG chains
-- **DAG inference on results:** Pass → ancestors INFERRED_MASTERED, Fail → descendants INFERRED_NOT_MASTERED
+- **Probe selection:** `DAGAnalysisEngine.select_initial_probes()` — topological sort, compute node metrics, select midpoints of independent chains
+- **Only prerequisite edges** used for topo sort (non-prerequisite edges can have cycles)
+- **DAG inference on results:** Pass → ancestors unlocked via leapfrog; Fail → calibrate β
 - **Coverage target:** After first session (~15 items), expect 40-60% of DAG classified via inference
-- **Transition:** After first session completes and mastery docs are seeded, subsequent sessions use normal 3-band assembly
-
-This eliminates the need for a separate diagnostic onboarding flow. The first Pulse session IS the diagnostic. Subsequent sessions are seamless — the bands gradually shift from mostly frontier probes (early sessions, still mapping the graph) to mostly current work (later sessions, settled frontier).
+- **Transition:** After first session completes and mastery docs are seeded, subsequent sessions use unified selection
 
 ---
 
@@ -193,74 +243,86 @@ This eliminates the need for a separate diagnostic onboarding flow. The first Pu
 ### 5.1 `assemble_session(student_id, subject, item_count=15)`
 
 ```
-1. LOAD STUDENT STATE
-   - mastery_lifecycle docs for subject → Dict[subskill_id, lifecycle]
-   - ability docs for subject → Dict[skill_id, ability]
-   - DAG graph → nodes[], edges[]
+1. LOAD STUDENT STATE (parallel Firestore reads)
+   - mastery_lifecycle docs for subject → lifecycle_map
+   - ability docs → theta_map
+   - primitive history → recent_primitives (rolling window)
 
-2. COLD START CHECK
-   - If len(mastery_lifecycle_docs) == 0 → cold_start_mode
-   - Select topological midpoints as probes (see §4)
+2. BUILD LOOKUP MAPS
+   - gate_map: subskill_id → current_gate
+   - retention_map: subskill_id → retention_state (via derive_retention_state)
+   - lifecycle_map: subskill_id → full lifecycle dict
+
+3. LOAD DAG
+   - LearningPathsService._get_graph(subject) → nodes, edges
+   - Filter to subskill nodes only
+
+4. COLD START CHECK
+   - If len(lifecycles) == 0 → cold_start_mode
+   - DAGAnalysisEngine.select_initial_probes() for midpoint selection
    - Return all items as band=FRONTIER
 
-3. COMPUTE FRONTIER
-   - unlocked = LearningPathsService.get_unlocked_entities(student_id, subject)
-   - gate_0 = { id for id, lc in lifecycles if lc.current_gate == 0 }
-   - frontier = unlocked ∩ gate_0
-   - If frontier is empty and gate_0 is empty:
-       all mastered → enrichment mode (stretch only)
+5. UNIFIED SELECTION (non-cold-start)
+   a. Compute unlocked entities
+      - LearningPathsService.get_unlocked_entities()
+      - Intersect with graph node IDs
+      - Identify mastered_ids (retention_state == "mastered")
 
-4. SELECT REVIEW ITEMS (15%) — stability-based (§16)
-   - For each lifecycle with retention_state="active":
-       compute effective_theta(θ_tested, days_since_last_review, stability)
-       compute P(correct) and information from effective_theta
-   - review_due = [lc where P(correct|effective_θ) < TARGET_RETENTION (0.85)]
-   - Sort by: information value DESC (most informative first)
-   - Take top ceil(item_count * 0.15) subskills
-   - Group via LessonGroupService
-   - Set mode per subskill: effective_θ → mode mapping
+   b. BFS forward to discover frontier probes
+      - Seed: (unlocked ∪ mastered) - mastered
+      - Traverse ALL edge types (not just prerequisites) for broad discovery
+      - Sort candidates by midpoint proximity + edge strength
+      - Max depth: FRONTIER_MAX_JUMP (5)
 
-5. SELECT CURRENT ITEMS (65%)
-   - candidates = unlocked subskills with retention_state="not_started"
-                  or "active" with lesson_eval_count < 3
-   - Filter out trivial items: skip if P(correct|θ) > 0.95 (§16.6B)
-   - Group via LessonGroupService with type="new"
-   - Set mode per subskill: θ→mode mapping
-   - Take enough to fill ceil(item_count * 0.65)
+   c. Score ALL candidates with unified utility function:
+      For each unlocked (non-mastered) subskill:
+        - Use DEFAULT_STUDENT_THETA for not_started (not inherited parent θ)
+        - select_best_mode(theta, primitive_type) → mode, beta, eval_mode
+        - Compute decay-adjusted effective_theta for active skills
+        - info = item_information(eff_theta, a, beta, c)
+        - urgency = state-based multiplier (see §2.2)
+        - utility = info × urgency
+        - Derive band label from state (see §2.3)
 
-6. SELECT FRONTIER PROBE ITEMS (20%)
-   - BFS from frontier along descendant edges, depth 1-5
-   - Skip nodes already mastered (gate ≥ 1) or in frontier
-   - Collect candidate probe nodes
-   - Group via LessonGroupService
-   - Set mode = 3 (mid-range probe)
-   - Take 1-2 lesson groups, ceil(item_count * 0.20) items
+      For each frontier probe candidate:
+        - Use DEFAULT_STUDENT_THETA (no θ data)
+        - info at prior → high because high uncertainty
+        - urgency = 2.0 / (1.0 + 0.2 × depth)
+        - band = FRONTIER
 
-7. INTERLEAVE
-   - Pattern: current → probe → current → current → review → current → probe → ...
-   - Front-load current work (highest attention)
-   - Space frontier probes evenly
-   - Trailing reviews toward middle/end
+   d. Sort by utility descending, select top items with diversity cap
+      - MAX_CURRENT_ITEMS_PER_SKILL per skill_id
 
-8. PERSIST
+6. COMPUTE FRONTIER CONTEXT
+   - Per-item: unit progress, DAG distance, ancestor count, next skill name
+   - Session-level: frontier depth, total mastered, units in progress
+   - Uses DAGAnalysisEngine for topological depth computation
+
+7. PERSIST
    - Generate session_id (uuid)
    - Save to Firestore: pulse_sessions/{session_id}
-   - Return PulseSessionResponse
+   - Return PulseSessionResponse with frontier_context + recent_primitives
 ```
 
-### 5.2 Band Allocation Flexibility
+### 5.2 Key Design Decisions
 
-The 20/65/15 split is a target, not a hard constraint:
+**Why unified ranking instead of fixed band allocation:**
+- Fixed 20/65/15 splits force items into bands regardless of information value
+- A gifted student with all reviews trivial (P>0.95) wastes 15% of session on busywork
+- The unified function naturally shifts proportions based on student state:
+  - New student: mostly frontier + current (no reviews exist)
+  - Advanced student: mostly frontier (current items are trivial)
+  - Overdue student: mostly review (high urgency from decay)
 
-| Scenario | Frontier | Current | Review |
-|----------|----------|---------|--------|
-| Normal session | 20% | 65% | 15% |
-| Cold start (no mastery docs) | 100% | 0% | 0% |
-| Early sessions (sparse frontier) | 40% | 50% | 10% |
-| All reviews overdue | 10% | 40% | 50% |
-| Near full mastery | 50% | 10% | 40% |
+**Why not_started skills use DEFAULT_STUDENT_THETA (not parent skill θ):**
+- Leapfrog-inferred skills share a parent skill_id whose θ was elevated by the probe
+- Using inherited θ would make info ≈ 0, starving inferred skills of selection despite high uncertainty
+- DEFAULT_STUDENT_THETA + max prior σ = high Fisher information = naturally prioritized
 
-The engine adjusts proportions based on available candidates per band. If fewer than 2 review items are due, those slots go to current work. If the frontier has few unlocked skills, more slots go to frontier probes.
+**Why BFS traverses all edge types (not just prerequisites):**
+- Non-prerequisite edges (parallel, reinforces, builds_on, applies) reveal related skills
+- Broader discovery prevents the engine from getting stuck in narrow prerequisite chains
+- Candidate sorting by midpoint proximity + edge strength balances depth and relevance
 
 ---
 
@@ -272,72 +334,84 @@ Per-item processing pipeline:
 
 ```
 1. LOAD SESSION
-   - Fetch pulse_sessions/{session_id}
+   - Fetch pulse_sessions/{session_id} (or use prefetched)
    - Find item spec by result.item_id
    - Validate item not already scored
 
-2. IRT UPDATE
-   - CalibrationEngine.process_submission(
-       student_id, skill_id, subskill_id,
-       result.primitive_type, result.eval_mode, result.score
-     )
-   - Returns: { calibrated_beta, student_theta, earned_level }
+2. PRE-FETCH (parallel)
+   - ability doc for skill_id
+   - lifecycle doc for subskill_id
 
-3. RETENTION UPDATE (replaces gate transitions — see §16.7)
-   - If retention_state == "not_started" AND band == CURRENT:
-       process as lesson eval (increment lesson_eval_count)
-       if lesson_eval_count >= 3 and all scores >= 9.0:
-         transition to retention_state="active"
-         set stability = INITIAL_STABILITY (3.0 days)
-         set last_reviewed = now
-   - If retention_state == "active":
-       update stability based on score:
-         score >= 9.0 → stability *= 2.5
-         score >= 7.0 → stability *= 1.5
-         score < 7.0  → stability *= 0.5
-       set last_reviewed = now
-       if stability > MASTERY_STABILITY_THRESHOLD (30 days):
-         transition to retention_state="mastered"
+3. IRT UPDATE
+   - CalibrationEngine.process_submission()
+   - Returns: calibrated_beta, student_theta, sigma, earned_level,
+              p_correct, item_information, discrimination_a
 
-4. LEAPFROG CHECK (frontier band only)
-   - If item.band == FRONTIER:
-       - Record item score in session doc
-       - Check: all items in this lesson group scored?
-       - If yes AND aggregate ≥ 75%:
-           - Walk DAG upstream from probed nodes
-           - Collect ancestor skills not yet mastered
-           - For each: seed mastery_lifecycle with
-               retention_state="active", stability=3.0, last_reviewed=now
-             + ability (θ=7.0)
-           - recalculate_unlocks(student_id, subject)
-           - Return leapfrog event
+4. MASTERY UPDATE
+   - Classify eval source: gate 0 → "lesson", gate ≥ 1 → "practice"
+   - MasteryLifecycleEngine.process_eval_result()
+     with theta, sigma, primitive_type, avg_a for IRT-derived gate check
+   - Returns: updated lifecycle dict
 
-5. UPDATE SESSION DOC
-   - Mark item completed with score, timestamp
+5. LEAPFROG CHECK (frontier band only)
+   - Check all items in lesson group scored
+   - Aggregate score ≥ FRONTIER_PASS_THRESHOLD (7.5)
+   - If pass: seed competency docs (credibility=0.1), mark for unlock refresh
+   - Dedup via _session_inferred_skills set
+
+6. UPDATE SESSION DOC (in-memory)
+   - Mark item: score, primitive_type, eval_mode, duration_ms, completed_at
+   - Attach theta_update, irt_data, gate_update per item
    - Increment progress counters
-   - Check if session complete (all items scored)
 
-6. RETURN PulseResultResponse
-   - theta_update: { skill_id, old_theta, new_theta, earned_level }
+7. COMPETENCY WRITE
+   - update_competency() for prerequisite-unlock propagation
+   - Without this, get_student_proficiency_map() returns 0
+     → depth-1+ children never unlock → students stuck at root skills
+
+8. PRIMITIVE HISTORY
+   - Record primitive_type + eval_mode + score in rolling window
+
+9. RETURN PulseResultResponse
+   - theta_update: { skill_id, old_theta, new_theta, sigma, earned_level }
    - gate_update: { subskill_id, old_gate, new_gate } or null
-   - leapfrog: { skills_advanced, inferences } or null
-   - session_progress: { items_completed, items_total, bands_summary }
+   - leapfrog: { probed_skills, inferred_skills, aggregate_score } or null
+   - irt: { p_correct, item_information, discrimination_a, guessing_c }
+   - session_progress: { items_completed, items_total, is_complete, bands_summary }
 ```
 
-### 6.2 Eval Classification
+### 6.2 Eval Source Classification
+
+Simplified from the original band+state matrix to a gate-only check:
 
 ```python
-def _classify_eval(band: PulseBand, retention_state: str) -> str:
-    """Classify evaluation for retention processing."""
-    if band == PulseBand.REVIEW:
-        return "review"         # stability update (§16.4)
-    if band == PulseBand.FRONTIER:
-        return "probe"          # leapfrog logic handles separately
-    # CURRENT band:
-    if retention_state == "not_started":
-        return "lesson"         # counts toward initial mastery (3 evals ≥ 9.0)
-    return "review"             # active subskill → stability update
+@staticmethod
+def _get_eval_source(band: str, gate: int) -> str:
+    """
+    Gate 0 → "lesson" (probability gate check runs regardless of band)
+    Gate ≥ 1 → "practice" (IRT-derived gate update via stability)
+    """
+    if gate == 0:
+        return "lesson"
+    return "practice"
 ```
+
+**Why gate-only:** At gate 0, ALL bands route to "lesson" so the probability gate check (`derive_gate_from_irt`) runs regardless of whether the item was a frontier probe, review, or current-band item. This ensures a frontier probe on an untested skill can trigger activation just as well as a current-band item. After activation (gate ≥ 1), everything is "practice" for IRT-derived gate updates.
+
+### 6.3 Deferred Write Optimization
+
+For batch callers (Pulse Agent, high-throughput sessions), the engine supports deferred writes to minimize Firestore round-trips:
+
+| Parameter | Effect | Flush Method |
+|-----------|--------|--------------|
+| `prefetched_session` | Skip session read; dict mutated in-place | `save_deferred_session()` |
+| `defer_session_save` | Skip per-item session write | `save_deferred_session()` |
+| `defer_primitive_history` | Skip per-item history read+write | `flush_primitive_history()` |
+| `defer_competency` | Skip per-item competency write | `save_deferred_session()` (batched) |
+| `prefetched_global_pass_rate` | Skip per-item global rate read | — |
+| `item_calibration_cache` | Shared dict, skip duplicate item cal reads | — |
+
+Typical optimization: session loaded once, global rate prefetched once, item calibration cached across items sharing same primitive+mode. Saves ~3N Firestore reads per session where N = item count.
 
 ---
 
@@ -345,9 +419,8 @@ def _classify_eval(band: PulseBand, retention_state: str) -> str:
 
 ### 7.1 Firestore Schema
 
-**New collection:**
+**pulse_sessions/{session_id}**
 ```
-pulse_sessions/{session_id}
 {
   session_id: str
   student_id: int
@@ -366,6 +439,7 @@ pulse_sessions/{session_id}
       target_beta: float
       lesson_group_id: str
       primitive_affinity: str | null
+      eval_mode_name: str | null        # max-info mode name from registry
 
       # Populated after completion:
       score: float | null (0-10)
@@ -373,6 +447,9 @@ pulse_sessions/{session_id}
       eval_mode: str | null
       duration_ms: int | null
       completed_at: str | null
+      theta_update: { skill_id, old_theta, new_theta, sigma, earned_level } | null
+      irt: { p_correct, item_information, discrimination_a, guessing_c } | null
+      gate_update: { subskill_id, old_gate, new_gate } | null
     }
   ]
 
@@ -386,7 +463,6 @@ pulse_sessions/{session_id}
       probed_skills: [str]
       inferred_skills: [str]
       aggregate_score: float
-      timestamp: str
     }
   ]
 
@@ -396,20 +472,56 @@ pulse_sessions/{session_id}
 }
 ```
 
-**Existing collections used (modified for retention model):**
-- `students/{id}/mastery_lifecycle/{subskill_id}` — retention tracking (replaces gate transitions)
-  - **New fields:**
-    - `retention_state`: `"not_started" | "active" | "mastered"` (replaces `current_gate` 0-4)
-    - `stability`: `float` — memory strength in days (grows with successful reviews)
-    - `last_reviewed`: `str (ISO datetime)` — timestamp of last assessment
-    - `review_count`: `int` — number of successful reviews completed
-  - **Deprecated fields** (kept for migration, not used in new logic):
-    - `current_gate` — superseded by `retention_state`
-    - `next_retest_eligible` — superseded by stability-based scheduling
-    - `retest_interval_days` — superseded by `stability`
-- `students/{id}/ability/{skill_id}` — θ, σ, earned_level, theta_history
-- `item_calibration/{primitive_type}_{eval_mode}` — calibrated β
-- `curriculum_graphs/{subject}/published` — DAG nodes + edges
+**students/{id}/mastery_lifecycle/{subskill_id}**
+```
+{
+  student_id: int
+  subskill_id: str
+  subject: str
+  skill_id: str
+
+  # Gate state (IRT-derived via derive_gate_from_irt)
+  current_gate: int (0-4)
+
+  # Retention model
+  retention_state: "not_started" | "active" | "mastered"
+  stability: float           # days — derived from gate for backward compat
+  last_reviewed: str | null  # ISO-8601
+  review_count: int
+
+  # Completion factor (actuarial model)
+  completion_pct: float (0.0-1.0)
+  passes: int
+  fails: int
+  subskill_pass_rate: float
+  blended_pass_rate: float
+  credit_per_pass: float
+  estimated_remaining_attempts: int
+
+  # Gate transition tracking
+  gate_mode: "legacy" | "probability"
+  theta_at_gate_entry: float | null
+  sigma_at_gate_entry: float | null
+  gate_theta_threshold: float | null
+
+  # Legacy fields (kept for backward compat, not driving logic)
+  next_retest_eligible: str | null
+  retest_interval_days: int
+  lesson_eval_count: int
+
+  gate_history: [GateHistoryEntry]
+  created_at: str
+  updated_at: str
+}
+```
+
+**students/{id}/ability/{skill_id}** — θ, σ, earned_level, theta_history
+
+**students/{id}/pulse_state/primitive_history** — rolling window of recent primitive usage
+
+**item_calibration/{primitive_type}_{eval_mode}** — calibrated β per item type
+
+**curriculum_graphs/{subject}/published** — DAG nodes + edges
 
 ### 7.2 Backend Pydantic Models
 
@@ -430,9 +542,27 @@ class PulseItemSpec(BaseModel):
     target_beta: float
     lesson_group_id: str
     primitive_affinity: Optional[str] = None
+    eval_mode_name: Optional[str] = None
+    frontier_context: Optional[ItemFrontierContext] = None
 
-class CreatePulseSessionRequest(BaseModel):
-    subject: str
+class ItemFrontierContext(BaseModel):
+    """Per-item graph position context for frontend display."""
+    unit_name: str = ""
+    unit_mastered: int = 0
+    unit_total: int = 0
+    dag_distance: Optional[int] = None        # frontier only
+    ancestors_if_passed: Optional[int] = None  # frontier only
+    ancestor_skill_names: List[str] = []       # frontier only (max 5)
+    next_skill_name: Optional[str] = None      # current only
+    last_tested_ago: Optional[str] = None      # review only
+
+class SessionFrontierContext(BaseModel):
+    """Session-level graph summary."""
+    frontier_depth: int = 0
+    max_depth: int = 0
+    total_mastered: int = 0
+    total_nodes: int = 0
+    units_in_progress: List[UnitProgress] = []
 
 class PulseSessionResponse(BaseModel):
     session_id: str
@@ -440,7 +570,9 @@ class PulseSessionResponse(BaseModel):
     subject: str
     is_cold_start: bool
     items: List[PulseItemSpec]
+    recent_primitives: List[RecentPrimitive] = []
     session_meta: Dict[str, Any]
+    frontier_context: Optional[SessionFrontierContext] = None
 
 class PulseResultRequest(BaseModel):
     item_id: str
@@ -453,24 +585,37 @@ class ThetaUpdate(BaseModel):
     skill_id: str
     old_theta: float
     new_theta: float
+    sigma: Optional[float] = None
     earned_level: float
 
 class GateUpdate(BaseModel):
     subskill_id: str
     old_gate: int
     new_gate: int
+    skill_id: str = ""
+    skill_description: str = ""
+
+class IrtProbabilityData(BaseModel):
+    p_correct: float
+    item_information: float
+    discrimination_a: float
+    guessing_c: float = 0.0
 
 class LeapfrogEvent(BaseModel):
     lesson_group_id: str
     probed_skills: List[str]
     inferred_skills: List[str]
     aggregate_score: float
+    probed_details: List[SkillDetail] = []
+    inferred_details: List[SkillDetail] = []
 
 class PulseResultResponse(BaseModel):
     item_id: str
     theta_update: ThetaUpdate
     gate_update: Optional[GateUpdate] = None
     leapfrog: Optional[LeapfrogEvent] = None
+    irt: Optional[IrtProbabilityData] = None
+    gate_progress: Optional[Any] = None
     session_progress: Dict[str, Any]
 
 class PulseSessionSummary(BaseModel):
@@ -480,72 +625,14 @@ class PulseSessionSummary(BaseModel):
     items_completed: int
     items_total: int
     duration_ms: int
-    bands: Dict[str, Dict[str, Any]]
+    bands: Dict[str, PulseBandSummary]
     skills_advanced: List[GateUpdate]
     theta_changes: List[ThetaUpdate]
     leapfrogs: List[LeapfrogEvent]
+    skill_progress: List[SkillUnlockProgress] = []
     frontier_expanded: bool
     celebration_message: str
-```
-
-### 7.3 Frontend TypeScript Types
-
-Mirror the backend models in `my-tutoring-app/src/components/lumina/pulse/types.ts`:
-
-```typescript
-type PulseBand = 'frontier' | 'current' | 'review'
-
-interface PulseItemSpec {
-  item_id: string
-  band: PulseBand
-  subskill_id: string
-  skill_id: string
-  subject: string
-  description: string
-  target_mode: number          // 1-6
-  target_beta: number
-  lesson_group_id: string
-  primitive_affinity?: string
-}
-
-interface PulseSessionResponse {
-  session_id: string
-  student_id: number
-  subject: string
-  is_cold_start: boolean
-  items: PulseItemSpec[]
-  session_meta: Record<string, unknown>
-}
-
-interface PulseResultRequest {
-  item_id: string
-  score: number                // 0-10
-  primitive_type: string
-  eval_mode: string
-  duration_ms: number
-}
-
-interface PulseResultResponse {
-  item_id: string
-  theta_update: { skill_id: string; old_theta: number; new_theta: number; earned_level: number }
-  gate_update?: { subskill_id: string; old_gate: number; new_gate: number }
-  leapfrog?: { lesson_group_id: string; probed_skills: string[]; inferred_skills: string[]; aggregate_score: number }
-  session_progress: { items_completed: number; items_total: number; bands_summary: Record<string, unknown> }
-}
-
-interface PulseSessionSummary {
-  session_id: string
-  subject: string
-  is_cold_start: boolean
-  items_completed: number
-  duration_ms: number
-  bands: Record<string, unknown>
-  skills_advanced: Array<{ subskill_id: string; old_gate: number; new_gate: number }>
-  theta_changes: Array<{ skill_id: string; old_theta: number; new_theta: number; earned_level: number }>
-  leapfrogs: Array<{ probed_skills: string[]; inferred_skills: string[] }>
-  frontier_expanded: boolean
-  celebration_message: string
-}
+    irt_summary: Optional[SessionIrtSummary] = None
 ```
 
 ---
@@ -567,16 +654,7 @@ All endpoints require Firebase authentication via `get_user_context` dependency.
 
 `POST /api/lumina/pulse-stream` — SSE streaming route for item hydration.
 
-Takes `PulseItemSpec[]` from the backend session response and hydrates each item via Gemini, streaming results as they complete. The key difference from `practice-stream`: items already have `target_mode` and `subskill_id` from the backend, so the manifest is pre-determined — only content generation (hydration) is needed.
-
-Event stream format:
-```json
-{ "type": "progress", "message": "Preparing 15 practice items..." }
-{ "type": "item", "index": 0, "total": 15, "item": { /* HydratedPracticeItem */ } }
-{ "type": "item", "index": 1, "total": 15, "item": { /* HydratedPracticeItem */ } }
-...
-{ "type": "complete", "items": [ /* all HydratedPracticeItem[] */ ] }
-```
+Takes `PulseItemSpec[]` from the backend session response and hydrates each item via Gemini, streaming results as they complete.
 
 ---
 
@@ -604,12 +682,12 @@ PulseSession (replaces PracticeModeEnhanced)
     ├── Skills advanced (gate changes)
     ├── EL trajectory chart (θ history sparklines)
     ├── Knowledge map delta (before/after frontier)
+    ├── IRT session summary (σ reduction, predicted vs actual, avg information)
+    ├── Skill progress bars (per-skill unlock progress)
     └── "Next Pulse" CTA
 ```
 
 ### 9.2 Session Hook: `usePulseSession`
-
-Follows `useDiagnosticSession` pattern:
 
 ```typescript
 function usePulseSession(options: { gradeLevel: string }) {
@@ -637,94 +715,16 @@ function usePulseSession(options: { gradeLevel: string }) {
 }
 ```
 
-**Pre-generation:** While the student works on item N, items N+1 and N+2 are hydrated in the background via Gemini. This eliminates loading gaps between items. Same pattern proven in `useDiagnosticSession`.
+### 9.3 Session-Aware Hydration (Primitive Diversity + Difficulty Calibration)
 
-**Leapfrog interruption:** When `process_result` returns a leapfrog event, the hook transitions to phase='leapfrog' briefly (2-3 seconds celebration) before resuming to the next item.
-
-### 9.3 Item Hydration Flow
-
-```
-Backend: assemble_session() → PulseItemSpec[] (what to test, at what mode)
-    ↓
-Frontend: usePulseSession receives item specs
-    ↓
-Frontend: POST /api/lumina/pulse-stream with item specs
-    ↓
-Streaming route: For each PulseItemSpec:
-    ├── Map target_mode + description → Gemini prompt
-    ├── generateComponentContent(primitiveType, description, gradeLevel, { mode })
-    └── Stream HydratedPracticeItem back
-    ↓
-Frontend: PracticeManifestRenderer renders each hydrated item
-    ↓
-Primitive: onEvaluationSubmit(PrimitiveEvaluationResult)
-    ↓
-Frontend: POST /api/pulse/sessions/{id}/result
-    ↓
-Backend: process_result() → θ update, gate update, leapfrog check
-    ↓
-Frontend: Update UI, advance to next item
-```
-
-### 9.4 Session-Aware Hydration (Primitive Diversity + Difficulty Calibration)
-
-Each item is hydrated independently via Gemini, which creates a repetition risk — for similar math topics, Gemini defaults to the same "best" primitive (e.g., ten-frame). The session hook maintains a running history of completed primitives with scores and passes it as context to each subsequent hydration call.
+Each item is hydrated independently via Gemini. The session hook maintains a running history of completed primitives with scores and passes it as context to each subsequent hydration call.
 
 **Session history record (per completed item):**
 ```typescript
 { componentId: string; difficulty: 'easy' | 'medium' | 'hard'; score: number }
 ```
 
-**How it flows:**
-```
-usePulseSession.sessionPrimitiveHistory (ref, accumulated per item)
-    ↓ passed as options.sessionHistory
-generatePracticeManifestAndHydrateStreaming()
-    ↓ POST body
-/api/lumina/practice-stream route
-    ↓ options.sessionHistory
-generatePracticeManifest() → injected into Gemini prompt
-```
-
-**What Gemini sees in the prompt:**
-> "Earlier in this session the student completed: ten-frame (easy, scored 92%), counting-board (medium, scored 64%). Use this to calibrate: if they scored high on an easy primitive, step up the difficulty or try a different angle. Vary primitives when possible, but repeating at a harder level is fine."
-
-**Design principles:**
-- **Soft guidance, not hard blocking.** Repeating a primitive at a different difficulty is pedagogically valid (easy ten-frame → multiple choice → hard ten-frame is a strong progression).
-- **Scores inform difficulty.** A student who scored 92% on easy mode should get medium or hard next — Gemini sees this and calibrates.
-- **No post-generation swap.** If Gemini decides the same primitive is genuinely the best fit at a harder level, that's correct behavior.
-
-### 9.5 Primitive Coverage as Mastery Signal
-
-**Problem:** For a given subskill, there may only be 4-5 applicable visual primitives. If a student demonstrates competence across all of them (high scores at increasing difficulty), that's strong evidence of mastery — potentially stronger than completing N lesson evals at ≥9.0.
-
-**Primitive coverage mastery** treats the set of applicable primitives for a subskill as a coverage checklist. When a student passes all available primitives at or above a difficulty threshold, this can accelerate gate transitions.
-
-**Coverage model:**
-```
-For subskill S with applicable primitives P = {ten-frame, counting-board, number-line, ...}:
-
-coverage_set = { p ∈ P : student scored ≥ 7.5/10 on p for subskill S }
-coverage_ratio = |coverage_set| / |P|
-
-If coverage_ratio ≥ 0.8 AND avg_score ≥ 8.0:
-  → Signal: "primitive_coverage_mastery"
-  → Effect: counts as equivalent to 2 lesson evals (accelerates Gate 0 → Gate 1)
-  → Rationale: demonstrating competence across diverse representations
-    is stronger evidence than repeating the same representation 3 times
-```
-
-**Where this lives:**
-- **Backend:** `PulseEngine.process_result()` — after IRT + gate updates, check primitive coverage for the subskill
-- **Data source:** `item_calibration` collection already tracks (primitive_type, eval_mode) per subskill; coverage can be computed from session history + historical evals
-- **Gate interaction:** Coverage mastery doesn't skip gates — it accelerates the lesson eval count toward Gate 1. A student who covers 4/5 primitives at ≥8.0 avg gets credit for 2 lesson evals, so they need only 1 more traditional eval to advance.
-
-**Why not full gate skip:** Primitive coverage tests breadth (can the student do it many ways?) but not depth (can they do it consistently over time?). The retest cycle (Gates 2-4) still verifies retention. Coverage mastery accelerates initial recognition (Gate 0 → 1), not final mastery.
-
-**Applicable primitive mapping:** Each subskill needs a set of applicable primitives. This can be:
-1. **Inferred from historical data** — which primitives has Gemini actually generated for this subskill? If ten-frame, counting-board, and number-line have all been generated before, those are the applicable set.
-2. **Curated in curriculum metadata** — a `primitive_affinity` list per subskill in the DAG node data.
-3. **Hybrid** — start with inference, allow curriculum authors to override.
+Gemini sees: "Earlier in this session the student completed: ten-frame (easy, scored 92%), counting-board (medium, scored 64%). Vary primitives when possible, but repeating at a harder level is fine."
 
 ---
 
@@ -748,64 +748,55 @@ class PulseEngine:
     ):
         ...
 
-    async def assemble_session(
-        self, student_id: int, subject: str, item_count: int = 15
-    ) -> PulseSessionResponse:
-        """Compose a Pulse session from 3 bands."""
+    # Max-information mode selection
+    @staticmethod
+    def select_best_mode(theta, primitive_type) -> (mode, beta, eval_mode_name)
 
-    async def process_result(
-        self, student_id: int, session_id: str, result: PulseResultRequest
-    ) -> PulseResultResponse:
-        """Process a single item result. Update θ, β, gates, check leapfrog."""
+    # Session assembly
+    async def assemble_session(student_id, subject, item_count=15) -> PulseSessionResponse
+    def _assemble_cold_start(...) -> List[PulseItemSpec]
+    async def _assemble_unified(...) -> List[PulseItemSpec]
 
-    async def get_session(self, session_id: str) -> dict:
-        """Get session state for resume."""
+    # Graph exploration
+    def _bfs_forward(seed_ids, mastered_ids, all_edges, node_map) -> [(node_id, depth)]
+    def _compute_frontier_context(...) -> SessionFrontierContext
 
-    async def get_session_summary(self, session_id: str) -> PulseSessionSummary:
-        """Aggregate completed session into summary."""
+    # Result processing
+    async def process_result(student_id, session_id, result, ...) -> PulseResultResponse
+    async def _check_leapfrog(...) -> Optional[LeapfrogEvent]
+
+    # Deferred write helpers (for batch callers)
+    async def save_deferred_session(session_id, session, student_id)
+    async def flush_primitive_history(student_id, entries)
+    async def flush_competency_writes(session)
+
+    # Session queries
+    async def get_session(session_id) -> dict
+    async def get_session_summary(session_id) -> PulseSessionSummary
 ```
 
-### 10.2 Dependency Injection
-
-```python
-# dependencies.py
-_pulse_engine: Optional[PulseEngine] = None
-
-async def get_pulse_engine(
-    firestore_service: FirestoreService = Depends(get_firestore_service),
-    calibration_engine: CalibrationEngine = Depends(get_calibration_engine),
-    mastery_lifecycle_engine: MasteryLifecycleEngine = Depends(get_mastery_lifecycle_engine),
-    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
-) -> PulseEngine:
-    global _pulse_engine
-    if _pulse_engine is None:
-        _pulse_engine = PulseEngine(
-            firestore_service=firestore_service,
-            calibration_engine=calibration_engine,
-            mastery_lifecycle_engine=mastery_lifecycle_engine,
-            learning_paths_service=learning_paths_service,
-        )
-    return _pulse_engine
-```
-
-### 10.3 Service Interaction Diagram
+### 10.2 Service Interaction Diagram
 
 ```
 PulseEngine.assemble_session()
-    ├── FirestoreService.get_all_mastery_lifecycles()    → gate state per subskill
+    ├── FirestoreService.get_all_mastery_lifecycles()    → lifecycle state
     ├── FirestoreService.get_all_student_abilities()     → θ per skill
+    ├── FirestoreService.get_pulse_primitive_history()   → recent primitives
     ├── LearningPathsService._get_graph()                → DAG nodes + edges
     ├── LearningPathsService.get_unlocked_entities()     → frontier computation
-    └── LessonGroupService.group_subskills_into_blocks() → group into lesson blocks
+    ├── DAGAnalysisEngine.topological_sort()             → depth metrics
+    ├── DAGAnalysisEngine.select_initial_probes()        → cold start only
+    └── ProblemTypeRegistry (select_best_mode)           → max-info mode per item
 
 PulseEngine.process_result()
-    ├── CalibrationEngine.process_submission()            → update θ and β
-    ├── MasteryLifecycleEngine.process_eval_result()      → update gate
+    ├── CalibrationEngine.process_submission()            → update θ, β, σ, p, info
+    ├── MasteryLifecycleEngine.process_eval_result()      → IRT-derived gate check
     ├── [If leapfrog]:
-    │   ├── FirestoreService.batch_write_mastery_lifecycles()  → seed inferred skills
-    │   ├── FirestoreService.upsert_student_ability()          → seed θ for inferred
-    │   └── LearningPathsService.recalculate_unlocks()         → refresh frontier
-    └── FirestoreService.save_pulse_session()              → update session doc
+    │   ├── DAGAnalysisEngine.get_ancestors()             → find inferrable skills
+    │   ├── FirestoreService.get_mastery_lifecycles_batch()→ filter already-active
+    │   └── FirestoreService.update_competency() × N      → seed for unlock propagation
+    ├── FirestoreService.update_competency()              → prerequisite propagation
+    └── FirestoreService.save_pulse_session()             → update session doc
 ```
 
 ---
@@ -814,346 +805,36 @@ PulseEngine.process_result()
 
 | Parameter | Value | Source |
 |-----------|-------|--------|
-| Default session size | 15 items | Configurable per session |
-| Frontier band allocation | 20% (~3 items) | Adjusts based on available candidates |
-| Current band allocation | 65% (~9-10 items) | Fills remaining after review + frontier |
-| Review band allocation | 15% (~2-3 items) | Capped; excess deferred |
-| Frontier probe mode | 3 (pictorial, reduced prompts) | Fixed for fair probing |
-| Frontier pass threshold | 75% aggregate (≥7.5/10 avg) | Matches diagnostic threshold |
-| Inferred mastery state | `active`, stability=3.0 days | Conservative; requires verification via retention model |
-| Inferred mastery θ | 7.0 | Same as diagnostic inference |
-| Default θ (new skill) | 3.0 | From CalibrationEngine |
-| IRT correct threshold | 9.0 / 10 | From CalibrationEngine |
-| Cold start detection | 0 mastery_lifecycle docs for subject | First session = all probes |
-| θ → mode mapping | See §3.1 | 6 tiers matching prior β scale |
-| **Retention model (§16)** | | |
+| Default session size | 15 items | `DEFAULT_PULSE_ITEM_COUNT` |
+| Frontier max BFS depth | 5 jumps | `FRONTIER_MAX_JUMP` |
+| Frontier probe mode | 3 (pictorial) | `FRONTIER_PROBE_MODE` |
+| Frontier pass threshold | 7.5/10 avg | `FRONTIER_PASS_THRESHOLD` |
+| Diversity cap per skill | 3 items | `MAX_CURRENT_ITEMS_PER_SKILL` |
+| Primitive history window | configurable | `PRIMITIVE_HISTORY_WINDOW` |
+| Default θ (new skill) | 3.0 | `DEFAULT_STUDENT_THETA` |
+| Default σ (new skill) | 2.0 | `DEFAULT_THETA_SIGMA` |
+| IRT correct threshold | 9.0 / 10 | `IRT_CORRECT_THRESHOLD` |
+| **IRT Gate Thresholds** | | |
+| Gate 1: P ≥ 0.70 at β_min, σ ≤ 1.5 | | `GATE_P_THRESHOLDS`, `GATE_SIGMA_THRESHOLDS` |
+| Gate 2: P ≥ 0.75 at β_50%, σ ≤ 1.2 | | |
+| Gate 3: P ≥ 0.80 at β_80%, σ ≤ 1.0 | | |
+| Gate 4: P ≥ 0.90 at β_max, σ ≤ 0.8 | | |
+| **Retention Model** | | |
 | INITIAL_STABILITY | 3.0 days | First review surfaces after ~3 days |
 | DECAY_RATE | 1.5 | Calibrated for P≈0.85 at t=S |
 | TARGET_RETENTION | 0.85 | P(correct) threshold for review candidacy |
-| TRIVIAL_THRESHOLD | 0.95 | Current-band items above this P are skipped |
-| STABILITY_GROWTH_STRONG | ×2.5 | Score ≥ 9.0 |
-| STABILITY_GROWTH_PARTIAL | ×1.5 | Score 7.0-8.9 |
-| STABILITY_SHRINK_FAIL | ×0.5 | Score < 7.0 |
+| THETA_DECAY_FLOOR_FACTOR | 0.5 | Never decay below 50% of tested θ |
 | MASTERY_STABILITY_THRESHOLD | 30 days | Stability above this → mastered |
+| Gate → stability mapping | {0:0, 1:3, 2:7.5, 3:18.75, 4:47} | `GATE_TO_STABILITY` |
 
 ---
 
-## 12. Relationship to Existing Systems
+## 12. Mastery Lifecycle — IRT-Derived Gate System
 
-### 12.1 What Pulse Replaces
-
-| Component | Replaced By | Notes |
-|-----------|-------------|-------|
-| `PracticeModeEnhanced.tsx` | `PulseSession.tsx` | Pulse becomes the main practice entry |
-| Separate "lesson" vs "practice" modes | Unified via θ→mode | Same grouper, mode determines scaffolding |
-| PlanningService daily queue | PulseEngine session assembly | Pulse assembles per-session, not per-day |
-
-### 12.2 What Pulse Keeps
-
-| Component | Relationship | Notes |
-|-----------|-------------|-------|
-| `CalibrationEngine` | Called per item result | θ/β updates unchanged |
-| `MasteryLifecycleEngine` | Called per item result | Gate transitions unchanged; leapfrog adds new path |
-| `LearningPathsService` | Called for DAG + frontier | Graph traversal unchanged |
-| `LessonGroupService` | Called for grouping | Same grouper for all bands |
-| `PracticeManifestRenderer` | Renders items | Completely unchanged |
-| All visual primitives | Rendered as before | No changes needed |
-| `DiagnosticSession` | Optional for existing students | Can still run; Pulse handles cold start for new students |
-| `PlannerDashboard` | Parallel (for parents/teachers) | Weekly/monthly views still useful for planning visibility |
-
-### 12.3 Migration Path
-
-1. **Phase 1:** Build Pulse alongside existing systems. New entry point, existing backend services.
-2. **Phase 2:** Pulse replaces PracticeModeEnhanced as default practice mode.
-3. **Phase 3:** Cold start mode replaces mandatory diagnostic for new students.
-4. **Future:** PlannerDashboard reads from Pulse session history for planning visibility. Daily Learning planner becomes optional "structured mode" for parent-directed learning.
-
----
-
-## 13. Student Experience
-
-### 13.1 Session Flow
+### 12.1 State Model
 
 ```
-1. Open app → Dashboard
-2. Tap "Practice" → PulseWelcome
-3. Select subject (Math) → "Start Pulse"
-4. Loading: "Preparing your session..." (items hydrating)
-5. Item 1 (Current): Addition problem at mode 2 (pictorial)
-   → Solve → Submit → θ updates → "Nice work!"
-6. Item 2 (Current): Number bonds at mode 3
-   → Solve → Submit → θ updates
-7. Item 3 (Frontier): Multiplication probe at mode 3
-   → Student gets it right! → Leapfrog celebration!
-   → "You just jumped ahead 3 skills!"
-   → Knowledge map animates expansion
-8. Item 4 (Current): Next skill at frontier
-   → Continue...
-9. Item 12 (Review): Quick addition retest at mode 5
-   → Pass → Gate advances 2 → 3
-10. ...
-15. Session complete → PulseSummary
-    → "You advanced 7 skills, including 3 leapfrogs!"
-    → EL trajectory shows growth
-    → "Start another Pulse?" or "Done for today"
-```
-
-### 13.2 Contextual Band Labels
-
-Students see encouraging, non-technical labels:
-
-| Band | Student-Facing Label | Color |
-|------|---------------------|-------|
-| Frontier | "Exploring new territory" | Purple/violet (discovery) |
-| Current | "Building skills" | Blue (steady growth) |
-| Review | "Quick review" | Green (confidence) |
-
-### 13.3 Leapfrog Celebration
-
-When a frontier probe triggers leapfrog:
-- Brief pause (500ms)
-- Animated overlay: skills unlocked fan out from the probed node
-- Knowledge map mini-view shows frontier expanding
-- Message: "You just jumped ahead N skills!"
-- Auto-dismiss after 3 seconds, resume next item
-
----
-
-## 14. Implementation Phases
-
-### Phase 1 — MVP ✅ Core Loop Complete (2026-03-04 → 2026-03-05)
-
-**Backend — ALL COMPLETE:**
-- ✅ `backend/app/models/pulse.py` — all Pydantic models
-- ✅ `backend/app/services/pulse_engine.py` — assemble_session + process_result + get_session_summary
-- ✅ `backend/app/api/endpoints/pulse.py` — REST endpoints (POST sessions, POST result, GET summary)
-- ✅ `backend/app/dependencies.py` — PulseEngine singleton + `get_pulse_engine()` getter
-- ✅ `backend/app/main.py` — router registered at `/api/pulse`
-- ✅ `backend/app/services/firestore_service.py` — added `save_pulse_session()`, `get_pulse_session()` methods
-
-**Frontend — ALL COMPLETE:**
-- ✅ `my-tutoring-app/src/components/lumina/pulse/types.ts` — TypeScript types
-- ✅ `my-tutoring-app/src/components/lumina/pulse/pulseApi.ts` — API client
-- ✅ `my-tutoring-app/src/components/lumina/pulse/usePulseSession.ts` — session hook with pre-gen cache
-- ✅ `my-tutoring-app/src/components/lumina/pulse/PulseSession.tsx` — main component with subject picker
-
-**Integration — COMPLETE:**
-- ✅ `App.tsx` updated: PulseSession replaces PracticeModeEnhanced as main practice entry
-- ✅ End-to-end loop working: session assembly → item hydration → result submission → θ/gate updates
-- ✅ Cold start mode tested and working (100% frontier probes, DAG inference)
-- ✅ Leapfrog triggers correctly and seeds inferred mastery + ability docs
-- ✅ TypeScript compiles clean (0 errors in Pulse files)
-
-**Bugs Fixed:**
-- ✅ Leapfrog `GateHistoryEntry.source` — changed from `"pulse_leapfrog"` (invalid literal) to `"diagnostic"` (valid)
-
-**Known Limitations (Phase 1):**
-- Items hydrated one-at-a-time via existing `generatePracticeManifestAndHydrateStreaming` — no dedicated `/api/lumina/pulse-stream` SSE bulk route yet
-- Leapfrog celebration is a simple overlay (no animated knowledge map)
-- Summary screen shows basic stats only (no EL trajectory chart or knowledge map delta)
-
-### Phase 2 — Polish (In Progress, 2026-03-05)
-
-**Completed:**
-- [x] LessonGroupService integration — `_select_current_items` now calls `LessonGroupService.group_subskills_into_blocks()` with Bloom's-sorted grouping; falls back to skill-based grouping on failure
-- [x] Session resume — `usePulseSession` detects saved sessions on mount via localStorage (2-hour expiry), fetches state from backend via `GET /api/pulse/sessions/{id}`, resumes at first uncompleted item. Amber "Unfinished session" banner with Resume/Dismiss in `PulseSession.tsx`
-- [x] Populate `skills_advanced` and `theta_changes` in summary — `process_result` now persists `theta_update` and `gate_update` per item in session doc; `get_session_summary` aggregates them
-- [x] Adaptive band proportions — `_assemble_normal` gathers all candidates first, caps each band to available count, redistributes surplus (priority: current > frontier > review)
-
-**Remaining:**
-- [ ] Dedicated `/api/lumina/pulse-stream` SSE route for bulk item hydration
-- [x] Leapfrog celebration animation — framer-motion staggered skill chips (probed + inferred), animated score ring SVG, ambient glow, spring animations with 3s auto-dismiss
-- [x] EL trajectory visualization in PulseSummary — `ThetaGrowthSection`: horizontal bars (1-3 skills) with animated old→new theta, or recharts `LineChart` (4+ skills) with before/after lines; color-coded by mode tier
-- [x] Knowledge map delta — `FrontierDeltaSection`: gate advances + leapfrog skips breakdown, "+N skills unlocked" badge with motion animation, frontier expanded message
-- [x] Session-aware hydration — `usePulseSession` tracks `{ componentId, difficulty, score }` per completed item, passes as `sessionHistory` through practice-stream → manifest generator prompt. Soft guidance (no hard blocking): Gemini sees what was done + scores to calibrate variety and difficulty. See §9.4.
-- [ ] Pre-generation cache optimization (handle failures gracefully, retry logic)
-
-### Phase 3 — Advanced Features
-
-- [ ] Primitive coverage mastery — when a student demonstrates competence (≥7.5/10) across ≥80% of applicable primitives for a subskill, count as 2 lesson evals to accelerate Gate 0→1. See §9.5.
-- [ ] Difficulty slider (student agency, θ-2.0 to θ+4.0 range)
-- [ ] Cross-skill leapfrog (high θ on downstream skill → infer prerequisites)
-- [ ] Parent dashboard integration (Pulse session history in PlannerDashboard)
-- [ ] Adaptive band proportions (ML-driven, based on student trajectory)
-- [ ] Session length adaptation (shorter for young students, longer for engaged)
-
-### Phase 4 — System Consolidation
-
-- [ ] Deprecate PracticeModeEnhanced (replaced by Pulse) — **already removed from App.tsx**
-- [ ] Deprecate mandatory diagnostic onboarding (cold start handles it)
-- [ ] PlanningService reads Pulse session history for weekly/monthly projections
-- [ ] Unified telemetry: all learning data flows through Pulse sessions
-
----
-
-## 15. Success Metrics
-
-| Metric | Current | Target | How Measured |
-|--------|---------|--------|--------------|
-| Skills advanced per session | ~1 (sequential) | 3-5 (with leapfrogs) | Gate changes per pulse_session |
-| Completion velocity (% per hour) | ~23% per hour | ~60% per hour | mastery_lifecycle gate changes / time |
-| Time to first mastery (Gate 4) | ~4 weeks per skill | ~1-2 weeks per skill | Gate 4 timestamp - Gate 0 timestamp |
-| Student engagement (session completion rate) | Baseline TBD | +20% vs practice mode | Sessions completed / sessions started |
-| Leapfrog rate | N/A (not possible) | 15-25% of frontier probes trigger leapfrog | leapfrogs / frontier items probed |
-| Cold start coverage | 90% in 20-30 min (diagnostic) | 50-60% in first 15-item session | classified_count / total_nodes |
-
----
-
-## 16. Retention Model — Stability-Based Forgetting (replaces Gates 1-4)
-
-### 16.1 Why Gates Failed
-
-The 4-gate retest cycle (Gate 1 → wait 3d → Gate 2 → wait 7d → Gate 3 → wait 14d → Gate 4) is a calendar-based checkpoint system, not a spaced repetition algorithm. It has three fatal flaws:
-
-1. **It blocks forward progress.** A gifted student who masters addition instantly still waits 24 calendar days of retests before the system considers it "mastered." During the wait, the engine has nothing better to serve — it feeds P(correct)=0.99 busywork.
-
-2. **It doesn't model forgetting.** A 3-day wait is the same whether the student barely passed or aced it. Real memory decay is continuous and student-dependent — strong learners retain longer, weak learners need sooner review.
-
-3. **It wastes session capacity.** Trivial items (P > 0.95, Info < 0.05) consume 60-80% of session slots for advanced students. A static worksheet would provide more variety.
-
-**Evidence:** Pulse Agent testing (Gifted Grace, 15 sessions) showed 48% of all items were P(correct)=0.989 busywork. The student touched 7/163 skills in 90 items. The engine served the same 6 items for 14 consecutive sessions.
-
-### 16.2 The Replacement: Stability + Effective Theta
-
-Instead of calendar gates, model forgetting directly in the IRT probability estimate. Every mastered subskill gets a **stability** value (S) — how many days the memory is expected to last before retrieval probability drops below target. Theta decays over time, and the engine's existing information-maximizing logic automatically schedules reviews when items become informative again.
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    RETENTION MODEL                               │
-│                                                                  │
-│   theta_tested ─────┐                                            │
-│                      ├─► effective_theta(t) = θ - d·√(t/S)       │
-│   days_since_test ──┘                                            │
-│   stability ────────┘                                            │
-│                                                                  │
-│   P(correct) computed from effective_theta → if P < 0.85,        │
-│   item becomes a review candidate automatically                  │
-│                                                                  │
-│   On successful review: S *= growth_factor (memory strengthens)  │
-│   On failed review:     S *= shrink_factor (review sooner)       │
-│   When S > 30 days:     mastered = true (stop reviewing)         │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-**No gates block forward progress.** Reviews are pulled by the engine when informative, not pushed by a calendar.
-
-### 16.3 Effective Theta — The Forgetting Function
-
-At session assembly time, compute the **effective theta** for every subskill that has been mastered (post-Gate 1):
-
-```python
-def effective_theta(theta_tested: float, days_since_test: float, stability: float) -> float:
-    """
-    Model memory decay as theta erosion over time.
-
-    Uses power-law decay (√t) rather than exponential — matches Ebbinghaus
-    forgetting curve research showing memory decays quickly at first,
-    then plateaus. Stability (S) controls the rate: higher S = slower decay.
-
-    Args:
-        theta_tested: θ at last successful assessment
-        days_since_test: calendar days since last assessment
-        stability: memory strength in days (higher = more durable)
-
-    Returns:
-        effective θ reflecting predicted current ability
-    """
-    if days_since_test <= 0:
-        return theta_tested
-
-    decay = DECAY_RATE * math.sqrt(days_since_test / stability)
-    floor = max(DEFAULT_STUDENT_THETA, theta_tested * 0.5)
-    return max(floor, theta_tested - decay)
-```
-
-**Parameters:**
-
-| Parameter | Value | Rationale |
-|-----------|-------|-----------|
-| `DECAY_RATE` | 1.5 | Calibrated so that at t=S days, a student with θ=7.0 and β=5.0 drops to P≈0.85 — the target retention threshold |
-| `DEFAULT_STUDENT_THETA` | 3.0 | Floor — never decay below "untaught" level |
-| `theta * 0.5` floor | — | Prevents high-θ students from decaying to absurdly low values |
-
-**Example — Grace (θ=7.7, β=5.0, S=3 days):**
-
-| Day | effective_θ | P(correct) | Information | Engine action |
-|-----|------------|------------|-------------|---------------|
-| 0 | 7.70 | 0.989 | 0.028 (negligible) | **Skip** — trivial |
-| 1 | 6.83 | 0.943 | 0.090 | Skip — still above target |
-| 3 | 6.20 | 0.858 | 0.183 | **Review candidate** — informative |
-| 5 | 5.76 | 0.788 | 0.241 | High-priority review |
-| 7 | 5.41 | 0.724 | 0.280 | Urgent review |
-
-After successful review on day 3: S = 3 × 2.5 = 7.5 days. The next review naturally surfaces around day 10-11.
-
-**Example — Sam (θ=4.0, β=3.5, S=3 days):**
-
-| Day | effective_θ | P(correct) | Information | Engine action |
-|-----|------------|------------|-------------|---------------|
-| 0 | 4.00 | 0.622 | 0.356 | **Serve** — already informative |
-| 1 | 3.13 | 0.411 | 0.365 | Serve — current work |
-| 3 | 2.50 | 0.269 | 0.296 | Review candidate |
-
-Sam's items are already informative at θ=4.0 — the decay model doesn't change his experience, it just handles review scheduling naturally.
-
-### 16.4 Stability Lifecycle
-
-Stability starts low and grows with each successful review, modeling the well-established finding that memories strengthen with spaced retrieval practice.
-
-```
-Initial mastery (Gate 0 → Gate 1):
-  stability = S₀ = 3.0 days
-  last_reviewed = now
-
-After each review:
-  if score >= 9.0:    stability *= 2.5   (strong recall → much longer interval)
-  elif score >= 7.0:  stability *= 1.5   (partial recall → modest increase)
-  else:               stability *= 0.5   (failed recall → halve interval, review sooner)
-
-  last_reviewed = now
-  review_count += 1
-
-Mastery threshold:
-  if stability > MASTERY_STABILITY_THRESHOLD (30 days):
-    mastered = true
-    → Stop scheduling reviews
-    → Equivalent to old Gate 4
-```
-
-**Typical progression for a strong learner:**
-
-| Review # | Stability (days) | Approx. review interval | Cumulative days |
-|----------|-----------------|------------------------|-----------------|
-| 0 (initial mastery) | 3.0 | — | 0 |
-| 1 | 7.5 | ~3 days | 3 |
-| 2 | 18.75 | ~8 days | 11 |
-| 3 | 46.9 → **mastered** | ~19 days | 30 |
-
-Three successful reviews over ~30 days → mastered. Compare to the old gate model: 4 retests over 24 days, but **blocking forward progress the entire time**. The stability model achieves the same verification in roughly the same calendar time, but never blocks.
-
-**Typical progression for a struggling learner:**
-
-| Review # | Score | Stability | Next review |
-|----------|-------|-----------|-------------|
-| 0 | — | 3.0 | — |
-| 1 | 6.5 (fail) | 1.5 | ~1-2 days |
-| 2 | 7.2 (partial) | 2.25 | ~2 days |
-| 3 | 8.0 (partial) | 3.4 | ~3 days |
-| 4 | 9.5 (strong) | 8.4 | ~8 days |
-| 5 | 9.0 (strong) | 21.0 | ~21 days |
-| 6 | 9.2 (strong) | 52.5 → **mastered** | done |
-
-More reviews, shorter intervals, same destination. The model adapts to the learner.
-
-### 16.5 Simplified State Model
-
-The 5-gate state machine (Gate 0/1/2/3/4) reduces to 3 states:
-
-```
-OLD:  Gate 0 ──3 evals──► Gate 1 ──3d──► Gate 2 ──7d──► Gate 3 ──14d──► Gate 4
-                                    ▲ BLOCKS FORWARD PROGRESS ▲
-
-NEW:  not_started ──3 evals──► active ──stability grows──► mastered
+not_started ──IRT gate check──► active ──IRT gate advance──► mastered
                                   │
                                   └─ never blocks forward progress
                                      reviews surface by information value
@@ -1161,159 +842,352 @@ NEW:  not_started ──3 evals──► active ──stability grows──► m
 
 | State | Meaning | Transition |
 |-------|---------|------------|
-| `not_started` | Student hasn't been introduced to this subskill | → `active` when 3 lesson evals ≥ 9.0 (same as old Gate 0→1) |
-| `active` | Student has initial mastery; retention is being tracked | → `mastered` when stability > 30 days |
-| `mastered` | Long-term retention verified; no more reviews scheduled | Terminal state (can regress if future evidence contradicts) |
+| `not_started` | Student hasn't demonstrated competence | → `active` when `derive_gate_from_irt()` returns gate ≥ 1 (IRT path) |
+| `active` | Initial mastery achieved; retention tracked | → `mastered` when `derive_gate_from_irt()` returns gate 4 |
+| `mastered` | Long-term competence verified | Terminal (can regress if θ drops on future evidence) |
 
-Gate 0 → 1 transition is preserved because it serves a different purpose: **introduction verification** ("has the student been taught this and demonstrated basic competence?"). This is not spaced repetition — it's curriculum progress. The stability model handles everything after.
+### 12.2 Lesson-Mode Handler (not_started → active)
 
-### 16.6 Impact on Session Assembly
-
-The `_assemble_normal()` method changes in two ways:
-
-**A. Review candidate selection (replaces gate-based retest queries)**
+When a lesson-mode eval arrives for a `not_started` subskill:
 
 ```python
-# OLD: query lifecycle for next_retest_eligible <= now AND gate 1-3
-# NEW: compute effective_theta for all active subskills, select by information
+def _handle_lesson_eval(self, lifecycle, score, ...):
+    if lifecycle.retention_state != "not_started":
+        return  # no effect on already-active skills
 
-def _gather_review_candidates(self, lifecycle_map, theta_map, node_map, subject, now):
-    candidates = []
-    for sid, lc in lifecycle_map.items():
-        state = lc.get("retention_state", "not_started")
-        if state != "active":
-            continue
+    if passed:
+        lifecycle.lesson_eval_count += 1
 
-        stability = lc.get("stability", INITIAL_STABILITY)
-        last_reviewed = lc.get("last_reviewed")
-        if not last_reviewed:
-            continue
-
-        days_elapsed = (now - parse_datetime(last_reviewed)).total_seconds() / 86400
-        theta_tested = theta_map.get(lc.get("skill_id", ""), DEFAULT_STUDENT_THETA)
-
-        eff_theta = effective_theta(theta_tested, days_elapsed, stability)
-
-        node = node_map.get(sid, {})
-        prim_type = node.get("primitive_type", "ten-frame")
-        a = get_item_discrimination(prim_type)
-        _, beta, _ = self.select_best_mode(eff_theta, prim_type)
-        p = p_correct(eff_theta, beta, a)
-        info = item_information(eff_theta, beta, a)
-
-        if p < TARGET_RETENTION:  # 0.85
-            candidates.append((sid, lc, eff_theta, info, days_elapsed))
-
-    # Sort by information value descending — most informative reviews first
-    candidates.sort(key=lambda x: -x[3])
-    return candidates
+    # IRT-derived gate check (primary path)
+    if theta and sigma and min_beta and max_beta:
+        irt_gate, irt_rs, irt_p = derive_gate_from_irt(theta, sigma, min_beta, max_beta)
+        if irt_gate >= 1:
+            _activate_retention(lifecycle, timestamp, theta, sigma)
+    else:
+        # No IRT data → no lifecycle effect (logged as warning)
+        pass
 ```
 
-**B. Current band trivial-item filter**
+**Key change from PRD v2.0:** The legacy "3 lesson evals ≥ 9.0" path is gone. Activation is now purely IRT-derived — `derive_gate_from_irt()` checks P(correct) at the easiest mode. If P ≥ 0.70 and σ ≤ 1.5, the student activates. This can happen on the very first eval if θ rises fast enough.
+
+### 12.3 Practice-Mode Handler (active → mastered)
+
+When a practice-mode eval arrives for an `active` or `mastered` subskill:
 
 ```python
-# When selecting current-band items, skip any with P > 0.95
-# This prevents the engine from serving busywork when all current items are trivial
+def _handle_practice_eval(self, lifecycle, score, ...):
+    if lifecycle.retention_state == "not_started":
+        return  # need initial mastery first
 
-for sid in current_candidate_ids:
-    node = node_map.get(sid, {})
-    skill_id = node.get("skill_id", "")
-    theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
-    prim_type = node.get("primitive_type", "ten-frame")
-    _, beta, _ = self.select_best_mode(theta, prim_type)
-    a = get_item_discrimination(prim_type)
-    p = p_correct(theta, beta, a)
-    if p > TRIVIAL_THRESHOLD:  # 0.95
-        continue  # Skip — no pedagogical value
-    filtered_current.add(sid)
+    # Track pass/fail for actuarial completion
+    if score >= 7.0:
+        lifecycle.passes += 1
+    else:
+        lifecycle.fails += 1
+
+    lifecycle.last_reviewed = timestamp
+    lifecycle.review_count += 1
+
+    # IRT-derived gate (primary path)
+    if theta and sigma and primitive_type:
+        irt_gate, irt_rs, irt_p = derive_gate_from_irt(theta, sigma, min_beta, max_beta)
+
+        # Gate can only advance or hold — never regress on single eval
+        if irt_gate >= lifecycle.current_gate:
+            lifecycle.current_gate = irt_gate
+            lifecycle.retention_state = irt_rs
+
+        # Stability derived FROM gate (backward compat), not driving it
+        lifecycle.stability = GATE_TO_STABILITY[lifecycle.current_gate]
+
+    # Recalculate actuarial completion factor
+    _recalculate_completion_factor(lifecycle, global_pass_rate)
 ```
 
-Freed slots flow to frontier probes via existing surplus redistribution. Gifted students get more exploration; no busywork.
+**Key change from PRD v2.0:** No stability multipliers (×2.5/×1.5/×0.5) driving gate transitions. The IRT model IS the mastery signal. `derive_gate_from_irt()` checks θ+σ against probability thresholds at each gate's reference β. Stability is derived from the gate for backward-compat consumers, not the other way around.
 
-### 16.7 Impact on Result Processing
+### 12.4 Divergence Logging (Phase A)
 
-When `process_result()` runs after a student completes an item:
-
-```
-OLD flow:
-  1. IRT update (θ, β)
-  2. Gate transition check (score >= 9.0? increment lesson_eval_count, check gate thresholds)
-  3. Leapfrog check (frontier only)
-
-NEW flow:
-  1. IRT update (θ, β) — unchanged
-  2. Retention update:
-     - If subskill is "not_started" and this is a lesson eval:
-         increment lesson_eval_count; if count >= 3 and all scores >= 9.0:
-           transition to "active", set stability = S₀, last_reviewed = now
-     - If subskill is "active":
-         update stability based on score (see §16.4)
-         update last_reviewed = now
-         check mastery threshold (stability > 30 → "mastered")
-  3. Leapfrog check — unchanged, except inferred skills start at
-     retention_state="active", stability=INITIAL_STABILITY
-```
-
-### 16.8 Impact on Leapfrog Inference
-
-When leapfrog seeds inferred skills, the seeded state changes:
+After each eval, the engine compares what the IRT-derived gate says vs. what the stability-based system says, and logs divergences:
 
 ```
-OLD: Gate 2, completion_pct=0.5, next_retest_eligible=now+3d
-NEW: retention_state="active", stability=3.0, last_reviewed=now
+[MASTERY_DIVERGENCE] MATH-ADD-01-A: IRT says gate=3/state=active (P=0.823, σ=0.95),
+  stability system says gate=2/state=active (stability=7.5). θ=6.20, score=9.0
 ```
 
-This means inferred skills don't block anything. Their effective_theta will naturally decay, and when they become informative, the engine will surface them as review candidates. If the inference was wrong (student doesn't actually know this), the review will fail, stability halves, and the engine schedules a quicker follow-up.
+This dual-track logging prepares for the eventual removal of stability-based state (Phase B).
 
-### 16.9 Migration from Gates
+### 12.5 Effective Theta — The Forgetting Function
 
-Existing mastery_lifecycle documents with gate values can be migrated:
+At session assembly time, compute the **effective theta** for every active subskill to determine review urgency:
+
+```python
+def effective_theta(theta_tested: float, days_since_test: float, stability: float) -> float:
+    """Power-law decay (√t) — matches Ebbinghaus forgetting curve."""
+    if days_since_test <= 0 or stability <= 0:
+        return theta_tested
+    decay = DECAY_RATE * math.sqrt(days_since_test / stability)
+    floor = max(DEFAULT_STUDENT_THETA, theta_tested * THETA_DECAY_FLOOR_FACTOR)
+    return max(floor, theta_tested - decay)
+```
+
+This feeds into the unified selection: decayed θ → higher information → higher utility → selected as review. No separate review scheduler needed.
+
+### 12.6 Actuarial Completion Factor
+
+The completion factor uses credibility blending, computed after every practice eval:
+
+```
+Z = min(attempts / CREDIBILITY_STANDARD, 1.0)    # CREDIBILITY_STANDARD = 10
+blended_rate = Z × subskill_rate + (1-Z) × global_rate
+credit_per_pass = blended_rate × 0.25
+completion_pct = gate_1_credit (0.25) + passes × credit_per_pass
+```
+
+For mastered subskills, completion is forced to 1.0. For not_started, gate_1_credit = 0.
+
+### 12.7 Migration from Legacy Gates
+
+Existing Firestore documents with gate values are lazily migrated via `derive_retention_state()`:
 
 | Current Gate | New State | Stability | Rationale |
 |-------------|-----------|-----------|-----------|
-| 0 | `not_started` | — | Not yet mastered |
+| 0 | `not_started` | 0.0 | Not yet mastered |
 | 1 | `active` | 3.0 | Just cleared initial mastery |
 | 2 | `active` | 7.5 | Survived one retest |
 | 3 | `active` | 18.75 | Survived two retests |
 | 4 | `mastered` | 47.0 | Fully verified |
 
-Migration is a one-time batch update on existing lifecycle documents. New documents use the retention model from creation.
+No batch migration script needed — `derive_retention_state()` runs lazily on read when `retention_state` is not set.
 
-### 16.10 New Parameters
+---
 
-| Parameter | Value | Rationale |
-|-----------|-------|-----------|
-| `INITIAL_STABILITY` | 3.0 days | Matches old Gate 1→2 interval; first review surfaces after ~3 days |
-| `DECAY_RATE` | 1.5 | At t=S, drops high-θ students to P≈0.85 |
-| `TARGET_RETENTION` | 0.85 | Items below this P become review candidates. Standard in spaced repetition literature (Anki default: 0.90, FSRS default: 0.90). We use 0.85 for fewer, more informative reviews |
-| `TRIVIAL_THRESHOLD` | 0.95 | Current-band items above this P are skipped — zero pedagogical value |
-| `STABILITY_GROWTH_STRONG` | 2.5 | Score ≥ 9.0 — strong recall, large interval increase |
-| `STABILITY_GROWTH_PARTIAL` | 1.5 | Score 7.0-8.9 — partial recall, modest increase |
-| `STABILITY_SHRINK_FAIL` | 0.5 | Score < 7.0 — failed recall, halve interval |
-| `MASTERY_STABILITY_THRESHOLD` | 30 days | Stability above this → mastered (predicted retention > 90% at 30 days) |
-| `THETA_DECAY_FLOOR_FACTOR` | 0.5 | Never decay below 50% of tested theta |
+## 13. Pulse Agent — Synthetic Student Test Harness
 
-### 16.11 Cross-Archetype Behavior
+### 13.1 Purpose
 
-| Archetype | Old Behavior | New Behavior |
-|-----------|-------------|-------------|
-| **Gifted Grace** | Trapped on P=0.989 busywork for 14 sessions. 7/163 skills in 90 items. | Trivial items skipped immediately. Freed slots go to frontier probes. Races through DAG. Reviews surface naturally after ~3 days. |
-| **Steady Sam** | Can't clear gates because P(correct) stuck at 0.22 vs 0.7 threshold (IRT-gate mismatch). | No gate thresholds to clear. Stability grows based on score alone. Items are already informative (P≈0.5-0.7), so the engine serves them correctly. |
-| **Struggling Sophia** | Gets stuck at Gate 0 indefinitely — can't score 9.0 three times. | Gate 0→active transition unchanged (still needs 3 evals ≥ 9.0). But once active, stability model handles reviews with shorter intervals (failed reviews → S×0.5). |
-| **Cold Start** | Uses `_assemble_cold_start()` — 100% frontier probes. | **Unchanged.** Cold start doesn't use the retention model. |
+The Pulse Agent runs synthetic students through multi-session journeys, calling PulseEngine directly (no HTTP layer, no auth) with isolated student IDs. It validates:
+- Gate progression over time
+- Leapfrog triggers and coverage
+- Band distribution patterns
+- Skill diversity across sessions
+- IRT θ/σ evolution
 
-### 16.12 Comparison to Established Systems
+### 13.2 Architecture
 
-| Property | Lumina Gates (old) | Anki/SM-2 | FSRS | Lumina Stability (new) |
-|----------|-------------------|-----------|------|----------------------|
-| Forgetting model | None (fixed calendar) | Exponential intervals | Power-law (optimized) | Power-law (√t/S) |
-| Blocks forward progress | Yes | No | No | No |
-| Per-student adaptation | None | Ease factor per card | Per-card stability + difficulty | Per-subskill stability, leverages IRT θ |
-| Review trigger | Calendar date | Calendar date | Calendar date | Information value (P < target) |
-| Integration with ability model | Separate (gates ≠ θ) | N/A (no ability model) | N/A | Unified (decay modifies θ directly) |
-| Mastery definition | Gate 4 (3 retests passed) | Mature interval > N days | Stability > threshold | Stability > 30 days |
+```
+PulseAgentRunner (agent.py)
+├── PulseEngine (direct call, no HTTP)
+├── JourneyRecorder (journey_recorder.py)
+│   ├── JourneyTimeline — full journey state
+│   └── SessionSnapshot — per-session metrics
+├── SyntheticProfile (profiles.py)
+│   ├── student_id, name, archetype
+│   ├── subject, items_per_session, target_sessions
+│   └── ability_range, pass_threshold
+├── ScoreStrategy (scenarios.py)
+│   ├── ArchetypeStrategy — archetype-driven scoring
+│   └── get_strategy(profile) → ScoreStrategy
+└── Assertions (assertions.py)
+    ├── check_gate_advance()
+    ├── check_no_stagnation()
+    ├── check_skill_diversity()
+    └── check_leapfrog_triggers()
+```
 
-The key innovation over Anki/FSRS: **reviews are triggered by information value, not calendar dates.** Because we have a full IRT model, we can compute exactly how informative a review would be and let the engine's existing selection logic handle scheduling. No separate scheduler needed.
+### 13.3 Virtual Clock
+
+Each session advances by `session_gap_days` (default 1.0) to simulate realistic pacing. The virtual clock is passed to `assemble_session(now_override=)` and `process_result(now_override=)` so decay calculations use virtual time, not wall time.
+
+### 13.4 Cleanup
+
+`cleanup_student()` deletes ALL Firestore data for a synthetic student before re-running scenarios: mastery_lifecycle, abilities, pulse_state subcollections + pulse_sessions filtered by student_id.
+
+---
+
+## 14. LearningPathsService Integration
+
+### 14.1 Role in Pulse
+
+LearningPathsService provides the curriculum graph and prerequisite-based unlock logic that Pulse depends on:
+
+| Method | Pulse Usage |
+|--------|-------------|
+| `_get_graph(subject)` | Load DAG nodes + edges (in-memory cached) |
+| `get_unlocked_entities(student_id, "subskill", subject)` | Determine which skills the student can access |
+| `recalculate_unlocks(student_id, subject)` | Refresh unlock state after leapfrog (deferred to session end) |
+
+### 14.2 Unlock Determination
+
+`get_unlocked_entities()` reads the curriculum graph and student proficiency map in real-time:
+
+```
+For each node in the graph:
+  - If no prerequisite edges → always unlocked
+  - If ALL prerequisites meet their thresholds → unlocked
+  - Otherwise → locked
+```
+
+Only edges where `is_prerequisite=True` count. Non-prerequisite edges (parallel, reinforces, builds_on, applies) are used by PulseEngine's BFS for discovery but don't block unlocks.
+
+### 14.3 Edge Types
+
+The curriculum graph supports multiple edge types:
+
+| Edge Type | `is_prerequisite` | Blocks Unlock | Pulse BFS Uses |
+|-----------|-------------------|---------------|----------------|
+| `prerequisite` | true | Yes | Yes |
+| `parallel` | false | No | Yes (discovery) |
+| `reinforces` | false | No | Yes (discovery) |
+| `builds_on` | false | No | Yes (discovery) |
+| `applies` | false | No | Yes (discovery) |
+
+---
+
+## 15. Implementation Phases
+
+### Phase 1 — MVP (Complete, 2026-03-04)
+- ✅ Core PulseEngine: assemble_session + process_result
+- ✅ Cold start mode with DAG inference
+- ✅ Leapfrog logic with ancestor walking
+- ✅ Frontend: PulseSession, usePulseSession, types, API client
+- ✅ Replaced PracticeModeEnhanced in App.tsx
+
+### Phase 2 — Polish (Complete, 2026-03-05)
+- ✅ LessonGroupService integration with Bloom's sorting
+- ✅ Session resume (localStorage + backend fetch)
+- ✅ Adaptive band proportions (surplus redistribution)
+- ✅ Leapfrog celebration (framer-motion animations)
+- ✅ EL trajectory visualization (ThetaGrowthSection)
+- ✅ Frontier delta section (gate advances + leapfrog breakdown)
+- ✅ Session-aware hydration (primitive diversity via Gemini context)
+
+### Phase 3 — Retention Model (Complete, 2026-03-22)
+- ✅ Stability-based forgetting model (effective_theta, decay function)
+- ✅ Replaced Gates 1-4 with retention_state + stability
+- ✅ Information-value review scheduling (P < 0.85 → review candidate)
+- ✅ Trivial-item filter (P > 0.95 → skip)
+- ✅ Lazy migration from legacy gates (derive_retention_state)
+- ✅ Updated forecasting to stability-based projections
+
+### Phase 4 — 2PL/3PL IRT + Probability Gates (Complete, 2026-03-23)
+- ✅ CalibrationEngine upgraded to 2PL/3PL model
+- ✅ ProblemTypeRegistry with per-primitive a, c parameters
+- ✅ Gate thresholds computed via P(correct) at reference β levels
+- ✅ CalibrationSimulator.tsx validated model
+
+### Phase 5 — Curriculum Knowledge Graph (Complete, 2026-03-24)
+- ✅ Multi-edge-type graph (prerequisite, parallel, reinforces, builds_on, applies)
+- ✅ LearningPathsService supports non-prerequisite edges
+- ✅ DAGAnalysisEngine for topological analysis
+
+### Phase 6 — Unified Item Selection (Complete, 2026-03-26)
+- ✅ Replaced 3-band allocation with unified utility function
+- ✅ `utility = information × urgency` ranking
+- ✅ Band labels derived from state (emergent, not enforced)
+- ✅ BFS traverses all edge types for broader discovery
+- ✅ MAX_CURRENT_ITEMS_PER_SKILL diversity cap
+
+### Phase 7 — IRT-Derived Gates + Lightweight Leapfrog (Complete, 2026-03-27)
+- ✅ `derive_gate_from_irt()` — gates derived directly from θ+σ
+- ✅ Practice evals use IRT-derived gate (no stability multipliers)
+- ✅ Lesson evals use IRT gate check (no 3-eval count requirement)
+- ✅ Gate can only advance or hold, never regress on single eval
+- ✅ Leapfrog seeds only competency docs (credibility=0.1)
+- ✅ No fabricated θ/σ/lifecycle/ability — unified selector handles naturally
+- ✅ Session-level leapfrog deduplication
+- ✅ Deferred write optimization (batch Firestore round-trips)
+- ✅ Divergence logging (IRT vs stability comparison)
+- ✅ Pulse Agent test harness with virtual clock
+
+### Future
+- [ ] Primitive coverage mastery (§9.5 from v2.0 — breadth → accelerated activation)
+- [ ] Difficulty slider (student agency)
+- [ ] Cross-skill leapfrog (high θ downstream → infer prerequisites)
+- [ ] Parent dashboard integration
+- [ ] Session length adaptation
+- [ ] Phase B: Remove stability-based state entirely (IRT-derived gate is sole authority)
+- [ ] Phase C: Per-item σ tracking (currently per-skill)
+
+---
+
+## 16. Testability Requirement — In-Memory Execution
+
+### 16.1 The Problem
+
+Pulse sessions hit Firestore ~120 times per 15-item session. With network latency, a single session takes 10-30 seconds. Running the Pulse Agent (5 archetypes × 15 sessions = 75 sessions) takes 15-30 minutes. This makes iterative development on selection algorithms, gate thresholds, and retention parameters impractical.
+
+### 16.2 The Solution: InMemoryFirestoreService
+
+`backend/tests/pulse_agent/in_memory_firestore.py` provides a drop-in replacement for FirestoreService that stores everything in Python dicts. Zero network calls.
+
+**Performance (measured):**
+
+| Metric | Firestore | In-Memory | Speedup |
+|--------|-----------|-----------|---------|
+| Single 15-item session | 10-30s | **31ms** | ~500x |
+| Per item (process_result) | 200-600ms | **2.9ms** | ~150x |
+| 60 sessions (3 students × 20 sessions) | ~20 min | **2.6s** | ~500x |
+| Full agent suite (5 archetypes × 15 sessions) | ~25 min | **~3s** (projected) | ~500x |
+
+### 16.3 Usage
+
+```bash
+# Fetch graph once from Firestore, then run everything in-memory
+python -m tests.pulse_agent.run_scenarios --profile gifted --sessions 15 --in-memory
+
+# Run all archetypes (< 5 seconds total)
+python -m tests.pulse_agent.run_scenarios --all --in-memory
+
+# Still works with real Firestore (default, for production validation)
+python -m tests.pulse_agent.run_scenarios --profile gifted --sessions 5
+```
+
+### 16.4 Architecture
+
+```python
+# One-time bootstrap: fetch curriculum graph from real Firestore
+pulse_engine, mem_fs = await build_engine_in_memory("Mathematics")
+
+# From here on, 0 network calls:
+session = await pulse_engine.assemble_session(student_id=1, subject="Mathematics")
+for item in session.items:
+    await pulse_engine.process_result(student_id=1, session_id=..., result=...)
+
+# Stats tracking for debugging:
+print(mem_fs.stats)  # {'reads': 54, 'writes': 63}
+
+# Clean slate between runs:
+mem_fs.clear_student(1)  # or mem_fs.clear_all()
+```
+
+All services (PulseEngine, CalibrationEngine, MasteryLifecycleEngine, LearningPathsService) take `firestore_service` as a constructor arg — the in-memory implementation is injected without any code changes to the services.
+
+### 16.5 Baseline Requirement
+
+> A 15-item synthetic session MUST complete in < 200ms in test mode (in-memory storage). The Pulse Agent MUST be able to run 100 sessions across 5 archetypes in < 30 seconds. This enables rapid iteration on selection algorithms, gate thresholds, and retention parameters.
+
+Current performance exceeds this requirement by ~5x.
+
+### 16.6 What It Enables
+
+- **Rapid algorithm iteration:** Change `derive_gate_from_irt()` thresholds, re-run 75 sessions in 3 seconds, see the impact
+- **Regression detection:** Run full suite on every commit — if Grace stagnates or Sam never advances, catch it immediately
+- **Parameter sweeps:** Test DECAY_RATE values 0.5-3.0 in 10 steps × 5 archetypes = 50 runs = ~25 seconds
+- **Divergence analysis:** The MASTERY_DIVERGENCE logs (IRT vs stability) are now cheap to generate at scale
+
+---
+
+## 17. Success Metrics
+
+| Metric | Original | Target | How Measured |
+|--------|---------|--------|--------------|
+| Skills advanced per session | ~1 (sequential) | 3-5 (with leapfrogs) | Gate changes per pulse_session |
+| Completion velocity (% per hour) | ~23% per hour | ~60% per hour | mastery_lifecycle gate changes / time |
+| Time to first mastery (Gate 4) | ~4 weeks per skill | ~1-2 weeks per skill | Gate 4 timestamp - Gate 0 timestamp |
+| Trivial item ratio | 48% (Gifted Grace pre-fix) | < 5% | Items with P > 0.95 served |
+| Session information density | Low (P≈0.99 items) | High (P≈0.5-0.8 items) | avg Fisher information per session |
+| Leapfrog rate | N/A | 15-25% of frontier probes | leapfrogs / frontier items probed |
 
 ---
 
@@ -1323,18 +1197,37 @@ The key innovation over Anki/FSRS: **reviews are triggered by information value,
 ```python
 async def process_submission(
     student_id: int, skill_id: str, subskill_id: str,
-    primitive_type: str, eval_mode: str, score: float, source: str = "practice"
+    primitive_type: str, eval_mode: str, score: float,
+    source: str = "practice",
+    prefetched_ability: Optional[Dict] = None,
+    prefetched_item_calibration: Optional[Dict] = None,
 ) -> Dict[str, Any]
-# Returns: { item_key, calibrated_beta, credibility_z, student_theta, earned_level }
+# Returns: { item_key, calibrated_beta, student_theta, sigma, earned_level,
+#            p_correct, item_information, discrimination_a, guessing_c,
+#            ability_doc, item_calibration_doc, gate_progress }
 ```
 
 ### MasteryLifecycleEngine
 ```python
 async def process_eval_result(
     student_id: int, subskill_id: str, subject: str, skill_id: str,
-    score: float, source: Literal["lesson", "practice"], timestamp: Optional[str] = None
+    score: float, source: Literal["lesson", "practice"],
+    timestamp: Optional[str] = None,
+    *,
+    prefetched_lifecycle: Optional[Dict] = None,
+    prefetched_ability: Optional[Dict] = None,
+    prefetched_global_pass_rate: Optional[float] = None,
+    theta: Optional[float] = None,
+    sigma: Optional[float] = None,
+    primitive_type: Optional[str] = None,
+    avg_a: Optional[float] = None,
 ) -> Dict[str, Any]
 # Returns: updated MasteryLifecycle dict
+
+# Pure functions (module-level, used by PulseEngine directly):
+def effective_theta(theta_tested, days_since_test, stability) -> float
+def derive_retention_state(lifecycle_dict) -> (retention_state, stability)
+def derive_gate_from_irt(theta, sigma, min_beta, max_beta, avg_a) -> (gate, state, p)
 ```
 
 ### LearningPathsService
@@ -1346,19 +1239,32 @@ async def get_unlocked_entities(student_id: int, entity_type?: str, subject?: st
 # Returns: set of unlocked skill/subskill IDs
 
 async def recalculate_unlocks(student_id: int, subject_id: str) -> None
+
+async def get_related_entities(entity_id: str, subject: str) -> List[Dict]
+# Returns: edge metadata for all connections to entity_id
 ```
 
-### LessonGroupService
+### DAGAnalysisEngine
 ```python
-@classmethod
-def group_subskills_into_blocks(cls, candidates: List[Dict[str, Any]]) -> List[LessonBlock]
-# Candidate dict: { skill_id, subject, type, mastery_gate, unit_title, skill_description, subskill_description, days_overdue?, completion_factor? }
+@staticmethod
+def topological_sort(nodes, edges) -> List[str]
+@staticmethod
+def compute_node_metrics(nodes, edges, topo_order) -> Dict[str, NodeMetrics]
+@staticmethod
+def select_initial_probes(metrics, nodes, edges, max_probes) -> List[ProbeCandidate]
+@staticmethod
+def get_ancestors(node_id, edges) -> Set[str]
 ```
 
 ### ProblemTypeRegistry
 ```python
+PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, EvalModeConfig]]
+# primitive_type → { eval_mode_name → EvalModeConfig(prior_beta, a, c) }
+
+def get_item_discrimination(primitive_type: str, eval_mode: str) -> (a, c)
+def get_item_key(primitive_type: str, eval_mode: str) -> str
+def get_primitive_beta_range(primitive_type: str) -> (min_beta, max_beta)
 def get_prior_beta(primitive_type: str, eval_mode: str) -> float
-# Returns: prior β for the (primitive_type, eval_mode) pair
 ```
 
 ---
@@ -1368,9 +1274,11 @@ def get_prior_beta(primitive_type: str, eval_mode: str) -> float
 | Date | Version | Changes |
 |------|---------|---------|
 | 2026-03-04 | 1.0 | Initial PRD — design complete |
-| 2026-03-05 | 1.1 | Phase 1 MVP implemented end-to-end. All backend + frontend files created. Wired into App.tsx. Fixed leapfrog GateHistoryEntry source literal bug. Updated §3.3 leapfrog gate_history source to "diagnostic". Added known limitations and Phase 2 checklist. |
-| 2026-03-05 | 1.2 | Phase 2 progress: LessonGroupService integrated into band assembly, adaptive band proportions, session resume flow (localStorage + backend fetch), summary now populates skills_advanced and theta_changes from per-item data. |
-| 2026-03-05 | 1.3 | Phase 2 UI polish: Enhanced leapfrog celebration with framer-motion staggered skill chips, animated SVG score ring, probed/inferred skill breakdown. Added ThetaGrowthSection (recharts line chart or animated bars based on skill count). Added FrontierDeltaSection with gate advance + leapfrog skip breakdown and frontier expansion message. |
-| 2026-03-05 | 1.4 | Added §9.4 Session-Aware Hydration: sessionHistory (componentId + difficulty + score) passed to Gemini for diversity + difficulty calibration. Soft guidance, no hard blocking. Added §9.5 Primitive Coverage as Mastery Signal: breadth across applicable primitives accelerates Gate 0→1 (Phase 3). |
-| 2026-03-22 | 2.0 | **Retention model redesign.** Replaced Gates 1-4 with stability-based forgetting model (§16). Gates blocked forward progress and served P=0.989 busywork to gifted students. New model: effective_theta decays over time via power-law forgetting; reviews surface by information value, never blocking progression. Stability grows with successful reviews (×2.5/×1.5/×0.5), mastery at S>30 days. Updated §2.3 (review selection), §3.3 (leapfrog seeding), §5.1 (assembly algorithm), §6 (result processing), §7 (data model — new retention_state/stability/last_reviewed fields), §11 (parameters). Gate 0→1 transition preserved for initial mastery verification. Identified via Pulse Agent — Gifted Grace stagnation (48% trivial items, 7/163 skills in 90 items). |
-| 2026-03-22 | 2.1 | **§16 implemented.** All backend changes complete: `mastery_lifecycle.py` — added retention_state/stability/last_reviewed/review_count fields + 10 retention constants (INITIAL_STABILITY, DECAY_RATE, TARGET_RETENTION, TRIVIAL_THRESHOLD, growth multipliers, MASTERY_STABILITY_THRESHOLD, GATE_TO_STABILITY migration map). `mastery_lifecycle_engine.py` — full rewrite: added `effective_theta()` power-law forgetting function, `derive_retention_state()` lazy migration helper, `_activate_retention()` for Gate 0→1 transition, replaced `_handle_practice_eval()` with stability updates (×2.5/×1.5/×0.5), removed `_handle_retest_pass()`/`_handle_retest_fail()`, updated forecasting to stability-based projections. `pulse_engine.py` — replaced `_gather_review_candidates()` with information-value selection (effective_theta decay → P < 0.85 → review candidate), added trivial-item filter (P > 0.95 → skip), updated band logic to use retention_map, updated leapfrog seeding to retention_state="active" + stability=3.0. `planning_service.py` — added `_derive_retention_state()` with legacy gate fallback, updated `_count_by_gate_status()`, monthly projection (stability-based closure pipeline), daily planner blocking. All backward-compat gate fields kept in sync for consumers. Lazy migration — no batch script needed. Verified: effective_theta matches PRD §16.3 examples, derive_retention_state handles all gate values, stability growth reaches mastery in 3 reviews. |
+| 2026-03-05 | 1.1 | Phase 1 MVP implemented end-to-end |
+| 2026-03-05 | 1.2 | Phase 2: LessonGroupService, session resume, adaptive band proportions |
+| 2026-03-05 | 1.3 | Phase 2 UI: leapfrog celebration, theta growth, frontier delta |
+| 2026-03-05 | 1.4 | Session-aware hydration (§9.4), primitive coverage mastery (§9.5) |
+| 2026-03-22 | 2.0 | Retention model redesign — replaced Gates 1-4 with stability-based forgetting |
+| 2026-03-22 | 2.1 | §16 implemented — effective_theta, derive_retention_state, stability lifecycle |
+| 2026-03-27 | 3.0 | **Major PRD rewrite to match implementation.** Added §16 Testability Requirement with InMemoryFirestoreService (500x speedup: 31ms/session vs 10-30s). |
+| 2026-03-27 | 3.0 | **Architecture changes documented:** Key changes: (1) §2 rewritten — unified utility-based item selection replaces 3-band allocation; band labels are emergent from state, not enforced allocation targets. (2) §3.1 rewritten — max-Fisher-information mode selection via ProblemTypeRegistry replaces static θ→mode table. (3) §3.3 rewritten — leapfrog seeds only competency docs (credibility=0.1), no fabricated lifecycle/ability/θ/σ; unified selector handles naturally via high Fisher information. (4) §3.4 new — IRT-derived gate system: `derive_gate_from_irt()` checks P(correct) at reference βs per gate; gates can only advance, never regress on single eval. (5) §5 rewritten — assembly algorithm now `_assemble_unified()` with BFS across all edge types, midpoint-proximity sorting. (6) §6 rewritten — eval source simplified to gate-only check; deferred write optimization documented. (7) §12 new — comprehensive mastery lifecycle section: IRT-derived practice handler (no stability multipliers), IRT-derived lesson handler (no 3-eval count), divergence logging, actuarial completion factor. (8) §13 new — Pulse Agent test harness. (9) §14 new — LearningPathsService integration details. (10) Removed obsolete sections: stability multiplier tables (×2.5/×1.5/×0.5 no longer drive gates), fixed band allocation tables, LessonGroupService grouper (replaced by utility ranking), primitive coverage mastery (not yet implemented). |

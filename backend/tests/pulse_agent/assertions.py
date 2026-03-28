@@ -168,7 +168,11 @@ def assert_no_stuck_skills(
 def assert_cold_start_frontier_heavy(
     timeline: JourneyTimeline,
 ) -> AssertionResult:
-    """First session of a cold-start student should be mostly frontier probes."""
+    """First session of a cold-start student should be mostly frontier probes.
+
+    With the unified selector, cold-start students have maximum σ on all skills,
+    so utility is dominated by urgency — frontier items naturally dominate.
+    """
     if not timeline.sessions:
         return AssertionResult(
             name="cold_start_frontier",
@@ -230,20 +234,21 @@ def assert_inferred_skills_tested(
     timeline: JourneyTimeline,
     min_inferred_test_pct: float = 0.10,
 ) -> AssertionResult:
-    """Check that leapfrog-inferred skills eventually get directly probed.
+    """Check that leapfrog-unlocked skills eventually appear in sessions.
 
-    After leapfrog infers N ancestors as "known", the engine should prioritize
-    testing at least some of them — especially those with high uncertainty.
-    A healthy algorithm validates inferred knowledge rather than assuming it.
+    Leapfrog now only seeds competency docs for unlock propagation — inferred
+    skills stay ``not_started`` (no fabricated lifecycle docs) until tested.
+    The unified selector should naturally pick them up because their high σ
+    (uncertainty) produces high utility = information(θ,a,b) × urgency(σ).
 
     This assertion tracks:
     - frontier_subskills: subskills the student actually faced as frontier probes
     - inferred_subskills: subskills that appear in mastery snapshots but were
-      never served as frontier probes (they came from leapfrog inference)
-    - tested_inferred: inferred subskills that later appeared as current/review items
+      never served as frontier probes (they were unlocked via leapfrog)
+    - tested_inferred: unlocked subskills that later appeared as session items
 
-    The assertion passes if >= min_inferred_test_pct of inferred skills were
-    eventually tested directly (served as current or review items).
+    The assertion passes if >= min_inferred_test_pct of unlocked skills were
+    eventually selected by the unified utility scorer.
     """
     # Collect subskills seen as frontier probes (directly tested)
     frontier_subskills: set = set()
@@ -293,17 +298,18 @@ def assert_prereq_gap_detection(
     timeline: JourneyTimeline,
     max_consecutive_inferred_fails: int = 3,
 ) -> AssertionResult:
-    """Check whether the engine detects and reacts to weak-root patterns.
+    """Check whether the unified selector naturally deprioritises weak roots.
 
-    When a student consistently fails on inferred (leapfrog) skills but aces
-    frontier probes, the algorithm should detect the pattern and:
-    - Increase frontier probes to directly test uncertain prerequisites
-    - Reduce reliance on leapfrog inference for gate advancement
+    When a student consistently fails on leapfrog-unlocked skills, the unified
+    utility function should self-correct: θ drops on those skills → lower
+    Fisher information at current difficulty → utility falls → selector
+    shifts toward higher-information items (including frontier probes on
+    genuinely uncertain prerequisites).
 
     This assertion fails if:
-    - The student fails >= max_consecutive_inferred_fails inferred items in a row
-      (score < 7.0 on current/review items that were never frontier-probed)
-      WITHOUT the engine responding by increasing frontier allocation.
+    - The student fails >= max_consecutive_inferred_fails unlocked items in a
+      row (score < 7.0 on items that were never frontier-probed) WITHOUT the
+      engine responding by presenting frontier probes in subsequent sessions.
     """
     # Track frontier subskills
     frontier_subskills: set = set()

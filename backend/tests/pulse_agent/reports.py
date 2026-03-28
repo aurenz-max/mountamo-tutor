@@ -6,8 +6,9 @@ Generate human-readable reports from journey timelines.
 Outputs Markdown that can be saved to files or printed to console.
 
 Includes IRT decision context: P(correct), Fisher information, item difficulty,
-and commentary explaining why the engine chose each item and how the
-selection algorithm's assumptions match observed behavior.
+and commentary explaining why the unified utility scorer chose each item
+(utility = information × urgency) and how the IRT-derived gates
+(derive_gate_from_irt) match observed behavior.
 """
 
 from __future__ import annotations
@@ -138,14 +139,18 @@ def _session_irt_commentary(s: SessionSnapshot) -> List[str]:
 
     # 5. Gate advance vs score mismatch (gate > 0 only — at gate 0 all bands
     #    now route through the lesson handler, so this would be a real issue)
+    #    Gates advance via derive_gate_from_irt(theta, sigma, min_beta, max_beta, avg_a)
+    #    which checks P(correct) at reference difficulties with σ thresholds.
     high_scores_no_gate = [
         it for it in s.items
         if it.score >= 9.0 and it.gate_before == it.gate_after and it.gate_before > 0
     ]
     if high_scores_no_gate:
         notes.append(
-            f"**High scores, no stability progress:** {len(high_scores_no_gate)} items scored "
-            f"9.0+ but gate didn't advance. Check stability growth thresholds."
+            f"**High scores, no gate progress:** {len(high_scores_no_gate)} items scored "
+            f"9.0+ but gate didn't advance. Gates are IRT-derived via "
+            f"derive_gate_from_irt — check P(correct) at reference difficulties "
+            f"and σ thresholds."
         )
 
     return notes
@@ -422,9 +427,10 @@ def generate_journey_report(
     # ── Selection Analysis (why these skills?) ──
     _h("## Selection Analysis")
     _h("")
-    _h("> Why did the engine choose these skills? This section tracks which skills ")
-    _h("> were selected across sessions, how often, and flags potential issues ")
-    _h("> with the candidate selection or midpoint algorithm.")
+    _h("> Why did the engine choose these skills? Items are ranked by a unified ")
+    _h("> utility function: utility = information(θ,a,b) × urgency(σ, decay, state). ")
+    _h("> Band labels (frontier/current/review) are emergent from state, not allocated ")
+    _h("> by percentage. This section tracks selection patterns and flags potential issues.")
     _h("")
 
     skill_session_counts: Dict[str, int] = defaultdict(int)
