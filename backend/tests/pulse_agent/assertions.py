@@ -416,6 +416,33 @@ def run_assertions_for_archetype(
         # Gate progression should still happen (the student IS learning)
         results.append(assert_gate_progression(timeline, min_gate_advances=3))
 
+    elif archetype == "regressing":
+        # θ should decline as scores drop
+        results.append(assert_theta_trend(timeline, direction="decreasing", tolerance=0.3))
+        # Few leapfrogs — early sessions are strong but decline cuts them off
+        results.append(assert_leapfrog_count(timeline, min_leapfrogs=0, max_leapfrogs=10))
+        # Some early gate advances before decline sets in
+        results.append(assert_gate_progression(timeline, min_gate_advances=1))
+
+    elif archetype == "volatile":
+        # θ should stay roughly stable — high and low sessions cancel out
+        results.append(assert_theta_trend(timeline, direction="stable", tolerance=1.5))
+        # Should still touch multiple skills despite thrashing
+        results.append(assert_skill_diversity(timeline, min_unique_skills=3))
+
+    elif archetype == "plateau":
+        # θ should increase initially then stabilize
+        results.append(assert_theta_trend(timeline, direction="increasing", tolerance=0.5))
+        # Some gate advances (G0→G1, maybe G1→G2) but limited
+        results.append(assert_gate_progression(timeline, min_gate_advances=1))
+        # Few leapfrogs — plateau scores (~7.5) occasionally pass frontier checks
+        results.append(assert_leapfrog_count(timeline, min_leapfrogs=0, max_leapfrogs=10))
+
+    elif archetype == "bursty":
+        # Despite 7-day gaps, strong learner should still progress
+        results.append(assert_theta_trend(timeline, direction="increasing"))
+        results.append(assert_gate_progression(timeline, min_gate_advances=1))
+
     else:
         logger.warning(f"No assertion suite for archetype '{archetype}'")
 

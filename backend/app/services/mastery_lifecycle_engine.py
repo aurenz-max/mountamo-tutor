@@ -28,6 +28,7 @@ from ..models.calibration import DEFAULT_STUDENT_THETA
 from ..models.mastery_lifecycle import (
     CREDIBILITY_STANDARD,
     DECAY_RATE,
+    GATE_CREDIBILITY_K,
     GATE_P_THRESHOLDS,
     GATE_REF_FRACTIONS,
     GATE_SIGMA_THRESHOLDS,
@@ -107,20 +108,36 @@ def derive_gate_from_irt(
     sigma: float,
     item_beta: float,
     avg_a: float = 1.4,
+    empirical_p: Optional[float] = None,
+    n_observations: int = 0,
 ) -> tuple[int, str, float]:
     """
-    Pure function: derive mastery gate from P(correct) at the item's actual β.
+    Pure function: derive mastery gate from P(correct) at the item's actual β,
+    blended with empirical pass rate when sufficient observations exist.
 
     Checks gates 4→3→2→1 (highest first) and returns the highest passed gate.
-    No side effects, no stored state — just θ and the item's tested difficulty.
+    No side effects, no stored state.
 
-    The item's β is the mode selected by select_best_mode for this student
-    on this subskill — not the hardest mode the primitive supports. A counting
-    subskill tested at β=1.0 shouldn't need P≥0.90 at β=4.0 ("operate").
+    Credibility blend (PRD §12.7):
+        Z = n / (n + GATE_CREDIBILITY_K)
+        P = Z × P_empirical + (1 - Z) × P_irt
 
-    Returns (gate, retention_state, p_at_item_beta).
+    When n is small, the IRT model dominates. As observations accumulate,
+    the student's demonstrated performance carries increasing weight. This
+    solves the "grinder problem" where θ updates are negligible (±0.01/score)
+    because σ has collapsed, leaving P_irt stuck just below a gate threshold
+    despite consistent high scores.
+
+    Returns (gate, retention_state, p_blended).
     """
-    p = p_correct(theta, avg_a, item_beta)
+    p_irt = p_correct(theta, avg_a, item_beta)
+
+    # Credibility-blend with empirical pass rate when available
+    if empirical_p is not None and n_observations > 0:
+        z = n_observations / (n_observations + GATE_CREDIBILITY_K)
+        p = z * empirical_p + (1.0 - z) * p_irt
+    else:
+        p = p_irt
 
     for gate in (4, 3, 2, 1):
         if p >= GATE_P_THRESHOLDS[gate]:
@@ -430,8 +447,15 @@ class MasteryLifecycleEngine:
             old_gate = lifecycle.current_gate
             old_rs = lifecycle.retention_state
 
+            # Compute empirical pass rate for credibility blend
+            total_attempts = lifecycle.passes + lifecycle.fails
+            emp_p = (lifecycle.passes / total_attempts) if total_attempts > 0 else None
+            n_obs = lifecycle.review_count
+
             irt_gate, irt_rs, irt_p = derive_gate_from_irt(
                 theta, sigma, item_beta, a,
+                empirical_p=emp_p,
+                n_observations=n_obs,
             )
 
             # Activate retention if not_started and IRT qualifies

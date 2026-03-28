@@ -36,6 +36,9 @@ class SyntheticProfile:
     # Items per session (default matches Pulse default)
     items_per_session: int = 6
 
+    # Simulated days between sessions (None = use runner default of 1.0)
+    session_gap_days: Optional[float] = None
+
 
 # ── Pre-built profiles ─────────────────────────────────────────────────────
 
@@ -112,6 +115,55 @@ SHALLOW_ROOTS = SyntheticProfile(
     target_sessions=20,
 )
 
+REGRESSING = SyntheticProfile(
+    student_id=900_009,
+    name="Regressing Rita",
+    description=(
+        "Starts strong (9-10) then declines to 3-4. Tests θ decline over "
+        "multiple sessions and whether IRT-derived gates regress when "
+        "P(correct) drops below thresholds."
+    ),
+    archetype="regressing",
+    target_sessions=20,
+)
+
+VOLATILE = SyntheticProfile(
+    student_id=900_010,
+    name="Volatile Vic",
+    description=(
+        "Alternates between high (9-10) and low (2-4) sessions. Tests σ "
+        "convergence under noisy data and whether the selector thrashes "
+        "on the same skills or maintains diversity."
+    ),
+    archetype="volatile",
+    target_sessions=20,
+)
+
+PLATEAU = SyntheticProfile(
+    student_id=900_011,
+    name="Plateau Pat",
+    description=(
+        "Ramps to ~7.5 then flatlines. The most common real-world pattern. "
+        "Tests mid-gate stall (G1-G2 permanently) and whether the engine "
+        "keeps serving useful items or loops."
+    ),
+    archetype="plateau",
+    target_sessions=25,
+)
+
+BURSTY = SyntheticProfile(
+    student_id=900_012,
+    name="Bursty Bea",
+    description=(
+        "Good scores (~9) but 7-day gaps between sessions. Tests "
+        "effective_theta decay formula (θ - 1.5 × √(days/stability)) "
+        "and whether review items resurface after long absences."
+    ),
+    archetype="bursty",
+    target_sessions=20,
+    session_gap_days=7.0,
+)
+
 
 # Registry for CLI lookup
 ALL_PROFILES: Dict[str, SyntheticProfile] = {
@@ -123,4 +175,8 @@ ALL_PROFILES: Dict[str, SyntheticProfile] = {
     "forgetful": FORGETFUL_STUDENT,
     "accelerating": ACCELERATOR,
     "shallow_roots": SHALLOW_ROOTS,
+    "regressing": REGRESSING,
+    "volatile": VOLATILE,
+    "plateau": PLATEAU,
+    "bursty": BURSTY,
 }

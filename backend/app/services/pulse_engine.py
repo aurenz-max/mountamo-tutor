@@ -22,7 +22,7 @@ from ..db.firestore_service import FirestoreService
 from ..models.calibration import DEFAULT_STUDENT_THETA, DEFAULT_THETA_SIGMA
 from ..models.mastery_lifecycle import (
     INITIAL_STABILITY,
-
+    SIGMA_DIFFUSION_RATE,
 )
 from ..models.pulse import (
     DEFAULT_PULSE_ITEM_COUNT,
@@ -365,6 +365,24 @@ class PulseEngine:
             bfs_seed, mastered_ids, all_edges, node_map,
         )
 
+        # Promote tested frontier items to the unlocked pool.
+        # Skills discovered via leapfrog may bypass prerequisite checks in
+        # get_unlocked_entities(), leaving them "locked" despite having
+        # lifecycle docs from prior testing.  Without this, they re-enter
+        # as frontier probes every session — triggering vacuous leapfrogs
+        # (0 new skills unlocked) and starving current/review items.
+        promoted = set()
+        for nid, _depth in probe_ids:
+            if nid in lifecycle_map:
+                promoted.add(nid)
+                unlocked_in_graph.add(nid)
+        if promoted:
+            probe_ids = [(nid, d) for nid, d in probe_ids if nid not in promoted]
+            logger.info(
+                f"[PULSE] Promoted {len(promoted)} tested frontier items to "
+                f"current pool: {sorted(promoted)[:5]}..."
+            )
+
         # 2. Compute transfer prior: use the student's average θ across
         # known skills instead of the global default.  This lets gifted
         # students' frontier probes start near their true ability, so
@@ -387,26 +405,35 @@ class PulseEngine:
             if sid in mastered_ids:
                 continue
             node = node_map.get(sid, {})
-            skill_id = node.get("skill_id", "")
+            # Skip skill-level grouping nodes — only subskills are testable
+            if node.get("type") == "skill":
+                continue
+            skill_id = node.get("skill_id", "") or sid
             rs = retention_map.get(sid, "not_started")
             lc = lifecycle_map.get(sid)
 
             # θ and σ for this skill
-            if rs == "not_started":
+            # Truly unseen (no lifecycle doc): transfer prior + max uncertainty.
+            # Gate-0 WITH lifecycle doc: student has been tested — use real
+            # calibrated θ/σ so utility reflects actual measurement need.
+            # Without this, gate-0 items get σ=2.0 (44× inflated utility)
+            # and permanently block frontier probes via depth tie-break.
+            if rs == "not_started" and not lc:
                 theta = transfer_prior
-                sigma = DEFAULT_THETA_SIGMA  # unseen → max uncertainty
+                sigma = DEFAULT_THETA_SIGMA
             else:
-                theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
+                theta = theta_map.get(skill_id, transfer_prior)
                 sigma = sigma_map.get(skill_id, DEFAULT_THETA_SIGMA)
             prim_type = node.get("primitive_type", "ten-frame")
             _, beta, eval_mode_name = self.select_best_mode(theta, prim_type)
             a, c = get_item_discrimination(prim_type, eval_mode_name)
 
-            # Decay-adjusted theta for active skills (forgetting model)
+            # Decay-adjusted theta for tested skills (forgetting model)
             eff_theta = theta
             days_since = 0.0
             stability = INITIAL_STABILITY
-            if rs == "active" and lc:
+            has_history = lc is not None  # gate-0 or active — both have history
+            if has_history:
                 last_reviewed = lc.get("last_reviewed")
                 stability = lc.get("stability", INITIAL_STABILITY)
                 if last_reviewed:
@@ -419,16 +446,24 @@ class PulseEngine:
                     except (ValueError, TypeError):
                         pass
 
+            # Posterior diffusion: σ grows without new observations.
+            # Matches effective_theta decay — both θ erosion and σ growth
+            # model the Bayesian reality that stale estimates are less certain.
+            eff_sigma = sigma
+            if has_history and days_since > 0:
+                eff_sigma = math.sqrt(sigma ** 2 + SIGMA_DIFFUSION_RATE ** 2 * days_since)
+                eff_sigma = min(eff_sigma, DEFAULT_THETA_SIGMA)
+
             # Expected posterior variance reduction: I(θ) × σ²
             # Standard CAT criterion — naturally favors high-uncertainty
-            # skills (unseen/new) over well-known ones. No heuristic needed.
+            # skills (unseen/new) over well-known ones.
             info = item_information(eff_theta, a, beta, c)
-            utility = info * (sigma ** 2)
+            utility = info * (eff_sigma ** 2)
 
             # Derive band label from state
-            if rs == "not_started":
-                band = PulseBand.CURRENT
-            elif rs == "active" and days_since > stability * 0.5:
+            if not has_history:
+                band = PulseBand.CURRENT  # truly unseen
+            elif days_since > stability * 0.5:
                 band = PulseBand.REVIEW
             else:
                 band = PulseBand.CURRENT
@@ -439,20 +474,29 @@ class PulseEngine:
         for nid, depth in probe_ids:
             if nid in mastered_ids or nid in unlocked_in_graph:
                 continue
-            node = node_map.get(nid, {})
-            skill_id = node.get("skill_id", "")
+            node = node_map.get(nid)
+            # Skip nodes not in the subskill graph (skill-level parents, orphans)
+            if not node or node.get("type") == "skill":
+                continue
+            # Skip already-probed frontier items — they have lifecycle docs
+            # but couldn't unlock (prerequisite constraints). Re-probing
+            # provides no new information and starves consolidation.
+            if nid in lifecycle_map:
+                continue
+            skill_id = node.get("skill_id", "") or nid
             prim_type = node.get("primitive_type", "ten-frame")
 
-            # Frontier probes: transfer prior θ, max uncertainty σ
-            _, beta, eval_mode_name = self.select_best_mode(
-                transfer_prior, prim_type,
-            )
+            # If this skill has been probed before, use real θ/σ from
+            # the ability doc instead of defaults. Prevents frontier items
+            # from permanently dominating with σ=2.0 after being tested.
+            theta = theta_map.get(skill_id, transfer_prior)
+            sigma = sigma_map.get(skill_id, DEFAULT_THETA_SIGMA)
+
+            _, beta, eval_mode_name = self.select_best_mode(theta, prim_type)
             a, c = get_item_discrimination(prim_type, eval_mode_name)
 
-            info = item_information(transfer_prior, a, beta, c)
-            # Max uncertainty (σ² = DEFAULT_THETA_SIGMA²) — frontier items
-            # are completely unseen, so they carry maximum prior variance.
-            utility = info * (DEFAULT_THETA_SIGMA ** 2)
+            info = item_information(theta, a, beta, c)
+            utility = info * (sigma ** 2)
             scored.append((utility, nid, PulseBand.FRONTIER.value, node, depth))
 
         # 3. Sort by utility descending, depth ascending as tie-breaker
@@ -465,7 +509,7 @@ class PulseEngine:
         for utility, sid, band_label, node, _depth in scored:
             if len(items) >= item_count:
                 break
-            skill_id = node.get("skill_id", "")
+            skill_id = node.get("skill_id", "") or sid
             if skill_counts[skill_id] >= MAX_CURRENT_ITEMS_PER_SKILL:
                 continue
             skill_counts[skill_id] += 1
@@ -550,7 +594,7 @@ class PulseEngine:
             if nid in visited or depth > FRONTIER_MAX_JUMP:
                 continue
             visited.add(nid)
-            if nid not in mastered_ids and nid not in seed_ids:
+            if nid not in mastered_ids and nid not in seed_ids and nid in node_map:
                 candidates.append((nid, depth))
                 candidate_strength[nid] = path_strength
             if depth < FRONTIER_MAX_JUMP:

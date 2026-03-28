@@ -216,6 +216,98 @@ class ShallowRootsStrategy(ScoreStrategy):
         return len(self._directly_tested)
 
 
+class RegressingStrategy(ScoreStrategy):
+    """Starts strong (9-10), declines ~0.4 per session toward 3-4.
+
+    Models a student who loses motivation, encounters life disruptions, or
+    hits a conceptual wall.  Tests whether θ actually declines and whether
+    IRT-derived gates regress when P(correct) drops below thresholds.
+    """
+
+    def score_item(self, item: PulseItemSpec) -> float:
+        # Decline from 9.5 → ~3.5 over ~15 sessions
+        decline = min(self.session_number * 0.4, 6.0)
+        base = {
+            PulseBand.FRONTIER: 9.0 - decline,
+            PulseBand.CURRENT: 9.5 - decline,
+            PulseBand.REVIEW: 9.5 - decline,
+        }[item.band]
+        return self._jitter(max(base, 2.0), spread=0.8)
+
+
+class VolatileStrategy(ScoreStrategy):
+    """Alternates between high (9-10) and low (2-4) sessions.
+
+    Models an inconsistent learner — great one day, bombed the next.
+    Tests whether σ stays high under noisy data and whether the selector
+    thrashes on the same skills or maintains diversity.
+    """
+
+    def score_item(self, item: PulseItemSpec) -> float:
+        # Odd sessions: strong.  Even sessions: weak.
+        is_strong_session = self.session_number % 2 == 1
+        if is_strong_session:
+            base = {
+                PulseBand.FRONTIER: 8.5,
+                PulseBand.CURRENT: 9.5,
+                PulseBand.REVIEW: 9.5,
+            }[item.band]
+            return self._jitter(base, spread=0.5)
+        else:
+            base = {
+                PulseBand.FRONTIER: 2.5,
+                PulseBand.CURRENT: 3.5,
+                PulseBand.REVIEW: 3.0,
+            }[item.band]
+            return self._jitter(base, spread=1.0)
+
+
+class PlateauStrategy(ScoreStrategy):
+    """Ramps quickly to ~7.5 then flatlines indefinitely.
+
+    Models the most common real-world pattern: a student who "gets it" enough
+    to pass basic checks but never pushes into mastery territory.  Tests
+    whether the engine keeps serving useful items or gets stuck in a loop
+    at G1-G2 forever.
+    """
+
+    def score_item(self, item: PulseItemSpec) -> float:
+        # Quick ramp over first 5 sessions: 5.0 → 7.5, then plateau
+        ramp = min(self.session_number * 0.5, 2.5)
+        base = {
+            PulseBand.FRONTIER: 5.0 + ramp,
+            PulseBand.CURRENT: 5.5 + ramp,
+            PulseBand.REVIEW: 5.5 + ramp,
+        }[item.band]
+        # Tight variance — the student is consistently mediocre
+        return self._jitter(base, spread=0.6)
+
+
+class BurstyStrategy(ScoreStrategy):
+    """Good scores (~9) but designed to be run with large session gaps (7+ days).
+
+    The score generation is similar to Steady, but the profile sets
+    session_gap_days=7.0 so the effective_theta decay formula
+    (θ - 1.5 × √(days/stability)) is exercised heavily.  Tests whether
+    review items resurface appropriately after long absences and whether
+    the decay floor (θ × 0.5) prevents catastrophic regression.
+    """
+
+    def score_item(self, item: PulseItemSpec) -> float:
+        # Strong learner when present — the challenge is the time gaps
+        base = {
+            PulseBand.FRONTIER: 8.0,
+            PulseBand.CURRENT: 9.0,
+            PulseBand.REVIEW: 8.5,  # Slightly lower on review due to rust
+        }[item.band]
+        spread = {
+            PulseBand.FRONTIER: 1.2,
+            PulseBand.CURRENT: 0.8,
+            PulseBand.REVIEW: 1.5,  # Wider variance — sometimes remembers, sometimes doesn't
+        }[item.band]
+        return self._jitter(base, spread=spread)
+
+
 # ── Strategy registry ──────────────────────────────────────────────────────
 
 STRATEGY_MAP: Dict[str, type] = {
@@ -227,6 +319,10 @@ STRATEGY_MAP: Dict[str, type] = {
     "forgetful": ForgetfulStrategy,
     "accelerating": AcceleratingStrategy,
     "shallow_roots": ShallowRootsStrategy,
+    "regressing": RegressingStrategy,
+    "volatile": VolatileStrategy,
+    "plateau": PlateauStrategy,
+    "bursty": BurstyStrategy,
 }
 
 

@@ -1,8 +1,8 @@
 # Lumina Pulse — Adaptive Learning Loop
 
-**Version:** 3.0
-**Date:** 2026-03-27
-**Status:** Phase 7 — IRT-Driven Mastery + Unified Item Selection
+**Version:** 3.1
+**Date:** 2026-03-28
+**Status:** Phase 8 — Posterior Diffusion + Credibility-Blended Gates
 
 ---
 
@@ -91,7 +91,30 @@ else:
 band = FRONTIER
 ```
 
-### 2.4 Diversity Cap
+### 2.4 Posterior Diffusion — σ Grows When Unobserved
+
+The utility function `I(θ_eff) × σ²` can degenerate when all skills have converged σ — utility becomes near-zero everywhere, and the deterministic sort locks onto the same items indefinitely. This was observed in Pulse Agent testing: the "steady" archetype (scores 8-9) hit a 39-session plateau where 6 items repeated with zero gate advances.
+
+The fix: model uncertainty as growing between observations. A Bayesian posterior should widen when new data hasn't arrived — the system's confidence should decay, not just the student's ability.
+
+```python
+# At assembly time, inflate σ based on time since last observation
+if has_history and days_since > 0:
+    eff_sigma = sqrt(sigma² + SIGMA_DIFFUSION_RATE² × days_since)
+    eff_sigma = min(eff_sigma, DEFAULT_THETA_SIGMA)   # cap at cold-start prior
+else:
+    eff_sigma = sigma
+
+utility = I(θ_eff, a, β) × eff_sigma²
+```
+
+| Constant | Value | Rationale |
+|----------|-------|-----------|
+| `SIGMA_DIFFUSION_RATE` | 0.08 / day | Tuned via pulse-agent sweep: 0.06 too weak (plateau persists), 0.10 too aggressive (scatters focus). At 0.08, σ=0.25 untested for 10 days → σ≈0.30. |
+
+This pairs with the existing `effective_theta` decay: both θ erosion and σ growth model the Bayesian reality that stale estimates are less certain. Items that haven't been tested gain utility naturally and rotate into sessions without heuristic scheduling.
+
+### 2.5 Diversity Cap
 
 To prevent a single skill from monopolizing a session:
 
@@ -946,7 +969,75 @@ completion_pct = gate_1_credit (0.25) + passes × credit_per_pass
 
 For mastered subskills, completion is forced to 1.0. For not_started, gate_1_credit = 0.
 
-### 12.7 Migration from Legacy Gates
+### 12.7 Credibility-Blended Gate Derivation
+
+#### The Problem
+
+Pure IRT gate derivation uses `P_irt = P(correct | θ, a, β)` as the sole mastery signal. When σ converges after many observations, θ updates become negligible (±0.01 per score), and P_irt can hover just below a gate threshold indefinitely. A student scoring 9.0+ for 40 consecutive sessions — empirically demonstrating 93% success — remains stuck because the model predicts 89%.
+
+This is an actuarial credibility problem. The model has two sources of information:
+
+1. **IRT model prediction**: P_irt — what the parametric model believes
+2. **Empirical observation**: P_empirical — what the student actually demonstrates
+
+When the student has enough observations, the empirical evidence should carry weight. The law of total variance (Eve's law) tells us:
+
+```
+Var(P) = E[Var(P|data)] + Var[E[P|data]]
+```
+
+A low σ means Term 1 is small (we're confident in θ). But Term 2 — the possibility that the "true" P differs from the model's prediction — is non-zero whenever empirical and model predictions diverge. The credibility blend captures this.
+
+#### The Solution
+
+Blend IRT model prediction with empirical pass rate using the same credibility framework already used for the actuarial completion factor (§12.6):
+
+```python
+def derive_gate_from_irt(theta, sigma, item_beta, avg_a,
+                         empirical_p=None, n_observations=0):
+    p_irt = p_correct(theta, avg_a, item_beta)
+
+    if empirical_p is not None and n_observations > 0:
+        Z = n_observations / (n_observations + GATE_CREDIBILITY_K)
+        p = Z * empirical_p + (1 - Z) * p_irt
+    else:
+        p = p_irt
+
+    for gate in (4, 3, 2, 1):
+        if p >= GATE_P_THRESHOLDS[gate]:
+            return gate, retention_state, p
+    return 0, "not_started", p
+```
+
+| Constant | Value | Rationale |
+|----------|-------|-----------|
+| `GATE_CREDIBILITY_K` | 10 | Matches `CREDIBILITY_STANDARD` in completion factor. Z=0.5 at 10 observations, Z=0.75 at 30. |
+
+#### Behavior by Archetype
+
+| Archetype | n_obs | Z | P_irt | P_empirical | P_blended | Effect |
+|-----------|-------|---|-------|-------------|-----------|--------|
+| **Cold start** | 1 | 0.09 | 0.75 | 0.90 | 0.76 | IRT dominates — correct |
+| **Steady grinder** | 30 | 0.75 | 0.890 | 0.930 | 0.920 | Empirical lifts past G4 threshold |
+| **Gifted** | 5 | 0.33 | 0.950 | 0.970 | 0.957 | Barely matters — P_irt already high |
+| **Struggling** | 20 | 0.67 | 0.550 | 0.520 | 0.530 | No false advancement — empirical is also low |
+
+#### Empirical P Computation
+
+The lifecycle already tracks continuous-weight passes and fails:
+
+```python
+empirical_p = lifecycle.passes / (lifecycle.passes + lifecycle.fails)
+n_observations = lifecycle.review_count
+```
+
+`passes` accumulates `score / 10.0` per eval (not binary), so `empirical_p` is a weighted accuracy rate that matches the continuous response model.
+
+#### Design Principle
+
+This is not a heuristic override — it's the statistically correct treatment when two estimators (parametric model + empirical observation) are available. The credibility weight Z is data-driven (more observations → more weight to empirical). The IRT model remains the primary signal for students with limited data; the empirical blend only dominates for students who have demonstrated consistent performance over many observations.
+
+### 12.8 Migration from Legacy Gates
 
 Existing Firestore documents with gate values are lazily migrated via `derive_retention_state()`:
 
@@ -1282,3 +1373,4 @@ def get_prior_beta(primitive_type: str, eval_mode: str) -> float
 | 2026-03-22 | 2.1 | §16 implemented — effective_theta, derive_retention_state, stability lifecycle |
 | 2026-03-27 | 3.0 | **Major PRD rewrite to match implementation.** Added §16 Testability Requirement with InMemoryFirestoreService (500x speedup: 31ms/session vs 10-30s). |
 | 2026-03-27 | 3.0 | **Architecture changes documented:** Key changes: (1) §2 rewritten — unified utility-based item selection replaces 3-band allocation; band labels are emergent from state, not enforced allocation targets. (2) §3.1 rewritten — max-Fisher-information mode selection via ProblemTypeRegistry replaces static θ→mode table. (3) §3.3 rewritten — leapfrog seeds only competency docs (credibility=0.1), no fabricated lifecycle/ability/θ/σ; unified selector handles naturally via high Fisher information. (4) §3.4 new — IRT-derived gate system: `derive_gate_from_irt()` checks P(correct) at reference βs per gate; gates can only advance, never regress on single eval. (5) §5 rewritten — assembly algorithm now `_assemble_unified()` with BFS across all edge types, midpoint-proximity sorting. (6) §6 rewritten — eval source simplified to gate-only check; deferred write optimization documented. (7) §12 new — comprehensive mastery lifecycle section: IRT-derived practice handler (no stability multipliers), IRT-derived lesson handler (no 3-eval count), divergence logging, actuarial completion factor. (8) §13 new — Pulse Agent test harness. (9) §14 new — LearningPathsService integration details. (10) Removed obsolete sections: stability multiplier tables (×2.5/×1.5/×0.5 no longer drive gates), fixed band allocation tables, LessonGroupService grouper (replaced by utility ranking), primitive coverage mastery (not yet implemented). |
+| 2026-03-28 | 3.1 | **Phase 8 — Posterior diffusion + credibility-blended gates.** (1) §2.4 new — posterior diffusion: σ grows when a skill is unobserved (`SIGMA_DIFFUSION_RATE=0.08/day`), preventing utility degeneration where all items have identical near-zero utility and the selector locks onto the same 6 items. Tuned via pulse-agent sweep (0.06 too weak, 0.10 too aggressive). (2) §12.7 new — credibility-blended gate derivation: `P_gate = Z × P_empirical + (1-Z) × P_irt` where Z = n/(n+K). Solves the "grinder problem" where steady students score 9.0+ for 40 sessions but P_irt hovers at 0.89 because σ-collapsed θ updates are negligible (±0.01/score). The empirical pass rate — computed from lifecycle's continuous-weight passes/fails — carries increasing credibility weight as observations accumulate. Uses same credibility framework as actuarial completion factor (§12.6). Motivated by Eve's law: Var(P) = E[Var(P\|data)] + Var[E[P\|data]] — the second term is non-zero whenever model and empirical predictions diverge, regardless of how confident the model is in θ. |

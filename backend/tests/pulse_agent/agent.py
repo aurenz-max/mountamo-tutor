@@ -71,13 +71,16 @@ class PulseAgentRunner:
         strategy = strategy_override or get_strategy(profile, seed=self.seed)
         num_sessions = session_limit or profile.target_sessions
 
-        # Virtual clock: each session advances by session_gap_days
+        # Per-profile gap overrides runner default (e.g. bursty = 7 days)
+        gap_days = profile.session_gap_days if profile.session_gap_days is not None else self.session_gap_days
+
+        # Virtual clock: each session advances by gap_days
         virtual_now = datetime.now(timezone.utc)
 
         logger.info(
             f">> Starting journey: {profile.name} (id={profile.student_id}, "
             f"archetype={profile.archetype}, sessions={num_sessions}, "
-            f"gap={self.session_gap_days}d/session)"
+            f"gap={gap_days}d/session)"
         )
 
         timeline = await self.recorder.create_timeline(
@@ -110,7 +113,7 @@ class PulseAgentRunner:
                 )
 
                 logger.info(
-                    f"  Session {session_num}/{num_sessions} (day {(session_num - 1) * self.session_gap_days:.0f}): "
+                    f"  Session {session_num}/{num_sessions} (day {(session_num - 1) * gap_days:.0f}): "
                     f"avg={snapshot.avg_score:.1f}, "
                     f"leapfrogs={snapshot.total_leapfrogs}, "
                     f"gate_advances={snapshot.total_gate_advances}, "
@@ -129,7 +132,7 @@ class PulseAgentRunner:
                 continue
 
             # Advance virtual clock for next session
-            virtual_now += timedelta(days=self.session_gap_days)
+            virtual_now += timedelta(days=gap_days)
 
         timeline.completed_at = datetime.now(timezone.utc).isoformat()
 
@@ -241,8 +244,16 @@ class PulseAgentRunner:
             old_theta = result_resp.theta_update.old_theta
             new_theta = result_resp.theta_update.new_theta
             theta_delta = new_theta - old_theta
-            gate_before = result_resp.gate_update.old_gate if result_resp.gate_update else 0
-            gate_after = result_resp.gate_update.new_gate if result_resp.gate_update else gate_before
+            if result_resp.gate_update:
+                gate_before = result_resp.gate_update.old_gate
+                gate_after = result_resp.gate_update.new_gate
+            else:
+                # No gate change — look up current gate from lifecycle
+                lc = await self.engine.firestore.get_mastery_lifecycle(
+                    profile.student_id, item.subskill_id,
+                )
+                gate_before = lc.get("current_gate", 0) if lc else 0
+                gate_after = gate_before
             leapfrog_fired = result_resp.leapfrog is not None
 
             # Compact per-item line

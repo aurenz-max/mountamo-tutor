@@ -206,6 +206,11 @@ GATE_P_THRESHOLDS = {
     4: 0.90,  # Gate 3→4: 90% chance at hardest mode
 }
 
+# Credibility constant for blending empirical P with IRT P in gate checks.
+# Z = n / (n + K).  At K=10: Z=0.5 after 10 observations, Z=0.75 after 30.
+# Matches CREDIBILITY_STANDARD used in the actuarial completion factor.
+GATE_CREDIBILITY_K = 10
+
 # Reference difficulty fraction within the primitive's beta range
 GATE_REF_FRACTIONS = {
     1: 0.0,   # Easiest mode (min β)
@@ -224,6 +229,13 @@ INITIAL_STABILITY = 3.0  # days
 # Forgetting function: effective_theta = θ - DECAY_RATE * √(t / S)
 # Calibrated so at t=S days, θ=7.0 drops to P≈0.85
 DECAY_RATE = 1.5
+
+# Posterior diffusion: σ grows when a skill is not observed.
+# eff_σ = √(σ² + SIGMA_DIFFUSION_RATE² × days_since)
+# At 0.08/day, a skill at σ=0.25 untested for 10 days → σ≈0.30.
+# Tuned via pulse-agent sweep: 0.06 too weak (plateau persists),
+# 0.10 too aggressive (scatters focus).  Capped at DEFAULT_THETA_SIGMA.
+SIGMA_DIFFUSION_RATE = 0.08
 
 # Review trigger: items with P(correct) below this become review candidates
 TARGET_RETENTION = 0.85
