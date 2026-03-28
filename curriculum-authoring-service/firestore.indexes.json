@@ -1,0 +1,118 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "curriculum_units",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject_id", "order": "ASCENDING" },
+        { "fieldPath": "unit_order", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_units",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject_id", "order": "ASCENDING" },
+        { "fieldPath": "is_draft", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_skills",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "unit_id", "order": "ASCENDING" },
+        { "fieldPath": "skill_order", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_skills",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "unit_id", "order": "ASCENDING" },
+        { "fieldPath": "is_draft", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_subskills",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "skill_id", "order": "ASCENDING" },
+        { "fieldPath": "subskill_order", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_subskills",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "skill_id", "order": "ASCENDING" },
+        { "fieldPath": "is_draft", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_edges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject_id", "order": "ASCENDING" },
+        { "fieldPath": "is_prerequisite", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_edges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject_id", "order": "ASCENDING" },
+        { "fieldPath": "is_draft", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_edges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "source_entity_id", "order": "ASCENDING" },
+        { "fieldPath": "is_draft", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_edges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "target_entity_id", "order": "ASCENDING" },
+        { "fieldPath": "is_draft", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_versions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject_id", "order": "ASCENDING" },
+        { "fieldPath": "is_active", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_versions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject_id", "order": "ASCENDING" },
+        { "fieldPath": "version_number", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_prerequisites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject_id", "order": "ASCENDING" },
+        { "fieldPath": "is_draft", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "curriculum_subskill_primitives",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subskill_id", "order": "ASCENDING" },
+        { "fieldPath": "version_id", "order": "ASCENDING" },
+        { "fieldPath": "is_draft", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

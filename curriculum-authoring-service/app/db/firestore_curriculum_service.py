@@ -1,9 +1,9 @@
 """
-Firestore dual-write sync service for curriculum entities.
+Firestore write service for curriculum entities.
 
-Every BigQuery write in the authoring service is followed by a Firestore sync
-call from this module. Firestore failures are logged but never propagated —
-BigQuery remains the source of truth.
+Firestore is the source of truth for all curriculum authoring data.
+This module provides the write operations (create/update/delete)
+via .set() upserts and .delete() calls.
 
 Collections:
   curriculum_subjects/{subject_id}

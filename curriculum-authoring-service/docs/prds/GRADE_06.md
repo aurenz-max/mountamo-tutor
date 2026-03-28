@@ -127,7 +127,19 @@ Grade 6 represents a significant increase in abstraction. Students work with neg
 
 ## Authoring Notes
 
-1. **Ratios as a new way of thinking:** RP001 introduces proportional reasoning, which is fundamentally different from additive reasoning that dominated K-5. Students must shift from "how much more?" to "how many times as much?" This conceptual shift should be explicitly scaffolded with multiple representations: tape diagrams, double number lines, ratio tables, and coordinate graphs.
+1. **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5. Starting at Grade 6, ELA shifts toward analytical skills (literary analysis, argumentative writing, rhetoric). These are highly renderable in Lumina when framed correctly:
+
+   **Key ELA primitive targets for Grade 6:**
+   - LA001 (Reading Literature): `story-map`, `character-web`, `evidence-finder`, `figurative-language-finder`, `genre-explorer`, `poetry-lab`
+   - LA002 (Reading Informational): `text-structure-analyzer`, `evidence-finder`, `timeline-explorer`
+   - LA003 (Writing): `paragraph-architect`, `opinion-builder`, `revision-workshop`, AI tutor sessions for drafting feedback
+   - LA004 (Speaking and Listening): **Restructure as "Listening Comprehension and Oral Analysis"** — use `listen-and-respond`, `media-player` (for analyzing presentations/media), AI tutor sessions
+   - LA005 (Language): `sentence-builder`, `sentence-analyzer`, `fill-in-blanks`
+   - LA006 (Vocabulary): `context-clues-detective`, `word-builder`, `figurative-language-finder`, `vocabulary-explorer`
+
+   **Science:** Middle school science is well-served by existing primitives (`atom-builder`, `cell-builder`, `food-web-builder`, `life-cycle-sequencer`, `day-night-seasons`, etc.). Map each subskill to specific science primitives.
+
+2. **Ratios as a new way of thinking:** RP001 introduces proportional reasoning, which is fundamentally different from additive reasoning that dominated K-5. Students must shift from "how much more?" to "how many times as much?" This conceptual shift should be explicitly scaffolded with multiple representations: tape diagrams, double number lines, ratio tables, and coordinate graphs.
 
 2. **Negative numbers:** NS001 introduces negative numbers for the first time. Subskills should progress from real-world contexts (temperature, elevation, debt) to number line placement to operations. Absolute value should be connected to distance, not presented as an isolated rule.
 
@@ -146,6 +158,7 @@ Grade 6 represents a significant increase in abstraction. Students work with neg
 From parent PRD:
 
 - [ ] All subskills have unique, descriptive IDs following the naming convention
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] Every subskill has at least one prerequisite edge (except entry-level skills)
 - [ ] No orphan nodes in the prerequisite graph
 - [ ] Difficulty values assigned and calibrated within the grade-appropriate range

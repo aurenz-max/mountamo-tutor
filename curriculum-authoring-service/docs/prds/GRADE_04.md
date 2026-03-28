@@ -123,7 +123,19 @@ Grade 4 increases the complexity of multi-step problems and introduces formal me
 
 ## Authoring Notes
 
-1. **Multi-digit arithmetic mastery:** Grade 4 is where the standard algorithms for addition, subtraction, and multiplication are expected to be fluent. NBT004 should have extensive subskills covering each algorithm with increasing digit counts, estimation strategies, and reasonableness checks.
+1. **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5 (Lumina-First Design Principle).
+
+   **Key LA primitive targets for Grade 4:**
+   - LA001 (Reading Literature): `story-map`, `character-web`, `evidence-finder`, `genre-explorer`, `multiple-choice`
+   - LA002 (Reading Informational): `text-structure-analyzer`, `evidence-finder`, `categorization-activity`, `timeline-explorer`
+   - LA003 (Writing): `paragraph-architect`, `opinion-builder`, `story-planner`, `revision-workshop`, AI tutor sessions
+   - LA004 (Speaking and Listening): **Restructure as "Listening Comprehension and Oral Language"** — use `listen-and-respond`, AI tutor sessions. Remove peer-dependent subskills.
+   - LA005 (Language): `sentence-builder`, `sentence-analyzer`, `fill-in-blanks`, `matching-activity`
+   - LA006 (Vocabulary): `context-clues-detective`, `word-builder`, `figurative-language-finder`, `vocabulary-explorer`
+
+   **Note on angle measurement (SCI/MEAS):** The PRD correctly asks "how this maps to digital/interactive primitives." Target `measurement-tools` primitive and `coordinate-graph` for angle visualization.
+
+2. **Multi-digit arithmetic mastery:** Grade 4 is where the standard algorithms for addition, subtraction, and multiplication are expected to be fluent. NBT004 should have extensive subskills covering each algorithm with increasing digit counts, estimation strategies, and reasonableness checks.
 
 2. **Fraction operations begin:** NF002 introduces fraction arithmetic (with like denominators only) and the connection between fractions and decimals. The progression must carefully scaffold: equivalent fractions first, then addition/subtraction with like denominators, then multiplication of fraction by whole number, and finally decimal notation as a special case of fractions (tenths and hundredths).
 
@@ -140,6 +152,7 @@ Grade 4 increases the complexity of multi-step problems and introduces formal me
 From parent PRD:
 
 - [ ] All subskills have unique, descriptive IDs following the naming convention
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] Every subskill has at least one prerequisite edge (except entry-level skills)
 - [ ] No orphan nodes in the prerequisite graph
 - [ ] Difficulty values assigned and calibrated within the grade-appropriate range

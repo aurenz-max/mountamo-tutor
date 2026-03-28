@@ -14,13 +14,14 @@
 2. [Current State](#2-current-state)
 3. [Subjects by Grade Band](#3-subjects-by-grade-band)
 4. [Scope Per Grade](#4-scope-per-grade)
-5. [Authoring Workflow](#5-authoring-workflow-per-grade)
-6. [ID Convention](#6-id-convention)
-7. [Difficulty Calibration](#7-difficulty-calibration)
-8. [Rollout Strategy](#8-rollout-strategy)
-9. [Quality Gates](#9-quality-gates-per-grade)
-10. [Risks and Mitigations](#10-risks-and-mitigations)
-11. [Success Metrics](#11-success-metrics)
+5. [Lumina-First Design Principle](#5-lumina-first-design-principle)
+6. [Authoring Workflow](#6-authoring-workflow-per-grade)
+7. [ID Convention](#7-id-convention)
+8. [Difficulty Calibration](#8-difficulty-calibration)
+9. [Rollout Strategy](#9-rollout-strategy)
+10. [Quality Gates](#10-quality-gates-per-grade)
+11. [Risks and Mitigations](#11-risks-and-mitigations)
+12. [Success Metrics](#12-success-metrics)
 
 ---
 
@@ -133,7 +134,91 @@ The cap of approximately 800 subskills per grade serves as a hard ceiling to pre
 
 ---
 
-## 5. Authoring Workflow (Per Grade)
+## 5. Lumina-First Design Principle
+
+**Every subskill must have a clear path to interactive practice in Lumina.**
+
+This is the single most important constraint on curriculum authoring. A subskill that cannot be rendered, practiced, and evaluated through a Lumina primitive or the AI tutoring scaffold is not a valid subskill — it must be rewritten or removed.
+
+### The Problem: Standards-First vs Lumina-First
+
+Traditional curriculum authoring starts from standards documents (Common Core, NGSS, C3) and breaks them into observable classroom behaviors: "participate in collaborative conversations," "use props and costumes in dramatic play," "track print with a finger during independent reading." These are valid pedagogical goals but they describe **teacher-mediated classroom activities**, not interactive digital experiences.
+
+Lumina is not a classroom. It is an adaptive AI tutoring platform with:
+- **168+ interactive primitives** spanning math, literacy, science, and engineering
+- **AI tutoring scaffold** (Gemini Live) for real-time conversational coaching
+- **Problem-type primitives** (multiple-choice, fill-in-blanks, matching, sequencing, categorization, short-answer) for assessment
+- **Eval modes** with IRT-calibrated difficulty tiers
+
+Every subskill must target one of these three delivery channels:
+
+| Channel | What It Is | Example |
+|---------|-----------|---------|
+| **Primitive** | An interactive Lumina component that teaches/practices the skill | `phonics-blender` for decoding consonant blends |
+| **Problem type** | A structured assessment primitive | `matching-activity` for synonym/antonym pairs |
+| **AI tutor session** | A Gemini Live conversation with scaffolded prompts | Oral reading fluency practice with real-time feedback |
+
+### Renderability Test
+
+Before adding any subskill to the curriculum, apply this test:
+
+> **"Can a 6-year-old (or age-appropriate student) practice this skill by interacting with a screen and/or talking to the AI tutor?"**
+
+- If **yes** → valid subskill. Note the target primitive/channel in the description.
+- If **no** → rewrite the subskill to target what IS digitally practicable, or remove it.
+
+### What Gets Cut
+
+These categories of subskills are **not valid** for Lumina and must be removed or restructured:
+
+| Category | Example | Why It Fails |
+|----------|---------|-------------|
+| Physical performance | "Track print with a finger" | Requires physical book |
+| Peer collaboration | "Participate in collaborative conversations" | Requires other students |
+| Teacher-mediated | "With guidance and support from adults" | Requires a teacher |
+| Physical materials | "Use props, costumes, and scenery" | Requires physical objects |
+| Vague process outcomes | "Plan, draft, revise, and edit writing" | Too broad; break into discrete primitive-backed steps |
+| Classroom behaviors | "Follow agreed-upon rules for discussions" | Social norm, not a skill |
+
+### What Gets Rewritten
+
+Many standards-based skills have a valid digital core buried inside classroom language:
+
+| Standards Language | Lumina-First Rewrite | Target Primitive |
+|-------------------|---------------------|-----------------|
+| "Identify the role of the author and illustrator" | "Match labels (author, illustrator, title, publisher) to parts of a book cover" | `matching-activity` |
+| "Retell stories including key details" | "Sequence story events in chronological order" | `sequencing-activity` or `story-map` |
+| "Produce complete sentences appropriate to task" | "Build grammatically correct sentences by arranging word tiles" | `sentence-builder` |
+| "Use context clues to determine word meaning" | "Read a sentence with a missing word and select the best-fit vocabulary word" | `context-clues-detective` |
+| "Give simple oral presentations" | "Describe a picture to the AI tutor using complete sentences" | AI tutor session |
+
+### Existing Primitive Inventory (by subject area)
+
+Authors must consult the current primitive inventory before writing subskills. Key literacy primitives available today:
+
+**Phonics & Decoding:** `phonics-blender`, `decodable-reader`, `cvc-speller`, `letter-spotter`, `letter-sound-link`
+**Phonological Awareness:** `rhyme-studio`, `syllable-clapper`, `phoneme-explorer`, `sound-swap`
+**Word Study & Vocabulary:** `word-builder`, `spelling-pattern-explorer`, `vocabulary-explorer`, `context-clues-detective`, `word-workout`
+**Writing & Grammar:** `sentence-builder`, `sentence-analyzer`, `paragraph-architect`, `revision-workshop`, `opinion-builder`
+**Comprehension:** `story-map`, `story-planner`, `character-web`, `evidence-finder`, `text-structure-analyzer`
+**Fluency:** `read-aloud-studio`, `listen-and-respond`, `decodable-reader`
+**Advanced Literacy:** `figurative-language-finder`, `genre-explorer`, `poetry-lab`
+**General Problem Types:** `multiple-choice`, `true-false`, `fill-in-blanks`, `matching-activity`, `sequencing-activity`, `categorization-activity`, `short-answer`
+
+**Math, Science, and Engineering** primitives are similarly extensive (42 math, 17 biology, 13 chemistry, 19 engineering, 8 astronomy). See the primitive catalog for the full list.
+
+If no existing primitive covers a needed skill, the subskill description should note `[NEW PRIMITIVE NEEDED: brief description]` so it enters the primitive development backlog.
+
+### AI Tutor as a Channel
+
+The Gemini Live AI tutor scaffold is a first-class delivery channel, not a fallback. Skills that are inherently conversational or oral — reading fluency, storytelling, oral vocabulary use, listening comprehension — should target the AI tutor directly. The subskill description should specify:
+- What the AI tutor prompts the student to do
+- What constitutes success (e.g., "student reads passage aloud with <5% error rate")
+- The scaffolding level (guided → independent)
+
+---
+
+## 6. Authoring Workflow (Per Grade)
 
 Each grade follows a three-phase workflow. Phases 1 and 2 are self-contained per grade; Phase 3 requires the adjacent grade(s) to also be authored.
 
@@ -145,9 +230,10 @@ Each grade follows a three-phase workflow. Phases 1 and 2 are self-contained per
    - Science: Next Generation Science Standards (NGSS)
    - Social Studies: C3 Framework (College, Career, and Civic Life)
 2. **AI-assisted scaffolding.** Use `POST /api/ai/generate-unit` to generate skills and subskills from unit topics. The AI agent proposes granular breakdowns; authors review and adjust.
-3. **Review and refine.** Verify pedagogical soundness, adjust difficulty ranges, ensure appropriate granularity (not too coarse, not too fine).
-4. **Export to CSV.** Output must match the existing CSV schema convention used by Kindergarten and Grade 1.
-5. **Publish via authoring service.** Push the finalized hierarchy to Firestore through the curriculum authoring service.
+3. **Lumina-first renderability pass.** Apply the renderability test from §5 to every subskill. Tag each with its target delivery channel (primitive name, problem type, or AI tutor session). Remove or rewrite any subskill that fails the test. Flag `[NEW PRIMITIVE NEEDED]` where gaps exist.
+4. **Review and refine.** Verify pedagogical soundness, adjust difficulty ranges, ensure appropriate granularity (not too coarse, not too fine).
+5. **Export to CSV.** Output must match the existing CSV schema convention used by Kindergarten and Grade 1.
+6. **Publish via authoring service.** Push the finalized hierarchy to Firestore through the curriculum authoring service.
 
 ### Phase 2 -- Knowledge Graph
 
@@ -166,7 +252,7 @@ Each grade follows a three-phase workflow. Phases 1 and 2 are self-contained per
 
 ---
 
-## 6. ID Convention
+## 7. ID Convention
 
 The existing ID convention is preserved across all grades:
 
@@ -220,7 +306,7 @@ The existing ID convention is preserved across all grades:
 
 ---
 
-## 7. Difficulty Calibration
+## 8. Difficulty Calibration
 
 Difficulty values are **within-grade relative**, not absolute across the K-12 span. A difficulty of 5 in Kindergarten represents a mid-difficulty Kindergarten task, not the same absolute challenge as a difficulty 5 in Grade 8.
 
@@ -235,7 +321,7 @@ Each subskill defines a `difficulty_start` (entry point) and `difficulty_end` (m
 
 ---
 
-## 8. Rollout Strategy
+## 9. Rollout Strategy
 
 Grades are rolled out in four waves, ordered by business value, dependency chain, and authoring complexity.
 
@@ -254,13 +340,14 @@ Grades are rolled out in four waves, ordered by business value, dependency chain
 
 ---
 
-## 9. Quality Gates (Per Grade)
+## 10. Quality Gates (Per Grade)
 
 A grade is not considered production-ready until all of the following gates are passed:
 
 | Gate | Criteria |
 |------|----------|
 | Hierarchy completeness | All subjects have complete hierarchy with no empty units or skills |
+| **Lumina renderability** | **Every subskill targets a named primitive, problem type, or AI tutor session. Zero un-renderable subskills.** |
 | Difficulty validity | All subskills have valid difficulty ranges within the grade band's calibration |
 | Graph health | Score >= 7.0 on `/curriculum-graph diagnose` |
 | No orphan nodes | Every subskill has at least one graph edge (no isolated nodes) |
@@ -273,7 +360,7 @@ A grade is not considered production-ready until all of the following gates are 
 
 ---
 
-## 10. Risks and Mitigations
+## 11. Risks and Mitigations
 
 | Risk | Impact | Likelihood | Mitigation |
 |------|--------|------------|------------|
@@ -283,11 +370,12 @@ A grade is not considered production-ready until all of the following gates are 
 | Cross-grade transitions break Pulse sessions | Students stuck at grade boundaries; dead-end sessions | Medium | Integration testing across grade boundaries with Pulse simulator before publication. |
 | ID collisions across grades | Data corruption; incorrect skill references | Low | Grade is metadata, not encoded in ID. Same UnitID prefixes are explicitly allowed across grades. Validate uniqueness within grade at publish time. |
 | Standards alignment drift | Curriculum does not match Common Core / NGSS / C3 | Medium | Use standards documents as primary source during Phase 1. Cross-reference during review. |
+| **Standards-first anti-pattern** | Subskills describe classroom activities (dramatic play, peer discussion, physical book navigation) that cannot be rendered in Lumina | **High** | Apply Lumina-first renderability test (§5) to every subskill. Grade 1 LA is the cautionary example — 150 subskills authored, many un-renderable. |
 | Authoring bottleneck at high school | Course-based structure is significantly more complex | High | Defer to Wave 4. Use lessons from Waves 1--3 to refine the AI agent pipeline first. |
 
 ---
 
-## 11. Success Metrics
+## 12. Success Metrics
 
 | Metric | Target | Measurement |
 |--------|--------|-------------|

@@ -130,7 +130,17 @@ Grade 5 demands multi-step reasoning, abstract representation (coordinate plane)
 
 ## Authoring Notes
 
-1. **Fraction operations mastery:** NF003 is the culmination of the elementary fraction sequence. Students must add/subtract with unlike denominators (requiring equivalent fractions from NF002), multiply fractions and mixed numbers, and divide with unit fractions. The subskill progression should ensure each operation is grounded in visual models before transitioning to algorithms.
+1. **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5 (Lumina-First Design Principle).
+
+   **Key ELA primitive targets for Grade 5:**
+   - LA001 (Reading Literature): `story-map`, `character-web`, `evidence-finder`, `genre-explorer`, `figurative-language-finder`
+   - LA002 (Reading Informational): `text-structure-analyzer`, `evidence-finder`, `timeline-explorer`, `categorization-activity`
+   - LA003 (Writing): `paragraph-architect`, `opinion-builder`, `story-planner`, `revision-workshop`, AI tutor sessions
+   - LA004 (Speaking and Listening): **Restructure as "Listening Comprehension and Oral Language"** — use `listen-and-respond`, AI tutor sessions. Remove peer/presentation subskills.
+   - LA005 (Language): `sentence-builder`, `sentence-analyzer`, `fill-in-blanks`, `matching-activity`
+   - LA006 (Vocabulary): `context-clues-detective`, `word-builder`, `figurative-language-finder`, `vocabulary-explorer`
+
+2. **Fraction operations mastery:** NF003 is the culmination of the elementary fraction sequence. Students must add/subtract with unlike denominators (requiring equivalent fractions from NF002), multiply fractions and mixed numbers, and divide with unit fractions. The subskill progression should ensure each operation is grounded in visual models before transitioning to algorithms.
 
 2. **Volume as a new concept:** MEAS005 introduces three-dimensional measurement through volume. This is the first time students work with cubic units. Scaffold from counting unit cubes to using the formula V = l x w x h to composing volumes of composite figures (additive volume).
 
@@ -147,6 +157,7 @@ Grade 5 demands multi-step reasoning, abstract representation (coordinate plane)
 From parent PRD:
 
 - [ ] All subskills have unique, descriptive IDs following the naming convention
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] Every subskill has at least one prerequisite edge (except entry-level skills)
 - [ ] No orphan nodes in the prerequisite graph
 - [ ] Difficulty values assigned and calibrated within the grade-appropriate range

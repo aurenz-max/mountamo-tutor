@@ -28,17 +28,17 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting Curriculum Authoring Service")
 
     try:
-        # Initialize BigQuery connection
-        db.initialize()
-
-        # Setup database tables
-        db.setup_all_tables()
-
-        # Initialize Firestore for graph caching
+        # Initialize Firestore (source of truth for authoring)
         firestore_graph_service.initialize()
-
-        # Initialize Firestore curriculum dual-write sync
         firestore_curriculum_sync.initialize()
+
+        # Initialize BigQuery (optional — used for analytics export on publish)
+        try:
+            db.initialize()
+            db.setup_all_tables()
+        except Exception as bq_err:
+            logger.warning(f"BigQuery initialization failed (non-blocking): {bq_err}")
+            logger.warning("BQ export on publish will be unavailable until BQ is connected")
 
         # Initialize agentic graph analysis service
         try:
@@ -64,6 +64,32 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"Graph agent service initialization failed (non-blocking): {e}")
             app.state.graph_agent = None
+
+        # Initialize scoped suggestion service (graph-aware authoring)
+        try:
+            from app.services.edge_manager import edge_manager as _edge_mgr
+            from app.services.scoped_suggestion_service import ScopedSuggestionService
+
+            scoped_service = ScopedSuggestionService(
+                edge_manager=_edge_mgr,
+                firestore_client=firestore_curriculum_sync.client,
+            )
+            app.state.scoped_suggestion_service = scoped_service
+            logger.info("✅ Scoped suggestion service initialized")
+        except Exception as e:
+            logger.warning(f"Scoped suggestion service initialization failed (non-blocking): {e}")
+            app.state.scoped_suggestion_service = None
+
+        # Initialize PRD-driven authoring service
+        try:
+            from app.services.authoring_service import AuthoringService
+
+            authoring_service = AuthoringService()
+            app.state.authoring_service = authoring_service
+            logger.info("✅ Authoring service initialized")
+        except Exception as e:
+            logger.warning(f"Authoring service initialization failed (non-blocking): {e}")
+            app.state.authoring_service = None
 
         logger.info("✅ Service startup complete")
 
@@ -168,6 +194,8 @@ async def root():
             "Firestore subcollection deployment (curriculum_published/{grade}/subjects/{id})",
             "Knowledge graph edges (prerequisite, builds_on, reinforces, parallel, applies)",
             "Agentic graph analysis (health metrics, anomaly detection, connection suggestions)",
+            "Scoped edge suggestions (inline authoring, cross-grade connections)",
+            "PRD-driven authoring (generate -> preview -> accept/reject per unit)",
             "Graph caching",
             "RESTful API"
         ],

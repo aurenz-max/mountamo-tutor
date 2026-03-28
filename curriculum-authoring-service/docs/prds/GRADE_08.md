@@ -212,6 +212,7 @@ Target range: ~550-700 subskills.
 
 ## Authoring Notes
 
+- **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5. Same ELA primitive targets as Grade 7. Science benefits from extensive physics/engineering primitives: `bridge-builder`, `lever-lab`, `pulley-system-builder`, `ramp-lab`, `airfoil-lab`, `flight-forces-explorer`. Map each science subskill to specific primitives. **Restructure Speaking and Listening as "Listening Comprehension and Oral Analysis".**
 - This is the single most consequential math year in the K-8 sequence. Students who master functions and linear equations here are prepared for Algebra I; those who do not may be placed in remedial tracks. Ensure extensive practice and multiple representations (tables, graphs, equations, verbal descriptions) for FUNC001.
 - The Pythagorean theorem unit (GEOM008) should build from experimental verification through formal proof to application, not skip directly to formula application.
 - Systems of equations (EE003) should include graphical, substitution, and elimination methods with clear connections between them.
@@ -223,6 +224,7 @@ Target range: ~550-700 subskills.
 ## Quality Gates
 
 ### Standard Quality Gates
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] All subskills have at least 3 assessment items at target difficulty
 - [ ] Every skill node has at least 2 prerequisite edges (no orphan nodes)
 - [ ] Difficulty calibration verified: items span the full 3-9 range with median in 5-8

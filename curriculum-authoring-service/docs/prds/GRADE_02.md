@@ -121,7 +121,17 @@ Grade 2 builds on concrete representations and increasingly expects students to 
 
 ## Authoring Notes
 
-1. **Bridge to multiplication:** Grade 2 introduces the concept of equal groups through OPS002, which is the critical conceptual bridge to Grade 3 multiplication. Ensure subskills cover arrays, repeated addition, and grouping -- not just as isolated topics but as a coherent pathway toward multiplicative thinking.
+1. **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5 (Lumina-First Design Principle). Apply the renderability test before authoring any subskill. Grade 1 LA is the cautionary example: 150 subskills were authored standards-first and many describe classroom activities (peer conversations, dramatic play, physical book navigation) that cannot be rendered in Lumina. Grade 2 must avoid this pattern.
+
+   **Key LA primitive targets for Grade 2:**
+   - LA001 (Reading Foundations): `phonics-blender`, `decodable-reader`, `spelling-pattern-explorer`, `read-aloud-studio`
+   - LA002 (Writing): `sentence-builder`, `paragraph-architect`, `opinion-builder`, `revision-workshop`
+   - LA003 (Speaking and Listening): **Restructure as "Listening Comprehension and Oral Language"** — use `listen-and-respond` and AI tutor sessions (Gemini Live). Remove peer-dependent subskills.
+   - LA004 (Grammar): `sentence-builder`, `sentence-analyzer`, `categorization-activity`, `fill-in-blanks`
+   - LA005 (Vocabulary): `context-clues-detective`, `word-builder`, `vocabulary-explorer`, `matching-activity`
+   - LA006/LA007 (Reading Comprehension): `story-map`, `character-web`, `evidence-finder`, `text-structure-analyzer`, `sequencing-activity`
+
+2. **Bridge to multiplication:** Grade 2 introduces the concept of equal groups through OPS002, which is the critical conceptual bridge to Grade 3 multiplication. Ensure subskills cover arrays, repeated addition, and grouping -- not just as isolated topics but as a coherent pathway toward multiplicative thinking.
 
 2. **Place value expansion:** The jump from two-digit to three-digit numbers is significant. NBT002 should include extensive scaffolding with base-ten blocks, expanded form, and comparison of three-digit numbers before moving to addition/subtraction within 1000.
 
@@ -138,6 +148,7 @@ Grade 2 builds on concrete representations and increasingly expects students to 
 From parent PRD:
 
 - [ ] All subskills have unique, descriptive IDs following the naming convention
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] Every subskill has at least one prerequisite edge (except entry-level skills)
 - [ ] No orphan nodes in the prerequisite graph
 - [ ] Difficulty values assigned and calibrated within the grade-appropriate range

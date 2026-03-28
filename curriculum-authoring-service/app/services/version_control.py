@@ -1,17 +1,19 @@
 """
 Version control and publishing service
 Manages draft/publish workflow and version history
+
+Reads: Firestore-native via firestore_reader
+Writes: Firestore-first (source of truth). Publish still writes to BQ (Phase 5 will redesign).
 """
 
 import logging
 import uuid
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from google.cloud import bigquery
 
 from app.core.config import settings
-from app.core.database import db
 from app.db.firestore_curriculum_service import firestore_curriculum_sync
+from app.db.firestore_curriculum_reader import firestore_reader
 from app.models.versioning import (
     Version, VersionCreate,
     DraftSummary, DraftChange,
@@ -24,39 +26,16 @@ logger = logging.getLogger(__name__)
 class VersionControl:
     """Manages curriculum versioning and publishing"""
 
-    def _get_primary_key(self, table_name: str) -> str:
-        """Get the primary key column name for a table"""
-        pk_map = {
-            settings.TABLE_SUBJECTS: "subject_id",
-            settings.TABLE_UNITS: "unit_id",
-            settings.TABLE_SKILLS: "skill_id",
-            settings.TABLE_SUBSKILLS: "subskill_id",
-            settings.TABLE_PREREQUISITES: "prerequisite_id",
-            settings.TABLE_VERSIONS: "version_id",
-            settings.TABLE_PRIMITIVES: "primitive_id",
-            settings.TABLE_SUBSKILL_PRIMITIVES: "subskill_id"  # Composite key, but subskill_id is primary
-        }
-        return pk_map.get(table_name, "id")
-
     async def create_version(
         self,
         version_create: VersionCreate,
         user_id: str
     ) -> Version:
-        """Create a new version record using DML INSERT (not streaming)"""
+        """Create a new version record (Firestore-first)."""
         version_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
-        # Get latest version number for this subject
-        query = f"""
-        SELECT COALESCE(MAX(version_number), 0) as max_version
-        FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        WHERE subject_id = @subject_id
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", version_create.subject_id)]
-        results = await db.execute_query(query, parameters)
-        max_version = results[0]["max_version"] if results else 0
+        max_version = await firestore_reader.get_max_version_number(version_create.subject_id)
 
         version_data = {
             "version_id": version_id,
@@ -64,58 +43,21 @@ class VersionControl:
             "version_number": max_version + 1,
             "description": version_create.description or settings.DEFAULT_VERSION_DESCRIPTION,
             "is_active": False,
-            "created_at": now,
+            "created_at": now.isoformat(),
             "activated_at": None,
             "created_by": user_id,
-            "change_summary": version_create.change_summary
+            "change_summary": version_create.change_summary,
         }
 
-        # Use DML INSERT instead of streaming insert to avoid buffer issues
-        insert_query = f"""
-        INSERT INTO `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        (version_id, subject_id, version_number, description, is_active, created_at, activated_at, created_by, change_summary)
-        VALUES (@version_id, @subject_id, @version_number, @description, @is_active, @created_at, @activated_at, @created_by, @change_summary)
-        """
+        # Firestore is source of truth
+        await firestore_curriculum_sync.sync_version(version_data)
 
-        insert_params = [
-            bigquery.ScalarQueryParameter("version_id", "STRING", version_id),
-            bigquery.ScalarQueryParameter("subject_id", "STRING", version_create.subject_id),
-            bigquery.ScalarQueryParameter("version_number", "INT64", max_version + 1),
-            bigquery.ScalarQueryParameter("description", "STRING", version_data["description"]),
-            bigquery.ScalarQueryParameter("is_active", "BOOL", False),
-            bigquery.ScalarQueryParameter("created_at", "TIMESTAMP", now),
-            bigquery.ScalarQueryParameter("activated_at", "TIMESTAMP", None),
-            bigquery.ScalarQueryParameter("created_by", "STRING", user_id),
-            bigquery.ScalarQueryParameter("change_summary", "STRING", version_data["change_summary"])
-        ]
-
-        await db.execute_query(insert_query, insert_params)
-
-        # Return version data with ISO string timestamps for consistency
-        version_obj = Version(**{
-            **version_data,
-            "created_at": now.isoformat(),
-            "activated_at": None
-        })
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_version(version_obj.dict())
-
-        return version_obj
+        return Version(**version_data)
 
     async def get_active_version(self, subject_id: str) -> Optional[Version]:
-        """Get the currently active version for a subject"""
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        WHERE subject_id = @subject_id AND is_active = true
-        LIMIT 1
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
-        results = await db.execute_query(query, parameters)
-
-        return Version(**results[0]) if results else None
+        """Get the currently active version for a subject (Firestore-native read)."""
+        row = await firestore_reader.get_active_version(subject_id)
+        return Version(**row) if row else None
 
     async def get_or_create_active_version(self, subject_id: str, user_id: str) -> str:
         """
@@ -130,33 +72,11 @@ class VersionControl:
             logger.info(f"✅ Using existing active version for {subject_id}: {active_version.version_id}")
             return active_version.version_id
 
-        # No active version exists - create version 1 using DML INSERT
+        # No active version exists — create version 1 (Firestore-first)
         version_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
-        insert_query = f"""
-        INSERT INTO `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        (version_id, subject_id, version_number, description, is_active, created_at, activated_at, created_by, change_summary)
-        VALUES (@version_id, @subject_id, @version_number, @description, @is_active, @created_at, @activated_at, @created_by, @change_summary)
-        """
-
-        insert_params = [
-            bigquery.ScalarQueryParameter("version_id", "STRING", version_id),
-            bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id),
-            bigquery.ScalarQueryParameter("version_number", "INT64", 1),
-            bigquery.ScalarQueryParameter("description", "STRING", f"Initial {subject_id} curriculum"),
-            bigquery.ScalarQueryParameter("is_active", "BOOL", True),
-            bigquery.ScalarQueryParameter("created_at", "TIMESTAMP", now),
-            bigquery.ScalarQueryParameter("activated_at", "TIMESTAMP", now),
-            bigquery.ScalarQueryParameter("created_by", "STRING", user_id),
-            bigquery.ScalarQueryParameter("change_summary", "STRING", "Initial version")
-        ]
-
-        await db.execute_query(insert_query, insert_params)
-        logger.info(f"✅ Created initial active version for {subject_id}: {version_id}")
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_version({
+        version_data = {
             "version_id": version_id,
             "subject_id": subject_id,
             "version_number": 1,
@@ -166,140 +86,57 @@ class VersionControl:
             "activated_at": now.isoformat(),
             "created_by": user_id,
             "change_summary": "Initial version",
-        })
+        }
+
+        await firestore_curriculum_sync.sync_version(version_data)
+        logger.info(f"Created initial active version for {subject_id}: {version_id}")
 
         return version_id
 
     async def get_version_history(self, subject_id: str) -> List[Version]:
-        """Get all versions for a subject"""
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        WHERE subject_id = @subject_id
-        ORDER BY version_number DESC
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
-        results = await db.execute_query(query, parameters)
-
-        return [Version(**row) for row in results]
+        """Get all versions for a subject (Firestore-native read)."""
+        rows = await firestore_reader.get_versions(subject_id)
+        return [Version(**row) for row in rows]
 
     async def get_draft_changes(self, subject_id: str) -> DraftSummary:
-        """Get summary of all draft changes for a subject"""
-
+        """Get summary of all draft changes for a subject (Firestore-native read)."""
         changes = []
         validation_errors = []
 
-        # Get active version
         active_version = await self.get_active_version(subject_id)
         active_version_id = active_version.version_id if active_version else None
 
-        # Check for draft changes in each table
-        tables = [
-            (settings.TABLE_SUBJECTS, "subject"),
-            (settings.TABLE_UNITS, "unit"),
-            (settings.TABLE_SKILLS, "skill"),
-            (settings.TABLE_SUBSKILLS, "subskill"),
-            (settings.TABLE_PREREQUISITES, "prerequisite")
-        ]
+        # Fetch all draft entities from Firestore in one traversal
+        draft_entities = await firestore_reader.get_draft_entities(subject_id)
 
-        for table_name, entity_type in tables:
-            # Query draft records - use subqueries to avoid JOIN issues with streaming buffer
-            if table_name == settings.TABLE_SUBJECTS:
-                query = f"""
-                SELECT *
-                FROM `{settings.get_table_id(table_name)}`
-                WHERE is_draft = true AND subject_id = @subject_id
-                """
-                parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
+        entity_type_map = {
+            "subjects": "subject",
+            "units": "unit",
+            "skills": "skill",
+            "subskills": "subskill",
+            "prerequisites": "prerequisite",
+            "edges": "edge",
+        }
 
-            elif table_name == settings.TABLE_UNITS:
-                query = f"""
-                SELECT *
-                FROM `{settings.get_table_id(table_name)}`
-                WHERE is_draft = true AND subject_id = @subject_id
-                """
-                parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
+        for collection_key, entity_type in entity_type_map.items():
+            drafts = draft_entities.get(collection_key, [])
+            logger.info(f"Found {len(drafts)} draft {entity_type} records for {subject_id}")
 
-            elif table_name == settings.TABLE_SKILLS:
-                # Use subquery to get unit_ids for this subject (avoids JOIN with streaming buffer)
-                query = f"""
-                SELECT *
-                FROM `{settings.get_table_id(table_name)}`
-                WHERE is_draft = true
-                  AND unit_id IN (
-                    SELECT unit_id
-                    FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
-                    WHERE subject_id = @subject_id
-                  )
-                """
-                parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
-
-            elif table_name == settings.TABLE_SUBSKILLS:
-                # Use nested subqueries to traverse the hierarchy
-                query = f"""
-                SELECT *
-                FROM `{settings.get_table_id(table_name)}`
-                WHERE is_draft = true
-                  AND skill_id IN (
-                    SELECT skill_id
-                    FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
-                    WHERE unit_id IN (
-                      SELECT unit_id
-                      FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
-                      WHERE subject_id = @subject_id
-                    )
-                  )
-                """
-                parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
-
-            elif table_name == settings.TABLE_PREREQUISITES:
-                # Prerequisites should have subject_id directly
-                query = f"""
-                SELECT *
-                FROM `{settings.get_table_id(table_name)}`
-                WHERE is_draft = true AND subject_id = @subject_id
-                """
-                parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
-
-            else:
-                # Skip unknown tables
-                logger.warning(f"Unknown table type: {table_name}")
-                continue
-
-            try:
-                draft_results = await db.execute_query(query, parameters)
-                logger.info(f"📊 Found {len(draft_results)} draft {entity_type} records for {subject_id}")
-            except Exception as e:
-                logger.error(f"❌ Error querying {table_name} for drafts: {e}")
-                # Continue with other tables even if one fails
-                draft_results = []
-
-            for draft in draft_results:
-                # Determine if this is new or updated
-                entity_id = draft.get("subject_id") or draft.get("unit_id") or \
-                           draft.get("skill_id") or draft.get("subskill_id") or \
-                           draft.get("prerequisite_id")
-
-                # Check if corresponding active record exists
-                if active_version_id:
-                    # Query active version of this entity
-                    # (simplified - in reality would need more complex logic)
-                    change_type = "updated"
-                else:
-                    change_type = "created"
-
-                changes.append(
-                    DraftChange(
-                        entity_type=entity_type,
-                        entity_id=entity_id,
-                        change_type=change_type,
-                        new_value=dict(draft)
-                    )
+            for draft in drafts:
+                entity_id = (
+                    draft.get("subject_id") or draft.get("unit_id")
+                    or draft.get("skill_id") or draft.get("subskill_id")
+                    or draft.get("prerequisite_id") or draft.get("edge_id")
                 )
+                change_type = "updated" if active_version_id else "created"
 
-        # Validate prerequisites (check for circular dependencies, referential integrity)
-        # Simplified validation
+                changes.append(DraftChange(
+                    entity_type=entity_type,
+                    entity_id=entity_id,
+                    change_type=change_type,
+                    new_value=dict(draft),
+                ))
+
         can_publish = len(validation_errors) == 0
 
         return DraftSummary(
@@ -307,7 +144,7 @@ class VersionControl:
             total_changes=len(changes),
             changes=changes,
             can_publish=can_publish,
-            validation_errors=validation_errors
+            validation_errors=validation_errors,
         )
 
     async def publish(
@@ -316,81 +153,30 @@ class VersionControl:
         user_id: str
     ) -> PublishResponse:
         """
-        Publish all draft changes for a subject
-        Creates a new version and marks it as active
+        Publish all draft changes for a subject.
+
+        Firestore-first flow:
+        1. Validate draft changes
+        2. Create new version in Firestore
+        3. Batch update all Firestore entities (is_draft=False, new version_id)
+        4. Export to BigQuery (non-blocking)
         """
+        from app.db.bigquery_export_service import bigquery_export
+
         now = datetime.utcnow()
 
-        # Get draft summary
+        # 1. Validate
         draft_summary = await self.get_draft_changes(publish_request.subject_id)
-
         if not draft_summary.can_publish:
-            raise ValueError(f"Cannot publish due to validation errors: {draft_summary.validation_errors}")
+            raise ValueError(f"Cannot publish: {draft_summary.validation_errors}")
 
-        # Step 1: Fetch the currently active version (if any) before deactivating
-        active_version_query = f"""
-        SELECT version_id
-        FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        WHERE subject_id = @subject_id AND is_active = true
-        LIMIT 1
-        """
-        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id)]
-        active_version_results = await db.execute_query(active_version_query, parameters)
-        old_version_id = active_version_results[0]["version_id"] if active_version_results else None
+        # 2. Get current active version and create new one in Firestore
+        active_ver = await firestore_reader.get_active_version(publish_request.subject_id)
+        old_version_id = active_ver["version_id"] if active_ver else None
 
-        # Deactivate current active version FIRST (before creating new one)
-        # This avoids streaming buffer issues since old versions are not in the buffer
-        deactivate_query = f"""
-        MERGE `{settings.get_table_id(settings.TABLE_VERSIONS)}` AS T
-        USING (
-            SELECT version_id
-            FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-            WHERE subject_id = @subject_id AND is_active = true
-        ) AS S
-        ON T.version_id = S.version_id
-        WHEN MATCHED THEN
-          UPDATE SET T.is_active = false
-        """
-
-        await db.execute_query(deactivate_query, parameters)
-
-        # Step 2: Create new version with is_active=True using DML INSERT
-        # DML INSERT avoids streaming buffer issues
         version_id = str(uuid.uuid4())
+        max_version = await firestore_reader.get_max_version_number(publish_request.subject_id)
 
-        # Get latest version number for this subject
-        version_query = f"""
-        SELECT COALESCE(MAX(version_number), 0) as max_version
-        FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        WHERE subject_id = @subject_id
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id)]
-        results = await db.execute_query(version_query, parameters)
-        max_version = results[0]["max_version"] if results else 0
-
-        # Use DML INSERT to create new version
-        insert_query = f"""
-        INSERT INTO `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        (version_id, subject_id, version_number, description, is_active, created_at, activated_at, created_by, change_summary)
-        VALUES (@version_id, @subject_id, @version_number, @description, @is_active, @created_at, @activated_at, @created_by, @change_summary)
-        """
-
-        insert_params = [
-            bigquery.ScalarQueryParameter("version_id", "STRING", version_id),
-            bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
-            bigquery.ScalarQueryParameter("version_number", "INT64", max_version + 1),
-            bigquery.ScalarQueryParameter("description", "STRING", publish_request.version_description or settings.DEFAULT_VERSION_DESCRIPTION),
-            bigquery.ScalarQueryParameter("is_active", "BOOL", True),
-            bigquery.ScalarQueryParameter("created_at", "TIMESTAMP", now),
-            bigquery.ScalarQueryParameter("activated_at", "TIMESTAMP", now),
-            bigquery.ScalarQueryParameter("created_by", "STRING", user_id),
-            bigquery.ScalarQueryParameter("change_summary", "STRING", publish_request.change_summary or f"{draft_summary.total_changes} changes")
-        ]
-
-        await db.execute_query(insert_query, insert_params)
-
-        # Create Version object for return
         new_version = Version(
             version_id=version_id,
             subject_id=publish_request.subject_id,
@@ -400,153 +186,30 @@ class VersionControl:
             created_at=now.isoformat(),
             activated_at=now.isoformat(),
             created_by=user_id,
-            change_summary=publish_request.change_summary or f"{draft_summary.total_changes} changes"
+            change_summary=publish_request.change_summary or f"{draft_summary.total_changes} changes",
         )
 
-        # Mark all draft records as published (is_draft = false)
-        # AND update ALL records for this subject to the new version_id (including non-drafts)
-        #
-        # IMPORTANT: Use SELECT DISTINCT <primary_key> in USING subqueries to avoid
-        # BigQuery MERGE error "must match at most one source row for each target row"
-        # which occurs when JOINs through parent tables produce duplicate rows
-        # (e.g., from streaming buffer + DML coexistence).
-
-        parameters = [
-            bigquery.ScalarQueryParameter("subject_id", "STRING", publish_request.subject_id),
-            bigquery.ScalarQueryParameter("version_id", "STRING", new_version.version_id)
-        ]
-
-        # 1. Subjects - direct match on subject_id
-        await db.execute_query(f"""
-            MERGE `{settings.get_table_id(settings.TABLE_SUBJECTS)}` AS T
-            USING (
-                SELECT DISTINCT subject_id
-                FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}`
-                WHERE subject_id = @subject_id
-            ) AS S
-            ON T.subject_id = S.subject_id
-            WHEN MATCHED THEN
-              UPDATE SET T.is_draft = false, T.version_id = @version_id
-        """, parameters)
-        logger.info(f"✅ Updated subjects to version {new_version.version_id}")
-
-        # 2. Units - direct match on subject_id
-        await db.execute_query(f"""
-            MERGE `{settings.get_table_id(settings.TABLE_UNITS)}` AS T
-            USING (
-                SELECT DISTINCT unit_id
-                FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
-                WHERE subject_id = @subject_id
-            ) AS S
-            ON T.unit_id = S.unit_id
-            WHEN MATCHED THEN
-              UPDATE SET T.is_draft = false, T.version_id = @version_id
-        """, parameters)
-        logger.info(f"✅ Updated units to version {new_version.version_id}")
-
-        # 3. Skills - use IN subquery instead of JOIN to avoid duplicate rows
-        await db.execute_query(f"""
-            MERGE `{settings.get_table_id(settings.TABLE_SKILLS)}` AS T
-            USING (
-                SELECT DISTINCT skill_id
-                FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
-                WHERE unit_id IN (
-                    SELECT DISTINCT unit_id
-                    FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
-                    WHERE subject_id = @subject_id
-                )
-            ) AS S
-            ON T.skill_id = S.skill_id
-            WHEN MATCHED THEN
-              UPDATE SET T.is_draft = false, T.version_id = @version_id
-        """, parameters)
-        logger.info(f"✅ Updated skills to version {new_version.version_id}")
-
-        # 4. Subskills - use nested IN subqueries
-        await db.execute_query(f"""
-            MERGE `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` AS T
-            USING (
-                SELECT DISTINCT subskill_id
-                FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
-                WHERE skill_id IN (
-                    SELECT DISTINCT skill_id
-                    FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
-                    WHERE unit_id IN (
-                        SELECT DISTINCT unit_id
-                        FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
-                        WHERE subject_id = @subject_id
-                    )
-                )
-            ) AS S
-            ON T.subskill_id = S.subskill_id
-            WHEN MATCHED THEN
-              UPDATE SET T.is_draft = false, T.version_id = @version_id
-        """, parameters)
-        logger.info(f"✅ Updated subskills to version {new_version.version_id}")
-
-        # 5. Prerequisites - direct match on subject_id
-        await db.execute_query(f"""
-            MERGE `{settings.get_table_id(settings.TABLE_PREREQUISITES)}` AS T
-            USING (
-                SELECT DISTINCT prerequisite_id
-                FROM `{settings.get_table_id(settings.TABLE_PREREQUISITES)}`
-                WHERE subject_id = @subject_id
-            ) AS S
-            ON T.prerequisite_id = S.prerequisite_id
-            WHEN MATCHED THEN
-              UPDATE SET T.is_draft = false, T.version_id = @version_id
-        """, parameters)
-        logger.info(f"✅ Updated prerequisites to version {new_version.version_id}")
-
-        # 6. Subskill primitives - use nested IN subqueries
-        await db.execute_query(f"""
-            MERGE `{settings.get_table_id(settings.TABLE_SUBSKILL_PRIMITIVES)}` AS T
-            USING (
-                SELECT DISTINCT subskill_id, primitive_id
-                FROM `{settings.get_table_id(settings.TABLE_SUBSKILL_PRIMITIVES)}`
-                WHERE subskill_id IN (
-                    SELECT DISTINCT subskill_id
-                    FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
-                    WHERE skill_id IN (
-                        SELECT DISTINCT skill_id
-                        FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
-                        WHERE unit_id IN (
-                            SELECT DISTINCT unit_id
-                            FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
-                            WHERE subject_id = @subject_id
-                        )
-                    )
-                )
-            ) AS S
-            ON T.subskill_id = S.subskill_id AND T.primitive_id = S.primitive_id
-            WHEN MATCHED THEN
-              UPDATE SET T.is_draft = false, T.version_id = @version_id
-        """, parameters)
-        logger.info(f"✅ Updated subskill_primitives to version {new_version.version_id}")
-
-        # 7. Curriculum edges (knowledge graph) - direct match on subject_id
-        await db.execute_query(f"""
-            MERGE `{settings.get_table_id(settings.TABLE_EDGES)}` T
-            USING (
-                SELECT edge_id
-                FROM `{settings.get_table_id(settings.TABLE_EDGES)}`
-                WHERE subject_id = @subject_id
-            ) AS S
-            ON T.edge_id = S.edge_id
-            WHEN MATCHED THEN
-              UPDATE SET T.is_draft = false, T.version_id = @version_id
-        """, parameters)
-        logger.info(f"✅ Updated curriculum_edges to version {new_version.version_id}")
-
-        logger.info(f"✅ Published version {new_version.version_number} for subject {publish_request.subject_id}")
-
-        # Dual-write: sync the new version doc and all entity updates to Firestore
+        # Write new version to Firestore
         await firestore_curriculum_sync.sync_version(new_version.dict())
+
+        # 3. Batch update all entities in Firestore (is_draft=False, new version_id)
         await firestore_curriculum_sync.sync_publish(
             subject_id=publish_request.subject_id,
             new_version_id=new_version.version_id,
             old_version_id=old_version_id,
         )
+
+        logger.info(f"Published version {new_version.version_number} for {publish_request.subject_id}")
+
+        # 4. Export to BigQuery (non-blocking — failure does not fail publish)
+        try:
+            export_result = await bigquery_export.export_published_subject(
+                publish_request.subject_id, new_version.version_id
+            )
+            if export_result.get("errors"):
+                logger.warning(f"BQ export had errors: {export_result['errors']}")
+        except Exception as e:
+            logger.error(f"BQ export failed (non-blocking): {e}")
 
         return PublishResponse(
             success=True,
@@ -554,7 +217,7 @@ class VersionControl:
             version_number=new_version.version_number,
             changes_published=draft_summary.total_changes,
             activated_at=now,
-            message=f"Successfully published version {new_version.version_number}"
+            message=f"Successfully published version {new_version.version_number}",
         )
 
     async def rollback_to_version(
@@ -563,66 +226,22 @@ class VersionControl:
         version_id: str,
         user_id: str
     ) -> PublishResponse:
-        """Rollback to a previous version"""
+        """Rollback to a previous version (Firestore-first)."""
         now = datetime.utcnow()
 
-        # Verify version exists and belongs to subject
-        version_query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        WHERE version_id = @version_id AND subject_id = @subject_id
-        """
-
-        parameters = [
-            bigquery.ScalarQueryParameter("version_id", "STRING", version_id),
-            bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)
-        ]
-
-        results = await db.execute_query(version_query, parameters)
-        if not results:
+        ver_doc = await firestore_reader.get_version(version_id)
+        if not ver_doc or ver_doc.get("subject_id") != subject_id:
             raise ValueError(f"Version {version_id} not found for subject {subject_id}")
 
-        target_version = Version(**results[0])
+        target_version = Version(**ver_doc)
 
-        # Use a single MERGE to update both versions atomically
-        # This works because we're only updating OLD versions (not in streaming buffer)
-        rollback_query = f"""
-        MERGE `{settings.get_table_id(settings.TABLE_VERSIONS)}` AS T
-        USING (
-            SELECT
-                version_id,
-                CASE
-                    WHEN version_id = @target_version_id THEN true
-                    ELSE false
-                END as should_be_active,
-                CASE
-                    WHEN version_id = @target_version_id THEN @activated_at
-                    ELSE activated_at
-                END as new_activated_at
-            FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-            WHERE subject_id = @subject_id
-        ) AS S
-        ON T.version_id = S.version_id
-        WHEN MATCHED THEN
-          UPDATE SET
-            T.is_active = S.should_be_active,
-            T.activated_at = S.new_activated_at
-        """
-
-        parameters = [
-            bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id),
-            bigquery.ScalarQueryParameter("target_version_id", "STRING", version_id),
-            bigquery.ScalarQueryParameter("activated_at", "TIMESTAMP", now)
-        ]
-        await db.execute_query(rollback_query, parameters)
-
-        logger.info(f"✅ Rolled back to version {target_version.version_number} for subject {subject_id}")
-
-        # Dual-write: sync rollback to Firestore
+        # Firestore rollback: switch active flags
         await firestore_curriculum_sync.sync_rollback(
             subject_id=subject_id,
             target_version_id=version_id,
         )
+
+        logger.info(f"Rolled back to version {target_version.version_number} for {subject_id}")
 
         return PublishResponse(
             success=True,
@@ -630,7 +249,7 @@ class VersionControl:
             version_number=target_version.version_number,
             changes_published=0,
             activated_at=now,
-            message=f"Successfully rolled back to version {target_version.version_number}"
+            message=f"Successfully rolled back to version {target_version.version_number}",
         )
 
 

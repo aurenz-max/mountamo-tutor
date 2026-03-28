@@ -1,17 +1,17 @@
 """
 Core curriculum management service
 Handles CRUD operations for subjects, units, skills, and subskills
+
+Reads: Firestore-native via firestore_reader (curriculum_drafts → curriculum_published fallback)
+Writes: DraftCurriculumService (hierarchical docs in curriculum_drafts)
 """
 
 import logging
-import uuid
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from google.cloud import bigquery
 
-from app.core.config import settings
-from app.core.database import db
-from app.db.firestore_curriculum_service import firestore_curriculum_sync
+from app.db.draft_curriculum_service import draft_curriculum
+from app.db.firestore_curriculum_reader import firestore_reader
 from app.models.curriculum import (
     Subject, SubjectCreate, SubjectUpdate,
     Unit, UnitCreate, UnitUpdate,
@@ -26,1105 +26,368 @@ logger = logging.getLogger(__name__)
 
 
 class CurriculumManager:
-    """Manages curriculum entities and hierarchical structure"""
+    """Manages curriculum entities and hierarchical structure.
+
+    Reads from the hierarchical draft/published docs via firestore_reader.
+    Writes to the hierarchical draft doc via DraftCurriculumService.
+    """
+
+    # ==================== Context resolution ====================
+
+    async def _resolve_subject_context(self, subject_id: str) -> Optional[Dict[str, str]]:
+        """Resolve grade for a subject_id by searching drafts/published."""
+        subject = await firestore_reader.get_subject(subject_id)
+        if not subject:
+            return None
+        return {"grade": subject.get("grade", ""), "subject_id": subject_id}
+
+    async def _resolve_from_unit(self, unit_id: str) -> Optional[Dict[str, str]]:
+        """Resolve grade + subject_id from a unit_id."""
+        unit = await firestore_reader.get_unit(unit_id)
+        if not unit:
+            return None
+        return await self._resolve_subject_context(unit.get("subject_id", ""))
+
+    async def _resolve_from_skill(self, skill_id: str) -> Optional[Dict[str, str]]:
+        """Resolve grade + subject_id from a skill_id."""
+        skill = await firestore_reader.get_skill(skill_id)
+        if not skill:
+            return None
+        return await self._resolve_from_unit(skill.get("unit_id", ""))
+
+    async def _resolve_from_subskill(self, subskill_id: str) -> Optional[Dict[str, str]]:
+        """Resolve grade + subject_id from a subskill_id."""
+        subskill = await firestore_reader.get_subskill(subskill_id)
+        if not subskill:
+            return None
+        return await self._resolve_from_skill(subskill.get("skill_id", ""))
 
     # ==================== SUBJECT OPERATIONS ====================
 
     async def get_all_subjects(self, include_drafts: bool = False) -> List[Subject]:
-        """Get all subjects"""
-        where_clause = "WHERE is_active = true" if not include_drafts else ""
+        """Get all subjects."""
+        rows = await firestore_reader.get_all_subjects(include_drafts=include_drafts)
+        return [Subject(**self._normalise_subject(r)) for r in rows]
 
-        query = f"""
-        SELECT
-            subject_id, subject_name, description,
-            grade_level as grade,
-            version_id, is_active, is_draft,
-            created_at, updated_at, created_by
-        FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}`
-        {where_clause}
-        ORDER BY subject_name
-        """
+    @staticmethod
+    def _normalise_subject(data: Dict[str, Any]) -> Dict[str, Any]:
+        d = dict(data)
+        if "grade_level" in d and "grade" not in d:
+            d["grade"] = d.pop("grade_level")
+        return d
 
-        logger.info(f"📊 Querying subjects with include_drafts={include_drafts}")
-        logger.info(f"🔍 Query: {query}")
-
-        results = await db.execute_query(query)
-        logger.info(f"📦 Found {len(results)} subjects")
-
-        if results:
-            logger.info(f"📋 Sample subject: {results[0]}")
-
-        return [Subject(**row) for row in results]
-
-    async def get_subject(self, subject_id: str, version_id: Optional[str] = None) -> Optional[Subject]:
-        """Get a specific subject"""
-        where_conditions = ["subject_id = @subject_id"]
-
-        if version_id:
-            where_conditions.append("version_id = @version_id")
-        else:
-            where_conditions.append("is_active = true")
-
-        where_clause = " AND ".join(where_conditions)
-
-        query = f"""
-        SELECT
-            subject_id, subject_name, description,
-            grade_level as grade,
-            version_id, is_active, is_draft,
-            created_at, updated_at, created_by
-        FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}`
-        WHERE {where_clause}
-        LIMIT 1
-        """
-
-        parameters = [
-            bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)
-        ]
-        if version_id:
-            parameters.append(bigquery.ScalarQueryParameter("version_id", "STRING", version_id))
-
-        results = await db.execute_query(query, parameters)
-        return Subject(**results[0]) if results else None
+    async def get_subject(self, subject_id: str, version_id: Optional[str] = None, include_drafts: bool = False) -> Optional[Subject]:
+        """Get a specific subject."""
+        row = await firestore_reader.get_subject(subject_id, version_id=version_id, include_drafts=include_drafts)
+        return Subject(**self._normalise_subject(row)) if row else None
 
     async def create_subject(self, subject: SubjectCreate, user_id: str, version_id: str) -> Subject:
-        """Create a new subject using DML INSERT for consistency"""
-        now = datetime.utcnow()
+        """Create a new subject by initializing a draft doc."""
+        doc = await draft_curriculum.ensure_subject(
+            subject_id=subject.subject_id,
+            subject_name=subject.subject_name,
+            grade=subject.grade,
+            version_id=version_id,
+            created_by=user_id,
+        )
 
-        # BigQuery column is grade_level; model field is grade
-        bq_data = {
-            "subject_id": subject.subject_id,
-            "subject_name": subject.subject_name,
-            "description": subject.description,
-            "grade_level": subject.grade,
-            "version_id": version_id,
-            "is_active": False,
-            "is_draft": True,
-            "created_at": now.isoformat(),
-            "updated_at": now.isoformat(),
-            "created_by": user_id
-        }
-
-        table_id = settings.get_table_id(settings.TABLE_SUBJECTS)
-
-        # Build DML INSERT query
-        fields = ", ".join(bq_data.keys())
-        value_placeholders = ", ".join([f"@{key}" for key in bq_data.keys()])
-
-        insert_query = f"""
-        INSERT INTO `{table_id}` ({fields})
-        VALUES ({value_placeholders})
-        """
-
-        # Create BigQuery parameters with appropriate types
-        parameters = []
-        type_map = {'is_active': 'BOOL', 'is_draft': 'BOOL'}
-        for key, value in bq_data.items():
-            bq_type = type_map.get(key, 'STRING')
-            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
-
-        await db.execute_query(insert_query, parameters)
-
-        # Return model with grade (not grade_level)
-        model_data = {**bq_data, "grade": bq_data.pop("grade_level")}
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_subject(model_data)
-
-        return Subject(**model_data)
+        return Subject(
+            subject_id=subject.subject_id,
+            subject_name=subject.subject_name,
+            description=subject.description,
+            grade=subject.grade,
+            version_id=version_id,
+            is_active=True,
+            is_draft=True,
+            created_at=doc.get("created_at", datetime.utcnow().isoformat()),
+            updated_at=doc.get("updated_at", datetime.utcnow().isoformat()),
+            created_by=user_id,
+        )
 
     async def update_subject(self, subject_id: str, updates: SubjectUpdate, version_id: str) -> Optional[Subject]:
-        """Update a subject using atomic DML MERGE"""
-        current = await self.get_subject(subject_id)
-        if not current:
+        """Update a subject in the draft doc."""
+        ctx = await self._resolve_subject_context(subject_id)
+        if not ctx:
             return None
 
-        now = datetime.utcnow()
+        doc = await draft_curriculum.get_draft(ctx["grade"], subject_id)
+        if not doc:
+            return None
+
         update_data = updates.dict(exclude_unset=True)
+        for k, v in update_data.items():
+            doc[k] = v
+        doc["version_id"] = version_id
+        doc["updated_at"] = datetime.utcnow().isoformat()
 
-        # Convert current model to dict and ensure datetime fields are ISO strings
-        current_dict = current.dict(exclude_unset=True)
-        if isinstance(current_dict.get("created_at"), datetime):
-            current_dict["created_at"] = current_dict["created_at"].isoformat()
-        if isinstance(current_dict.get("updated_at"), datetime):
-            current_dict["updated_at"] = current_dict["updated_at"].isoformat()
+        await draft_curriculum.save_draft(ctx["grade"], subject_id, doc)
 
-        # Merge with current data to get final state
-        subject_data = {
-            **current_dict,
-            **update_data,
-            "subject_id": subject_id,
-            "version_id": version_id,
-            "is_draft": True,
-            "updated_at": now.isoformat()
-        }
-
-        # Map model field 'grade' to BigQuery column 'grade_level'
-        bq_data = dict(subject_data)
-        if "grade" in bq_data:
-            bq_data["grade_level"] = bq_data.pop("grade")
-
-        table_id = settings.get_table_id(settings.TABLE_SUBJECTS)
-
-        # Build MERGE statement for atomic upsert
-        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in bq_data.keys()])
-        insert_fields = ", ".join(bq_data.keys())
-        insert_values = ", ".join([f"@{key}" for key in bq_data.keys()])
-
-        merge_query = f"""
-        MERGE `{table_id}` AS T
-        USING (SELECT @subject_id AS subject_id_key) AS S
-        ON T.subject_id = S.subject_id_key
-        WHEN MATCHED THEN
-          UPDATE SET {update_set_clauses}
-        WHEN NOT MATCHED THEN
-          INSERT ({insert_fields}) VALUES ({insert_values})
-        """
-
-        # Create BigQuery parameters with appropriate types
-        parameters = []
-        type_map = {'is_active': 'BOOL', 'is_draft': 'BOOL'}
-        for key, value in bq_data.items():
-            bq_type = type_map.get(key, 'STRING')
-            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
-
-        await db.execute_query(merge_query, parameters)
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_subject(subject_data)
-
-        return Subject(**subject_data)
+        return Subject(
+            subject_id=subject_id,
+            subject_name=doc.get("subject_name", ""),
+            description=doc.get("description"),
+            grade=doc.get("grade", ctx["grade"]),
+            version_id=version_id,
+            is_active=True,
+            is_draft=True,
+            created_at=doc.get("created_at", ""),
+            updated_at=doc.get("updated_at", ""),
+            created_by=doc.get("created_by"),
+        )
 
     # ==================== UNIT OPERATIONS ====================
 
     async def get_units_by_subject(self, subject_id: str, include_drafts: bool = False) -> List[Unit]:
-        """Get all units for a subject"""
-        where_conditions = ["subject_id = @subject_id"]
-
-        if not include_drafts:
-            where_conditions.append("is_draft = false")
-
-        where_clause = " AND ".join(where_conditions)
-
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
-        WHERE {where_clause}
-        ORDER BY unit_order, unit_id
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
-        results = await db.execute_query(query, parameters)
-        return [Unit(**row) for row in results]
+        rows = await firestore_reader.get_units_by_subject(subject_id, include_drafts=include_drafts)
+        return [Unit(**row) for row in rows]
 
     async def get_unit(self, unit_id: str) -> Optional[Unit]:
-        """Get a specific unit"""
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
-        WHERE unit_id = @unit_id
-        LIMIT 1
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("unit_id", "STRING", unit_id)]
-        results = await db.execute_query(query, parameters)
-        return Unit(**results[0]) if results else None
+        row = await firestore_reader.get_unit(unit_id)
+        return Unit(**row) if row else None
 
     async def create_unit(self, unit: UnitCreate, version_id: str) -> Unit:
-        """Create a new unit using DML INSERT for consistency"""
-        now = datetime.utcnow()
+        """Add a unit to the subject's draft doc."""
+        ctx = await self._resolve_subject_context(unit.subject_id)
+        if not ctx:
+            raise ValueError(f"Subject {unit.subject_id} not found")
 
-        unit_data = {
-            **unit.dict(),
-            "version_id": version_id,
-            "is_draft": True,
-            "created_at": now.isoformat(),
-            "updated_at": now.isoformat()
-        }
+        result = await draft_curriculum.add_unit(ctx["grade"], unit.subject_id, {
+            "unit_id": unit.unit_id,
+            "unit_title": unit.unit_title,
+            "unit_order": unit.unit_order,
+            "description": unit.description,
+        })
 
-        table_id = settings.get_table_id(settings.TABLE_UNITS)
-
-        # Build DML INSERT query
-        fields = ", ".join(unit_data.keys())
-        value_placeholders = ", ".join([f"@{key}" for key in unit_data.keys()])
-
-        insert_query = f"""
-        INSERT INTO `{table_id}` ({fields})
-        VALUES ({value_placeholders})
-        """
-
-        # Create BigQuery parameters with appropriate types
-        parameters = []
-        type_map = {'unit_order': 'INT64', 'is_draft': 'BOOL'}
-        for key, value in unit_data.items():
-            bq_type = type_map.get(key, 'STRING')
-            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
-
-        await db.execute_query(insert_query, parameters)
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_unit(unit_data)
-
-        return Unit(**unit_data)
+        now = datetime.utcnow().isoformat()
+        return Unit(
+            unit_id=unit.unit_id,
+            subject_id=unit.subject_id,
+            unit_title=unit.unit_title,
+            unit_order=unit.unit_order,
+            description=unit.description,
+            version_id=version_id,
+            is_draft=True,
+            created_at=now,
+            updated_at=now,
+        )
 
     async def update_unit(self, unit_id: str, updates: UnitUpdate, version_id: str) -> Optional[Unit]:
-        """Update a unit using atomic DML MERGE"""
-        current = await self.get_unit(unit_id)
-        if not current:
+        ctx = await self._resolve_from_unit(unit_id)
+        if not ctx:
             return None
 
-        now = datetime.utcnow()
-        update_data = updates.dict(exclude_unset=True)
+        result = await draft_curriculum.update_unit(
+            ctx["grade"], ctx["subject_id"], unit_id,
+            updates.dict(exclude_unset=True),
+        )
+        if not result:
+            return None
 
-        # Convert current model to dict and ensure datetime fields are ISO strings
-        current_dict = current.dict(exclude_unset=True)
-        if isinstance(current_dict.get("created_at"), datetime):
-            current_dict["created_at"] = current_dict["created_at"].isoformat()
-        if isinstance(current_dict.get("updated_at"), datetime):
-            current_dict["updated_at"] = current_dict["updated_at"].isoformat()
-
-        # Merge with current data to get final state
-        unit_data = {
-            **current_dict,
-            **update_data,
-            "unit_id": unit_id,
-            "version_id": version_id,
-            "is_draft": True,
-            "updated_at": now.isoformat()
-        }
-
-        table_id = settings.get_table_id(settings.TABLE_UNITS)
-
-        # Build MERGE statement for atomic upsert
-        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in unit_data.keys()])
-        insert_fields = ", ".join(unit_data.keys())
-        insert_values = ", ".join([f"@{key}" for key in unit_data.keys()])
-
-        merge_query = f"""
-        MERGE `{table_id}` AS T
-        USING (SELECT @unit_id AS unit_id_key) AS S
-        ON T.unit_id = S.unit_id_key
-        WHEN MATCHED THEN
-          UPDATE SET {update_set_clauses}
-        WHEN NOT MATCHED THEN
-          INSERT ({insert_fields}) VALUES ({insert_values})
-        """
-
-        # Create BigQuery parameters with appropriate types
-        parameters = []
-        type_map = {'unit_order': 'INT64', 'is_draft': 'BOOL'}
-        for key, value in unit_data.items():
-            bq_type = type_map.get(key, 'STRING')
-            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
-
-        await db.execute_query(merge_query, parameters)
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_unit(unit_data)
-
-        return Unit(**unit_data)
+        # Re-read to get full data
+        row = await firestore_reader.get_unit(unit_id)
+        return Unit(**row) if row else None
 
     async def delete_unit(self, unit_id: str) -> bool:
-        """Delete a unit by removing all rows with this ID"""
-        query = f"""
-        DELETE FROM `{settings.get_table_id(settings.TABLE_UNITS)}`
-        WHERE unit_id = @unit_id
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("unit_id", "STRING", unit_id)]
-
-        try:
-            await db.execute_query(query, parameters)
-            logger.info(f"✅ Deleted unit {unit_id}")
-
-            # Dual-write: sync to Firestore
-            await firestore_curriculum_sync.delete_unit(unit_id)
-
-            return True
-        except Exception as e:
-            logger.error(f"❌ Failed to delete unit {unit_id}: {e}")
+        ctx = await self._resolve_from_unit(unit_id)
+        if not ctx:
             return False
+        return await draft_curriculum.delete_unit(ctx["grade"], ctx["subject_id"], unit_id)
 
     # ==================== SKILL OPERATIONS ====================
 
     async def get_skills_by_unit(self, unit_id: str, include_drafts: bool = False) -> List[Skill]:
-        """Get all skills for a unit"""
-        where_conditions = ["unit_id = @unit_id"]
-
-        if not include_drafts:
-            where_conditions.append("is_draft = false")
-
-        where_clause = " AND ".join(where_conditions)
-
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
-        WHERE {where_clause}
-        ORDER BY skill_order, skill_id
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("unit_id", "STRING", unit_id)]
-        results = await db.execute_query(query, parameters)
-        return [Skill(**row) for row in results]
+        rows = await firestore_reader.get_skills_by_unit(unit_id, include_drafts=include_drafts)
+        return [Skill(**row) for row in rows]
 
     async def get_skill(self, skill_id: str) -> Optional[Skill]:
-        """Get a specific skill"""
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
-        WHERE skill_id = @skill_id
-        LIMIT 1
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("skill_id", "STRING", skill_id)]
-        results = await db.execute_query(query, parameters)
-        return Skill(**results[0]) if results else None
+        row = await firestore_reader.get_skill(skill_id)
+        return Skill(**row) if row else None
 
     async def create_skill(self, skill: SkillCreate, version_id: str) -> Skill:
-        """Create a new skill using DML INSERT for consistency"""
-        now = datetime.utcnow()
+        """Add a skill to a unit in the draft doc."""
+        ctx = await self._resolve_from_unit(skill.unit_id)
+        if not ctx:
+            raise ValueError(f"Unit {skill.unit_id} not found")
 
-        skill_data = {
-            **skill.dict(),
-            "version_id": version_id,
-            "is_draft": True,
-            "created_at": now.isoformat(),
-            "updated_at": now.isoformat()
-        }
+        await draft_curriculum.add_skill(ctx["grade"], ctx["subject_id"], skill.unit_id, {
+            "skill_id": skill.skill_id,
+            "skill_description": skill.skill_description,
+            "skill_order": skill.skill_order,
+        })
 
-        table_id = settings.get_table_id(settings.TABLE_SKILLS)
-
-        # Build DML INSERT query
-        fields = ", ".join(skill_data.keys())
-        value_placeholders = ", ".join([f"@{key}" for key in skill_data.keys()])
-
-        insert_query = f"""
-        INSERT INTO `{table_id}` ({fields})
-        VALUES ({value_placeholders})
-        """
-
-        # Create BigQuery parameters with appropriate types
-        parameters = []
-        type_map = {'skill_order': 'INT64', 'is_draft': 'BOOL'}
-        for key, value in skill_data.items():
-            bq_type = type_map.get(key, 'STRING')
-            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
-
-        await db.execute_query(insert_query, parameters)
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_skill(skill_data)
-
-        return Skill(**skill_data)
+        now = datetime.utcnow().isoformat()
+        return Skill(
+            skill_id=skill.skill_id,
+            unit_id=skill.unit_id,
+            skill_description=skill.skill_description,
+            skill_order=skill.skill_order,
+            version_id=version_id,
+            is_draft=True,
+            created_at=now,
+            updated_at=now,
+        )
 
     async def update_skill(self, skill_id: str, updates: SkillUpdate, version_id: str) -> Optional[Skill]:
-        """Update a skill using atomic DML MERGE"""
-        current = await self.get_skill(skill_id)
-        if not current:
+        ctx = await self._resolve_from_skill(skill_id)
+        if not ctx:
             return None
 
-        now = datetime.utcnow()
-        update_data = updates.dict(exclude_unset=True)
+        result = await draft_curriculum.update_skill(
+            ctx["grade"], ctx["subject_id"], skill_id,
+            updates.dict(exclude_unset=True),
+        )
+        if not result:
+            return None
 
-        # Convert current model to dict and ensure datetime fields are ISO strings
-        current_dict = current.dict(exclude_unset=True)
-        if isinstance(current_dict.get("created_at"), datetime):
-            current_dict["created_at"] = current_dict["created_at"].isoformat()
-        if isinstance(current_dict.get("updated_at"), datetime):
-            current_dict["updated_at"] = current_dict["updated_at"].isoformat()
-
-        # Merge with current data to get final state
-        skill_data = {
-            **current_dict,
-            **update_data,
-            "skill_id": skill_id,
-            "version_id": version_id,
-            "is_draft": True,
-            "updated_at": now.isoformat()
-        }
-
-        table_id = settings.get_table_id(settings.TABLE_SKILLS)
-
-        # Build MERGE statement for atomic upsert
-        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in skill_data.keys()])
-        insert_fields = ", ".join(skill_data.keys())
-        insert_values = ", ".join([f"@{key}" for key in skill_data.keys()])
-
-        merge_query = f"""
-        MERGE `{table_id}` AS T
-        USING (SELECT @skill_id AS skill_id_key) AS S
-        ON T.skill_id = S.skill_id_key
-        WHEN MATCHED THEN
-          UPDATE SET {update_set_clauses}
-        WHEN NOT MATCHED THEN
-          INSERT ({insert_fields}) VALUES ({insert_values})
-        """
-
-        # Create BigQuery parameters with appropriate types
-        parameters = []
-        type_map = {'skill_order': 'INT64', 'is_draft': 'BOOL'}
-        for key, value in skill_data.items():
-            bq_type = type_map.get(key, 'STRING')
-            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
-
-        await db.execute_query(merge_query, parameters)
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_skill(skill_data)
-
-        return Skill(**skill_data)
+        row = await firestore_reader.get_skill(skill_id)
+        return Skill(**row) if row else None
 
     async def delete_skill(self, skill_id: str) -> bool:
-        """Delete a skill by removing all rows with this ID"""
-        query = f"""
-        DELETE FROM `{settings.get_table_id(settings.TABLE_SKILLS)}`
-        WHERE skill_id = @skill_id
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("skill_id", "STRING", skill_id)]
-
-        try:
-            await db.execute_query(query, parameters)
-            logger.info(f"✅ Deleted skill {skill_id}")
-
-            # Dual-write: sync to Firestore
-            await firestore_curriculum_sync.delete_skill(skill_id)
-
-            return True
-        except Exception as e:
-            logger.error(f"❌ Failed to delete skill {skill_id}: {e}")
+        ctx = await self._resolve_from_skill(skill_id)
+        if not ctx:
             return False
+        return await draft_curriculum.delete_skill(ctx["grade"], ctx["subject_id"], skill_id)
 
     # ==================== SUBSKILL OPERATIONS ====================
 
     async def get_subskills_by_skill(self, skill_id: str, include_drafts: bool = False) -> List[Subskill]:
-        """Get all subskills for a skill"""
-        where_conditions = ["skill_id = @skill_id"]
-
-        if not include_drafts:
-            where_conditions.append("is_draft = false")
-
-        where_clause = " AND ".join(where_conditions)
-
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
-        WHERE {where_clause}
-        ORDER BY subskill_order, subskill_id
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("skill_id", "STRING", skill_id)]
-        results = await db.execute_query(query, parameters)
-        return [Subskill(**row) for row in results]
+        rows = await firestore_reader.get_subskills_by_skill(skill_id, include_drafts=include_drafts)
+        return [Subskill(**row) for row in rows]
 
     async def get_subskill(self, subskill_id: str) -> Optional[Subskill]:
-        """Get a specific subskill"""
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
-        WHERE subskill_id = @subskill_id
-        LIMIT 1
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
-        results = await db.execute_query(query, parameters)
-        return Subskill(**results[0]) if results else None
+        row = await firestore_reader.get_subskill(subskill_id)
+        return Subskill(**row) if row else None
 
     async def create_subskill(self, subskill: SubskillCreate, version_id: str) -> Subskill:
-        """Create a new subskill using DML INSERT for consistency"""
-        now = datetime.utcnow()
+        """Add a subskill to a skill in the draft doc."""
+        ctx = await self._resolve_from_skill(subskill.skill_id)
+        if not ctx:
+            raise ValueError(f"Skill {subskill.skill_id} not found")
 
-        subskill_data = {
-            **subskill.dict(),
-            "version_id": version_id,
-            "is_draft": True,
-            "created_at": now.isoformat(),
-            "updated_at": now.isoformat()
-        }
+        await draft_curriculum.add_subskill(ctx["grade"], ctx["subject_id"], subskill.skill_id, {
+            "subskill_id": subskill.subskill_id,
+            "subskill_description": subskill.subskill_description,
+            "subskill_order": subskill.subskill_order,
+            "difficulty_start": subskill.difficulty_start,
+            "difficulty_end": subskill.difficulty_end,
+            "target_difficulty": subskill.target_difficulty,
+        })
 
-        table_id = settings.get_table_id(settings.TABLE_SUBSKILLS)
-
-        # Build DML INSERT query
-        fields = ", ".join(subskill_data.keys())
-        value_placeholders = ", ".join([f"@{key}" for key in subskill_data.keys()])
-
-        insert_query = f"""
-        INSERT INTO `{table_id}` ({fields})
-        VALUES ({value_placeholders})
-        """
-
-        # Create BigQuery parameters with appropriate types
-        parameters = []
-        type_map = {
-            'subskill_order': 'INT64',
-            'difficulty_start': 'FLOAT64',
-            'difficulty_end': 'FLOAT64',
-            'target_difficulty': 'FLOAT64',
-            'is_draft': 'BOOL'
-        }
-        for key, value in subskill_data.items():
-            bq_type = type_map.get(key, 'STRING')
-            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
-
-        await db.execute_query(insert_query, parameters)
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_subskill(subskill_data)
-
-        return Subskill(**subskill_data)
+        now = datetime.utcnow().isoformat()
+        return Subskill(
+            subskill_id=subskill.subskill_id,
+            skill_id=subskill.skill_id,
+            subskill_description=subskill.subskill_description,
+            subskill_order=subskill.subskill_order,
+            difficulty_start=subskill.difficulty_start,
+            difficulty_end=subskill.difficulty_end,
+            target_difficulty=subskill.target_difficulty,
+            version_id=version_id,
+            is_draft=True,
+            created_at=now,
+            updated_at=now,
+        )
 
     async def update_subskill(self, subskill_id: str, updates: SubskillUpdate, version_id: str) -> Optional[Subskill]:
-        """Update a subskill using atomic DML MERGE"""
-        current = await self.get_subskill(subskill_id)
-        if not current:
+        ctx = await self._resolve_from_subskill(subskill_id)
+        if not ctx:
             return None
 
-        now = datetime.utcnow()
-        update_data = updates.dict(exclude_unset=True)
+        result = await draft_curriculum.update_subskill(
+            ctx["grade"], ctx["subject_id"], subskill_id,
+            updates.dict(exclude_unset=True),
+        )
+        if not result:
+            return None
 
-        # Convert current model to dict and ensure datetime fields are ISO strings
-        current_dict = current.dict(exclude_unset=True)
-        if isinstance(current_dict.get("created_at"), datetime):
-            current_dict["created_at"] = current_dict["created_at"].isoformat()
-        if isinstance(current_dict.get("updated_at"), datetime):
-            current_dict["updated_at"] = current_dict["updated_at"].isoformat()
-
-        # Merge with current data to get final state
-        subskill_data = {
-            **current_dict,
-            **update_data,
-            "subskill_id": subskill_id,
-            "version_id": version_id,
-            "is_draft": True,
-            "updated_at": now.isoformat()
-        }
-
-        table_id = settings.get_table_id(settings.TABLE_SUBSKILLS)
-
-        # Build MERGE statement for atomic upsert
-        update_set_clauses = ", ".join([f"T.{key} = @{key}" for key in subskill_data.keys()])
-        insert_fields = ", ".join(subskill_data.keys())
-        insert_values = ", ".join([f"@{key}" for key in subskill_data.keys()])
-
-        merge_query = f"""
-        MERGE `{table_id}` AS T
-        USING (SELECT @subskill_id AS subskill_id_key) AS S
-        ON T.subskill_id = S.subskill_id_key
-        WHEN MATCHED THEN
-          UPDATE SET {update_set_clauses}
-        WHEN NOT MATCHED THEN
-          INSERT ({insert_fields}) VALUES ({insert_values})
-        """
-
-        # Create BigQuery parameters with appropriate types
-        parameters = []
-        type_map = {
-            'subskill_order': 'INT64',
-            'difficulty_start': 'FLOAT64',
-            'difficulty_end': 'FLOAT64',
-            'target_difficulty': 'FLOAT64',
-            'is_draft': 'BOOL'
-        }
-        for key, value in subskill_data.items():
-            bq_type = type_map.get(key, 'STRING')
-            parameters.append(bigquery.ScalarQueryParameter(key, bq_type, value))
-
-        await db.execute_query(merge_query, parameters)
-
-        # Dual-write: sync to Firestore
-        await firestore_curriculum_sync.sync_subskill(subskill_data)
-
-        return Subskill(**subskill_data)
+        row = await firestore_reader.get_subskill(subskill_id)
+        return Subskill(**row) if row else None
 
     async def delete_subskill(self, subskill_id: str) -> bool:
-        """Delete a subskill by removing all rows with this ID"""
-        query = f"""
-        DELETE FROM `{settings.get_table_id(settings.TABLE_SUBSKILLS)}`
-        WHERE subskill_id = @subskill_id
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id)]
-
-        try:
-            await db.execute_query(query, parameters)
-            logger.info(f"✅ Deleted subskill {subskill_id}")
-
-            # Dual-write: sync to Firestore
-            await firestore_curriculum_sync.delete_subskill(subskill_id)
-
-            return True
-        except Exception as e:
-            logger.error(f"❌ Failed to delete subskill {subskill_id}: {e}")
+        ctx = await self._resolve_from_subskill(subskill_id)
+        if not ctx:
             return False
+        return await draft_curriculum.delete_subskill(ctx["grade"], ctx["subject_id"], subskill_id)
 
     # ==================== HIERARCHICAL TREE ====================
 
     async def get_curriculum_tree(self, subject_id: str, include_drafts: bool = False) -> Optional[CurriculumTree]:
-        """Build complete hierarchical curriculum tree for a subject using optimized single query"""
-        subject = await self.get_subject(subject_id)
-        if not subject:
+        """Get the curriculum tree (single doc read, no joins)."""
+        tree_data = await firestore_reader.get_curriculum_tree(subject_id, include_drafts=include_drafts)
+        if not tree_data:
             return None
 
-        # Build WHERE clause for drafts
-        draft_filter = "" if include_drafts else "AND u.is_draft = false AND sk.is_draft = false AND sub.is_draft = false"
-
-        # Single query with LEFT JOINs to fetch entire hierarchy at once
-        query = f"""
-        SELECT
-            u.unit_id, u.unit_title, u.unit_order, u.description as unit_description, u.is_draft as unit_is_draft,
-            sk.skill_id, sk.skill_description, sk.skill_order, sk.is_draft as skill_is_draft,
-            sub.subskill_id, sub.subskill_description, sub.subskill_order,
-            sub.difficulty_start, sub.difficulty_end, sub.target_difficulty, sub.is_draft as subskill_is_draft
-        FROM `{settings.get_table_id(settings.TABLE_UNITS)}` u
-        LEFT JOIN `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
-            ON u.unit_id = sk.unit_id
-        LEFT JOIN `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` sub
-            ON sk.skill_id = sub.skill_id
-        WHERE u.subject_id = @subject_id
-        {draft_filter}
-        ORDER BY u.unit_order, u.unit_id, sk.skill_order, sk.skill_id, sub.subskill_order, sub.subskill_id
-        """
-
-        parameters = [bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id)]
-        results = await db.execute_query(query, parameters)
-
-        # Build tree from flat results using dictionaries for O(1) lookups
-        units_dict = {}
-        skills_dict = {}
-
-        for row in results:
-            unit_id = row.get("unit_id")
-            skill_id = row.get("skill_id")
-            subskill_id = row.get("subskill_id")
-
-            # Create/get unit
-            if unit_id and unit_id not in units_dict:
-                units_dict[unit_id] = UnitNode(
-                    id=unit_id,
-                    title=row["unit_title"],
-                    order=row.get("unit_order"),
-                    description=row.get("unit_description"),
-                    is_draft=row.get("unit_is_draft", False),
-                    skills=[]
-                )
-
-            # Create/get skill
-            if skill_id and skill_id not in skills_dict:
-                skill_node = SkillNode(
-                    id=skill_id,
-                    description=row["skill_description"],
-                    order=row.get("skill_order"),
-                    is_draft=row.get("skill_is_draft", False),
-                    subskills=[]
-                )
-                skills_dict[skill_id] = skill_node
-                if unit_id:
-                    units_dict[unit_id].skills.append(skill_node)
-
-            # Add subskill
-            if subskill_id and skill_id:
-                subskill_node = SubskillNode(
-                    id=subskill_id,
-                    description=row["subskill_description"],
-                    order=row.get("subskill_order"),
-                    difficulty_range={
-                        "start": row.get("difficulty_start"),
-                        "end": row.get("difficulty_end"),
-                        "target": row.get("target_difficulty")
-                    },
-                    is_draft=row.get("subskill_is_draft", False)
-                )
-                skills_dict[skill_id].subskills.append(subskill_node)
-
-        # Convert dict to sorted list
-        tree_units = sorted(units_dict.values(), key=lambda u: (u.order or 0, u.id))
+        tree_units = []
+        for u in tree_data["units"]:
+            skill_nodes = []
+            for sk in u.get("skills", []):
+                subskill_nodes = [SubskillNode(**ss) for ss in sk.get("subskills", [])]
+                skill_nodes.append(SkillNode(
+                    id=sk["id"], description=sk["description"],
+                    order=sk.get("order"), is_draft=sk.get("is_draft", False),
+                    subskills=subskill_nodes,
+                ))
+            tree_units.append(UnitNode(
+                id=u["id"], title=u["title"],
+                order=u.get("order"), description=u.get("description"),
+                is_draft=u.get("is_draft", False), skills=skill_nodes,
+            ))
 
         return CurriculumTree(
-            subject_id=subject.subject_id,
-            subject_name=subject.subject_name,
-            grade=subject.grade,
-            version_id=subject.version_id,
-            units=tree_units
+            subject_id=tree_data["subject_id"],
+            subject_name=tree_data["subject_name"],
+            grade=tree_data["grade"],
+            version_id=tree_data["version_id"],
+            units=tree_units,
         )
 
     # ==================== FLATTENED VIEW ====================
 
     async def get_flattened_curriculum_view(
-        self,
-        subject_id: str,
-        version_id: Optional[str] = None
+        self, subject_id: str, version_id: Optional[str] = None
     ) -> List[FlattenedCurriculumRow]:
-        """
-        Get flattened curriculum view matching BigQuery analytics view structure.
-        Returns published curriculum only (is_draft=false).
-        If version_id is None, gets the active version.
-        """
-        # Get subject and version info
-        subject = await self.get_subject(subject_id, version_id)
-        if not subject:
-            return []
-
-        # Determine which version to query
-        target_version_id = version_id or subject.version_id
-
-        # Get version number for metadata
-        version_query = f"""
-        SELECT version_number
-        FROM `{settings.get_table_id(settings.TABLE_VERSIONS)}`
-        WHERE version_id = @version_id
-        LIMIT 1
-        """
-        version_params = [bigquery.ScalarQueryParameter("version_id", "STRING", target_version_id)]
-        version_results = await db.execute_query(version_query, version_params)
-        version_number = version_results[0]["version_number"] if version_results else 1
-
-        # Build flattened query matching the analytics view structure
-        # This mirrors the CREATE VIEW query from backend/scripts/create_curriculum_views.sql
-        query = f"""
-        SELECT
-            s.subject_name as subject,
-            s.grade_level as grade,
-            s.subject_id,
-            u.unit_id,
-            u.unit_title,
-            u.unit_order,
-            sk.skill_id,
-            sk.skill_description,
-            sk.skill_order,
-            sub.subskill_id,
-            sub.subskill_description,
-            sub.subskill_order,
-            sub.difficulty_start,
-            sub.difficulty_end,
-            sub.target_difficulty,
-            s.version_id
-        FROM `{settings.get_table_id(settings.TABLE_SUBJECTS)}` s
-        JOIN `{settings.get_table_id(settings.TABLE_UNITS)}` u
-            ON s.subject_id = u.subject_id AND s.version_id = u.version_id
-        JOIN `{settings.get_table_id(settings.TABLE_SKILLS)}` sk
-            ON u.unit_id = sk.unit_id AND u.version_id = sk.version_id
-        JOIN `{settings.get_table_id(settings.TABLE_SUBSKILLS)}` sub
-            ON sk.skill_id = sub.skill_id AND sk.version_id = sub.version_id
-        WHERE s.subject_id = @subject_id
-            AND s.version_id = @version_id
-            AND s.is_active = true
-            AND s.is_draft = false
-            AND u.is_draft = false
-            AND sk.is_draft = false
-            AND sub.is_draft = false
-        ORDER BY u.unit_order, sk.skill_order, sk.skill_id, sub.subskill_order
-        """
-
-        parameters = [
-            bigquery.ScalarQueryParameter("subject_id", "STRING", subject_id),
-            bigquery.ScalarQueryParameter("version_id", "STRING", target_version_id)
-        ]
-
-        logger.info(f"📊 Querying flattened curriculum view for subject {subject_id}, version {target_version_id}")
-        results = await db.execute_query(query, parameters)
-        logger.info(f"📦 Found {len(results)} flattened curriculum rows")
-
-        # Build flattened rows with version metadata
-        flattened_rows = []
-        for row in results:
-            flattened_rows.append(FlattenedCurriculumRow(
-                subject=row["subject"],
-                grade=row.get("grade"),
-                subject_id=row["subject_id"],
-                unit_id=row["unit_id"],
-                unit_title=row["unit_title"],
-                unit_order=row.get("unit_order"),
-                skill_id=row["skill_id"],
-                skill_description=row["skill_description"],
-                skill_order=row.get("skill_order"),
-                subskill_id=row["subskill_id"],
-                subskill_description=row["subskill_description"],
-                subskill_order=row.get("subskill_order"),
-                difficulty_start=row.get("difficulty_start"),
-                difficulty_end=row.get("difficulty_end"),
-                target_difficulty=row.get("target_difficulty"),
-                version_id=row["version_id"],
-                version_number=version_number
-            ))
-
-        return flattened_rows
+        rows = await firestore_reader.get_flattened_view(subject_id, version_id=version_id)
+        return [FlattenedCurriculumRow(**row) for row in rows]
 
     # ==================== PRIMITIVE OPERATIONS ====================
 
     async def get_all_primitives(self) -> List[Dict[str, Any]]:
-        """Get all primitives from the library"""
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_PRIMITIVES)}`
-        ORDER BY category, primitive_name
-        """
-
-        logger.info("📊 Querying all primitives")
-        results = await db.execute_query(query)
-        logger.info(f"📦 Found {len(results)} primitives")
-
-        return results
+        return await firestore_reader.get_all_primitives()
 
     async def get_primitives_by_category(self, category: str) -> List[Dict[str, Any]]:
-        """Get primitives filtered by category"""
-        query = f"""
-        SELECT *
-        FROM `{settings.get_table_id(settings.TABLE_PRIMITIVES)}`
-        WHERE category = @category
-        ORDER BY primitive_name
-        """
-
-        parameters = [
-            bigquery.ScalarQueryParameter("category", "STRING", category)
-        ]
-
-        logger.info(f"📊 Querying primitives for category: {category}")
-        results = await db.execute_query(query, parameters)
-        logger.info(f"📦 Found {len(results)} primitives in category {category}")
-
-        return results
+        return await firestore_reader.get_primitives_by_category(category)
 
     async def get_subskill_primitives(self, subskill_id: str, version_id: str) -> List[Dict[str, Any]]:
-        """Get all primitives associated with a subskill"""
-        query = f"""
-        SELECT p.*
-        FROM `{settings.get_table_id(settings.TABLE_SUBSKILL_PRIMITIVES)}` sp
-        JOIN `{settings.get_table_id(settings.TABLE_PRIMITIVES)}` p
-            ON sp.primitive_id = p.primitive_id
-        WHERE sp.subskill_id = @subskill_id
-            AND sp.version_id = @version_id
-            AND sp.is_draft = false
-        ORDER BY p.category, p.primitive_name
-        """
+        return await firestore_reader.get_subskill_primitives(subskill_id, version_id)
 
-        parameters = [
-            bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id),
-            bigquery.ScalarQueryParameter("version_id", "STRING", version_id)
-        ]
-
-        logger.info(f"📊 Querying primitives for subskill {subskill_id}, version {version_id}")
-        results = await db.execute_query(query, parameters)
-        logger.info(f"📦 Found {len(results)} primitives for subskill")
-
-        return results
-
-    async def update_subskill_primitives(
-        self,
-        subskill_id: str,
-        primitive_ids: List[str],
-        version_id: str
-    ) -> bool:
-        """
-        Update the primitives associated with a subskill.
-        Creates draft records in the junction table.
-        """
+    async def update_subskill_primitives(self, subskill_id: str, primitive_ids: List[str], version_id: str) -> bool:
+        from app.db.firestore_curriculum_service import firestore_curriculum_sync
         try:
-            now = datetime.utcnow()
-
-            # Step 1: Delete existing draft associations for this subskill
-            delete_query = f"""
-            DELETE FROM `{settings.get_table_id(settings.TABLE_SUBSKILL_PRIMITIVES)}`
-            WHERE subskill_id = @subskill_id
-                AND version_id = @version_id
-                AND is_draft = true
-            """
-
-            delete_params = [
-                bigquery.ScalarQueryParameter("subskill_id", "STRING", subskill_id),
-                bigquery.ScalarQueryParameter("version_id", "STRING", version_id)
-            ]
-
-            logger.info(f"🗑️ Deleting existing draft primitive associations for subskill {subskill_id}")
-            await db.execute_query(delete_query, delete_params)
-
-            # Step 2: Insert new draft associations
-            if primitive_ids:
-                rows_to_insert = []
-                for primitive_id in primitive_ids:
-                    rows_to_insert.append({
-                        "subskill_id": subskill_id,
-                        "primitive_id": primitive_id,
-                        "version_id": version_id,
-                        "is_draft": True,
-                        "created_at": now.isoformat()
-                    })
-
-                logger.info(f"💾 Inserting {len(rows_to_insert)} draft primitive associations")
-                success = await db.insert_rows(settings.TABLE_SUBSKILL_PRIMITIVES, rows_to_insert)
-
-                if not success:
-                    logger.error("❌ Failed to insert primitive associations")
-                    return False
-
-                logger.info(f"✅ Successfully updated primitives for subskill {subskill_id}")
-            else:
-                logger.info(f"✅ Removed all primitives from subskill {subskill_id}")
-
-            # Dual-write: sync to Firestore
-            await firestore_curriculum_sync.sync_subskill_primitives(
-                subskill_id, primitive_ids, version_id
-            )
-
+            await firestore_curriculum_sync.sync_subskill_primitives(subskill_id, primitive_ids, version_id)
             return True
-
         except Exception as e:
-            logger.error(f"❌ Failed to update subskill primitives: {e}")
+            logger.error(f"Failed to update subskill primitives: {e}")
             raise
 
     # ==================== DEPLOYMENT TO FIRESTORE ====================
 
     async def deploy_curriculum_to_firestore(
-        self,
-        subject_id: str,
-        version_id: Optional[str] = None,
-        deployed_by: str = "system"
+        self, subject_id: str, version_id: Optional[str] = None, deployed_by: str = "system"
     ) -> Dict[str, Any]:
-        """
-        Build and deploy published curriculum to Firestore for backend consumption.
+        """Publish the draft doc to curriculum_published."""
+        ctx = await self._resolve_subject_context(subject_id)
+        if not ctx:
+            raise ValueError(f"Subject {subject_id} not found")
 
-        Reads the flattened curriculum view, restructures it into a hierarchical
-        document with subskill index and stats, then writes it to Firestore.
-
-        Args:
-            subject_id: The subject to deploy
-            version_id: Optional specific version (defaults to active)
-            deployed_by: Who triggered the deployment
-
-        Returns:
-            Deployment result with metadata
-        """
-        from app.db.firestore_graph_service import firestore_graph_service
-
-        # Get flattened data (published, active version)
-        flat_rows = await self.get_flattened_curriculum_view(subject_id, version_id)
-        if not flat_rows:
-            raise ValueError(f"No published curriculum found for subject {subject_id}")
-
-        # Build the deployment document
-        curriculum_doc = self._build_deployment_document(flat_rows, subject_id, deployed_by)
-
-        # Write to Firestore
-        result = await firestore_graph_service.deploy_curriculum(subject_id, curriculum_doc)
-
-        logger.info(
-            f"✅ Deployed {subject_id} to Firestore: "
-            f"{curriculum_doc['stats']['total_units']} units, "
-            f"{curriculum_doc['stats']['total_skills']} skills, "
-            f"{curriculum_doc['stats']['total_subskills']} subskills"
-        )
+        published = await draft_curriculum.publish(ctx["grade"], subject_id, deployed_by=deployed_by)
 
         return {
             "success": True,
             "subject_id": subject_id,
-            "version_id": curriculum_doc["version_id"],
-            "version_number": curriculum_doc["version_number"],
-            "deployed_at": curriculum_doc["deployed_at"],
-            "stats": curriculum_doc["stats"],
-        }
-
-    def _build_deployment_document(
-        self,
-        flat_rows: List[FlattenedCurriculumRow],
-        subject_id: str,
-        deployed_by: str
-    ) -> Dict[str, Any]:
-        """
-        Convert flattened curriculum rows into the Firestore deployment document.
-
-        Produces:
-        - curriculum: hierarchical tree (units → skills → subskills)
-        - subskill_index: flat map of subskill_id → metadata for reverse lookups
-        - stats: pre-computed counts and difficulty ranges
-        """
-        first_row = flat_rows[0]
-
-        # Build hierarchical structure
-        units: List[Dict[str, Any]] = []
-        subskill_index: Dict[str, Dict[str, Any]] = {}
-        current_unit: Optional[Dict[str, Any]] = None
-        current_skill: Optional[Dict[str, Any]] = None
-
-        difficulty_values = []
-
-        for row in flat_rows:
-            # New unit?
-            if current_unit is None or current_unit["unit_id"] != row.unit_id:
-                current_unit = {
-                    "unit_id": row.unit_id,
-                    "unit_title": row.unit_title,
-                    "unit_order": row.unit_order,
-                    "skills": [],
-                }
-                units.append(current_unit)
-                current_skill = None  # reset skill on new unit
-
-            # New skill?
-            if current_skill is None or current_skill["skill_id"] != row.skill_id:
-                current_skill = {
-                    "skill_id": row.skill_id,
-                    "skill_description": row.skill_description,
-                    "skill_order": row.skill_order,
-                    "subskills": [],
-                }
-                current_unit["skills"].append(current_skill)
-
-            # Add subskill
-            current_skill["subskills"].append({
-                "subskill_id": row.subskill_id,
-                "subskill_description": row.subskill_description,
-                "subskill_order": row.subskill_order,
-                "difficulty_start": row.difficulty_start,
-                "difficulty_end": row.difficulty_end,
-                "target_difficulty": row.target_difficulty,
-            })
-
-            # Build reverse-lookup index
-            subskill_index[row.subskill_id] = {
-                "subject": row.subject,
-                "unit_id": row.unit_id,
-                "unit_title": row.unit_title,
-                "skill_id": row.skill_id,
-                "skill_description": row.skill_description,
-                "subskill_id": row.subskill_id,
-                "subskill_description": row.subskill_description,
-                "difficulty_start": row.difficulty_start,
-                "difficulty_end": row.difficulty_end,
-                "target_difficulty": row.target_difficulty,
-                "grade": row.grade,
-            }
-
-            # Collect difficulty values for stats
-            if row.target_difficulty is not None:
-                difficulty_values.append(row.target_difficulty)
-            if row.difficulty_start is not None:
-                difficulty_values.append(row.difficulty_start)
-            if row.difficulty_end is not None:
-                difficulty_values.append(row.difficulty_end)
-
-        # Compute stats
-        unique_skills = {row.skill_id for row in flat_rows}
-        target_diffs = [r.target_difficulty for r in flat_rows if r.target_difficulty is not None]
-
-        stats = {
-            "total_units": len(units),
-            "total_skills": len(unique_skills),
-            "total_subskills": len(subskill_index),
-            "avg_target_difficulty": round(sum(target_diffs) / len(target_diffs), 3) if target_diffs else None,
-            "min_difficulty": min(difficulty_values) if difficulty_values else None,
-            "max_difficulty": max(difficulty_values) if difficulty_values else None,
-        }
-
-        return {
-            "subject_id": subject_id,
-            "subject_name": first_row.subject,
-            "grade": first_row.grade,
-            "version_id": first_row.version_id,
-            "version_number": first_row.version_number,
-            "deployed_at": datetime.utcnow().isoformat(),
-            "deployed_by": deployed_by,
-            "curriculum": units,
-            "subskill_index": subskill_index,
-            "stats": stats,
+            "version_id": published.get("version_id", ""),
+            "version_number": published.get("version_number", 1),
+            "deployed_at": published.get("deployed_at", ""),
+            "stats": published.get("stats", {}),
         }
 
 

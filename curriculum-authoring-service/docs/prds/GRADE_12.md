@@ -211,6 +211,7 @@ Target range: ~400-600 subskills.
 
 ## Authoring Notes
 
+- **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5. Capstone year relies heavily on AI tutor sessions for advanced writing (research papers, synthesis essays) alongside `paragraph-architect`, `revision-workshop`, `evidence-finder`. Science (Environmental Systems) can leverage `food-web-builder`, `habitat-diorama`, `adaptation-investigator`, plus problem-type primitives. Calculus/Pre-Calc use `graph-board`, `coordinate-graph`, `function-machine`. **Restructure Speaking and Listening as "Listening Comprehension and Rhetorical Analysis".**
 - Grade 12 mathematics has the widest variation in student placement of any grade. The Pre-Calculus/Calculus track defined here is the most rigorous path. Consider marking CALC001-CALC003 as optional/advanced so that students on a Pre-Calculus-only or Statistics track have a clear subset to follow.
 - SP006 (Advanced Statistics) is marked as an optional track. It can serve as the primary math course for students not on the Calculus path.
 - Calculus content (CALC001-CALC003) extends beyond Common Core standards, which do not cover calculus. These units align with standard AP Calculus AB first-semester content. Mark these clearly as extension content.
@@ -225,6 +226,7 @@ Target range: ~400-600 subskills.
 ## Quality Gates
 
 ### Standard Quality Gates
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] All subskills have at least 3 assessment items at target difficulty
 - [ ] Every skill node has at least 2 prerequisite edges (no orphan nodes)
 - [ ] Difficulty calibration verified: items span the full 5-10 range with median in 6-9

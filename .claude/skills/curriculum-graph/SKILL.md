@@ -1,11 +1,13 @@
 # Curriculum Graph — Diagnostic & Improvement Skill
 
-Analyze the curriculum knowledge graph for structural issues that affect Pulse engine diversity and adaptive learning quality. Uses the agentic graph analysis layer (GraphAnalysisEngine, SuggestionEngine, CurriculumGraphAgentService) to diagnose, suggest, and improve the graph.
+Analyze the curriculum knowledge graph for structural issues that affect Pulse engine diversity and adaptive learning quality. Uses the agentic graph analysis layer (GraphAnalysisEngine, SuggestionEngine, ScopedSuggestionService, CurriculumGraphAgentService) to diagnose, suggest, and improve the graph.
 
 **Arguments:** `/curriculum-graph [command] [subject_id]`
 - `/curriculum-graph diagnose Mathematics` — full structural diagnosis + health score
 - `/curriculum-graph pulse-sim Mathematics` — simulate Pulse candidate pools across sessions
-- `/curriculum-graph suggest Mathematics` — generate Gemini-powered edge suggestions
+- `/curriculum-graph suggest Mathematics` — generate Gemini-powered edge suggestions (bulk pipeline)
+- `/curriculum-graph scoped-suggest SKILL_ID1 SKILL_ID2` — lightweight scoped edge suggestions (1-2 Gemini calls, < 5s)
+- `/curriculum-graph connect-skills SOURCE_SKILL TARGET_SKILL` — pairwise subskill connections (including cross-grade)
 - `/curriculum-graph add-edge SOURCE TARGET [relationship]` — create a typed edge (with validation)
 - `/curriculum-graph compare Mathematics` — before/after impact comparison
 
@@ -29,7 +31,8 @@ Only edges with `is_prerequisite: true` enforce mastery gates. All types are tra
 **Key services:**
 - `curriculum-authoring-service/app/services/edge_manager.py` — `EdgeManager`: edge CRUD, validation (cycle check on prereq subgraph only), parallel edge auto-reversal
 - `curriculum-authoring-service/app/services/graph_analysis.py` — `GraphAnalysisEngine`: pure structural analysis (health metrics, anomalies, impact projection, validation)
-- `curriculum-authoring-service/app/services/suggestion_engine.py` — `SuggestionEngine`: Gemini-powered (embeddings + LLM refinement)
+- `curriculum-authoring-service/app/services/suggestion_engine.py` — `SuggestionEngine`: Gemini-powered bulk pipeline (embeddings + LLM refinement)
+- `curriculum-authoring-service/app/services/scoped_suggestion_service.py` — `ScopedSuggestionService`: lightweight scoped suggestions (1-2 Gemini calls, inline authoring)
 - `curriculum-authoring-service/app/services/graph_agent.py` — `CurriculumGraphAgentService`: orchestrator (health reports, suggestion workflow, event hooks)
 - `curriculum-authoring-service/app/api/agent.py` — Agent REST endpoints
 - `curriculum-authoring-service/app/api/edges.py` — Edge CRUD REST endpoints
@@ -58,7 +61,9 @@ Only edges with `is_prerequisite: true` enforce mastery gates. All types are tra
 |---------|---------|
 | `diagnose` | Full structural analysis + health score via GraphAnalysisEngine |
 | `pulse-sim` | Simulate Pulse sessions and measure candidate diversity |
-| `suggest` | Generate Gemini-powered edge suggestions via agent API |
+| `suggest` | Generate Gemini-powered edge suggestions via bulk agent API |
+| `scoped-suggest` | Lightweight scoped suggestions (1-2 Gemini calls, < 5s) |
+| `connect-skills` | Pairwise subskill connections between two skills (cross-grade OK) |
 | `add-edge` | Create a typed edge via EdgeManager API |
 | `compare` | Before/after impact using agent's impact-preview |
 
@@ -273,6 +278,125 @@ curl -s http://localhost:8001/api/agent/{subject_id}/impact-preview
 
 ---
 
+## Command: `scoped-suggest`
+
+Lightweight scoped edge suggestions — the primary inline authoring tool. Runs 1-2 Gemini calls against a narrow, author-defined scope instead of the bulk 5-phase pipeline.
+
+**Syntax:** `/curriculum-graph scoped-suggest SKILL_ID1 [SKILL_ID2 ...] [--subject SUBJECT_ID]`
+
+Defaults: `subject_id` inferred from skill ID prefix if possible.
+
+### Step 1: Call the scoped suggestion endpoint
+
+```bash
+curl -s -X POST http://localhost:8001/api/ai/suggest-edges \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject_id": "MATHEMATICS",
+    "scope": {
+      "skill_ids": ["OPS002-01", "OPS002-02"],
+      "include_existing_graph": true
+    },
+    "options": {
+      "max_suggestions": 10,
+      "depth": "subskill"
+    }
+  }'
+```
+
+Returns `ScopedSuggestionResponse` with suggestions and scope_summary (nodes analyzed, Gemini calls, elapsed_ms).
+
+### Step 2: Present suggestions
+
+```
+## Scoped Suggestions (2.8s, 1 Gemini call)
+
+### 1. OPS001-01-D → OPS002-01-A (builds_on, strength: 0.85)
+   Confidence: 0.90
+   Rationale: Equation writing within 10 extends to modeling at higher range.
+   Source: Grade 1 > Operations > OPS001-01
+   Target: Grade 2 > Operations > OPS002-01
+
+### 2. OPS001-01-B → OPS002-01-B (builds_on, strength: 0.75)
+   Confidence: 0.82
+   Rationale: Part-whole modeling extends to comparison at higher range.
+```
+
+### Step 3: Accept selected suggestions
+
+```bash
+curl -s -X POST http://localhost:8001/api/ai/suggest-edges/accept \
+  -H "Content-Type: application/json" \
+  -d '{"suggestion_ids": ["uuid1", "uuid2"], "subject_id": "MATHEMATICS"}'
+```
+
+Creates draft edges via EdgeManager (same dual-write, same on_mutation hooks).
+
+---
+
+## Command: `connect-skills`
+
+Find all subskill-level connections between exactly two skills. Supports cross-grade connections.
+
+**Syntax:** `/curriculum-graph connect-skills SOURCE_SKILL TARGET_SKILL [--source-subject SID] [--target-subject SID]`
+
+### Step 1: Call the connect-skills endpoint
+
+```bash
+curl -s -X POST http://localhost:8001/api/ai/connect-skills \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source_skill_id": "OPS001-01",
+    "source_subject_id": "MATHEMATICS",
+    "target_skill_id": "OPS002-01",
+    "target_subject_id": "MATHEMATICS"
+  }'
+```
+
+Returns `ConnectSkillsResponse` with connections and skill_summary.
+
+### Step 2: Present connections
+
+```
+## Skill Connections: OPS001-01 → OPS002-01 (3.1s, 1 Gemini call)
+
+Source: 6 subskills | Target: 5 subskills | Connections found: 4
+
+### 1. OPS001-01-D → OPS002-01-A (prerequisite, strength: 0.9)
+   "Write equations for add/subtract within 10" → "Model addition within 100"
+   Rationale: Equation writing within 10 gates concrete modeling at higher range.
+
+### 2. OPS001-01-B → OPS002-01-B (builds_on, strength: 0.75)
+   "Model word problems within 10" → "Model comparison word problems within 100"
+   Rationale: Part-whole modeling extends to comparison at higher range.
+```
+
+### Step 3: Accept connections
+
+Use the same accept endpoint — connections are stored as scoped suggestions in Firestore:
+```bash
+curl -s -X POST http://localhost:8001/api/ai/suggest-edges/accept \
+  -H "Content-Type: application/json" \
+  -d '{"suggestion_ids": ["uuid1", "uuid2"], "subject_id": "MATHEMATICS"}'
+```
+
+### Cross-Grade Example
+
+```bash
+curl -s -X POST http://localhost:8001/api/ai/connect-skills \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source_skill_id": "GEOM002-04",
+    "source_subject_id": "MATHEMATICS",
+    "target_skill_id": "NF001-01",
+    "target_subject_id": "MATHEMATICS"
+  }'
+```
+
+The LLM receives grade context and considers developmental progression when suggesting cross-grade connections.
+
+---
+
 ## Command: `add-edge`
 
 Create a typed edge via the EdgeManager API. Now supports all relationship types.
@@ -397,7 +521,9 @@ Removed edges: 0
 | `curriculum-authoring-service/app/models/suggestions.py` | Suggestion, health report, anomaly models |
 | `curriculum-authoring-service/app/services/edge_manager.py` | Edge CRUD, validation, parallel auto-reversal |
 | `curriculum-authoring-service/app/services/graph_analysis.py` | `GraphAnalysisEngine` — pure structural analysis |
-| `curriculum-authoring-service/app/services/suggestion_engine.py` | `SuggestionEngine` — Gemini embeddings + LLM refinement |
+| `curriculum-authoring-service/app/services/suggestion_engine.py` | `SuggestionEngine` — Gemini embeddings + LLM refinement (bulk) |
+| `curriculum-authoring-service/app/services/scoped_suggestion_service.py` | `ScopedSuggestionService` — lightweight scoped suggestions (inline authoring) |
+| `curriculum-authoring-service/app/models/scoped_suggestions.py` | Request/response models for scoped suggestions |
 | `curriculum-authoring-service/app/services/graph_agent.py` | `CurriculumGraphAgentService` — orchestrator + event hooks |
 | `curriculum-authoring-service/app/services/graph_cache_manager.py` | Graph caching in Firestore (enriched edge metadata) |
 | `curriculum-authoring-service/app/api/edges.py` | Edge CRUD endpoints |
@@ -416,6 +542,12 @@ Removed edges: 0
 - [ ] For `pulse-sim`: identified diversity cliff point
 - [ ] For `suggest`: called agent suggest endpoint (or manual structural analysis)
 - [ ] For `suggest`: presented ranked suggestions with relationship type, impact, rationale
+- [ ] For `scoped-suggest`: called POST /api/ai/suggest-edges with scoped skill IDs
+- [ ] For `scoped-suggest`: presented suggestions with context, rationale, and confidence
+- [ ] For `scoped-suggest`: offered accept workflow via POST /api/ai/suggest-edges/accept
+- [ ] For `connect-skills`: called POST /api/ai/connect-skills with source/target skills
+- [ ] For `connect-skills`: presented pairwise connections with source→target labels
+- [ ] For `connect-skills`: offered accept workflow (same endpoint as scoped-suggest)
 - [ ] For `add-edge`: validated (cycle check on prereq subgraph), confirmed with user, created via edges API
 - [ ] For `add-edge`: noted parallel auto-reversal if applicable
 - [ ] For `compare`: showed before/after health metrics and Pulse impact delta

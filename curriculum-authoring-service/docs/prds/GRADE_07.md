@@ -201,6 +201,7 @@ Target range: ~550-700 subskills.
 
 ## Authoring Notes
 
+- **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5. ELA at this level should target: `evidence-finder`, `text-structure-analyzer`, `figurative-language-finder`, `paragraph-architect`, `opinion-builder`, `revision-workshop`, `poetry-lab`, `genre-explorer`, AI tutor sessions for argument development and oral analysis. **Restructure Speaking and Listening as "Listening Comprehension and Oral Analysis"** — remove peer/presentation subskills, use `listen-and-respond`, `media-player`, and AI tutor sessions.
 - Grade 7 is the first year where students routinely work with negative rational numbers in all four operations; ensure rich coverage of sign rules in context.
 - Proportional relationships are the mathematical backbone of Grade 7 and connect to virtually every other subject. Prioritize deep coverage of RP002.
 - Statistics and probability shift from descriptive (Grade 6) to inferential thinking; ensure problems require students to make inferences rather than just compute.
@@ -212,6 +213,7 @@ Target range: ~550-700 subskills.
 ## Quality Gates
 
 ### Standard Quality Gates
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] All subskills have at least 3 assessment items at target difficulty
 - [ ] Every skill node has at least 2 prerequisite edges (no orphan nodes)
 - [ ] Difficulty calibration verified: items span the full 3-9 range with median in 5-7

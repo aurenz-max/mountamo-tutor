@@ -203,6 +203,7 @@ Target range: ~500-650 subskills.
 
 ## Authoring Notes
 
+- **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5. Geometry has strong primitive coverage: `shape-builder`, `coordinate-graph`, `measurement-tools`. Chemistry is well-served: `atom-builder`, `molecule-constructor`, `equation-balancer`, `reaction-lab`, `periodic-table`, `states-of-matter`, `ph-explorer`. ELA targets same as Grade 9. **Restructure Speaking and Listening as "Listening Comprehension and Oral Analysis".**
 - Geometry is the only high school math course where deductive proof is a primary skill. Proof items must be carefully scaffolded: start with fill-in-the-blank proofs, progress to guided proofs, then to independent proof construction.
 - Trigonometric ratios in Geometry (GEOM102) are limited to right triangles. The unit circle and general trigonometric functions belong to Algebra II (Grade 11). Do not introduce radian measure here.
 - Chemistry stoichiometry (CHEM003) is typically the highest-difficulty content in Grade 10 science. Ensure extensive scaffolding from conceptual mole relationships through limiting reactant problems.
@@ -213,6 +214,7 @@ Target range: ~500-650 subskills.
 ## Quality Gates
 
 ### Standard Quality Gates
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] All subskills have at least 3 assessment items at target difficulty
 - [ ] Every skill node has at least 2 prerequisite edges (no orphan nodes)
 - [ ] Difficulty calibration verified: items span the full 4-10 range with median in 5-8

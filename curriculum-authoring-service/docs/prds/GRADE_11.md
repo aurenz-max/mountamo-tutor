@@ -211,6 +211,7 @@ Target range: ~450-600 subskills.
 
 ## Authoring Notes
 
+- **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5. Physics has good primitive coverage: `lever-lab`, `ramp-lab`, `pulley-system-builder`, `airfoil-lab`, `flight-forces-explorer`, `propulsion-lab`, `orbit-mechanics-lab`. Algebra II uses `coordinate-graph`, `graph-board`, `function-machine`, `systems-equations-visualizer`. ELA at this level centers on rhetorical analysis and college-ready writing — primarily AI tutor sessions with `evidence-finder`, `paragraph-architect`, `revision-workshop` for structured practice. **Restructure Speaking and Listening as "Listening Comprehension and Rhetorical Analysis".**
 - Algebra II is the course most strongly correlated with college readiness. Ensure that function analysis (FUNC101) and trigonometric functions (FUNC102) are deeply covered, not just procedurally.
 - The transition from right-triangle trigonometry (Grade 10 Geometry) to unit-circle trigonometry (Grade 11 Algebra II) is a known difficulty spike. Include bridging content that connects the two approaches explicitly.
 - Physics requires Grade 11 math capabilities (algebra, trigonometry). Ensure that physics items do not require calculus, which belongs to Grade 12. Vector decomposition using trigonometry is appropriate; derivatives and integrals are not.
@@ -221,6 +222,7 @@ Target range: ~450-600 subskills.
 ## Quality Gates
 
 ### Standard Quality Gates
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] All subskills have at least 3 assessment items at target difficulty
 - [ ] Every skill node has at least 2 prerequisite edges (no orphan nodes)
 - [ ] Difficulty calibration verified: items span the full 4-10 range with median in 6-9

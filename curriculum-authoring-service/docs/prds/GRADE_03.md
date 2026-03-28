@@ -126,7 +126,17 @@ Grade 3 marks a significant increase in cognitive demand. Students are expected 
 
 ## Authoring Notes
 
-1. **Multiplication and division as the centerpiece:** Grade 3 math revolves around building multiplicative reasoning. OPS003 should be the largest math unit with the most granular subskill breakdown. Cover all interpretations: equal groups, arrays, area model, comparison. Include fact fluency as a distinct skill cluster.
+1. **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5 (Lumina-First Design Principle). Grade 3 is the "reading to learn" transition — LA subskills must describe what students DO in Lumina, not what teachers facilitate in classrooms.
+
+   **Key LA primitive targets for Grade 3:**
+   - LA001 (Reading Literature): `story-map`, `character-web`, `evidence-finder`, `multiple-choice`, `sequencing-activity`
+   - LA002 (Reading Informational): `text-structure-analyzer`, `evidence-finder`, `sequencing-activity`, `categorization-activity`
+   - LA003 (Writing): `paragraph-architect`, `opinion-builder`, `story-planner`, `revision-workshop`, AI tutor sessions
+   - LA004 (Speaking and Listening): **Restructure as "Listening Comprehension and Oral Language"** — use `listen-and-respond`, AI tutor sessions. Remove peer-dependent and presentation subskills.
+   - LA005 (Language): `sentence-builder`, `sentence-analyzer`, `fill-in-blanks`, `categorization-activity`
+   - LA006 (Vocabulary): `context-clues-detective`, `word-builder`, `figurative-language-finder`, `vocabulary-explorer`
+
+2. **Multiplication and division as the centerpiece:** Grade 3 math revolves around building multiplicative reasoning. OPS003 should be the largest math unit with the most granular subskill breakdown. Cover all interpretations: equal groups, arrays, area model, comparison. Include fact fluency as a distinct skill cluster.
 
 2. **Fractions introduction:** NF001 is new territory. The subskill progression must be carefully scaffolded: whole partitioned into equal parts, naming unit fractions, placing fractions on a number line, then equivalence and comparison. Avoid jumping to symbolic manipulation before conceptual understanding is established.
 
@@ -143,6 +153,7 @@ Grade 3 marks a significant increase in cognitive demand. Students are expected 
 From parent PRD:
 
 - [ ] All subskills have unique, descriptive IDs following the naming convention
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] Every subskill has at least one prerequisite edge (except entry-level skills)
 - [ ] No orphan nodes in the prerequisite graph
 - [ ] Difficulty values assigned and calibrated within the grade-appropriate range

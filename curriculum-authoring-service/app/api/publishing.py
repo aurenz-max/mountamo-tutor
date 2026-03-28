@@ -330,6 +330,27 @@ async def get_deploy_diagnostics(subject_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/backfill-drafts")
+async def backfill_drafts(grade: Optional[str] = None):
+    """Seed curriculum_drafts from existing curriculum_published docs.
+
+    Run once after migration to populate the drafts collection for subjects
+    that were published before the drafts collection existed.
+    """
+    from app.db.draft_curriculum_service import draft_curriculum
+
+    try:
+        result = await draft_curriculum.backfill_from_published(grade=grade)
+        return {
+            "success": True,
+            **result,
+            "message": f"Backfilled {result['backfilled']} subjects into curriculum_drafts",
+        }
+    except Exception as e:
+        logger.error(f"Backfill failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/subjects/{subject_id}/deploy/repair")
 async def repair_version_ids(subject_id: str):
     """

@@ -219,6 +219,7 @@ Target range: ~500-650 subskills.
 
 ## Authoring Notes
 
+- **Lumina-first design (CRITICAL).** Every subskill must target a named Lumina primitive, problem type, or AI tutor session. See parent PRD §5. High school ELA shifts to literary analysis and argumentative writing — these are strong Lumina targets via `evidence-finder`, `text-structure-analyzer`, `figurative-language-finder`, `paragraph-architect`, `opinion-builder`, `revision-workshop`, `poetry-lab`, AI tutor sessions for Socratic dialogue on texts. Biology is extensively covered by existing primitives: `cell-builder`, `dna-explorer`, `inheritance-lab`, `protein-folder`, `food-web-builder`, `evolution-timeline`, `energy-cycle-engine`. **Restructure Speaking and Listening as "Listening Comprehension and Oral Analysis".**
 - Algebra I is the gateway course for all subsequent high school mathematics. Ensure thorough coverage of all HSA and HSF standards, with particular attention to the conceptual understanding of functions, not just procedural fluency.
 - The transition from middle school to high school ELA standards (RL/RI.9-10 vs RL/RI.8) involves a significant jump in text complexity and analytical depth. Include scaffolded items that bridge this gap.
 - Biology covers the full HS-LS domain in one year. This is a large scope; ensure units are tightly sequenced and that evolution (BIO004) builds on heredity (BIO003) rather than standing alone.
@@ -229,6 +230,7 @@ Target range: ~500-650 subskills.
 ## Quality Gates
 
 ### Standard Quality Gates
+- [ ] **Every subskill targets a named primitive, problem type, or AI tutor session (Lumina renderability gate)**
 - [ ] All subskills have at least 3 assessment items at target difficulty
 - [ ] Every skill node has at least 2 prerequisite edges (no orphan nodes)
 - [ ] Difficulty calibration verified: items span the full 4-10 range with median in 5-8
