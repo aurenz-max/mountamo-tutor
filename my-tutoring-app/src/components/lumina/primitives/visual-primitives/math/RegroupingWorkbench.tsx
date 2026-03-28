@@ -309,6 +309,55 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   }, [isConnected, challenges.length, operation, operand1, operand2, gradeBand, currentChallenge, wordProblemContext, sendText]);
 
   // -------------------------------------------------------------------------
+  // Auto-submit evaluation when all challenges complete
+  // -------------------------------------------------------------------------
+  // The "Next Problem" button is hidden when allChallengesComplete is true,
+  // so advanceToNextChallenge is never called for the last challenge.
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+
+    const totalCorrect = challengeResults.filter(r => r.correct).length;
+    const totalRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingTotal as number) ?? 0), 0);
+    const correctRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingCorrect as number) ?? 0), 0);
+    const avgTime = challengeResults.length > 0
+      ? challengeResults.reduce((s, r) => s + ((r.timeMs as number) ?? 0), 0) / challengeResults.length
+      : 0;
+    const score = challenges.length > 0
+      ? Math.round((totalCorrect / challenges.length) * 100)
+      : 0;
+
+    const metrics: RegroupingWorkbenchMetrics = {
+      type: 'regrouping-workbench',
+      problemsCompleted: totalCorrect,
+      problemsTotal: challenges.length,
+      regroupingCorrect: correctRegroups,
+      regroupingTotal: totalRegroups,
+      algorithmConnectionMade,
+      incorrectRegroupAttempts,
+      stepByStepUsed,
+      wordProblemContextEngaged: !!(wordProblemContext?.enabled && wordProblemContext.story),
+      averageTimePerProblem: Math.round(avgTime),
+      attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+    };
+
+    submitEvaluation(totalCorrect === challenges.length, score, metrics, { challengeResults });
+
+    const phaseScoreStr = phaseResults
+      .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+      .join(', ');
+    sendText(
+      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${score}%. `
+      + `Student completed all ${challenges.length} regrouping problems! `
+      + `Celebrate and give encouraging phase-specific feedback about ${operation} with regrouping.`,
+      { silent: true },
+    );
+  }, [
+    allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, phaseResults,
+    algorithmConnectionMade, incorrectRegroupAttempts, stepByStepUsed, wordProblemContext,
+    submitEvaluation, sendText, operation,
+  ]);
+
+  // -------------------------------------------------------------------------
   // Regrouping Logic
   // -------------------------------------------------------------------------
   const handleRegroup = useCallback((placeIndex: number) => {

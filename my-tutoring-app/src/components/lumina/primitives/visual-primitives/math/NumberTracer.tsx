@@ -495,6 +495,40 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     );
   }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
 
+  // ── Auto-submit evaluation when all challenges complete ─────────────
+  // The action buttons are hidden when allChallengesComplete is true,
+  // so handleNextChallenge is never called for the last challenge.
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+
+    const overallPct = Math.round(
+      challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0)
+      / Math.max(1, challengeResults.length),
+    );
+
+    submitEvaluation(
+      overallPct >= 60,
+      overallPct,
+      {
+        type: 'number-tracer',
+        tracingAccuracy: overallPct,
+        digitsCompleted: challengeResults.filter(r => r.correct).length,
+        totalDigits: challenges.length,
+        attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+      },
+    );
+
+    const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
+    sendText(
+      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+      + `Give encouraging phase-specific feedback about numeral writing progress.`,
+      { silent: true },
+    );
+  }, [
+    allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults,
+    phaseResults, submitEvaluation, sendText,
+  ]);
+
   // ── Canvas Drawing ──────────────────────────────────────────────────
 
   const getCanvasCoords = useCallback((e: React.MouseEvent | React.TouchEvent): PathPoint | null => {

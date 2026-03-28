@@ -32,10 +32,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   classify: {
     promptDoc:
       `"classify": Sort multiple preloaded shapes into categories. `
-      + `Set classificationCategories (e.g. ['Triangles', 'Quadrilaterals', 'Other Shapes']). `
-      + `Include 4-6 preloaded shapes spread across the grid. `
-      + `CRITICAL: Each preloadedShape MUST have a "correctCategory" field set to one of the classificationCategories values — `
-      + `this is how the component knows the answer. `
+      + `Set classificationCategories to EXACTLY ["Triangles", "Quadrilaterals", "Pentagons & More"]. `
+      + `Include 4-6 preloaded shapes spread across the grid — a mix of 3-sided, 4-sided, and 5+-sided shapes. `
+      + `CRITICAL: Each preloadedShape MUST have a "correctCategory" field: `
+      + `"Triangles" for 3-vertex shapes, "Quadrilaterals" for 4-vertex shapes, "Pentagons & More" for 5+ vertices. `
       + `Pictorial with reduced prompts — identify shape properties to sort.`,
     schemaDescription: "'classify' (identify shape properties)",
   },
@@ -50,6 +50,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"find_symmetry": Draw lines of symmetry on a preloaded shape. `
       + `Include a preloaded shape. Set targetProperties.linesOfSymmetry. Enable symmetryLine tool. `
+      + `CRITICAL GRID CONSTRAINT: ALL vertices must use EVEN x and y coordinates (e.g., 2,4,6,8 — never odd). `
+      + `This ensures lines of symmetry pass through integer grid points that students can click. `
+      + `Example rectangle: (2,2),(6,2),(6,6),(2,6) — center at (4,4), symmetry lines at x=4 and y=4. `
+      + `BAD example: (1,1),(4,1),(4,4),(1,4) — center at (2.5,2.5), impossible to draw. `
       + `Symbolic — analyze and identify symmetry lines.`,
     schemaDescription: "'find_symmetry' (analyze symmetry lines)",
   },
@@ -186,7 +190,8 @@ const shapeBuilderSchema: Schema = {
           },
           correctCategory: {
             type: Type.STRING,
-            description: "For classify mode: which classificationCategories value this shape belongs to. MUST match one of the classificationCategories exactly."
+            enum: ["Triangles", "Quadrilaterals", "Pentagons & More"],
+            description: "For classify mode: 'Triangles' (3 sides), 'Quadrilaterals' (4 sides), or 'Pentagons & More' (5+ sides). MUST match one of classificationCategories."
           }
         },
         required: ["id", "vertices", "name", "locked"]
@@ -276,9 +281,10 @@ const shapeBuilderSchema: Schema = {
     classificationCategories: {
       type: Type.ARRAY,
       items: {
-        type: Type.STRING
+        type: Type.STRING,
+        enum: ["Triangles", "Quadrilaterals", "Pentagons & More"],
       },
-      description: "Categories for classify mode (e.g., ['Triangles', 'Quadrilaterals', 'Pentagons'])"
+      description: "Categories for classify mode. Use exactly: ['Triangles', 'Quadrilaterals', 'Pentagons & More']"
     },
     patternBlocks: {
       type: Type.OBJECT,
@@ -391,7 +397,7 @@ REQUIREMENTS:
 4. For K-2: keep instructions simple, use "sides" and "corners" instead of "edges" and "vertices"
 5. For 3-5: use proper geometric vocabulary (parallel, perpendicular, congruent)
 6. For classify mode: include 4-6 preloaded shapes spread across the grid, set classificationCategories
-7. For find_symmetry: include a preloaded shape and set targetProperties.linesOfSymmetry
+7. For find_symmetry: include a preloaded shape with ALL vertices at EVEN coordinates (2,4,6,8 — never odd) and set targetProperties.linesOfSymmetry
 8. For compose mode: enable patternBlocks with appropriate shapes
 9. For build challenges: always set targetProperties with at least the number of sides
 10. Enable appropriate tools based on the challenge types:
@@ -535,31 +541,25 @@ Return the complete shape builder configuration.
     (s: { vertices?: unknown[] }) => Array.isArray(s.vertices) && s.vertices.length >= 3
   );
 
+  // Canonical classify categories — schema enum forces these, but ensure consistency
+  const CANONICAL_CATEGORIES = ['Triangles', 'Quadrilaterals', 'Pentagons & More'];
+
   // Ensure classificationCategories is an array
   if (!Array.isArray(data.classificationCategories)) {
     data.classificationCategories = [];
   }
 
-  // For classify mode: ensure every preloaded shape has a valid correctCategory
+  // For classify mode: force canonical categories and derive correctCategory from vertex count
   const hasClassifyChallenge = (data.challenges as Array<{ type: string }>).some(
     (c: { type: string }) => c.type === 'classify'
   );
-  if (hasClassifyChallenge && data.classificationCategories.length > 0) {
-    const categories = data.classificationCategories as string[];
+  if (hasClassifyChallenge) {
+    data.classificationCategories = CANONICAL_CATEGORIES;
     for (const shape of data.preloadedShapes as Array<{ correctCategory?: string; vertices: Array<{ x: number; y: number }>; name: string }>) {
-      if (!shape.correctCategory || !categories.includes(shape.correctCategory)) {
-        // Fallback: assign based on side count if correctCategory missing/invalid
+      if (!shape.correctCategory || !CANONICAL_CATEGORIES.includes(shape.correctCategory)) {
         const sides = shape.vertices.length;
-        shape.correctCategory = categories.find(c => {
-          const cl = c.toLowerCase();
-          // Match common side-count patterns
-          if (sides === 3 && (cl.includes('triangle') || cl.includes('3 side') || cl.includes('three'))) return true;
-          if (sides === 4 && (cl.includes('quadrilateral') || cl.includes('4 side') || cl.includes('four'))) return true;
-          if (sides === 5 && (cl.includes('pentagon') || cl.includes('5 side') || cl.includes('five'))) return true;
-          if (sides === 6 && (cl.includes('hexagon') || cl.includes('6 side') || cl.includes('six'))) return true;
-          return false;
-        }) || categories[categories.length - 1]; // default to last category (often "Other")
-        console.warn(`[ShapeBuilder] Assigned fallback correctCategory "${shape.correctCategory}" to "${shape.name}"`);
+        shape.correctCategory = sides === 3 ? 'Triangles' : sides === 4 ? 'Quadrilaterals' : 'Pentagons & More';
+        console.warn(`[ShapeBuilder] Derived correctCategory "${shape.correctCategory}" for "${shape.name}" (${sides} vertices)`);
       }
     }
   }
