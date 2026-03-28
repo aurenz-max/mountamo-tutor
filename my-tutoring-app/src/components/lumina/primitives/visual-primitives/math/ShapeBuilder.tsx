@@ -484,6 +484,59 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   }, [isConnected, challenges.length, mode, gradeBand, currentChallenge, targetShape, sendText]);
 
   // -------------------------------------------------------------------------
+  // Auto-submit evaluation when all challenges complete
+  // -------------------------------------------------------------------------
+  // The "Next Challenge" button is hidden for the last challenge (since
+  // allChallengesComplete becomes true immediately), so advanceToNextChallenge
+  // is never called. This effect ensures submitEvaluation fires automatically.
+
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+
+    const totalCorrect = challengeResults.filter((r) => r.correct).length;
+    const score = Math.round((totalCorrect / challenges.length) * 100);
+
+    const metrics: ShapeBuilderMetrics = {
+      type: 'shape-builder',
+      shapesBuiltCorrectly,
+      shapesTotal: challenges.filter(
+        (c) => c.type === 'build' || c.type === 'coordinate_shape',
+      ).length,
+      propertiesIdentified,
+      propertiesTotal,
+      classificationCorrect: classificationsCorrect,
+      classificationTotal: classificationsTotal,
+      compositionsCompleted: challengeResults.filter(
+        (_, i) => challenges[i]?.type === 'compose',
+      ).filter((r) => r.correct).length,
+      compositionsTotal: challenges.filter((c) => c.type === 'compose').length,
+      symmetryLinesFound: symmetryLinesFoundTotal,
+      symmetryLinesTotal: challenges
+        .filter((c) => c.type === 'find_symmetry')
+        .reduce((s, c) => s + (c.targetProperties?.linesOfSymmetry || 1), 0),
+      hierarchyUnderstood,
+      toolsUsed: Array.from(toolsUsed),
+      attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+    };
+
+    submitEvaluation(totalCorrect === challenges.length, score, metrics, { challengeResults });
+
+    const phaseScoreStr = phaseResults
+      .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+      .join(', ');
+    sendText(
+      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${score}%. `
+      + `Give encouraging phase-specific feedback.`,
+      { silent: true },
+    );
+  }, [
+    allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, phaseResults,
+    shapesBuiltCorrectly, propertiesIdentified, propertiesTotal, classificationsCorrect,
+    classificationsTotal, symmetryLinesFoundTotal, hierarchyUnderstood, toolsUsed,
+    submitEvaluation, sendText,
+  ]);
+
+  // -------------------------------------------------------------------------
   // SVG Interaction
   // -------------------------------------------------------------------------
 

@@ -490,15 +490,15 @@ function PulseWelcome({ subject, onSelectSubject, onStart }: {
 
           <div className="grid grid-cols-3 gap-3 mt-4">
             <div className="glass-panel rounded-xl border border-violet-500/20 p-3 text-center">
-              <div className="text-violet-400 text-lg font-bold">20%</div>
+              <div className="text-violet-400 text-lg">🔭</div>
               <div className="text-[10px] text-slate-500 uppercase tracking-wider">Explore</div>
             </div>
             <div className="glass-panel rounded-xl border border-blue-500/20 p-3 text-center">
-              <div className="text-blue-400 text-lg font-bold">65%</div>
+              <div className="text-blue-400 text-lg">🔨</div>
               <div className="text-[10px] text-slate-500 uppercase tracking-wider">Build</div>
             </div>
             <div className="glass-panel rounded-xl border border-emerald-500/20 p-3 text-center">
-              <div className="text-emerald-400 text-lg font-bold">15%</div>
+              <div className="text-emerald-400 text-lg">🔄</div>
               <div className="text-[10px] text-slate-500 uppercase tracking-wider">Review</div>
             </div>
           </div>

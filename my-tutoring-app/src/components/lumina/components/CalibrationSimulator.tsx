@@ -45,6 +45,21 @@ const DEFAULT_DECAY_RATE = 1.5;
 const DEFAULT_INITIAL_STABILITY = 3.0;   // days (display only — derived from gate)
 const DEFAULT_STUDENT_THETA = 3.0;       // floor — never decay below "untaught"
 const DEFAULT_TARGET_RETENTION = 0.85;   // P below this → review candidate
+const THETA_DECAY_FLOOR_FACTOR = 0.5;   // never decay below this fraction of tested theta
+
+// Credibility blending constants (PRD §12.7 / §4.3)
+const GATE_CREDIBILITY_K = 10;          // Z = n / (n + K) for gate P blend
+const CREDIBILITY_STANDARD = 10;        // actuarial completion factor credibility
+const SIGMA_DIFFUSION_RATE = 0.08;      // σ grows when skill not observed (per day)
+
+// Gate-to-stability mapping (backward compat)
+const GATE_TO_STABILITY: Record<number, number> = {
+  0: 0.0,
+  1: 3.0,
+  2: 7.5,
+  3: 18.75,
+  4: 47.0,
+};
 
 interface RetentionParams {
   decayRate: number;
@@ -69,34 +84,49 @@ function effectiveTheta(
   stability: number,
   decayRate: number = DEFAULT_DECAY_RATE,
 ): number {
-  if (daysSinceTest <= 0) return thetaTested;
+  if (daysSinceTest <= 0 || stability <= 0) return thetaTested;
   const decay = decayRate * Math.sqrt(daysSinceTest / stability);
-  const floor = Math.max(DEFAULT_STUDENT_THETA, thetaTested * 0.5);
+  const floor = Math.max(DEFAULT_STUDENT_THETA, thetaTested * THETA_DECAY_FLOOR_FACTOR);
   return Math.max(floor, thetaTested - decay);
 }
 
 /**
- * Derive mastery gate from IRT state alone — the core of the simplified model.
- * Checks gates 4→1 (highest first), returns the highest passing gate.
+ * Derive mastery gate from P(correct) at the item's actual β,
+ * blended with empirical pass rate when sufficient observations exist.
+ *
+ * Credibility blend (PRD §12.7):
+ *   Z = n / (n + GATE_CREDIBILITY_K)
+ *   P = Z × P_empirical + (1 - Z) × P_irt
+ *
+ * Checks gates 4→3→2→1 (highest first), returns the highest passed gate.
  * This is the TypeScript mirror of backend derive_gate_from_irt().
  */
 function deriveGateFromIrt(
-  theta: number, sigma: number,
-  minBeta: number, maxBeta: number, avgA: number = 1.4,
-): { gate: number; state: string; p: number; gateName: string } {
+  theta: number, _sigma: number,
+  itemBeta: number, avgA: number = 1.4,
+  empiricalP?: number, nObservations: number = 0,
+): { gate: number; state: string; p: number; pIrt: number; gateName: string } {
+  const pIrt = pCorrect(theta, avgA, itemBeta);
+
+  // Credibility-blend with empirical pass rate when available
+  let p = pIrt;
+  if (empiricalP !== undefined && nObservations > 0) {
+    const z = nObservations / (nObservations + GATE_CREDIBILITY_K);
+    p = z * empiricalP + (1 - z) * pIrt;
+  }
+
   for (const gd of [...GATE_DEFINITIONS].reverse()) {
-    const refBeta = minBeta + (maxBeta - minBeta) * gd.refBetaFraction;
-    const p = pCorrect(theta, avgA, refBeta);
-    if (p >= gd.pThreshold && sigma <= gd.sigmaMax) {
+    if (p >= gd.pThreshold) {
       return {
         gate: gd.gate,
         state: gd.gate >= 4 ? 'mastered' : 'active',
         p,
+        pIrt,
         gateName: gd.label,
       };
     }
   }
-  return { gate: 0, state: 'not_started', p: pCorrect(theta, avgA, minBeta), gateName: 'Not Started' };
+  return { gate: 0, state: 'not_started', p, pIrt, gateName: 'Not Started' };
 }
 
 /** Simulate IRT mastery progression: a sequence of scores updating θ/σ → gate */
@@ -111,13 +141,17 @@ interface MasteryProgressionEvent {
   gate: number;
   gateName: string;
   state: string;
-  pAtGateRef: number;
+  pBlended: number;       // credibility-blended P used for gate check
+  pIrt: number;           // raw IRT P(correct) before blending
+  credibilityZ: number;   // Z = n / (n + K) — how much empirical P dominates
+  completionPct: number;  // actuarial completion factor (0-1)
+  stability: number;      // gate-derived stability in days
 }
 
 function simulateMasteryProgression(
   scores: number[],
-  minBeta: number,
-  maxBeta: number,
+  _minBeta: number,
+  _maxBeta: number,
   avgA: number,
   primitiveKey: string,
 ): MasteryProgressionEvent[] {
@@ -130,11 +164,23 @@ function simulateMasteryProgression(
   const history: SubmissionRecord[] = [];
   let cals = makeInitialCalibrations(primitiveKey);
 
+  // Actuarial completion factor state (mirrors backend MasteryLifecycle)
+  let passes = 0;
+  let fails = 0;
+  let currentGate = 0;
+  let retentionState = 'not_started';
+  const globalPassRate = 0.8; // default global rate
+
   for (let i = 0; i < scores.length; i++) {
     const score = scores[i];
     const isCorrect = score >= IRT_CORRECT_THRESHOLD;
 
-    // Select best mode for current theta
+    // Continuous weight pass/fail (score/10) — matches backend
+    const weight = score / 10.0;
+    passes += weight;
+    fails += (1.0 - weight);
+
+    // Select best mode for current theta (max Fisher information)
     let bestMode = prim.modes[0];
     let bestInfo = 0;
     for (const mode of prim.modes) {
@@ -169,7 +215,40 @@ function simulateMasteryProgression(
       aCredibility: updatedCal.aCredibility, betaCredibility: updatedCal.credibilityZ,
     });
 
-    const gateResult = deriveGateFromIrt(updated.theta, updated.sigma, minBeta, maxBeta, avgA);
+    // Compute empirical pass rate for credibility blend
+    const totalAttempts = passes + fails;
+    const empiricalP = totalAttempts > 0 ? passes / totalAttempts : undefined;
+    const nObs = i + 1; // review_count
+
+    // Gate derivation uses item's actual β (the mode selected), with credibility blend
+    const gateResult = deriveGateFromIrt(
+      updated.theta, updated.sigma, useBeta, avgA,
+      empiricalP, nObs,
+    );
+
+    // Gates can only advance or hold — never regress (matches backend)
+    if (gateResult.gate >= currentGate) {
+      currentGate = gateResult.gate;
+      retentionState = gateResult.state;
+    }
+    if (currentGate >= 1 && retentionState === 'not_started') {
+      retentionState = 'active';
+    }
+
+    // Derive stability from gate (backward compat)
+    const stability = GATE_TO_STABILITY[currentGate] ?? DEFAULT_INITIAL_STABILITY;
+
+    // Credibility Z for display
+    const credZ = nObs / (nObs + GATE_CREDIBILITY_K);
+
+    // Actuarial completion factor (mirrors backend _recalculate_completion_factor)
+    const subskillPassRate = totalAttempts > 0 ? passes / totalAttempts : 0;
+    const actZ = Math.min(totalAttempts / CREDIBILITY_STANDARD, 1.0);
+    const blendedPassRate = actZ * subskillPassRate + (1 - actZ) * globalPassRate;
+    const creditPerPass = blendedPassRate * 0.25;
+    const gate1Credit = retentionState !== 'not_started' ? 0.25 : 0;
+    let completionPct = Math.min(1.0, gate1Credit + passes * creditPerPass);
+    if (retentionState === 'mastered') completionPct = 1.0;
 
     events.push({
       itemNum: i,
@@ -179,14 +258,18 @@ function simulateMasteryProgression(
       thetaAfter: updated.theta,
       sigmaBefore: ability.sigma,
       sigmaAfter: updated.sigma,
-      gate: gateResult.gate,
-      gateName: gateResult.gateName,
-      state: gateResult.state,
-      pAtGateRef: gateResult.p,
+      gate: currentGate,
+      gateName: GATE_DEFINITIONS.find((g) => g.gate === currentGate)?.label ?? 'Not Started',
+      state: retentionState,
+      pBlended: gateResult.p,
+      pIrt: gateResult.pIrt,
+      credibilityZ: credZ,
+      completionPct: Math.round(completionPct * 10000) / 10000,
+      stability,
     });
 
     ability = updated;
-    if (gateResult.state === 'mastered') break;
+    if (retentionState === 'mastered') break;
   }
   return events;
 }
@@ -1861,7 +1944,7 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
           {/* Center — Charts */}
           <div className="col-span-6 space-y-4">
             {/* Summary Stats */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-5 gap-3">
               {(() => {
                 const lastEvent = masteryEvents.length > 0 ? masteryEvents[masteryEvents.length - 1] : null;
                 const masteredEvent = masteryEvents.find((ev) => ev.state === 'mastered');
@@ -1879,6 +1962,12 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                     value: `G${currentGate}`,
                     sub: currentGateDef ? currentGateDef.label : 'Not Started',
                     color: currentGate >= 4 ? 'text-purple-400' : currentGate >= 2 ? 'text-blue-400' : currentGate >= 1 ? 'text-emerald-400' : 'text-slate-400',
+                  },
+                  {
+                    label: 'Completion',
+                    value: lastEvent ? `${(lastEvent.completionPct * 100).toFixed(0)}%` : '0%',
+                    sub: lastEvent ? `Z=${(lastEvent.credibilityZ * 100).toFixed(0)}% cred` : 'no data',
+                    color: lastEvent && lastEvent.completionPct >= 1.0 ? 'text-purple-400' : lastEvent && lastEvent.completionPct >= 0.5 ? 'text-cyan-400' : 'text-slate-400',
                   },
                   {
                     label: 'Items to Mastery',
@@ -2001,7 +2090,10 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                         <th className="text-right text-slate-500 py-1.5 px-2">Score</th>
                         <th className="text-right text-slate-500 py-1.5 px-2">theta</th>
                         <th className="text-right text-slate-500 py-1.5 px-2">sigma</th>
-                        <th className="text-right text-slate-500 py-1.5 px-2">P(gate)</th>
+                        <th className="text-right text-slate-500 py-1.5 px-2">P(irt)</th>
+                        <th className="text-right text-slate-500 py-1.5 px-2">P(blend)</th>
+                        <th className="text-right text-slate-500 py-1.5 px-2">Z</th>
+                        <th className="text-right text-slate-500 py-1.5 px-2">Comp%</th>
                         <th className="text-left text-slate-500 py-1.5 px-2">Gate</th>
                       </tr>
                     </thead>
@@ -2020,8 +2112,19 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                             <td className="py-1.5 px-2 text-right font-mono text-slate-400">
                               {ev.sigmaBefore.toFixed(3)} &rarr; {ev.sigmaAfter.toFixed(3)}
                             </td>
-                            <td className="py-1.5 px-2 text-right font-mono text-green-400">
-                              {(ev.pAtGateRef * 100).toFixed(0)}%
+                            <td className="py-1.5 px-2 text-right font-mono text-slate-400">
+                              {(ev.pIrt * 100).toFixed(0)}%
+                            </td>
+                            <td className={`py-1.5 px-2 text-right font-mono font-bold ${
+                              ev.pBlended >= 0.90 ? 'text-purple-400' : ev.pBlended >= 0.70 ? 'text-green-400' : 'text-slate-400'
+                            }`}>
+                              {(ev.pBlended * 100).toFixed(0)}%
+                            </td>
+                            <td className="py-1.5 px-2 text-right font-mono text-amber-400">
+                              {(ev.credibilityZ * 100).toFixed(0)}%
+                            </td>
+                            <td className="py-1.5 px-2 text-right font-mono text-cyan-400">
+                              {(ev.completionPct * 100).toFixed(0)}%
                             </td>
                             <td className="py-1.5 px-2">
                               <span
@@ -2096,20 +2199,20 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
               </h3>
               <div className="space-y-3 text-xs">
                 <div className="p-2 rounded-lg bg-red-500/5 border border-red-500/10">
-                  <div className="text-red-400 font-semibold mb-1">Old: Stability Multipliers</div>
+                  <div className="text-red-400 font-semibold mb-1">Old: Pure IRT Gates</div>
                   <div className="text-slate-500">
-                    Fixed multipliers (strong x2.5, partial x1.5, fail x0.5).
-                    <br />Stability is a single number with no statistical grounding.
-                    <br />Gates derived from arbitrary day thresholds.
+                    Gates derived from P(correct) at reference difficulties only.
+                    <br />Required sigma below thresholds (could block grinders).
+                    <br />No empirical weighting — P stuck below threshold despite consistent scores.
                   </div>
                 </div>
                 <div className="p-2 rounded-lg bg-green-500/5 border border-green-500/10">
-                  <div className="text-green-400 font-semibold mb-1">New: IRT-Derived Gates</div>
+                  <div className="text-green-400 font-semibold mb-1">New: Credibility-Blended Gates</div>
                   <div className="text-slate-500">
-                    Gates derived from P(correct) at reference difficulties.
-                    <br />theta and sigma update via Bayesian EAP with 2PL/3PL likelihood.
-                    <br />sigma (uncertainty) must be low enough to trust the estimate.
-                    <br />No arbitrary multipliers -- the math determines readiness.
+                    P_blended = Z * P_empirical + (1-Z) * P_irt.
+                    <br />Z = n / (n + {GATE_CREDIBILITY_K}) — empirical weight grows with observations.
+                    <br />Solves the &quot;grinder problem&quot; where sigma collapse makes theta stuck.
+                    <br />Actuarial completion factor uses same credibility framework.
                   </div>
                 </div>
               </div>
@@ -2121,25 +2224,28 @@ const CalibrationSimulator: React.FC<CalibrationSimulatorProps> = ({ onBack }) =
                 <Shield className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0" />
                 <div className="text-xs text-slate-400 space-y-2">
                   <p>
-                    <span className="text-violet-300 font-semibold">IRT-derived gates:</span>{' '}
-                    Each gate checks P(correct) at a reference difficulty within the primitive&apos;s beta range.
-                    G1 checks the easiest mode, G4 checks the hardest. Both P threshold AND sigma ceiling must be met.
+                    <span className="text-violet-300 font-semibold">Credibility-blended gates:</span>{' '}
+                    P_blend = Z * P_empirical + (1-Z) * P_irt, where Z = n / (n + {GATE_CREDIBILITY_K}).
+                    Early on IRT dominates; as observations accumulate, demonstrated performance carries more weight.
+                    Gates can only advance or hold — never regress on a single eval.
                   </p>
                   <p>
                     <span className="text-amber-300 font-semibold">Decay model:</span>{' '}
                     theta_eff = theta - d * sqrt(t/S). When P(correct) drops below{' '}
                     {(retParams.targetRetention * 100).toFixed(0)}%, the item becomes a review candidate.
-                    No calendar gates needed.
+                    Posterior diffusion: sigma grows at {SIGMA_DIFFUSION_RATE}/day when untested.
                   </p>
                   <p>
-                    <span className="text-green-300 font-semibold">Sigma convergence:</span>{' '}
-                    Each correct answer on an informative item reduces sigma. High-discrimination items
-                    (large a) reduce sigma faster. Once sigma is low, we trust the theta estimate.
+                    <span className="text-cyan-300 font-semibold">Actuarial completion:</span>{' '}
+                    completion = 0.25 (gate 1 credit) + passes * credit_per_pass.
+                    credit_per_pass = blended_rate * 0.25. blended_rate = Z_act * subskill_rate + (1-Z_act) * global_rate,
+                    where Z_act = min(attempts / {CREDIBILITY_STANDARD}, 1).
                   </p>
                   <p>
-                    <span className="text-cyan-300 font-semibold">Gate progression:</span>{' '}
-                    G1 (Emerging, 70% at easiest) &rarr; G2 (Developing, 75% at mid) &rarr;
-                    G3 (Proficient, 80% at hard) &rarr; G4 (Mastered, 90% at hardest).
+                    <span className="text-green-300 font-semibold">Gate thresholds:</span>{' '}
+                    G1 (Emerging, 70%) &rarr; G2 (Developing, 75%) &rarr;
+                    G3 (Proficient, 80%) &rarr; G4 (Mastered, 90%).
+                    Stability derived from gate: {Object.entries(GATE_TO_STABILITY).map(([g, s]) => `G${g}=${s}d`).join(', ')}.
                   </p>
                 </div>
               </div>

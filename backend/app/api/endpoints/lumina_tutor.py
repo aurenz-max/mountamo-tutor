@@ -38,7 +38,7 @@ client = genai.Client(
 )
 
 DEFAULT_VOICE = "Leda"
-MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
+MODEL = "gemini-3.1-flash-live-preview"
 
 # Audio constants
 FORMAT = "audio/pcm"
@@ -466,8 +466,8 @@ async def lumina_tutor_session(websocket: WebSocket):
             output_audio_transcription=types.AudioTranscriptionConfig(),
             realtime_input_config=types.RealtimeInputConfig(turn_coverage="TURN_INCLUDES_ALL_INPUT"),
             context_window_compression=types.ContextWindowCompressionConfig(
-                trigger_tokens=25600,
-                sliding_window=types.SlidingWindow(target_tokens=12800),
+                trigger_tokens=104857,
+                sliding_window=types.SlidingWindow(target_tokens=52428),
             ),
             system_instruction=Content(parts=[{"text": system_instruction}]),
             thinking_config=types.ThinkingConfig(
