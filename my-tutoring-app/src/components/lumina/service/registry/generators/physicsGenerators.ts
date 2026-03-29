@@ -11,6 +11,7 @@ import { registerGenerator } from '../contentRegistry';
 
 // Physics Generator Imports
 import { generateMotionDiagram } from '../../physics/gemini-motion-diagram';
+import { generateSoundWaveExplorer } from '../../physics/gemini-sound-wave-explorer';
 
 // ============================================================================
 // Physics Primitives Registration (Middle School - High School)
@@ -23,6 +24,13 @@ registerGenerator('motion-diagram', async (item, topic, gradeContext) => ({
   data: await generateMotionDiagram(topic, gradeContext, item.config),
 }));
 
+// Sound Wave Explorer - Interactive sound/vibration lab (K-3)
+registerGenerator('sound-wave-explorer', async (item, topic, gradeContext) => ({
+  type: 'sound-wave-explorer',
+  instanceId: item.instanceId,
+  data: await generateSoundWaveExplorer(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 1/1 physics primitives registered
+// Migration status: 2/2 physics primitives registered
 // ============================================================================

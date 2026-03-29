@@ -987,6 +987,14 @@ export interface FastFactMetrics extends BasePrimitiveMetrics {
   challengesCorrect: number;
 }
 
+export interface HundredsChartMetrics extends BasePrimitiveMetrics {
+  type: 'hundreds-chart';
+  totalChallenges: number;
+  correctCount: number;
+  accuracy: number;
+  averageAttempts: number;
+}
+
 export interface StrategyPickerMetrics extends BasePrimitiveMetrics {
   type: 'strategy-picker';
   accuracy: number;
@@ -1467,6 +1475,25 @@ export interface TelescopeSimulatorMetrics extends BasePrimitiveMetrics {
   panDistance: number;              // Approximate pixels panned (exploration measure)
 }
 
+export interface LightShadowLabMetrics extends BasePrimitiveMetrics {
+  type: 'light-shadow-lab';
+  challengesCompleted: number;
+  challengesCorrect: number;
+  totalAttempts: number;
+  accuracy: number; // 0-100
+  averageAttemptsPerChallenge: number;
+}
+
+export interface ConstellationBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'constellation-builder';
+  totalChallenges: number;
+  correctChallenges: number;
+  totalAttempts: number;
+  accuracy: number;
+  averageScore: number;
+  durationMs: number;
+}
+
 // -----------------------------------------------------------------------------
 // Physics Primitives
 // -----------------------------------------------------------------------------
@@ -1494,6 +1521,16 @@ export interface MotionDiagramMetrics extends BasePrimitiveMetrics {
   timeInterval: number;            // Time between markers in seconds
   vectorsPlaced: number;           // Number of vectors student placed (evaluation mode)
   vectorsCorrect: boolean;         // If target specified, did student place correct vectors?
+}
+
+export interface SoundWaveExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'sound-wave-explorer';
+  evalMode?: string;
+  challengesCompleted: number;
+  challengesCorrect: number;
+  totalAttempts: number;
+  accuracy: number;
+  averageAttemptsPerChallenge: number;
 }
 
 // -----------------------------------------------------------------------------
@@ -3021,6 +3058,7 @@ export type PrimitiveMetrics =
   | MathFactFluencyMetrics
   | FastFactMetrics
   | StrategyPickerMetrics
+  | HundredsChartMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation
@@ -3049,8 +3087,11 @@ export type PrimitiveMetrics =
   | OrbitMechanicsLabMetrics
   | MissionPlannerMetrics
   | TelescopeSimulatorMetrics
+  | LightShadowLabMetrics
+  | ConstellationBuilderMetrics
   // Physics
   | MotionDiagramMetrics
+  | SoundWaveExplorerMetrics
   // Chemistry
   | MatterExplorerMetrics
   | ReactionLabMetrics

@@ -59,8 +59,12 @@
 | function-machine | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/function-machine-2026-03-17.md) |
 | knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
 | how-it-works | 3 | 3 | 0 | 2026-03-22 | [report](eval-reports/how-it-works-2026-03-22.md) |
+| light-shadow-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/light-shadow-lab-2026-03-29.md) |
+| constellation-builder | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/constellation-builder-2026-03-29.md) |
+| sound-wave-explorer | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/sound-wave-explorer-2026-03-29.md) |
+| hundreds-chart | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/hundreds-chart-2026-03-29.md) |
 
-**Totals:** 190/207 modes passing (91.8%) | 21 open issues (11 CRITICAL, 10 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 207/223 modes passing (92.8%) | 21 open issues (11 CRITICAL, 10 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -122,10 +126,17 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-9: Generator ignores challengeType constraint — all modes return same type
 
-**Affected:** paragraph-architect (narrative returns "informational", opinion returns "informational"), ~~tape-diagram (all modes identical)~~
+**Affected:** paragraph-architect (narrative returns "informational", opinion returns "informational"), ~~tape-diagram (all modes identical)~~, ~~sound-wave-explorer (apply returns observe/predict)~~
 **Risk:** Any primitive where the generator prompt doesn't forward the evalMode's challengeTypes constraint to Gemini.
 **Root cause:** The generator prompt describes all types but doesn't constrain Gemini to produce only the requested type. Gemini defaults to the most common/first-described type.
 **Fix pattern:** Generator must inject `constrainChallengeTypeEnum` or equivalent constraint that forces the output type to match the eval mode.
+
+### SP-10: Generator and component use incompatible coordinate conventions
+
+**Affected:** ~~light-shadow-lab (all modes — azimuth convention mismatch)~~
+**Risk:** Any primitive where a spatial/physical model in the component uses a different coordinate system than what the generator prompt describes. First instance is azimuth (compass 0-360 vs component 0-180 east-west arc).
+**Root cause:** Component was built with a simplified 2D east-west arc model (azimuth 0-180). Generator prompt and schema document standard compass bearings (0-360). Post-generation validator applies component-convention thresholds to compass values, producing wrong shadow directions and off-screen sun positions.
+**Fix pattern:** Pick one convention and align prompt, schema, validator, AND component. For light-shadow-lab: either (A) rewrite prompt to use 0-180 component convention, or (B) add compass→component mapping in the generator post-process. Option A is simpler.
 
 ### SP-4: Render path and validation path use different data sources
 
@@ -220,6 +231,17 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | HW-1 | how-it-works | 2026-03-22 | Converted "explain" challenge from free-form textarea with `.includes()` keyword matching to MC format ("Why is Step X important?" + 4 options). Reuses existing MC rendering. Generator prompt, schema, validation + component updated. |
 | SHB-1 | shape-builder | 2026-03-28 | Schema enum on `correctCategory` and `classificationCategories` items forces `["Triangles", "Quadrilaterals", "Pentagons & More"]`. Prompt updated with vertex-count mapping. Post-process safety net derives from vertex count. |
 | SHB-2 | shape-builder | 2026-03-28 | Prompt constraint: find_symmetry vertices must use EVEN coordinates so symmetry lines land on integer grid points. 3/3 stochastic passes. |
+| LS-1 | light-shadow-lab | 2026-03-29 | Generator prompt + schema rewritten from compass bearings (0-360) to component's 0-180 east-west arc convention. Sun now renders on-screen for all times of day (SP-10). |
+| LS-2 | light-shadow-lab | 2026-03-29 | Same convention fix as LS-1. Midday azimuth ~90 → validateShadowDirection returns 'N' correctly (SP-10). |
+| LS-3 | light-shadow-lab | 2026-03-29 | Flipped DIRECTION_LABELS parenthetical hints: E='East (left)', W='West (right)' to match SVG layout. |
+| LS-4 | light-shadow-lab | 2026-03-29 | Measure mode now uses DIRECTION_LABELS + LENGTH_LABELS for correct answer and distractors — consistent format across all modes. |
+| LS-5 | light-shadow-lab | 2026-03-29 | Same convention fix as LS-1/LS-2. Validator now agrees with Gemini instruction text (SP-10). |
+| CB-1 | constellation-builder | 2026-03-29 | Post-process derives guided_trace correctConnections from starOrder as N-1 consecutive pairs — no closing loop. Prompt also updated. |
+| CB-2 | constellation-builder | 2026-03-29 | Seasonal promptDoc forbids shape/figure descriptions. Post-process sanitizeSeasonalInstruction() catches remaining leaks with regex fallback. |
+| CB-3 | constellation-builder | 2026-03-29 | Same fix as CB-2 — seasonal instructions no longer reference stars or star field SVG. |
+| SWE-1 | sound-wave-explorer | 2026-03-29 | SCHEMA-SIMPLIFY: removed 16 obj0-obj3 fields from schema (objects are deterministic science facts, picked by grade). Schema ~30→8 properties. Added post-process type forcing (SP-9). |
+| HC-1 | hundreds-chart | 2026-03-29 | POST-PROCESS-DERIVE: flat schema's 10 correctCell slots truncated sequences (skip-by-5=20 cells, skip-by-3=33). Now derives full correctCells/givenCells from skipValue+startNumber via buildSequence(), bypassing slot limit. |
+| HC-2 | hundreds-chart | 2026-03-29 | PROMPT-CHANGE: highlight_sequence promptDoc now requires click/tap instructions instead of passive "watch/observe" language. |
 
 ---
 

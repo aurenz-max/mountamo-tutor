@@ -1107,6 +1107,7 @@ export type ComponentId =
   | 'shape-sorter'            // Interactive shape sorting for categorizing shapes by attributes
   | 'shape-tracer'            // Interactive shape tracing
   | 'number-tracer'           // Interactive number tracing for digit formation and numeral recognition
+  | 'hundreds-chart'          // Interactive hundreds chart for number patterns, counting, and skip counting (K-2)
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, shape-builder
@@ -1222,17 +1223,20 @@ export type ComponentId =
   | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
   | 'scale-comparator' // Interactive scale comparison tool for celestial objects with familiar references
   | 'day-night-seasons' // Interactive Earth model showing rotation (day/night) and orbit (seasons) with tilt visualization
+  | 'light-shadow-lab' // Interactive light and shadow exploration for astronomy concepts
   | 'moon-phases-lab' // Interactive Earth-Moon-Sun model showing why Moon phases occur, with multiple view perspectives
   | 'rocket-builder' // Comprehensive rocket design and simulation tool for spaceflight education
   | 'orbit-mechanics-lab' // Interactive orbital mechanics sandbox for learning orbits, burns, and transfers
   | 'mission-planner' // Interactive mission design tool for planning trips to the Moon, Mars, and beyond
   | 'telescope-simulator' // Virtual telescope experience for exploring the night sky with adjustable telescopes, magnification, and view modes
+  | 'constellation-builder' // Interactive constellation building and identification tool
 
   // Foundational Concept Teaching
   | 'foundation-explorer' // Objective-driven concept exploration with diagrams and self-checks
 
   // Physics Primitives (Middle School - High School)
   | 'motion-diagram'     // Strobe diagram visualization for teaching kinematics and motion concepts
+  | 'sound-wave-explorer' // Interactive sound wave exploration for physics concepts
 
 /**
  * Tutoring scaffold metadata for AI-assisted learning.
@@ -1534,7 +1538,10 @@ export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './pr
 export type { RocketBuilderData, RocketComponent } from './primitives/visual-primitives/astronomy/RocketBuilder';
 export type { OrbitMechanicsLabData, OrbitConfig, OrbitalBody } from './primitives/visual-primitives/astronomy/OrbitMechanicsLab';
 export type { TelescopeSimulatorData, CelestialTarget, JournalEntry, TelescopeType, SkyViewMode } from './primitives/visual-primitives/astronomy/TelescopeSimulator';
+export type { LightShadowLabData } from './primitives/visual-primitives/astronomy/LightShadowLab';
+export type { ConstellationBuilderData } from './primitives/visual-primitives/astronomy/ConstellationBuilder';
 export type { MotionDiagramData, PositionMarker, MotionType } from './primitives/visual-primitives/physics/MotionDiagram';
+export type { SoundWaveExplorerData } from './primitives/visual-primitives/physics/SoundWaveExplorer';
 export type { OrganismCardData, OrganismInfo, OrganismAttributes, OrganismClassification } from './primitives/visual-primitives/biology/OrganismCard';
 export type { ClassificationSorterData, ClassificationCategory, ClassificationItem } from './primitives/visual-primitives/biology/ClassificationSorter';
 export type { LifeCycleSequencerData, LifeCycleStage, MisconceptionTrap } from './primitives/visual-primitives/biology/LifeCycleSequencer';
@@ -1600,6 +1607,7 @@ export type { NumberTracerData } from './primitives/visual-primitives/math/Numbe
 export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/math/ThreeDShapeExplorer';
 export type { MathFactFluencyData } from './primitives/visual-primitives/math/MathFactFluency';
 export type { StrategyPickerData } from './primitives/visual-primitives/math/StrategyPicker';
+export type { HundredsChartData } from './primitives/visual-primitives/math/HundredsChart';
 
 // Literacy
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';

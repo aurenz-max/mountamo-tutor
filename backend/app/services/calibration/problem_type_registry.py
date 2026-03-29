@@ -248,6 +248,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "assessment":        PriorConfig(6.5, "Symbolic: large composites (40-100), no hints, no reset"),
     },
     "bar-model":                  {"default": PriorConfig(3.0, "Bar model comparison")},
+    "hundreds-chart": {
+        "highlight_sequence": PriorConfig(1.5, "Highlight all cells in a skip-count pattern"),
+        "complete_sequence":  PriorConfig(2.5, "Complete a partially highlighted skip-count sequence"),
+        "identify_pattern":   PriorConfig(3.5, "Describe the visual pattern formed on the grid"),
+        "find_skip_value":    PriorConfig(5.0, "Determine the skip interval from highlighted cells"),
+    },
     "ordinal-line": {
         "identify":           PriorConfig(1.5, "Concrete: name ordinal position"),
         "match":              PriorConfig(2.5, "Pictorial: connect ordinal to symbol"),
@@ -392,6 +398,27 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "reaction-lab":               {"default": PriorConfig(4.0, "Chemical reaction simulation")},
     "rocket-builder":             {"default": PriorConfig(4.5, "Design and launch rocket")},
     "orbit-mechanics-lab":        {"default": PriorConfig(5.0, "Orbital mechanics simulation")},
+    "light-shadow-lab": {
+        "observe": PriorConfig(1.5, "Observe shadow changes by dragging sun"),
+        "predict": PriorConfig(3.0, "Predict shadow direction and length"),
+        "measure": PriorConfig(4.5, "Record and analyze shadow data"),
+        "apply":   PriorConfig(6.0, "Reverse reasoning: determine time from shadow"),
+    },
+    "constellation-builder": {
+        "guided_trace": PriorConfig(1.5, "Numbered dots — tap stars in order to trace constellation"),
+        "free_connect": PriorConfig(3.0, "No numbers — identify and connect correct stars from field"),
+        "identify":     PriorConfig(4.5, "Lines drawn — select correct constellation name"),
+        "seasonal":     PriorConfig(6.0, "Identify constellations visible in a given season"),
+    },
+    # -----------------------------------------------------------------
+    # Physics primitives
+    # -----------------------------------------------------------------
+    "sound-wave-explorer": {
+        "observe":  PriorConfig(1.5, "Tap objects, watch vibrations, answer MC about what produces sound"),
+        "predict":  PriorConfig(3.0, "Adjust force/speed, predict pitch/volume change before hearing"),
+        "classify": PriorConfig(4.5, "Compare objects/materials, rank by pitch or sort by sound travel"),
+        "apply":    PriorConfig(6.0, "Reverse reasoning — hear a sound, identify the force/speed/medium"),
+    },
     # -----------------------------------------------------------------
     # Core / general-content primitives
     # -----------------------------------------------------------------

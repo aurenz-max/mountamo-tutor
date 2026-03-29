@@ -9,16 +9,22 @@ import RocketBuilder from '../primitives/visual-primitives/astronomy/RocketBuild
 import OrbitMechanicsLab from '../primitives/visual-primitives/astronomy/OrbitMechanicsLab';
 import MissionPlanner from '../primitives/visual-primitives/astronomy/MissionPlanner';
 import TelescopeSimulator from '../primitives/visual-primitives/astronomy/TelescopeSimulator';
+import LightShadowLab from '../primitives/visual-primitives/astronomy/LightShadowLab';
+import ConstellationBuilder from '../primitives/visual-primitives/astronomy/ConstellationBuilder';
+import type { EvalModeDefinition } from '../types';
 import {
   EvaluationProvider,
   useEvaluationContext,
+  type PrimitiveEvaluationResult,
 } from '../evaluation';
+import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
+import { ASTRONOMY_CATALOG } from '../service/manifest/catalog/astronomy';
 
 interface AstronomyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'solar-system-explorer' | 'scale-comparator' | 'day-night-seasons' | 'moon-phases-lab' | 'rocket-builder' | 'orbit-mechanics-lab' | 'mission-planner' | 'telescope-simulator';
+type PrimitiveType = 'solar-system-explorer' | 'scale-comparator' | 'day-night-seasons' | 'moon-phases-lab' | 'rocket-builder' | 'orbit-mechanics-lab' | 'mission-planner' | 'telescope-simulator' | 'light-shadow-lab' | 'constellation-builder';
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -30,6 +36,8 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'orbit-mechanics-lab', label: 'Orbit Mechanics', icon: '🛰️', topic: 'Learn how orbits work with launches and burns' },
   { value: 'mission-planner', label: 'Mission Planner', icon: '🛸', topic: 'Plan a mission to the Moon, Mars, and beyond' },
   { value: 'telescope-simulator', label: 'Telescope Simulator', icon: '🔭', topic: 'Explore the night sky with a virtual telescope' },
+  { value: 'light-shadow-lab', label: 'Light & Shadow Lab', icon: '☀️', topic: 'shadows and sunlight' },
+  { value: 'constellation-builder', label: 'Constellation Builder', icon: '⭐', topic: 'Star patterns and constellations in the night sky' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -115,6 +123,22 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'light-shadow-lab':
+      return (
+        <LightShadowLab
+          data={{
+            ...(data as Parameters<typeof LightShadowLab>[0]['data']),
+          }}
+        />
+      );
+    case 'constellation-builder':
+      return (
+        <ConstellationBuilder
+          data={{
+            ...(data as Parameters<typeof ConstellationBuilder>[0]['data']),
+          }}
+        />
+      );
     default:
       return <div className="text-slate-400">Unknown primitive: {componentId}</div>;
   }
@@ -196,8 +220,8 @@ const EvaluationResultsPanel: React.FC = () => {
                     {result.score}%
                   </span>
                 </div>
-                {result.feedback && (
-                  <p className="text-xs text-slate-400 mt-1">{result.feedback}</p>
+                {'feedback' in result && typeof (result as Record<string, unknown>).feedback === 'string' && (
+                  <p className="text-xs text-slate-400 mt-1">{(result as Record<string, unknown>).feedback as string}</p>
                 )}
               </div>
             ))}
@@ -218,12 +242,24 @@ const EvaluationResultsPanel: React.FC = () => {
 const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps> = ({ onBack }) => {
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('solar-system-explorer');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('3');
+  const [selectedEvalMode, setSelectedEvalMode] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
+  const [generationKey, setGenerationKey] = useState(0);
+  const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
+
+  // Look up eval modes from the catalog for the selected primitive
+  const catalogEntry = ASTRONOMY_CATALOG.find(c => c.id === selectedPrimitive);
+  const evalModes: EvalModeDefinition[] = catalogEntry?.evalModes ?? [];
+
+  const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
+    console.log('Evaluation submitted:', result);
+    setLastEvaluationResult(result);
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -241,7 +277,9 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
             componentId: selectedPrimitive,
             topic: currentTopic,
             gradeLevel: selectedGrade,
-            config: {},
+            config: {
+              ...(selectedEvalMode ? { targetEvalMode: selectedEvalMode } : {}),
+            },
           },
         }),
       });
@@ -253,6 +291,7 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
 
       const result = await response.json();
       setGeneratedData(result.data || result);
+      setGenerationKey(k => k + 1);
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
@@ -296,7 +335,11 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
                 {PRIMITIVE_OPTIONS.map((option) => (
                   <button
                     key={option.value}
-                    onClick={() => setSelectedPrimitive(option.value)}
+                    onClick={() => {
+                      setSelectedPrimitive(option.value);
+                      setSelectedEvalMode(null);
+                      setGeneratedData(null);
+                    }}
                     className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
                       selectedPrimitive === option.value
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
@@ -329,6 +372,58 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
                 ))}
               </select>
             </div>
+
+            {/* Eval Mode Selector — shown when the primitive has IRT eval modes */}
+            {evalModes.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                  Difficulty Mode
+                  <span className="text-slate-600 font-normal ml-1">(IRT)</span>
+                </label>
+                <div className="space-y-1">
+                  {/* "Auto" option — no mode constraint */}
+                  <button
+                    onClick={() => setSelectedEvalMode(null)}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-all text-xs ${
+                      selectedEvalMode === null
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                        : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Auto (mixed)</span>
+                      <span className="text-slate-400">Default</span>
+                    </div>
+                  </button>
+                  {/* One button per eval mode */}
+                  {evalModes.map((mode) => (
+                    <button
+                      key={mode.evalMode}
+                      onClick={() => setSelectedEvalMode(mode.evalMode)}
+                      className={`w-full text-left px-3 py-2 rounded-lg transition-all text-xs ${
+                        selectedEvalMode === mode.evalMode
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                          : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{mode.label}</span>
+                        <span className={`px-1.5 py-0.5 rounded-full ${
+                          mode.scaffoldingMode <= 2
+                            ? 'bg-green-500/20 text-green-400'
+                            : mode.scaffoldingMode <= 4
+                              ? 'bg-yellow-500/20 text-yellow-400'
+                              : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          M{mode.scaffoldingMode} / {'\u03B2'}{mode.beta}
+                        </span>
+                      </div>
+                      <p className="text-slate-500 mt-0.5 leading-tight">{mode.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Topic Input */}
             <div>
@@ -375,10 +470,30 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
               )}
             </button>
 
+            {/* Selected mode info */}
+            {selectedEvalMode && evalModes.length > 0 && (() => {
+              const mode = evalModes.find(m => m.evalMode === selectedEvalMode);
+              return mode ? (
+                <p className="text-xs text-blue-400 text-center">
+                  Mode: {mode.label} ({'\u03B2'} = {mode.beta})
+                </p>
+              ) : null;
+            })()}
+
             {/* Evaluation Results (Compact) */}
             <div className="pt-4 border-t border-slate-700">
               <EvaluationResultsPanel />
             </div>
+
+            {/* Last Result Quick View */}
+            {lastEvaluationResult && (
+              <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                <h5 className="text-xs font-medium text-slate-300 mb-1">Last Eval (Raw)</h5>
+                <pre className="text-[10px] text-slate-500 overflow-auto max-h-32 bg-slate-900/50 p-2 rounded">
+                  {JSON.stringify(lastEvaluationResult, null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
         </div>
 
@@ -406,9 +521,10 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
               </div>
             )}
 
-            {generatedData && (
+            {generatedData != null && (
               <div className="space-y-6">
                 <PrimitiveRenderer
+                  key={generationKey}
                   componentId={selectedPrimitive}
                   data={generatedData}
                 />
@@ -421,12 +537,20 @@ const AstronomyPrimitivesTesterContent: React.FC<AstronomyPrimitivesTesterProps>
   );
 };
 
-// Wrapper with EvaluationProvider
+// Wrapper with LuminaAIProvider + EvaluationProvider
 const AstronomyPrimitivesTester: React.FC<AstronomyPrimitivesTesterProps> = (props) => {
   return (
-    <EvaluationProvider>
-      <AstronomyPrimitivesTesterContent {...props} />
-    </EvaluationProvider>
+    <LuminaAIProvider>
+      <EvaluationProvider
+        sessionId={`astronomy-tester-${Date.now()}`}
+        exhibitId="astronomy-primitives-tester"
+        onCompetencyUpdate={(updates) => {
+          console.log('Competency updates received:', updates);
+        }}
+      >
+        <AstronomyPrimitivesTesterContent {...props} />
+      </EvaluationProvider>
+    </LuminaAIProvider>
   );
 };
 

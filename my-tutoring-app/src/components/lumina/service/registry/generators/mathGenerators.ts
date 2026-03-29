@@ -47,6 +47,7 @@ import { generateShapeTracer } from '../../math/gemini-shape-tracer';
 import { generateMathFactFluency } from '../../math/gemini-math-fact-fluency';
 import { generateStrategyPicker } from '../../math/gemini-strategy-picker';
 import { generateNumberTracer } from '../../math/gemini-number-tracer';
+import { generateHundredsChart } from '../../math/gemini-hundreds-chart';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -357,6 +358,13 @@ registerGenerator('number-tracer', async (item, topic, gradeContext) => ({
   data: await generateNumberTracer(topic, gradeContext, item.config),
 }));
 
+// Hundreds Chart (1-4 skip-counting patterns and sequence discovery)
+registerGenerator('hundreds-chart', async (item, topic, gradeContext) => ({
+  type: 'hundreds-chart',
+  instanceId: item.instanceId,
+  data: await generateHundredsChart(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
 // Legacy Math Primitives (now have dedicated service files)
 // ============================================================================
@@ -410,6 +418,6 @@ registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
 }));
 
 // ============================================================================
-// Migration status: 30/30 math primitives registered
+// Migration status: 31/31 math primitives registered
 // All math generators now use dedicated service files in math/ folder
 // ============================================================================

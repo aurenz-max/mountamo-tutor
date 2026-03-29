@@ -52,6 +52,7 @@ import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
 import NumberTracer from '../primitives/visual-primitives/math/NumberTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
 import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker';
+import HundredsChart from '../primitives/visual-primitives/math/HundredsChart';
 import FactFile from '../primitives/visual-primitives/core/FactFile';
 import HowItWorks from '../primitives/visual-primitives/core/HowItWorks';
 import FastFact from '../primitives/visual-primitives/core/FastFact';
@@ -128,8 +129,11 @@ import RocketBuilder from '../primitives/visual-primitives/astronomy/RocketBuild
 import OrbitMechanicsLab from '../primitives/visual-primitives/astronomy/OrbitMechanicsLab';
 import MissionPlanner from '../primitives/visual-primitives/astronomy/MissionPlanner';
 import TelescopeSimulator from '../primitives/visual-primitives/astronomy/TelescopeSimulator';
+import LightShadowLab from '../primitives/visual-primitives/astronomy/LightShadowLab';
+import ConstellationBuilder from '../primitives/visual-primitives/astronomy/ConstellationBuilder';
 // Physics Primitives
 import MotionDiagram from '../primitives/visual-primitives/physics/MotionDiagram';
+import SoundWaveExplorer from '../primitives/visual-primitives/physics/SoundWaveExplorer';
 // Literacy Primitives (Wave 1 - K-6 ELA)
 import ParagraphArchitect from '../primitives/visual-primitives/literacy/ParagraphArchitect';
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
@@ -768,6 +772,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'number-tracer': {
     component: NumberTracer,
     sectionTitle: 'Number Tracer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'hundreds-chart': {
+    component: HundredsChart,
+    sectionTitle: 'Hundreds Chart',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
@@ -1433,11 +1447,39 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true,
   },
+  'light-shadow-lab': {
+    component: LightShadowLab,
+    sectionTitle: 'Light & Shadow Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'constellation-builder': {
+    component: ConstellationBuilder,
+    sectionTitle: 'Constellation Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
 
   // Physics Primitives (Middle School - High School)
   'motion-diagram': {
     component: MotionDiagram,
     sectionTitle: 'Motion Diagram',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'sound-wave-explorer': {
+    component: SoundWaveExplorer,
+    sectionTitle: 'Sound Wave Explorer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

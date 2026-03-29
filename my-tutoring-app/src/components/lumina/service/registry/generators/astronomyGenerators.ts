@@ -18,6 +18,8 @@ import { generateRocketBuilder } from '../../astronomy/gemini-rocket-builder';
 import { generateOrbitMechanicsLab } from '../../astronomy/gemini-orbit-mechanics-lab';
 import { generateMissionPlanner } from '../../astronomy/gemini-mission-planner';
 import { generateTelescopeSimulator } from '../../astronomy/gemini-telescope-simulator';
+import { generateLightShadowLab } from '../../astronomy/gemini-light-shadow-lab';
+import { generateConstellationBuilder } from '../../astronomy/gemini-constellation-builder';
 
 // ============================================================================
 // Astronomy Primitives Registration (K-5)
@@ -79,6 +81,20 @@ registerGenerator('telescope-simulator', async (item, topic, gradeContext) => ({
   data: await generateTelescopeSimulator(topic, gradeContext, item.config),
 }));
 
+// Light & Shadow Lab
+registerGenerator('light-shadow-lab', async (item, topic, gradeContext) => ({
+  type: 'light-shadow-lab',
+  instanceId: item.instanceId,
+  data: await generateLightShadowLab(topic, gradeContext, item.config),
+}));
+
+// Constellation Builder
+registerGenerator('constellation-builder', async (item, topic, gradeContext) => ({
+  type: 'constellation-builder',
+  instanceId: item.instanceId,
+  data: await generateConstellationBuilder(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 8/8 astronomy primitives registered
+// Migration status: 10/10 astronomy primitives registered
 // ============================================================================

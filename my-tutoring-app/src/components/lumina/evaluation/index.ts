@@ -96,6 +96,7 @@ export type {
   // Media metrics
   MediaPlayerMetrics,
   // Math Phase 2 metrics
+  HundredsChartMetrics,
   TenFrameMetrics,
   CountingBoardMetrics,
   MultiplicationExplorerMetrics,
@@ -119,6 +120,8 @@ export type {
   MoonPhasesLabMetrics,
   MissionPlannerMetrics,
   TelescopeSimulatorMetrics,
+  LightShadowLabMetrics,
+  ConstellationBuilderMetrics,
   // Biology metrics
   MicroscopeViewerMetrics,
   FoodWebBuilderMetrics,
@@ -131,6 +134,7 @@ export type {
   EvolutionTimelineMetrics,
   // Physics metrics
   MotionDiagramMetrics,
+  SoundWaveExplorerMetrics,
   // Chemistry metrics
   MatterExplorerMetrics,
   ReactionLabMetrics,

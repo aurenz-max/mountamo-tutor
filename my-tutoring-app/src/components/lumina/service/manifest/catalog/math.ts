@@ -1532,6 +1532,72 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
   },
   {
+    id: 'hundreds-chart',
+    description: 'Interactive hundreds chart (10x10 grid, 1-100) for skip-counting pattern discovery. Students highlight skip-count sequences (2s, 5s, 10s), complete partially shown patterns, identify visual column/row/diagonal relationships, and determine skip intervals. Connects number grid topology to multiplication foundations. ESSENTIAL for grades 1-3 skip counting, pattern recognition, and place value understanding.',
+    constraints: 'Best for grades 1-3. Grades 1-2: skip by 2s, 5s, 10s, highlight and complete modes. Grades 2-3: skip by 3s, 4s, identify and find_skip_value modes. Grid always 1-100.',
+    evalModes: [
+      {
+        evalMode: 'highlight_sequence',
+        label: 'Highlight Sequence (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['highlight_sequence'],
+        description: 'Highlight all cells in a skip-count pattern.',
+      },
+      {
+        evalMode: 'complete_sequence',
+        label: 'Complete Sequence (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['complete_sequence'],
+        description: 'Complete a partially highlighted skip-count sequence.',
+      },
+      {
+        evalMode: 'identify_pattern',
+        label: 'Identify Pattern (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['identify_pattern'],
+        description: 'Describe the visual pattern formed on the grid.',
+      },
+      {
+        evalMode: 'find_skip_value',
+        label: 'Find Skip Value (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['find_skip_value'],
+        description: 'Determine the skip interval from highlighted cells.',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Student is working with a hundreds chart. Challenge type: {{challengeType}}. Instruction: {{instruction}}. Skip value: {{skipValue}}. Start number: {{startNumber}}. Given cells: {{givenCells}}. Attempt: {{attemptNumber}}. Cells selected so far: {{selectedCount}}.',
+      contextKeys: ['challengeType', 'instruction', 'skipValue', 'startNumber', 'givenCells', 'attemptNumber', 'currentPhase', 'selectedCount'],
+      scaffoldingLevels: {
+        level1: '"Look at the chart. Can you see which numbers are highlighted? What do they have in common?"',
+        level2: '"The pattern skips by {{skipValue}}. Start at {{startNumber}} and count by {{skipValue}}s: {{startNumber}}, then add {{skipValue}}..."',
+        level3: '"Let me help: starting at {{startNumber}}, count by {{skipValue}}s. Look at the column — numbers that end in the same digit are in the same column. The pattern goes: {{startNumber}}, {{startNumber}} + {{skipValue}}, {{startNumber}} + {{skipValue}} + {{skipValue}}..."',
+      },
+      commonStruggles: [
+        { pattern: 'Missing cells in highlight sequence', response: '"Count carefully by {{skipValue}}s from {{startNumber}}. Say each number out loud as you click it: {{startNumber}}, then add {{skipValue}}..."' },
+        { pattern: 'Clicking wrong cells in complete sequence', response: '"Look at the numbers already highlighted. What is the difference between each one? That tells you the skip value!"' },
+        { pattern: 'Cannot identify the visual pattern', response: '"Look at where the highlighted cells sit. Are they in the same column (vertical line)? The same row? Or do they make a diagonal? Columns mean the ones digit stays the same!"' },
+        { pattern: 'Wrong skip value guess', response: '"Pick any two highlighted numbers next to each other. Subtract the smaller from the bigger — that difference IS the skip value!"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'HUNDREDS CHART COACHING',
+          instruction:
+            'Connect grid position to place value: "Numbers in the same column end in the same digit!" '
+            + 'For skip counting: "Let\'s count together: 5, 10, 15, 20... see how they make a pattern on the chart?" '
+            + 'Highlight spatial patterns: "Counting by 10s goes straight down — same column!" '
+            + 'For Grade 1: keep to 2s, 5s, 10s. For Grade 2-3: introduce 3s, 4s, and diagonals. '
+            + 'Celebrate pattern discovery: "You found it! Counting by 5s makes two columns — the 5s and the 0s!"',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
     id: 'regrouping-workbench',
     description: 'Interactive addition and subtraction with regrouping (carrying and borrowing) for grades 1-4. Split view: base-ten blocks workspace (ones cubes, tens rods, hundreds flats) alongside the written algorithm. Students tap to trade 10 ones for 1 ten (carry) or break 1 ten into 10 ones (borrow). The blocks and algorithm update in parallel. Progressive phases from exploration to solving. Supports word problem contexts. ESSENTIAL for grades 1-4 multi-digit addition, subtraction, regrouping, and standard algorithm understanding.',
     constraints: 'Best for grades 1-4. Grades 1-2: two-digit problems with one regroup, addition focus. Grades 3-4: three-digit problems with multiple regroups, addition and subtraction. Supports add_no_regroup, subtract_no_regroup, add_regroup, and subtract_regroup challenge types.',

@@ -125,6 +125,7 @@ class SubskillUpdate(BaseModel):
     difficulty_start: Optional[float] = None
     difficulty_end: Optional[float] = None
     target_difficulty: Optional[float] = None
+    target_primitive: Optional[str] = None
     primitive_ids: Optional[List[str]] = None
 
 

@@ -2,21 +2,26 @@
 
 import React, { useState } from 'react';
 import MotionDiagram from '../primitives/visual-primitives/physics/MotionDiagram';
+import SoundWaveExplorer from '../primitives/visual-primitives/physics/SoundWaveExplorer';
+import type { EvalModeDefinition } from '../types';
 import {
   EvaluationProvider,
   useEvaluationContext,
   type PrimitiveEvaluationResult,
 } from '../evaluation';
+import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
+import { PHYSICS_CATALOG } from '../service/manifest/catalog/physics';
 
 interface PhysicsPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'motion-diagram';
+type PrimitiveType = 'motion-diagram' | 'sound-wave-explorer';
 type GradeLevel = '6' | '7' | '8' | '9' | '10' | '11' | '12';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
   { value: 'motion-diagram', label: 'Motion Diagram', icon: '📍', topic: 'Understanding motion through position markers' },
+  { value: 'sound-wave-explorer', label: 'Sound Wave Explorer', icon: '🎵', topic: 'Sound and vibrations' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -49,6 +54,18 @@ const PrimitiveRenderer: React.FC<{
             subskillId: 'motion-analysis',
             objectiveId: 'understand-velocity-acceleration',
             onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'sound-wave-explorer':
+      return (
+        <SoundWaveExplorer
+          data={{
+            ...(data as Parameters<typeof SoundWaveExplorer>[0]['data']),
+            instanceId: `sound-wave-explorer-${Date.now()}`,
+            skillId: 'physics-waves',
+            subskillId: 'sound-waves',
+            objectiveId: 'understand-sound-vibrations',
           }}
         />
       );
@@ -169,12 +186,18 @@ const EvaluationResultsPanel: React.FC = () => {
 const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ onBack }) => {
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('motion-diagram');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('9');
+  const [selectedEvalMode, setSelectedEvalMode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  const [generationKey, setGenerationKey] = useState(0);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
 
   const selectedOption = PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)!;
+
+  // Look up eval modes from the catalog for the selected primitive
+  const catalogEntry = PHYSICS_CATALOG.find(c => c.id === selectedPrimitive);
+  const evalModes: EvalModeDefinition[] = catalogEntry?.evalModes ?? [];
 
   // Callback when an evaluation is submitted
   const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
@@ -196,7 +219,9 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
             componentId: selectedPrimitive,
             topic: selectedOption.topic,
             gradeLevel,
-            config: {},
+            config: {
+              ...(selectedEvalMode ? { targetEvalMode: selectedEvalMode } : {}),
+            },
           },
         }),
       });
@@ -207,6 +232,7 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
 
       const result = await response.json();
       setGeneratedData(result.data || result);
+      setGenerationKey(k => k + 1);
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate primitive');
@@ -250,6 +276,7 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
                   key={option.value}
                   onClick={() => {
                     setSelectedPrimitive(option.value);
+                    setSelectedEvalMode(null);
                     setGeneratedData(null);
                   }}
                   className={`p-3 rounded-lg border transition-all text-left ${
@@ -281,6 +308,58 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
             </select>
           </div>
 
+          {/* Eval Mode Selector — shown when the primitive has IRT eval modes */}
+          {evalModes.length > 0 && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Difficulty Mode
+                <span className="text-slate-500 font-normal ml-1">(IRT Calibration)</span>
+              </label>
+              <div className="space-y-2">
+                {/* "Auto" option — no mode constraint */}
+                <button
+                  onClick={() => setSelectedEvalMode(null)}
+                  className={`w-full p-3 rounded-lg border transition-all text-left ${
+                    selectedEvalMode === null
+                      ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                      : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Auto (mixed difficulty)</span>
+                    <span className="text-xs text-slate-500">Default</span>
+                  </div>
+                </button>
+                {/* One button per eval mode */}
+                {evalModes.map((mode) => (
+                  <button
+                    key={mode.evalMode}
+                    onClick={() => setSelectedEvalMode(mode.evalMode)}
+                    className={`w-full p-3 rounded-lg border transition-all text-left ${
+                      selectedEvalMode === mode.evalMode
+                        ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                        : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{mode.label}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        mode.scaffoldingMode <= 2
+                          ? 'bg-green-500/20 text-green-400'
+                          : mode.scaffoldingMode <= 4
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        Mode {mode.scaffoldingMode} / {'\u03B2'} {mode.beta}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">{mode.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Error Display */}
           {error && (
             <div className="mb-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
@@ -310,6 +389,14 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
           {/* Info */}
           <p className="mt-4 text-xs text-slate-500 text-center">
             Gemini will generate a {selectedOption.label.toLowerCase()} appropriate for grade {gradeLevel}
+            {selectedEvalMode && evalModes.length > 0 && (() => {
+              const mode = evalModes.find(m => m.evalMode === selectedEvalMode);
+              return mode ? (
+                <span className="block mt-1 text-blue-400">
+                  Mode: {mode.label} ({'\u03B2'} = {mode.beta})
+                </span>
+              ) : null;
+            })()}
           </p>
         </div>
 
@@ -319,6 +406,7 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
 
           {generatedData ? (
             <PrimitiveRenderer
+              key={generationKey}
               componentId={selectedPrimitive}
               data={generatedData}
               onEvaluationSubmit={handleEvaluationSubmit}
@@ -353,15 +441,17 @@ const PhysicsPrimitivesTesterInner: React.FC<PhysicsPrimitivesTesterProps> = ({ 
 // Main export - wraps with EvaluationProvider for tracking
 export const PhysicsPrimitivesTester: React.FC<PhysicsPrimitivesTesterProps> = (props) => {
   return (
-    <EvaluationProvider
-      sessionId={`physics-tester-${Date.now()}`}
-      exhibitId="physics-primitives-tester"
-      onCompetencyUpdate={(updates) => {
-        console.log('Competency updates received:', updates);
-      }}
-    >
-      <PhysicsPrimitivesTesterInner {...props} />
-    </EvaluationProvider>
+    <LuminaAIProvider>
+      <EvaluationProvider
+        sessionId={`physics-tester-${Date.now()}`}
+        exhibitId="physics-primitives-tester"
+        onCompetencyUpdate={(updates) => {
+          console.log('Competency updates received:', updates);
+        }}
+      >
+        <PhysicsPrimitivesTesterInner {...props} />
+      </EvaluationProvider>
+    </LuminaAIProvider>
   );
 };
 
