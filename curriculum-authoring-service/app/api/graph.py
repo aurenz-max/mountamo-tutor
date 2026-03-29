@@ -239,56 +239,7 @@ async def list_all_cached_graphs():
         )
 
 
-@router.delete("/graph/cache/delete-all")
-async def delete_all_cached_graphs():
-    """
-    Delete ALL cached graph documents (use with caution!)
 
-    This is useful for cleaning up accumulated cache documents.
-    After deletion, graphs will be regenerated on next request.
-    """
-    try:
-        logger.info(f"🗑️ DELETE /graph/cache/delete-all")
-
-        deleted_count = await graph_cache_manager.delete_all_cached_graphs()
-
-        return {
-            "message": f"Deleted all cached graphs",
-            "deleted_count": deleted_count
-        }
-
-    except Exception as e:
-        logger.error(f"❌ Error deleting all cached graphs: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to delete all cached graphs: {str(e)}"
-        )
-
-
-@router.delete("/graph/cache/delete-by-ids")
-async def delete_cached_graphs_by_ids(
-    document_ids: list[str]
-):
-    """
-    Delete specific cached graphs by their document IDs
-
-    Request body should be a list of document IDs to delete.
-    Example: ["SCIENCE_latest_20251025_114839_draft", "SCIENCE_latest_20251025_114842_draft"]
-    """
-    try:
-        logger.info(f"🗑️ DELETE /graph/cache/delete-by-ids (count={len(document_ids)})")
-
-        deleted_count = await graph_cache_manager.delete_cached_graphs_by_ids(document_ids)
-
-        return {
-            "message": f"Deleted {deleted_count} specific cached graphs",
-            "deleted_count": deleted_count,
-            "requested_ids": document_ids
-        }
-
-    except Exception as e:
-        logger.error(f"❌ Error deleting cached graphs by IDs: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to delete cached graphs by IDs: {str(e)}"
-        )
+# NOTE: delete-all and delete-by-ids endpoints removed — too destructive,
+# wiped flattened graph caches for all subjects. Use per-subject
+# DELETE /graph/{subject_id}/cache instead.

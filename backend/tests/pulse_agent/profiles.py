@@ -16,12 +16,20 @@ from typing import Dict, Optional
 
 @dataclass
 class SyntheticProfile:
-    """A synthetic student used by the agent runner."""
+    """A synthetic student used by the agent runner.
+
+    The ``subject`` field is set at runtime by the CLI (``--subject`` flag).
+    Profiles are subject-agnostic by default — the same archetype can run
+    against Mathematics, Science, Language Arts, etc.
+    """
 
     student_id: int
     name: str
     description: str
-    subject: str = "Mathematics"
+
+    # Set at runtime by the CLI — no hardcoded default.
+    # Use set_subject() or assign directly before running.
+    subject: Optional[str] = None
 
     # Scenario hint — scenarios inspect this to pick a ScoreStrategy
     archetype: str = "steady"
@@ -68,11 +76,11 @@ STRUGGLING_STUDENT = SyntheticProfile(
 
 FRACTION_WEAKNESS = SyntheticProfile(
     student_id=900_004,
-    name="Fraction-Weak Finn",
-    description="Strong everywhere except fraction-related skills.",
+    name="Selective-Weakness Finn",
+    description="Strong everywhere except a subject-specific skill cluster (fractions/forces/grammar).",
     archetype="selective_weakness",
     skill_biases={
-        # These will be matched by substring against skill descriptions
+        # Weakness keywords are chosen per subject in SelectiveWeaknessStrategy
     },
     target_sessions=20,
 )

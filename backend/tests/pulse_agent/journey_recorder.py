@@ -46,6 +46,8 @@ class ItemResult:
     p_correct: Optional[float] = None
     item_information: Optional[float] = None
     discrimination_a: Optional[float] = None
+    p_blended: Optional[float] = None       # credibility-blended P used for gate checks
+    empirical_p: Optional[float] = None     # empirical pass rate (score/10 weighted)
 
     # Frontier context (from session assembly — why was this item chosen?)
     dag_distance: Optional[int] = None
@@ -251,7 +253,8 @@ class JourneyRecorder:
     def save_timeline(timeline: JourneyTimeline, output_dir: Path) -> Path:
         """Serialize a timeline to JSON."""
         output_dir.mkdir(parents=True, exist_ok=True)
-        filename = f"journey_{timeline.profile_name}_{timeline.student_id}.json"
+        subject_tag = f"_{timeline.subject}" if timeline.subject else ""
+        filename = f"journey_{timeline.profile_name}{subject_tag}_{timeline.student_id}.json"
         path = output_dir / filename
 
         data = asdict(timeline)

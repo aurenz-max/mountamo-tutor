@@ -303,7 +303,11 @@ class MasteryLifecycleEngine:
             f"completion={lifecycle.completion_pct:.3f}"
         )
 
-        return lifecycle.model_dump()
+        result = lifecycle.model_dump()
+        # Include transient blended-P context (not persisted to Firestore)
+        result["_last_irt_p"] = getattr(lifecycle, "_last_irt_p", None)
+        result["_last_empirical_p"] = getattr(lifecycle, "_last_empirical_p", None)
+        return result
 
     # ------------------------------------------------------------------
     # Lesson-mode handler (Gate 0 → 1 / not_started → active)
@@ -457,6 +461,10 @@ class MasteryLifecycleEngine:
                 empirical_p=emp_p,
                 n_observations=n_obs,
             )
+
+            # Stash blended-P context for callers (not persisted to Firestore)
+            lifecycle._last_irt_p = irt_p
+            lifecycle._last_empirical_p = emp_p
 
             # Activate retention if not_started and IRT qualifies
             if was_not_started and irt_gate >= 1:

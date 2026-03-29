@@ -228,7 +228,7 @@ class CurriculumGraphAgentService:
         accepted_ids = []
 
         for s in suggestions_data:
-            s.setdefault("subject_id", subject_id)
+            s["subject_id"] = subject_id  # Force-set (scoped suggestions may omit or null)
             s.setdefault("rationale", "")
             s.setdefault("confidence", 0.0)
             suggestion = EdgeSuggestion(**s)

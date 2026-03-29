@@ -86,33 +86,39 @@ def build_engine() -> tuple:
     return pulse_engine, firestore_service
 
 
-async def build_engine_in_memory(subject: str = "Mathematics") -> tuple:
+async def build_engine_in_memory(subjects: list[str] | None = None) -> tuple:
     """Instantiate PulseEngine backed by in-memory storage.
 
-    Fetches the curriculum graph from Firestore ONCE, then runs everything
-    in-memory. A 15-item session completes in <100ms vs 10-30s with Firestore.
+    Fetches curriculum graphs from Firestore ONCE per subject, then runs
+    everything in-memory. A 15-item session completes in <100ms vs 10-30s
+    with Firestore.
 
     Args:
-        subject: Subject to pre-load the graph for (default: "Mathematics")
+        subjects: Grade-prefixed subject IDs to pre-load (e.g. ["MATHEMATICS_GK"]).
+                  Default: ["MATHEMATICS_GK"]
 
     Returns:
         (pulse_engine, in_memory_firestore_service)
     """
-    # Fetch graph from real Firestore (one-time bootstrap)
-    real_fs = FirestoreService()
-    subject_id = subject.upper().replace(" ", "_")
-    graph_data = await real_fs.get_curriculum_graph(
-        subject_id=subject_id, version_type="published"
-    )
-    if not graph_data:
-        raise ValueError(
-            f"No published curriculum graph for {subject_id} in Firestore. "
-            f"The in-memory engine needs a real graph to run against."
-        )
+    if not subjects:
+        subjects = ["MATHEMATICS_GK"]
 
-    # Build in-memory store with the graph pre-loaded
+    # Fetch graphs from real Firestore (one-time bootstrap)
+    real_fs = FirestoreService()
     mem_fs = InMemoryFirestoreService()
-    mem_fs.load_curriculum_graph(subject_id, graph_data)
+
+    for subject_id in subjects:
+        graph_data = await real_fs.get_curriculum_graph(
+            subject_id=subject_id, version_type="published"
+        )
+        if not graph_data:
+            raise ValueError(
+                f"No published curriculum graph for {subject_id} in Firestore. "
+                f"The in-memory engine needs a real graph to run against."
+            )
+        mem_fs.load_curriculum_graph(subject_id, graph_data)
+        node_count = len(graph_data.get("graph", {}).get("nodes", []))
+        logger.info(f"[InMemory] Loaded {subject_id}: {node_count} nodes")
 
     # Wire up all services with the in-memory store
     calibration_engine = CalibrationEngine(mem_fs)
@@ -127,9 +133,8 @@ async def build_engine_in_memory(subject: str = "Mathematics") -> tuple:
         learning_paths_service=learning_paths_service,
     )
 
-    node_count = len(graph_data.get("graph", {}).get("nodes", []))
     logger.info(
-        f"[InMemory] Engine ready: {node_count} nodes for {subject_id}, "
+        f"[InMemory] Engine ready: {len(subjects)} subject(s) loaded, "
         f"0 Firestore calls from here on"
     )
 
@@ -191,7 +196,7 @@ async def run_single_profile(
             report += "\n\n" + graph_section
             print(f"  Graph: {len(graph['nodes'])} nodes, {len(graph['edges'])} edges")
 
-        save_report(report, output_dir, profile.name.replace(" ", "_"))
+        save_report(report, output_dir, profile.name.replace(" ", "_"), subject=profile.subject or "")
         JourneyRecorder.save_timeline(timeline, output_dir)
 
 
@@ -241,10 +246,13 @@ async def run_all_profiles(
                 graph_section = generate_graph_report(graph, timeline)
                 report += "\n\n" + graph_section
 
-            save_report(report, output_dir, timeline.profile_name.replace(" ", "_"))
+            save_report(report, output_dir, timeline.profile_name.replace(" ", "_"), subject=timeline.subject)
             JourneyRecorder.save_timeline(timeline, output_dir)
 
-        comp_path = output_dir / "comparison_report.md"
+        # Use subject from first timeline for the comparison filename
+        comp_subject = timelines[0].subject if timelines else ""
+        comp_tag = f"_{comp_subject}" if comp_subject else ""
+        comp_path = output_dir / f"comparison_report{comp_tag}.md"
         comp_path.write_text(comparison, encoding="utf-8")
         print(f"\nComparison report saved to {comp_path}")
 
@@ -307,26 +315,71 @@ def main():
         action="store_true",
         help="List available profiles and exit",
     )
+    parser.add_argument(
+        "--subject",
+        type=str,
+        action="append",
+        default=None,
+        help=(
+            "Base subject name(s) (repeatable). "
+            "Examples: --subject Mathematics --subject Science. "
+            "Default: Mathematics. "
+            "Combined with --grade to form Firestore subject_id "
+            "(e.g. Mathematics + grade 1 → MATHEMATICS_G1)."
+        ),
+    )
+    parser.add_argument(
+        "--grade",
+        type=str,
+        default="K",
+        help=(
+            "Grade level. Combined with --subject to form the Firestore "
+            "subject_id. Examples: K → MATHEMATICS_GK, 1 → MATHEMATICS_G1. "
+            "Default: K (kindergarten)"
+        ),
+    )
 
     args = parser.parse_args()
 
+    # Normalise subjects — default to Mathematics for backward compat
+    if not args.subject:
+        args.subject = ["Mathematics"]
+
+    # Build grade-prefixed subject IDs matching Firestore flat cache naming:
+    #   Kindergarten/K → _GK,  1 → _G1,  2 → _G2
+    grade_raw = args.grade.strip()
+    if grade_raw.lower() in ("k", "kindergarten"):
+        grade_suffix = "_GK"
+    else:
+        grade_suffix = f"_G{grade_raw}"
+
+    # Construct full Firestore subject_ids (e.g. "MATHEMATICS_GK", "SCIENCE_G1")
+    args.subject_ids = [
+        s.upper().replace(" ", "_") + grade_suffix for s in args.subject
+    ]
+
     if args.list:
         print("\nAvailable profiles:")
-        print("-" * 50)
+        print("-" * 60)
         for name, p in ALL_PROFILES.items():
             print(f"  {name:20s} — {p.description}")
+        print(f"\nGrade: {grade_raw} (suffix: {grade_suffix})")
+        print(f"Subject(s): {', '.join(args.subject_ids)}")
+        print("  Use --subject <name> --grade <N> to change")
         return
 
     if not args.profile and not args.all:
         parser.error("Specify --profile <name> or --all")
 
-    output_dir = Path(args.output) if args.output else None
+    # Build output dir with grade subfolder: reports/GK/, reports/G1/, etc.
+    output_dir = Path(args.output) / grade_suffix.lstrip("_") if args.output else None
 
     # Build engine
     if args.in_memory:
-        print("[InMemory] Bootstrapping — fetching graph from Firestore once...")
+        subjects_str = ", ".join(args.subject_ids)
+        print(f"[InMemory] Bootstrapping — fetching graph(s) for: {subjects_str}...")
         pulse_engine, firestore_service = asyncio.run(
-            build_engine_in_memory(subject="Mathematics")
+            build_engine_in_memory(subjects=args.subject_ids)
         )
         # In-memory mode: always clean (start fresh) and skip Firestore cleanup
         args.clean = False
@@ -340,20 +393,29 @@ def main():
         session_gap_days=args.gap,
     )
 
-    # Run
-    if args.all:
-        asyncio.run(run_all_profiles(
-            runner, args.sessions, args.clean, output_dir,
-            include_graph=args.graph,
-        ))
-    else:
-        profile = ALL_PROFILES[args.profile]
-        asyncio.run(
-            run_single_profile(
-                runner, profile, args.sessions, args.clean, output_dir,
+    # Run each subject_id independently so reports are per-subject
+    for subject_id in args.subject_ids:
+        if len(args.subject_ids) > 1:
+            print(f"\n{'━'*60}")
+            print(f"  Subject: {subject_id}")
+            print(f"{'━'*60}")
+
+        if args.all:
+            for p in ALL_PROFILES.values():
+                p.subject = subject_id
+            asyncio.run(run_all_profiles(
+                runner, args.sessions, args.clean, output_dir,
                 include_graph=args.graph,
+            ))
+        else:
+            profile = ALL_PROFILES[args.profile]
+            profile.subject = subject_id
+            asyncio.run(
+                run_single_profile(
+                    runner, profile, args.sessions, args.clean, output_dir,
+                    include_graph=args.graph,
+                )
             )
-        )
 
 
 if __name__ == "__main__":

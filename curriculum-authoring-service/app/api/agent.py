@@ -65,8 +65,8 @@ async def list_pending_suggestions(subject_id: str, request: Request):
     data = await firestore_reader.get_suggestions_for_subject(subject_id, status="pending")
     results = []
     for d in data:
-        # Inject subject_id (scoped suggestions don't store it)
-        d.setdefault("subject_id", subject_id)
+        # Inject subject_id (scoped suggestions may omit or null it)
+        d["subject_id"] = subject_id
         # Provide defaults for fields that may be missing from scoped origin
         d.setdefault("rationale", "")
         d.setdefault("confidence", 0.0)

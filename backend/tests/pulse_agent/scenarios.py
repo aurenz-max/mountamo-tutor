@@ -92,15 +92,30 @@ class StrugglingStrategy(ScoreStrategy):
 
 
 class SelectiveWeaknessStrategy(ScoreStrategy):
-    """Strong in most areas, weak in skills matching bias keywords."""
+    """Strong in most areas, weak in skills matching subject-specific keywords.
 
-    WEAKNESS_KEYWORDS = ["fraction", "decimal", "ratio", "percent"]
+    Weakness keywords are chosen per subject so the strategy works across
+    Mathematics, Science, Language Arts, etc.  Falls back to a generic
+    "every 4th skill is weak" heuristic if the subject has no keyword list.
+    """
+
+    WEAKNESS_KEYWORDS_BY_SUBJECT: Dict[str, list[str]] = {
+        "Mathematics": ["fraction", "decimal", "ratio", "percent"],
+        "Science": ["force", "energy", "gravity", "motion"],
+        "Language Arts": ["grammar", "punctuation", "spelling", "tense"],
+    }
+
+    def _is_weak_skill(self, item: PulseItemSpec) -> bool:
+        subject = (self.profile.subject or "").strip()
+        keywords = self.WEAKNESS_KEYWORDS_BY_SUBJECT.get(subject)
+        if keywords:
+            desc_lower = item.description.lower()
+            return any(kw in desc_lower for kw in keywords)
+        # Fallback: deterministic weakness based on subskill_id hash
+        return hash(item.subskill_id) % 4 == 0
 
     def score_item(self, item: PulseItemSpec) -> float:
-        desc_lower = item.description.lower()
-        is_weak = any(kw in desc_lower for kw in self.WEAKNESS_KEYWORDS)
-
-        if is_weak:
+        if self._is_weak_skill(item):
             base = {
                 PulseBand.FRONTIER: 2.5,
                 PulseBand.CURRENT: 4.5,

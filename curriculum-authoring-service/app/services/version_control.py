@@ -159,9 +159,7 @@ class VersionControl:
         1. Validate draft changes
         2. Create new version in Firestore
         3. Batch update all Firestore entities (is_draft=False, new version_id)
-        4. Export to BigQuery (non-blocking)
         """
-        from app.db.bigquery_export_service import bigquery_export
 
         now = datetime.utcnow()
 
@@ -201,15 +199,7 @@ class VersionControl:
 
         logger.info(f"Published version {new_version.version_number} for {publish_request.subject_id}")
 
-        # 4. Export to BigQuery (non-blocking — failure does not fail publish)
-        try:
-            export_result = await bigquery_export.export_published_subject(
-                publish_request.subject_id, new_version.version_id
-            )
-            if export_result.get("errors"):
-                logger.warning(f"BQ export had errors: {export_result['errors']}")
-        except Exception as e:
-            logger.error(f"BQ export failed (non-blocking): {e}")
+        # BQ export removed from publish — use POST /publishing/subjects/{id}/deploy-to-bigquery instead
 
         return PublishResponse(
             success=True,

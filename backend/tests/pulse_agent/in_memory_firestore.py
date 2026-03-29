@@ -9,8 +9,9 @@ Usage:
     from tests.pulse_agent.in_memory_firestore import InMemoryFirestoreService
 
     fs = InMemoryFirestoreService()
-    # Pre-load a curriculum graph (required for Pulse):
-    fs.load_curriculum_graph("MATHEMATICS", graph_data)
+    # Pre-load curriculum graphs (one per subject, required for Pulse):
+    fs.load_curriculum_graph("MATHEMATICS", math_graph)
+    fs.load_curriculum_graph("SCIENCE", science_graph)
     # Then wire into PulseEngine via build_engine_in_memory()
 
 All methods are async to match FirestoreService's interface, but execute

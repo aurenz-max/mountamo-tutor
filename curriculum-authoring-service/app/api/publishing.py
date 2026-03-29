@@ -10,6 +10,7 @@ from app.core.security import require_admin
 from app.services.version_control import version_control
 from app.services.graph_cache_manager import graph_cache_manager
 from app.services.curriculum_manager import curriculum_manager
+from app.services.graph_flattening import graph_flattening_service
 from app.models.versioning import (
     Version, DraftSummary,
     PublishRequest, PublishResponse
@@ -176,6 +177,27 @@ async def deploy_curriculum(
             version_id=version_id,
             deployed_by="manual"
         )
+
+        # Auto-flatten graph after deploy so Pulse/LearningPaths have fresh data
+        flatten_result = None
+        try:
+            flat = graph_flattening_service.rebuild_cache(subject_id, published_only=True)
+            if flat:
+                meta = flat.get("metadata", {})
+                flatten_result = {
+                    "cache_doc_id": flat["id"],
+                    "nodes": meta.get("entity_counts", {}),
+                    "edges": meta.get("edge_counts", {}),
+                }
+                logger.info(f"[FLATTEN] Auto-flattened after deploy: {flat['id']}")
+            # Also rebuild draft cache
+            graph_flattening_service.rebuild_cache(subject_id, published_only=False)
+        except Exception as e:
+            logger.error(f"[FLATTEN] Auto-flatten failed (non-critical): {e}")
+
+        if flatten_result:
+            result["flatten"] = flatten_result
+
         return result
 
     except ValueError as e:
@@ -183,6 +205,39 @@ async def deploy_curriculum(
     except Exception as e:
         logger.error(f"❌ Deploy failed for {subject_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to deploy curriculum: {str(e)}")
+
+
+@router.post("/subjects/{subject_id}/deploy-to-bigquery")
+async def deploy_to_bigquery(subject_id: str):
+    """
+    Export published curriculum to BigQuery for analytics.
+
+    This is separate from publish/deploy (which are Firestore-only).
+    Run this when you want to sync the published curriculum to BQ
+    for analytics dashboards and reporting.
+    """
+    from app.db.bigquery_export_service import bigquery_export
+
+    try:
+        active_version = await version_control.get_active_version(subject_id)
+        if not active_version:
+            raise HTTPException(status_code=404, detail=f"No active version for {subject_id}")
+
+        export_result = await bigquery_export.export_published_subject(
+            subject_id, active_version.version_id
+        )
+
+        return {
+            "success": True,
+            "subject_id": subject_id,
+            "version_id": active_version.version_id,
+            "export_result": export_result,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ BQ export failed for {subject_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"BigQuery export failed: {str(e)}")
 
 
 @router.get("/subjects/{subject_id}/deploy/status")
@@ -348,6 +403,102 @@ async def backfill_drafts(grade: Optional[str] = None):
         }
     except Exception as e:
         logger.error(f"Backfill failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Graph Flattening / Cache Rebuild ====================
+
+
+@router.post("/subjects/{subject_id}/flatten")
+async def flatten_and_cache_graph(
+    subject_id: str,
+    published_only: bool = True,
+):
+    """
+    Rebuild the flat graph cache from the hierarchical Firestore graph.
+
+    Reads edges from curriculum_graphs/{grade}/subjects/{subject_id}/edges/
+    and nodes from curriculum_published, then writes a grade-prefixed flat
+    cache document, e.g.:
+      curriculum_graphs/MATHEMATICS_GK_latest_published  (Kindergarten)
+      curriculum_graphs/SCIENCE_G1_latest_published      (Grade 1)
+
+    This is automatically called after deploy, but can be triggered manually
+    if you need to refresh the cache without redeploying.
+    """
+    try:
+        result = graph_flattening_service.rebuild_cache(subject_id, published_only)
+
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Could not resolve graph for {subject_id} — check that edges exist in the hierarchical collection"
+            )
+
+        metadata = result.get("metadata", {})
+        return {
+            "success": True,
+            "subject_id": subject_id,
+            "cache_doc_id": result["id"],
+            "nodes": metadata.get("entity_counts", {}),
+            "edges": metadata.get("edge_counts", {}),
+            "generated_at": result["generated_at"],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rebuilding graph cache for {subject_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/flatten-all/{grade}")
+async def flatten_all_for_grade(grade: str):
+    """
+    Rebuild flat graph caches for ALL subjects under a grade.
+
+    Useful after bulk curriculum changes or migration.
+    """
+    try:
+        rebuilt = graph_flattening_service.rebuild_all_for_grade(grade)
+
+        return {
+            "success": True,
+            "grade": grade,
+            "rebuilt_subjects": rebuilt,
+            "count": len(rebuilt),
+        }
+
+    except Exception as e:
+        logger.error(f"Error rebuilding all graph caches for grade {grade}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/subjects/{subject_id}/flatten/preview")
+async def preview_flattened_graph(
+    subject_id: str,
+    published_only: bool = True,
+):
+    """
+    Preview the flattened graph without writing to cache.
+
+    Useful for debugging — shows what Pulse/LearningPaths would see.
+    """
+    try:
+        result = graph_flattening_service.flatten_graph(subject_id, published_only)
+
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Could not resolve graph for {subject_id}"
+            )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error previewing flattened graph for {subject_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -46,7 +46,7 @@ from app.services.edge_manager import EdgeManager
 
 logger = logging.getLogger(__name__)
 
-LLM_MODEL = "gemini-3-flash-preview"
+LLM_MODEL = "gemini-3.1-flash-lite-preview"
 
 
 def _parse_json_lenient(text: str) -> list:
@@ -234,6 +234,7 @@ class ScopedSuggestionService:
                 confidence=conn.confidence,
             )
             data = suggestion.model_dump(mode="json")
+            data["subject_id"] = subject_id  # Ensure subject_id stored for accept-all
             data["origin"] = "connect_skills"
             data["status"] = "pending"
             data["created_at"] = datetime.utcnow().isoformat()
@@ -448,6 +449,10 @@ class ScopedSuggestionService:
         depth: str,
     ) -> List[ScopedEdgeSuggestion]:
         """Single Gemini call to generate scoped edge suggestions."""
+        logger.info(
+            f"[SCOPED] Generating suggestions: {len(nodes)} nodes, "
+            f"{len(existing_edges)} existing edges, max={max_suggestions}"
+        )
         nodes_text = self._format_nodes_for_prompt(nodes)
         edges_text = self._format_edges_for_prompt(existing_edges)
         types_text = ", ".join(relationship_types)
@@ -507,6 +512,9 @@ For each connection, specify:
             ),
         )
 
+        prompt_chars = len(prompt)
+        logger.info(f"[SCOPED] Prompt size: {prompt_chars} chars, {len(nodes)} nodes in scope")
+
         try:
             response = self.client.models.generate_content(
                 model=LLM_MODEL,
@@ -523,14 +531,18 @@ For each connection, specify:
             logger.error(f"Scoped suggestion LLM call failed: {e}")
             return []
 
+        logger.info(f"[SCOPED] Gemini returned {len(raw)} raw items ({len(response.text)} chars)")
+
         node_map = {n["id"]: n for n in nodes}
 
+        rejected_ids: List[str] = []
         suggestions: List[ScopedEdgeSuggestion] = []
         for item in raw[:max_suggestions]:
             src_id = item.get("source_id", "")
             tgt_id = item.get("target_id", "")
 
             if src_id not in node_map or tgt_id not in node_map:
+                rejected_ids.append(f"{src_id}->{tgt_id}")
                 continue
 
             src_node = node_map[src_id]
@@ -553,6 +565,16 @@ For each connection, specify:
                 confidence=max(0.0, min(1.0, item.get("confidence", 0.7))),
             ))
 
+        if rejected_ids:
+            logger.warning(
+                f"[SCOPED] Rejected {len(rejected_ids)} items with unknown IDs: "
+                f"{rejected_ids[:5]}{'...' if len(rejected_ids) > 5 else ''}"
+            )
+        logger.info(
+            f"[SCOPED] Result: {len(suggestions)} valid suggestions "
+            f"({len(raw)} raw, {len(rejected_ids)} rejected)"
+        )
+
         return suggestions
 
     # ================================================================== #
@@ -567,6 +589,13 @@ For each connection, specify:
         relationship_types: List[RelationshipType],
     ) -> List[SkillConnection]:
         """Single Gemini call for pairwise skill connection analysis."""
+        src_skill = source_nodes[0].get("skill_id", "?") if source_nodes else "?"
+        tgt_skill = target_nodes[0].get("skill_id", "?") if target_nodes else "?"
+        logger.info(
+            f"[PAIRWISE] {src_skill} → {tgt_skill}: "
+            f"{len(source_nodes)} source subskills, {len(target_nodes)} target subskills, "
+            f"{len(existing_edges)} existing edges"
+        )
         source_text = self._format_nodes_for_prompt(source_nodes)
         target_text = self._format_nodes_for_prompt(target_nodes)
         edges_text = self._format_edges_for_prompt(existing_edges)
@@ -651,16 +680,23 @@ For each connection, specify:
             logger.error(f"Pairwise connection LLM call failed: {e}")
             return []
 
+        logger.info(
+            f"[PAIRWISE] {src_skill} → {tgt_skill}: "
+            f"Gemini returned {len(raw)} raw items ({len(response.text)} chars)"
+        )
+
         source_ids = {n["id"] for n in source_nodes}
         target_ids = {n["id"] for n in target_nodes}
         node_map = {n["id"]: n for n in source_nodes + target_nodes}
 
+        rejected_count = 0
         connections: List[SkillConnection] = []
         for item in raw:
             src_id = item.get("source_subskill_id", "")
             tgt_id = item.get("target_subskill_id", "")
 
             if src_id not in source_ids or tgt_id not in target_ids:
+                rejected_count += 1
                 continue
 
             connections.append(SkillConnection(
@@ -674,6 +710,17 @@ For each connection, specify:
                 rationale=item.get("rationale", ""),
                 confidence=max(0.0, min(1.0, item.get("confidence", 0.7))),
             ))
+
+        if rejected_count:
+            logger.warning(
+                f"[PAIRWISE] {src_skill} → {tgt_skill}: "
+                f"rejected {rejected_count}/{len(raw)} items (IDs not in source/target sets)"
+            )
+        logger.info(
+            f"[PAIRWISE] {src_skill} → {tgt_skill}: "
+            f"{len(connections)} valid connections "
+            f"({len(raw)} raw, {rejected_count} rejected)"
+        )
 
         return connections
 

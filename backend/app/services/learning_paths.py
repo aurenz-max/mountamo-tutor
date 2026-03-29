@@ -1242,7 +1242,7 @@ class LearningPathsService:
 
             target_id = edge["target"]
             source_id = edge["source"]
-            threshold = edge.get("threshold", self.DEFAULT_MASTERY_THRESHOLD)
+            threshold = edge.get("threshold") or self.DEFAULT_MASTERY_THRESHOLD
 
             if target_id not in prereqs_map:
                 prereqs_map[target_id] = []

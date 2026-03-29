@@ -84,13 +84,26 @@ def _session_irt_commentary(s: SessionSnapshot) -> List[str]:
         )
 
     # 2. P(correct) analysis — are we giving items that are too easy?
-    p_values = [it.p_correct for it in s.items if it.p_correct is not None]
+    # Use blended P when available (what actually drives gate checks)
+    p_values = [it.p_blended or it.p_correct for it in s.items if (it.p_blended or it.p_correct) is not None]
+    p_irt_values = [it.p_correct for it in s.items if it.p_correct is not None]
     if p_values:
         avg_p = sum(p_values) / len(p_values)
+        avg_p_irt = sum(p_irt_values) / len(p_irt_values) if p_irt_values else avg_p
         high_p_count = sum(1 for p in p_values if p >= 0.90)
+
+        # Show IRT vs blended divergence when credibility blend is materially pulling P down
+        if p_irt_values and abs(avg_p_irt - avg_p) > 0.03:
+            notes.append(
+                f"**Credibility blend active:** P(irt) avg = {avg_p_irt:.3f}, "
+                f"P(blended) avg = {avg_p:.3f} (Δ={avg_p - avg_p_irt:+.3f}). "
+                f"Empirical pass rate is pulling the gate-check P "
+                f"{'down' if avg_p < avg_p_irt else 'up'} from the IRT prediction."
+            )
+
         if avg_p >= 0.90:
             notes.append(
-                f"**Ceiling effect:** Average P(correct) = {avg_p:.3f}. "
+                f"**Ceiling effect:** Average P(blended) = {avg_p:.3f}. "
                 f"{high_p_count}/{len(p_values)} items had P >= 0.90 — the student "
                 f"has very high probability of acing these. Items are not providing "
                 f"maximum information. Consider higher-beta items or frontier probes "
@@ -98,7 +111,7 @@ def _session_irt_commentary(s: SessionSnapshot) -> List[str]:
             )
         elif avg_p <= 0.50:
             notes.append(
-                f"**Floor effect:** Average P(correct) = {avg_p:.3f}. "
+                f"**Floor effect:** Average P(blended) = {avg_p:.3f}. "
                 f"Items may be too difficult — risk of frustrating the student."
             )
 
@@ -270,15 +283,17 @@ def generate_journey_report(
             # Session has anomalies — show full IRT table
             _h(f"### Session {s.session_number}" + (" (Cold Start)" if s.is_cold_start else ""))
             _h("")
-            _h("| Band | Subskill | Mode | Beta | theta | P(correct) | Info | Score | Verdict |")
-            _h("|------|----------|------|------|-------|------------|------|-------|---------|")
+            _h("| Band | Subskill | Mode | Beta | theta | P(irt) | P(blended) | Info | Score | Verdict |")
+            _h("|------|----------|------|------|-------|--------|------------|------|-------|---------|")
 
             for item in s.items:
                 p = item.p_correct
+                pb = item.p_blended
                 info = item.item_information
                 p_str = f"{p:.3f}" if p is not None else "--"
+                pb_str = f"{pb:.3f}" if pb is not None else "--"
                 info_str = f"{info:.4f}" if info is not None else "--"
-                verdict = _p_label(p)
+                verdict = _p_label(pb if pb is not None else p)
                 dag_note = f" d={item.dag_distance}" if item.dag_distance is not None else ""
 
                 _h(
@@ -287,7 +302,8 @@ def generate_journey_report(
                     f"| {item.target_mode} "
                     f"| {item.target_beta:.1f} "
                     f"| {item.theta_before:.2f} "
-                    f"| {p_str} ({verdict}) "
+                    f"| {p_str} "
+                    f"| {pb_str} ({verdict}) "
                     f"| {info_str} ({_info_label(info)}) "
                     f"| {item.score:.1f} "
                     f"| {'G' + str(item.gate_before) + '->' + 'G' + str(item.gate_after) if item.gate_before != item.gate_after else '--'} |"
@@ -298,9 +314,11 @@ def generate_journey_report(
             _h("")
         else:
             # Clean session — one-line summary
+            p_vals = [it.p_blended or it.p_correct for it in s.items if (it.p_blended or it.p_correct) is not None]
+            avg_p_clean = sum(p_vals) / len(p_vals) if p_vals else 0
             _h(
                 f"- **Session {s.session_number}:** "
-                f"avg P={avg_p:.2f}, "
+                f"avg P(blended)={avg_p_clean:.2f}, "
                 f"{gate_advances} gate advances, "
                 f"avg score {s.avg_score:.1f} — no anomalies"
             )
@@ -681,10 +699,16 @@ def generate_graph_report(
     return "\n".join(lines)
 
 
-def save_report(report: str, output_dir: Path, profile_name: str) -> Path:
-    """Save a report to a Markdown file."""
+def save_report(report: str, output_dir: Path, profile_name: str, subject: str = "") -> Path:
+    """Save a report to a Markdown file.
+
+    Args:
+        subject: Subject ID (e.g. "MATHEMATICS_GK") — included in filename
+                 when provided so reports are distinguishable per-subject.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
-    filename = f"journey_report_{profile_name}.md"
+    subject_tag = f"_{subject}" if subject else ""
+    filename = f"journey_report_{profile_name}{subject_tag}.md"
     path = output_dir / filename
     path.write_text(report, encoding="utf-8")
     logger.info(f"Report saved to {path}")

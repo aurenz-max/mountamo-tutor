@@ -7,6 +7,7 @@ Writes: DraftCurriculumService (hierarchical docs in curriculum_drafts)
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
@@ -74,6 +75,9 @@ class CurriculumManager:
         d = dict(data)
         if "grade_level" in d and "grade" not in d:
             d["grade"] = d.pop("grade_level")
+        for ts_field in ("created_at", "updated_at"):
+            if not d.get(ts_field):
+                d[ts_field] = datetime.now(timezone.utc)
         return d
 
     async def get_subject(self, subject_id: str, version_id: Optional[str] = None, include_drafts: bool = False) -> Optional[Subject]:

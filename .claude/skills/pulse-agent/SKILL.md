@@ -12,6 +12,10 @@ Run synthetic student profiles through the Pulse adaptive loop to validate progr
 - `/pulse-agent gifted --firestore` — run against real Firestore (slow, for production validation)
 - `/pulse-agent gifted --clean` — wipe Firestore data before running (Firestore mode only)
 - `/pulse-agent gifted --graph` — include curriculum DAG analysis in the report
+- `/pulse-agent gifted --subject Science` — run against a specific subject (default: Mathematics)
+- `/pulse-agent gifted --grade 1` — run against 1st grade (default: K)
+- `/pulse-agent gifted --subject Science --grade 1` — 1st grade Science
+- `/pulse-agent gifted --subject Science --subject "Language Arts" --grade 1` — multiple 1st grade subjects
 
 ## Required Reading
 
@@ -42,17 +46,22 @@ Parse the user's command. Map to CLI flags:
 | User says | CLI command |
 |-----------|------------|
 | `/pulse-agent` or `/pulse-agent list` | `--list` |
-| `/pulse-agent gifted` | `--profile gifted --in-memory --output ./reports` |
-| `/pulse-agent all` | `--all --in-memory --output ./reports` |
+| `/pulse-agent gifted` | `--profile gifted --in-memory --output ./reports` → `reports/GK/` |
+| `/pulse-agent all` | `--all --in-memory --output ./reports` → `reports/GK/` |
 | `/pulse-agent steady --sessions 5` | `--profile steady --sessions 5 --in-memory --output ./reports` |
 | `/pulse-agent gifted --graph` | `--profile gifted --graph --in-memory --output ./reports` |
 | `/pulse-agent gifted --firestore` | `--profile gifted --clean --output ./reports` |
+| `/pulse-agent gifted --subject Science` | `--profile gifted --subject Science --in-memory --output ./reports` |
+| `/pulse-agent gifted --grade 1` | `--profile gifted --grade 1 --in-memory --output ./reports` → `reports/G1/` |
+| `/pulse-agent gifted --subject Science --grade 1` | `--profile gifted --subject Science --grade 1 --in-memory --output ./reports` → `reports/G1/` |
+| `/pulse-agent all --subject "Language Arts" --grade 1` | `--all --subject "Language Arts" --grade 1 --in-memory --output ./reports` → `reports/G1/` |
 
 Default behavior:
 - Always use `--in-memory` unless user says `--firestore` (500x faster, fetches graph once then runs locally)
-- Always use `--output ./reports` (save reports for review)
+- Always use `--output ./reports` (reports saved to `reports/<grade>/`, e.g. `reports/GK/`)
 - Only use `--clean` in Firestore mode (in-memory always starts fresh)
 - Default seed is 42 (reproducible)
+- Default subject is Mathematics (backward compatible)
 
 ### Step 2: Check Prerequisites
 
@@ -79,23 +88,25 @@ cd backend && python -m tests.pulse_agent.run_scenarios --list
 
 For a single profile (in-memory, ~3s):
 ```bash
-cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --in-memory --sessions <N> --seed 42 --output ./reports
+cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --subject <Subject> --grade <N> --in-memory --sessions <N> --seed 42 --output ./reports
 ```
 
 For a single profile with graph analysis:
 ```bash
-cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --in-memory --graph --sessions <N> --seed 42 --output ./reports
+cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --subject <Subject> --grade <N> --in-memory --graph --sessions <N> --seed 42 --output ./reports
 ```
 
 For all profiles (in-memory, ~5s):
 ```bash
-cd backend && python -m tests.pulse_agent.run_scenarios --all --in-memory --seed 42 --output ./reports
+cd backend && python -m tests.pulse_agent.run_scenarios --all --subject <Subject> --grade <N> --in-memory --seed 42 --output ./reports
 ```
 
 For Firestore mode (production validation, slow):
 ```bash
-cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --clean --sessions <N> --seed 42 --output ./reports
+cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --subject <Subject> --grade <N> --clean --sessions <N> --seed 42 --output ./reports
 ```
+
+**Note:** `--subject` defaults to `Mathematics`, `--grade` defaults to `K` (kindergarten). The grade and subject are combined to form the Firestore subject_id: `Mathematics` + grade `1` → `MATHEMATICS_G1`. Repeat `--subject` to load multiple graphs for the same grade.
 
 Show the user the real-time output as sessions run. Each session logs:
 ```
@@ -126,7 +137,7 @@ After the run completes, present a clear summary:
 
 If assertions fail or the user wants to dig deeper:
 
-1. Read the full journey report: `backend/reports/journey_report_<ProfileName>.md`
+1. Read the full journey report: `backend/reports/<Grade>/journey_report_<ProfileName>_<SUBJECT_ID>.md`
 2. Check the theta progression table — is theta trending correctly?
 3. Check the gate progression table — are gates advancing at the right pace?
 4. Check leapfrog events — did they fire when expected?
@@ -142,7 +153,7 @@ Offer to:
 After presenting results, offer to update the eval tracker or save a dated summary:
 
 ```
-backend/reports/pulse-agent-<YYYY-MM-DD>.md
+backend/reports/<Grade>/pulse-agent-<YYYY-MM-DD>.md
 ```
 
 ## Available Profiles
@@ -152,10 +163,17 @@ backend/reports/pulse-agent-<YYYY-MM-DD>.md
 | `gifted` | High scores (9-10) | IRT-derived gate progression, leapfrog unlock propagation |
 | `steady` | Mid scores (7-8) | Linear IRT convergence, gradual gate advancement |
 | `struggling` | Low scores (4-6) | IRT convergence stability, stuck at gate 0 |
-| `fraction_weakness` | Mixed (high + low on fractions) | Selective weakness detection |
+| `fraction_weakness` | Mixed (high + low on subject-specific cluster) | Selective weakness detection (fractions/forces/grammar by subject) |
 | `cold_start` | No history | Cold-start frontier probe assembly |
+| `forgetful` | Good scores, 20% review forgetting | Retention/stability model |
 | `accelerating` | Improving over time | Growth trajectory, accelerating gate advances |
 | `shallow_roots` | Aces frontier, fails prereqs | Leapfrog unlock + natural validation via utility scoring |
+| `regressing` | Starts strong, declines | θ decline, gate regression |
+| `volatile` | Alternating high/low sessions | σ convergence under noisy data |
+| `plateau` | Ramps to ~7.5 then flatlines | Mid-gate stall behavior |
+| `bursty` | Good scores, 7-day gaps | Effective θ decay formula |
+
+All profiles are **subject-agnostic** — the same archetype works against any curriculum graph. Subject is set at runtime via `--subject`.
 
 ## Expected Behaviors (Quick Reference)
 

@@ -957,6 +957,11 @@ class PulseEngine:
             avg_a=cal_result.get("discrimination_a"),
         )
 
+        # Attach blended-P context to IRT data (from gate derivation)
+        if irt_data is not None:
+            irt_data.p_blended = mastery_result.get("_last_irt_p")
+            irt_data.empirical_p = mastery_result.get("_last_empirical_p")
+
         new_gate = mastery_result.get("current_gate", old_gate)
         if new_gate != old_gate:
             gate_update = GateUpdate(

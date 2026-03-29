@@ -288,6 +288,8 @@ class PulseAgentRunner:
                 p_correct=irt.p_correct if irt else None,
                 item_information=irt.item_information if irt else None,
                 discrimination_a=irt.discrimination_a if irt else None,
+                p_blended=irt.p_blended if irt else None,
+                empirical_p=irt.empirical_p if irt else None,
                 # Frontier context
                 dag_distance=fc.dag_distance if fc else None,
                 ancestors_if_passed=fc.ancestors_if_passed if fc else None,
