@@ -127,9 +127,18 @@ class CurriculumService:
 
         # Check cached subjects for the mapping
         all_subjects = await self.get_available_subjects()
-        for subj in all_subjects:
-            if subj.get("subject_name", "").lower() == subject.lower():
-                return subj["subject_id"]
+        matches = [
+            subj for subj in all_subjects
+            if subj.get("subject_name", "").lower() == subject.lower()
+        ]
+        if len(matches) > 1:
+            ids = [m["subject_id"] for m in matches]
+            logger.warning(
+                f"Ambiguous subject name '{subject}' matches {len(matches)} entries: {ids}. "
+                "Pass subject_id instead of subject_name to avoid this."
+            )
+        if matches:
+            return matches[0]["subject_id"]
 
         # Fallback: normalise to UPPER_SNAKE_CASE
         return subject.upper().replace(" ", "_")

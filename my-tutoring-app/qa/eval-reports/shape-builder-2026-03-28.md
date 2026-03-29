@@ -5,11 +5,19 @@
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
 | build | PASS | — |
-| measure | PASS | — |
+| measure | FAIL | 1 (SHB-3) |
 | classify | PASS | Fixed: SHB-1 |
 | compose | PASS | — |
 | find_symmetry | PASS | Fixed: SHB-2 (3/3 stochastic) |
 | coordinate_shape | PASS | — |
+
+## Issues
+
+### SHB-3: measure — No actual question/answer mechanism
+- **Severity:** HIGH
+- **What's broken:** Measure challenges ask questions like "How many different side lengths do you find?" but the component has no answer input. The student toggles the Ruler button, measurements appear, and clicking "Check Answer" auto-passes if all tool buttons were toggled (`propsFound >= propsNeeded` at line 840). No comprehension is assessed — clicking a button is the entire "evaluation."
+- **Data:** `handleCheckAnswer` measure path (ShapeBuilder.tsx:832-866) only checks tool toggle count, not student understanding
+- **Fix in:** COMPONENT + GENERATOR — Component needs an answer input (numeric input or MC options) after tools are toggled. Generator should produce a `correctAnswer` field for measure challenges. Generator already produces question text; component just ignores it.
 
 ## Fixed Issues
 

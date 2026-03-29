@@ -48,7 +48,7 @@
 | math-fact-fluency | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/math-fact-fluency-2026-03-17.md) |
 | multiplication-explorer | 6 | 6 | 0 | 2026-03-17 | [report](eval-reports/multiplication-explorer-2026-03-17.md) |
 | skip-counting-runner | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/skip-counting-runner-2026-03-17.md) |
-| shape-builder | 6 | 6 | 0 | 2026-03-28 | [report](eval-reports/shape-builder-2026-03-28.md) |
+| shape-builder | 6 | 5 | 1 | 2026-03-28 | [report](eval-reports/shape-builder-2026-03-28.md) |
 | shape-tracer | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/shape-tracer-2026-03-17.md) |
 | 3d-shape-explorer | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/3d-shape-explorer-2026-03-17.md) |
 | strategy-picker | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/strategy-picker-2026-03-17.md) |
@@ -60,7 +60,7 @@
 | knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
 | how-it-works | 3 | 3 | 0 | 2026-03-22 | [report](eval-reports/how-it-works-2026-03-22.md) |
 
-**Totals:** 191/207 modes passing (92.3%) | 20 open issues (11 CRITICAL, 9 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 190/207 modes passing (91.8%) | 21 open issues (11 CRITICAL, 10 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -160,6 +160,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | RV-1 | revision-workshop | reorganize | HIGH | Interaction mismatch | Reorganize expects drag-to-reorder but component only offers textareas — students must retype sentences | COMPONENT |
 | SB-1 | sentence-builder | complex, compound_complex | CRITICAL | Impossible challenge | Duplicate tile IDs in validArrangements — student can't match with only 1 copy per tile; compound_complex ch2 unsolvable | GENERATOR |
 | SB-2 | sentence-builder | complex, compound_complex | HIGH | Wrong content | Alternative arrangements are ungrammatical (mid-sentence capitals, misplaced punctuation) — accepted as correct | GENERATOR |
+| SHB-3 | shape-builder | measure | HIGH | Trivial challenge | Measure mode has no answer input — student toggles Ruler button, measurements appear, Check Answer auto-passes. No comprehension assessed. | COMPONENT + GENERATOR |
 
 ---
 

@@ -558,6 +558,16 @@ class FirestoreService:
 
                 docs = list(query.stream())
 
+                # Fallback: grade-prefixed cache docs store the original
+                # subject in base_subject_id (e.g. subject_id=MATHEMATICS_GK,
+                # base_subject_id=MATHEMATICS). Try that if direct match fails.
+                if not docs:
+                    fallback_query = self.curriculum_graphs \
+                        .where('base_subject_id', '==', subject_id) \
+                        .where('version_type', '==', version_type) \
+                        .limit(1)
+                    docs = list(fallback_query.stream())
+
                 if docs:
                     doc = docs[0]
                     doc_data = doc.to_dict()

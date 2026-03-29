@@ -167,7 +167,7 @@ class FirestoreAnalyticsService:
         else:
             all_subj = await self.curriculum.get_available_subjects()
             subjects_to_load = [
-                s.get("subject_name") or s.get("subject_id") or s
+                s.get("subject_id") or s.get("subject_name") or s
                 for s in all_subj
             ]
 

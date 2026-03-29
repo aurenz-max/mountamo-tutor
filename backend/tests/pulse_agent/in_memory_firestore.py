@@ -445,6 +445,11 @@ class InMemoryFirestoreService:
         for k, v in self._curriculum_graphs.items():
             if k.upper() == key.upper():
                 return copy.deepcopy(v)
+        # Try base_subject_id fallback (grade-prefixed cache docs)
+        for k, v in self._curriculum_graphs.items():
+            if v.get("base_subject_id", "").upper() == subject_id.upper() and \
+               v.get("version_type", "") == version_type:
+                return copy.deepcopy(v)
         return None
 
     async def get_all_published_subjects(

@@ -224,7 +224,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
 }) => {
   const { user } = useAuth();
   const [subjects, setSubjects] = useState<SubjectInfo[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<SubjectInfo | null>(null);
   const [curriculumData, setCurriculumData] = useState<CurriculumUnit[] | null>(null);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [loadingCurriculum, setLoadingCurriculum] = useState(false);
@@ -254,8 +254,11 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
     }
   }, [subjectsLoaded, loadingSubjects, user]);
 
-  const handleSubjectSelect = useCallback(async (subject: string) => {
-    if (subject === selectedSubject) {
+  const handleSubjectSelect = useCallback(async (subject: SubjectInfo) => {
+    // Use subject_id as the unique key (each grade has a distinct ID)
+    const subjectKey = subject.subject_id ?? subject.subject_name;
+
+    if ((selectedSubject?.subject_id ?? selectedSubject?.subject_name) === subjectKey) {
       // Toggle off
       setSelectedSubject(null);
       setCurriculumData(null);
@@ -266,7 +269,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
     setError(null);
 
     // Check cache
-    const cached = cacheRef.current.get(subject);
+    const cached = cacheRef.current.get(subjectKey);
     if (cached) {
       setCurriculumData(cached);
       return;
@@ -275,11 +278,13 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
     setLoadingCurriculum(true);
     setCurriculumData(null);
     try {
-      const data = await authApi.getSubjectCurriculum(subject) as { curriculum: CurriculumUnit[] };
-      cacheRef.current.set(subject, data.curriculum);
+      // Pass subject_id when available — the backend resolves it unambiguously
+      const lookupKey = subject.subject_id ?? subject.subject_name;
+      const data = await authApi.getSubjectCurriculum(lookupKey) as { curriculum: CurriculumUnit[] };
+      cacheRef.current.set(subjectKey, data.curriculum);
       setCurriculumData(data.curriculum);
     } catch {
-      setError(`Failed to load ${subject} curriculum`);
+      setError(`Failed to load ${subject.subject_name} curriculum`);
     } finally {
       setLoadingCurriculum(false);
     }
@@ -356,9 +361,9 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
                   {grouped.get(grade)!.map(subject => (
                     <button
                       key={`${subject.subject_name}-${grade}`}
-                      onClick={() => handleSubjectSelect(subject.subject_name)}
+                      onClick={() => handleSubjectSelect(subject)}
                       className={`px-4 py-2 rounded-full border transition-all text-sm font-medium ${
-                        selectedSubject === subject.subject_name
+                        (selectedSubject?.subject_id ?? selectedSubject?.subject_name) === (subject.subject_id ?? subject.subject_name)
                           ? 'bg-blue-500/20 border-blue-500/50 text-blue-200'
                           : 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10 hover:text-white'
                       }`}
@@ -388,7 +393,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
                 setSubjectsLoaded(false);
                 ensureSubjectsLoaded();
               } else if (selectedSubject) {
-                cacheRef.current.delete(selectedSubject);
+                cacheRef.current.delete(selectedSubject.subject_id ?? selectedSubject.subject_name);
                 handleSubjectSelect(selectedSubject);
               }
             }}
@@ -435,7 +440,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
                       key={skill.id}
                       skill={skill}
                       unit={unit}
-                      subject={selectedSubject}
+                      subject={selectedSubject.subject_name}
                       onSelect={onSelectTopic}
                       selectionMode={selectionMode}
                       selectedIds={selectedIds}
@@ -450,7 +455,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
       )}
 
       {curriculumData && curriculumData.length === 0 && selectedSubject && (
-        <p className="text-center text-slate-500 text-sm">No curriculum found for {selectedSubject}.</p>
+        <p className="text-center text-slate-500 text-sm">No curriculum found for {selectedSubject.subject_name}.</p>
       )}
     </div>
   );

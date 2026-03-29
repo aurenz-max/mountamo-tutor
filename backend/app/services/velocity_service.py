@@ -83,7 +83,7 @@ class VelocityService:
         subject_names: List[str] = []
         for s in subjects_list:
             if isinstance(s, dict):
-                subject_names.append(s.get("subject_name") or s.get("subject_id", ""))
+                subject_names.append(s.get("subject_id") or s.get("subject_name", ""))
             else:
                 subject_names.append(str(s))
 
