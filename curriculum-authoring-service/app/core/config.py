@@ -66,7 +66,6 @@ class Settings(BaseSettings):
     TABLE_EDGES: str = "curriculum_edges"
     TABLE_VERSIONS: str = "curriculum_versions"
     TABLE_PRIMITIVES: str = "curriculum_primitives"
-    TABLE_SUBSKILL_PRIMITIVES: str = "curriculum_subskill_primitives"
 
     def get_table_id(self, table_name: str) -> str:
         """Get fully qualified BigQuery table ID"""

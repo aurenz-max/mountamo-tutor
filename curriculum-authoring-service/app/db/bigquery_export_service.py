@@ -7,8 +7,7 @@ BQ export failure does NOT fail the publish operation.
 
 Tables written:
   curriculum_subjects, curriculum_units, curriculum_skills, curriculum_subskills,
-  curriculum_prerequisites, curriculum_edges, curriculum_versions,
-  curriculum_subskill_primitives
+  curriculum_prerequisites, curriculum_edges, curriculum_versions
 """
 
 import logging

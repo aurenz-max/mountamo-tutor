@@ -141,7 +141,6 @@ curriculum_subskills/{subskill_id}
 curriculum_prerequisites/{prerequisite_id}
 curriculum_versions/{version_id}
 curriculum_primitives/{primitive_id}
-curriculum_subskill_primitives/{subskill_id}_{primitive_id}
 ```
 
 **Published curriculum** (from `CurriculumFirestore`):

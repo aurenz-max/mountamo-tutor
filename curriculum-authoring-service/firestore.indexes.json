@@ -116,15 +116,6 @@
         { "fieldPath": "is_draft", "order": "ASCENDING" }
       ]
     },
-    {
-      "collectionGroup": "curriculum_subskill_primitives",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "subskill_id", "order": "ASCENDING" },
-        { "fieldPath": "version_id", "order": "ASCENDING" },
-        { "fieldPath": "is_draft", "order": "ASCENDING" }
-      ]
-    }
   ],
   "fieldOverrides": []
 }

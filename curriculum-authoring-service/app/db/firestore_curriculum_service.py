@@ -18,7 +18,6 @@ Flat collections (legacy):
   curriculum_prerequisites/{prerequisite_id}
   curriculum_versions/{version_id}
   curriculum_primitives/{primitive_id}
-  curriculum_subskill_primitives/{subskill_id}_{primitive_id}
 """
 
 import logging
@@ -69,7 +68,6 @@ class FirestoreCurriculumSync:
                 "prerequisites": self.client.collection("curriculum_prerequisites"),
                 "versions": self.client.collection("curriculum_versions"),
                 "primitives": self.client.collection("curriculum_primitives"),
-                "subskill_primitives": self.client.collection("curriculum_subskill_primitives"),
                 "edges": self.client.collection("curriculum_edges"),
             }
 
@@ -427,51 +425,6 @@ class FirestoreCurriculumSync:
             logger.error(f"Firestore sync failed for version: {e}")
 
     # ========================================================================
-    # SUBSKILL-PRIMITIVE SYNC
-    # ========================================================================
-
-    async def sync_subskill_primitives(
-        self,
-        subskill_id: str,
-        primitive_ids: List[str],
-        version_id: str
-    ) -> None:
-        """Sync subskill-primitive associations to Firestore.
-
-        Deletes old draft associations for this subskill and writes new ones.
-        """
-        try:
-            batch = self.client.batch()
-
-            # Delete existing associations for this subskill
-            existing = self._collections["subskill_primitives"] \
-                .where("subskill_id", "==", subskill_id) \
-                .where("version_id", "==", version_id) \
-                .stream()
-
-            for doc in existing:
-                batch.delete(doc.reference)
-
-            # Write new associations
-            now = datetime.utcnow().isoformat()
-            for primitive_id in primitive_ids:
-                doc_id = f"{subskill_id}_{primitive_id}"
-                data = {
-                    "subskill_id": subskill_id,
-                    "primitive_id": primitive_id,
-                    "version_id": version_id,
-                    "is_draft": True,
-                    "created_at": now,
-                }
-                batch.set(self._collections["subskill_primitives"].document(doc_id), data)
-
-            batch.commit()
-            logger.info(f"Synced {len(primitive_ids)} primitive associations for subskill {subskill_id}")
-
-        except Exception as e:
-            logger.error(f"Firestore sync failed for subskill primitives: {e}")
-
-    # ========================================================================
     # PUBLISH SYNC (batch update across all entity collections)
     # ========================================================================
 
@@ -532,11 +485,6 @@ class FirestoreCurriculumSync:
 
             # 6b. Publish edges in graph subcollection (separate from flat batch)
             await self.publish_edges(subject_id, new_version_id)
-
-            # 7. Update subskill-primitive associations
-            for subskill_id in subskill_ids:
-                for doc in self._collections["subskill_primitives"].where("subskill_id", "==", subskill_id).stream():
-                    operations.append((doc.reference, publish_update))
 
             # Commit in batches of 500 (Firestore limit)
             for i in range(0, len(operations), 500):

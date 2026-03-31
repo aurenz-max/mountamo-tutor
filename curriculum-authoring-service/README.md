@@ -123,7 +123,7 @@ curriculum_graphs/{grade}/subjects/{subject_id}
 ```
 curriculum_subjects, curriculum_units, curriculum_skills, curriculum_subskills,
 curriculum_prerequisites, curriculum_versions, curriculum_primitives,
-curriculum_subskill_primitives, curriculum_edges
+curriculum_edges
 ```
 
 ### Grade Resolution
