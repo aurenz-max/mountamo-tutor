@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.database import db
 from app.db.firestore_graph_service import firestore_graph_service
 from app.db.firestore_curriculum_service import firestore_curriculum_sync
-from app.api import curriculum, prerequisites, publishing, ai, graph, edges, agent
+from app.api import curriculum, prerequisites, publishing, ai, graph, edges, agent, lineage
 
 # Configure logging
 logging.basicConfig(
@@ -171,6 +171,12 @@ app.include_router(
     agent.router,
     prefix="/api/agent",
     tags=["Agentic Graph Analysis"]
+)
+
+app.include_router(
+    lineage.router,
+    prefix="/api/lineage",
+    tags=["Curriculum Lineage"]
 )
 
 

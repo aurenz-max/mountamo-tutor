@@ -48,6 +48,21 @@ The planning engine is a tightly coupled set of services built on a **4-gate mas
 
 **Key files:** `planning_service.py`, `mastery_lifecycle_engine.py`, `models/planning.py`, `models/mastery_lifecycle.py`, `endpoints/weekly_planner.py`, `endpoints/daily_activities.py`, `endpoints/mastery.py`.
 
+## Curriculum Lineage & Draft-First Rules
+
+Student data (competencies, mastery_lifecycle, ability, attempts, reviews) uses `subskill_id` as document IDs and composite keys. When curriculum iterates (rename, merge, split, retire subskills), the **curriculum lineage system** preserves student data:
+
+- **`curriculum_lineage` collection** — maps old subskill_id to canonical successor(s)
+- **`SubskillIdResolver`** — cached lookup layer in `backend/app/services/subskill_id_resolver.py`, transparently resolves deprecated IDs in all FirestoreService methods
+- **`LineageDetector`** — auto-detects changes at publish time by diffing old vs new `subskill_index`
+- **Pre-publish validation** — publish is blocked if removed subskill IDs lack lineage records
+
+**Draft-first rule:** NEVER edit `curriculum_published` directly. All curriculum changes go through: edit draft → `lineage-check` → publish → deploy. The publish pipeline in `draft_curriculum_service.py` is the ONLY writer to `curriculum_published`. If published data is wrong, fix it by editing the draft and re-publishing.
+
+**Before any subskill ID change:** Create a lineage record via `POST /api/lineage/` BEFORE modifying the draft. Use `/curriculum-lumina-audit lineage-check {subject_id}` to validate coverage before publishing.
+
+**Key files:** `subskill_id_resolver.py`, `lazy_migration.py`, `models/lineage.py`, `curriculum-authoring-service/app/services/lineage_detector.py`, `curriculum-authoring-service/app/api/lineage.py`.
+
 **PRD references:** §2 (lifecycle subcollection), §3 (gate transitions), §4 (completion factor), §5 (planning), §7 (gate blocking/prerequisites), §8 (session interleaving).
 
 ## Development Commands

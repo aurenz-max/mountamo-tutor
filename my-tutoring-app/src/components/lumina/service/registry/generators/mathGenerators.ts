@@ -48,6 +48,8 @@ import { generateMathFactFluency } from '../../math/gemini-math-fact-fluency';
 import { generateStrategyPicker } from '../../math/gemini-strategy-picker';
 import { generateNumberTracer } from '../../math/gemini-number-tracer';
 import { generateHundredsChart } from '../../math/gemini-hundreds-chart';
+import { generateLengthLab } from '../../math/gemini-length-lab';
+import { generateAnalogClock } from '../../math/gemini-analog-clock';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -365,6 +367,20 @@ registerGenerator('hundreds-chart', async (item, topic, gradeContext) => ({
   data: await generateHundredsChart(topic, gradeContext, item.config),
 }));
 
+// Length Lab (K-1 direct comparison & non-standard measurement)
+registerGenerator('length-lab', async (item, topic, gradeContext) => ({
+  type: 'length-lab',
+  instanceId: item.instanceId,
+  data: await generateLengthLab(topic, gradeContext, item.config),
+}));
+
+// Analog Clock (K-5 telling time, elapsed time, clock reading)
+registerGenerator('analog-clock', async (item, topic, gradeContext) => ({
+  type: 'analog-clock',
+  instanceId: item.instanceId,
+  data: await generateAnalogClock(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
 // Legacy Math Primitives (now have dedicated service files)
 // ============================================================================
@@ -418,6 +434,6 @@ registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
 }));
 
 // ============================================================================
-// Migration status: 31/31 math primitives registered
+// Migration status: 32/32 math primitives registered
 // All math generators now use dedicated service files in math/ folder
 // ============================================================================

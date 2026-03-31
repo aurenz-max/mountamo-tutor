@@ -12,8 +12,19 @@
 | GAP-002 | MEDIUM | SCIENCE_G1 | 3 (SCI003-04-a/b/c stretch-fit) | `constellation-builder` (or telescope-simulator enhancement) | SMALL-MEDIUM | OPEN |
 | GAP-003 | LOW | SCIENCE_G1, MATHEMATICS_G1 | 1 (absorbed into sorting-station) | `bar-graph-builder` | SMALL | BACKLOG |
 | GAP-004 | MEDIUM | MATHEMATICS_G1 | 3 (PTRN001-04-a/b/c) | `hundreds-chart` | MEDIUM | OPEN |
+| GAP-005 | HIGH | MATHEMATICS (K) | 5 (MEAS001-03-a/b/c, 04-a, 04-d) | `analog-clock` | MEDIUM | CLOSED |
+| GAP-006 | HIGH | MATHEMATICS (K) | 4 (MEAS001-01-a/b, 02-a/b) | `length-lab` | MEDIUM | CLOSED |
+| GAP-007 | MEDIUM | MATHEMATICS (K) | 2 (MEAS001-07-a, 07-c) | `coin-counter` | SMALL-MEDIUM | OPEN |
+| GAP-008 | HIGH | LANGUAGE_ARTS (K) | 4 (LA001-07-a/b, LA005-08-a + future) | `sight-word-trainer` | SMALL-MEDIUM | OPEN |
+| GAP-009 | MEDIUM | LANGUAGE_ARTS (K) | 4 (Letter Formation Groups 1-4) | `letter-tracer` | MEDIUM | OPEN |
+| GAP-010 | HIGH | LANGUAGE_ARTS (K), LANGUAGE_ARTS_G1 | ~20 (LA004, LA005, LA006 sorting/categorization subskills) | `word-sorter` | SMALL | OPEN |
+| GAP-011 | MEDIUM | LANGUAGE_ARTS (K) | 7 (LA006-06 Text Features A-G) | `book-explorer` | SMALL | OPEN |
+| GAP-012 | MEDIUM | LANGUAGE_ARTS (K), LANGUAGE_ARTS_G1 | 3 (LA004-01-G/K, LA004-02-C) | `sentence-builder` | MEDIUM | CLOSED |
+| GAP-013 | LOW | SCIENCE (K) | 1 (SCI001-02-D) | `material-properties-tester` | MEDIUM | OPEN |
+| GAP-014 | LOW | SCIENCE (K) | 1 (SCI003-01-E) | `weather-station` | MEDIUM | OPEN |
+| GAP-015 | LOW | SCIENCE (K) | 1 (SCI004-02-E) | `digital-skills-sim` | SMALL | OPEN |
 
-**Totals:** 4 gaps | 1 HIGH, 2 MEDIUM, 1 LOW | 8 subskills affected (1 directly blocked, 3 stretch-fit, 1 absorbed, 3 blocked by hundreds-chart gap)
+**Totals:** 15 gaps | 5 HIGH, 6 MEDIUM, 4 LOW | ~64 subskills affected | 4 CLOSED (GAP-005, GAP-006, GAP-012 + GAP-003 backlog)
 
 ---
 
@@ -315,6 +326,342 @@ Students construct bar graphs by dragging pre-filled values into columns, then a
 
 ---
 
+## GAP-005: analog-clock
+
+**Priority:** HIGH — time-telling is a K-1 core standard with zero primitive coverage
+
+**Blocked subskills:** MEAS001-03-a, MEAS001-03-b, MEAS001-03-c, MEAS001-04-a, MEAS001-04-d
+
+**Pedagogical goal:** Students read analog and digital clock faces, write times, and set clock hands to show given times — covering hour and half-hour granularity at the K level.
+
+**Why no existing primitive fits:** No clock primitive exists in any catalog domain. `knowledge-check` handles pure recall tasks (matching, fill-in-blanks) but cannot present an interactive clock face for reading or hand-placement challenges.
+
+**Proposed features:**
+- Analog clock face (clean, high-contrast, large numerals 1-12)
+- Read mode: clock shows a time; student types or selects the correct time
+- Set mode: student drags minute and hour hands to a target time (snap to hour/half-hour)
+- Digital display mode: read a digital clock and answer questions
+- Sync display: show analog and digital side-by-side for matching challenges
+- K constraints: hour and half-hour only; minute hand snaps to 12 or 6
+
+**Grade band:** K-1 (K: hour + half-hour; G1-2: quarter-hour, elapsed time)
+
+**Eval modes:**
+- `read_analog` — given clock face, identify the time (hour focus, Tier 1)
+- `read_digital` — given digital display, identify the time (Tier 1)
+- `set_hands` — drag hands to show a given time (half-hour focus, Tier 2)
+- `match` — match analog face to correct digital from 4 options (Tier 2)
+- `elapsed` — given start and end time, answer how much time passed (Tier 3, G1+)
+
+**Catalog domain:** math
+**Complexity:** MEDIUM — analog SVG with draggable hands, 12-position hour snap + 2-position minute snap, digital display sync
+**Standards:** K.MD (time context), 1.MD.3 (tell/write time to nearest hour and half-hour on analog and digital clocks)
+
+---
+
+## GAP-006: length-lab
+
+**Priority:** HIGH — K measurement standard (direct comparison + non-standard units) has zero primitive coverage
+
+**Blocked subskills:** MEAS001-01-a, MEAS001-01-b, MEAS001-02-a, MEAS001-02-b
+
+**Pedagogical goal:** Students visually compare the lengths of two or three objects and measure objects by placing identical non-standard units (cubes, paper clips) end-to-end without gaps or overlaps.
+
+**Why no existing primitive fits:** `measurement-tools` uses a ruler (grades 1-5, standard units). K measurement is pre-ruler: direct visual comparison and non-standard unit tiling are fundamentally different interactions. `comparison-builder` compares quantities/numbers, not physical object lengths.
+
+**Proposed features:**
+- **Phase 1 - Compare:** Two objects displayed on a shared horizontal baseline; student taps to select "longer", "shorter", or "same length"; objects have clear length differentials
+- **Phase 2 - Tile:** Student drags identical unit tiles (cubes, paper clips, bears) end-to-end along an object; unit count auto-tallies; gap or overlap flagged with visual feedback
+- **Phase 3 - Order:** Three objects shown; student drags to arrange from shortest to longest
+- **Phase 4 - Indirect:** Two objects that cannot be placed side-by-side; student uses a reference object to compare them transitively
+- Unit types: cubes, paper clips, bears, erasers (selectable per challenge)
+- Clear visual feedback: green checkmark for correct alignment, red flash for gaps/overlaps
+
+**Grade band:** K-1 (K: compare + tile; G1: order + indirect; G2+: transitions to `measurement-tools`)
+
+**Eval modes:**
+- `compare` — which object is longer/shorter (Tier 1, beta=1.5)
+- `tile_and_count` — tile units, read the count (Tier 2, beta=2.5)
+- `order` — arrange 3 objects by length (Tier 3, beta=3.5)
+- `indirect` — transitivity comparison via reference object (Tier 4, beta=5.0)
+
+**Catalog domain:** math
+**Complexity:** MEDIUM — drag-and-drop tiling with baseline snapping, gap/overlap detection, object pool with varied length assets
+**Standards:** K.MD.1 (describe measurable attributes of objects), K.MD.2 (directly compare two objects with a measurable attribute in common)
+
+---
+
+## GAP-007: coin-counter
+
+**Priority:** MEDIUM — coin identification and value counting for K-1
+
+**Blocked subskills:** MEAS001-07-a, MEAS001-07-c
+
+**Pedagogical goal:** Students identify US coins (penny, nickel, dime, quarter) by their visual appearance and count collections of identical coins to determine total value.
+
+**Why no existing primitive fits:** No coin/money primitive in any catalog. `counting-board` counts generic objects by 1s and has no concept of denomination values. `skip-counting-runner` (grades 1-3) can skip by 5s/10s but provides no coin context and its constraints exclude K.
+
+**Proposed features:**
+- High-quality coin images (heads and tails views) for penny, nickel, dime, quarter
+- Identify phase: tap to name the coin displayed
+- Count phase: collection of identical coins shown; student taps each coin as they count; running total increments by denomination (1 cent for penny, 5 for nickel, 10 for dime, 25 for quarter)
+- Skip-count visual: coin tap triggers denomination animation ("+5" floats up for nickel)
+- K constraints: single denomination sets only; 4 coins max per challenge
+- G1 extension: mixed denomination sets
+
+**Grade band:** K (identify + count single denomination); G1 (mixed collections, compare totals)
+
+**Eval modes:**
+- `identify` — name the coin from image, Tier 1 (beta=1.5)
+- `match_value` — drag coin to its value label (1c, 5c, 10c, 25c), Tier 2 (beta=2.5)
+- `count_pennies` — count by 1s, Tier 2 (beta=2.5)
+- `count_nickels_dimes` — count by 5s/10s (single denomination), Tier 3 (beta=3.5)
+- `mixed_count` — mixed denominations, G1+ only, Tier 4 (beta=5.0)
+
+**Catalog domain:** math
+**Complexity:** SMALL-MEDIUM — coin image assets + denomination-aware running total, skip-count tap animation; no complex physics
+**Standards:** K.CC (counting context), 1.MD (measure and count coin collections)
+
+---
+
+## GAP-008: sight-word-trainer
+
+> **Display precursor exists:** `SightWordCard.tsx` (`my-tutoring-app/src/components/lumina/primitives/visual-primitives/SightWordCard.tsx`) shows the word in large font with optional context sentence — but it is **display-only** (no drilling, no recall challenge, no eval modes). Not in registry or catalog. The interactive trainer below still needs to be built.
+
+**Priority:** HIGH — sight word automaticity is the single biggest bottleneck for early K-1 reading fluency and currently has zero interactive primitive coverage
+
+### Curriculum Need
+
+| Subject | Subskill | Current Workaround | Why Workaround Fails |
+|---------|----------|--------------------|---------------------|
+| LANGUAGE_ARTS (K) | LA001-07-a (Dolch pre-K list recognition) | `knowledge-check` | MC quiz cannot simulate the rapid flash/recall loop that builds automaticity. Speed is the entire point — knowledge-check has no timing component. |
+| LANGUAGE_ARTS (K) | LA001-07-b (sight words in sentence context) | `knowledge-check` | Cannot show a word in running text and assess same-word transfer across different sentence frames. |
+| LANGUAGE_ARTS (K) | LA005-08-a (Sight Word Fluency) | `knowledge-check` | Fluency = automaticity over time. A static MC quiz doesn't track per-word mastery history or build toward the timed recall that fluency requires. |
+| LANGUAGE_ARTS_G1 | Future G1 Dolch/Fry word subskills | — | Same gap will exist at Grade 1 scale (Dolch Level 1 and Level 2, Fry 1-100). |
+
+**Standards:** CCSS RF.K.3c — "Read common high-frequency words by sight (e.g., the, of, to, you, she, my, is, are, do, does)." RF.1.3g — extend to Dolch pre-primer, primer, and Grade 1 lists.
+
+**Root cause of gap:** Sight words are memorized by visual shape — they cannot be phonetically decoded (the, of, said, was). They require a fundamentally different interaction model: rapid exposure → recognition → mastery tracking per word. No existing primitive does this.
+
+### Pedagogical Goal
+
+Build orthographic lexicon (sight word bank) through repeated exposure, recognition across contexts, and adaptive per-word mastery tracking. A student who has seen "the" 40 times and responds instantly has automaticity. A student who hesitates 3 seconds has not. The primitive must model this distinction.
+
+**Three stages of sight word learning:**
+1. **Introduction** — student encounters the word and its pronunciation for the first time (new exposure, low repetition)
+2. **Practice** — repeated recognition across different formats (flash, sentence, write)
+3. **Mastery** — automatic, sub-second recognition with zero prompting (the actual goal)
+
+### Word Lists
+
+The primitive should support these standard lists, each building on the previous:
+
+| List | Count | Grade | Examples |
+|------|-------|-------|---------|
+| Dolch Pre-Primer | 40 | PK-K | a, and, away, big, blue, can, come, down, find, for, funny, go, help, here, I, in, is, it, jump, little, look, make, me, my, not, one, play, red, run, said, see, the, three, to, two, up, we, where, yellow, you |
+| Dolch Primer | 52 | K | all, am, are, at, ate, be, black, brown, but, came, did, do, eat, four, get, good, have, he, into, like, must, new, no, now, on, our, out, please, pretty, ran, ride, saw, say, she, so, soon, that, there, they, this, too, under, want, was, well, went, what, white, who, will, with, yes |
+| Dolch Grade 1 | 41 | G1 | after, again, an, any, as, ask, by, could, every, fly, from, give, giving, had, has, her, him, his, how, just, know, let, live, may, of, old, once, open, over, put, round, some, stop, take, thank, them, then, think, walk, were, when |
+| Fry 1-100 | 100 | K-1 | the, of, and, a, to, in, is, you, that, it, he, was, for, on, are, as, with, his, they, at, be, this, from, I, have, or, by, one, had, not, but, what, all, were, when, we, there, can, an, your... |
+
+### Proposed Design
+
+**Core UI:** Clean, distraction-free white card with large, high-contrast word displayed. No phonics cues. Word presented, student responds, immediate feedback, next word.
+
+**Three interaction modes:**
+
+**Mode 1 — Flash Recognition (`flash`)**
+- Word appears on screen (configurable display duration: 1s easy, 0.5s medium, 0.25s hard)
+- Simultaneously spoken by AI tutor
+- Student taps YES (I know it) or types/speaks the word
+- Wrong or hesitant → word queued for re-presentation
+- Correct streaks → word "graduated" from the queue
+
+**Mode 2 — Sentence Context (`sentence_context`)**
+- Simple 4-7 word decodable sentence shown with the target sight word highlighted or blanked
+- E.g., `"The ___ is big."` → student taps "dog" to complete OR taps correct word from 3 options
+- Tests transfer: student must recognize the word in running text, not just in isolation
+- Example sentences always use only the target sight word + previously mastered CVC/sight words
+
+**Mode 3 — Production (`production`)**
+- Word shown, spoken, then hidden after 2 seconds
+- Student types or selects it from an on-screen letter bank (Elkonin-box style)
+- Hardest mode — pure recall without visual scaffold
+- K constraint: use letter-bank selection, not free typing
+
+**Mastery tracking per word (within session):**
+- Each word has a per-session attempt/correct counter
+- "Working set" of 8-10 words cycled until all hit 3-correct-in-a-row
+- Words below threshold are re-presented more frequently (spaced-repetition lite)
+- Session summary shows graduated vs. still-practicing words
+
+### Eval Modes
+
+| Mode | Tier | Beta | Challenge Type | Description |
+|------|------|------|---------------|-------------|
+| `flash` | 1 | 1.5 | Flash card recognition | See + hear word, confirm recognition. Working set of 8 words, 3-in-a-row mastery per word. |
+| `sentence_context` | 2 | 2.5 | Fill-blank in sentence | Complete sentence with target word from 3 options. Sentence uses only mastered vocabulary. |
+| `find_it` | 3 | 3.5 | Visual search | Find all instances of target word in a paragraph of running text. Highlights on tap. |
+| `production` | 4 | 5.0 | Letter-bank spelling | Word shown + spoken, then hidden. Build word from letter bank (Elkonin boxes). |
+
+### Generator Requirements
+
+```
+Input: wordList ("pre-primer"|"primer"|"grade1"|"fry-100"), evalMode, sessionSize (8-10 words), gradeLevel
+Output: {
+  targetWords: string[],          // 8-10 words from the list, frequency-weighted (less-practiced words appear first)
+  flashConfig: {
+    displayDuration: number,      // ms (1000 easy, 500 medium, 250 hard)
+    masteryThreshold: number,     // correct-in-a-row needed (default: 3)
+  },
+  sentenceChallenges: [{          // for sentence_context mode
+    targetWord: string,
+    sentence: string,             // e.g. "The ___ is big."
+    distractors: string[],        // 2 wrong options (previously mastered CVC words or sight words)
+    blankPosition: "start"|"middle"|"end"
+  }],
+  findItChallenges: [{            // for find_it mode
+    targetWord: string,
+    paragraph: string,            // 3-4 short sentences using target word 2-4 times
+    correctCount: number          // how many times targetWord appears
+  }],
+  productionChallenges: [{        // for production mode
+    targetWord: string,
+    letterBank: string[],         // all letters of targetWord + 2-3 distractors, shuffled
+    boxCount: number              // = targetWord.length
+  }]
+}
+```
+
+**Schema complexity:** LOW-MEDIUM (4 challenge types, flat structure). No nested objects deeper than 2 levels. Flash-lite safe.
+
+**Key generator constraints:**
+- Sentence context sentences must ONLY use words from: already-mastered Dolch lists + standard CVC words (cat, dog, big, run, sit, etc.)
+- Never include a word in a distractor set that looks too similar to the target (e.g., "the"/"they" should not be distractors for each other at early levels)
+- Word ordering within the session: prioritize words with fewer prior exposures across the student's history (IRT integration point)
+
+### AI Tutoring Scaffold
+
+```typescript
+tutoring: {
+  taskDescription:
+    'Sight word practice. Word list: {{wordList}}. '
+    + 'Mode: {{evalMode}}. Session words: {{sessionWords}}. '
+    + 'Current word: "{{currentWord}}". '
+    + 'Attempts on this word: {{attempts}}. Correct streak: {{correctStreak}}. '
+    + 'Words mastered this session: {{masteredCount}}/{{sessionSize}}.',
+  contextKeys: [
+    'wordList', 'evalMode', 'sessionWords', 'currentWord',
+    'attempts', 'correctStreak', 'masteredCount', 'sessionSize',
+    'currentSentence', 'currentParagraph',
+  ],
+  scaffoldingLevels: {
+    level1:
+      'FLASH: "Look at this word — can you say it? Listen: [word]." '
+      + 'SENTENCE: "Read the sentence. What word belongs in the blank?" '
+      + 'FIND_IT: "Look for this word hiding in the text. Tap it each time you see it!" '
+      + 'PRODUCTION: "You heard the word — now can you build it with the letters?"',
+    level2:
+      'FLASH: "This word is {{currentWord}}. It is one of our helper words — we see it in almost every sentence!" '
+      + 'SENTENCE: "Read up to the blank. What helper word would make sense there?" '
+      + 'FIND_IT: "The word {{currentWord}} is hiding {{correctCount}} times. You found {{foundCount}} so far." '
+      + 'PRODUCTION: "{{currentWord}} has {{boxCount}} letters. What sound does it start with? Find that letter first."',
+    level3:
+      'FLASH: "{{currentWord}} — say it with me: {{currentWord}}! We have practiced this word before. Say it fast!" '
+      + 'SENTENCE: "The missing word is {{currentWord}}. Tap it in the choices! It is a helper word we use all the time." '
+      + 'FIND_IT: "Look at each word carefully. The word is {{currentWord}} — it starts with {{firstLetter}}. Find all of them!" '
+      + 'PRODUCTION: "{{currentWord}} is spelled: {{letters}}. Drag them in order — one box at a time."',
+  },
+  commonStruggles: [
+    {
+      pattern: 'Student consistently misreads "was" as "saw" or vice versa',
+      response: '"These two look similar! Was starts with W — like the letter W in water. Saw starts with S — like the letter S in sun. Listen: was... saw. Different!"',
+    },
+    {
+      pattern: 'Student cannot distinguish "the" from "they" or "there"',
+      response: '"The is short — just three letters: T-H-E. They and there are longer. Look at how many letters. Just three? That is the!"',
+    },
+    {
+      pattern: 'Student reads correctly when isolated but fails in sentence context',
+      response: '"Good — you know the word by itself! Now find it inside the sentence. Read word by word. Which one matches?"',
+    },
+    {
+      pattern: 'Student guesses randomly in production mode',
+      response: '"Say the word aloud first: {{currentWord}}. What is the very first sound you hear? Find that letter, put it in the first box."',
+    },
+    {
+      pattern: 'Student losing focus after repeated correct answers (boredom)',
+      response: '"You are doing amazing — {{masteredCount}} words mastered! Just {{remaining}} to go. You are almost done!"',
+    },
+  ],
+  aiDirectives: [
+    {
+      title: 'PRONUNCIATION COMMANDS',
+      instruction:
+        'When you receive [PRONOUNCE_WORD], say ONLY the sight word clearly and naturally. '
+        + 'Do NOT spell it out loud, do NOT add commentary. Just say the word as you would in speech. '
+        + 'Pace: natural reading speed — not stretched, not over-articulated. '
+        + 'These are high-frequency words; students must hear them as fluent speech sounds.',
+    },
+    {
+      title: 'WORD INTRODUCTION (first exposure)',
+      instruction:
+        'When you receive [INTRODUCE_WORD], introduce the sight word warmly. '
+        + 'Say: "Here is our new word: [word]. It is a helper word — we see it everywhere when we read. Say it with me: [word]!" '
+        + 'Keep it to 2-3 sentences. Do not attempt to phonetically decode irregular sight words (said, was, the) — these are memorized by sight.',
+    },
+    {
+      title: 'MASTERY CELEBRATION',
+      instruction:
+        'When you receive [WORD_MASTERED], give a brief, enthusiastic celebration for mastering that specific word. '
+        + '"You know [word] now! That word lives in your brain forever." '
+        + 'Keep it to one sentence — do not over-celebrate. Move quickly to the next word.',
+    },
+    {
+      title: 'SESSION SUMMARY',
+      instruction:
+        'When you receive [SESSION_COMPLETE], summarize the session warmly. '
+        + 'Name the words mastered. If any words were not yet mastered, say: "We will practice [words] again next time — they are almost there!" '
+        + 'Encourage with something specific: "You mastered {{masteredCount}} words today!"',
+    },
+  ],
+}
+```
+
+### Implementation Notes
+
+- **No phonics cues on the card.** The word is shown as a whole unit — no phoneme tiles, no letter highlighting. Sight words are memorized orthographically, not decoded.
+- **Session state is critical.** The working set (8-10 words) must persist across mode switches within a session. A word mastered in flash mode should not be re-presented in sentence mode unless the teacher enables cross-mode reinforcement.
+- **Spaced repetition within session:** Words with fewer correct streaks surface more frequently. A simple interval model: every time a word is answered correctly, its next appearance is scheduled 2× as many cards later.
+- **Speed variant for advanced students:** In flash mode, display duration should decrease as the student demonstrates consistency. Start at 2s, drop to 1s, 0.5s for streak-3+. This builds the automaticity that separates fluent readers from decoders.
+- **Cross-session mastery** (IRT integration): Feed per-word attempt/correct data back to the competency system so that IRT θ tracks sight word mastery per word individually, not just the skill as a whole.
+- **K constraint on production mode:** Use letter-bank drag (Elkonin boxes) rather than keyboard typing — 5-year-olds cannot reliably type on a keyboard at speed.
+
+### Catalog Domain
+
+`literacy` — alongside `phonics-blender`, `letter-sound-link`, `cvc-speller`, `decodable-reader`
+
+### Complexity Estimate
+
+**SMALL-MEDIUM.** The core UI (flash card cycle, letter bank) is simple. The complexity is in:
+1. Session state management (working set, streak tracking, spaced repetition queue)
+2. Sentence generator constraints (only mastered vocab in context sentences)
+3. Per-word mastery model integration with IRT/competency system
+
+Estimate: 2-4 days build including all 4 eval modes and AI tutoring scaffold.
+
+### Cross-Grade Applicability
+
+| Grade | Word List | Mode Focus | Primary Use |
+|-------|-----------|-----------|-------------|
+| PK-K | Dolch Pre-Primer (40 words) | flash + sentence_context | LA001-07, LA005-08 |
+| K (late) | Dolch Primer (52 words) | flash + sentence_context + find_it | LA001-07-b extension |
+| G1 | Dolch Grade 1 + Fry 1-100 | all 4 modes | LANGUAGE_ARTS_G1 sight word skills |
+| G2 | Fry 101-200 | sentence_context + production | Advanced fluency work |
+
+This primitive has the widest curriculum ROI of any unbuilt primitive in the K-1 literacy stack — sight word automaticity is a prerequisite for fluent reading of any connected text, which means every decodable-reader and read-aloud-studio session is enhanced when students already have the high-frequency words memorized.
+
+---
+
 ## Systemic Pattern: Phantom Primitives in Curriculum Authoring
 
 **Affected:** SCI003 had 6 phantom primitives (star-pattern-viewer, matching-activity, sequencing-activity, categorization-activity, light-shadow-lab, bar-graph-builder). Likely affects other units authored without catalog validation.
@@ -330,9 +677,279 @@ Students construct bar graphs by dragging pre-filled values into columns, then a
 
 ---
 
+## GAP-009: letter-tracer
+
+> **Partial precursor exists:** `LetterTracing.tsx` (`my-tutoring-app/src/components/lumina/primitives/LetterTracing.tsx`) shows a large display letter with stroke-order indicators — but it is **display-only** (no canvas, no touch/mouse tracing, no eval). It is not registered in `primitiveRegistry.tsx` or the literacy catalog. The full interactive tracer described below still needs to be built.
+
+**Priority:** MEDIUM — letter formation is a genuine K standard (CCSS L.K.1a); no existing primitive covers stroke order or handwriting
+
+### Curriculum Need
+
+| Subject | Subskill | Current Workaround | Why Workaround Fails |
+|---------|----------|--------------------|---------------------|
+| LANGUAGE_ARTS (K) | Letter Formation Group 1 (s,a,t,i,p,n) | (none assigned) | No primitive exists for stroke-by-stroke letter tracing |
+| LANGUAGE_ARTS (K) | Letter Formation Group 2 (c,k,e,h,r,m,d) | (none assigned) | Same |
+| LANGUAGE_ARTS (K) | Letter Formation Group 3 (g,o,u,l,f,b) | (none assigned) | Same |
+| LANGUAGE_ARTS (K) | Letter Formation Group 4 (j,z,w,v,y,x,q) | (none assigned) | Same |
+
+**Standards:** CCSS L.K.1a — "Print many upper- and lowercase letters." RF.K.1d — "Recognize and name all upper- and lowercase letters of the alphabet."
+
+### Pedagogical Goal
+
+Students watch a letter drawn with animated stroke order, then trace it themselves using mouse or touch. Correct strokes are reinforced with visual/audio feedback. The 4-group progression mirrors `letter-spotter` and `letter-sound-link` groupings so all three alphabet primitives stay in sync.
+
+### Proposed Design
+
+**Core interaction:** Letter appears on a ruled guide line (Handwriting Without Tears style). Animated ghost hand shows stroke order once. Student traces with mouse/finger. Stroke accuracy scored by direction and proximity to path (tolerance set wide for mouse, tighter for touch). On-screen "starting dot" shows where to begin.
+
+**Two sub-modes:**
+- **Trace** — dotted letter outline, student follows the path
+- **Copy** — blank line, student draws from memory after seeing the model
+
+**Letter groups:** Match exactly the 4 groups from `letter-spotter` (Group 1: s,a,t,i,p,n → Group 4: j,z,w,v,y,x,q). Both uppercase and lowercase within each group.
+
+**Eval modes:**
+
+| Mode | Tier | Beta | Description |
+|------|------|------|-------------|
+| `trace_lower` | 1 | 1.5 | Trace lowercase letters with dotted guide |
+| `trace_upper` | 2 | 2.5 | Trace uppercase letters with dotted guide |
+| `copy_lower` | 3 | 3.5 | Copy lowercase letters from model into blank space |
+| `copy_upper` | 4 | 5.0 | Copy uppercase letters from model into blank space |
+
+**Complexity:** MEDIUM — requires canvas-based stroke detection, path proximity scoring, animated stroke-order sequencing, touch + mouse support. No physics. No Gemini generation needed (letter strokes are deterministic).
+
+**Catalog domain:** literacy
+
+**Standards:** CCSS L.K.1a, RF.K.1d
+
+---
+
+---
+
+## GAP-010: word-sorter
+
+**Priority:** HIGH — single highest-ROI literacy build; unlocks ~20 subskills across grammar, vocabulary, and comprehension that currently have no primitive
+
+### Curriculum Need
+
+| Subject | Skill | Subskills | Sorting task |
+|---------|-------|-----------|-------------|
+| LANGUAGE_ARTS (K) | LA004-01 Parts of Speech | A, D | Sort nouns vs verbs; common vs proper nouns |
+| LANGUAGE_ARTS (K) | LA004-03 Plurals & Articles | B, C, G | Sort singular/plural; match irregular plural pairs |
+| LANGUAGE_ARTS (K) | LA004-04 Basic Pronouns | A, C | Identify/match pronouns to pictures |
+| LANGUAGE_ARTS (K) | LA004-05 Prepositions | C, D, I | Sort by positional relationship; categorize location vs direction |
+| LANGUAGE_ARTS (K) | LA004-06 Verb Forms | C, G | Sort action/linking verbs; match irregular past tense |
+| LANGUAGE_ARTS (K) | LA005-01 Word Meaning | A, B, D, E, H | Sort words into semantic categories; match opposites; gradable concepts |
+| LANGUAGE_ARTS (K) | LA005-02 Context Clues | D | Match vocabulary to story scene illustrations |
+| LANGUAGE_ARTS (K) | LA005-03 Word Relationships | B, G | Sort into basic categories; sort by seasonal category |
+| LANGUAGE_ARTS (K) | LA006-03 Main Idea | D | Sort cards into "Main Idea" vs "Supporting Details" |
+
+**Why no existing primitive fits:** `sorting-station` exists in the math catalog and has the right interaction model (drag items to buckets), but is configured for math content only (numbers, shapes, measurements). A literacy-domain word-sorter needs word+image cards, configurable semantic category buckets, and TTS word pronunciation. Cross-domain use of `sorting-station` for literacy would be a category mismatch.
+
+### Pedagogical Goal
+
+Students drag word cards (each showing a word + optional picture) into labeled category buckets. Buckets are configurable to any semantic grouping: nouns/verbs, singular/plural, location/direction prepositions, big/small/medium, living/nonliving, etc. AI tutor pronounces words on tap and provides scaffolding when a word is sorted incorrectly.
+
+### Proposed Design
+
+**Core UI:** 2-3 labeled bucket columns (e.g., "Nouns" | "Verbs"). Word cards in a shuffled pool above. Student drags cards into buckets. Correct placement: card locks with green highlight. Incorrect: card bounces back with AI tutor hint.
+
+**Word cards:** Word text + optional image (Gemini-generated or emoji). TTS pronunciation on tap.
+
+**Bucket types:** Binary (2 buckets) for basic distinctions; Ternary (3 buckets) for more advanced categorization.
+
+**Eval modes:**
+
+| Mode | Tier | Beta | Description |
+|------|------|------|-------------|
+| `binary_sort` | 1 | 1.5 | Sort into 2 labeled buckets (e.g., noun/verb) |
+| `ternary_sort` | 2 | 2.5 | Sort into 3 labeled buckets (e.g., past/present/future) |
+| `match_pairs` | 3 | 3.5 | Match word cards to their pair (singular→plural, antonym→antonym) |
+
+**Complexity:** SMALL — identical interaction model to `sorting-station`; main work is literacy-domain configuration schema and TTS integration.
+
+**Catalog domain:** literacy
+
+**Standards:** CCSS L.K.1a-f (grammar categories), L.K.5 (vocabulary categorization), RL.K.1 (key details)
+
+---
+
+## GAP-011: book-explorer
+
+**Priority:** MEDIUM — unlocks all 7 LA006-06 Text Features subskills; SMALL build with a very clear interaction model
+
+### Curriculum Need
+
+| Subject | Subskill | Text feature targeted |
+|---------|----------|-----------------------|
+| LANGUAGE_ARTS (K) | LA006-06-A | Titles on covers |
+| LANGUAGE_ARTS (K) | LA006-06-B | Title, author name, pictures |
+| LANGUAGE_ARTS (K) | LA006-06-C | Page numbers |
+| LANGUAGE_ARTS (K) | LA006-06-D | Headings in nonfiction text |
+| LANGUAGE_ARTS (K) | LA006-06-E | Labels on picture parts |
+| LANGUAGE_ARTS (K) | LA006-06-F | Picture captions |
+| LANGUAGE_ARTS (K) | LA006-06-G | Table of contents |
+
+**Why no existing primitive fits:** No primitive displays a virtual book page and asks students to identify or interact with text features. `decodable-reader` shows connected text but has no text-feature labeling/identification mechanic.
+
+### Pedagogical Goal
+
+Students explore a simulated book or book page and are prompted to identify, tap, or label specific text features. Builds awareness that informational text has navigational and organizational structures distinct from story text.
+
+### Proposed Design
+
+**Core UI:** A rendered "book spread" — either a cover, a table of contents page, or a nonfiction content page. Text features are tappable hotspots. AI tutor narrates what each feature is for.
+
+**Three modes:**
+- `identify` — AI names a feature ("Tap the heading"), student taps the correct element; hotspot highlights on correct tap
+- `label` — Feature is highlighted; student selects the correct label from 3 options ("What is this called?")
+- `use` — Functional task ("What page does Chapter 2 start on?" using the table of contents)
+
+**Eval modes:**
+
+| Mode | Tier | Beta | Description |
+|------|------|------|-------------|
+| `identify` | 1 | 1.5 | Tap the named text feature |
+| `label` | 2 | 2.5 | Name the highlighted feature from 3 choices |
+| `use` | 3 | 3.5 | Answer a question using a specific text feature |
+
+**Complexity:** SMALL — static layout rendering with tappable hotspot regions; no physics or generative content. Book page layouts can be Gemini-generated as structured JSON.
+
+**Catalog domain:** literacy
+
+**Standards:** CCSS RI.K.5 — "Identify the front cover, back cover, and title page of a book." RI.1.5 — "Know and use various text features."
+
+---
+
+## GAP-012: sentence-builder ✓ CLOSED
+
+> **Status:** Built and registered. `SentenceBuilder.tsx` lives at `my-tutoring-app/src/components/lumina/primitives/visual-primitives/literacy/SentenceBuilder.tsx`, is registered in `primitiveRegistry.tsx`, and has 4 eval modes in the literacy catalog (`simple`, `compound`, `complex`, `compound_complex`). Subskills LA004-01-G/K and LA004-02-C can be assigned `sentence-builder` immediately.
+
+**Priority (was):** MEDIUM — unlocks 3 core LA004 sentence-structure subskills; foundational grammar interaction missing from entire literacy suite
+
+### Curriculum Need
+
+| Subject | Subskill | Task |
+|---------|----------|------|
+| LANGUAGE_ARTS (K) | LA004-01-G | Create simple sentences using nouns, verbs, and adjectives with picture support |
+| LANGUAGE_ARTS (K) | LA004-01-K | Build complete sentences using mixed parts of speech with manipulatives |
+| LANGUAGE_ARTS (K) | LA004-02-C | Arrange word cards to form simple subject-verb-object sentences |
+
+**Why no existing primitive fits:** `sentence-analyzer` breaks down existing sentences but doesn't ask students to construct them. `word-builder` constructs words from morphemes (grades 3-8), not sentences from words.
+
+### Pedagogical Goal
+
+Students construct grammatically correct sentences by dragging color-coded word tiles into a sentence slot. Nouns (blue), verbs (red), adjectives (green), articles (gray) are visually distinct. A picture prompt establishes the sentence context (e.g., picture of a dog running → student builds "The big dog runs fast."). AI tutor reads the assembled sentence aloud and gives structural feedback.
+
+### Proposed Design
+
+**Core UI:** Picture prompt at top. Word tile bank below (shuffled). Sentence slot in the middle — tiles snap into order. TTS reads the assembled sentence on demand. Color-coded parts of speech from the start.
+
+**Progression:**
+- Subject + verb (2-word core: "Dog runs.")
+- Subject + verb + object (3-word: "Dog eats bone.")
+- Expanded sentences with article + adjective + noun + verb (5-6 words)
+
+**Eval modes:**
+
+| Mode | Tier | Beta | Description |
+|------|------|------|-------------|
+| `subject_verb` | 1 | 1.5 | Build 2-part sentence: who + does what |
+| `svo` | 2 | 2.5 | Build subject-verb-object sentence |
+| `expanded` | 3 | 3.5 | Add adjectives and articles to expand the core sentence |
+
+**Complexity:** MEDIUM — requires tile drag-and-drop with sentence slot validation, grammaticality checking (does the assembled sentence match an accepted pattern?), TTS read-aloud of assembled sentence, color-coded PoS tile rendering.
+
+**Catalog domain:** literacy
+
+**Standards:** CCSS L.K.1f — "Produce and expand complete sentences in shared language activities." L.1.1j — "Produce and expand complete simple and compound declarative, interrogative, imperative, and exclamatory sentences."
+
+---
+
+## GAP-013: material-properties-tester
+
+**Priority:** LOW — single K subskill, others have workable alternatives
+
+### Curriculum Need
+
+| Subject | Subskill | Task |
+|---------|----------|------|
+| SCIENCE (K) | SCI001-02-D | Test and compare material characteristics (flexibility, strength, water absorption) |
+
+**Why no existing primitive fits:** `matter-explorer` sorts by states of matter (solid/liquid/gas), not material properties. `shape-strength-tester` tests shape strength, not material flexibility/absorption. `reaction-lab` is chemistry reactions.
+
+### Proposed Design
+
+Students select materials (paper, rubber, wood, sponge, metal) and test them in 3 stations: **Bend Test** (flexibility), **Press Test** (strength), **Water Test** (absorption). Each test produces a visual result (material bends/snaps, holds/crushes, absorbs/repels). Results fill a comparison chart. Challenges ask students to pick the best material for a given purpose (e.g., "Which material would make the best raincoat?").
+
+**Eval modes:** `explore` (test all materials), `predict` (predict before testing), `apply` (choose best material for scenario)
+**Grade band:** K-2
+**Catalog domain:** science
+**Complexity:** MEDIUM
+**Standards:** K-PS1-1 (plan and conduct an investigation to compare materials based on their properties)
+
+---
+
+## GAP-014: weather-station
+
+**Priority:** LOW — single K subskill, `take-home-activity` is a partial workaround
+
+### Curriculum Need
+
+| Subject | Subskill | Task |
+|---------|----------|------|
+| SCIENCE (K) | SCI003-01-E | Measure and record basic weather conditions using simple tools (thermometer, rain gauge, wind sock) |
+
+**Why no existing primitive fits:** No primitive simulates weather measurement instruments. Closest is `take-home-activity` (offline only) or `knowledge-check` (no instrument interaction).
+
+### Proposed Design
+
+Virtual weather station with 3 instruments: **Thermometer** (read temperature with scale), **Rain Gauge** (read water level), **Wind Sock** (observe direction + strength). Students take readings, record on a simple chart, and identify patterns over simulated days. Challenges ask students to read instruments and match readings to weather conditions.
+
+**Eval modes:** `read` (read single instrument), `record` (fill in chart from multiple instruments), `pattern` (identify 3-day trend)
+**Grade band:** K-3
+**Catalog domain:** science
+**Complexity:** MEDIUM
+**Standards:** K-ESS2-1 (use and share observations of local weather conditions)
+
+---
+
+## GAP-015: digital-skills-sim
+
+**Priority:** LOW — single K subskill, digital skills are incidental to the platform
+
+### Curriculum Need
+
+| Subject | Subskill | Task |
+|---------|----------|------|
+| SCIENCE (K) | SCI004-02-E | Demonstrate fundamental digital device skills (mouse control, keyboard basics, educational programs) |
+
+**Why no existing primitive fits:** All primitives assume device proficiency; none teach it.
+
+### Proposed Design
+
+Guided tutorial with 3 phases: **Click Practice** (click targets that appear on screen), **Drag Practice** (drag objects to zones), **Type Practice** (press highlighted keys on a virtual keyboard). Gamified with score tracking. Very simple — the primitive IS the tutorial.
+
+**Eval modes:** `click` (accuracy + speed), `drag` (complete 5 drags), `type` (type 5 letters)
+**Grade band:** K-1
+**Catalog domain:** core
+**Complexity:** SMALL
+**Standards:** ISTE K.1 (empowered learner — students use technology to achieve learning goals)
+
+---
+
 ## Next Steps
 
-1. **GAP-001 (`light-shadow-lab`):** `/primitive light-shadow-lab` — build it, then update SCI003-01 to include a shadow subskill
-2. **GAP-002 (`constellation-builder`):** `/primitive constellation-builder` — build it, then swap SCI003-04-c from telescope-simulator
-3. **Phantom primitive audit:** `/curriculum-lumina-audit audit LANGUAGE_ARTS_G1` and `SOCIAL_STUDIES_G1` to find more phantom assignments
-4. **Authoring service fix:** Add catalog validation to the author-unit endpoint to prevent future phantom primitives
+> **2026-03-31:** SCIENCE (K) full audit + upgrade completed. 85/88 subskills assigned primitives (was 0/88). 3 PURPLE gaps added (GAP-013/014/015). Published + deployed version 88.
+> **2026-03-29:** GAP-012 (`sentence-builder`) closed.
+
+1. **GAP-008 (`sight-word-trainer`):** `/primitive sight-word-trainer` — 4 K subskills blocked (placeholder `knowledge-check`); highest ROI K-1 literacy build; cross-grade value up to G2
+2. **GAP-005 (`analog-clock`):** `/primitive analog-clock` — 5 K subskills blocked, highest impact K math build
+3. **GAP-006 (`length-lab`):** `/primitive length-lab` — 4 K subskills blocked, core K.MD.1/K.MD.2 standard
+4. **GAP-007 (`coin-counter`):** `/primitive coin-counter` — 2 K subskills blocked, SMALL-MEDIUM build
+5. **GAP-001 (`light-shadow-lab`):** Already built! Assigned to SCI001-03-E, SCI003-03-C in this audit
+6. **GAP-002 (`constellation-builder`):** Already built! Available for future SCI003 space subskills
+7. **GAP-013 (`material-properties-tester`):** `/primitive material-properties-tester` — 1 K subskill blocked, MEDIUM build
+8. **Phantom primitive audit:** `/curriculum-lumina-audit audit LANGUAGE_ARTS_G1` and `SOCIAL_STUDIES_G1` to find more phantom assignments
+9. **Authoring service fix:** Add catalog validation to the author-unit endpoint to prevent future phantom primitives

@@ -878,15 +878,23 @@ class BigQueryETLService:
                     logger.warning(f"Invalid student_id in attempt: {attempt.get('id', 'unknown')}")
                     continue
                 
+                # Resolve through curriculum lineage (sync — uses cached data)
+                from app.services.subskill_id_resolver import subskill_id_resolver
+                raw_skill = str(attempt['skill_id'])
+                raw_subskill = str(attempt['subskill_id'])
+                resolved_skill = subskill_id_resolver.resolve_skill_sync(raw_skill)
+                resolved_subskill = subskill_id_resolver.resolve_sync(raw_subskill)
+
                 transformed_record = {
                     'student_id': student_id,
                     'subject': str(attempt['subject']),
-                    'skill_id': str(attempt['skill_id']),
-                    'subskill_id': str(attempt['subskill_id']),
+                    'skill_id': resolved_skill,
+                    'subskill_id': resolved_subskill,
                     'score': float(score),
                     'timestamp': timestamp.isoformat(),
                     'sync_timestamp': datetime.now().isoformat(),
-                    'doc_id': attempt.get('id', '') or attempt.get('_firestore_doc_id', '')
+                    'doc_id': attempt.get('id', '') or attempt.get('_firestore_doc_id', ''),
+                    'lineage_source': raw_subskill if raw_subskill != resolved_subskill else None
                 }
                 
                 transformed.append(transformed_record)

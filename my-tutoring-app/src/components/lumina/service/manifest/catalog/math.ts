@@ -2549,4 +2549,139 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
   },
+  {
+    id: 'length-lab',
+    description: 'Interactive length measurement lab for Kindergarten. Students compare object lengths visually, tile non-standard units (cubes, paper clips) end-to-end to measure, arrange objects by length, and use indirect comparison via a reference. Perfect for K.MD.1 and K.MD.2 standards. ESSENTIAL for Kindergarten measurement.',
+    constraints: 'Objects limited to 1-12 unit lengths. K: compare + tile only. G1: order + indirect.',
+    evalModes: [
+      {
+        evalMode: 'compare',
+        label: 'Compare (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['compare'],
+        description: 'Which object is longer or shorter? Direct visual comparison.',
+      },
+      {
+        evalMode: 'tile_and_count',
+        label: 'Tile & Count (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['tile_and_count'],
+        description: 'Tile non-standard units end-to-end along an object and count them.',
+      },
+      {
+        evalMode: 'order',
+        label: 'Order (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['order'],
+        description: 'Arrange three objects from shortest to longest.',
+      },
+      {
+        evalMode: 'indirect',
+        label: 'Indirect (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['indirect'],
+        description: 'Compare two objects transitively using a reference object.',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Student is measuring and comparing lengths using {{unitType}}. Grade: {{gradeBand}}. Challenge type: {{challengeType}}. Comparing {{objectName0}} and {{objectName1}}.',
+      contextKeys: ['unitType', 'gradeBand', 'challengeType', 'objectName0', 'objectName1', 'correctAnswer', 'challengeCount'],
+      scaffoldingLevels: {
+        level1: '"Look at both objects carefully. Which one sticks out farther? Which one is longer?"',
+        level2: '"Put your finger at the start of each object and slide to the end. The {{objectName0}} goes to here, and the {{objectName1}} goes to here. Which one goes farther?"',
+        level3: '"Line up both objects at the same starting point. Now look at the other end — the one that sticks out farther is longer. Count the units if you need to: {{objectName0}} is {{objectLength0}} units, {{objectName1}} is {{objectLength1}} units."',
+      },
+      commonStruggles: [
+        { pattern: 'Student does not align objects at the same starting point', response: '"Make sure both objects start at the same line! If one starts ahead, it might look longer even if it is not."' },
+        { pattern: 'Student confuses longer and shorter', response: '"Longer means it takes up MORE space. Shorter means it takes up LESS space. Which object takes up more space?"' },
+        { pattern: 'Student leaves gaps between tiles when measuring', response: '"Put each tile right next to the last one with no space in between. Gaps make the count wrong!"' },
+        { pattern: 'Student overlaps tiles when measuring', response: '"Each tile should just touch the next one — no stacking on top! Start at one end and line them up carefully."' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'analog-clock',
+    description:
+      'Interactive analog clock with draggable hands, digital display sync, and timeline scrubber. '
+      + 'Students read clock faces, set times by dragging hands, match analog to digital, and measure elapsed time with a stopwatch. '
+      + 'Perfect for K-5 time-telling standards. ESSENTIAL for K.MD and 1.MD.3.',
+    constraints:
+      'K: hour and half-hour only (:00/:30). G1-2: quarter-hour (:15 intervals). G3-5: 5-minute intervals. Maximum 6 challenges per session.',
+    evalModes: [
+      {
+        evalMode: 'read',
+        label: 'Read Time (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['read'],
+        description: 'Read analog clock face and pick correct time from 4 options',
+      },
+      {
+        evalMode: 'set_time',
+        label: 'Set Time (Tier 2)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['set_time'],
+        description: 'Drag clock hands to show a given time',
+      },
+      {
+        evalMode: 'match',
+        label: 'Match (Tier 2)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['match'],
+        description: 'Match analog face to correct digital display from 4 options',
+      },
+      {
+        evalMode: 'elapsed',
+        label: 'Elapsed Time (Tier 3)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['elapsed'],
+        description: 'Determine elapsed time using real-time stopwatch',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Student is working on a {{challengeType}} clock challenge. Target time: {{targetTime}}. '
+        + 'Currently showing: {{displayedTime}}. Grade: {{gradeBand}}. Attempt {{attemptNumber}}.',
+      contextKeys: ['gradeBand', 'challengeType', 'targetTime', 'displayedTime', 'instruction', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"Look at where the short hand is pointing. Which number is it closest to?"',
+        level2:
+          '"The short hand shows the hour — it\'s pointing near {{targetTime}}. The long hand shows minutes — when it points straight up, that\'s :00 (o\'clock)."',
+        level3:
+          '"The short hand (hour) points to the hour number. The long hand (minute) tells us the minutes: pointing up is :00, pointing right is :15, pointing down is :30, pointing left is :45. '
+          + 'For {{targetTime}}, the short hand points to the hour and the long hand points to the minutes."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student confuses hour and minute hands',
+          response:
+            '"The SHORT hand tells the HOUR — it moves slowly. The LONG hand tells the MINUTES — it moves faster. Look for the short one first!"',
+        },
+        {
+          pattern: 'Student reads the number the minute hand points to as the minute value',
+          response:
+            '"When the long hand points to 6, it doesn\'t mean 6 minutes — it means 30 minutes! Each number means 5 more minutes: 1=5, 2=10, 3=15..."',
+        },
+        {
+          pattern: 'Student struggles with half-hour positions',
+          response:
+            '"When the long hand points straight down to 6, that means half past — :30. The hour hand will be halfway between two numbers."',
+        },
+        {
+          pattern: 'Student cannot drag hands to correct position',
+          response:
+            '"Try dragging the long hand first. Point it straight up for :00, straight down for :30. Then check if the short hand is on the right number."',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

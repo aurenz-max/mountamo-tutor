@@ -463,16 +463,11 @@ async def lumina_tutor_session(websocket: WebSocket):
         config = LiveConnectConfig(
             response_modalities=["AUDIO"],
             speech_config=speech_config,
-            output_audio_transcription=types.AudioTranscriptionConfig(),
-            realtime_input_config=types.RealtimeInputConfig(turn_coverage="TURN_INCLUDES_ALL_INPUT"),
-            context_window_compression=types.ContextWindowCompressionConfig(
-                trigger_tokens=104857,
-                sliding_window=types.SlidingWindow(target_tokens=52428),
-            ),
+            #context_window_compression=types.ContextWindowCompressionConfig(
+            #    trigger_tokens=104857,
+            #    sliding_window=types.SlidingWindow(target_tokens=52428),
+            #),
             system_instruction=Content(parts=[{"text": system_instruction}]),
-            thinking_config=types.ThinkingConfig(
-                thinking_budget=0
-            ),
         )
 
         logger.info("Starting Gemini Live session for Lumina tutoring...")
@@ -682,7 +677,11 @@ async def lumina_tutor_session(websocket: WebSocket):
                     await websocket.close(code=1011, reason="Internal server error")
 
             async def handle_text_to_gemini():
-                """Send text messages to Gemini, respecting end_of_turn flag."""
+                """Send text messages to Gemini using realtime input.
+
+                Gemini 3.1+ rejects send_client_content mid-session (1007 error).
+                Must use send_realtime_input for all mid-session text.
+                """
                 try:
                     while True:
                         entry = await text_queue.get()
@@ -696,23 +695,22 @@ async def lumina_tutor_session(websocket: WebSocket):
                             end_of_turn = True
 
                         logger.info(f"Sending text to Gemini (end_of_turn={end_of_turn}): {text[:100]}...")
-                        await session.send(input=text, end_of_turn=end_of_turn)
+                        await session.send_realtime_input(text=text)
                         logger.info(f"Text sent to Gemini successfully")
                 except Exception as e:
                     logger.error(f"Error sending text to Gemini: {e}")
                     logger.error(f"Full traceback: {traceback.format_exc()}")
 
             async def handle_audio_to_gemini():
-                """Send audio data to Gemini"""
+                """Send audio data to Gemini via realtime input."""
                 try:
                     while True:
                         audio_data = await audio_queue.get()
-                        await session.send(
-                            input={
-                                "data": audio_data,
-                                "mime_type": f"{FORMAT};rate={SEND_SAMPLE_RATE}"
-                            },
-                            end_of_turn=False  # Keep turn open for streaming
+                        await session.send_realtime_input(
+                            audio=types.Blob(
+                                data=audio_data,
+                                mime_type=f"{FORMAT};rate={SEND_SAMPLE_RATE}"
+                            )
                         )
                         logger.debug(f"Sent audio chunk to Gemini ({len(audio_data)} bytes base64)")
                 except Exception as e:

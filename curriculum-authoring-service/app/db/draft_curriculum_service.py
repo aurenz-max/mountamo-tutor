@@ -319,11 +319,13 @@ class DraftCurriculumService:
                         "difficulty_end": subskill.get("difficulty_end"),
                         "target_difficulty": subskill.get("target_difficulty"),
                     }
+                    if subskill.get("target_primitive"):
+                        ss_entry["target_primitive"] = subskill["target_primitive"]
                     sk["subskills"].append(ss_entry)
 
                     # Update subskill_index (only if unit is accepted)
                     if _is_accepted(u):
-                        doc.setdefault("subskill_index", {})[subskill["subskill_id"]] = {
+                        idx_entry = {
                             "subject": doc.get("subject_name", ""),
                             "unit_id": u["unit_id"],
                             "unit_title": u["unit_title"],
@@ -336,6 +338,9 @@ class DraftCurriculumService:
                             "target_difficulty": subskill.get("target_difficulty"),
                             "grade": doc.get("grade", ""),
                         }
+                        if subskill.get("target_primitive"):
+                            idx_entry["target_primitive"] = subskill["target_primitive"]
+                        doc.setdefault("subskill_index", {})[subskill["subskill_id"]] = idx_entry
 
                     self._recompute_stats(doc)
                     doc["updated_at"] = datetime.utcnow().isoformat()
@@ -359,10 +364,10 @@ class DraftCurriculumService:
                             if k != "subskill_id":
                                 ss[k] = v
 
-                        # Update index too
+                        # Update index too (add new fields, not just update existing)
                         if subskill_id in doc.get("subskill_index", {}):
                             for k, v in updates.items():
-                                if k in doc["subskill_index"][subskill_id]:
+                                if k != "subskill_id":
                                     doc["subskill_index"][subskill_id][k] = v
 
                         self._recompute_stats(doc)
@@ -443,7 +448,7 @@ class DraftCurriculumService:
 
             for sk in skills:
                 for ss in sk.get("subskills", []):
-                    index[ss["subskill_id"]] = {
+                    idx_entry = {
                         "subject": subject_name,
                         "unit_id": unit["unit_id"],
                         "unit_title": unit["unit_title"],
@@ -456,6 +461,9 @@ class DraftCurriculumService:
                         "target_difficulty": ss.get("target_difficulty"),
                         "grade": doc_grade,
                     }
+                    if ss.get("target_primitive"):
+                        idx_entry["target_primitive"] = ss["target_primitive"]
+                    index[ss["subskill_id"]] = idx_entry
 
         self._recompute_stats(doc)
         doc["updated_at"] = datetime.utcnow().isoformat()
@@ -585,8 +593,11 @@ class DraftCurriculumService:
         """Copy draft to curriculum_published.
 
         Only accepted units are published. Authoring metadata is stripped.
+        Pre-publish validation ensures every removed subskill_id has a
+        lineage record in curriculum_lineage — blocks publish if missing.
         """
         from app.db.firestore_graph_service import firestore_graph_service
+        from app.services.lineage_detector import detect_changes
 
         doc = await self.get_draft(grade, subject_id)
         if not doc:
@@ -604,6 +615,26 @@ class DraftCurriculumService:
         # Rebuild index and stats on the filtered copy
         self._rebuild_subskill_index(published)
         self._recompute_stats(published)
+
+        # --- Lineage detection & pre-publish validation ---
+        old_published = await self._get_current_published(grade, subject_id, firestore_graph_service)
+        old_index = (old_published or {}).get("subskill_index", {})
+        new_index = published.get("subskill_index", {})
+
+        if old_index:
+            # Auto-detect lineage changes and write records
+            lineage_records = detect_changes(old_index, new_index, subject_id=subject_id, grade=grade)
+            if lineage_records:
+                await self._write_lineage_records(lineage_records, firestore_graph_service)
+
+            # Validate: every removed subskill_id must have a lineage record
+            missing = await self._validate_lineage_coverage(old_index, new_index, firestore_graph_service)
+            if missing:
+                raise ValueError(
+                    f"Pre-publish blocked: {len(missing)} removed subskill_id(s) have no lineage record. "
+                    f"Create lineage records for: {missing}. "
+                    f"Use POST /api/lineage/ or /curriculum-lumina-audit lineage-check {subject_id}"
+                )
 
         published["deployed_at"] = datetime.utcnow().isoformat()
         published["deployed_by"] = deployed_by
@@ -719,7 +750,7 @@ class DraftCurriculumService:
                 continue
             for sk in u.get("skills", []):
                 for ss in sk.get("subskills", []):
-                    index[ss["subskill_id"]] = {
+                    entry = {
                         "subject": subject_name,
                         "unit_id": u["unit_id"],
                         "unit_title": u["unit_title"],
@@ -732,8 +763,82 @@ class DraftCurriculumService:
                         "target_difficulty": ss.get("target_difficulty"),
                         "grade": grade,
                     }
+                    if ss.get("target_primitive"):
+                        entry["target_primitive"] = ss["target_primitive"]
+                    if ss.get("primitive_ids"):
+                        entry["primitive_ids"] = ss["primitive_ids"]
+                    index[ss["subskill_id"]] = entry
 
         doc["subskill_index"] = index
+
+    # ==================== Lineage helpers ====================
+
+    async def _get_current_published(self, grade: str, subject_id: str, graph_service) -> Optional[Dict]:
+        """Read the currently published curriculum document."""
+        try:
+            doc_ref = graph_service.curriculum_published.document(grade).collection("subjects").document(subject_id)
+            doc = doc_ref.get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.warning(f"Could not read published curriculum for {subject_id}: {e}")
+            return None
+
+    async def _write_lineage_records(self, records: list, graph_service) -> None:
+        """Batch-write auto-detected lineage records to curriculum_lineage."""
+        from app.db.firestore_curriculum_service import firestore_curriculum_sync
+        from datetime import timezone
+
+        client = firestore_curriculum_sync.client
+        if not client:
+            logger.warning("Firestore client not available — skipping lineage writes")
+            return
+
+        batch = client.batch()
+        now = datetime.now(timezone.utc).isoformat()
+        written = 0
+
+        for record in records:
+            old_id = record["old_id"]
+            doc_ref = client.collection("curriculum_lineage").document(old_id)
+
+            # Don't overwrite existing records (may have been manually created)
+            existing = doc_ref.get()
+            if existing.exists:
+                logger.info(f"[LINEAGE] {old_id} — record already exists, skipping auto-detect")
+                continue
+
+            record["created_at"] = now
+            record["created_by"] = "auto-publish"
+            batch.set(doc_ref, record)
+            written += 1
+            logger.info(f"[LINEAGE] {old_id} → {record.get('canonical_id')} ({record['operation']}) — auto-created")
+
+        if written > 0:
+            batch.commit()
+            logger.info(f"[LINEAGE] Wrote {written} lineage records")
+
+    async def _validate_lineage_coverage(self, old_index: dict, new_index: dict, graph_service) -> list:
+        """Check that every removed subskill_id has a lineage record. Returns list of missing IDs."""
+        from app.db.firestore_curriculum_service import firestore_curriculum_sync
+
+        client = firestore_curriculum_sync.client
+        if not client:
+            return []  # Can't validate without Firestore
+
+        removed = set(old_index.keys()) - set(new_index.keys())
+        if not removed:
+            return []
+
+        missing = []
+        for old_id in sorted(removed):
+            doc = client.collection("curriculum_lineage").document(old_id).get()
+            if not doc.exists:
+                missing.append(old_id)
+
+        if missing:
+            logger.warning(f"[LINEAGE-MISSING] {len(missing)} removed IDs without lineage records: {missing}")
+
+        return missing
 
 
 # Global instance

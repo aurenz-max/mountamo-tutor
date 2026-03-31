@@ -63,8 +63,10 @@
 | constellation-builder | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/constellation-builder-2026-03-29.md) |
 | sound-wave-explorer | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/sound-wave-explorer-2026-03-29.md) |
 | hundreds-chart | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/hundreds-chart-2026-03-29.md) |
+| length-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/length-lab-2026-03-29.md) |
+| analog-clock | 4 | 0 | 4 | 2026-03-29 | [report](eval-reports/analog-clock-2026-03-29.md) |
 
-**Totals:** 207/223 modes passing (92.8%) | 21 open issues (11 CRITICAL, 10 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 211/231 modes passing (91.3%) | 27 open issues (13 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -78,6 +80,14 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 **Risk:** Likely affects other primitives that added eval modes after the component was built. Check all primitives with 2+ eval modes.
 **Root cause:** Eval modes were added to the catalog but the component was never updated to branch on the challenge type field.
 **Fix pattern:** Component needs to read `challengeType`/`type` from data and conditionally render different interaction paths (pre-built vs build, number input vs sentence input, etc.).
+
+### SP-11: Generator deduplicates lengths but not names — duplicate names break name-keyed UI
+
+**Affected:** ~~length-lab (order — challenge 3)~~
+**Risk:** Any multi-object primitive where the UI keys interactions by object name (buttons, filters, selections). If two objects share a name, removing one removes both.
+**Root cause:** Generator post-process enforces unique lengths but not unique names. Object pool reuse and Gemini free-composition can produce two items with the same name and different lengths — which passes length checks but breaks name-keyed UI.
+**Fix pattern:** After length deduplication in `order` post-process, check for name collisions and replace duplicates with a different name from the object pool.
+**Status:** Fixed for length-lab — `usedOrderNames` set walks lengths[1]/lengths[2] and picks unused name from `objectPool` on collision (LL-1).
 
 ### SP-2: Generator produces values that overflow component's fixed UI slots
 
@@ -138,6 +148,13 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 **Root cause:** Component was built with a simplified 2D east-west arc model (azimuth 0-180). Generator prompt and schema document standard compass bearings (0-360). Post-generation validator applies component-convention thresholds to compass values, producing wrong shadow directions and off-screen sun positions.
 **Fix pattern:** Pick one convention and align prompt, schema, validator, AND component. For light-shadow-lab: either (A) rewrite prompt to use 0-180 component convention, or (B) add compass→component mapping in the generator post-process. Option A is simpler.
 
+### SP-12: Rapid interactive state changes flood Gemini via `updateContext`
+
+**Affected:** fraction-bar (`shadedCount` on every partition click), likely percent-bar, fraction-circles, number-line (drag), counting-board, ten-frame
+**Risk:** Any primitive that includes fast-changing UI state (click counters, drag positions, toggle counts) in its `aiPrimitiveData` useMemo. Each state change sends a WebSocket `update_context` → backend → Gemini `send_realtime_input`. The 500ms client debounce only coalesces sub-500ms bursts; normal click pace (~700ms) sends every update individually. No backend-side rate limiting or deduplication exists.
+**Root cause:** `useLuminaAI` auto-syncs `primitiveData` to Gemini on every change (useEffect + 500ms debounce). Primitives include transient interaction state (shadedCount, marker position) that changes many times before the student submits. Gemini must process each message sequentially, causing response lag.
+**Fix pattern:** (A) Per-primitive: remove transient interaction fields from `aiPrimitiveData` — only send on submit via explicit `sendText`. (B) Systemic: backend replace-not-append for queued `update_context` messages (discard stale, keep newest). (C) Increase client debounce or add settling heuristic.
+
 ### SP-4: Render path and validation path use different data sources
 
 **Affected:** number-sequencer (decade_fill — renderer uses `correctAnswers` to determine blanks, but check logic uses `blankIndices` from sequence nulls)
@@ -172,6 +189,10 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | SB-1 | sentence-builder | complex, compound_complex | CRITICAL | Impossible challenge | Duplicate tile IDs in validArrangements — student can't match with only 1 copy per tile; compound_complex ch2 unsolvable | GENERATOR |
 | SB-2 | sentence-builder | complex, compound_complex | HIGH | Wrong content | Alternative arrangements are ungrammatical (mid-sentence capitals, misplaced punctuation) — accepted as correct | GENERATOR |
 | SHB-3 | shape-builder | measure | HIGH | Trivial challenge | Measure mode has no answer input — student toggles Ruler button, measurements appear, Check Answer auto-passes. No comprehension assessed. | COMPONENT + GENERATOR |
+| AC-1 | analog-clock | read, match | CRITICAL | Answer leak | Digital display always shows `formatTime(targetHour, targetMinute)` — student reads answer instead of clock face | COMPONENT |
+| AC-2 | analog-clock | set_time | CRITICAL | Broken interaction | Drag handler only moves minute hand; hour changes on minute wraparound but stale closure breaks detection. Minutes can't pass 45, hour hand can't change. | COMPONENT |
+| AC-3 | analog-clock | elapsed | HIGH | Wrong answer | Generator auto-correction skips elapsed type — Gemini always outputs `correctOptionIndex: 0` regardless of which option is correct | GENERATOR |
+| FB-1 | fraction-bar | all (build phase) | HIGH | AI responsiveness | `shadedCount` in aiPrimitiveData triggers `updateContext` on every partition click — floods Gemini, causes response lag (SP-12) | COMPONENT + BACKEND |
 
 ---
 
@@ -242,6 +263,10 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | SWE-1 | sound-wave-explorer | 2026-03-29 | SCHEMA-SIMPLIFY: removed 16 obj0-obj3 fields from schema (objects are deterministic science facts, picked by grade). Schema ~30→8 properties. Added post-process type forcing (SP-9). |
 | HC-1 | hundreds-chart | 2026-03-29 | POST-PROCESS-DERIVE: flat schema's 10 correctCell slots truncated sequences (skip-by-5=20 cells, skip-by-3=33). Now derives full correctCells/givenCells from skipValue+startNumber via buildSequence(), bypassing slot limit. |
 | HC-2 | hundreds-chart | 2026-03-29 | PROMPT-CHANGE: highlight_sequence promptDoc now requires click/tap instructions instead of passive "watch/observe" language. |
+| LL-1 | length-lab | 2026-03-29 | POST-PROCESS-DERIVE: `usedOrderNames` set deduplicates `order` object names — picks unused name from objectPool on collision. Fixes name-keyed OrderingWorkspace removing both items (SP-11). |
+| LL-2 | length-lab | 2026-03-29 | POST-PROCESS-DERIVE: `order` case always overwrites `instruction` with template using actual deduped names — eliminates free-composed wrong-name bug. |
+| LL-3 | length-lab | 2026-03-29 | POST-PROCESS-DERIVE: `indirect` case clamps referenceObjectLength strictly between the two object lengths; regenerates clue0/clue1 from corrected values; always derives correctAnswer from lengths. |
+| LL-4 | length-lab | 2026-03-29 | Same fix as LL-3 — same root cause (referenceObjectLength not constrained to be strictly between object lengths). |
 
 ---
 

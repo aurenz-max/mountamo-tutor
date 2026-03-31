@@ -53,6 +53,8 @@ import NumberTracer from '../primitives/visual-primitives/math/NumberTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
 import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker';
 import HundredsChart from '../primitives/visual-primitives/math/HundredsChart';
+import LengthLab from '../primitives/visual-primitives/math/LengthLab';
+import AnalogClock from '../primitives/visual-primitives/math/AnalogClock';
 import FactFile from '../primitives/visual-primitives/core/FactFile';
 import HowItWorks from '../primitives/visual-primitives/core/HowItWorks';
 import FastFact from '../primitives/visual-primitives/core/FastFact';
@@ -378,6 +380,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'addition-subtraction-scene': {
     component: AdditionSubtractionScene,
     sectionTitle: 'Addition & Subtraction Scene',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'analog-clock': {
+    component: AnalogClock,
+    sectionTitle: 'Analog Clock',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
@@ -782,6 +794,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'hundreds-chart': {
     component: HundredsChart,
     sectionTitle: 'Hundreds Chart',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'length-lab': {
+    component: LengthLab,
+    sectionTitle: 'Length Lab',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

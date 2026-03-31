@@ -48,12 +48,14 @@ class CurriculumSubskill(BaseModel):
     """Curriculum subskill schema"""
     id: str = Field(..., description="Subskill ID (e.g., 'SS001-04-E', 'COUNT001-01-A')")
     description: str = Field(..., description="Subskill description")
+    target_primitive: Optional[str] = Field(None, description="Target Lumina primitive for this subskill (e.g., 'number-line', 'phonics-blender')")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "id": "SS001-04-E",
-                "description": "Create simple maps showing locations of local public services"
+                "description": "Create simple maps showing locations of local public services",
+                "target_primitive": "map-builder"
             }
         }
 
@@ -106,6 +108,7 @@ class CurriculumItem(BaseModel):
     difficulty_start: Optional[int] = None
     difficulty_end: Optional[int] = None
     target_difficulty: Optional[int] = None
+    target_primitive: Optional[str] = None
 
     def to_curriculum_metadata(self) -> CurriculumMetadata:
         """Convert to CurriculumMetadata schema"""
@@ -122,7 +125,8 @@ class CurriculumItem(BaseModel):
             ),
             subskill=CurriculumSubskill(
                 id=self.subskill_id,
-                description=self.subskill_description
+                description=self.subskill_description,
+                target_primitive=self.target_primitive
             )
         )
 

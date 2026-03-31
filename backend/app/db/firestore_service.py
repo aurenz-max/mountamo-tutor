@@ -22,6 +22,10 @@ class FirestoreService:
         students/{student_id}/competencies/{subject}_{skill}_{subskill}
 
     Curriculum graphs remain a flat top-level collection (read-only).
+
+    All student-data lookups by subskill_id or skill_id are transparently
+    resolved through the SubskillIdResolver so that curriculum iteration
+    never orphans student progress.
     """
 
     def __init__(self, project_id: Optional[str] = None):
@@ -46,6 +50,11 @@ class FirestoreService:
 
             # Collection reference for curriculum graphs (read-only, flat)
             self.curriculum_graphs = self.client.collection('curriculum_graphs')
+
+            # Initialize the lineage resolver with this Firestore client
+            from ..services.subskill_id_resolver import subskill_id_resolver
+            self._resolver = subskill_id_resolver
+            self._resolver.set_client(self.client)
 
             logger.info(f"Firestore service initialized for project: {self.project_id}")
 
@@ -403,6 +412,10 @@ class FirestoreService:
     ) -> Dict[str, Any]:
         """Update competency in Firestore under students/{student_id}/competencies/"""
         try:
+            # Resolve through lineage — always write to canonical ID
+            skill_id = await self._resolver.resolve_skill(skill_id)
+            subskill_id = await self._resolver.resolve(subskill_id)
+
             # Subcollection doc ID omits student_id (already scoped by parent)
             competency_doc_id = f"{subject}_{skill_id}_{subskill_id}"
             # Keep full composite ID in the data for backward compatibility
@@ -459,26 +472,50 @@ class FirestoreService:
         skill_id: str,
         subskill_id: str
     ) -> Dict[str, Any]:
-        """Get competency from Firestore subcollection"""
+        """Get competency from Firestore subcollection.
+
+        Resolves through curriculum lineage: tries canonical ID first,
+        falls back to original ID if data hasn't been migrated yet,
+        then triggers lazy migration.
+        """
         try:
-            competency_doc_id = f"{subject}_{skill_id}_{subskill_id}"
+            # Resolve to canonical IDs
+            canonical_skill = await self._resolver.resolve_skill(skill_id)
+            canonical_subskill = await self._resolver.resolve(subskill_id)
+
+            competency_doc_id = f"{subject}_{canonical_skill}_{canonical_subskill}"
             doc_ref = self._competencies_subcollection(student_id).document(competency_doc_id)
             doc = doc_ref.get()
 
             if doc.exists:
                 return doc.to_dict()
-            else:
-                # Return default competency structure
-                return {
-                    "student_id": student_id,
-                    "subject": subject,
-                    "skill_id": skill_id,
-                    "subskill_id": subskill_id,
-                    "current_score": 0,
-                    "credibility": 0,
-                    "total_attempts": 0,
-                    "last_updated": None
-                }
+
+            # Fallback: try the original (pre-lineage) ID if different
+            if canonical_subskill != subskill_id or canonical_skill != skill_id:
+                old_doc_id = f"{subject}_{skill_id}_{subskill_id}"
+                old_ref = self._competencies_subcollection(student_id).document(old_doc_id)
+                old_doc = old_ref.get()
+                if old_doc.exists:
+                    # Trigger lazy migration in background
+                    from ..services.lazy_migration import lazy_migration_service
+                    import asyncio
+                    asyncio.create_task(lazy_migration_service.migrate_competency(
+                        self, student_id, subject, skill_id, subskill_id,
+                        canonical_skill, canonical_subskill
+                    ))
+                    return old_doc.to_dict()
+
+            # Return default competency structure
+            return {
+                "student_id": student_id,
+                "subject": subject,
+                "skill_id": canonical_skill,
+                "subskill_id": canonical_subskill,
+                "current_score": 0,
+                "credibility": 0,
+                "total_attempts": 0,
+                "last_updated": None
+            }
 
         except Exception as e:
             logger.error(f"Error getting competency from Firestore: {str(e)}")
@@ -1045,11 +1082,31 @@ class FirestoreService:
         student_id: int,
         subskill_id: str
     ) -> Optional[Dict[str, Any]]:
-        """Get a single subskill's mastery lifecycle document."""
+        """Get a single subskill's mastery lifecycle document.
+
+        Resolves through curriculum lineage: tries canonical ID first,
+        falls back to original ID with lazy migration trigger.
+        """
         try:
-            doc_ref = self._mastery_lifecycle_subcollection(student_id).document(subskill_id)
-            doc = doc_ref.get()
-            return doc.to_dict() if doc.exists else None
+            canonical = await self._resolver.resolve(subskill_id)
+            collection = self._mastery_lifecycle_subcollection(student_id)
+
+            doc = collection.document(canonical).get()
+            if doc.exists:
+                return doc.to_dict()
+
+            # Fallback: try original ID if different
+            if canonical != subskill_id:
+                old_doc = collection.document(subskill_id).get()
+                if old_doc.exists:
+                    from ..services.lazy_migration import lazy_migration_service
+                    import asyncio
+                    asyncio.create_task(lazy_migration_service.migrate_mastery_lifecycle(
+                        self, student_id, subskill_id, canonical
+                    ))
+                    return old_doc.to_dict()
+
+            return None
         except Exception as e:
             logger.error(f"Error getting mastery lifecycle for {subskill_id}: {e}")
             return None
@@ -1059,20 +1116,38 @@ class FirestoreService:
         student_id: int,
         subskill_ids: List[str],
     ) -> Dict[str, Optional[Dict[str, Any]]]:
-        """Batch-read multiple mastery lifecycle docs in a single Firestore call."""
+        """Batch-read multiple mastery lifecycle docs in a single Firestore call.
+
+        Resolves all IDs through lineage. Returns results keyed by the
+        ORIGINAL input IDs so callers don't need to know about resolution.
+        """
         if not subskill_ids:
             return {}
         try:
+            resolved = await self._resolver.resolve_batch(subskill_ids)
             collection = self._mastery_lifecycle_subcollection(student_id)
-            doc_refs = [collection.document(sid) for sid in subskill_ids]
+
+            # Build refs for canonical IDs
+            canonical_ids = list(set(resolved.values()))
+            doc_refs = [collection.document(cid) for cid in canonical_ids]
             docs = self.client.get_all(doc_refs)
-            result: Dict[str, Optional[Dict[str, Any]]] = {}
+            canonical_data: Dict[str, Optional[Dict[str, Any]]] = {}
             for doc in docs:
-                result[doc.id] = doc.to_dict() if doc.exists else None
-            # Fill in any IDs that weren't returned
+                canonical_data[doc.id] = doc.to_dict() if doc.exists else None
+
+            # Map back to original input IDs
+            result: Dict[str, Optional[Dict[str, Any]]] = {}
             for sid in subskill_ids:
-                if sid not in result:
-                    result[sid] = None
+                cid = resolved[sid]
+                result[sid] = canonical_data.get(cid)
+
+            # Fallback: for any None result where original != canonical, try original
+            for sid in subskill_ids:
+                if result[sid] is None and resolved[sid] != sid:
+                    old_doc = collection.document(sid).get()
+                    if old_doc.exists:
+                        result[sid] = old_doc.to_dict()
+
             return result
         except Exception as e:
             logger.error(f"Error batch-reading mastery lifecycles: {e}")
@@ -1084,13 +1159,22 @@ class FirestoreService:
         subskill_id: str,
         data: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Create or update a subskill's mastery lifecycle document."""
+        """Create or update a subskill's mastery lifecycle document.
+
+        Always writes to the canonical (resolved) subskill_id.
+        """
         try:
+            canonical = await self._resolver.resolve(subskill_id)
             await self._ensure_student_document(student_id)
-            doc_ref = self._mastery_lifecycle_subcollection(student_id).document(subskill_id)
+
+            # Update the subskill_id field in data to canonical
+            if canonical != subskill_id:
+                data = {**data, "subskill_id": canonical}
+
+            doc_ref = self._mastery_lifecycle_subcollection(student_id).document(canonical)
             firestore_data = self._prepare_firestore_data(data)
             doc_ref.set(firestore_data, merge=True)
-            logger.info(f"Upserted mastery_lifecycle/{subskill_id} for student {student_id}")
+            logger.info(f"Upserted mastery_lifecycle/{canonical} for student {student_id}")
             return firestore_data
         except Exception as e:
             logger.error(f"Error upserting mastery lifecycle: {e}")
@@ -1278,11 +1362,21 @@ class FirestoreService:
     async def get_student_ability(
         self, student_id: int, skill_id: str
     ) -> Optional[Dict[str, Any]]:
-        """Get a single student ability document."""
+        """Get a single student ability document. Resolves through lineage."""
         try:
-            doc_ref = self._ability_subcollection(student_id).document(skill_id)
+            canonical = await self._resolver.resolve_skill(skill_id)
+            doc_ref = self._ability_subcollection(student_id).document(canonical)
             doc = doc_ref.get()
-            return doc.to_dict() if doc.exists else None
+            if doc.exists:
+                return doc.to_dict()
+
+            # Fallback to original ID
+            if canonical != skill_id:
+                old_doc = self._ability_subcollection(student_id).document(skill_id).get()
+                if old_doc.exists:
+                    return old_doc.to_dict()
+
+            return None
         except Exception as e:
             logger.error(f"Error getting student ability for {skill_id}: {e}")
             return None

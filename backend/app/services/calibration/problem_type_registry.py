@@ -113,6 +113,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "compare":   PriorConfig(3.0, "Pictorial: measure and compare objects"),
         "convert":   PriorConfig(5.0, "Transitional: measure and convert between units"),
     },
+    "length-lab": {
+        "compare":        PriorConfig(1.5, "Direct visual comparison — which is longer/shorter"),
+        "tile_and_count": PriorConfig(2.5, "Tile non-standard units and count"),
+        "order":          PriorConfig(3.5, "Arrange 3 objects shortest to longest"),
+        "indirect":       PriorConfig(5.0, "Transitive comparison via reference object"),
+    },
     "array-grid": {
         "build_array":    PriorConfig(1.5, "Concrete: build array with given dimensions"),
         "count_array":    PriorConfig(2.5, "Pictorial: count total objects in array"),
@@ -260,6 +266,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "relative_position":  PriorConfig(3.5, "Pictorial: before/after reasoning"),
         "sequence_story":     PriorConfig(5.0, "Transitional: ordinals in story context"),
         "build_sequence":     PriorConfig(6.5, "Symbolic: construct ordering from scratch"),
+    },
+    "analog-clock": {
+        "read":      PriorConfig(1.5, "Read analog clock face and pick correct time"),
+        "set_time":  PriorConfig(3.0, "Drag clock hands to show a given time"),
+        "match":     PriorConfig(3.5, "Match analog face to digital display"),
+        "elapsed":   PriorConfig(5.0, "Determine elapsed time using stopwatch"),
     },
     # -----------------------------------------------------------------
     # Assessment primitives

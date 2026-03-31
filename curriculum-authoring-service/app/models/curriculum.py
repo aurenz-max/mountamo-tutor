@@ -4,7 +4,7 @@ Pydantic models for curriculum entities
 
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SubjectBase(BaseModel):
@@ -32,9 +32,16 @@ class Subject(SubjectBase):
     version_id: str
     is_active: bool
     is_draft: bool
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
+
+    @field_validator("created_at", "updated_at", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
     class Config:
         from_attributes = True
@@ -65,8 +72,15 @@ class Unit(UnitBase):
     """Complete unit model"""
     version_id: str
     is_draft: bool
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @field_validator("created_at", "updated_at", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
     class Config:
         from_attributes = True
@@ -95,8 +109,15 @@ class Skill(SkillBase):
     """Complete skill model"""
     version_id: str
     is_draft: bool
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @field_validator("created_at", "updated_at", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
     class Config:
         from_attributes = True
@@ -133,9 +154,18 @@ class Subskill(SubskillBase):
     """Complete subskill model"""
     version_id: str
     is_draft: bool
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    target_primitive: Optional[str] = None
+    primitive_ids: Optional[List[str]] = None
     primitives: List["Primitive"] = []
+
+    @field_validator("created_at", "updated_at", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
     class Config:
         from_attributes = True
@@ -180,7 +210,7 @@ class SubskillNode(BaseModel):
     order: Optional[int] = None
     difficulty_range: Optional[dict] = None
     is_draft: bool
-    primitives: List[Primitive] = []
+    primitives: List[str] = []  # primitive IDs assigned to this subskill
 
 
 class SkillNode(BaseModel):
@@ -236,6 +266,8 @@ class FlattenedCurriculumRow(BaseModel):
     difficulty_end: Optional[float] = None
     target_difficulty: Optional[float] = None
     primitives: Optional[List[str]] = None  # List of primitive IDs
+    target_primitive: Optional[str] = None
+    primitive_ids: Optional[List[str]] = None
 
     # Metadata
     version_id: str

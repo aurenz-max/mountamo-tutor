@@ -1065,6 +1065,7 @@ export type ComponentId =
   // Math Visualization Primitives (Elementary Math)
   | '3d-shape-explorer'   // Interactive 3D shape explorer
   | 'addition-subtraction-scene' // Interactive addition and subtraction scene
+  | 'analog-clock'        // Interactive analog clock for telling time
   | 'bar-model'          // Comparative bar visualization for values
   | 'number-bond'        // Part-whole number bond visualization for addition and subtraction
   | 'number-line'        // Linear number line with highlights
@@ -1108,6 +1109,7 @@ export type ComponentId =
   | 'shape-tracer'            // Interactive shape tracing
   | 'number-tracer'           // Interactive number tracing for digit formation and numeral recognition
   | 'hundreds-chart'          // Interactive hundreds chart for number patterns, counting, and skip counting (K-2)
+  | 'length-lab'              // Interactive length measurement and comparison lab
 
   // Deprecated (kept for backward compatibility)
   | 'math-visual'        // @deprecated Use specific primitives: bar-model, number-line, base-ten-blocks, fraction-circles, shape-builder
@@ -1608,6 +1610,8 @@ export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/mat
 export type { MathFactFluencyData } from './primitives/visual-primitives/math/MathFactFluency';
 export type { StrategyPickerData } from './primitives/visual-primitives/math/StrategyPicker';
 export type { HundredsChartData } from './primitives/visual-primitives/math/HundredsChart';
+export type { LengthLabData } from './primitives/visual-primitives/math/LengthLab';
+export type { AnalogClockData } from './primitives/visual-primitives/math/AnalogClock';
 
 // Literacy
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';

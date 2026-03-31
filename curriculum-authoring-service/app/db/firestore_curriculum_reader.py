@@ -199,16 +199,22 @@ class FirestoreCurriculumReader:
     # ==================== UNIT READS ====================
 
     async def get_units_by_subject(self, subject_id: str, include_drafts: bool = False) -> List[Dict[str, Any]]:
-        """Get all units from the hierarchical doc."""
+        """Get all units from the hierarchical doc. Deduplicates by unit_id to guard against
+        duplicate entries in the curriculum array (e.g. from cross-grade import collisions)."""
         doc = await self._get_subject_doc(subject_id)
         if not doc:
             return []
 
         now = doc.get("updated_at", doc.get("deployed_at", ""))
         units = []
+        seen_unit_ids: set = set()
         for u in doc.get("curriculum", []):
+            uid = u["unit_id"]
+            if uid in seen_unit_ids:
+                continue
+            seen_unit_ids.add(uid)
             units.append({
-                "unit_id": u["unit_id"],
+                "unit_id": uid,
                 "subject_id": subject_id,
                 "unit_title": u.get("unit_title", ""),
                 "unit_order": u.get("unit_order"),
@@ -344,6 +350,8 @@ class FirestoreCurriculumReader:
                 "difficulty_start": ss.get("difficulty_start"),
                 "difficulty_end": ss.get("difficulty_end"),
                 "target_difficulty": ss.get("target_difficulty"),
+                "target_primitive": ss.get("target_primitive"),
+                "primitive_ids": ss.get("primitive_ids"),
                 "version_id": version_id,
                 "is_draft": False,
                 "created_at": now,
@@ -375,6 +383,8 @@ class FirestoreCurriculumReader:
                         "difficulty_start": entry.get("difficulty_start"),
                         "difficulty_end": entry.get("difficulty_end"),
                         "target_difficulty": entry.get("target_difficulty"),
+                        "target_primitive": entry.get("target_primitive"),
+                        "primitive_ids": entry.get("primitive_ids"),
                         "version_id": doc.get("version_id", ""),
                         "is_draft": False,
                         "created_at": doc.get("updated_at", ""),
@@ -398,6 +408,8 @@ class FirestoreCurriculumReader:
                             "difficulty_start": entry.get("difficulty_start"),
                             "difficulty_end": entry.get("difficulty_end"),
                             "target_difficulty": entry.get("target_difficulty"),
+                            "target_primitive": entry.get("target_primitive"),
+                            "primitive_ids": entry.get("primitive_ids"),
                             "version_id": d.get("version_id", ""),
                             "is_draft": False,
                             "created_at": d.get("updated_at", ""),
@@ -428,6 +440,7 @@ class FirestoreCurriculumReader:
                             "target": ss.get("target_difficulty"),
                         },
                         "is_draft": False,
+                        "primitives": ss.get("primitive_ids") or [],
                     }
                     for ss in sk.get("subskills", [])
                 ]
@@ -488,6 +501,8 @@ class FirestoreCurriculumReader:
                         "difficulty_start": ss.get("difficulty_start"),
                         "difficulty_end": ss.get("difficulty_end"),
                         "target_difficulty": ss.get("target_difficulty"),
+                        "target_primitive": ss.get("target_primitive"),
+                        "primitive_ids": ss.get("primitive_ids", []),
                         "version_id": vid,
                         "version_number": vnum,
                     })

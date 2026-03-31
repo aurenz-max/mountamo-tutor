@@ -167,24 +167,26 @@ async def create_unit(
 @router.put("/units/{unit_id}", response_model=Unit)
 async def update_unit(
     unit_id: str,
-    updates: UnitUpdate
+    updates: UnitUpdate,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses fallback scan when provided)")
 ):
     """Update a unit"""
-    unit = await curriculum_manager.get_unit(unit_id)
-    if not unit:
-        raise HTTPException(status_code=404, detail="Unit not found")
+    if not subject_id:
+        unit = await curriculum_manager.get_unit(unit_id)
+        if not unit:
+            raise HTTPException(status_code=404, detail="Unit not found")
+        subject_id = unit.subject_id
 
-    # Create draft version
-    # (In reality, would need to get subject_id from unit)
     draft_version = await version_control.create_version(
-        VersionCreate(subject_id=unit.subject_id, description="Update unit"),
+        VersionCreate(subject_id=subject_id, description="Update unit"),
         "local-dev-user"
     )
 
     updated = await curriculum_manager.update_unit(
         unit_id,
         updates,
-        draft_version.version_id
+        draft_version.version_id,
+        subject_id=subject_id,
     )
 
     return updated
@@ -192,10 +194,11 @@ async def update_unit(
 
 @router.delete("/units/{unit_id}")
 async def delete_unit(
-    unit_id: str
+    unit_id: str,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses fallback scan when provided)")
 ):
     """Delete a unit"""
-    success = await curriculum_manager.delete_unit(unit_id)
+    success = await curriculum_manager.delete_unit(unit_id, subject_id=subject_id)
     if not success:
         raise HTTPException(status_code=404, detail="Unit not found")
     return {"message": "Unit deleted successfully"}
@@ -206,32 +209,35 @@ async def delete_unit(
 @router.get("/units/{unit_id}/skills", response_model=List[Skill])
 async def list_skills(
     unit_id: str,
-    include_drafts: bool = False
+    include_drafts: bool = False,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses fallback scan when provided)")
 ):
     """List all skills for a unit"""
-    return await curriculum_manager.get_skills_by_unit(unit_id, include_drafts)
+    return await curriculum_manager.get_skills_by_unit(unit_id, include_drafts, subject_id=subject_id)
 
 
 @router.post("/skills", response_model=Skill)
 async def create_skill(
-    skill: SkillCreate
+    skill: SkillCreate,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses unit lookup when provided)")
 ):
     """Create a new skill"""
     logger.info(f"📝 Creating skill: {skill.skill_id} for unit {skill.unit_id}")
 
-    # Get unit to determine subject_id
-    unit = await curriculum_manager.get_unit(skill.unit_id)
-    if not unit:
-        logger.error(f"❌ Unit not found: {skill.unit_id}")
-        raise HTTPException(status_code=404, detail="Unit not found")
+    if not subject_id:
+        # Slow path: discover subject_id from the unit
+        unit = await curriculum_manager.get_unit(skill.unit_id)
+        if not unit:
+            logger.error(f"❌ Unit not found: {skill.unit_id}")
+            raise HTTPException(status_code=404, detail="Unit not found")
+        subject_id = unit.subject_id
 
-    # Get or create active version (reuse existing version instead of creating new one)
     version_id = await version_control.get_or_create_active_version(
-        unit.subject_id,
+        subject_id,
         "local-dev-user"
     )
 
-    result = await curriculum_manager.create_skill(skill, version_id)
+    result = await curriculum_manager.create_skill(skill, version_id, subject_id=subject_id)
     logger.info(f"✅ Skill created: {result.skill_id}")
     return result
 
@@ -255,34 +261,35 @@ async def get_skill(
 @router.put("/skills/{skill_id}", response_model=Skill)
 async def update_skill(
     skill_id: str,
-    updates: SkillUpdate
+    updates: SkillUpdate,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses fallback scan when provided)")
 ):
     """Update a skill"""
     logger.info(f"📝 Updating skill: {skill_id}")
     logger.info(f"   Updates: {updates.dict(exclude_unset=True)}")
 
-    # Get skill to determine unit and subject
-    skill = await curriculum_manager.get_skill(skill_id)
-    if not skill:
-        logger.error(f"❌ Skill not found: {skill_id}")
-        raise HTTPException(status_code=404, detail="Skill not found")
+    if not subject_id:
+        # Slow path: discover subject_id from skill → unit chain
+        skill = await curriculum_manager.get_skill(skill_id)
+        if not skill:
+            logger.error(f"❌ Skill not found: {skill_id}")
+            raise HTTPException(status_code=404, detail="Skill not found")
+        unit = await curriculum_manager.get_unit(skill.unit_id)
+        if not unit:
+            logger.error(f"❌ Unit not found for skill: {skill.unit_id}")
+            raise HTTPException(status_code=404, detail="Unit not found")
+        subject_id = unit.subject_id
 
-    # Get unit to determine subject_id
-    unit = await curriculum_manager.get_unit(skill.unit_id)
-    if not unit:
-        logger.error(f"❌ Unit not found for skill: {skill.unit_id}")
-        raise HTTPException(status_code=404, detail="Unit not found")
-
-    # Create draft version
     draft_version = await version_control.create_version(
-        VersionCreate(subject_id=unit.subject_id, description="Update skill"),
+        VersionCreate(subject_id=subject_id, description="Update skill"),
         "local-dev-user"
     )
 
     updated = await curriculum_manager.update_skill(
         skill_id,
         updates,
-        draft_version.version_id
+        draft_version.version_id,
+        subject_id=subject_id,
     )
 
     if not updated:
@@ -295,12 +302,13 @@ async def update_skill(
 
 @router.delete("/skills/{skill_id}")
 async def delete_skill(
-    skill_id: str
+    skill_id: str,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses fallback scan when provided)")
 ):
     """Delete a skill"""
     logger.info(f"🗑️  Deleting skill: {skill_id}")
 
-    success = await curriculum_manager.delete_skill(skill_id)
+    success = await curriculum_manager.delete_skill(skill_id, subject_id=subject_id)
     if not success:
         logger.error(f"❌ Skill not found: {skill_id}")
         raise HTTPException(status_code=404, detail="Skill not found")
@@ -314,37 +322,40 @@ async def delete_skill(
 @router.get("/skills/{skill_id}/subskills", response_model=List[Subskill])
 async def list_subskills(
     skill_id: str,
-    include_drafts: bool = False
+    include_drafts: bool = False,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses fallback scan when provided)")
 ):
     """List all subskills for a skill"""
-    return await curriculum_manager.get_subskills_by_skill(skill_id, include_drafts)
+    return await curriculum_manager.get_subskills_by_skill(skill_id, include_drafts, subject_id=subject_id)
 
 
 @router.post("/subskills", response_model=Subskill)
 async def create_subskill(
-    subskill: SubskillCreate
+    subskill: SubskillCreate,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses skill lookup when provided)")
 ):
     """Create a new subskill"""
     logger.info(f"📝 Creating subskill: {subskill.subskill_id} for skill {subskill.skill_id}")
 
-    # Get skill and unit to determine subject_id
-    skill = await curriculum_manager.get_skill(subskill.skill_id)
-    if not skill:
-        logger.error(f"❌ Skill not found: {subskill.skill_id}")
-        raise HTTPException(status_code=404, detail="Skill not found")
+    if not subject_id:
+        # Slow path: discover subject from skill
+        skill = await curriculum_manager.get_skill(subskill.skill_id)
+        if not skill:
+            logger.error(f"❌ Skill not found: {subskill.skill_id}")
+            raise HTTPException(status_code=404, detail="Skill not found")
 
-    unit = await curriculum_manager.get_unit(skill.unit_id)
-    if not unit:
-        logger.error(f"❌ Unit not found: {skill.unit_id}")
-        raise HTTPException(status_code=404, detail="Unit not found")
+        unit = await curriculum_manager.get_unit(skill.unit_id)
+        if not unit:
+            logger.error(f"❌ Unit not found: {skill.unit_id}")
+            raise HTTPException(status_code=404, detail="Unit not found")
+        subject_id = unit.subject_id
 
-    # Get or create active version (reuse existing version instead of creating new one)
     version_id = await version_control.get_or_create_active_version(
-        unit.subject_id,
+        subject_id,
         "local-dev-user"
     )
 
-    result = await curriculum_manager.create_subskill(subskill, version_id)
+    result = await curriculum_manager.create_subskill(subskill, version_id, subject_id=subject_id)
     logger.info(f"✅ Subskill created: {result.subskill_id}")
     return result
 
@@ -368,39 +379,48 @@ async def get_subskill(
 @router.put("/subskills/{subskill_id}", response_model=Subskill)
 async def update_subskill(
     subskill_id: str,
-    updates: SubskillUpdate
+    updates: SubskillUpdate,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses subskill lookup when provided)")
 ):
     """Update a subskill"""
     logger.info(f"📝 Updating subskill: {subskill_id}")
     logger.info(f"   Updates: {updates.dict(exclude_unset=True)}")
 
-    # Get subskill to determine skill and subject
-    subskill = await curriculum_manager.get_subskill(subskill_id)
-    if not subskill:
-        logger.error(f"❌ Subskill not found: {subskill_id}")
-        raise HTTPException(status_code=404, detail="Subskill not found")
+    if subject_id:
+        # Fast path: subject_id provided, resolve context directly
+        ctx = await curriculum_manager._resolve_subject_context(subject_id)
+        if not ctx:
+            raise HTTPException(status_code=404, detail=f"Subject {subject_id} not found")
+        resolved_subject_id = subject_id
+    else:
+        # Slow path: discover subject from subskill
+        subskill = await curriculum_manager.get_subskill(subskill_id)
+        if not subskill:
+            logger.error(f"❌ Subskill not found: {subskill_id}")
+            raise HTTPException(status_code=404, detail="Subskill not found")
 
-    # Get skill and unit to determine subject_id
-    skill = await curriculum_manager.get_skill(subskill.skill_id)
-    if not skill:
-        logger.error(f"❌ Skill not found: {subskill.skill_id}")
-        raise HTTPException(status_code=404, detail="Skill not found")
+        skill = await curriculum_manager.get_skill(subskill.skill_id)
+        if not skill:
+            logger.error(f"❌ Skill not found: {subskill.skill_id}")
+            raise HTTPException(status_code=404, detail="Skill not found")
 
-    unit = await curriculum_manager.get_unit(skill.unit_id)
-    if not unit:
-        logger.error(f"❌ Unit not found: {skill.unit_id}")
-        raise HTTPException(status_code=404, detail="Unit not found")
+        unit = await curriculum_manager.get_unit(skill.unit_id)
+        if not unit:
+            logger.error(f"❌ Unit not found: {skill.unit_id}")
+            raise HTTPException(status_code=404, detail="Unit not found")
+        resolved_subject_id = unit.subject_id
 
     # Create draft version
     draft_version = await version_control.create_version(
-        VersionCreate(subject_id=unit.subject_id, description="Update subskill"),
+        VersionCreate(subject_id=resolved_subject_id, description="Update subskill"),
         "local-dev-user"
     )
 
     updated = await curriculum_manager.update_subskill(
         subskill_id,
         updates,
-        draft_version.version_id
+        draft_version.version_id,
+        subject_id=resolved_subject_id
     )
 
     if not updated:
@@ -413,12 +433,13 @@ async def update_subskill(
 
 @router.delete("/subskills/{subskill_id}")
 async def delete_subskill(
-    subskill_id: str
+    subskill_id: str,
+    subject_id: Optional[str] = Query(None, description="Subject ID (bypasses fallback scan when provided)")
 ):
     """Delete a subskill"""
     logger.info(f"🗑️  Deleting subskill: {subskill_id}")
 
-    success = await curriculum_manager.delete_subskill(subskill_id)
+    success = await curriculum_manager.delete_subskill(subskill_id, subject_id=subject_id)
     if not success:
         logger.error(f"❌ Subskill not found: {subskill_id}")
         raise HTTPException(status_code=404, detail="Subskill not found")
@@ -428,6 +449,61 @@ async def delete_subskill(
 
 
 # ==================== PRIMITIVE ENDPOINTS ====================
+
+@router.post("/subjects/{subject_id}/repair-duplicate-units")
+async def repair_duplicate_units(subject_id: str):
+    """Merge duplicate unit entries in a subject's curriculum array.
+
+    When the same unit_id appears more than once (e.g. from cross-grade import
+    collisions), their skills arrays are merged into the first occurrence and
+    all subsequent duplicates are removed.  Safe to call multiple times.
+    """
+    from app.db.draft_curriculum_service import draft_curriculum as _dc
+
+    ctx = await curriculum_manager._resolve_subject_context(subject_id)
+    if not ctx:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    doc = await _dc.get_draft(ctx["grade"], subject_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Merge duplicates: keep first occurrence, fold subsequent skills into it
+    merged: dict = {}          # unit_id → merged unit entry
+    order: list = []           # preserves first-seen order
+
+    for u in doc.get("curriculum", []):
+        uid = u["unit_id"]
+        if uid not in merged:
+            merged[uid] = dict(u)  # copy, not alias
+            order.append(uid)
+        else:
+            # Merge skills from the duplicate into the existing entry
+            existing_skill_ids = {sk["skill_id"] for sk in merged[uid].get("skills", [])}
+            for sk in u.get("skills", []):
+                if sk["skill_id"] not in existing_skill_ids:
+                    merged[uid].setdefault("skills", []).append(sk)
+                    existing_skill_ids.add(sk["skill_id"])
+
+    original_count = len(doc["curriculum"])
+    doc["curriculum"] = [merged[uid] for uid in order]
+    removed = original_count - len(doc["curriculum"])
+
+    if removed == 0:
+        return {"message": "No duplicates found", "subject_id": subject_id}
+
+    from datetime import datetime
+    doc["updated_at"] = datetime.utcnow().isoformat()
+    await _dc.save_draft(ctx["grade"], subject_id, doc)
+
+    merged_units = [uid for uid in order if original_count - len(order) > 0]
+    logger.info(f"✅ Repaired {subject_id}: merged {removed} duplicate unit entries")
+    return {
+        "message": f"Merged {removed} duplicate unit entries",
+        "subject_id": subject_id,
+        "units_after": len(doc["curriculum"]),
+    }
+
 
 @router.get("/primitives")
 async def get_all_primitives():
@@ -461,47 +537,43 @@ async def get_primitives_by_category(category: str):
 @router.get("/subskills/{subskill_id}/primitives")
 async def get_subskill_primitives(
     subskill_id: str,
-    subject_id: str = Query(..., description="Subject ID for version lookup")
+    subject_id: str = Query(..., description="Subject ID to locate the draft doc")
 ):
-    """Get all primitives associated with a subskill"""
+    """Get primitive IDs assigned to a subskill (reads from hierarchical draft doc)."""
     logger.info(f"📊 Fetching primitives for subskill: {subskill_id}")
 
-    # Use a simple draft version ID based on subject
-    # This matches the pattern used in update_subskill_primitives
-    version_id = f"{subject_id}-draft"
-
-    primitives = await curriculum_manager.get_subskill_primitives(
+    primitive_ids = await curriculum_manager.get_subskill_primitives(
         subskill_id,
-        version_id
+        subject_id,
     )
 
-    logger.info(f"✅ Retrieved {len(primitives)} primitives for subskill {subskill_id}")
-    return primitives
+    logger.info(f"✅ Retrieved {len(primitive_ids)} primitives for subskill {subskill_id}")
+    return primitive_ids
 
 
 @router.put("/subskills/{subskill_id}/primitives")
 async def update_subskill_primitives(
     subskill_id: str,
     primitive_ids: List[str],
-    subject_id: str = Query(..., description="Subject ID for version lookup")
+    subject_id: str = Query(..., description="Subject ID to locate the draft doc")
 ):
-    """Update the primitives associated with a subskill"""
+    """Update the primitives associated with a subskill.
+
+    Writes primitive_ids directly into the hierarchical draft doc so the
+    tree, publish, and flattened views all reflect the assignment.
+    """
     logger.info(f"📝 Updating primitives for subskill: {subskill_id}")
     logger.info(f"   New primitive IDs: {primitive_ids}")
 
-    # Use a simple draft version ID
-    version_id = f"{subject_id}-draft"
-
-    # Update primitive associations
     success = await curriculum_manager.update_subskill_primitives(
         subskill_id,
         primitive_ids,
-        version_id
+        subject_id,
     )
 
     if not success:
         logger.error(f"❌ Failed to update primitives for subskill: {subskill_id}")
-        raise HTTPException(status_code=500, detail="Failed to update primitives")
+        raise HTTPException(status_code=404, detail="Subskill or subject not found")
 
     logger.info(f"✅ Primitives updated for subskill: {subskill_id}")
     return {"message": "Primitives updated successfully", "primitive_count": len(primitive_ids)}

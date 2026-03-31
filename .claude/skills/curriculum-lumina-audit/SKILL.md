@@ -2,18 +2,23 @@
 
 Bidirectional audit between curriculum content and Lumina primitives. Finds where curriculum is underusing available primitives, where primitives need development to serve curriculum goals, and drives the fix loop in both directions.
 
+> **API Reference:** See `curriculum-authoring-service/README.md` for full endpoint docs, request/response schemas, Firestore collections, and known gotchas.
+
 **Arguments:** `/curriculum-lumina-audit [command] [subject_id] [options]`
 
 ## Commands
 
 | Command | Example | Purpose |
 |---------|---------|---------|
-| `audit` | `/curriculum-lumina-audit audit SCIENCE_G1` | Full audit: pull curriculum, cross-ref catalog, classify every subskill |
-| `audit` | `/curriculum-lumina-audit audit SCIENCE_G1 --unit SCI002` | Audit a single unit |
-| `upgrade` | `/curriculum-lumina-audit upgrade SCIENCE_G1` | Re-author RED/YELLOW subskills with better primitives |
-| `gaps` | `/curriculum-lumina-audit gaps SCIENCE_G1` | Generate primitive development requirements (EVAL_TRACKER format) |
+| `audit` | `/curriculum-lumina-audit audit SCIENCE` | Full audit: pull curriculum, cross-ref catalog, classify every subskill |
+| `audit` | `/curriculum-lumina-audit audit SCIENCE --unit SCI002` | Audit a single unit |
+| `upgrade` | `/curriculum-lumina-audit upgrade SCIENCE` | Re-author RED/YELLOW subskills with better primitives |
+| `gaps` | `/curriculum-lumina-audit gaps SCIENCE` | Generate primitive development requirements (EVAL_TRACKER format) |
 | `unused` | `/curriculum-lumina-audit unused` | Show all catalog primitives not used by any curriculum |
-| `full-loop` | `/curriculum-lumina-audit full-loop SCIENCE_G1` | Run audit → upgrade → gaps → report in sequence |
+| `full-loop` | `/curriculum-lumina-audit full-loop SCIENCE` | Run audit → upgrade → gaps → report in sequence |
+| `lineage-check` | `/curriculum-lumina-audit lineage-check SCIENCE` | Pre-publish: verify all subskill ID changes have lineage records |
+
+> **Subject IDs** are bare enums (e.g. `MATHEMATICS`, `LANGUAGE_ARTS`, `SCIENCE`, `SOCIAL_STUDIES`). Grade is a separate parameter, not embedded in the ID. See README § "Subject ID Format".
 
 ---
 
@@ -21,9 +26,24 @@ Bidirectional audit between curriculum content and Lumina primitives. Finds wher
 
 ### Data Sources
 
-1. **Curriculum** — Authoring service at `http://localhost:8001`
-   - `GET /api/ai/author-previews/{subject_id}?grade=X` — all units with skills/subskills
+1. **Curriculum** — Two read paths available:
+
+   **a. Published curriculum (preferred for audits)** — Backend at `http://localhost:8000`
+   - `GET /api/curriculum/curriculum/{subject}` — full hierarchy with `target_primitive` on each subskill
+   - `GET /api/curriculum/primitive-mappings/{subject}` — dedicated primitive summary:
+     - `mappings`: `{subskill_id → target_primitive}`
+     - `primitives`: `{primitive_name → count}` (how many subskills use each)
+     - `mapped_count` / `unmapped_count` totals
+   - No grade param needed — reads from `curriculum_published/{grade}/subjects/{subject_id}` in Firestore
+   - `target_primitive` is available on every subskill in the curriculum tree
+
+   **b. Draft curriculum (for auditing unpublished changes)** — Authoring service at `http://localhost:8001`
+   - `GET /api/ai/author-previews/{subject_id}?grade={grade}` — all units with skills/subskills
+   - `grade` query param is **required** (e.g. `?grade=K`, `?grade=1`)
    - Each subskill has `target_primitive`, `subskill_description`, `difficulty_start/end`, `standards_alignment`
+   - See README § "AI Authoring" for response schema
+
+   > **Which to use:** Default to the published path (a) for audits — it's what Lumina actually reads. Use the draft path (b) when auditing unpublished changes before publishing.
 
 2. **Lumina Catalog** — TypeScript catalog files at `my-tutoring-app/src/components/lumina/service/manifest/catalog/`
    - Domain catalogs: `math.ts`, `literacy.ts`, `engineering.ts`, `science.ts`, `biology.ts`, `astronomy.ts`, `physics.ts`, `media.ts`, `core.ts`, `assessment.ts`
@@ -32,6 +52,10 @@ Bidirectional audit between curriculum content and Lumina primitives. Finds wher
 
 3. **Eval Tracker** — `my-tutoring-app/qa/EVAL_TRACKER.md`
    - Format for primitive development requirements and issue tracking
+
+### Grade Resolution
+
+To find the grade for a subject_id, call `GET /api/curriculum/subjects` and match. Common grades: `K` (Kindergarten), `1` (First Grade). See README § "Grade Resolution" for the caching mechanism.
 
 ### Generic Primitives (always flag for replacement)
 
@@ -46,12 +70,14 @@ drag-and-drop, true-false, short-answer
 
 When auditing a subject, load the relevant catalog domains for primitive matching:
 
-| Subject Pattern | Primary Catalogs | Secondary Catalogs |
-|----------------|-----------------|-------------------|
-| `MATHEMATICS_*` | math | core, assessment |
-| `LANGUAGE_ARTS_*` | literacy | core, media, assessment |
-| `SCIENCE_*` | science, engineering, biology, astronomy, physics | core, assessment |
-| `SOCIAL_STUDIES_*` | core, media | assessment |
+| Subject ID | Primary Catalogs | Secondary Catalogs |
+|------------|-----------------|-------------------|
+| `MATHEMATICS` | math | core, assessment |
+| `LANGUAGE_ARTS` | literacy | core, media, assessment |
+| `SCIENCE` | science, engineering, biology, astronomy, physics | core, assessment |
+| `SOCIAL_STUDIES` | core, media | assessment |
+| `ABC123` | literacy, math | core, assessment |
+| `ARTS` | media, core | assessment |
 
 ---
 
@@ -62,9 +88,24 @@ Pull curriculum and classify every subskill by primitive quality.
 ### Phase 1: Load Data
 
 1. **Pull curriculum:**
+
+   **Published (default)** — use the backend at `http://localhost:8000`:
+   ```bash
+   # Full hierarchy with target_primitive on each subskill
+   curl -s "http://localhost:8000/api/curriculum/curriculum/{subject}"
+   # Dedicated primitive summary (mappings, counts, coverage)
+   curl -s "http://localhost:8000/api/curriculum/primitive-mappings/{subject}"
+   ```
+   - `subject` = subject name (e.g. `Mathematics`) or subject_id
+   - `primitive-mappings` returns `mappings` (subskill→primitive), `primitives` (primitive→count), `mapped_count`/`unmapped_count`
+
+   **Drafts (unpublished)** — use authoring service at `http://localhost:8001`:
    ```bash
    curl -s "http://localhost:8001/api/ai/author-previews/{subject_id}?grade={grade}"
    ```
+   - `subject_id` = bare enum (e.g. `SCIENCE`), `grade` = grade code (e.g. `1`)
+
+   Default to published path — it's what Lumina actually reads. Use drafts when auditing unpublished changes.
    Parse all units → skills → subskills. If `--unit` specified, filter to that unit only.
 
 2. **Load catalog primitives:**
@@ -87,12 +128,16 @@ For each subskill, assign a classification:
 #### Classification Logic
 
 ```
-1. If target_primitive is empty/null → PURPLE (NO_PRIMITIVE)
+1. If target_primitive is empty/null → scan catalog for matching primitive by subskill description:
+     a. If a matching primitive is found → RED (GENERIC — not assigned, but one exists; treat like a missing assignment)
+     b. If no match in any catalog domain → PURPLE (NO_PRIMITIVE)
 2. If target_primitive is in GENERIC_LIST → RED (GENERIC)
 3. If target_primitive exists in catalog AND matches subskill pedagogy → GREEN (STRONG)
 4. If target_primitive exists but a MORE SPECIFIC primitive exists for this concept → YELLOW (UPGRADEABLE)
 5. If target_primitive is "ai-tutor-session" → BLUE (AI_TUTOR)
 ```
+
+> **Important:** Empty `target_primitive` means the *author didn't assign one* — it does NOT mean no primitive exists. Always scan the catalog before classifying as PURPLE. A subskill whose concept clearly maps to an existing primitive (e.g., ordinal position → `ordinal-line`) is RED/upgradeable, not a gap.
 
 For YELLOW classification, use this heuristic:
 - Read the subskill description (Focus/Examples/Constraints)
@@ -171,37 +216,48 @@ For each PURPLE subskill, generate an EVAL_TRACKER-style requirement:
 
 Re-author RED and YELLOW subskills to use better primitives.
 
+> **API details:** See README § "Curriculum CRUD — Subskills" for `PUT` body schema and § "AI Authoring" for `generate-skill`. See README § "Gotchas" item 1 for why `subject_id` query param is required.
+
 ### Steps
 
 1. **Run audit** (or use cached audit results from same conversation)
 2. **Present upgrade plan** to user for approval:
    ```
-   ## Upgrade Plan: SCIENCE_G1
+   ## Upgrade Plan: SCIENCE (Grade 1)
 
    Will re-author 10 subskills:
    | Subskill | From | To | Confidence |
    |----------|------|----|------------|
-   | SCI001-01-c | multiple-choice | knowledge-check | HIGH |
-   | SCI001-03-b | multiple-choice | sorting-station | HIGH |
+   | SCI001-01-C | multiple-choice | knowledge-check | HIGH |
+   | SCI001-03-B | multiple-choice | sorting-station | HIGH |
    ...
 
    Approve? (y/n/select specific ones)
    ```
 
-3. **For each approved upgrade**, call `POST /api/ai/generate-skill` to regenerate the subskill with the new target primitive, OR if the subskill description just needs the `target_primitive` field swapped (description already fits), use a direct Firestore update if available.
+3. **Flag compound subskills for splitting.** If a subskill covers two distinct pedagogical concepts (e.g., "compare quantities AND count backward"), it cannot get a clean primitive assignment. Split it into two subskills before upgrading — each gets its own primitive, `subskill_order`, and difficulty range. Use `POST /api/curriculum/subskills?subject_id={subject_id}` for the new subskill.
 
-4. **For subskills needing description rewrites** (the Focus/Examples/Constraints need to match the new primitive's capabilities):
+4. **For each approved upgrade**, call `POST /api/ai/generate-skill` to regenerate the subskill with the new target primitive, OR if the subskill description just needs the `target_primitive` field swapped (description already fits), patch it directly:
+   ```bash
+   curl -X PUT "http://localhost:8001/api/curriculum/subskills/{subskill_id}?subject_id={subject_id}" \
+     -H "Content-Type: application/json" \
+     -d '{"target_primitive": "new-primitive", "primitive_ids": ["new-primitive"]}'
+   ```
+   > **Always pass `?subject_id=`** — without it the endpoint does a slow-path scan that is unreliable on large subjects (README § "Gotchas" item 1).
+
+5. **For subskills needing description rewrites** (the Focus/Examples/Constraints need to match the new primitive's capabilities):
    - Read the new primitive's `description` and `constraints` from the catalog
    - Generate a new subskill description that leverages the primitive's specific features
-   - Use the authoring service to update
+   - Use `PUT /api/curriculum/subskills/{id}?subject_id={subject_id}` with the full `SubskillUpdate` body
 
-5. **Log all changes:**
+6. **Log all changes:**
    ```
-   [UPGRADE] SCI001-01-c: multiple-choice → knowledge-check (description updated)
-   [UPGRADE] SCI001-03-b: multiple-choice → sorting-station (description rewritten)
+   [UPGRADE] SCI001-01-C: multiple-choice → knowledge-check (description updated)
+   [UPGRADE] SCI001-03-B: multiple-choice → sorting-station (description rewritten)
+   [SPLIT] COUNT001-02-E → COUNT001-02-E (comparison-builder) + COUNT001-02-H (number-line)
    ```
 
-6. **Re-run audit** on upgraded subskills to verify they now classify as GREEN.
+7. **Re-run audit** on upgraded subskills to verify they now classify as GREEN.
 
 ---
 
@@ -224,8 +280,8 @@ Write requirements to `my-tutoring-app/qa/PRIMITIVE_GAPS.md` in EVAL_TRACKER-com
 
 | ID | Subject | Subskills Blocked | Proposed Primitive | Complexity | Status |
 |----|---------|-------------------|-------------------|------------|--------|
-| GAP-001 | SCIENCE_G1 | 3 | signal-designer | MEDIUM | OPEN |
-| GAP-002 | LANGUAGE_ARTS_G1 | 5 | vocabulary-map | SMALL | OPEN |
+| GAP-001 | SCIENCE | 3 | signal-designer | MEDIUM | OPEN |
+| GAP-002 | LANGUAGE_ARTS | 5 | vocabulary-map | SMALL | OPEN |
 
 ---
 
@@ -270,10 +326,13 @@ Show all catalog primitives not referenced by any curriculum subject.
 
 ### Steps
 
-1. Pull all subjects from authoring service
-2. Collect all `target_primitive` values across all subjects
-3. Read all catalog files, extract all primitive IDs
-4. Diff: catalog - used = unused
+1. Pull all subjects: `GET /api/curriculum/subjects` from backend (`localhost:8000`)
+2. For each subject, pull primitive mappings: `GET /api/curriculum/primitive-mappings/{subject}`
+   - Returns `primitives` (primitive→count) directly — no need to walk the tree
+   - Fallback: `GET /api/ai/author-previews/{subject_id}?grade={grade}` from authoring service
+3. Collect all `target_primitive` values across all subjects
+4. Read all catalog `.ts` files, extract all primitive IDs
+5. Diff: catalog - used = unused
 
 ### Output
 
@@ -305,19 +364,23 @@ Runs the complete bidirectional audit and improvement cycle.
 ### Sequence
 
 ```
-1. AUDIT  → classify all subskills
-2. REVIEW → present findings, get user approval on upgrade plan
+1. AUDIT   → classify all subskills
+2. REVIEW  → present findings, get user approval on upgrade plan
 3. UPGRADE → re-author approved RED/YELLOW subskills
-4. GAPS   → generate PRIMITIVE_GAPS.md for PURPLE items
-5. UNUSED → flag catalog primitives with no curriculum home
-6. REPORT → final summary with before/after metrics
+4. GAPS    → generate PRIMITIVE_GAPS.md for PURPLE items
+5. UNUSED  → flag catalog primitives with no curriculum home
+6. REPORT  → final summary with before/after metrics
 7. PUBLISH → if user approves, publish + deploy changes
 ```
+
+> **Publishing requires two steps** (README § "Gotchas" item 7):
+> 1. `POST /api/publishing/subjects/{subject_id}/publish` — creates immutable version snapshot
+> 2. `POST /api/publishing/subjects/{subject_id}/deploy` — writes to `curriculum_published` (what the platform reads) + auto-flattens graph
 
 ### Final Report
 
 ```
-## Full Loop Report: SCIENCE_G1
+## Full Loop Report: SCIENCE
 
 ### Before → After
 | Metric | Before | After | Delta |
@@ -340,8 +403,101 @@ Written to: my-tutoring-app/qa/PRIMITIVE_GAPS.md
 
 ### Next Steps
 1. `/primitive signal-designer` — build the highest-impact gap primitive
-2. `/curriculum-lumina-audit audit LANGUAGE_ARTS_G1` — audit next subject
-3. `/curriculum-author graph SCIENCE_G1` — rebuild graph edges after subskill changes
+2. `/curriculum-lumina-audit audit LANGUAGE_ARTS` — audit next subject
+3. `/curriculum-graph suggest SCIENCE` — rebuild graph edges after subskill changes
+```
+
+---
+
+## Command: `lineage-check`
+
+Pre-publish validation: diff published vs draft subskill_index and verify every removed subskill_id has a lineage record in the `curriculum_lineage` Firestore collection.
+
+### Steps
+
+1. Call `GET /api/lineage/check/{subject_id}` — returns `{total_removed, total_added, covered, missing, is_valid}`
+2. If `is_valid == true`: all removed IDs have lineage records. Safe to publish.
+3. If `is_valid == false`: list the `missing` IDs and their old descriptions. These **BLOCK publishing**.
+
+### For Each Missing ID
+
+Determine the operation type and create the lineage record:
+
+1. **Was it renamed?** Check if a new subskill with similar description exists in the draft.
+   ```bash
+   curl -X POST "http://localhost:8001/api/lineage/" \
+     -H "Content-Type: application/json" \
+     -d '{"old_id": "OLD_ID", "canonical_id": "NEW_ID", "operation": "rename", "subject_id": "SCIENCE"}'
+   ```
+
+2. **Was it merged?** Multiple old IDs consolidated into one new ID.
+   ```bash
+   curl -X POST "http://localhost:8001/api/lineage/" \
+     -d '{"old_id": "OLD_ID_1", "canonical_id": "MERGED_ID", "operation": "merge", "subject_id": "SCIENCE", "merge_sources": ["OLD_ID_1", "OLD_ID_2"]}'
+   ```
+
+3. **Was it split?** One old ID became multiple new IDs.
+   ```bash
+   curl -X POST "http://localhost:8001/api/lineage/" \
+     -d '{"old_id": "OLD_ID", "canonical_id": "NEW_A", "canonical_ids": ["NEW_A", "NEW_B"], "operation": "split", "subject_id": "SCIENCE"}'
+   ```
+
+4. **Was it retired?** No successor.
+   ```bash
+   curl -X POST "http://localhost:8001/api/lineage/" \
+     -d '{"old_id": "OLD_ID", "operation": "retire", "subject_id": "SCIENCE"}'
+   ```
+
+5. Re-run `lineage-check` to confirm `is_valid == true`.
+
+### Output
+
+```
+## Lineage Check: SCIENCE
+
+| Status | Count |
+|--------|-------|
+| Removed subskill IDs | 4 |
+| With lineage records | 3 |
+| MISSING (blocking) | 1 |
+
+### Missing Lineage Records (BLOCKING)
+| Old ID | Description | Likely Operation |
+|--------|-------------|-----------------|
+| SCI001-03-b | "Classify materials by transparency" | rename? (SCI001-03-c has similar description) |
+```
+
+---
+
+## Lineage Enforcement Rules
+
+These rules apply to ALL commands that modify subskill IDs (`upgrade`, `full-loop`, or any direct CRUD).
+
+### Mandatory Lineage Gate
+
+**Before any subskill ID change (rename, delete, merge, split):**
+1. Identify the old subskill_id(s) being affected
+2. Determine the operation type (rename/merge/split/retire)
+3. Determine the target canonical_id(s)
+4. Create the lineage record via `POST /api/lineage/` **BEFORE** modifying the draft
+5. Only then proceed with the draft CRUD operation
+
+### Draft-First Rule
+
+**NEVER edit `curriculum_published` directly.** All changes go through the draft → publish flow:
+1. Edit the draft via curriculum CRUD endpoints
+2. Run `lineage-check` to validate all ID changes are tracked
+3. Publish via `POST /api/publishing/subjects/{subject_id}/publish`
+4. Deploy via `POST /api/publishing/subjects/{subject_id}/deploy`
+
+The publish pipeline in `draft_curriculum_service.py` is the **ONLY** writer to `curriculum_published`. If published data is wrong, fix it by editing the draft and re-publishing — never patch in place.
+
+### Logging
+
+```
+[LINEAGE] {old_id} → {canonical_id} ({operation}) — lineage record created
+[LINEAGE-MISSING] {old_id} removed from draft but NO lineage record found — BLOCKING
+[LINEAGE-CHECK] {subject_id}: {N} changes, {M} with lineage, {K} missing
 ```
 
 ---
@@ -402,7 +558,7 @@ Watch for these patterns that indicate a bad primitive match:
 
 2. **DO NOT classify subskills as YELLOW without a specific better primitive.** YELLOW means "I found a concrete better option" — not "this could theoretically be improved."
 
-3. **DO NOT generate PRIMITIVE_GAPS for concepts that existing primitives already cover.** Check the FULL catalog (all domains) before declaring a gap.
+3. **DO NOT generate PRIMITIVE_GAPS for concepts that existing primitives already cover.** Check the FULL catalog (all domains) before declaring a gap. Also glob `my-tutoring-app/src/components/lumina/primitives/**/*.tsx` — a component can exist without being top-of-mind in the catalog text. If a `.tsx` file name matches the concept, read its header to confirm before declaring PURPLE.
 
 4. **DO NOT upgrade subskills without checking the primitive's grade-band constraints.** A primitive that's perfect for Grade 5 is wrong for Grade 1.
 
@@ -411,6 +567,12 @@ Watch for these patterns that indicate a bad primitive match:
 6. **DO NOT forget to re-run audit after upgrades.** The whole point is a closed loop — verify the changes actually improved coverage.
 
 7. **DO NOT recommend non-evaluable primitives for mastery-gated subskills.** Check `supportsEvaluation` before recommending.
+
+8. **DO NOT delete or rename a subskill without creating a lineage record first.** Student data (competencies, mastery lifecycle, reviews) is keyed by subskill_id. Without a lineage record, all student progress for that subskill is orphaned. The lineage record must exist BEFORE the draft change, not after.
+
+9. **DO NOT edit `curriculum_published` directly.** All changes go through the draft → publish flow. Published data is immutable — only the publish pipeline writes to it. If published data is wrong, fix it by editing the draft and re-publishing.
+
+10. **DO NOT publish without running `lineage-check` first.** The publish pipeline will block if removed subskill IDs lack lineage records, but catching this early via `lineage-check` is faster than debugging a blocked publish.
 
 ---
 
@@ -426,3 +588,6 @@ Watch for these patterns that indicate a bad primitive match:
 - [ ] PURPLE items have EVAL_TRACKER-compatible requirements
 - [ ] No primitives recommended without reading their catalog entry
 - [ ] User approved all changes before execution
+- [ ] For `lineage-check`: called `/api/lineage/check/{subject_id}`, resolved all missing IDs
+- [ ] For `upgrade`/`full-loop`: lineage records created BEFORE any subskill ID changes
+- [ ] No direct edits to `curriculum_published` — all changes via draft then publish

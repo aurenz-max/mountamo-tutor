@@ -92,6 +92,45 @@ async def get_detailed_objectives(
             detail=f"Error loading objectives: {str(e)}"
         )
 
+@public_router.get("/primitive-mappings/{subject}")
+async def get_primitive_mappings(
+    subject: str,
+    curriculum_service: CurriculumService = Depends(get_curriculum_service)
+) -> Dict[str, Any]:
+    """Get primitive mappings for all subskills in a subject.
+
+    Returns a map of subskill_id → target_primitive, plus a summary
+    of unique primitives and their subskill counts.
+    """
+    try:
+        curriculum = await curriculum_service.get_curriculum(subject)
+        if not curriculum:
+            raise HTTPException(status_code=404, detail=f"Curriculum not found for subject: {subject}")
+
+        mappings: Dict[str, Optional[str]] = {}
+        primitive_counts: Dict[str, int] = {}
+
+        for unit in curriculum:
+            for skill in unit.get("skills", []):
+                for ss in skill.get("subskills", []):
+                    prim = ss.get("target_primitive")
+                    mappings[ss["id"]] = prim
+                    if prim:
+                        primitive_counts[prim] = primitive_counts.get(prim, 0) + 1
+
+        return {
+            "subject": subject,
+            "mappings": mappings,
+            "primitives": primitive_counts,
+            "total_subskills": len(mappings),
+            "mapped_count": sum(1 for v in mappings.values() if v),
+            "unmapped_count": sum(1 for v in mappings.values() if not v),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @public_router.get("/stats")
 async def get_curriculum_stats(
     curriculum_service: CurriculumService = Depends(get_curriculum_service)

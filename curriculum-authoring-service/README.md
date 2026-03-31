@@ -1,169 +1,703 @@
 # Curriculum Authoring Service
 
-The single source of truth for curriculum structure and the knowledge graph. Defines **what** students learn; [Lumina](../my-tutoring-app/src/components/lumina/) handles **how** they learn it.
+FastAPI microservice (port 8001) that owns curriculum structure and the knowledge graph. Defines **what** students learn; [Lumina](../my-tutoring-app/src/components/lumina/) handles **how**.
 
-A standalone FastAPI microservice (port 8001) managing the 4-level curriculum taxonomy, a typed knowledge graph with 5 relationship types, an AI-powered graph analysis agent, and a draft/publish version control workflow.
-
-## Current State
-
-- **Kindergarten**: 805 subskills across 6 subjects (ABC123, Language Arts, Mathematics, Science, Social Studies, Arts)
-- **First Grade**: ~496 subskills across 4 subjects (Language Arts, Mathematics, Science, Social Studies)
-- **Grades 2-12**: Not yet authored
-- **Grade codes**: PK, K, 1, 2, 3, ... 12
+4-level hierarchy (Subject > Unit > Skill > Subskill), typed knowledge graph (5 relationship types), AI-powered authoring via Gemini, and draft/publish version control.
 
 ---
 
-## Core Concepts
+## Quick Reference
 
-### Curriculum Hierarchy
+| Item | Value |
+|------|-------|
+| Port | `8001` |
+| Base URL | `http://localhost:8001` |
+| Framework | FastAPI 0.109.0 |
+| Auth | Firebase Auth (Bearer token), disable with `DISABLE_AUTH=true` |
+| Primary storage | Firestore (hierarchical documents) |
+| Secondary storage | BigQuery (analytics export on publish) |
+| AI | Gemini (content generation, embeddings, graph suggestions) |
+| Grade codes | `PK`, `K`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `10`, `11`, `12` |
+
+### Subject ID Format
+
+Subject IDs are bare enums scoped to grade via the Firestore collection path:
 
 ```
-Subject  (e.g. "Language Arts -- Kindergarten")
-  |-- Unit  (e.g. "Phonological & Phonemic Awareness")
-       |-- Skill  (e.g. "Phoneme Blending & Segmentation")
-            |-- Subskill  (e.g. "Segment a CVC word into three phonemes")
-                 |-- difficulty range (0-10 scale)
-                 |-- knowledge graph edges (relationships to other nodes)
-                 |-- Lumina primitives (interactive exercises that teach it)
-                 |-- AI foundations (master context, visual schemas)
+curriculum_drafts/{grade}/subjects/{subject_id}
 ```
 
-### Knowledge Graph
+Examples: `MATHEMATICS`, `LANGUAGE_ARTS`, `SCIENCE`, `SOCIAL_STUDIES`, `ABC123`, `ARTS`
 
-Subskills and skills are connected by typed edges that form a directed graph. Only `prerequisite` edges enforce mastery gates; all other types are informational and used by the adaptive engine for session assembly.
+The `grade` field (e.g. `"K"`, `"1"`) is stored on the subject and used as the Firestore partition key. Subject IDs do NOT embed the grade — the same ID could theoretically exist across grades.
 
-| Type | Meaning | Gate Effect |
-|------|---------|-------------|
-| `prerequisite` | Must master A before B | Enforces mastery gates |
-| `builds_on` | A extends into B conceptually | No gate |
-| `reinforces` | Practicing A strengthens B | No gate |
-| `parallel` | Peer concepts at similar difficulty | No gate, auto-creates reverse edge |
-| `applies` | Abstract A used in applied context B | No gate |
+### Entity ID Conventions
 
-### Version Control
+```
+Unit:     {ABBREV}{NNN}          e.g. LA001, SCI003, OPS002
+Skill:    {UNIT_ID}-{NN}        e.g. LA001-01, SCI003-02
+Subskill: {SKILL_ID}-{LETTER}   e.g. LA001-01-A, SCI003-02-C
+```
 
-All curriculum changes go through a draft/publish workflow. Published versions are immutable snapshots. Rollback restores a previous published version as the new draft.
+Subskill IDs always end with a letter suffix. Skill IDs never do. This matters when filtering graph anomalies — skill-level nodes are containers and will appear as orphans (expected).
 
 ---
 
-## Architecture
-
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| API | FastAPI 0.109.0 | REST endpoints (7 route groups) |
-| Database | BigQuery | Source of truth for all curriculum data |
-| Cache / Deploy | Firestore | Dual-write cache and published curriculum store |
-| Auth | Firebase Auth | Role-based access control |
-| AI | Gemini | Content generation, embeddings, graph suggestions |
-
-### Data Flow
+## Curriculum Hierarchy
 
 ```
-Authoring Service
-    |-- writes --> BigQuery (source of truth)
-    |-- dual-writes --> Firestore (cache + published deployment)
-                            |
-                            |-- reads --> Backend CurriculumService (platform API)
-                            |-- reads --> LearningPathsService (prerequisite gating)
-                            |-- reads --> PulseEngine (adaptive session assembly)
-                            |-- reads --> Frontend (renders curriculum)
+Subject  (e.g. "Language Arts", grade "1")
+  └── Unit  (e.g. LA001 "Phonological & Phonemic Awareness")
+       └── Skill  (e.g. LA001-01 "Phoneme Blending & Segmentation")
+            └── Subskill  (e.g. LA001-01-A "Segment a CVC word into three phonemes")
+                 ├── difficulty_start / difficulty_end / target_difficulty (0-10 scale)
+                 ├── target_primitive (Lumina primitive ID or "ai-tutor-session")
+                 ├── primitive_ids[] (assigned Lumina primitives)
+                 ├── standards_alignment (e.g. "1.OA.1")
+                 └── knowledge graph edges
+```
+
+---
+
+## Knowledge Graph
+
+Subskills and skills are connected by typed directed edges. Only `is_prerequisite: true` edges enforce mastery gates; all types are traversable by Pulse BFS for discovery.
+
+| Type | Meaning | Gate? | Pulse Use |
+|------|---------|-------|-----------|
+| `prerequisite` | Must master A before B | Yes (when `is_prerequisite: true`) | BFS discovery + unlock gating |
+| `builds_on` | A extends into B conceptually | No | BFS discovery, affinity grouping |
+| `reinforces` | Practicing A strengthens B | No | Review pairing, session variety |
+| `parallel` | Peer concepts at similar difficulty | No | Cold-start breadth, subject interleaving |
+| `applies` | Abstract A used in applied context B | No | Transfer assessment, contextual practice |
+
+**Parallel edges** auto-create bidirectional pairs (A→B + B→A) linked by `pair_id`. Do not manually create reverse edges.
+
+### Edge Data Model
+
+```json
+{
+  "source_entity_id": "LA001-01-A",
+  "source_entity_type": "subskill",
+  "target_entity_id": "LA001-02-B",
+  "target_entity_type": "subskill",
+  "relationship": "builds_on",
+  "strength": 0.8,
+  "is_prerequisite": false,
+  "min_proficiency_threshold": 0.8,
+  "rationale": "Blending extends into segmentation fluency",
+  "authored_by": "human",
+  "confidence": null,
+  "pair_id": null
+}
+```
+
+- `strength` (0.0–1.0): Affinity signal for Pulse ranking. Higher = preferred in tiebreaking.
+- `is_prerequisite` (bool): Only these enforce mastery gates. A `prerequisite` relationship defaults to `true`, all others default to `false`.
+- `confidence` (float|null): Agent confidence score. Null for human-authored edges.
+- `pair_id` (string|null): Links bidirectional parallel edges.
+
+---
+
+## Firestore Collections
+
+### Hierarchical (Primary — source of truth for authoring & deployment)
+
+```
+curriculum_drafts/{grade}/subjects/{subject_id}
+  → Full hierarchical document: { curriculum[], subskill_index, stats }
+  → Unit entries may include authoring metadata: status, preview_id, lumina_coverage
+
+curriculum_published/{grade}/subjects/{subject_id}
+  → Published immutable snapshot (same schema as drafts)
+  → Read by: backend CurriculumService, LearningPathsService, PulseEngine, frontend
+
+curriculum_graphs/{grade}/subjects/{subject_id}
+  → Graph metadata document
+  ├── edges/{edge_id}         — Individual edge documents
+  └── suggestions/{suggestion_id}  — AI-generated edge suggestions (pending/accepted/rejected)
+```
+
+### Flat (Legacy — still dual-written for backward compatibility)
+
+```
+curriculum_subjects, curriculum_units, curriculum_skills, curriculum_subskills,
+curriculum_prerequisites, curriculum_versions, curriculum_primitives,
+curriculum_subskill_primitives, curriculum_edges
+```
+
+### Grade Resolution
+
+The service resolves `subject_id → grade` by scanning both `curriculum_drafts` and `curriculum_published` collections, then caches the mapping. Most API endpoints accept `subject_id` and resolve the grade automatically. Some require explicit `grade` parameter (authoring endpoints).
+
+---
+
+## Data Flow
+
+```
+Authoring Service (port 8001)
+    ├── writes → Firestore curriculum_drafts (source of truth)
+    ├── on publish → Firestore curriculum_published (immutable snapshot)
+    ├── on publish → BigQuery (non-blocking analytics export)
+    └── on edge mutation → Firestore curriculum_graphs/edges subcollection
+                                │
+                                ├── reads → Backend CurriculumService (platform API, port 8000)
+                                ├── reads → LearningPathsService (prerequisite gating)
+                                ├── reads → PulseEngine (adaptive session assembly, BFS)
+                                └── reads → Frontend (renders curriculum)
 ```
 
 ---
 
 ## API Reference
 
-### 1. Curriculum (`/api/curriculum`)
+### 1. Curriculum CRUD — `/api/curriculum`
 
-CRUD operations for the 4-level hierarchy: subjects, units, skills, subskills.
+#### Grades
 
-- `GET /subjects` -- list all subjects
-- `GET /subjects/{id}/tree` -- full hierarchical tree
-- `POST /units` -- create unit
-- `PUT /skills/{id}` -- update skill
-- `DELETE /subskills/{id}` -- delete subskill
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/curriculum/grades` | List all valid grade codes |
 
-### 2. Edges (`/api/edges`)
+#### Subjects
 
-Typed knowledge graph edge management. Supports all 5 relationship types with validation to prevent cycles in prerequisite edges.
+| Method | Path | Query Params | Body | Purpose |
+|--------|------|-------------|------|---------|
+| `GET` | `/api/curriculum/subjects` | `include_drafts?` | — | List all subjects |
+| `GET` | `/api/curriculum/subjects/{subject_id}` | — | — | Get one subject |
+| `GET` | `/api/curriculum/subjects/{subject_id}/tree` | `include_drafts?` | — | Full hierarchical tree |
+| `POST` | `/api/curriculum/subjects` | — | `SubjectCreate` | Create subject |
+| `PUT` | `/api/curriculum/subjects/{subject_id}` | — | `SubjectUpdate` | Update subject |
 
-### 3. Agent (`/api/agent`)
+#### Units
 
-Graph health analysis, AI-powered suggestion engine, and approval workflow for suggested connections.
+| Method | Path | Query Params | Body | Purpose |
+|--------|------|-------------|------|---------|
+| `GET` | `/api/curriculum/subjects/{subject_id}/units` | `include_drafts?` | — | List units by subject |
+| `GET` | `/api/curriculum/units/{unit_id}` | — | — | Get one unit |
+| `POST` | `/api/curriculum/units` | — | `UnitCreate` | Create unit |
+| `PUT` | `/api/curriculum/units/{unit_id}` | `subject_id?` | `UnitUpdate` | Update unit |
+| `DELETE` | `/api/curriculum/units/{unit_id}` | `subject_id?` | — | Delete unit |
 
-### 4. AI (`/api/ai`)
+#### Skills
 
-Gemini-powered content generation.
+| Method | Path | Query Params | Body | Purpose |
+|--------|------|-------------|------|---------|
+| `GET` | `/api/curriculum/units/{unit_id}/skills` | `include_drafts?`, `subject_id?` | — | List skills by unit |
+| `GET` | `/api/curriculum/skills/{skill_id}` | — | — | Get one skill |
+| `POST` | `/api/curriculum/skills` | `subject_id?` | `SkillCreate` | Create skill |
+| `PUT` | `/api/curriculum/skills/{skill_id}` | `subject_id?` | `SkillUpdate` | Update skill |
+| `DELETE` | `/api/curriculum/skills/{skill_id}` | `subject_id?` | — | Delete skill |
 
-- `POST /generate-unit` -- generate unit structure from a topic prompt
-- `POST /generate-skill` -- generate skill with subskills
-- `POST /suggest-prerequisites` -- AI-suggested learning paths
-- `POST /improve-description` -- refine entity descriptions
+#### Subskills
 
-### 5. Publishing (`/api/publishing`)
+| Method | Path | Query Params | Body | Purpose |
+|--------|------|-------------|------|---------|
+| `GET` | `/api/curriculum/skills/{skill_id}/subskills` | `include_drafts?`, `subject_id?` | — | List subskills by skill |
+| `GET` | `/api/curriculum/subskills/{subskill_id}` | — | — | Get one subskill |
+| `POST` | `/api/curriculum/subskills` | `subject_id?` | `SubskillCreate` | Create subskill |
+| `PUT` | `/api/curriculum/subskills/{subskill_id}` | `subject_id?` | `SubskillUpdate` | Update subskill |
+| `DELETE` | `/api/curriculum/subskills/{subskill_id}` | `subject_id?` | — | Delete subskill |
 
-Draft/publish/rollback version control.
+**SubskillUpdate body** (all fields optional):
+```json
+{
+  "subskill_description": "...",
+  "subskill_order": 1,
+  "difficulty_start": 1.0,
+  "difficulty_end": 5.0,
+  "target_difficulty": 3.0,
+  "target_primitive": "number-line",
+  "primitive_ids": ["number-line", "ten-frame"]
+}
+```
 
-- `GET /subjects/{id}/draft-changes` -- view pending changes
-- `POST /subjects/{id}/publish` -- publish new version
-- `GET /subjects/{id}/versions` -- version history
-- `POST /subjects/{id}/rollback/{version_id}` -- rollback to a previous version
+> **Gotcha:** Always pass `?subject_id=SUBJECT_ID` on update/delete. Without it, the service does a slow-path scan across all subjects which is unreliable on large datasets.
 
-### 6. Graph (`/api/graph`)
+#### Primitives
 
-Graph caching and invalidation endpoints for Firestore-backed prerequisite graph cache.
+| Method | Path | Query Params | Body | Purpose |
+|--------|------|-------------|------|---------|
+| `GET` | `/api/curriculum/primitives` | — | — | List all primitives |
+| `GET` | `/api/curriculum/primitives/categories/{category}` | — | — | Filter by category |
+| `GET` | `/api/curriculum/subskills/{subskill_id}/primitives` | `subject_id` | — | Get assigned primitives |
+| `PUT` | `/api/curriculum/subskills/{subskill_id}/primitives` | `subject_id` | `["prim-1", "prim-2"]` | Assign primitives |
 
-### 7. Prerequisites (`/api/prerequisites`) [Legacy]
+#### Repair
 
-Original prerequisite management endpoints. Superseded by the typed edges system (`/api/edges`). Retained for backward compatibility.
-
----
-
-## Agent Suggestion Pipeline
-
-The AI agent runs a 5-phase pipeline to discover missing or beneficial knowledge graph connections:
-
-1. **Skill-level embedding comparison** -- Generates embeddings for up to 25 skills, producing ~300 candidate pairs by cosine similarity.
-2. **Skill-pair LLM triage** -- Gemini evaluates each candidate pair for pedagogical relevance, filtering to high-confidence matches.
-3. **Subskill drill-down** -- Embedding comparison within matched skill pairs to find specific subskill-level connections.
-4. **Subskill LLM refinement** -- Gemini classifies each subskill pair into one of the 5 relationship types with confidence scores.
-5. **Impact simulation and validation** -- Validates suggestions against existing graph structure, checks for cycles, and estimates impact.
-
-Suggestions enter an approval queue where curriculum designers can accept, modify, or reject each one.
-
----
-
-## Database
-
-### BigQuery Tables
-
-| Table | Purpose |
-|-------|---------|
-| `curriculum_subjects` | Subject metadata and grade level |
-| `curriculum_units` | Unit structure and ordering |
-| `curriculum_skills` | Skill definitions |
-| `curriculum_subskills` | Subskill details with difficulty ranges |
-| `curriculum_edges` | Knowledge graph (5 typed relationships) |
-| `curriculum_versions` | Version history for draft/publish workflow |
-| `curriculum_primitives` | Lumina primitive library |
-| `curriculum_subskill_primitives` | Junction table: subskill to primitive mapping |
-| `curriculum_subskill_foundations` | AI-generated content foundations |
-| `curriculum_prerequisites` | Legacy prerequisite relationships (superseded by edges) |
-
-### Firestore Collections
-
-Published curriculum deploys to `curriculum_published/{grade}/subjects/{id}` for consumption by the main backend.
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/curriculum/subjects/{subject_id}/repair-duplicate-units` | Merge duplicate unit entries |
 
 ---
 
-## How It Connects to the Platform
+### 2. AI Authoring — `/api/ai`
 
-1. **Authoring service** defines WHAT students learn (hierarchy + knowledge graph).
-2. **Published curriculum** deploys to Firestore at `curriculum_published/{grade}/subjects/{id}`.
-3. **Backend `CurriculumService`** reads published data to serve the platform API.
-4. **`LearningPathsService`** reads the graph for prerequisite gating (blocking students from skills they are not ready for).
-5. **`PulseEngine`** reads the graph for adaptive session assembly -- BFS discovery of reachable skills, cold-start probes for new students, and leapfrog inference to skip mastered prerequisites.
-6. **Lumina primitives** handle HOW students learn through interactive exercises linked to subskills.
+#### PRD-Driven Unit Authoring
+
+| Method | Path | Body | Purpose |
+|--------|------|------|---------|
+| `POST` | `/api/ai/author-subject` | `AuthorSubjectRequest` | Create/retrieve subject shell |
+| `POST` | `/api/ai/author-unit` | `AuthorUnitRequest` | Generate unit from PRD → pending in drafts |
+| `POST` | `/api/ai/author-unit/accept` | `AcceptUnitRequest` | Accept pending → accepted |
+| `POST` | `/api/ai/author-unit/reject` | `RejectUnitRequest` | Reject with feedback |
+| `POST` | `/api/ai/author-unit/regenerate` | `RegenerateUnitRequest` | Regenerate from rejection feedback |
+| `GET` | `/api/ai/author-previews/{subject_id}` | query: `grade` (required) | List previews with status counts |
+
+**AuthorSubjectRequest:**
+```json
+{
+  "subject_id": "LANGUAGE_ARTS",
+  "subject_name": "Language Arts",
+  "grade": "1",
+  "description": "First grade language arts curriculum"
+}
+```
+
+**AuthorUnitRequest:**
+```json
+{
+  "subject_id": "LANGUAGE_ARTS",
+  "grade": "1",
+  "unit_id": "LA001",
+  "unit_title": "Phonological & Phonemic Awareness",
+  "unit_description": "Foundation phonics skills for early readers",
+  "unit_order": 1,
+  "prd_context": "The unit MUST contain exactly these 3 skills:\n\n1. LA001-01: Rhyming (3 subskills) — rhyme-builder\n...",
+  "custom_instructions": "Skill descriptions = SHORT UI TITLES (1-4 words). Subskill descriptions use Focus/Examples/Constraints format.",
+  "num_skills": 3,
+  "num_subskills_per_skill": 4
+}
+```
+
+> **Critical:** `prd_context` must explicitly list EVERY skill with subskill counts and primitive assignments. Do NOT let Gemini infer — it will hallucinate primitives and invent IDs. Include valid primitive IDs from the Lumina catalog.
+
+**AcceptUnitRequest:**
+```json
+{ "preview_id": "uuid", "subject_id": "LANGUAGE_ARTS", "grade": "1" }
+```
+
+**RejectUnitRequest:**
+```json
+{ "preview_id": "uuid", "subject_id": "LANGUAGE_ARTS", "grade": "1", "feedback": "Too many subskills per skill" }
+```
+
+**RegenerateUnitRequest:**
+```json
+{ "preview_id": "uuid", "subject_id": "LANGUAGE_ARTS", "grade": "1", "additional_feedback": "Reduce to 3 subskills each", "custom_instructions": "..." }
+```
+
+#### Skill-Level Generation
+
+| Method | Path | Body | Purpose |
+|--------|------|------|---------|
+| `POST` | `/api/ai/generate-skill` | `GenerateSkillRequest` | Generate subskills for a single skill |
+
+**GenerateSkillRequest:**
+```json
+{
+  "subject_id": "LANGUAGE_ARTS",
+  "grade": "1",
+  "unit_id": "LA001",
+  "skill_id": "LA001-10",
+  "skill_title": "Soft C and G",
+  "skill_order": 10,
+  "num_subskills": 2,
+  "prd_context": "Prescriptive instructions for subskill content...",
+  "custom_instructions": "..."
+}
+```
+
+#### Content Improvement
+
+| Method | Path | Body | Purpose |
+|--------|------|------|---------|
+| `POST` | `/api/ai/suggest-prerequisites` | `SuggestPrerequisitesRequest` | AI-suggested learning paths |
+| `POST` | `/api/ai/improve-description` | `ImproveDescriptionRequest` | Refine entity descriptions |
+
+#### Scoped Edge Suggestions (Lightweight Graph Building)
+
+| Method | Path | Body | Purpose |
+|--------|------|------|---------|
+| `POST` | `/api/ai/suggest-edges` | `ScopedSuggestionRequest` | 1-2 Gemini calls, scoped to specific skills |
+| `POST` | `/api/ai/connect-skills` | `ConnectSkillsRequest` | Pairwise subskill connections (cross-grade OK) |
+| `POST` | `/api/ai/suggest-edges/accept` | `AcceptScopedSuggestionsRequest` | Accept suggestions → create draft edges |
+
+**ScopedSuggestionRequest:**
+```json
+{
+  "subject_id": "MATHEMATICS",
+  "scope": {
+    "skill_ids": ["OPS002-01", "OPS002-02"],
+    "subskill_ids": [],
+    "include_existing_graph": true,
+    "cross_grade_subject_ids": []
+  },
+  "options": {
+    "relationship_types": ["prerequisite", "builds_on", "reinforces", "parallel", "applies"],
+    "max_suggestions": 10,
+    "depth": "subskill"
+  }
+}
+```
+
+> **Gotcha:** Avoid passing >6 skill IDs at once — too many subskills overflows Gemini context and causes truncated/missed suggestions. Use pairwise `connect-skills` instead.
+
+**ConnectSkillsRequest:**
+```json
+{
+  "source_skill_id": "OPS001-01",
+  "source_subject_id": "MATHEMATICS",
+  "target_skill_id": "OPS002-01",
+  "target_subject_id": "MATHEMATICS",
+  "relationship_types": ["prerequisite", "builds_on", "reinforces", "parallel", "applies"]
+}
+```
+
+> **Important:** `connect-skills` creates PENDING SUGGESTIONS, not edges. You must accept them via `/api/ai/suggest-edges/accept` or `/api/agent/{subject_id}/suggestions/accept-all`.
+
+**AcceptScopedSuggestionsRequest:**
+```json
+{
+  "suggestion_ids": ["uuid1", "uuid2"],
+  "subject_id": "MATHEMATICS"
+}
+```
+
+Returns `{ "accepted": 2, "edge_ids": ["edge-uuid1", "edge-uuid2"] }`.
+
+---
+
+### 3. Knowledge Graph Edges — `/api/edges` and `/api/subjects`
+
+| Method | Path | Query Params | Body | Purpose |
+|--------|------|-------------|------|---------|
+| `POST` | `/api/edges` | `subject_id?` | `CurriculumEdgeCreate` | Create edge |
+| `DELETE` | `/api/edges/{edge_id}` | `subject_id?` | — | Delete edge |
+| `GET` | `/api/edges/{entity_id}` | `entity_type`, `subject_id?`, `include_drafts?` | — | Get edges for entity |
+| `POST` | `/api/edges/validate` | `subject_id?` | `CurriculumEdgeCreate` | Validate without creating |
+| `GET` | `/api/subjects/{subject_id}/knowledge-graph` | `include_drafts?` | — | Full subject knowledge graph |
+| `GET` | `/api/subjects/{subject_id}/base-skills` | — | — | Entry-point skills (no prerequisites) |
+
+**CurriculumEdgeCreate:**
+```json
+{
+  "source_entity_id": "COUNT001-05-C",
+  "source_entity_type": "subskill",
+  "target_entity_id": "MEAS001-02-A",
+  "target_entity_type": "subskill",
+  "relationship": "builds_on",
+  "strength": 0.8,
+  "is_prerequisite": false,
+  "rationale": "Counting concepts support measurement comparison",
+  "authored_by": "human"
+}
+```
+
+**Validation rules:**
+- Prerequisite edges: cycle detection on prerequisite subgraph only
+- Non-prerequisite edges: always valid (cycles OK in discovery graph)
+- All edges: self-loop check, duplicate check
+- Parallel edges auto-create bidirectional pair
+
+> **Gotcha:** `/api/subjects/{subject_id}/knowledge-graph` reads from the flat legacy `curriculum_edges` collection. After accepting suggestions, edges may only exist in the hierarchical `curriculum_graphs` subcollection. Use `/api/agent/{subject_id}/health` for authoritative edge counts.
+
+---
+
+### 4. Agentic Graph Analysis — `/api/agent`
+
+| Method | Path | Query Params | Body | Purpose |
+|--------|------|-------------|------|---------|
+| `GET` | `/api/agent/{subject_id}/health` | — | — | Graph health report (authoritative) |
+| `POST` | `/api/agent/{subject_id}/suggest` | `max_suggestions?` | — | Gemini-powered bulk suggestions (5-phase pipeline) |
+| `GET` | `/api/agent/{subject_id}/suggestions` | `status?` | — | List suggestions |
+| `POST` | `/api/agent/{subject_id}/suggestions/accept-all` | — | — | Bulk accept all pending |
+| `POST` | `/api/agent/{subject_id}/suggestions/{id}/accept` | — | — | Accept one |
+| `POST` | `/api/agent/{subject_id}/suggestions/{id}/reject` | — | — | Reject one |
+| `POST` | `/api/agent/{subject_id}/reclassify` | `dry_run?` | — | Reclassify suggestions |
+| `GET` | `/api/agent/{subject_id}/impact-preview` | — | — | Cumulative impact of pending suggestions |
+
+**GraphHealthReport response:**
+```json
+{
+  "subject_id": "MATHEMATICS",
+  "health_score": 5.5,
+  "metrics": {
+    "node_count": 189,
+    "edge_count": 165,
+    "edge_density": 0.88,
+    "component_count": 42,
+    "cross_unit_ratio": 0.08,
+    "avg_bfs_reach": 5.8,
+    "dead_end_ratio": 0.38,
+    "orphan_count": 12,
+    "bottleneck_nodes": ["COUNT001-01-A"]
+  },
+  "anomalies": [
+    { "type": "orphan", "severity": "warning", "entity_ids": ["..."], "description": "..." },
+    { "type": "isolated_unit", "severity": "critical", "entity_ids": ["..."], "description": "..." }
+  ],
+  "suggestions_count": 5,
+  "computed_at": "2026-03-29T..."
+}
+```
+
+**Health metric thresholds:**
+| Metric | Healthy | Warning |
+|--------|---------|---------|
+| Edge density (edges/node) | ≥ 1.5 | < 1.0 = sparse |
+| Connected components | < 5 | > 5 = fragmented |
+| Cross-unit edge ratio | ≥ 10% | < 10% = isolated units |
+| Avg BFS reach (5 hops) | ≥ 6 | < 6 = limited discovery |
+| Dead-end ratio | < 20% | > 30% = many dead ends |
+| Orphan count | 0 | > 0 = invisible to Pulse |
+
+> **Expected orphans:** Skill-level nodes (IDs without letter suffix, e.g. `OPS001-01`) are containers and will always appear as orphans because `connect-skills` creates subskill-to-subskill edges only. Filter these out when reviewing anomalies.
+
+---
+
+### 5. Publishing & Deployment — `/api/publishing`
+
+| Method | Path | Query Params | Body | Purpose |
+|--------|------|-------------|------|---------|
+| `GET` | `/api/publishing/subjects/{subject_id}/draft-changes` | — | — | View pending changes |
+| `POST` | `/api/publishing/subjects/{subject_id}/publish` | — | `PublishRequest` | Publish draft → immutable version |
+| `GET` | `/api/publishing/subjects/{subject_id}/versions` | — | — | Version history |
+| `GET` | `/api/publishing/subjects/{subject_id}/active-version` | — | — | Current active version |
+| `POST` | `/api/publishing/subjects/{subject_id}/rollback/{version_id}` | — | — | Rollback to prior version |
+| `GET` | `/api/publishing/subjects/{subject_id}/flattened-view` | `version_id?` | — | Get flattened curriculum |
+| `POST` | `/api/publishing/subjects/{subject_id}/deploy` | `version_id?` | — | Deploy to `curriculum_published` + auto-flatten |
+| `POST` | `/api/publishing/subjects/{subject_id}/deploy-to-bigquery` | — | — | Export to BigQuery |
+| `GET` | `/api/publishing/subjects/{subject_id}/deploy/status` | — | — | Deployment status |
+| `GET` | `/api/publishing/subjects/{subject_id}/deploy/diagnostics` | — | — | Diagnose issues |
+| `POST` | `/api/publishing/backfill-drafts` | `grade?` | — | Seed `curriculum_drafts` from published |
+| `POST` | `/api/publishing/subjects/{subject_id}/flatten` | `published_only?` | — | Rebuild flat graph cache |
+| `POST` | `/api/publishing/flatten-all/{grade}` | — | — | Rebuild all subjects in grade |
+| `GET` | `/api/publishing/subjects/{subject_id}/flatten/preview` | `published_only?` | — | Preview flattened graph |
+| `POST` | `/api/publishing/subjects/{subject_id}/deploy/repair` | — | — | Fix version_id mismatches |
+
+**PublishRequest:**
+```json
+{
+  "subject_id": "MATHEMATICS",
+  "version_description": "Added geometry unit",
+  "change_summary": "3 units, 12 skills, 48 subskills added"
+}
+```
+
+**Deploy** writes to `curriculum_published/{grade}/subjects/{subject_id}` and auto-flattens the graph. No separate flatten step needed.
+
+---
+
+### 6. Graph Cache — `/api/graph`
+
+| Method | Path | Query Params | Purpose |
+|--------|------|-------------|---------|
+| `GET` | `/api/graph/{subject_id}` | `include_drafts?`, `force_refresh?` | Get cached graph |
+| `POST` | `/api/graph/{subject_id}/regenerate` | `include_drafts?` | Regenerate cache |
+| `POST` | `/api/graph/{subject_id}/regenerate-all` | — | Regenerate draft + published |
+| `DELETE` | `/api/graph/{subject_id}/cache` | `version_type?` | Invalidate cache |
+| `GET` | `/api/graph/{subject_id}/status` | — | Cache freshness |
+| `GET` | `/api/graph/cache/list` | — | All cached subjects |
+| `GET` | `/api/graph/cache/list-all` | — | All cached graphs with metadata |
+
+---
+
+### 7. Prerequisites (Legacy) — `/api/prerequisites`
+
+Superseded by the typed edges system (`/api/edges`). Retained for backward compatibility.
+
+| Method | Path | Query Params | Body | Purpose |
+|--------|------|-------------|------|---------|
+| `GET` | `/api/prerequisites/{entity_id}` | `entity_type`, `include_drafts?` | — | Get prerequisites |
+| `GET` | `/api/prerequisites/subjects/{subject_id}/graph` | `include_drafts?` | — | Prerequisite graph |
+| `GET` | `/api/prerequisites/subjects/{subject_id}/base-skills` | — | — | Entry-point skills |
+| `POST` | `/api/prerequisites/validate` | — | `PrerequisiteCreate` | Validate |
+| `POST` | `/api/prerequisites/prerequisites` | — | `PrerequisiteCreate` | Create prerequisite |
+| `DELETE` | `/api/prerequisites/prerequisites/{prerequisite_id}` | — | — | Delete prerequisite |
+
+---
+
+## Common Workflows
+
+### Workflow A: Author a New Subject
+
+```
+1. POST /api/ai/author-subject          → Create subject shell
+2. POST /api/ai/author-unit             → Generate unit (pending in drafts)
+3. GET  /api/ai/author-previews/{id}    → Review what was generated
+4. POST /api/ai/author-unit/accept      → Accept unit (or reject + regenerate)
+5. Repeat steps 2-4 for each unit
+6. POST /api/publishing/.../publish     → Publish all accepted units
+7. POST /api/publishing/.../deploy      → Deploy to curriculum_published
+```
+
+### Workflow B: Build Knowledge Graph
+
+```
+1. POST /api/ai/connect-skills          → Pairwise subskill connections (repeat per skill pair)
+2. POST /api/agent/{id}/suggestions/accept-all  → Bulk-accept all pending → draft edges
+3. GET  /api/agent/{id}/health          → Check health metrics
+4. If density < 1.5, run more connect-skills pairs
+5. POST /api/publishing/.../publish     → Publish edges
+6. POST /api/publishing/.../deploy      → Deploy with flattened graph
+```
+
+> **Prefer pairwise `connect-skills` over bulk `suggest-edges`** — bulk dumps too many subskills into one LLM call, causing output truncation and missed cross-unit connections. Use `connect-skills` between specific skill pairs for reliable results.
+
+### Workflow C: Audit Primitive Coverage (used by `/curriculum-lumina-audit`)
+
+```
+1. GET  /api/ai/author-previews/{subject_id}?grade={grade}  → Pull all subskills with target_primitive
+2. Read Lumina catalog files from my-tutoring-app/.../catalog/
+3. Classify each subskill (GREEN/YELLOW/RED/PURPLE/BLUE)
+4. PUT  /api/curriculum/subskills/{id}?subject_id={id}       → Update primitives for RED/YELLOW
+```
+
+### Workflow D: Diagnose Graph Health (used by `/curriculum-graph`)
+
+```
+1. GET  /api/agent/{subject_id}/health     → Health report with metrics + anomalies
+2. POST /api/agent/{id}/suggest            → Generate Gemini-powered suggestions (bulk pipeline)
+3. GET  /api/agent/{id}/suggestions        → Review pending suggestions
+4. POST /api/agent/{id}/suggestions/{id}/accept  → Accept one at a time
+   OR
+   POST /api/agent/{id}/suggestions/accept-all   → Bulk accept
+5. GET  /api/agent/{id}/impact-preview     → See cumulative impact before publishing
+```
+
+---
+
+## Gotchas & Known Issues
+
+### 1. Always pass `subject_id` query parameter
+
+Most update/delete endpoints have a `subject_id?` query parameter. Without it, the service scans all subjects to find the entity — slow and unreliable. Always pass it:
+
+```
+PUT /api/curriculum/subskills/{id}?subject_id=MATHEMATICS
+```
+
+### 2. `connect-skills` creates suggestions, not edges
+
+The `/api/ai/connect-skills` endpoint creates pending suggestions in Firestore. To convert them to draft edges, you must explicitly accept:
+
+```
+POST /api/agent/{subject_id}/suggestions/accept-all
+```
+
+### 3. Two different knowledge graph read paths
+
+- `/api/subjects/{subject_id}/knowledge-graph` → reads from flat legacy `curriculum_edges` collection
+- `/api/agent/{subject_id}/health` → reads from hierarchical `curriculum_graphs` subcollections (authoritative)
+
+After accepting suggestions, edges exist in the hierarchical collection. The legacy endpoint may show 0 edges. **Always use `/api/agent/{subject_id}/health` for authoritative edge counts.**
+
+### 4. Gemini output truncation
+
+When `prd_context` is vague, Gemini will hallucinate primitive names ("phantom primitives"). Always include valid primitive IDs from the Lumina catalog in the `prd_context` field. Keep `num_skills * num_subskills_per_skill` reasonable — very large units may hit output token limits.
+
+### 5. Skill-level orphans are expected
+
+`connect-skills` creates subskill-to-subskill edges. Skill-level nodes (e.g. `OPS001-01`) will always appear as orphans in health reports. Filter them out when assessing graph quality — orphan subskills (IDs with letter suffix) are the real concern.
+
+### 6. Cycle detection is prerequisite-only
+
+Non-prerequisite edges (builds_on, reinforces, parallel, applies) may form cycles. This is by design — only the prerequisite subgraph must be a DAG.
+
+### 7. Flatten/deploy are separate from publish
+
+`publish` creates an immutable version snapshot. `deploy` writes to `curriculum_published` (what the platform reads) and auto-flattens the graph. You need both:
+
+```
+POST /api/publishing/.../publish
+POST /api/publishing/.../deploy
+```
+
+### 8. Grade is required on authoring endpoints
+
+The `author-unit`, `accept`, `reject`, and `regenerate` endpoints all require `grade` in the request body (not just `subject_id`). Missing it causes a 422 validation error.
+
+---
+
+## Services Architecture
+
+| Service | File | Purpose |
+|---------|------|---------|
+| `CurriculumManager` | `services/curriculum_manager.py` | Hierarchy CRUD, tree/flatten views, primitive assignment |
+| `EdgeManager` | `services/edge_manager.py` | Edge CRUD, validation (cycle check), parallel auto-reversal |
+| `AuthoringService` | `services/authoring_service.py` | PRD-driven Gemini authoring, preview lifecycle |
+| `ScopedSuggestionService` | `services/scoped_suggestion_service.py` | Lightweight scoped edge suggestions (1-2 Gemini calls) |
+| `GraphAnalysisEngine` | `services/graph_analysis.py` | Pure structural analysis: health metrics, anomalies, impact |
+| `SuggestionEngine` | `services/suggestion_engine.py` | Bulk Gemini pipeline: embeddings + LLM refinement |
+| `CurriculumGraphAgentService` | `services/graph_agent.py` | Orchestrator: health reports, suggestion workflow, event hooks |
+| `GraphCacheManager` | `services/graph_cache_manager.py` | Firestore caching of prerequisite/knowledge graphs |
+| `VersionControl` | `services/version_control.py` | Draft/publish lifecycle, version history |
+| `AIAssistant` | `services/ai_assistant.py` | Gemini content generation (descriptions, prerequisites) |
+| `GraphFlattening` | `services/graph_flattening.py` | Flatten hierarchical graph to flat cache |
+
+### Database Layer
+
+| Service | File | Purpose |
+|---------|------|---------|
+| `DraftCurriculumService` | `db/draft_curriculum_service.py` | Hierarchical doc CRUD for `curriculum_drafts` |
+| `FirestoreCurriculumService` | `db/firestore_curriculum_service.py` | Sync to flat Firestore collections (legacy dual-write) |
+| `FirestoreCurriculumReader` | `db/firestore_curriculum_reader.py` | Read from drafts/published, grade resolution cache |
+| `FirestoreGraphService` | `db/firestore_graph_service.py` | Graph docs, edge subcollections, deploy to `curriculum_published` |
+| `BigQueryExportService` | `db/bigquery_export_service.py` | Non-blocking BQ analytics export on publish |
+
+---
+
+## Code Structure
+
+```
+app/
+├── api/
+│   ├── curriculum.py       # Hierarchy CRUD (subjects, units, skills, subskills, primitives)
+│   ├── ai.py               # AI authoring + scoped edge suggestions
+│   ├── edges.py            # Knowledge graph edge CRUD
+│   ├── agent.py            # Agentic graph analysis (health, suggest, accept/reject)
+│   ├── publishing.py       # Draft/publish/deploy/flatten
+│   ├── graph.py            # Graph cache management
+│   └── prerequisites.py    # Legacy prerequisite endpoints
+├── core/
+│   ├── config.py           # Environment config
+│   ├── database.py         # BigQuery client
+│   └── security.py         # Firebase auth
+├── db/
+│   ├── draft_curriculum_service.py      # Hierarchical Firestore CRUD
+│   ├── firestore_curriculum_service.py  # Flat Firestore sync (legacy)
+│   ├── firestore_curriculum_reader.py   # Read + grade resolution
+│   ├── firestore_graph_service.py       # Graph docs + deployment
+│   └── bigquery_export_service.py       # BQ analytics export
+├── models/
+│   ├── curriculum.py           # Subject, Unit, Skill, Subskill, CurriculumTree, FlattenedRow
+│   ├── edges.py                # CurriculumEdge, EntityEdges, CurriculumGraph, enums
+│   ├── authoring.py            # AuthorUnit/Skill requests, UnitPreview, LuminaCoverage
+│   ├── scoped_suggestions.py   # ScopedSuggestion/ConnectSkills requests/responses
+│   ├── suggestions.py          # GraphHealthReport, EdgeSuggestion, anomalies
+│   ├── versioning.py           # Version, DraftSummary, PublishRequest/Response
+│   ├── grades.py               # GRADE_CODES, GRADE_LABELS, validate_grade()
+│   └── prerequisites.py        # Legacy prerequisite models
+├── services/
+│   ├── curriculum_manager.py          # Hierarchy CRUD
+│   ├── edge_manager.py                # Edge CRUD + validation
+│   ├── authoring_service.py           # PRD-driven Gemini authoring
+│   ├── scoped_suggestion_service.py   # Lightweight edge suggestions
+│   ├── graph_analysis.py              # Structural health analysis
+│   ├── suggestion_engine.py           # Bulk Gemini suggestion pipeline
+│   ├── graph_agent.py                 # Agent orchestrator
+│   ├── graph_cache_manager.py         # Graph caching
+│   ├── graph_flattening.py            # Graph flattening
+│   ├── version_control.py             # Draft/publish lifecycle
+│   ├── ai_assistant.py                # Gemini content helpers
+│   ├── prerequisite_manager.py        # Legacy prerequisite manager
+│   └── foundations_service.py         # AI foundations (context, visual schemas)
+├── generators/    # Visual schema recommender
+└── utils/         # LLM logging
+scripts/           # Database setup, migration utilities
+docs/              # Architecture docs, PRDs
+```
 
 ---
 
@@ -172,7 +706,7 @@ Published curriculum deploys to `curriculum_published/{grade}/subjects/{id}` for
 ### Requirements
 
 - Python 3.9+
-- Google Cloud credentials (BigQuery + Firestore)
+- Google Cloud credentials (Firestore + BigQuery)
 - Firebase project for authentication
 - Gemini API key for AI features
 
@@ -188,7 +722,6 @@ uvicorn app.main:app --reload --port 8001
 ### Environment Variables
 
 **Required:**
-
 ```
 GOOGLE_CLOUD_PROJECT=your-project-id
 BIGQUERY_DATASET_ID=curriculum_authoring
@@ -198,7 +731,6 @@ GEMINI_API_KEY=your-gemini-api-key
 ```
 
 **Optional:**
-
 ```
 GEMINI_MODEL=gemini-3-flash-preview    # default model
 GEMINI_TEMPERATURE=0.7                  # generation temperature
@@ -209,32 +741,10 @@ DISABLE_AUTH=false                      # disable Firebase auth (dev only)
 
 ---
 
-## Code Structure
+## Current State
 
-```
-app/
-|-- api/           # 7 route groups (curriculum, edges, agent, ai, publishing, graph, prerequisites)
-|-- core/          # Config, database (BigQuery client), security (Firebase auth)
-|-- db/            # Firestore sync services
-|-- models/        # Pydantic models (curriculum, edges, grades, foundations, versioning)
-|-- services/
-|   |-- curriculum_manager.py    # Hierarchy CRUD operations
-|   |-- edge_manager.py          # Knowledge graph edges (5 types)
-|   |-- graph_analysis.py        # Structural health metrics
-|   |-- suggestion_engine.py     # 5-phase Gemini suggestion pipeline
-|   |-- graph_agent.py           # Agent orchestrator
-|   |-- graph_cache_manager.py   # Firestore caching
-|   |-- version_control.py       # Draft/publish workflow
-|   |-- ai_assistant.py          # Gemini content generation
-|   +-- foundations_service.py   # AI foundations (context, primitives, visual schemas)
-|-- generators/    # Visual schema recommender (LLM-powered)
-+-- utils/         # LLM logging
-scripts/           # Database setup, migration utilities
-docs/              # Architecture documentation and PRDs
-```
-
----
-
-## Archived Documentation
-
-Historical implementation documents, handoff guides, and earlier PRDs are preserved in `docs/archive/` for reference. These reflect the evolution of the service and may reference patterns or systems that have since been superseded.
+| Grade | Subjects | Status |
+|-------|----------|--------|
+| K (Kindergarten) | ABC123, Language Arts, Mathematics, Science, Social Studies, Arts | ~805 subskills |
+| 1 (First Grade) | Language Arts, Mathematics, Science, Social Studies | ~496 subskills |
+| 2-12 | — | Not yet authored |

@@ -151,7 +151,7 @@ class GraphFlatteningService:
 
                 for sub in skill.get("subskills", []):
                     sub_id = sub.get("subskill_id", "")
-                    nodes.append({
+                    node = {
                         "id": sub_id,
                         "type": "subskill",
                         "entity_type": "subskill",
@@ -160,7 +160,12 @@ class GraphFlatteningService:
                         "unit_id": unit_id,
                         "subskill_order": sub.get("subskill_order", 0),
                         "primitives": sub.get("primitives", []),
-                    })
+                    }
+                    # Map curriculum target_primitive → primitive_type for Pulse engine
+                    tp = sub.get("target_primitive")
+                    if tp:
+                        node["primitive_type"] = tp
+                    nodes.append(node)
 
         return nodes
 

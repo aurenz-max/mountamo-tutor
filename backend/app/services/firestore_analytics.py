@@ -77,19 +77,27 @@ class FirestoreAnalyticsService:
     async def _load_competency_map(
         self, student_id: int, subject: Optional[str] = None
     ) -> Dict[str, Dict[str, Any]]:
-        """Load all competency docs into a {subskill_id: metrics} dict."""
+        """Load all competency docs into a {subskill_id: metrics} dict.
+
+        Resolves old subskill_ids through curriculum lineage so that
+        analytics dashboards show continuous history across renames.
+        """
+        from app.services.subskill_id_resolver import subskill_id_resolver
+
         docs = await self.fs.get_all_competencies(student_id, subject)
         result = {}
         for d in docs:
             sid = d.get("subskill_id")
             if not sid:
                 continue
+            # Resolve to canonical ID
+            canonical = await subskill_id_resolver.resolve(sid)
             raw_score = float(d.get("current_score", 0))
             total_attempts = int(d.get("total_attempts", 0))
             credibility = float(d.get("credibility", 0))
             proficiency = raw_score / 10.0 if raw_score > 1.0 else raw_score
             mastery = proficiency * credibility
-            result[sid] = {
+            entry = {
                 "current_score": raw_score,
                 "proficiency": proficiency,
                 "credibility": credibility,
@@ -99,20 +107,39 @@ class FirestoreAnalyticsService:
                 "subject": d.get("subject"),
                 "skill_id": d.get("skill_id"),
             }
+            # If canonical already exists, merge (take higher score)
+            if canonical in result and canonical != sid:
+                existing = result[canonical]
+                if entry["current_score"] > existing["current_score"]:
+                    result[canonical] = entry
+            else:
+                result[canonical] = entry
         return result
 
     async def _load_lifecycle_map(
         self, student_id: int, subject: Optional[str] = None
     ) -> Dict[str, Dict[str, Any]]:
-        """Load mastery lifecycle docs into a {subskill_id: lifecycle_data} dict."""
+        """Load mastery lifecycle docs into a {subskill_id: lifecycle_data} dict.
+
+        Resolves old subskill_ids through curriculum lineage.
+        """
+        from app.services.subskill_id_resolver import subskill_id_resolver
+
         docs = await self.fs.get_all_mastery_lifecycles(student_id, subject)
         result = {}
         for d in docs:
             sid = d.get("subskill_id")
             if not sid:
-                # Use the doc's key as subskill_id if field is missing
                 continue
-            result[sid] = d
+            canonical = await subskill_id_resolver.resolve(sid)
+            # If canonical already exists (merge scenario), keep higher gate
+            if canonical in result and canonical != sid:
+                existing_gate = result[canonical].get("current_gate", 0)
+                new_gate = d.get("current_gate", 0)
+                if new_gate > existing_gate:
+                    result[canonical] = d
+            else:
+                result[canonical] = d
         return result
 
     async def _load_attempts(

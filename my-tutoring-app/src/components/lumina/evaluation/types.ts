@@ -2581,6 +2581,24 @@ export interface MeasurementToolsMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface LengthLabMetrics extends BasePrimitiveMetrics {
+  type: 'length-lab';
+  totalChallenges: number;
+  correctAnswers: number;
+  totalAttempts: number;
+  accuracy: number;
+  averageTimePerChallenge: number;
+}
+
+export interface AnalogClockMetrics extends BasePrimitiveMetrics {
+  type: 'analog-clock';
+  accuracy: number;
+  totalChallenges: number;
+  correctAnswers: number;
+  averageAttempts: number;
+  challengeTypes: string[];
+}
+
 export interface ShapeBuilderMetrics extends BasePrimitiveMetrics {
   type: 'shape-builder';
   shapesBuiltCorrectly: number;
@@ -3045,6 +3063,7 @@ export type PrimitiveMetrics =
   | RegroupingWorkbenchMetrics
   | MultiplicationExplorerMetrics
   | MeasurementToolsMetrics
+  | LengthLabMetrics
   | ShapeBuilderMetrics
   | NumberSequencerMetrics
   | NumberBondMetrics
@@ -3059,6 +3078,7 @@ export type PrimitiveMetrics =
   | FastFactMetrics
   | StrategyPickerMetrics
   | HundredsChartMetrics
+  | AnalogClockMetrics
   // Exploration
   | FunctionMachineMetrics
   // Visual Annotation

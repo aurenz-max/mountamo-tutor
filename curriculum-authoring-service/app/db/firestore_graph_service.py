@@ -378,6 +378,31 @@ class CurriculumFirestore:
             logger.error(f"❌ Failed to deploy curriculum for {subject_id}: {e}")
             raise
 
+    async def get_published_curriculum(
+        self,
+        subject_id: str,
+        grade: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Read the full published curriculum document for a subject.
+
+        Used by lineage-check to diff published vs draft subskill_index.
+        """
+        try:
+            if grade:
+                doc = self.curriculum_published.document(grade).collection("subjects").document(subject_id).get()
+                return doc.to_dict() if doc.exists else None
+
+            # Search across all grades
+            for grade_doc in self.curriculum_published.stream():
+                doc = grade_doc.reference.collection("subjects").document(subject_id).get()
+                if doc.exists:
+                    return doc.to_dict()
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to read published curriculum for {subject_id}: {e}")
+            raise
+
     async def get_deployment_status(
         self,
         subject_id: str,

@@ -101,6 +101,8 @@ export type {
   CountingBoardMetrics,
   MultiplicationExplorerMetrics,
   MeasurementToolsMetrics,
+  LengthLabMetrics,
+  AnalogClockMetrics,
   ShapeBuilderMetrics,
   NumberSequencerMetrics,
   NumberBondMetrics,

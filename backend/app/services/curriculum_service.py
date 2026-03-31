@@ -279,7 +279,7 @@ class CurriculumService:
                     "subskills": [],
                 }
                 for subskill in skill.get("subskills", []):
-                    skill_entry["subskills"].append({
+                    ss_entry = {
                         "id": subskill.get("subskill_id"),
                         "description": subskill.get("subskill_description"),
                         "difficulty_range": {
@@ -287,7 +287,10 @@ class CurriculumService:
                             "end": subskill.get("difficulty_end"),
                             "target": subskill.get("target_difficulty"),
                         },
-                    })
+                    }
+                    if subskill.get("target_primitive"):
+                        ss_entry["target_primitive"] = subskill["target_primitive"]
+                    skill_entry["subskills"].append(ss_entry)
                 unit_entry["skills"].append(skill_entry)
             structured.append(unit_entry)
 
@@ -318,7 +321,7 @@ class CurriculumService:
                 }
                 current_unit["skills"].append(current_skill)
 
-            current_skill["subskills"].append({
+            ss_entry = {
                 "id": row["subskill_id"],
                 "description": row["subskill_description"],
                 "difficulty_range": {
@@ -326,7 +329,10 @@ class CurriculumService:
                     "end": row.get("difficulty_end"),
                     "target": row.get("target_difficulty")
                 }
-            })
+            }
+            if row.get("target_primitive"):
+                ss_entry["target_primitive"] = row["target_primitive"]
+            current_skill["subskills"].append(ss_entry)
 
         return structured
 
@@ -437,7 +443,8 @@ class CurriculumService:
                     'difficulty_start': row.get('difficulty_start'),
                     'difficulty_end': row.get('difficulty_end'),
                     'target_difficulty': row.get('target_difficulty'),
-                    'grade': row.get('grade')
+                    'grade': row.get('grade'),
+                    'target_primitive': row.get('target_primitive'),
                 }
 
                 self._cache_set(cache_key, metadata)
