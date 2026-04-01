@@ -1,5 +1,5 @@
 """
-Graph cache management service - orchestrates between BigQuery and Firestore
+Graph cache management service — caches curriculum graph data in Firestore
 """
 
 import logging
@@ -7,7 +7,6 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 
 from app.services.edge_manager import edge_manager
-from app.services.prerequisite_manager import prerequisite_manager
 from app.db.firestore_graph_service import firestore_graph_service
 from app.models.prerequisites import PrerequisiteGraph
 from app.models.edges import CurriculumGraph
@@ -21,6 +20,7 @@ class GraphCacheManager:
     async def get_graph(
         self,
         subject_id: str,
+        grade: str,
         include_drafts: bool = False,
         force_refresh: bool = False
     ) -> PrerequisiteGraph:
@@ -29,28 +29,24 @@ class GraphCacheManager:
 
         Args:
             subject_id: Subject identifier (normalized to UPPER_SNAKE_CASE for Firestore consistency)
+            grade: Grade level (e.g. Kindergarten, 1)
             include_drafts: Include draft entities in graph
             force_refresh: Force regeneration even if cached version exists
 
         Returns:
             PrerequisiteGraph with nodes and edges
         """
-        # Normalize to UPPER_SNAKE_CASE to match backend convention
-        # e.g. "Mathematics" → "MATHEMATICS", "Language Arts" → "LANGUAGE_ARTS"
         subject_id = subject_id.upper().replace(" ", "_")
-
         version_type = "draft" if include_drafts else "published"
 
-        # Check cache first (unless forced refresh)
         if not force_refresh:
             cached = await self._get_from_cache(subject_id, version_type)
             if cached:
                 logger.info(f"✅ Returning cached graph for {subject_id} ({version_type})")
                 return cached
 
-        # Generate and cache new graph
         logger.info(f"🔄 Generating fresh graph for {subject_id} ({version_type})")
-        graph = await self._generate_and_cache(subject_id, include_drafts, version_type)
+        graph = await self._generate_and_cache(subject_id, grade, include_drafts, version_type)
 
         return graph
 
@@ -64,7 +60,6 @@ class GraphCacheManager:
             doc = await firestore_graph_service.get_graph_document(subject_id, version_type)
 
             if doc:
-                # Convert to PrerequisiteGraph model
                 graph_data = doc.get("graph", {})
                 graph = PrerequisiteGraph(
                     nodes=graph_data.get("nodes", []),
@@ -78,39 +73,25 @@ class GraphCacheManager:
 
         except Exception as e:
             logger.error(f"❌ Error retrieving from cache: {e}")
-            # On cache error, fall back to generating fresh
             return None
 
     async def _generate_and_cache(
         self,
         subject_id: str,
+        grade: str,
         include_drafts: bool,
         version_type: str
     ) -> PrerequisiteGraph:
-        """Generate graph from BigQuery and cache in Firestore.
-
-        Tries the EdgeManager (curriculum_edges table) first.  Falls back to
-        the legacy PrerequisiteManager if the edges table doesn't exist yet
-        (pre-migration).
-        """
+        """Generate graph from edges subcollection and cache in Firestore."""
         try:
-            # Try EdgeManager first (knowledge-graph enriched edges)
-            try:
-                kg_graph: CurriculumGraph = await edge_manager.get_subject_graph(
-                    subject_id, include_drafts
-                )
-                graph = PrerequisiteGraph(nodes=kg_graph.nodes, edges=kg_graph.edges)
-            except Exception as e:
-                logger.warning(f"EdgeManager failed, falling back to PrerequisiteManager: {e}")
-                graph = await prerequisite_manager.build_enriched_graph(
-                    subject_id, include_drafts
-                )
+            kg_graph: CurriculumGraph = await edge_manager.get_subject_graph(
+                subject_id, include_drafts, grade=grade
+            )
+            graph = PrerequisiteGraph(nodes=kg_graph.nodes, edges=kg_graph.edges)
 
-            # Calculate metadata
             skill_count = sum(1 for n in graph.nodes if n.get("type") == "skill")
             subskill_count = sum(1 for n in graph.nodes if n.get("type") == "subskill")
 
-            # Edge counts by relationship type
             from collections import Counter
             rel_counts = Counter(e.get("relationship", "prerequisite") for e in graph.edges)
 
@@ -132,11 +113,8 @@ class GraphCacheManager:
                 "include_drafts": include_drafts
             }
 
-            # Use consistent version_id so we replace instead of creating new documents
-            # For draft/published caches, we use "latest" to ensure we replace the previous cache
             version_id = "latest"
 
-            # Cache in Firestore
             await firestore_graph_service.create_graph_document(
                 subject_id=subject_id,
                 version_id=version_id,
@@ -158,6 +136,7 @@ class GraphCacheManager:
     async def invalidate_cache(
         self,
         subject_id: str,
+        grade: Optional[str] = None,
         version_type: Optional[str] = None
     ) -> int:
         """
@@ -165,6 +144,7 @@ class GraphCacheManager:
 
         Args:
             subject_id: Subject identifier
+            grade: Grade level (accepted for API consistency, not used in cache key)
             version_type: Optional - "draft" or "published". If None, invalidates both.
 
         Returns:
@@ -187,6 +167,7 @@ class GraphCacheManager:
     async def regenerate_graph(
         self,
         subject_id: str,
+        grade: str,
         include_drafts: bool = False
     ) -> PrerequisiteGraph:
         """
@@ -194,6 +175,7 @@ class GraphCacheManager:
 
         Args:
             subject_id: Subject identifier
+            grade: Grade level
             include_drafts: Include draft entities
 
         Returns:
@@ -204,45 +186,41 @@ class GraphCacheManager:
 
         logger.info(f"🔄 Force regenerating graph for {subject_id} ({version_type})")
 
-        # Invalidate existing cache
-        await self.invalidate_cache(subject_id, version_type)
+        await self.invalidate_cache(subject_id, version_type=version_type)
 
-        # Generate and cache new graph
-        graph = await self._generate_and_cache(subject_id, include_drafts, version_type)
+        graph = await self._generate_and_cache(subject_id, grade, include_drafts, version_type)
 
         return graph
 
     async def regenerate_all_versions(
         self,
-        subject_id: str
+        subject_id: str,
+        grade: str,
     ) -> Dict[str, PrerequisiteGraph]:
         """
-        Regenerate both draft and published graphs for a subject
-
-        subject_id is normalized to UPPER_SNAKE_CASE.
-
-        Useful after publishing changes or major curriculum updates.
+        Regenerate both draft and published graphs for a subject.
 
         Args:
             subject_id: Subject identifier
+            grade: Grade level
 
         Returns:
             Dictionary with "draft" and "published" keys containing graphs
         """
         logger.info(f"🔄 Regenerating all graph versions for {subject_id}")
 
-        # Invalidate all caches for this subject
         await self.invalidate_cache(subject_id)
 
-        # Generate both versions
         published_graph = await self._generate_and_cache(
             subject_id,
+            grade,
             include_drafts=False,
             version_type="published"
         )
 
         draft_graph = await self._generate_and_cache(
             subject_id,
+            grade,
             include_drafts=True,
             version_type="draft"
         )
@@ -256,7 +234,8 @@ class GraphCacheManager:
 
     async def get_cache_status(
         self,
-        subject_id: str
+        subject_id: str,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get cache status information for a subject
@@ -295,9 +274,6 @@ class GraphCacheManager:
     async def delete_all_cached_graphs(self) -> int:
         """
         Delete ALL cached graphs from Firestore (use with caution!)
-
-        This is useful for cleaning up accumulated cache documents.
-        After deletion, graphs will be regenerated on next request.
 
         Returns:
             Number of documents deleted

@@ -20,10 +20,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 interface GraphCachePanelProps {
   subjectId: string;
+  grade: string;
 }
 
-export function GraphCachePanel({ subjectId }: GraphCachePanelProps) {
-  const { data: graphStatus, isLoading, error } = useGraphStatus(subjectId);
+export function GraphCachePanel({ subjectId, grade }: GraphCachePanelProps) {
+  const { data: graphStatus, isLoading, error } = useGraphStatus(subjectId, grade);
   const { data: allGraphs, isLoading: allGraphsLoading } = useAllCachedGraphs();
   const regenerateGraph = useRegenerateGraph();
   const regenerateAllGraphs = useRegenerateAllGraphs();
@@ -36,19 +37,19 @@ export function GraphCachePanel({ subjectId }: GraphCachePanelProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleRegenerateDraft = () => {
-    regenerateGraph.mutate({ subjectId, includeDrafts: true });
+    regenerateGraph.mutate({ subjectId, grade, includeDrafts: true });
   };
 
   const handleRegeneratePublished = () => {
-    regenerateGraph.mutate({ subjectId, includeDrafts: false });
+    regenerateGraph.mutate({ subjectId, grade, includeDrafts: false });
   };
 
   const handleRegenerateAll = () => {
-    regenerateAllGraphs.mutate(subjectId);
+    regenerateAllGraphs.mutate({ subjectId, grade });
   };
 
   const handleInvalidateCache = (versionType?: 'draft' | 'published') => {
-    invalidateCache.mutate({ subjectId, versionType });
+    invalidateCache.mutate({ subjectId, grade, versionType });
   };
 
   const handleDeleteAllGraphs = () => {

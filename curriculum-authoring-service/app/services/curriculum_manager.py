@@ -18,7 +18,6 @@ from app.models.curriculum import (
     Unit, UnitCreate, UnitUpdate,
     Skill, SkillCreate, SkillUpdate,
     Subskill, SubskillCreate, SubskillUpdate,
-    Primitive, SubskillPrimitiveAssociation,
     CurriculumTree, UnitNode, SkillNode, SubskillNode,
     FlattenedCurriculumRow
 )
@@ -33,15 +32,6 @@ class CurriculumManager:
     Writes to the hierarchical draft doc via DraftCurriculumService.
     """
 
-    # ==================== Context resolution ====================
-
-    async def _resolve_subject_context(self, subject_id: str) -> Optional[Dict[str, str]]:
-        """Resolve grade for a subject_id by searching drafts/published."""
-        subject = await firestore_reader.get_subject(subject_id)
-        if not subject:
-            return None
-        return {"grade": subject.get("grade", ""), "subject_id": subject_id}
-
     async def validate_grade_subject(self, grade: str, subject_id: str) -> Dict[str, str]:
         """Validate that grade + subject_id are a valid pair.
 
@@ -53,7 +43,7 @@ class CurriculumManager:
         from app.models.grades import validate_grade as _validate_grade, GRADE_LABELS
         _validate_grade(grade)  # raises ValueError for bad grade codes
 
-        subject = await firestore_reader.get_subject(subject_id)
+        subject = await firestore_reader.get_subject(grade, subject_id)
         if not subject:
             # Subject doesn't exist — suggest alternatives in this grade
             all_subjects = await firestore_reader.get_all_subjects()
@@ -89,63 +79,6 @@ class CurriculumManager:
 
         return {"grade": grade, "subject_id": subject_id}
 
-    async def _resolve_from_unit(self, unit_id: str, subject_id: Optional[str] = None) -> Optional[Dict[str, str]]:
-        """Resolve grade + subject_id from a unit_id. Uses subject_id for O(1) lookup when provided."""
-        if subject_id:
-            return await self._resolve_subject_context(subject_id)
-        unit = await firestore_reader.get_unit(unit_id)
-        if not unit:
-            return None
-        return await self._resolve_subject_context(unit.get("subject_id", ""))
-
-    async def _resolve_from_skill(self, skill_id: str, subject_id: Optional[str] = None) -> Optional[Dict[str, str]]:
-        """Resolve grade + subject_id from a skill_id. Uses subject_id for O(1) lookup when provided."""
-        if subject_id:
-            return await self._resolve_subject_context(subject_id)
-        skill = await firestore_reader.get_skill(skill_id)
-        if not skill:
-            return None
-        return await self._resolve_from_unit(skill.get("unit_id", ""))
-
-    async def _resolve_from_subskill(self, subskill_id: str, subject_id: Optional[str] = None) -> Optional[Dict[str, str]]:
-        """Resolve grade + subject_id from a subskill_id. Uses subject_id for O(1) lookup when provided.
-
-        When subject_id is provided, verifies the subskill actually lives in
-        that subject.  If not, falls back to a scan so callers that pass the
-        wrong subject (e.g. MATHEMATICS instead of MATHEMATICS_G1) still work.
-        """
-        if subject_id:
-            ctx = await self._resolve_subject_context(subject_id)
-            if ctx:
-                # Verify the subskill is actually in this subject
-                doc = await firestore_reader._get_subject_doc(subject_id)
-                if doc and subskill_id in doc.get("subskill_index", {}):
-                    return ctx
-                # Wrong subject — fall through to scan
-                logger.warning(
-                    f"Subskill {subskill_id} not in subject {subject_id}, "
-                    "scanning to find correct subject"
-                )
-        subskill = await firestore_reader.get_subskill(subskill_id)
-        if not subskill:
-            return None
-        return await self._resolve_from_skill(subskill.get("skill_id", ""))
-
-    async def _resolve_from_skill_with_subject(self, skill_id: str, subject_id: str) -> Optional[Dict[str, str]]:
-        """Resolve grade + subject_id using a known subject_id (O(1), no scan)."""
-        ctx = await self._resolve_subject_context(subject_id)
-        if not ctx:
-            return None
-        # Verify the skill actually belongs to this subject
-        subject_doc = await firestore_reader._get_subject_doc(subject_id)
-        if not subject_doc:
-            return None
-        for u in subject_doc.get("curriculum", []):
-            for sk in u.get("skills", []):
-                if sk.get("skill_id") == skill_id:
-                    return ctx
-        return None
-
     # ==================== SUBJECT OPERATIONS ====================
 
     async def get_all_subjects(self, include_drafts: bool = False) -> List[Subject]:
@@ -163,9 +96,9 @@ class CurriculumManager:
                 d[ts_field] = datetime.now(timezone.utc)
         return d
 
-    async def get_subject(self, subject_id: str, version_id: Optional[str] = None, include_drafts: bool = False) -> Optional[Subject]:
+    async def get_subject(self, grade: str, subject_id: str, version_id: Optional[str] = None, include_drafts: bool = False) -> Optional[Subject]:
         """Get a specific subject."""
-        row = await firestore_reader.get_subject(subject_id, version_id=version_id, include_drafts=include_drafts)
+        row = await firestore_reader.get_subject(grade, subject_id, version_id=version_id, include_drafts=include_drafts)
         return Subject(**self._normalise_subject(row)) if row else None
 
     async def create_subject(self, subject: SubjectCreate, user_id: str, version_id: str) -> Subject:
@@ -191,13 +124,9 @@ class CurriculumManager:
             created_by=user_id,
         )
 
-    async def update_subject(self, subject_id: str, updates: SubjectUpdate, version_id: str) -> Optional[Subject]:
+    async def update_subject(self, grade: str, subject_id: str, updates: SubjectUpdate, version_id: str) -> Optional[Subject]:
         """Update a subject in the draft doc."""
-        ctx = await self._resolve_subject_context(subject_id)
-        if not ctx:
-            return None
-
-        doc = await draft_curriculum.get_draft(ctx["grade"], subject_id)
+        doc = await draft_curriculum.get_draft(grade, subject_id)
         if not doc:
             return None
 
@@ -207,13 +136,13 @@ class CurriculumManager:
         doc["version_id"] = version_id
         doc["updated_at"] = datetime.utcnow().isoformat()
 
-        await draft_curriculum.save_draft(ctx["grade"], subject_id, doc)
+        await draft_curriculum.save_draft(grade, subject_id, doc)
 
         return Subject(
             subject_id=subject_id,
             subject_name=doc.get("subject_name", ""),
             description=doc.get("description"),
-            grade=doc.get("grade", ctx["grade"]),
+            grade=doc.get("grade", grade),
             version_id=version_id,
             is_active=True,
             is_draft=True,
@@ -224,21 +153,17 @@ class CurriculumManager:
 
     # ==================== UNIT OPERATIONS ====================
 
-    async def get_units_by_subject(self, subject_id: str, include_drafts: bool = False) -> List[Unit]:
-        rows = await firestore_reader.get_units_by_subject(subject_id, include_drafts=include_drafts)
+    async def get_units_by_subject(self, grade: str, subject_id: str, include_drafts: bool = False) -> List[Unit]:
+        rows = await firestore_reader.get_units_by_subject(grade, subject_id, include_drafts=include_drafts)
         return [Unit(**row) for row in rows]
 
-    async def get_unit(self, unit_id: str) -> Optional[Unit]:
-        row = await firestore_reader.get_unit(unit_id)
+    async def get_unit(self, grade: str, subject_id: str, unit_id: str) -> Optional[Unit]:
+        row = await firestore_reader.get_unit(grade, subject_id, unit_id)
         return Unit(**row) if row else None
 
-    async def create_unit(self, unit: UnitCreate, version_id: str) -> Unit:
+    async def create_unit(self, unit: UnitCreate, version_id: str, grade: str) -> Unit:
         """Add a unit to the subject's draft doc."""
-        ctx = await self._resolve_subject_context(unit.subject_id)
-        if not ctx:
-            raise ValueError(f"Subject {unit.subject_id} not found")
-
-        result = await draft_curriculum.add_unit(ctx["grade"], unit.subject_id, {
+        result = await draft_curriculum.add_unit(grade, unit.subject_id, {
             "unit_id": unit.unit_id,
             "unit_title": unit.unit_title,
             "unit_order": unit.unit_order,
@@ -258,45 +183,33 @@ class CurriculumManager:
             updated_at=now,
         )
 
-    async def update_unit(self, unit_id: str, updates: UnitUpdate, version_id: str, subject_id: Optional[str] = None) -> Optional[Unit]:
-        ctx = await self._resolve_from_unit(unit_id, subject_id=subject_id)
-        if not ctx:
-            return None
-
+    async def update_unit(self, unit_id: str, updates: UnitUpdate, version_id: str, grade: str, subject_id: str) -> Optional[Unit]:
         result = await draft_curriculum.update_unit(
-            ctx["grade"], ctx["subject_id"], unit_id,
+            grade, subject_id, unit_id,
             updates.dict(exclude_unset=True),
         )
         if not result:
             return None
 
-        # Re-read to get full data
-        row = await firestore_reader.get_unit(unit_id, subject_id=ctx["subject_id"])
+        row = await firestore_reader.get_unit(grade, subject_id, unit_id)
         return Unit(**row) if row else None
 
-    async def delete_unit(self, unit_id: str, subject_id: Optional[str] = None) -> bool:
-        ctx = await self._resolve_from_unit(unit_id, subject_id=subject_id)
-        if not ctx:
-            return False
-        return await draft_curriculum.delete_unit(ctx["grade"], ctx["subject_id"], unit_id)
+    async def delete_unit(self, unit_id: str, grade: str, subject_id: str) -> bool:
+        return await draft_curriculum.delete_unit(grade, subject_id, unit_id)
 
     # ==================== SKILL OPERATIONS ====================
 
-    async def get_skills_by_unit(self, unit_id: str, include_drafts: bool = False, subject_id: Optional[str] = None) -> List[Skill]:
-        rows = await firestore_reader.get_skills_by_unit(unit_id, subject_id=subject_id, include_drafts=include_drafts)
+    async def get_skills_by_unit(self, grade: str, subject_id: str, unit_id: str, include_drafts: bool = False) -> List[Skill]:
+        rows = await firestore_reader.get_skills_by_unit(grade, subject_id, unit_id, include_drafts=include_drafts)
         return [Skill(**row) for row in rows]
 
-    async def get_skill(self, skill_id: str) -> Optional[Skill]:
-        row = await firestore_reader.get_skill(skill_id)
+    async def get_skill(self, grade: str, subject_id: str, skill_id: str) -> Optional[Skill]:
+        row = await firestore_reader.get_skill(grade, subject_id, skill_id)
         return Skill(**row) if row else None
 
-    async def create_skill(self, skill: SkillCreate, version_id: str, subject_id: Optional[str] = None) -> Skill:
+    async def create_skill(self, skill: SkillCreate, version_id: str, grade: str, subject_id: str) -> Skill:
         """Add a skill to a unit in the draft doc."""
-        ctx = await self._resolve_from_unit(skill.unit_id, subject_id=subject_id)
-        if not ctx:
-            raise ValueError(f"Unit {skill.unit_id} not found")
-
-        await draft_curriculum.add_skill(ctx["grade"], ctx["subject_id"], skill.unit_id, {
+        await draft_curriculum.add_skill(grade, subject_id, skill.unit_id, {
             "skill_id": skill.skill_id,
             "skill_description": skill.skill_description,
             "skill_order": skill.skill_order,
@@ -314,44 +227,33 @@ class CurriculumManager:
             updated_at=now,
         )
 
-    async def update_skill(self, skill_id: str, updates: SkillUpdate, version_id: str, subject_id: Optional[str] = None) -> Optional[Skill]:
-        ctx = await self._resolve_from_skill(skill_id, subject_id=subject_id)
-        if not ctx:
-            return None
-
+    async def update_skill(self, skill_id: str, updates: SkillUpdate, version_id: str, grade: str, subject_id: str) -> Optional[Skill]:
         result = await draft_curriculum.update_skill(
-            ctx["grade"], ctx["subject_id"], skill_id,
+            grade, subject_id, skill_id,
             updates.dict(exclude_unset=True),
         )
         if not result:
             return None
 
-        row = await firestore_reader.get_skill(skill_id, subject_id=ctx["subject_id"])
+        row = await firestore_reader.get_skill(grade, subject_id, skill_id)
         return Skill(**row) if row else None
 
-    async def delete_skill(self, skill_id: str, subject_id: Optional[str] = None) -> bool:
-        ctx = await self._resolve_from_skill(skill_id, subject_id=subject_id)
-        if not ctx:
-            return False
-        return await draft_curriculum.delete_skill(ctx["grade"], ctx["subject_id"], skill_id)
+    async def delete_skill(self, skill_id: str, grade: str, subject_id: str) -> bool:
+        return await draft_curriculum.delete_skill(grade, subject_id, skill_id)
 
     # ==================== SUBSKILL OPERATIONS ====================
 
-    async def get_subskills_by_skill(self, skill_id: str, include_drafts: bool = False, subject_id: Optional[str] = None) -> List[Subskill]:
-        rows = await firestore_reader.get_subskills_by_skill(skill_id, subject_id=subject_id, include_drafts=include_drafts)
+    async def get_subskills_by_skill(self, grade: str, subject_id: str, skill_id: str, include_drafts: bool = False) -> List[Subskill]:
+        rows = await firestore_reader.get_subskills_by_skill(grade, subject_id, skill_id, include_drafts=include_drafts)
         return [Subskill(**row) for row in rows]
 
-    async def get_subskill(self, subskill_id: str) -> Optional[Subskill]:
-        row = await firestore_reader.get_subskill(subskill_id)
+    async def get_subskill(self, grade: str, subject_id: str, subskill_id: str) -> Optional[Subskill]:
+        row = await firestore_reader.get_subskill(grade, subject_id, subskill_id)
         return Subskill(**row) if row else None
 
-    async def create_subskill(self, subskill: SubskillCreate, version_id: str, subject_id: Optional[str] = None) -> Subskill:
+    async def create_subskill(self, subskill: SubskillCreate, version_id: str, grade: str, subject_id: str) -> Subskill:
         """Add a subskill to a skill in the draft doc."""
-        ctx = await self._resolve_from_skill(subskill.skill_id, subject_id=subject_id)
-        if not ctx:
-            raise ValueError(f"Skill {subskill.skill_id} not found")
-
-        await draft_curriculum.add_subskill(ctx["grade"], ctx["subject_id"], subskill.skill_id, {
+        await draft_curriculum.add_subskill(grade, subject_id, subskill.skill_id, {
             "subskill_id": subskill.subskill_id,
             "subskill_description": subskill.subskill_description,
             "subskill_order": subskill.subskill_order,
@@ -375,35 +277,25 @@ class CurriculumManager:
             updated_at=now,
         )
 
-    async def update_subskill(self, subskill_id: str, updates: SubskillUpdate, version_id: str, subject_id: Optional[str] = None) -> Optional[Subskill]:
-        if subject_id:
-            ctx = await self._resolve_subject_context(subject_id)
-        else:
-            ctx = await self._resolve_from_subskill(subskill_id)
-        if not ctx:
-            return None
-
+    async def update_subskill(self, subskill_id: str, updates: SubskillUpdate, version_id: str, grade: str, subject_id: str) -> Optional[Subskill]:
         result = await draft_curriculum.update_subskill(
-            ctx["grade"], ctx["subject_id"], subskill_id,
+            grade, subject_id, subskill_id,
             updates.dict(exclude_unset=True),
         )
         if not result:
             return None
 
-        row = await firestore_reader.get_subskill(subskill_id)
+        row = await firestore_reader.get_subskill(grade, subject_id, subskill_id)
         return Subskill(**row) if row else None
 
-    async def delete_subskill(self, subskill_id: str, subject_id: Optional[str] = None) -> bool:
-        ctx = await self._resolve_from_subskill(subskill_id, subject_id=subject_id)
-        if not ctx:
-            return False
-        return await draft_curriculum.delete_subskill(ctx["grade"], ctx["subject_id"], subskill_id)
+    async def delete_subskill(self, subskill_id: str, grade: str, subject_id: str) -> bool:
+        return await draft_curriculum.delete_subskill(grade, subject_id, subskill_id)
 
     # ==================== HIERARCHICAL TREE ====================
 
-    async def get_curriculum_tree(self, subject_id: str, include_drafts: bool = False) -> Optional[CurriculumTree]:
+    async def get_curriculum_tree(self, grade: str, subject_id: str, include_drafts: bool = False) -> Optional[CurriculumTree]:
         """Get the curriculum tree (single doc read, no joins)."""
-        tree_data = await firestore_reader.get_curriculum_tree(subject_id, include_drafts=include_drafts)
+        tree_data = await firestore_reader.get_curriculum_tree(grade, subject_id, include_drafts=include_drafts)
         if not tree_data:
             return None
 
@@ -434,9 +326,9 @@ class CurriculumManager:
     # ==================== FLATTENED VIEW ====================
 
     async def get_flattened_curriculum_view(
-        self, subject_id: str, version_id: Optional[str] = None
+        self, grade: str, subject_id: str, version_id: Optional[str] = None
     ) -> List[FlattenedCurriculumRow]:
-        rows = await firestore_reader.get_flattened_view(subject_id, version_id=version_id)
+        rows = await firestore_reader.get_flattened_view(grade, subject_id, version_id=version_id)
         return [FlattenedCurriculumRow(**row) for row in rows]
 
     # ==================== PRIMITIVE OPERATIONS ====================
@@ -447,49 +339,14 @@ class CurriculumManager:
     async def get_primitives_by_category(self, category: str) -> List[Dict[str, Any]]:
         return await firestore_reader.get_primitives_by_category(category)
 
-    async def get_subskill_primitives(self, subskill_id: str, subject_id: str) -> List[str]:
-        """Read primitive_ids from the hierarchical draft doc."""
-        ctx = await self._resolve_subject_context(subject_id)
-        if not ctx:
-            return []
-        doc = await draft_curriculum.get_draft(ctx["grade"], subject_id)
-        if not doc:
-            return []
-        for u in doc.get("curriculum", []):
-            for sk in u.get("skills", []):
-                for ss in sk.get("subskills", []):
-                    if ss.get("subskill_id") == subskill_id:
-                        return ss.get("primitive_ids") or []
-        return []
-
-    async def update_subskill_primitives(self, subskill_id: str, primitive_ids: List[str], subject_id: str) -> bool:
-        """Write primitive_ids into the hierarchical draft doc (single source of truth)."""
-        ctx = await self._resolve_subject_context(subject_id)
-        if not ctx:
-            logger.error(f"Subject {subject_id} not found for primitive update")
-            return False
-
-        result = await draft_curriculum.update_subskill(
-            ctx["grade"], ctx["subject_id"], subskill_id,
-            {"primitive_ids": primitive_ids},
-        )
-        if not result:
-            logger.error(f"Subskill {subskill_id} not found in draft for {subject_id}")
-            return False
-
-        return True
 
     # ==================== DEPLOYMENT TO FIRESTORE ====================
 
     async def deploy_curriculum_to_firestore(
-        self, subject_id: str, version_id: Optional[str] = None, deployed_by: str = "system"
+        self, grade: str, subject_id: str, version_id: Optional[str] = None, deployed_by: str = "system"
     ) -> Dict[str, Any]:
         """Publish the draft doc to curriculum_published."""
-        ctx = await self._resolve_subject_context(subject_id)
-        if not ctx:
-            raise ValueError(f"Subject {subject_id} not found")
-
-        published = await draft_curriculum.publish(ctx["grade"], subject_id, deployed_by=deployed_by)
+        published = await draft_curriculum.publish(grade, subject_id, deployed_by=deployed_by)
 
         return {
             "success": True,

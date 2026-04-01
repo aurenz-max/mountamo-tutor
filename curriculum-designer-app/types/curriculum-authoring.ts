@@ -93,7 +93,8 @@ export interface SubskillUpdate {
   difficulty_start?: number;
   difficulty_end?: number;
   target_difficulty?: number;
-  primitive_ids?: string[];
+  target_primitive?: string;
+  target_eval_modes?: string[];
 }
 
 export interface Subskill extends SubskillBase {

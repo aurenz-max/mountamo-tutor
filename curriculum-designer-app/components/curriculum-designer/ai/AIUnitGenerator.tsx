@@ -20,6 +20,7 @@ import type { GenerateUnitRequest, AIGeneratedUnit } from '@/types/curriculum-au
 
 interface AIUnitGeneratorProps {
   subjectId: string;
+  grade: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

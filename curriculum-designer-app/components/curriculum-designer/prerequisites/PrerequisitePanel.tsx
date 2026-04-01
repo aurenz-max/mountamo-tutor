@@ -17,12 +17,14 @@ interface PrerequisitePanelProps {
   entityId: string;
   entityType: EntityType;
   subjectId: string;
+  grade: string;
 }
 
 export function PrerequisitePanel({
   entityId,
   entityType,
   subjectId,
+  grade,
 }: PrerequisitePanelProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [quickAddThreshold, setQuickAddThreshold] = useState(0.8);
@@ -36,7 +38,7 @@ export function PrerequisitePanel({
     data: prerequisites,
     isLoading,
     error,
-  } = useEntityPrerequisites(entityId, entityType, true, {
+  } = useEntityPrerequisites(entityId, entityType, grade, subjectId, true, {
     enabled: shouldFetchPrerequisites,
   });
 
@@ -44,7 +46,7 @@ export function PrerequisitePanel({
   const { mutate: createPrerequisite, isPending: isCreatingQuickAdd } = useCreatePrerequisite();
 
   // Fetch curriculum tree to find previous subskill
-  const { data: curriculumTree } = useCurriculumTree(subjectId, true);
+  const { data: curriculumTree } = useCurriculumTree(subjectId, grade, true);
 
   // Find previous subskill if current entity is a subskill
   const previousSubskill = useMemo(() => {
@@ -111,10 +113,10 @@ export function PrerequisitePanel({
         </Alert>
 
         {/* Still show graph cache panel for units */}
-        <GraphCachePanel subjectId={subjectId} />
+        <GraphCachePanel subjectId={subjectId} grade={grade} />
 
         {/* Graph Visualization */}
-        <GraphVisualization subjectId={subjectId} includeDrafts={true} />
+        <GraphVisualization subjectId={subjectId} grade={grade} includeDrafts={true} />
       </div>
     );
   }
@@ -291,10 +293,10 @@ export function PrerequisitePanel({
       </Card>
 
       {/* Graph Cache Management */}
-      <GraphCachePanel subjectId={subjectId} />
+      <GraphCachePanel subjectId={subjectId} grade={grade} />
 
       {/* Graph Visualization */}
-      <GraphVisualization subjectId={subjectId} includeDrafts={true} />
+      <GraphVisualization subjectId={subjectId} grade={grade} includeDrafts={true} />
 
       {/* Add Prerequisite Dialog */}
       <AddPrerequisiteDialog
@@ -303,6 +305,7 @@ export function PrerequisitePanel({
         entityId={entityId}
         entityType={entityType}
         subjectId={subjectId}
+        grade={grade}
       />
     </div>
   );

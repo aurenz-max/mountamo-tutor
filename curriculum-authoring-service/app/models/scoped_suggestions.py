@@ -38,6 +38,7 @@ class ScopedSuggestionOptions(BaseModel):
 class ScopedSuggestionRequest(BaseModel):
     """Request body for POST /api/ai/suggest-edges."""
     subject_id: str
+    grade: str
     scope: ScopedSuggestionScope
     options: ScopedSuggestionOptions = ScopedSuggestionOptions()
 
@@ -46,8 +47,10 @@ class ConnectSkillsRequest(BaseModel):
     """Request body for POST /api/ai/connect-skills."""
     source_skill_id: str
     source_subject_id: str
+    source_grade: str
     target_skill_id: str
     target_subject_id: str
+    target_grade: str
     relationship_types: List[RelationshipType] = [
         "prerequisite", "builds_on", "reinforces", "parallel", "applies"
     ]
@@ -57,6 +60,7 @@ class AcceptScopedSuggestionsRequest(BaseModel):
     """Request body for POST /api/ai/suggest-edges/accept."""
     suggestion_ids: List[str]
     subject_id: str
+    grade: str
 
 
 # ------------------------------------------------------------------ #

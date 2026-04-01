@@ -13,9 +13,11 @@ import type { Skill, SkillUpdate, SkillCreate } from '@/types/curriculum-authori
 
 interface SkillFormProps {
   skill: Skill;
+  grade: string;
+  subjectId: string;
 }
 
-export function SkillForm({ skill }: SkillFormProps) {
+export function SkillForm({ skill, grade, subjectId }: SkillFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const isNewSkill = skill.skill_id === 'new';
 
@@ -55,7 +57,7 @@ export function SkillForm({ skill }: SkillFormProps) {
         skill_order: data.skill_order,
       };
 
-      createSkill(createData, {
+      createSkill({ data: createData, grade, subjectId }, {
         onSuccess: () => {
           setShowSuccess(true);
           setTimeout(() => setShowSuccess(false), 3000);
@@ -64,7 +66,7 @@ export function SkillForm({ skill }: SkillFormProps) {
     } else {
       // Update existing skill
       updateSkill(
-        { skillId: skill.skill_id, data },
+        { skillId: skill.skill_id, data, grade, subjectId },
         {
           onSuccess: () => {
             setShowSuccess(true);

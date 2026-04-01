@@ -7,8 +7,7 @@ reinforces, parallel, applies). Backward-compatible with the legacy
 """
 
 import logging
-from fastapi import APIRouter, HTTPException
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Query
 
 from app.services.edge_manager import edge_manager
 from app.services.version_control import version_control
@@ -23,39 +22,27 @@ router = APIRouter()
 
 
 @router.post("/edges", response_model=CurriculumEdge)
-async def create_edge(edge: CurriculumEdgeCreate, subject_id: Optional[str] = None):
-    """Create a new knowledge graph edge.
-
-    If ``subject_id`` is not provided, it is resolved from the target entity
-    via the curriculum hierarchy.
-    """
-    # Resolve subject_id
-    resolved_subject = subject_id
-    if not resolved_subject:
-        resolved_subject = await _resolve_subject_id(
-            edge.target_entity_id, edge.target_entity_type
-        )
-    if not resolved_subject:
-        raise HTTPException(
-            status_code=404,
-            detail="Could not resolve subject_id from edge entities",
-        )
-
+async def create_edge(
+    edge: CurriculumEdgeCreate,
+    grade: str = Query(..., description="Grade level (e.g. Kindergarten, 1, 2)"),
+    subject_id: str = Query(..., description="Subject ID (e.g. MATHEMATICS)"),
+):
+    """Create a new knowledge graph edge."""
     # Validate
-    is_valid, error = await edge_manager.validate_edge(edge)
+    is_valid, error = await edge_manager.validate_edge(edge, grade=grade, subject_id=subject_id)
     if not is_valid:
         raise HTTPException(status_code=400, detail=error)
 
     # Get active version
     version_id = await version_control.get_or_create_active_version(
-        resolved_subject, "local-dev-user"
+        subject_id, "local-dev-user"
     )
 
-    result = await edge_manager.create_edge(edge, version_id, resolved_subject)
+    result = await edge_manager.create_edge(edge, version_id, subject_id, grade=grade)
 
     # Invalidate draft graph cache
     try:
-        await graph_cache_manager.invalidate_cache(resolved_subject, "draft")
+        await graph_cache_manager.invalidate_cache(subject_id, "draft")
     except Exception as e:
         logger.warning(f"Cache invalidation failed (non-blocking): {e}")
 
@@ -63,12 +50,13 @@ async def create_edge(edge: CurriculumEdgeCreate, subject_id: Optional[str] = No
 
 
 @router.delete("/edges/{edge_id}")
-async def delete_edge(edge_id: str, subject_id: Optional[str] = None):
-    """Delete an edge (and its paired reverse if parallel).
-
-    Providing subject_id enables O(1) lookup instead of scanning all subjects.
-    """
-    success = await edge_manager.delete_edge(edge_id, subject_id=subject_id)
+async def delete_edge(
+    edge_id: str,
+    grade: str = Query(..., description="Grade level (e.g. Kindergarten, 1, 2)"),
+    subject_id: str = Query(..., description="Subject ID (e.g. MATHEMATICS)"),
+):
+    """Delete an edge (and its paired reverse if parallel)."""
+    success = await edge_manager.delete_edge(edge_id, grade=grade, subject_id=subject_id)
     if not success:
         raise HTTPException(status_code=404, detail="Edge not found")
     return {"message": "Edge deleted successfully"}
@@ -78,61 +66,44 @@ async def delete_edge(edge_id: str, subject_id: Optional[str] = None):
 async def get_entity_edges(
     entity_id: str,
     entity_type: EntityType,
-    subject_id: Optional[str] = None,
+    grade: str = Query(..., description="Grade level (e.g. Kindergarten, 1, 2)"),
+    subject_id: str = Query(..., description="Subject ID (e.g. MATHEMATICS)"),
     include_drafts: bool = False,
 ):
-    """Get all edges (incoming and outgoing) for an entity.
-
-    Providing subject_id enables scoped subcollection query instead of scanning.
-    """
+    """Get all edges (incoming and outgoing) for an entity."""
     return await edge_manager.get_entity_edges(
-        entity_id, entity_type, subject_id=subject_id, include_drafts=include_drafts
+        entity_id, entity_type, grade=grade, subject_id=subject_id, include_drafts=include_drafts
     )
 
 
 @router.post("/edges/validate")
-async def validate_edge(edge: CurriculumEdgeCreate, subject_id: Optional[str] = None):
+async def validate_edge(
+    edge: CurriculumEdgeCreate,
+    grade: str = Query(..., description="Grade level (e.g. Kindergarten, 1, 2)"),
+    subject_id: str = Query(..., description="Subject ID (e.g. MATHEMATICS)"),
+):
     """Validate an edge without creating it (cycle check on prerequisite subgraph)."""
-    is_valid, error = await edge_manager.validate_edge(edge, subject_id=subject_id)
+    is_valid, error = await edge_manager.validate_edge(edge, grade=grade, subject_id=subject_id)
     return {"valid": is_valid, "error": error}
 
 
 @router.get("/subjects/{subject_id}/knowledge-graph", response_model=CurriculumGraph)
 async def get_subject_knowledge_graph(
     subject_id: str,
+    grade: str = Query(..., description="Grade level (e.g. Kindergarten, 1, 2)"),
     include_drafts: bool = False,
 ):
     """Get the full knowledge graph for a subject (all edge types)."""
-    return await edge_manager.get_subject_graph(subject_id, include_drafts)
+    return await edge_manager.get_subject_graph(subject_id, include_drafts, grade=grade)
 
 
 @router.get("/subjects/{subject_id}/base-skills")
-async def get_base_skills(subject_id: str):
+async def get_base_skills(
+    subject_id: str,
+    grade: str = Query(..., description="Grade level (e.g. Kindergarten, 1, 2)"),
+):
     """Get entry-point entities (no prerequisite edges targeting them)."""
-    base_skills = await edge_manager.get_base_skills(subject_id)
+    base_skills = await edge_manager.get_base_skills(subject_id, grade=grade)
     return {"subject_id": subject_id, "base_skills": base_skills}
 
 
-# ------------------------------------------------------------------ #
-#  Helpers
-# ------------------------------------------------------------------ #
-
-async def _resolve_subject_id(entity_id: str, entity_type: EntityType) -> Optional[str]:
-    """Walk the curriculum hierarchy to find the subject_id for an entity."""
-    from app.services.curriculum_manager import curriculum_manager
-
-    if entity_type == "skill":
-        skill = await curriculum_manager.get_skill(entity_id)
-        if skill:
-            unit = await curriculum_manager.get_unit(skill.unit_id)
-            if unit:
-                return unit.subject_id
-    elif entity_type == "subskill":
-        subskill = await curriculum_manager.get_subskill(entity_id)
-        if subskill:
-            skill = await curriculum_manager.get_skill(subskill.skill_id)
-            if skill:
-                unit = await curriculum_manager.get_unit(skill.unit_id)
-                if unit:
-                    return unit.subject_id
-    return None

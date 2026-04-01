@@ -25,6 +25,7 @@ interface AddPrerequisiteDialogProps {
   entityId: string;
   entityType: EntityType;
   subjectId: string;
+  grade: string;
 }
 
 interface EntityOption {
@@ -45,12 +46,13 @@ export function AddPrerequisiteDialog({
   entityId,
   entityType,
   subjectId,
+  grade,
 }: AddPrerequisiteDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPrereq, setSelectedPrereq] = useState<EntityOption | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const { data: tree, isLoading: isLoadingTree } = useCurriculumTree(subjectId, true);
+  const { data: tree, isLoading: isLoadingTree } = useCurriculumTree(subjectId, grade, true);
   const { mutate: createPrerequisite, isPending: isCreating, error: createError } = useCreatePrerequisite();
   const { mutate: validatePrerequisite, isPending: isValidating, data: validationResult } = useValidatePrerequisite();
 

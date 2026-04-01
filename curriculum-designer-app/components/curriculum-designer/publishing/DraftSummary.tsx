@@ -21,9 +21,10 @@ import { Loader2, Save, FileText, Plus, Edit, Trash } from 'lucide-react';
 
 interface DraftSummaryProps {
   subjectId: string;
+  grade: string;
 }
 
-export function DraftSummary({ subjectId }: DraftSummaryProps) {
+export function DraftSummary({ subjectId, grade }: DraftSummaryProps) {
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [versionDescription, setVersionDescription] = useState('');
   const [changeSummary, setChangeSummary] = useState('');
@@ -32,7 +33,7 @@ export function DraftSummary({ subjectId }: DraftSummaryProps) {
     data: drafts,
     isLoading,
     error,
-  } = useDraftChanges(subjectId);
+  } = useDraftChanges(subjectId, grade);
 
   const { mutate: publishSubject, isPending: isPublishing } = usePublishSubject();
 
@@ -42,6 +43,7 @@ export function DraftSummary({ subjectId }: DraftSummaryProps) {
     publishSubject(
       {
         subjectId,
+        grade,
         request: {
           subject_id: subjectId,
           version_description: versionDescription,

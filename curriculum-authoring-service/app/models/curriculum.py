@@ -7,6 +7,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
 
+
 class SubjectBase(BaseModel):
     """Base model for Subject"""
     subject_id: str
@@ -148,7 +149,6 @@ class SubskillUpdate(BaseModel):
     target_difficulty: Optional[float] = None
     target_primitive: Optional[str] = None
     target_eval_modes: Optional[List[str]] = None
-    primitive_ids: Optional[List[str]] = None
 
 
 class Subskill(SubskillBase):
@@ -159,8 +159,6 @@ class Subskill(SubskillBase):
     updated_at: Optional[datetime] = None
     target_primitive: Optional[str] = None
     target_eval_modes: Optional[List[str]] = None
-    primitive_ids: Optional[List[str]] = None
-    primitives: List["Primitive"] = []
 
     @field_validator("created_at", "updated_at", mode="before")
     @classmethod
@@ -212,7 +210,6 @@ class SubskillNode(BaseModel):
     order: Optional[int] = None
     difficulty_range: Optional[dict] = None
     is_draft: bool
-    primitives: List[str] = []  # primitive IDs assigned to this subskill
     target_primitive: Optional[str] = None
     target_eval_modes: Optional[List[str]] = None
 
@@ -246,7 +243,7 @@ class CurriculumTree(BaseModel):
 
 
 class FlattenedCurriculumRow(BaseModel):
-    """Flattened curriculum view matching BigQuery analytics view structure"""
+    """Flattened curriculum view — one row per subskill with full hierarchy"""
     # Subject level
     subject: str
     grade: Optional[str] = None
@@ -269,10 +266,8 @@ class FlattenedCurriculumRow(BaseModel):
     difficulty_start: Optional[float] = None
     difficulty_end: Optional[float] = None
     target_difficulty: Optional[float] = None
-    primitives: Optional[List[str]] = None  # List of primitive IDs
     target_primitive: Optional[str] = None
     target_eval_modes: Optional[List[str]] = None
-    primitive_ids: Optional[List[str]] = None
 
     # Metadata
     version_id: str

@@ -114,6 +114,7 @@ class ScopedSuggestionService:
 
         # 1. Load scoped nodes (subject_id passed for O(1) lookup)
         source_nodes = await self._load_scoped_nodes(
+            request.grade,
             request.subject_id,
             request.scope.skill_ids,
             request.scope.subskill_ids,
@@ -124,7 +125,7 @@ class ScopedSuggestionService:
         if request.scope.cross_grade_subject_ids:
             for sid in request.scope.cross_grade_subject_ids:
                 if sid != request.subject_id:
-                    cg_nodes = await self._load_subject_nodes(sid)
+                    cg_nodes = await self._load_subject_nodes(request.grade, sid)
                     cross_grade_nodes.extend(cg_nodes)
 
         all_nodes = source_nodes + cross_grade_nodes
@@ -141,7 +142,7 @@ class ScopedSuggestionService:
         # 2. Load existing edges between scoped nodes
         node_ids = {n["id"] for n in all_nodes}
         existing_edges = await self._load_existing_edges(
-            request.subject_id, node_ids
+            request.grade, request.subject_id, node_ids
         )
 
         # 3. Single Gemini call
@@ -159,7 +160,7 @@ class ScopedSuggestionService:
             data["origin"] = "scoped"
             data["status"] = "pending"
             data["created_at"] = datetime.utcnow().isoformat()
-            await firestore_curriculum_sync.sync_suggestion(request.subject_id, data)
+            await firestore_curriculum_sync.sync_suggestion(request.subject_id, data, grade=request.grade)
 
         elapsed = int((time.monotonic() - start) * 1000)
 
@@ -186,10 +187,10 @@ class ScopedSuggestionService:
 
         # Load both skills' subskill trees (subject_id for O(1) lookups)
         source_nodes = await self._load_skill_subskills(
-            request.source_subject_id, request.source_skill_id
+            request.source_grade, request.source_subject_id, request.source_skill_id
         )
         target_nodes = await self._load_skill_subskills(
-            request.target_subject_id, request.target_skill_id
+            request.target_grade, request.target_subject_id, request.target_skill_id
         )
 
         if not source_nodes or not target_nodes:
@@ -205,7 +206,7 @@ class ScopedSuggestionService:
         # Load existing edges between these skill families
         all_ids = {n["id"] for n in source_nodes + target_nodes}
         existing_edges = await self._load_existing_edges(
-            request.source_subject_id, all_ids
+            request.source_grade, request.source_subject_id, all_ids
         )
 
         # Single Gemini call for pairwise analysis
@@ -238,7 +239,7 @@ class ScopedSuggestionService:
             data["origin"] = "connect_skills"
             data["status"] = "pending"
             data["created_at"] = datetime.utcnow().isoformat()
-            await firestore_curriculum_sync.sync_suggestion(subject_id, data)
+            await firestore_curriculum_sync.sync_suggestion(subject_id, data, grade=request.source_grade)
 
         elapsed = int((time.monotonic() - start) * 1000)
 
@@ -272,7 +273,7 @@ class ScopedSuggestionService:
 
         for suggestion_id in request.suggestion_ids:
             suggestion = await firestore_reader.get_suggestion(
-                request.subject_id, suggestion_id
+                request.grade, request.subject_id, suggestion_id
             )
             if not suggestion:
                 logger.warning(f"Suggestion {suggestion_id} not found — skipping")
@@ -293,7 +294,7 @@ class ScopedSuggestionService:
             )
 
             created = await self.edges.create_edge(
-                edge_create, version_id, request.subject_id
+                edge_create, version_id, request.subject_id, grade=request.grade
             )
             edge_ids.append(created.edge_id)
 
@@ -302,7 +303,7 @@ class ScopedSuggestionService:
                 request.subject_id, suggestion_id, {
                     "status": "accepted",
                     "reviewed_at": datetime.utcnow().isoformat(),
-                }
+                }, grade=request.grade
             )
 
         return AcceptScopedSuggestionsResponse(
@@ -316,6 +317,7 @@ class ScopedSuggestionService:
 
     async def _load_scoped_nodes(
         self,
+        grade: str,
         subject_id: str,
         skill_ids: List[str],
         subskill_ids: List[str],
@@ -326,13 +328,13 @@ class ScopedSuggestionService:
         if skill_ids:
             for skill_id in skill_ids:
                 skill_nodes = await self._load_skill_subskills(
-                    subject_id, skill_id
+                    grade, subject_id, skill_id
                 )
                 nodes.extend(skill_nodes)
 
         if subskill_ids:
             for ss_id in subskill_ids:
-                node = await self._load_subskill(subject_id, ss_id)
+                node = await self._load_subskill(grade, subject_id, ss_id)
                 if node:
                     nodes.append(node)
 
@@ -347,21 +349,18 @@ class ScopedSuggestionService:
         return deduped
 
     async def _load_skill_subskills(
-        self, subject_id: str, skill_id: str
+        self, grade: str, subject_id: str, skill_id: str
     ) -> List[Dict]:
-        """Load all subskills for a skill with full hierarchy context.
-
-        Uses subject_id for O(1) document lookup instead of scanning all subjects.
-        """
-        skill_doc = await firestore_reader.get_skill(skill_id, subject_id=subject_id)
+        """Load all subskills for a skill with full hierarchy context."""
+        skill_doc = await firestore_reader.get_skill(grade, subject_id, skill_id)
         if not skill_doc:
             return []
 
         unit_doc = await firestore_reader.get_unit(
-            skill_doc.get("unit_id", ""), subject_id=subject_id
+            grade, subject_id, skill_doc.get("unit_id", "")
         )
         subskill_docs = await firestore_reader.get_subskills_by_skill(
-            skill_id, subject_id=subject_id, include_drafts=True
+            grade, subject_id, skill_id, include_drafts=True
         )
 
         return [
@@ -385,18 +384,18 @@ class ScopedSuggestionService:
         ]
 
     async def _load_subskill(
-        self, subject_id: str, subskill_id: str
+        self, grade: str, subject_id: str, subskill_id: str
     ) -> Optional[Dict]:
         """Load a single subskill with full hierarchy context."""
-        ss = await firestore_reader.get_subskill(subskill_id, subject_id=subject_id)
+        ss = await firestore_reader.get_subskill(grade, subject_id, subskill_id)
         if not ss:
             return None
 
         skill_doc = await firestore_reader.get_skill(
-            ss.get("skill_id", ""), subject_id=subject_id
+            grade, subject_id, ss.get("skill_id", "")
         )
         unit_doc = await firestore_reader.get_unit(
-            skill_doc.get("unit_id", ""), subject_id=subject_id
+            grade, subject_id, skill_doc.get("unit_id", "")
         ) if skill_doc else None
 
         return {
@@ -416,19 +415,19 @@ class ScopedSuggestionService:
             "target_difficulty": ss.get("target_difficulty"),
         }
 
-    async def _load_subject_nodes(self, subject_id: str) -> List[Dict]:
+    async def _load_subject_nodes(self, grade: str, subject_id: str) -> List[Dict]:
         """Load all subskills for a subject (for cross-grade context)."""
-        all_nodes = await firestore_reader.get_subject_graph_nodes(subject_id, include_drafts=False)
+        all_nodes = await firestore_reader.get_subject_graph_nodes(grade, subject_id, include_drafts=False)
         return [n for n in all_nodes if n["type"] == "subskill"]
 
     async def _load_existing_edges(
-        self, subject_id: str, node_ids: set
+        self, grade: str, subject_id: str, node_ids: set
     ) -> List[Dict]:
         """Load existing edges between scoped nodes (for dedup)."""
         if not node_ids:
             return []
 
-        all_edges = await firestore_reader.get_edges_for_subject(subject_id, include_drafts=True)
+        all_edges = await firestore_reader.get_edges_for_subject(grade, subject_id, include_drafts=True)
 
         return [
             e for e in all_edges

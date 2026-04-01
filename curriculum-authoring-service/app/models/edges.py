@@ -50,7 +50,7 @@ class CurriculumEdgeBase(CurriculumEdgeCreate):
 
 
 class CurriculumEdge(CurriculumEdgeBase):
-    """Complete edge model as stored in BigQuery."""
+    """Complete edge model as stored in Firestore."""
     edge_id: str
     version_id: str
     is_draft: bool

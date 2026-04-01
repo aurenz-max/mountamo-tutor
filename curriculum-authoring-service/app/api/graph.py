@@ -16,11 +16,12 @@ router = APIRouter()
 @router.get("/graph/{subject_id}", response_model=PrerequisiteGraph)
 async def get_curriculum_graph(
     subject_id: str,
+    grade: str = Query(..., description="Grade (e.g. Kindergarten, 1)"),
     include_drafts: bool = Query(default=False, description="Include draft entities in graph"),
     force_refresh: bool = Query(default=False, description="Force regeneration of graph")
 ):
     """
-    Get curriculum prerequisite graph for a subject
+    Get curriculum prerequisite graph for a subject (e.g. MATHEMATICS)
 
     Returns cached version if available, otherwise generates and caches.
     Use force_refresh=true to bypass cache and regenerate.
@@ -30,10 +31,11 @@ async def get_curriculum_graph(
     - Fresh generation: ~2-5s (depending on curriculum size)
     """
     try:
-        logger.info(f"📊 GET /graph/{subject_id} (drafts={include_drafts}, refresh={force_refresh})")
+        logger.info(f"📊 GET /graph/{subject_id} grade={grade} (drafts={include_drafts}, refresh={force_refresh})")
 
         graph = await graph_cache_manager.get_graph(
             subject_id=subject_id,
+            grade=grade,
             include_drafts=include_drafts,
             force_refresh=force_refresh
         )
@@ -51,19 +53,21 @@ async def get_curriculum_graph(
 @router.post("/graph/{subject_id}/regenerate")
 async def regenerate_curriculum_graph(
     subject_id: str,
+    grade: str = Query(..., description="Grade (e.g. Kindergarten, 1)"),
     include_drafts: bool = Query(default=False, description="Include draft entities")
 ):
     """
-    Force regeneration of curriculum graph
+    Force regeneration of curriculum graph for a subject (e.g. MATHEMATICS)
 
-    Invalidates cache and rebuilds graph from BigQuery.
+    Invalidates cache and rebuilds graph from edges subcollection.
     Use this after making significant curriculum changes.
     """
     try:
-        logger.info(f"🔄 POST /graph/{subject_id}/regenerate (drafts={include_drafts})")
+        logger.info(f"🔄 POST /graph/{subject_id}/regenerate grade={grade} (drafts={include_drafts})")
 
         graph = await graph_cache_manager.regenerate_graph(
             subject_id=subject_id,
+            grade=grade,
             include_drafts=include_drafts
         )
 
@@ -85,18 +89,19 @@ async def regenerate_curriculum_graph(
 
 @router.post("/graph/{subject_id}/regenerate-all")
 async def regenerate_all_graph_versions(
-    subject_id: str
+    subject_id: str,
+    grade: str = Query(..., description="Grade (e.g. Kindergarten, 1)")
 ):
     """
-    Regenerate both draft and published graph versions
+    Regenerate both draft and published graph versions for a subject (e.g. MATHEMATICS)
 
     Use this after publishing curriculum changes to ensure both
     draft and published caches are up to date.
     """
     try:
-        logger.info(f"🔄 POST /graph/{subject_id}/regenerate-all")
+        logger.info(f"🔄 POST /graph/{subject_id}/regenerate-all grade={grade}")
 
-        graphs = await graph_cache_manager.regenerate_all_versions(subject_id)
+        graphs = await graph_cache_manager.regenerate_all_versions(subject_id, grade=grade)
 
         return {
             "message": "All graph versions regenerated successfully",
@@ -122,22 +127,24 @@ async def regenerate_all_graph_versions(
 @router.delete("/graph/{subject_id}/cache")
 async def invalidate_graph_cache(
     subject_id: str,
+    grade: str = Query(..., description="Grade (e.g. Kindergarten, 1)"),
     version_type: str = Query(
         default=None,
         description="Version type to invalidate: 'draft', 'published', or None for both"
     )
 ):
     """
-    Invalidate cached graphs for a subject
+    Invalidate cached graphs for a subject (e.g. MATHEMATICS)
 
     Removes cached graph documents from Firestore.
     Next request will trigger fresh generation.
     """
     try:
-        logger.info(f"🗑️ DELETE /graph/{subject_id}/cache (version_type={version_type})")
+        logger.info(f"🗑️ DELETE /graph/{subject_id}/cache grade={grade} (version_type={version_type})")
 
         deleted_count = await graph_cache_manager.invalidate_cache(
             subject_id=subject_id,
+            grade=grade,
             version_type=version_type
         )
 
@@ -158,10 +165,11 @@ async def invalidate_graph_cache(
 
 @router.get("/graph/{subject_id}/status")
 async def get_graph_cache_status(
-    subject_id: str
+    subject_id: str,
+    grade: str = Query(..., description="Grade (e.g. Kindergarten, 1)")
 ):
     """
-    Get cache status information for a subject
+    Get cache status information for a subject (e.g. MATHEMATICS)
 
     Returns information about:
     - Cached versions (draft/published)
@@ -170,9 +178,9 @@ async def get_graph_cache_status(
     - Metadata (node counts, edge counts)
     """
     try:
-        logger.info(f"📊 GET /graph/{subject_id}/status")
+        logger.info(f"📊 GET /graph/{subject_id}/status grade={grade}")
 
-        status = await graph_cache_manager.get_cache_status(subject_id)
+        status = await graph_cache_manager.get_cache_status(subject_id, grade=grade)
 
         return status
 

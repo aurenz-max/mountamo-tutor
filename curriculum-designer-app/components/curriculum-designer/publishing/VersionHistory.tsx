@@ -20,9 +20,10 @@ import type { Version } from '@/types/curriculum-authoring';
 
 interface VersionHistoryProps {
   subjectId: string;
+  grade: string;
 }
 
-export function VersionHistory({ subjectId }: VersionHistoryProps) {
+export function VersionHistory({ subjectId, grade }: VersionHistoryProps) {
   const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
   const [showRollbackDialog, setShowRollbackDialog] = useState(false);
   const [showDeployDialog, setShowDeployDialog] = useState(false);
@@ -32,7 +33,7 @@ export function VersionHistory({ subjectId }: VersionHistoryProps) {
     data: versions,
     isLoading,
     error,
-  } = useVersionHistory(subjectId);
+  } = useVersionHistory(subjectId, grade);
 
   const { data: deployStatus } = useDeployStatus(subjectId);
   const { mutate: rollbackVersion, isPending: isRollingBack } = useRollbackVersion();
@@ -45,6 +46,7 @@ export function VersionHistory({ subjectId }: VersionHistoryProps) {
       {
         subjectId,
         versionId: selectedVersion.version_id,
+        grade,
       },
       {
         onSuccess: () => {

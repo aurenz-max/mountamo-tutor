@@ -165,7 +165,6 @@ class GraphFlatteningService:
                     tp = sub.get("target_primitive")
                     if tp:
                         node["primitive_type"] = tp
-                    # Map curriculum target_eval_modes → eval_modes for Pulse engine
                     eval_modes = sub.get("target_eval_modes")
                     if eval_modes:
                         node["eval_modes"] = eval_modes
@@ -223,15 +222,17 @@ class GraphFlatteningService:
             return None
 
         grade_pfx = self._grade_prefix(grade)
-        # Avoid doubling the grade suffix (e.g. LANGUAGE_ARTS_G1 + _G1)
-        if subject_id.endswith(f"_{grade_pfx}"):
-            cache_subject_id = subject_id
-        else:
-            cache_subject_id = f"{subject_id}_{grade_pfx}"
+        # Strip legacy _G1 suffix if present (migrated to bare subject_id)
+        for suffix in ("_GK", "_G1", "_G2", "_G3", "_G4", "_G5"):
+            if subject_id.endswith(suffix):
+                subject_id = subject_id[: -len(suffix)]
+                break
+        # Doc ID includes grade prefix to avoid collisions across grades
+        cache_doc_prefix = f"{subject_id}_{grade_pfx}"
 
         logger.info(
             f"[FLATTEN] Reading hierarchical graph for {subject_id} "
-            f"(grade={grade}, cache_id={cache_subject_id})"
+            f"(grade={grade}, cache_id={cache_doc_prefix})"
         )
 
         # Read edges from hierarchical subcollection
@@ -272,8 +273,8 @@ class GraphFlatteningService:
         rel_counts = Counter(e.get("relationship", "prerequisite") for e in edges)
 
         result = {
-            "id": f"{cache_subject_id}_latest_{version_type}",
-            "subject_id": cache_subject_id,
+            "id": f"{cache_doc_prefix}_latest_{version_type}",
+            "subject_id": subject_id,
             "grade": grade,
             "grade_prefix": grade_pfx,
             "base_subject_id": subject_id,
@@ -305,7 +306,7 @@ class GraphFlatteningService:
         }
 
         logger.info(
-            f"[FLATTEN] Produced flat graph for {cache_subject_id}: "
+            f"[FLATTEN] Produced flat graph for {cache_doc_prefix}: "
             f"{len(nodes)} nodes, {len(edges)} edges"
         )
         return result

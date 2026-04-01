@@ -1,6 +1,10 @@
 /**
  * Curriculum Authoring Service API Client (Standalone Version)
  * No authentication required for local development
+ *
+ * All subject-scoped endpoints require both grade and subject_id as query
+ * parameters so the caller always explicitly chooses which curriculum
+ * partition to access.
  */
 
 import type {
@@ -89,16 +93,17 @@ class CurriculumAuthoringAPI {
     );
   }
 
-  async getSubject(subjectId: string): Promise<Subject> {
-    return this.request<Subject>(`/api/curriculum/subjects/${subjectId}`);
+  async getSubject(subjectId: string, grade: string): Promise<Subject> {
+    const params = new URLSearchParams({ grade });
+    return this.request<Subject>(`/api/curriculum/subjects/${subjectId}?${params}`);
   }
 
-  async getCurriculumTree(subjectId: string, includeDrafts: boolean = false): Promise<CurriculumTree> {
-    const params = new URLSearchParams();
+  async getCurriculumTree(subjectId: string, grade: string, includeDrafts: boolean = false): Promise<CurriculumTree> {
+    const params = new URLSearchParams({ grade });
     if (includeDrafts) params.append('include_drafts', 'true');
 
     return this.request<CurriculumTree>(
-      `/api/curriculum/subjects/${subjectId}/tree${params.toString() ? `?${params}` : ''}`
+      `/api/curriculum/subjects/${subjectId}/tree?${params}`
     );
   }
 
@@ -109,137 +114,152 @@ class CurriculumAuthoringAPI {
     });
   }
 
-  async updateSubject(subjectId: string, data: SubjectUpdate): Promise<Subject> {
-    return this.request<Subject>(`/api/curriculum/subjects/${subjectId}`, {
+  async updateSubject(subjectId: string, data: SubjectUpdate, grade: string): Promise<Subject> {
+    const params = new URLSearchParams({ grade });
+    return this.request<Subject>(`/api/curriculum/subjects/${subjectId}?${params}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   // Units
-  async getUnits(subjectId: string, includeDrafts: boolean = false): Promise<Unit[]> {
-    const params = new URLSearchParams();
+  async getUnits(subjectId: string, grade: string, includeDrafts: boolean = false): Promise<Unit[]> {
+    const params = new URLSearchParams({ grade });
     if (includeDrafts) params.append('include_drafts', 'true');
 
     return this.request<Unit[]>(
-      `/api/curriculum/subjects/${subjectId}/units${params.toString() ? `?${params}` : ''}`
+      `/api/curriculum/subjects/${subjectId}/units?${params}`
     );
   }
 
-  async getUnit(unitId: string): Promise<Unit> {
-    return this.request<Unit>(`/api/curriculum/units/${unitId}`);
+  async getUnit(unitId: string, grade: string, subjectId: string): Promise<Unit> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
+    return this.request<Unit>(`/api/curriculum/units/${unitId}?${params}`);
   }
 
-  async createUnit(data: UnitCreate): Promise<Unit> {
-    return this.request<Unit>('/api/curriculum/units', {
+  async createUnit(data: UnitCreate, grade: string): Promise<Unit> {
+    const params = new URLSearchParams({ grade });
+    return this.request<Unit>(`/api/curriculum/units?${params}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateUnit(unitId: string, data: UnitUpdate): Promise<Unit> {
-    return this.request<Unit>(`/api/curriculum/units/${unitId}`, {
+  async updateUnit(unitId: string, data: UnitUpdate, grade: string, subjectId: string): Promise<Unit> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
+    return this.request<Unit>(`/api/curriculum/units/${unitId}?${params}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteUnit(unitId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/curriculum/units/${unitId}`, {
+  async deleteUnit(unitId: string, grade: string, subjectId: string): Promise<{ message: string }> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
+    return this.request<{ message: string }>(`/api/curriculum/units/${unitId}?${params}`, {
       method: 'DELETE',
     });
   }
 
   // Skills
-  async getSkills(unitId: string, includeDrafts: boolean = false): Promise<Skill[]> {
-    const params = new URLSearchParams();
+  async getSkills(unitId: string, grade: string, subjectId: string, includeDrafts: boolean = false): Promise<Skill[]> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
     if (includeDrafts) params.append('include_drafts', 'true');
 
     return this.request<Skill[]>(
-      `/api/curriculum/units/${unitId}/skills${params.toString() ? `?${params}` : ''}`
+      `/api/curriculum/units/${unitId}/skills?${params}`
     );
   }
 
-  async createSkill(data: SkillCreate): Promise<Skill> {
-    return this.request<Skill>('/api/curriculum/skills', {
+  async createSkill(data: SkillCreate, grade: string, subjectId: string): Promise<Skill> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
+    return this.request<Skill>(`/api/curriculum/skills?${params}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateSkill(skillId: string, data: SkillUpdate): Promise<Skill> {
-    return this.request<Skill>(`/api/curriculum/skills/${skillId}`, {
+  async updateSkill(skillId: string, data: SkillUpdate, grade: string, subjectId: string): Promise<Skill> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
+    return this.request<Skill>(`/api/curriculum/skills/${skillId}?${params}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteSkill(skillId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/curriculum/skills/${skillId}`, {
+  async deleteSkill(skillId: string, grade: string, subjectId: string): Promise<{ message: string }> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
+    return this.request<{ message: string }>(`/api/curriculum/skills/${skillId}?${params}`, {
       method: 'DELETE',
     });
   }
 
   // Subskills
-  async getSubskills(skillId: string, includeDrafts: boolean = false): Promise<Subskill[]> {
-    const params = new URLSearchParams();
+  async getSubskills(skillId: string, grade: string, subjectId: string, includeDrafts: boolean = false): Promise<Subskill[]> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
     if (includeDrafts) params.append('include_drafts', 'true');
 
     return this.request<Subskill[]>(
-      `/api/curriculum/skills/${skillId}/subskills${params.toString() ? `?${params}` : ''}`
+      `/api/curriculum/skills/${skillId}/subskills?${params}`
     );
   }
 
-  async createSubskill(data: SubskillCreate): Promise<Subskill> {
-    return this.request<Subskill>('/api/curriculum/subskills', {
+  async createSubskill(data: SubskillCreate, grade: string, subjectId: string): Promise<Subskill> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
+    return this.request<Subskill>(`/api/curriculum/subskills?${params}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateSubskill(subskillId: string, data: SubskillUpdate): Promise<Subskill> {
-    return this.request<Subskill>(`/api/curriculum/subskills/${subskillId}`, {
+  async updateSubskill(subskillId: string, data: SubskillUpdate, grade: string, subjectId: string): Promise<Subskill> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
+    return this.request<Subskill>(`/api/curriculum/subskills/${subskillId}?${params}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteSubskill(subskillId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/curriculum/subskills/${subskillId}`, {
+  async deleteSubskill(subskillId: string, grade: string, subjectId: string): Promise<{ message: string }> {
+    const params = new URLSearchParams({ grade, subject_id: subjectId });
+    return this.request<{ message: string }>(`/api/curriculum/subskills/${subskillId}?${params}`, {
       method: 'DELETE',
     });
   }
 
-  // ==================== PREREQUISITE OPERATIONS ====================
+  // ==================== EDGE/GRAPH OPERATIONS ====================
 
   async getEntityPrerequisites(
     entityId: string,
     entityType: EntityType,
+    grade: string,
+    subjectId: string,
     includeDrafts: boolean = false
   ): Promise<EntityPrerequisites> {
     const params = new URLSearchParams({
       entity_type: entityType,
+      grade,
+      subject_id: subjectId,
     });
     if (includeDrafts) params.append('include_drafts', 'true');
 
     return this.request<EntityPrerequisites>(
-      `/api/prerequisites/prerequisites/${entityId}?${params}`
+      `/api/edges/${entityId}?${params}`
     );
   }
 
-  async getSubjectGraph(subjectId: string, includeDrafts: boolean = false): Promise<PrerequisiteGraph> {
-    const params = new URLSearchParams();
+  async getSubjectGraph(subjectId: string, grade: string, includeDrafts: boolean = false): Promise<PrerequisiteGraph> {
+    const params = new URLSearchParams({ grade });
     if (includeDrafts) params.append('include_drafts', 'true');
 
-    // Use new cached graph endpoint for better performance
     return this.request<PrerequisiteGraph>(
-      `/api/graph/${subjectId}${params.toString() ? `?${params}` : ''}`
+      `/api/graph/${subjectId}?${params}`
     );
   }
 
-  async getBaseSkills(subjectId: string): Promise<{ subject_id: string; base_skills: string[] }> {
+  async getBaseSkills(subjectId: string, grade: string): Promise<{ subject_id: string; base_skills: string[] }> {
+    const params = new URLSearchParams({ grade });
     return this.request<{ subject_id: string; base_skills: string[] }>(
-      `/api/prerequisites/subjects/${subjectId}/base-skills`
+      `/api/edges/subjects/${subjectId}/base-skills?${params}`
     );
   }
 
@@ -265,6 +285,43 @@ class CurriculumAuthoringAPI {
   }
 
   // ==================== AI GENERATION OPERATIONS ====================
+
+  async suggestPrimitives(request: {
+    subskill_description: string;
+    difficulty_start?: number;
+    difficulty_end?: number;
+    target_difficulty?: number;
+    grade?: string;
+    subject_id?: string;
+    catalog: Array<{
+      id: string;
+      domain: string;
+      description: string;
+      supportsEvaluation: boolean;
+      evalModes: Array<{
+        evalMode: string;
+        label: string;
+        beta: number;
+        scaffoldingMode: number;
+        challengeTypes: string[];
+        description: string;
+      }>;
+    }>;
+  }): Promise<{
+    suggestions: Array<{
+      primitive_id: string;
+      rationale: string;
+      recommended_eval_modes: string[];
+      eval_mode_rationale?: string;
+      confidence: number;
+    }>;
+    reasoning: string;
+  }> {
+    return this.request('/api/ai/suggest-primitives', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
 
   async generateUnit(request: GenerateUnitRequest): Promise<AIGeneratedUnit> {
     return this.request<AIGeneratedUnit>('/api/ai/generate-unit', {
@@ -322,28 +379,33 @@ class CurriculumAuthoringAPI {
 
   // ==================== PUBLISHING & VERSIONING ====================
 
-  async getDraftChanges(subjectId: string): Promise<DraftSummary> {
-    return this.request<DraftSummary>(`/api/publishing/subjects/${subjectId}/draft-changes`);
+  async getDraftChanges(subjectId: string, grade: string): Promise<DraftSummary> {
+    const params = new URLSearchParams({ grade });
+    return this.request<DraftSummary>(`/api/publishing/subjects/${subjectId}/draft-changes?${params}`);
   }
 
-  async publishSubject(subjectId: string, request: PublishRequest): Promise<PublishResponse> {
-    return this.request<PublishResponse>(`/api/publishing/subjects/${subjectId}/publish`, {
+  async publishSubject(subjectId: string, request: PublishRequest, grade: string): Promise<PublishResponse> {
+    const params = new URLSearchParams({ grade });
+    return this.request<PublishResponse>(`/api/publishing/subjects/${subjectId}/publish?${params}`, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
-  async getVersionHistory(subjectId: string): Promise<Version[]> {
-    return this.request<Version[]>(`/api/publishing/subjects/${subjectId}/versions`);
+  async getVersionHistory(subjectId: string, grade: string): Promise<Version[]> {
+    const params = new URLSearchParams({ grade });
+    return this.request<Version[]>(`/api/publishing/subjects/${subjectId}/versions?${params}`);
   }
 
-  async getActiveVersion(subjectId: string): Promise<Version> {
-    return this.request<Version>(`/api/publishing/subjects/${subjectId}/active-version`);
+  async getActiveVersion(subjectId: string, grade: string): Promise<Version> {
+    const params = new URLSearchParams({ grade });
+    return this.request<Version>(`/api/publishing/subjects/${subjectId}/active-version?${params}`);
   }
 
-  async rollbackVersion(subjectId: string, versionId: string): Promise<PublishResponse> {
+  async rollbackVersion(subjectId: string, versionId: string, grade: string): Promise<PublishResponse> {
+    const params = new URLSearchParams({ grade });
     return this.request<PublishResponse>(
-      `/api/publishing/subjects/${subjectId}/rollback/${versionId}`,
+      `/api/publishing/subjects/${subjectId}/rollback/${versionId}?${params}`,
       { method: 'POST' }
     );
   }
@@ -372,25 +434,6 @@ class CurriculumAuthoringAPI {
     return this.request<Primitive[]>(`/api/curriculum/primitives/categories/${category}`);
   }
 
-  async getSubskillPrimitives(subskillId: string, subjectId: string): Promise<Primitive[]> {
-    return this.request<Primitive[]>(
-      `/api/curriculum/subskills/${subskillId}/primitives?subject_id=${subjectId}`
-    );
-  }
-
-  async updateSubskillPrimitives(
-    subskillId: string,
-    primitiveIds: string[],
-    subjectId: string
-  ): Promise<{ message: string; primitive_count: number }> {
-    return this.request<{ message: string; primitive_count: number }>(
-      `/api/curriculum/subskills/${subskillId}/primitives?subject_id=${subjectId}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(primitiveIds),
-      }
-    );
-  }
 }
 
 export const curriculumAuthoringAPI = new CurriculumAuthoringAPI(AUTHORING_API_BASE_URL);

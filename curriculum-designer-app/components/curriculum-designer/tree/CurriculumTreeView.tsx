@@ -9,6 +9,7 @@ import type { SelectedEntity } from '@/types/curriculum-authoring';
 
 interface CurriculumTreeViewProps {
   subjectId: string;
+  grade: string;
   selectedEntity?: SelectedEntity;
   onSelectEntity: (entity: SelectedEntity) => void;
   onAddUnit?: () => void;
@@ -16,6 +17,7 @@ interface CurriculumTreeViewProps {
 
 export function CurriculumTreeView({
   subjectId,
+  grade,
   selectedEntity,
   onSelectEntity,
   onAddUnit,
@@ -25,7 +27,7 @@ export function CurriculumTreeView({
     isLoading,
     error,
     refetch,
-  } = useCurriculumTree(subjectId, true);
+  } = useCurriculumTree(subjectId, grade, true);
 
   if (isLoading) {
     return (

@@ -22,6 +22,7 @@ import type { PrerequisiteGraph, PrerequisiteGraphNode } from '@/types/curriculu
 
 interface GraphVisualizationProps {
   subjectId: string;
+  grade: string;
   includeDrafts?: boolean;
 }
 
@@ -156,7 +157,7 @@ function convertToReactFlowGraph(graph: PrerequisiteGraph): {
   return { nodes: reactFlowNodes, edges: reactFlowEdges };
 }
 
-function GraphVisualizationInner({ subjectId, includeDrafts = false }: GraphVisualizationProps) {
+function GraphVisualizationInner({ subjectId, grade, includeDrafts = false }: GraphVisualizationProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -172,7 +173,7 @@ function GraphVisualizationInner({ subjectId, includeDrafts = false }: GraphVisu
         setIsLoading(true);
         setError(null);
 
-        const graph = await curriculumGraphAPI.getCachedGraph(subjectId, includeDrafts);
+        const graph = await curriculumGraphAPI.getCachedGraph(subjectId, grade, includeDrafts);
 
         if (!mounted) return;
 
@@ -197,7 +198,7 @@ function GraphVisualizationInner({ subjectId, includeDrafts = false }: GraphVisu
     return () => {
       mounted = false;
     };
-  }, [subjectId, includeDrafts, setNodes, setEdges]);
+  }, [subjectId, grade, includeDrafts, setNodes, setEdges]);
 
   const stats = useMemo(() => {
     if (!graphData) return null;

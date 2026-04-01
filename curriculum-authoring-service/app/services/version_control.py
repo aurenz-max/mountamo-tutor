@@ -2,8 +2,8 @@
 Version control and publishing service
 Manages draft/publish workflow and version history
 
-Reads: Firestore-native via firestore_reader
-Writes: Firestore-first (source of truth). Publish still writes to BQ (Phase 5 will redesign).
+Reads: Firestore-native via firestore_reader (curriculum_versions flat collection)
+Writes: Version docs to curriculum_versions, publish via draft_curriculum_service
 """
 
 import logging
@@ -31,7 +31,7 @@ class VersionControl:
         version_create: VersionCreate,
         user_id: str
     ) -> Version:
-        """Create a new version record (Firestore-first)."""
+        """Create a new version record."""
         version_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
@@ -49,30 +49,24 @@ class VersionControl:
             "change_summary": version_create.change_summary,
         }
 
-        # Firestore is source of truth
-        await firestore_curriculum_sync.sync_version(version_data)
+        # Write to curriculum_versions collection
+        firestore_curriculum_sync.client.collection("curriculum_versions").document(version_id).set(version_data)
 
         return Version(**version_data)
 
-    async def get_active_version(self, subject_id: str) -> Optional[Version]:
-        """Get the currently active version for a subject (Firestore-native read)."""
+    async def get_active_version(self, subject_id: str, grade: Optional[str] = None) -> Optional[Version]:
+        """Get the currently active version for a subject."""
         row = await firestore_reader.get_active_version(subject_id)
         return Version(**row) if row else None
 
     async def get_or_create_active_version(self, subject_id: str, user_id: str) -> str:
-        """
-        Get active version_id for a subject, or create one if none exists.
-        This ensures all new entities use the same version_id.
-
-        Returns the version_id string (not the Version object).
-        """
+        """Get active version_id for a subject, or create one if none exists."""
         active_version = await self.get_active_version(subject_id)
 
         if active_version:
-            logger.info(f"✅ Using existing active version for {subject_id}: {active_version.version_id}")
             return active_version.version_id
 
-        # No active version exists — create version 1 (Firestore-first)
+        # No active version exists — create version 1
         version_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
@@ -88,25 +82,24 @@ class VersionControl:
             "change_summary": "Initial version",
         }
 
-        await firestore_curriculum_sync.sync_version(version_data)
+        firestore_curriculum_sync.client.collection("curriculum_versions").document(version_id).set(version_data)
         logger.info(f"Created initial active version for {subject_id}: {version_id}")
 
         return version_id
 
-    async def get_version_history(self, subject_id: str) -> List[Version]:
-        """Get all versions for a subject (Firestore-native read)."""
+    async def get_version_history(self, subject_id: str, grade: Optional[str] = None) -> List[Version]:
+        """Get all versions for a subject."""
         rows = await firestore_reader.get_versions(subject_id)
         return [Version(**row) for row in rows]
 
-    async def get_draft_changes(self, subject_id: str) -> DraftSummary:
-        """Get summary of all draft changes for a subject (Firestore-native read)."""
+    async def get_draft_changes(self, subject_id: str, grade: Optional[str] = None) -> DraftSummary:
+        """Get summary of all draft changes for a subject."""
         changes = []
         validation_errors = []
 
         active_version = await self.get_active_version(subject_id)
         active_version_id = active_version.version_id if active_version else None
 
-        # Fetch all draft entities from Firestore in one traversal
         draft_entities = await firestore_reader.get_draft_entities(subject_id)
 
         entity_type_map = {
@@ -120,7 +113,6 @@ class VersionControl:
 
         for collection_key, entity_type in entity_type_map.items():
             drafts = draft_entities.get(collection_key, [])
-            logger.info(f"Found {len(drafts)} draft {entity_type} records for {subject_id}")
 
             for draft in drafts:
                 entity_id = (
@@ -152,23 +144,19 @@ class VersionControl:
         publish_request: PublishRequest,
         user_id: str
     ) -> PublishResponse:
-        """
-        Publish all draft changes for a subject.
+        """Publish all draft changes for a subject.
 
-        Firestore-first flow:
-        1. Validate draft changes
-        2. Create new version in Firestore
-        3. Batch update all Firestore entities (is_draft=False, new version_id)
+        Creates a new version record and publishes edges.
+        The actual draft→published copy is handled by curriculum_manager.deploy_curriculum_to_firestore().
         """
-
         now = datetime.utcnow()
 
-        # 1. Validate
+        # Validate
         draft_summary = await self.get_draft_changes(publish_request.subject_id)
         if not draft_summary.can_publish:
             raise ValueError(f"Cannot publish: {draft_summary.validation_errors}")
 
-        # 2. Get current active version and create new one in Firestore
+        # Get current active version and create new one
         active_ver = await firestore_reader.get_active_version(publish_request.subject_id)
         old_version_id = active_ver["version_id"] if active_ver else None
 
@@ -187,19 +175,18 @@ class VersionControl:
             change_summary=publish_request.change_summary or f"{draft_summary.total_changes} changes",
         )
 
-        # Write new version to Firestore
-        await firestore_curriculum_sync.sync_version(new_version.dict())
+        # Write new version, deactivate old
+        versions_coll = firestore_curriculum_sync.client.collection("curriculum_versions")
+        versions_coll.document(version_id).set(new_version.dict())
+        if old_version_id:
+            versions_coll.document(old_version_id).update({"is_active": False})
 
-        # 3. Batch update all entities in Firestore (is_draft=False, new version_id)
-        await firestore_curriculum_sync.sync_publish(
-            subject_id=publish_request.subject_id,
-            new_version_id=new_version.version_id,
-            old_version_id=old_version_id,
+        # Publish edges in graph subcollection
+        await firestore_curriculum_sync.publish_edges(
+            publish_request.subject_id, new_version.version_id
         )
 
         logger.info(f"Published version {new_version.version_number} for {publish_request.subject_id}")
-
-        # BQ export removed from publish — use POST /publishing/subjects/{id}/deploy-to-bigquery instead
 
         return PublishResponse(
             success=True,
@@ -212,11 +199,12 @@ class VersionControl:
 
     async def rollback_to_version(
         self,
+        grade: str,
         subject_id: str,
         version_id: str,
         user_id: str
     ) -> PublishResponse:
-        """Rollback to a previous version (Firestore-first)."""
+        """Rollback to a previous version."""
         now = datetime.utcnow()
 
         ver_doc = await firestore_reader.get_version(version_id)
@@ -225,11 +213,16 @@ class VersionControl:
 
         target_version = Version(**ver_doc)
 
-        # Firestore rollback: switch active flags
-        await firestore_curriculum_sync.sync_rollback(
-            subject_id=subject_id,
-            target_version_id=version_id,
-        )
+        # Switch active flags in curriculum_versions
+        versions_coll = firestore_curriculum_sync.client.collection("curriculum_versions")
+        versions = versions_coll.where("subject_id", "==", subject_id).stream()
+        batch = firestore_curriculum_sync.client.batch()
+        for doc in versions:
+            if doc.id == version_id:
+                batch.update(doc.reference, {"is_active": True, "activated_at": now.isoformat()})
+            elif doc.to_dict().get("is_active"):
+                batch.update(doc.reference, {"is_active": False})
+        batch.commit()
 
         logger.info(f"Rolled back to version {target_version.version_number} for {subject_id}")
 

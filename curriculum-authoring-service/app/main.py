@@ -8,10 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
-from app.core.database import db
 from app.db.firestore_graph_service import firestore_graph_service
 from app.db.firestore_curriculum_service import firestore_curriculum_sync
-from app.api import curriculum, prerequisites, publishing, ai, graph, edges, agent, lineage
+from app.api import curriculum, publishing, ai, graph, edges, agent, lineage
 
 # Configure logging
 logging.basicConfig(
@@ -27,75 +26,33 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("🚀 Starting Curriculum Authoring Service")
 
-    try:
-        # Initialize Firestore (source of truth for authoring)
-        firestore_graph_service.initialize()
-        firestore_curriculum_sync.initialize()
+    # Initialize Firestore clients
+    firestore_graph_service.initialize()
+    firestore_curriculum_sync.initialize()
 
-        # Initialize BigQuery (optional — used for analytics export on publish)
-        try:
-            db.initialize()
-            db.setup_all_tables()
-        except Exception as bq_err:
-            logger.warning(f"BigQuery initialization failed (non-blocking): {bq_err}")
-            logger.warning("BQ export on publish will be unavailable until BQ is connected")
+    # Initialize services
+    from app.services.edge_manager import edge_manager
+    from app.services.graph_cache_manager import graph_cache_manager
+    from app.services.graph_analysis import GraphAnalysisEngine
+    from app.services.suggestion_engine import SuggestionEngine
+    from app.services.graph_agent import CurriculumGraphAgentService
+    from app.services.scoped_suggestion_service import ScopedSuggestionService
+    from app.services.authoring_service import AuthoringService
 
-        # Initialize agentic graph analysis service
-        try:
-            from app.services.edge_manager import edge_manager
-            from app.services.graph_cache_manager import graph_cache_manager
-            from app.services.graph_analysis import GraphAnalysisEngine
-            from app.services.suggestion_engine import SuggestionEngine
-            from app.services.graph_agent import CurriculumGraphAgentService
+    app.state.graph_agent = CurriculumGraphAgentService(
+        edge_manager=edge_manager,
+        graph_cache=graph_cache_manager,
+        suggestion_engine=SuggestionEngine(firestore_client=firestore_curriculum_sync.client),
+        analysis_engine=GraphAnalysisEngine(),
+        firestore_client=firestore_curriculum_sync.client,
+    )
+    app.state.scoped_suggestion_service = ScopedSuggestionService(
+        edge_manager=edge_manager,
+        firestore_client=firestore_curriculum_sync.client,
+    )
+    app.state.authoring_service = AuthoringService()
 
-            analysis_engine = GraphAnalysisEngine()
-            suggestion_engine = SuggestionEngine(
-                firestore_client=firestore_curriculum_sync.client,
-            )
-            graph_agent = CurriculumGraphAgentService(
-                edge_manager=edge_manager,
-                graph_cache=graph_cache_manager,
-                suggestion_engine=suggestion_engine,
-                analysis_engine=analysis_engine,
-                firestore_client=firestore_curriculum_sync.client,
-            )
-            app.state.graph_agent = graph_agent
-            logger.info("✅ Graph agent service initialized")
-        except Exception as e:
-            logger.warning(f"Graph agent service initialization failed (non-blocking): {e}")
-            app.state.graph_agent = None
-
-        # Initialize scoped suggestion service (graph-aware authoring)
-        try:
-            from app.services.edge_manager import edge_manager as _edge_mgr
-            from app.services.scoped_suggestion_service import ScopedSuggestionService
-
-            scoped_service = ScopedSuggestionService(
-                edge_manager=_edge_mgr,
-                firestore_client=firestore_curriculum_sync.client,
-            )
-            app.state.scoped_suggestion_service = scoped_service
-            logger.info("✅ Scoped suggestion service initialized")
-        except Exception as e:
-            logger.warning(f"Scoped suggestion service initialization failed (non-blocking): {e}")
-            app.state.scoped_suggestion_service = None
-
-        # Initialize PRD-driven authoring service
-        try:
-            from app.services.authoring_service import AuthoringService
-
-            authoring_service = AuthoringService()
-            app.state.authoring_service = authoring_service
-            logger.info("✅ Authoring service initialized")
-        except Exception as e:
-            logger.warning(f"Authoring service initialization failed (non-blocking): {e}")
-            app.state.authoring_service = None
-
-        logger.info("✅ Service startup complete")
-
-    except Exception as e:
-        logger.error(f"❌ Service startup failed: {e}")
-        raise
+    logger.info("✅ Service startup complete")
 
     yield
 
@@ -135,12 +92,6 @@ app.include_router(
     curriculum.router,
     prefix="/api/curriculum",
     tags=["Curriculum Management"]
-)
-
-app.include_router(
-    prerequisites.router,
-    prefix="/api/prerequisites",
-    tags=["Prerequisites & Learning Paths"]
 )
 
 app.include_router(
@@ -193,7 +144,6 @@ async def root():
         "features": [
             "Grade-scoped Subject / Unit / Skill / Subskill hierarchy",
             "Canonical grade codes (PK, K, 1-12)",
-            "Prerequisite graph management",
             "AI-assisted curriculum scaffolding",
             "Lumina primitive assignment",
             "Version control and publishing",
@@ -207,7 +157,6 @@ async def root():
         ],
         "endpoints": {
             "curriculum": "/api/curriculum",
-            "prerequisites": "/api/prerequisites",
             "edges": "/api/edges",
             "agent": "/api/agent",
             "publishing": "/api/publishing",
@@ -220,25 +169,10 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    try:
-        # Test BigQuery connection
-        test_query = f"SELECT 1 as test"
-        await db.execute_query(test_query)
-
-        return {
-            "status": "healthy",
-            "service": settings.SERVICE_NAME,
-            "database": "connected",
-            "bigquery_project": settings.GOOGLE_CLOUD_PROJECT,
-            "bigquery_dataset": settings.BIGQUERY_DATASET_ID
-        }
-
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {
-            "status": "unhealthy",
-            "error": str(e)
-        }
+    return {
+        "status": "healthy",
+        "service": settings.SERVICE_NAME,
+    }
 
 
 if __name__ == "__main__":

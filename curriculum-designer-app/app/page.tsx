@@ -9,23 +9,43 @@ import { DraftSummary } from '@/components/curriculum-designer/publishing/DraftS
 import { VersionHistory } from '@/components/curriculum-designer/publishing/VersionHistory';
 import { GraphCachePanel } from '@/components/curriculum-designer/graph/GraphCachePanel';
 import { AIUnitGenerator } from '@/components/curriculum-designer/ai/AIUnitGenerator';
+import { PrimitiveCatalogView } from '@/components/curriculum-designer/catalog/PrimitiveCatalogView';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Plus, Save, GitBranch, Sparkles, Database } from 'lucide-react';
+import { Loader2, Plus, Save, GitBranch, Sparkles, Database, Layers } from 'lucide-react';
 import { GRADE_CODES, type GradeCode } from '@/lib/curriculum-authoring/constants';
 import type { SelectedEntity } from '@/types/curriculum-authoring';
 
 export default function CurriculumDesignerPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
+  const [selectedGrade, setSelectedGrade] = useState<string>('');
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | undefined>();
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showPrerequisites, setShowPrerequisites] = useState(false);
-  const [activeTab, setActiveTab] = useState<'editor' | 'prerequisites' | 'drafts' | 'versions' | 'cache'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'prerequisites' | 'drafts' | 'versions' | 'cache' | 'primitives'>('editor');
   const [sidebarWidth, setSidebarWidth] = useState(384); // 384px = w-96
   const [isResizing, setIsResizing] = useState(false);
 
   const { data: subjects, isLoading: isLoadingSubjects } = useSubjects(true);
+
+  /** Parse the composite select value "grade::subject_id" */
+  const handleSubjectChange = (compositeValue: string) => {
+    if (!compositeValue) {
+      setSelectedSubjectId('');
+      setSelectedGrade('');
+      setSelectedEntity(undefined);
+      return;
+    }
+    const [grade, subjectId] = compositeValue.split('::');
+    setSelectedGrade(grade);
+    setSelectedSubjectId(subjectId);
+    setSelectedEntity(undefined);
+  };
+
+  const compositeValue = selectedGrade && selectedSubjectId
+    ? `${selectedGrade}::${selectedSubjectId}`
+    : '';
 
   const handleEntitySelect = (entity: SelectedEntity) => {
     setSelectedEntity(entity);
@@ -115,6 +135,15 @@ export default function CurriculumDesignerPage() {
               AI Generate
             </Button>
 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab('primitives')}
+            >
+              <Layers className="mr-2 h-4 w-4" />
+              Primitives
+            </Button>
+
             {selectedSubjectId && (
               <>
                 <Button
@@ -154,8 +183,8 @@ export default function CurriculumDesignerPage() {
         <div className="flex items-center gap-3">
           <label className="text-sm font-medium text-gray-700">Subject:</label>
           <select
-            value={selectedSubjectId}
-            onChange={(e) => setSelectedSubjectId(e.target.value)}
+            value={compositeValue}
+            onChange={(e) => handleSubjectChange(e.target.value)}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">Select a subject...</option>
@@ -171,7 +200,7 @@ export default function CurriculumDesignerPage() {
               return Array.from(byGrade.entries()).map(([grade, gradeSubjects]) => (
                 <optgroup key={grade} label={GRADE_CODES[grade as GradeCode] || grade}>
                   {gradeSubjects.map((subject) => (
-                    <option key={subject.subject_id} value={subject.subject_id}>
+                    <option key={`${grade}::${subject.subject_id}`} value={`${grade}::${subject.subject_id}`}>
                       {subject.subject_name} {subject.is_draft ? '(Draft)' : ''}
                     </option>
                   ))}
@@ -199,6 +228,7 @@ export default function CurriculumDesignerPage() {
               <h2 className="mb-3 text-sm font-semibold text-gray-700">Curriculum Structure</h2>
               <CurriculumTreeView
                 subjectId={selectedSubjectId}
+                grade={selectedGrade}
                 selectedEntity={selectedEntity}
                 onSelectEntity={handleEntitySelect}
                 onAddUnit={handleAddUnit}
@@ -229,6 +259,7 @@ export default function CurriculumDesignerPage() {
                   <TabsTrigger value="drafts">Draft Changes</TabsTrigger>
                   <TabsTrigger value="versions">Version History</TabsTrigger>
                   <TabsTrigger value="cache">Graph Cache</TabsTrigger>
+                  <TabsTrigger value="primitives">Primitives</TabsTrigger>
                 </TabsList>
               </div>
 
@@ -238,6 +269,7 @@ export default function CurriculumDesignerPage() {
                     <EntityEditor
                       entity={selectedEntity}
                       subjectId={selectedSubjectId}
+                      grade={selectedGrade}
                       onPrerequisiteClick={handlePrerequisiteClick}
                       onEntityDeleted={() => setSelectedEntity(undefined)}
                     />
@@ -254,6 +286,7 @@ export default function CurriculumDesignerPage() {
                       entityId={selectedEntity.id}
                       entityType={selectedEntity.type}
                       subjectId={selectedSubjectId}
+                      grade={selectedGrade}
                     />
                   ) : (
                     <div className="flex h-64 items-center justify-center">
@@ -263,19 +296,27 @@ export default function CurriculumDesignerPage() {
                 </TabsContent>
 
                 <TabsContent value="drafts" className="mt-0">
-                  <DraftSummary subjectId={selectedSubjectId} />
+                  <DraftSummary subjectId={selectedSubjectId} grade={selectedGrade} />
                 </TabsContent>
 
                 <TabsContent value="versions" className="mt-0">
-                  <VersionHistory subjectId={selectedSubjectId} />
+                  <VersionHistory subjectId={selectedSubjectId} grade={selectedGrade} />
                 </TabsContent>
 
                 <TabsContent value="cache" className="mt-0">
-                  <GraphCachePanel subjectId={selectedSubjectId} />
+                  <GraphCachePanel subjectId={selectedSubjectId} grade={selectedGrade} />
+                </TabsContent>
+
+                <TabsContent value="primitives" className="mt-0">
+                  <PrimitiveCatalogView />
                 </TabsContent>
               </div>
             </Tabs>
           </div>
+        </div>
+      ) : activeTab === 'primitives' ? (
+        <div className="flex-1 overflow-y-auto p-6">
+          <PrimitiveCatalogView />
         </div>
       ) : (
         <div className="flex flex-1 items-center justify-center">
@@ -291,6 +332,7 @@ export default function CurriculumDesignerPage() {
       {showAIGenerator && selectedSubjectId && (
         <AIUnitGenerator
           subjectId={selectedSubjectId}
+          grade={selectedGrade}
           open={showAIGenerator}
           onOpenChange={setShowAIGenerator}
         />

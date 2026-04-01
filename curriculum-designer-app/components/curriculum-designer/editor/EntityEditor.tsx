@@ -25,17 +25,18 @@ import type { SelectedEntity } from '@/types/curriculum-authoring';
 interface EntityEditorProps {
   entity: SelectedEntity;
   subjectId?: string;
+  grade?: string;
   onPrerequisiteClick?: () => void;
   onEntityDeleted?: () => void;
 }
 
-export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityDeleted }: EntityEditorProps) {
+export function EntityEditor({ entity, subjectId, grade, onPrerequisiteClick, onEntityDeleted }: EntityEditorProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { mutate: deleteUnit, isPending: isDeletingUnit } = useDeleteUnit();
   const { mutate: deleteSkill, isPending: isDeletingSkill } = useDeleteSkill();
   const { mutate: deleteSubskill, isPending: isDeletingSubskill } = useDeleteSubskill();
-  const { data: activeVersion } = useActiveVersion(subjectId || '');
+  const { data: activeVersion } = useActiveVersion(subjectId || '', grade || '');
 
   const isDeleting = isDeletingUnit || isDeletingSkill || isDeletingSubskill;
   const getEntityTypeLabel = () => {
@@ -77,7 +78,7 @@ export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityD
 
     switch (entity.type) {
       case 'unit':
-        deleteUnit(entity.id, {
+        deleteUnit({ unitId: entity.id, grade: grade || '', subjectId: subjectId || '' }, {
           onSuccess: () => {
             setShowDeleteConfirm(false);
             onEntityDeleted?.();
@@ -85,7 +86,7 @@ export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityD
         });
         break;
       case 'skill':
-        deleteSkill(entity.id, {
+        deleteSkill({ skillId: entity.id, grade: grade || '', subjectId: subjectId || '' }, {
           onSuccess: () => {
             setShowDeleteConfirm(false);
             onEntityDeleted?.();
@@ -93,7 +94,7 @@ export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityD
         });
         break;
       case 'subskill':
-        deleteSubskill(entity.id, {
+        deleteSubskill({ subskillId: entity.id, grade: grade || '', subjectId: subjectId || '' }, {
           onSuccess: () => {
             setShowDeleteConfirm(false);
             onEntityDeleted?.();
@@ -163,10 +164,10 @@ export function EntityEditor({ entity, subjectId, onPrerequisiteClick, onEntityD
       </CardHeader>
 
       <CardContent>
-        {entity.type === 'subject' && <SubjectForm subject={entity.data as any} />}
-        {entity.type === 'unit' && <UnitForm unit={entity.data as any} />}
-        {entity.type === 'skill' && <SkillForm skill={entity.data as any} />}
-        {entity.type === 'subskill' && <SubskillForm subskill={entity.data as any} subjectId={subjectId} />}
+        {entity.type === 'subject' && <SubjectForm subject={entity.data as any} grade={grade || ''} />}
+        {entity.type === 'unit' && <UnitForm unit={entity.data as any} grade={grade || ''} subjectId={subjectId || ''} />}
+        {entity.type === 'skill' && <SkillForm skill={entity.data as any} grade={grade || ''} subjectId={subjectId || ''} />}
+        {entity.type === 'subskill' && <SubskillForm subskill={entity.data as any} subjectId={subjectId || ''} grade={grade || ''} />}
       </CardContent>
 
       {/* Delete Confirmation Dialog */}

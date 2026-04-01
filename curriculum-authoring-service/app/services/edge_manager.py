@@ -41,6 +41,7 @@ class EdgeManager:
         version_id: str,
         subject_id: str,
         *,
+        grade: Optional[str] = None,
         on_mutation: Any = None,
     ) -> CurriculumEdge:
         """
@@ -54,7 +55,7 @@ class EdgeManager:
         """
         pair_id = str(uuid.uuid4()) if edge.relationship == "parallel" else None
 
-        created = await self._insert_edge(edge, version_id, subject_id, pair_id=pair_id)
+        created = await self._insert_edge(edge, version_id, subject_id, pair_id=pair_id, grade=grade)
 
         # Auto-create reverse for parallel
         if edge.relationship == "parallel":
@@ -71,7 +72,7 @@ class EdgeManager:
                 authored_by=edge.authored_by,
                 confidence=edge.confidence,
             )
-            await self._insert_edge(reverse, version_id, subject_id, pair_id=pair_id)
+            await self._insert_edge(reverse, version_id, subject_id, pair_id=pair_id, grade=grade)
 
         if on_mutation:
             try:
@@ -88,13 +89,11 @@ class EdgeManager:
         subject_id: str,
         *,
         pair_id: Optional[str] = None,
+        grade: str,
     ) -> CurriculumEdge:
         """Write edge to Firestore graph subcollection (source of truth)."""
         now = datetime.utcnow()
         edge_id = str(uuid.uuid4())
-
-        # Resolve grade for hierarchical storage
-        grade = await firestore_reader.resolve_grade(subject_id)
 
         row = {
             "edge_id": edge_id,
@@ -132,6 +131,7 @@ class EdgeManager:
         self,
         edge_id: str,
         *,
+        grade: Optional[str] = None,
         on_mutation: Any = None,
         subject_id: Optional[str] = None,
     ) -> bool:
@@ -140,14 +140,13 @@ class EdgeManager:
         reverse edge too.
         """
         # Look up the edge (use subject_id for scoped lookup if available)
-        edge_doc = await firestore_reader.get_edge(edge_id, subject_id=subject_id)
+        edge_doc = await firestore_reader.get_edge(grade, subject_id, edge_id) if grade and subject_id else None
         if not edge_doc:
             logger.warning(f"Edge {edge_id} not found")
             return False
 
         pair_id = edge_doc.get("pair_id")
         resolved_subject = subject_id or edge_doc.get("subject_id")
-        grade = await firestore_reader.resolve_grade(resolved_subject) if resolved_subject else None
 
         try:
             await firestore_curriculum_sync.delete_edge(edge_id, subject_id=resolved_subject, grade=grade)
@@ -175,12 +174,13 @@ class EdgeManager:
         self,
         entity_id: str,
         entity_type: EntityType,
+        grade: Optional[str] = None,
         subject_id: Optional[str] = None,
         include_drafts: bool = False,
     ) -> EntityEdges:
         """Get all edges where entity is source or target."""
         result = await firestore_reader.get_entity_edges(
-            entity_id, entity_type, subject_id=subject_id, include_drafts=include_drafts
+            grade, subject_id, entity_id, entity_type, include_drafts=include_drafts
         )
 
         outgoing = [CurriculumEdge(**e) for e in result["outgoing"]]
@@ -197,15 +197,17 @@ class EdgeManager:
         self,
         subject_id: str,
         include_drafts: bool = False,
+        *,
+        grade: str,
     ) -> CurriculumGraph:
         """Build the full knowledge graph for a subject."""
-        logger.info(f"Building knowledge graph for {subject_id} (drafts={include_drafts})")
+        logger.info(f"Building knowledge graph for {subject_id} grade={grade} (drafts={include_drafts})")
 
         # Nodes via the reader's enriched helper
-        nodes = await firestore_reader.get_subject_graph_nodes(subject_id, include_drafts=include_drafts)
+        nodes = await firestore_reader.get_subject_graph_nodes(grade, subject_id, include_drafts=include_drafts)
 
         # Edges from hierarchical subcollection
-        raw_edges = await firestore_reader.get_edges_for_subject(subject_id, include_drafts=include_drafts)
+        raw_edges = await firestore_reader.get_edges_for_subject(grade, subject_id, include_drafts=include_drafts)
 
         # Build enriched edges
         edges = []
@@ -241,6 +243,7 @@ class EdgeManager:
     async def validate_edge(
         self,
         edge: CurriculumEdgeCreate,
+        grade: Optional[str] = None,
         subject_id: Optional[str] = None,
     ) -> Tuple[bool, Optional[str]]:
         """
@@ -258,12 +261,12 @@ class EdgeManager:
         )
 
         # Load all prerequisite edges for the subject into memory
-        if subject_id:
-            prereq_edges = await firestore_reader.get_prerequisite_edges(subject_id)
+        if grade and subject_id:
+            prereq_edges = await firestore_reader.get_prerequisite_edges(grade, subject_id)
         else:
             prereq_edges = []
             for eid in (edge.source_entity_id, edge.target_entity_id):
-                result = await firestore_reader.get_entity_edges(eid, edge.source_entity_type)
+                result = await firestore_reader.get_entity_edges(grade, subject_id, eid, edge.source_entity_type)
                 for e in result["outgoing"] + result["incoming"]:
                     if e.get("is_prerequisite"):
                         prereq_edges.append(e)
@@ -300,10 +303,10 @@ class EdgeManager:
     #  BASE SKILLS
     # ------------------------------------------------------------------ #
 
-    async def get_base_skills(self, subject_id: str) -> List[Dict[str, Any]]:
+    async def get_base_skills(self, subject_id: str, *, grade: str) -> List[Dict[str, Any]]:
         """Get entry-point entities with no prerequisite edges targeting them."""
-        nodes = await firestore_reader.get_subject_graph_nodes(subject_id, include_drafts=False)
-        prereq_edges = await firestore_reader.get_prerequisite_edges(subject_id)
+        nodes = await firestore_reader.get_subject_graph_nodes(grade, subject_id, include_drafts=False)
+        prereq_edges = await firestore_reader.get_prerequisite_edges(grade, subject_id)
 
         has_prereqs = {e["target_entity_id"] for e in prereq_edges if not e.get("is_draft")}
 

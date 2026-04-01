@@ -135,15 +135,16 @@ class CurriculumGraphAPI {
    */
   async getCachedGraph(
     subjectId: string,
+    grade: string,
     includeDrafts: boolean = false,
     forceRefresh: boolean = false
   ): Promise<PrerequisiteGraph> {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ grade });
     if (includeDrafts) params.append('include_drafts', 'true');
     if (forceRefresh) params.append('force_refresh', 'true');
 
     return this.request<PrerequisiteGraph>(
-      `/api/graph/${subjectId}${params.toString() ? `?${params}` : ''}`
+      `/api/graph/${subjectId}?${params}`
     );
   }
 
@@ -158,6 +159,7 @@ class CurriculumGraphAPI {
    */
   async regenerateGraph(
     subjectId: string,
+    grade: string,
     includeDrafts: boolean = false
   ): Promise<{
     message: string;
@@ -166,11 +168,11 @@ class CurriculumGraphAPI {
     node_count: number;
     edge_count: number;
   }> {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ grade });
     if (includeDrafts) params.append('include_drafts', 'true');
 
     return this.request(
-      `/api/graph/${subjectId}/regenerate${params.toString() ? `?${params}` : ''}`,
+      `/api/graph/${subjectId}/regenerate?${params}`,
       { method: 'POST' }
     );
   }
@@ -183,7 +185,8 @@ class CurriculumGraphAPI {
    * @param subjectId - Subject identifier
    */
   async regenerateAllVersions(
-    subjectId: string
+    subjectId: string,
+    grade: string
   ): Promise<{
     message: string;
     subject_id: string;
@@ -196,8 +199,9 @@ class CurriculumGraphAPI {
       edge_count: number;
     };
   }> {
+    const params = new URLSearchParams({ grade });
     return this.request(
-      `/api/graph/${subjectId}/regenerate-all`,
+      `/api/graph/${subjectId}/regenerate-all?${params}`,
       { method: 'POST' }
     );
   }
@@ -213,6 +217,7 @@ class CurriculumGraphAPI {
    */
   async invalidateCache(
     subjectId: string,
+    grade: string,
     versionType?: 'draft' | 'published'
   ): Promise<{
     message: string;
@@ -220,11 +225,11 @@ class CurriculumGraphAPI {
     version_type: string | null;
     deleted_count: number;
   }> {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ grade });
     if (versionType) params.append('version_type', versionType);
 
     return this.request(
-      `/api/graph/${subjectId}/cache${params.toString() ? `?${params}` : ''}`,
+      `/api/graph/${subjectId}/cache?${params}`,
       { method: 'DELETE' }
     );
   }
@@ -237,10 +242,12 @@ class CurriculumGraphAPI {
    * @param subjectId - Subject identifier
    */
   async getGraphStatus(
-    subjectId: string
+    subjectId: string,
+    grade: string
   ): Promise<GraphStatus> {
+    const params = new URLSearchParams({ grade });
     return this.request<GraphStatus>(
-      `/api/graph/${subjectId}/status`
+      `/api/graph/${subjectId}/status?${params}`
     );
   }
 

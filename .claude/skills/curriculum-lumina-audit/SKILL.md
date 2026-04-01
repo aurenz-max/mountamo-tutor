@@ -256,7 +256,7 @@ Re-author RED and YELLOW subskills to use better primitives.
    ```bash
    curl -X PUT "http://localhost:8001/api/curriculum/subskills/{subskill_id}?grade={grade}&subject_id={subject_id}" \
      -H "Content-Type: application/json" \
-     -d '{"target_primitive": "new-primitive", "primitive_ids": ["new-primitive"], "target_eval_modes": ["mode1", "mode2"]}'
+     -d '{"target_primitive": "new-primitive", "target_eval_modes": ["mode1", "mode2"]}'
    ```
    > **Both `grade` and `subject_id` are required** on all write endpoints. The service validates the pair and returns a clear error on mismatch (README § "Gotchas" item 1).
 
@@ -385,12 +385,11 @@ Runs the complete bidirectional audit and improvement cycle.
 4. GAPS    → generate PRIMITIVE_GAPS.md for PURPLE items
 5. UNUSED  → flag catalog primitives with no curriculum home
 6. REPORT  → final summary with before/after metrics
-7. PUBLISH → if user approves, publish + deploy changes
+7. PUBLISH → if user approves, publish changes (deploys + flattens automatically)
 ```
 
-> **Publishing requires two steps** (README § "Gotchas" item 7):
-> 1. `POST /api/publishing/subjects/{subject_id}/publish` — creates immutable version snapshot
-> 2. `POST /api/publishing/subjects/{subject_id}/deploy` — writes to `curriculum_published` (what the platform reads) + auto-flattens graph
+> **Publishing is a single action:**
+> `POST /api/publishing/subjects/{subject_id}/publish` — creates version snapshot, deploys to `curriculum_published`, and rebuilds graph cache in one step.
 
 ### Final Report
 
@@ -503,8 +502,7 @@ These rules apply to ALL commands that modify subskill IDs (`upgrade`, `full-loo
 **NEVER edit `curriculum_published` directly.** All changes go through the draft → publish flow:
 1. Edit the draft via curriculum CRUD endpoints
 2. Run `lineage-check` to validate all ID changes are tracked
-3. Publish via `POST /api/publishing/subjects/{subject_id}/publish`
-4. Deploy via `POST /api/publishing/subjects/{subject_id}/deploy`
+3. Publish via `POST /api/publishing/subjects/{subject_id}/publish` (deploys + flattens in one step)
 
 The publish pipeline in `draft_curriculum_service.py` is the **ONLY** writer to `curriculum_published`. If published data is wrong, fix it by editing the draft and re-publishing — never patch in place.
 

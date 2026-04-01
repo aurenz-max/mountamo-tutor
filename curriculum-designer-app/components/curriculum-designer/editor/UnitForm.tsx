@@ -13,9 +13,11 @@ import type { Unit, UnitUpdate, UnitCreate } from '@/types/curriculum-authoring'
 
 interface UnitFormProps {
   unit: Unit;
+  grade: string;
+  subjectId: string;
 }
 
-export function UnitForm({ unit }: UnitFormProps) {
+export function UnitForm({ unit, grade, subjectId }: UnitFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const isNewUnit = unit.unit_id === 'new';
 
@@ -58,7 +60,7 @@ export function UnitForm({ unit }: UnitFormProps) {
         description: data.description,
       };
 
-      createUnit(createData, {
+      createUnit({ data: createData, grade }, {
         onSuccess: () => {
           setShowSuccess(true);
           setTimeout(() => setShowSuccess(false), 3000);
@@ -67,7 +69,7 @@ export function UnitForm({ unit }: UnitFormProps) {
     } else {
       // Update existing unit
       updateUnit(
-        { unitId: unit.unit_id, data },
+        { unitId: unit.unit_id, data, grade, subjectId },
         {
           onSuccess: () => {
             setShowSuccess(true);

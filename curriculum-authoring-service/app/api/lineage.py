@@ -190,7 +190,10 @@ async def list_lineage_records(
 
 
 @router.get("/check/{subject_id}", response_model=LineageCheckResponse)
-async def check_lineage_coverage(subject_id: str):
+async def check_lineage_coverage(
+    subject_id: str,
+    grade: str = Query(..., description="Grade level (e.g. Kindergarten, 1, 2)"),
+):
     """
     Pre-publish validation: diff published vs draft subskill_index and verify
     every removed subskill_id has a lineage record.
@@ -205,7 +208,6 @@ async def check_lineage_coverage(subject_id: str):
     published = await firestore_graph_service.get_published_curriculum(subject_id)
     published_index = set((published or {}).get("subskill_index", {}).keys())
 
-    grade = (published or {}).get("grade", "K")
     draft = await draft_curriculum.get_draft(grade, subject_id)
     draft_index = set((draft or {}).get("subskill_index", {}).keys())
 

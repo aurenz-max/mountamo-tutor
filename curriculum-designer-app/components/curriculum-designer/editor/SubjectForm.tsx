@@ -15,9 +15,10 @@ import type { Subject, SubjectUpdate } from '@/types/curriculum-authoring';
 
 interface SubjectFormProps {
   subject: Subject;
+  grade: string;
 }
 
-export function SubjectForm({ subject }: SubjectFormProps) {
+export function SubjectForm({ subject, grade }: SubjectFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const { mutate: updateSubject, isPending, error } = useUpdateSubject();
 
@@ -48,7 +49,7 @@ export function SubjectForm({ subject }: SubjectFormProps) {
 
   const onSubmit = (data: SubjectUpdate) => {
     updateSubject(
-      { subjectId: subject.subject_id, data },
+      { subjectId: subject.subject_id, data, grade },
       {
         onSuccess: () => {
           setShowSuccess(true);

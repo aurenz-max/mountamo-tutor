@@ -1,0 +1,4104 @@
+[
+  {
+    "id": "curator-brief",
+    "domain": "core",
+    "description": "Introduction, learning objectives, and hook. REQUIRED: Always include this first.",
+    "constraints": "Must be first component",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "concept-card-grid",
+    "domain": "core",
+    "description": "A set of 3-4 distinct key terms or concepts defined with visuals. Use for vocabulary or core principles.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "comparison-panel",
+    "domain": "core",
+    "description": "Side-by-side comparison of two entities. Use when distinct",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "generative-table",
+    "domain": "core",
+    "description": "Structured rows/columns. Use for datasets, timelines, or categorical attributes.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "custom-visual",
+    "domain": "core",
+    "description": "A bespoke HTML/JS simulation or SVG diagram. Use for complex systems (biology, physics, counting games) that standard math visuals cannot handle. TIP: Provide config with subject, keyTerms, and concep",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "formula-card",
+    "domain": "core",
+    "description": "Mathematical formula display with LaTeX. Use for equations, theorems, or scientific formulas.",
+    "constraints": "Requires mathematical formulas",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "feature-exhibit",
+    "domain": "core",
+    "description": "Deep-dive editorial section with multiple subsections. Use for comprehensive exploration of a topic.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "annotated-example",
+    "domain": "core",
+    "description": "Step-by-step worked example with multi-layer annotations (procedural steps, strategic thinking, common errors, conceptual connections). Use for demonstrating problem-solving processes in math, science",
+    "constraints": "Best for elementary and above. Requires a well-defined problem with clear solution steps.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "nested-hierarchy",
+    "domain": "core",
+    "description": "Interactive tree structure for exploring hierarchical systems (organizational charts, taxonomies, system architectures, anatomical structures). Users navigate through expandable nodes to see relations",
+    "constraints": "Best for topics with clear hierarchical organization (2-4 levels deep). Use for biology (body systems), government (branches), classification systems, or any nested organizational structure.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "take-home-activity",
+    "domain": "core",
+    "description": "Hands-on activity using common household materials. Screen-free learning experience with step-by-step instructions, safety notes, reflection prompts, and optional extensions. Perfect for reinforcing c",
+    "constraints": "Best for science experiments, math manipulatives, art projects, or any topic that benefits from hands-on exploration. Automatically adapts complexity and safety guidance to grade level.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "graph-board",
+    "domain": "core",
+    "description": "Interactive polynomial graphing board where users plot points and visualize fitted polynomial curves. Use for algebra, functions, data analysis, or polynomial interpolation concepts.",
+    "constraints": "Best for middle-school and above. Requires mathematical/data analysis context.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "foundation-explorer",
+    "domain": "core",
+    "description": "Objective-driven concept exploration with clear diagrams, definitions, and self-checks. Shows a central diagram with multiple labeled concepts that students explore one at a time. Self-check questions",
+    "constraints": "Best for IDENTIFY and EXPLAIN objectives. Requires 2-4 foundational concepts with clear visual representations. Works across all subjects: science (parts of a cell), engineering (parts of a lever), language arts (parts of a sentence), math (components of an equation). Always connects to a specific learning objective from the curator brief.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "fast-fact",
+    "domain": "core",
+    "description": "Timed fluency drill for rapid recall across any subject.",
+    "constraints": "Best for factual recall (not reasoning or multi-step problems).",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "fact-file",
+    "domain": "core",
+    "description": "Magazine-style profile card with key stats, quick facts, deep dive sections, records, and",
+    "constraints": "Best for topics with concrete facts and stats. Not ideal for purely narrative content.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "explore",
+        "label": "Explore & Recall (Guided)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "recall_easy"
+        ],
+        "description": "Student explores all sections, then answers 3 easy recall questions with section hints visible"
+      },
+      {
+        "evalMode": "recall",
+        "label": "Recall (Unguided)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "recall_easy",
+          "recall_medium"
+        ],
+        "description": "Student reads the Fact File, then answers 4 questions without section hints. Mix of easy and medium."
+      },
+      {
+        "evalMode": "apply",
+        "label": "Apply & Analyze",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "recall_medium",
+          "recall_hard"
+        ],
+        "description": "Student answers harder questions requiring inference, comparison, or application of facts to new scenarios"
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "how-it-works",
+    "domain": "core",
+    "description": "Interactive step-by-step process diagram. Students navigate through 4-6 sequential stages learning how something works (garbage collection, water cycle, digestion, bill-making). Each step has descript",
+    "constraints": "Best for processes with clear sequential steps (4-6). Not ideal for non-linear or branching processes.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "guided",
+        "label": "Guided Walkthrough (Easy)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "identify"
+        ],
+        "description": "Student walks through all steps with full guidance, then answers 3 "
+      },
+      {
+        "evalMode": "sequence",
+        "label": "Sequence & Identify (Medium)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "sequence",
+          "identify"
+        ],
+        "description": "Student must drag steps into correct order AND answer identify questions without step details visible"
+      },
+      {
+        "evalMode": "predict",
+        "label": "Predict & Explain (Hard)",
+        "beta": 5.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "predict",
+          "explain"
+        ],
+        "description": "Student sees partial process and must predict next step or explain why a step happens. Requires inference beyond memorization."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "timeline-explorer",
+    "domain": "core",
+    "description": "Interactive chronological timeline with 5-8 event cards. Students explore events spanning a time period, reading descriptions, impact callouts, and connections between events. Comprehension challenges",
+    "constraints": "Best for topics with clear chronological progression (5-8 events). Not ideal for non-sequential topics.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "explore",
+        "label": "Guided Exploration (Easy)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "identify"
+        ],
+        "description": "Student explores all events with full guidance, then answers 3 "
+      },
+      {
+        "evalMode": "order",
+        "label": "Chronological Ordering (Medium)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "order",
+          "identify"
+        ],
+        "description": "Student must arrange events chronologically AND identify events by description, timeline hidden during challenges"
+      },
+      {
+        "evalMode": "connect",
+        "label": "Cause & Effect (Hard)",
+        "beta": 5.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "cause_effect",
+          "date"
+        ],
+        "description": "Student matches causes to effects across events and places events in correct time periods. Requires understanding WHY things happened, not just WHEN."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "vocabulary-explorer",
+    "domain": "core",
+    "description": "Topic-specific vocabulary explorer with rich contextual definitions, example sentences, word origins, related words, and pronunciation guides. Students explore 5-8 terms through an interactive card in",
+    "constraints": "Best for topics with specialized terminology (5-8 terms). Not ideal for topics without distinct vocabulary.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "explore",
+        "label": "Explore & Match (Guided)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "match"
+        ],
+        "description": "Student explores all terms, then matches terms to definitions with term cards still visible"
+      },
+      {
+        "evalMode": "recall",
+        "label": "Recall & Fill (Unguided)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "match",
+          "fill_blank"
+        ],
+        "description": "Student matches terms AND fills in blanks in sentences, without definitions visible"
+      },
+      {
+        "evalMode": "apply",
+        "label": "Apply in Context (Hard)",
+        "beta": 5.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "fill_blank",
+          "context"
+        ],
+        "description": "Student fills blanks and uses terms in new sentences/scenarios. Requires transferring vocabulary to novel contexts."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "bar-model",
+    "domain": "math",
+    "description": "Comparative bar visualization showing relative values. Perfect for comparing quantities, showing differences, or teaching basic arithmetic comparisons. ESSENTIAL for elementary math.",
+    "constraints": "Requires numeric values to compare",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "number-line",
+    "domain": "math",
+    "description": "Interactive number line with drag-to-plot, animated jump arcs, ordering, and zoom. Supports integers, fractions, decimals, and mixed numbers. K-2 mode (0-20, counting) and 3-5 mode (negatives, fractio",
+    "constraints": "Requires numeric range. Jump mode requires operations array. Challenges drive interactivity.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "plot",
+        "label": "Plot (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "plot_point"
+        ],
+        "description": "Place value on number line with full guidance."
+      },
+      {
+        "evalMode": "jump",
+        "label": "Jump (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "show_jump"
+        ],
+        "description": "Show operation as movement on number line."
+      },
+      {
+        "evalMode": "order",
+        "label": "Order (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "order_values"
+        ],
+        "description": "Sequence multiple values on number line."
+      },
+      {
+        "evalMode": "between",
+        "label": "Between (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "find_between"
+        ],
+        "description": "Estimate and find values between marks."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "base-ten-blocks",
+    "domain": "math",
+    "description": "Interactive base-ten manipulative with place value columns, supply tray, and regrouping. Students drag blocks to build numbers, decompose values, regroup (trade 10 ones for 1 ten), and perform additio",
+    "constraints": "Requires a number to work with. Challenges array drives interactivity. Grade band determines complexity.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "build_number",
+        "label": "Build Number (Concrete)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "build_number"
+        ],
+        "description": "Concrete manipulative: student builds a target number by placing blocks in place value columns."
+      },
+      {
+        "evalMode": "read_blocks",
+        "label": "Read Blocks (Pictorial)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "read_blocks"
+        ],
+        "description": "Pictorial recognition: student identifies the number represented by pre-placed blocks."
+      },
+      {
+        "evalMode": "regroup",
+        "label": "Regroup (Strategy)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "regroup"
+        ],
+        "description": "Strategy: student regroups blocks by trading 10 of one unit for 1 of the next."
+      },
+      {
+        "evalMode": "operate",
+        "label": "Operate (Transitional)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "add_with_blocks",
+          "subtract_with_blocks"
+        ],
+        "description": "Operations: student adds or subtracts using blocks with regrouping/borrowing."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "fraction-circles",
+    "domain": "math",
+    "description": "Multi-phase fraction learning with circle diagrams. Challenges include identifying fractions from shaded circles, building target fractions by clicking slices, comparing two fractions visually, and di",
+    "constraints": "Generates 4-6 challenges mixing identify, build, compare, and equivalent types. Denominators 2-12.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "identify",
+        "label": "Identify (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "identify"
+        ],
+        "description": "Name the fraction shown on the circle."
+      },
+      {
+        "evalMode": "build",
+        "label": "Build (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "build"
+        ],
+        "description": "Construct a given fraction by shading slices."
+      },
+      {
+        "evalMode": "compare",
+        "label": "Compare (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "compare"
+        ],
+        "description": "Compare two fractions visually."
+      },
+      {
+        "evalMode": "equivalent",
+        "label": "Equivalent (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "equivalent"
+        ],
+        "description": "Find equivalent fractions with different denominators."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "fraction-bar",
+    "domain": "math",
+    "description": "Multi-phase interactive fraction bar with three learning stages: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading par",
+    "constraints": "Requires a proper fraction (numerator <= denominator). Denominator range 2-12 for best visual clarity.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "identify",
+        "label": "Identify Fraction (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "identify"
+        ],
+        "description": "Unit fractions with small denominators (1/2, 1/3, 1/4)."
+      },
+      {
+        "evalMode": "build",
+        "label": "Build Fraction (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "build"
+        ],
+        "description": "Non-unit proper fractions (2/3, 3/4, 2/5)."
+      },
+      {
+        "evalMode": "compare",
+        "label": "Compare Fractions (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "compare"
+        ],
+        "description": "Fractions with larger denominators, harder distractors."
+      },
+      {
+        "evalMode": "add_subtract",
+        "label": "Fraction Operations (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "add_subtract"
+        ],
+        "description": "Fractions in addition/subtraction context."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "place-value-chart",
+    "domain": "math",
+    "description": "Multi-phase interactive place value chart with three learning stages: (1) identify the place of a highlighted digit via multiple choice, (2) find the value of that digit via multiple choice, (3) build",
+    "constraints": "Requires a target number with clear place value structure. Grade level determines digit range and decimal inclusion. Supports challengeTypes: identify (K-2), build (2-3), compare (3-4), expanded_form (5+).",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "identify",
+        "label": "Identify Place (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "identify"
+        ],
+        "description": "Simple 2-digit numbers, identify place name and value."
+      },
+      {
+        "evalMode": "build",
+        "label": "Build Number (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "build"
+        ],
+        "description": "3-digit numbers, construct the number in the chart."
+      },
+      {
+        "evalMode": "compare",
+        "label": "Compare Places (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "compare"
+        ],
+        "description": "3-4 digit numbers with multiple non-zero digits."
+      },
+      {
+        "evalMode": "expanded_form",
+        "label": "Expanded Form (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "expanded_form"
+        ],
+        "description": "4+ digit numbers or decimals with expanded form."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "area-model",
+    "domain": "math",
+    "description": "Visual area model for multiplication using rectangles divided by factor decomposition. Perfect for teaching multi-digit multiplication, distributive property, partial products, binomial multiplication",
+    "constraints": "Requires two factors that can be decomposed (e.g., 23×15 or (x+3)(x+5)). Supports both numeric and algebraic modes.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "build_model",
+        "label": "Build Model (Concrete)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "build_model"
+        ],
+        "description": "Construct area model from given factors. Simple single-digit factors. Grades 3-4."
+      },
+      {
+        "evalMode": "find_area",
+        "label": "Find Area (Pictorial)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "find_area"
+        ],
+        "description": "Calculate partial products and total area from shown model. Grades 3-4."
+      },
+      {
+        "evalMode": "multiply",
+        "label": "Multiply (Pictorial)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "multiply"
+        ],
+        "description": "Multi-digit multiplication via area model decomposition. Grades 4-5."
+      },
+      {
+        "evalMode": "factor",
+        "label": "Factor (Transitional)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "factor"
+        ],
+        "description": "Reverse operation: partial products shown in grid, student discovers the factor decomposition (dimension labels). Grades 5-6."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "array-grid",
+    "domain": "math",
+    "description": "Rectangular array of discrete objects (dots, squares, stars) arranged in rows and columns. Perfect for teaching multiplication introduction, repeated addition, skip counting, commutative property, are",
+    "constraints": "Best for multiplication facts and concrete counting. Keep arrays reasonable size (2-10 rows, 2-12 columns).",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "build_array",
+        "label": "Build Array (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "build_array"
+        ],
+        "description": "Concrete: build array with given dimensions."
+      },
+      {
+        "evalMode": "count_array",
+        "label": "Count Array (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "count_array"
+        ],
+        "description": "Pictorial: count total objects in array."
+      },
+      {
+        "evalMode": "multiply_array",
+        "label": "Multiply Array (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "multiply_array"
+        ],
+        "description": "Pictorial: write multiplication sentence from array."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "double-number-line",
+    "domain": "math",
+    "description": "INTERACTIVE PROBLEM-SOLVING PRIMITIVE: Students find missing values on two parallel number lines by calculating proportional relationships. Perfect for teaching ratios, unit rates, proportional relati",
+    "constraints": "Requires two quantity labels and proportional relationship. Automatically generates 2-4 target points for students to solve. Supports equivalent_ratios, find_missing, and unit_rate challenge types.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "equivalent_ratios",
+        "label": "Equivalent Ratios (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "equivalent_ratios"
+        ],
+        "description": "Unit rate given — scale to find equivalent ratio pairs."
+      },
+      {
+        "evalMode": "find_missing",
+        "label": "Find Missing Value (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "find_missing"
+        ],
+        "description": "Some points given — find missing values using proportional relationship."
+      },
+      {
+        "evalMode": "unit_rate",
+        "label": "Discover Unit Rate (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "unit_rate"
+        ],
+        "description": "Given a non-unit pair, discover the unit rate through division."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "tape-diagram",
+    "domain": "math",
+    "description": "Rectangular bars divided into labeled segments representing part-part-whole and comparison relationships. The single most versatile visual for word problems from elementary through algebra. Perfect fo",
+    "constraints": "Requires clear part-whole or comparison relationship. Use 1 bar for part-whole problems, 2+ bars for comparison. Can include unknown segments for algebra (marked with isUnknown: true).",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "represent",
+        "label": "Represent (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "represent"
+        ],
+        "description": "Build tape diagram from word problem, identify parts."
+      },
+      {
+        "evalMode": "solve_part_whole",
+        "label": "Part-Whole (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "solve_part_whole"
+        ],
+        "description": "Standard part-whole: given parts find total, or vice versa."
+      },
+      {
+        "evalMode": "solve_comparison",
+        "label": "Comparison (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "solve_comparison"
+        ],
+        "description": "Comparison problems with different quantity bars."
+      },
+      {
+        "evalMode": "multi_step",
+        "label": "Multi-Step (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "multi_step"
+        ],
+        "description": "Multi-step problems requiring multiple operations."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "factor-tree",
+    "domain": "math",
+    "description": "Visual tree diagram showing prime factorization of a number. Perfect for teaching prime numbers, composite numbers, factor decomposition, greatest common factor (GCF), least common multiple (LCM), and",
+    "constraints": "Requires a composite number (not prime). Best for numbers with interesting factorizations (e.g., 24, 36, 48, 60, 72).",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "guided_small",
+        "label": "Guided Small (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "guided_small"
+        ],
+        "description": "Small composites (4-24) with factor pair hints shown. Full scaffolding for learning the concept."
+      },
+      {
+        "evalMode": "guided_medium",
+        "label": "Guided Medium (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "guided_medium"
+        ],
+        "description": "Medium composites (24-60) with factor pair hints. More prime factors to decompose."
+      },
+      {
+        "evalMode": "unguided",
+        "label": "Unguided (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "unguided"
+        ],
+        "description": "Medium composites (20-60) without hints. Student must find factor pairs independently."
+      },
+      {
+        "evalMode": "assessment",
+        "label": "Assessment (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "assessment"
+        ],
+        "description": "Larger composites (40-100), no hints, no reset. Formal assessment of factoring skill."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "ratio-table",
+    "domain": "math",
+    "description": "Multi-challenge ratio table with 4 challenge types: missing-value (find a hidden scaled value), find-multiplier (determine the scaling factor), build-ratio (use a slider to construct an equivalent rat",
+    "constraints": "Requires a ratio relationship between 2-3 quantities. Best with 3-5 rows showing equivalent ratios.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "build_ratio",
+        "label": "Build Ratio (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "build-ratio"
+        ],
+        "description": "Construct ratio from context using slider."
+      },
+      {
+        "evalMode": "missing_value",
+        "label": "Missing Value (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "missing-value"
+        ],
+        "description": "Find unknown value in a scaled ratio."
+      },
+      {
+        "evalMode": "find_multiplier",
+        "label": "Find Multiplier (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "find-multiplier"
+        ],
+        "description": "Discover the scale factor between ratios."
+      },
+      {
+        "evalMode": "unit_rate",
+        "label": "Unit Rate (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "unit-rate"
+        ],
+        "description": "Reduce to unit rate and apply."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "percent-bar",
+    "domain": "math",
+    "description": "Horizontal bar model with percentage markings showing the relationship between a part and whole. Perfect for teaching percentages, percent of a quantity, discounts, tax, tips, percent increase/decreas",
+    "constraints": "Requires a percent value and context (total amount). Best for concrete percent problems with real-world applications. Supports direct, subtraction, addition, and comparison challenge types.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "identify_percent",
+        "label": "Identify Percent (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "direct"
+        ],
+        "description": "Find a percentage of a number — benchmark percents, test scores."
+      },
+      {
+        "evalMode": "find_part",
+        "label": "Find Part / Discount (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "subtraction"
+        ],
+        "description": "Calculate what remains after removing a percentage (discounts, decreases)."
+      },
+      {
+        "evalMode": "find_whole",
+        "label": "Find Whole / Tax (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "addition"
+        ],
+        "description": "Calculate total after adding a percentage (tax, tip, markup)."
+      },
+      {
+        "evalMode": "convert",
+        "label": "Compare Percentages (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "comparison"
+        ],
+        "description": "Compare percentages across different contexts."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "balance-scale",
+    "domain": "math",
+    "description": "Interactive balance scale with phase-based equation solving (Explore → Solve → Verify). Students click blocks to remove from both sides, drag blocks from palette, or use operations panel. Rich step tr",
+    "constraints": "Requires equation with leftSide, rightSide, and variableValue. Grade band controls complexity. Challenges array for multi-problem sets.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "equality",
+        "label": "Equality (Concrete)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "equality"
+        ],
+        "description": "Understand balance = equal; missing addend problems."
+      },
+      {
+        "evalMode": "one_step",
+        "label": "One-Step (Pictorial–)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "one_step"
+        ],
+        "description": "Solve single-operation equations with x."
+      },
+      {
+        "evalMode": "two_step",
+        "label": "Two-Step (Symbolic)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "two_step"
+        ],
+        "description": "Solve multi-step equations with coefficients."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "function-machine",
+    "domain": "math",
+    "description": "Visual",
+    "constraints": "Requires a transformation rule using variable x (e.g.,",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "observe",
+        "label": "Observe (Tier 1)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "observe"
+        ],
+        "description": "Watch input/output with rule visible. Full guidance."
+      },
+      {
+        "evalMode": "predict",
+        "label": "Predict (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "predict"
+        ],
+        "description": "Predict output for new input with rule visible."
+      },
+      {
+        "evalMode": "discover_rule",
+        "label": "Discover Rule (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "discover_rule"
+        ],
+        "description": "Identify the hidden function rule from I/O pairs."
+      },
+      {
+        "evalMode": "create_rule",
+        "label": "Create Rule (Tier 4)",
+        "beta": 4.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "create_rule"
+        ],
+        "description": "Write the rule expression for given I/O pairs."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "coordinate-graph",
+    "domain": "math",
+    "description": "Full-featured 2D Cartesian coordinate plane for plotting points, graphing lines, curves, and functions. Perfect for teaching ordered pairs, linear equations, slope, intercepts, systems of equations, q",
+    "constraints": "Requires axis ranges (xRange, yRange). Supports plotMode:",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "slope-triangle",
+    "domain": "math",
+    "description": "Interactive right triangle overlay on a linear graph showing rise and run for slope visualization. Perfect for teaching slope concept, rise over run, Δy/Δx notation, rate of change, angle of inclinati",
+    "constraints": "Requires a linear equation to attach triangles to. Equations must use y= format with * for multiplication (e.g.,",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "systems-equations-visualizer",
+    "domain": "math",
+    "description": "Comprehensive systems of linear equations visualizer combining graphical and algebraic solution methods. Perfect for teaching solving systems by graphing, substitution, and elimination methods. Displa",
+    "constraints": "Requires 2-3 linear equations in y = mx + b format. Equations must use * for multiplication (e.g.,",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "matrix-display",
+    "domain": "math",
+    "description": "Interactive m×n matrix display and editor with comprehensive step-by-step operations including determinant calculation, matrix inverse, transpose, multiplication, addition, row operations, and augment",
+    "constraints": "Matrix dimensions typically 2×2 to 4×4 (or 2×3 to 3×4 for augmented). Use simple integers for elementary/middle school, include fractions/decimals for advanced topics. For determinant visualization, show step-by-step calculation with cell highlighting. For inverse, show method (adjugate for 2×2, Gaussian elimination for 3×3+). For row operations, label each operation clearly (e.g.,",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "transpose",
+        "label": "Transpose (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "transpose"
+        ],
+        "description": "Swap rows and columns — simplest matrix operation."
+      },
+      {
+        "evalMode": "add_subtract",
+        "label": "Add/Subtract (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "add",
+          "subtract"
+        ],
+        "description": "Element-wise addition and subtraction of same-dimension matrices."
+      },
+      {
+        "evalMode": "multiply",
+        "label": "Multiply (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "multiply"
+        ],
+        "description": "Row-by-column matrix multiplication."
+      },
+      {
+        "evalMode": "determinant_inverse",
+        "label": "Determinant/Inverse (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "determinant",
+          "inverse"
+        ],
+        "description": "Calculate determinant or find inverse of square matrices."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "dot-plot",
+    "domain": "math",
+    "description": "Interactive dot plot (also called line plot) with stacked dots representing data values on a number line. Perfect for teaching data representation, frequency concepts, mean, median, mode, data distrib",
+    "constraints": "Requires number line range [min, max] and data points array. Data values should be within the range. For younger grades (2-3), use small whole numbers (0-10) and disable statistics. For grades 5+, enable showStatistics for mean/median/mode. For comparison activities, enable parallel mode with labeled datasets. Keep data size manageable: 8-20 values per dataset.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "histogram",
+    "domain": "math",
+    "description": "Interactive histogram (bar chart showing frequency distribution) with adjustable bin widths. Perfect for teaching grouped data, distribution shapes (normal, skewed, bimodal), data analysis, and statis",
+    "constraints": "Requires data array with 15-50 numeric values. binWidth and binStart define the histogram bins. For younger grades (6-7), use showFrequency: true and showCurve: false. For statistics lessons about normal distribution, enable showCurve: true. Set editable: true to allow students to explore bin width adjustments.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "two-way-table",
+    "domain": "math",
+    "description": "Interactive two-way table (contingency table) for categorical data with convertible Venn diagram view. Perfect for teaching categorical data organization, joint and marginal frequencies, conditional p",
+    "constraints": "Requires rowCategories and columnCategories arrays (2-4 categories each), and 2D frequencies array matching dimensions. For Venn diagram view, use 2x2 tables. For grade 7, use displayMode:",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "ten-frame",
+    "domain": "math",
+    "description": "Interactive 2×5 grid manipulative for building number sense in K-2. Students place counters to build numbers (0-20), develop subitizing skills (instant quantity recognition), compose and decompose num",
+    "constraints": "Best for grades K-2. Counter-based manipulative. Single frame for K (numbers 0-10), double frame for grades 1-2 (numbers 0-20).",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "build",
+        "label": "Build (Concrete)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "build"
+        ],
+        "description": "Place counters on the frame with full guidance. Concrete manipulative — lowest cognitive load."
+      },
+      {
+        "evalMode": "subitize",
+        "label": "Subitize (Pictorial)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "subitize"
+        ],
+        "description": "Flash counters briefly, identify count. Pictorial recognition — one layer of abstraction above concrete."
+      },
+      {
+        "evalMode": "make_ten",
+        "label": "Make Ten (Strategy)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "make_ten"
+        ],
+        "description": "Find the complement to 10. Strategic decomposition — student must self-organize approach."
+      },
+      {
+        "evalMode": "operate",
+        "label": "Operate (Symbolic)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "add",
+          "subtract"
+        ],
+        "description": "Addition and subtraction using the frame. Transitional symbolic — bridging concrete and abstract."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "counting-board",
+    "domain": "math",
+    "description": "Flexible K-1 counting workspace with tappable objects (bears, apples, stars, fish, butterflies, blocks) arranged in different patterns (scattered, line, groups, circle). Supports counting strategies: ",
+    "constraints": "Best for grades K-1. Object counting and subitizing. K: count 1-20 objects, count_all and subitize only. Grade 1: count to 30, count-on and group counting.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "count",
+        "label": "Count All (Concrete)",
+        "beta": 1,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "count_all"
+        ],
+        "description": "Tap each object one by one. Concrete 1:1 correspondence — lowest cognitive load."
+      },
+      {
+        "evalMode": "subitize",
+        "label": "Subitize (Perceptual)",
+        "beta": 2,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "subitize"
+        ],
+        "description": "Quickly recognize quantity without counting. Perceptual recognition of small groups."
+      },
+      {
+        "evalMode": "group",
+        "label": "Group Count (Pictorial)",
+        "beta": 2,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "group_count"
+        ],
+        "description": "Count objects in groups of 2s, 5s, or 10s. Pictorial grouping strategy."
+      },
+      {
+        "evalMode": "count_on",
+        "label": "Count On (Reduced Prompts)",
+        "beta": 2.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "count_on"
+        ],
+        "description": "Start from a known count and continue. Reduced scaffolding — student self-organizes."
+      },
+      {
+        "evalMode": "compare",
+        "label": "Compare (Reduced Prompts)",
+        "beta": 2.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "compare"
+        ],
+        "description": "Determine which group has more. Comparative reasoning with reduced prompts."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "comparison-builder",
+    "domain": "math",
+    "description": "Multi-phase comparison activity with four challenge types: compare groups of objects visually, compare written numerals with inequality symbols, order numbers least-to-greatest or greatest-to-least, a",
+    "constraints": "Supports numbers 1-20. Groups contain up to 10 objects. Order challenges use 3-5 numbers. Object types: bears, apples, stars, blocks, fish, butterflies, hearts, flowers, cookies, balls.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "compare_groups",
+        "label": "Compare Groups (Scaffold 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "compare-groups"
+        ],
+        "description": "Visual group comparison"
+      },
+      {
+        "evalMode": "one_more_less",
+        "label": "One More / One Less (Scaffold 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "one-more-one-less"
+        ],
+        "description": "Adjacent number reasoning"
+      },
+      {
+        "evalMode": "compare_numbers",
+        "label": "Compare Numbers (Scaffold 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "compare-numbers"
+        ],
+        "description": "Symbolic comparison (>, <, =)"
+      },
+      {
+        "evalMode": "order",
+        "label": "Order (Scaffold 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "order"
+        ],
+        "description": "Order multiple values"
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "pattern-builder",
+    "domain": "math",
+    "description": "Interactive pattern recognition, extension, and creation for K-3 algebraic thinking. Students build, extend, identify cores, translate, and create repeating patterns (AB, AAB, ABC), growing patterns (",
+    "constraints": "Best for grades K-3. K-1: repeating patterns with colors/shapes only (AB, AAB, ABB). Grades 2-3: growing and number patterns, translation and creation challenges.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "extend",
+        "label": "Extend (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "extend"
+        ],
+        "description": "Continue a given pattern."
+      },
+      {
+        "evalMode": "identify_core",
+        "label": "Identify Core (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "identify_core"
+        ],
+        "description": "Find the repeating unit."
+      },
+      {
+        "evalMode": "translate",
+        "label": "Translate (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "translate"
+        ],
+        "description": "Transform pattern to a different representation."
+      },
+      {
+        "evalMode": "create",
+        "label": "Create (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "create"
+        ],
+        "description": "Generate a pattern from a rule."
+      },
+      {
+        "evalMode": "find_rule",
+        "label": "Find Rule (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "find_rule"
+        ],
+        "description": "Discover the underlying rule."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "skip-counting-runner",
+    "domain": "math",
+    "description": "Rhythmic skip counting with animated number line jumps for grades 1-3. A character (frog, kangaroo, rabbit, rocket) jumps along a number line in equal leaps, landing on multiples. Students count along",
+    "constraints": "Best for grades 1-3. Grades 1-2: skip by 2s, 5s, 10s, forward only, count_along and predict challenges. Grades 2-3: skip by 3s, 4s, backward counting, multiplication connections.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "count_along",
+        "label": "Count Along (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "count_along"
+        ],
+        "description": "Follow a skip-count sequence with visual support."
+      },
+      {
+        "evalMode": "predict",
+        "label": "Predict (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "predict"
+        ],
+        "description": "Anticipate the next value in a skip-count sequence."
+      },
+      {
+        "evalMode": "fill_missing",
+        "label": "Fill Missing (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "fill_missing"
+        ],
+        "description": "Complete missing terms in a skip-count sequence."
+      },
+      {
+        "evalMode": "find_skip_value",
+        "label": "Find Skip Value (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "find_skip_value"
+        ],
+        "description": "Discover the skip interval from a displayed sequence."
+      },
+      {
+        "evalMode": "connect_multiplication",
+        "label": "Connect Multiplication (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "connect_multiplication"
+        ],
+        "description": "Link skip counting to multiplication facts."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "hundreds-chart",
+    "domain": "math",
+    "description": "Interactive hundreds chart (10x10 grid, 1-100) for skip-counting pattern discovery. Students highlight skip-count sequences (2s, 5s, 10s), complete partially shown patterns, identify visual column/row",
+    "constraints": "Best for grades 1-3. Grades 1-2: skip by 2s, 5s, 10s, highlight and complete modes. Grades 2-3: skip by 3s, 4s, identify and find_skip_value modes. Grid always 1-100.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "highlight_sequence",
+        "label": "Highlight Sequence (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "highlight_sequence"
+        ],
+        "description": "Highlight all cells in a skip-count pattern."
+      },
+      {
+        "evalMode": "complete_sequence",
+        "label": "Complete Sequence (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "complete_sequence"
+        ],
+        "description": "Complete a partially highlighted skip-count sequence."
+      },
+      {
+        "evalMode": "identify_pattern",
+        "label": "Identify Pattern (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "identify_pattern"
+        ],
+        "description": "Describe the visual pattern formed on the grid."
+      },
+      {
+        "evalMode": "find_skip_value",
+        "label": "Find Skip Value (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "find_skip_value"
+        ],
+        "description": "Determine the skip interval from highlighted cells."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "regrouping-workbench",
+    "domain": "math",
+    "description": "Interactive addition and subtraction with regrouping (carrying and borrowing) for grades 1-4. Split view: base-ten blocks workspace (ones cubes, tens rods, hundreds flats) alongside the written algori",
+    "constraints": "Best for grades 1-4. Grades 1-2: two-digit problems with one regroup, addition focus. Grades 3-4: three-digit problems with multiple regroups, addition and subtraction. Supports add_no_regroup, subtract_no_regroup, add_regroup, and subtract_regroup challenge types.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "add_no_regroup",
+        "label": "Add Without Regrouping (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "add_no_regroup"
+        ],
+        "description": "Addition problems where no carrying is needed. Builds confidence with the algorithm."
+      },
+      {
+        "evalMode": "subtract_no_regroup",
+        "label": "Subtract Without Regrouping (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "subtract_no_regroup"
+        ],
+        "description": "Subtraction problems where no borrowing is needed."
+      },
+      {
+        "evalMode": "add_regroup",
+        "label": "Add With Regrouping (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "add_regroup"
+        ],
+        "description": "Addition problems that require carrying (ones sum to 10+)."
+      },
+      {
+        "evalMode": "subtract_regroup",
+        "label": "Subtract With Regrouping (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "subtract_regroup"
+        ],
+        "description": "Subtraction problems that require borrowing."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "multiplication-explorer",
+    "domain": "math",
+    "description": "Multi-representation multiplication workspace connecting equal groups, arrays, repeated addition, number line jumps, and area model — all synchronized to the same fact. Students progress through 4 pha",
+    "constraints": "Best for single-digit × single-digit facts (grades 2-3) or multi-digit × single-digit (grade 4). Factors should be reasonable for visual display (≤12 for arrays, ≤50 product for number line). Supports build, connect, commutative, distributive, missing_factor, and fluency challenge types.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "build",
+        "label": "Build (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "build"
+        ],
+        "description": "Construct equal groups or arrays for the given fact."
+      },
+      {
+        "evalMode": "connect",
+        "label": "Connect (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "connect"
+        ],
+        "description": "Link multiple representations of the same fact."
+      },
+      {
+        "evalMode": "commutative",
+        "label": "Commutative (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "commutative"
+        ],
+        "description": "Apply the commutative property to multiplication facts."
+      },
+      {
+        "evalMode": "distributive",
+        "label": "Distributive (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "distributive"
+        ],
+        "description": "Break apart harder facts using the distributive property."
+      },
+      {
+        "evalMode": "missing_factor",
+        "label": "Missing Factor (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "missing_factor"
+        ],
+        "description": "Solve for an unknown factor given the product."
+      },
+      {
+        "evalMode": "fluency",
+        "label": "Fluency (Tier 6)",
+        "beta": 8,
+        "scaffoldingMode": 6,
+        "challengeTypes": [
+          "fluency"
+        ],
+        "description": "Rapid fact recall under time pressure."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "measurement-tools",
+    "domain": "math",
+    "description": "Drag-to-ruler measurement activity where students drag shapes (rectangles and squares) onto a visual ruler, read where the shape ends, and type the measurement. Teaches length measurement, comparison,",
+    "constraints": "Ruler-based length measurement for grades 1-5. Grades 1-2 use whole-number precision. Grades 3-5 add half precision and unit conversion.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "measure",
+        "label": "Measure (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "measure"
+        ],
+        "description": "Direct measurement with ruler."
+      },
+      {
+        "evalMode": "compare",
+        "label": "Compare (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "compare"
+        ],
+        "description": "Measure and compare objects."
+      },
+      {
+        "evalMode": "convert",
+        "label": "Convert (Tier 3)",
+        "beta": 5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "convert"
+        ],
+        "description": "Measure and convert between units."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "shape-builder",
+    "domain": "math",
+    "description": "Interactive geometry workspace for constructing shapes on dot/coordinate grids, measuring properties with ruler/protractor tools, classifying shapes into categories, composing/decomposing shapes, and ",
+    "constraints": "Requires challenges array with progressive difficulty. Grid-based workspace (dot or coordinate). Supports modes: build, discover, classify, compose, decompose, symmetry.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "build",
+        "label": "Build (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "build"
+        ],
+        "description": "Construct a shape matching given properties."
+      },
+      {
+        "evalMode": "measure",
+        "label": "Measure (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "measure"
+        ],
+        "description": "Find side lengths and angles of a given shape."
+      },
+      {
+        "evalMode": "classify",
+        "label": "Classify (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "classify"
+        ],
+        "description": "Identify shape properties to sort into categories."
+      },
+      {
+        "evalMode": "compose",
+        "label": "Compose (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "compose"
+        ],
+        "description": "Combine shapes using pattern blocks."
+      },
+      {
+        "evalMode": "find_symmetry",
+        "label": "Find Symmetry (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "find_symmetry"
+        ],
+        "description": "Analyze and draw lines of symmetry."
+      },
+      {
+        "evalMode": "coordinate_shape",
+        "label": "Coordinate Shape (Tier 6)",
+        "beta": 8,
+        "scaffoldingMode": 6,
+        "challengeTypes": [
+          "coordinate_shape"
+        ],
+        "description": "Build shapes by plotting vertices on a coordinate plane."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "number-sequencer",
+    "domain": "math",
+    "description": "Interactive number sequencing with 5 challenge types: fill-missing (complete number sequences with blanks), before-after (identify numbers before/after a given number), order-cards (arrange shuffled n",
+    "constraints": "Best for numbers 1-100. K: 1-20 range, Grade 1: 1-100 range. Each challenge set should include 5-10 challenges mixing different types.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "count_from",
+        "label": "Count From (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "count-from"
+        ],
+        "description": "Continue counting forward or backward from a given value."
+      },
+      {
+        "evalMode": "before_after",
+        "label": "Before/After (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "before-after"
+        ],
+        "description": "Identify numbers immediately before or after a given number."
+      },
+      {
+        "evalMode": "order_cards",
+        "label": "Order Cards (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "order-cards"
+        ],
+        "description": "Arrange a set of shuffled numbers in correct order."
+      },
+      {
+        "evalMode": "fill_missing",
+        "label": "Fill Missing (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "fill-missing"
+        ],
+        "description": "Complete gaps in a number sequence pattern."
+      },
+      {
+        "evalMode": "decade_fill",
+        "label": "Decade Fill (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "decade-fill"
+        ],
+        "description": "Fill missing numbers across decade boundaries."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "number-bond",
+    "domain": "math",
+    "description": "Classic number bond diagram (circle-and-branch visual) showing part-part-whole relationships. Supports 4 challenge types: decompose (find all pairs), missing-part, fact-family (write all 4 equations),",
+    "constraints": "Max number 5 for Kindergarten, 10 for Grade 1. Decompose challenges need allPairs computed. Fact-family requires all 4 equations.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "decompose",
+        "label": "Decompose (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "decompose"
+        ],
+        "description": "Break whole into parts."
+      },
+      {
+        "evalMode": "missing_part",
+        "label": "Missing Part (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "missing-part"
+        ],
+        "description": "Find unknown part."
+      },
+      {
+        "evalMode": "fact_family",
+        "label": "Fact Family (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "fact-family"
+        ],
+        "description": "Generate related facts."
+      },
+      {
+        "evalMode": "build_equation",
+        "label": "Build Equation (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "build-equation"
+        ],
+        "description": "Write symbolic equation."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "addition-subtraction-scene",
+    "domain": "math",
+    "description": "An animated story scene where objects join, leave, or are compared to teach addition and subtraction. Students act out stories by counting objects, build matching equations from tiles, solve word prob",
+    "constraints": "Numbers limited to maxNumber (5 for K, 10 for Grade 1). Requires 4 challenge types: act-out, build-equation, solve-story, create-story. Story contexts must match scene theme.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "act_out",
+        "label": "Act Out (Scaffold 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "act-out"
+        ],
+        "description": "Manipulate objects in scene"
+      },
+      {
+        "evalMode": "build_equation",
+        "label": "Build Equation (Scaffold 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "build-equation"
+        ],
+        "description": "Represent scene as equation"
+      },
+      {
+        "evalMode": "solve_story",
+        "label": "Solve Story (Scaffold 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "solve-story"
+        ],
+        "description": "Solve a word problem"
+      },
+      {
+        "evalMode": "create_story",
+        "label": "Create Story (Scaffold 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "create-story"
+        ],
+        "description": "Write story for given equation"
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "ordinal-line",
+    "domain": "math",
+    "description": "Interactive ordinal positions activity with a horizontal queue of characters. Students identify positions (1st-10th), match ordinal words to symbols, answer relative position questions, solve story-ba",
+    "constraints": "maxPosition 5 for Kindergarten, 10 for Grade 1. Characters array must have distinct emoji. Each challenge needs correctAnswer matching the expected response.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "identify",
+        "label": "Identify (Scaffold 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "identify"
+        ],
+        "description": "Name ordinal position"
+      },
+      {
+        "evalMode": "match",
+        "label": "Match (Scaffold 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "match"
+        ],
+        "description": "Connect ordinal to position"
+      },
+      {
+        "evalMode": "relative_position",
+        "label": "Relative Position (Scaffold 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "relative-position"
+        ],
+        "description": "Compare positions (before/after)"
+      },
+      {
+        "evalMode": "sequence_story",
+        "label": "Sequence Story (Scaffold 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "sequence-story"
+        ],
+        "description": "Apply ordinals in context"
+      },
+      {
+        "evalMode": "build_sequence",
+        "label": "Build Sequence (Scaffold 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "build-sequence"
+        ],
+        "description": "Construct ordering from scratch"
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "sorting-station",
+    "domain": "math",
+    "description": "Interactive sorting station where students categorize objects by attributes (color, shape, size). Supports single-attribute sorting, multi-attribute classification, count-and-compare, odd-one-out, and",
+    "constraints": "Best for K-1. Objects should be familiar (animals, shapes, food, toys). Max 4 sorting categories. Max 10 objects per challenge.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "sort_one",
+        "label": "Sort by One (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "sort-by-one"
+        ],
+        "description": "Sort objects by a single visible attribute (color, shape, or size)."
+      },
+      {
+        "evalMode": "sort_attribute",
+        "label": "Sort by Attribute (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "sort-by-attribute"
+        ],
+        "description": "Objects have multiple attributes; student chooses how to sort."
+      },
+      {
+        "evalMode": "count_compare",
+        "label": "Count & Compare (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "count-and-compare"
+        ],
+        "description": "Count sorted groups and answer a comparison question."
+      },
+      {
+        "evalMode": "odd_one_out",
+        "label": "Odd One Out (Tier 3+)",
+        "beta": 4,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "odd-one-out"
+        ],
+        "description": "Identify the object that does not belong in the group."
+      },
+      {
+        "evalMode": "two_attributes",
+        "label": "Two Attributes (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "two-attributes"
+        ],
+        "description": "Find objects matching two attributes simultaneously."
+      },
+      {
+        "evalMode": "tally_record",
+        "label": "Tally & Record (Tier 4+)",
+        "beta": 5.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "tally-record"
+        ],
+        "description": "Sort objects and record group counts using tally marks."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "shape-sorter",
+    "domain": "math",
+    "description": "Attribute-focused geometry primitive with 3 challenge types: identify (find shapes matching a rule), count (count sides and corners), and sort (group by attribute). Teaches Defining vs Non-Defining At",
+    "constraints": "Shapes limited to: circle, square, triangle, rectangle, diamond, rhombus, hexagon, pentagon, oval. Grade K-1 only. Rules: shape, color, sides, curved.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "identify",
+        "label": "Identify (Concrete)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "identify"
+        ],
+        "description": "Name 2D shapes by visual recognition."
+      },
+      {
+        "evalMode": "count",
+        "label": "Count (Pictorial)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "count"
+        ],
+        "description": "Count sides and corners of a given shape."
+      },
+      {
+        "evalMode": "sort",
+        "label": "Sort (Pictorial–)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "sort"
+        ],
+        "description": "Classify shapes by geometric property."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "3d-shape-explorer",
+    "domain": "math",
+    "description": "3D Shape Explorer — introduces cubes, cones, cylinders, spheres, and rectangular prisms through multi-phase challenges: identifying shapes, sorting 2D vs 3D, matching to real-world objects, analyzing ",
+    "constraints": "Shapes limited to: cube, sphere, cylinder, cone, rectangular-prism. Properties must use accurate geometry (e.g., cube has 6 flat faces, sphere has 0). Real-world object matches must be unambiguous.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "identify_3d",
+        "label": "Identify 3D (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "identify-3d"
+        ],
+        "description": "Name 3D shapes from visual display."
+      },
+      {
+        "evalMode": "match_real_world",
+        "label": "Match Real World (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "match-to-real-world"
+        ],
+        "description": "Connect 3D shapes to real-world objects."
+      },
+      {
+        "evalMode": "2d_vs_3d",
+        "label": "2D vs 3D (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "2d-vs-3d"
+        ],
+        "description": "Compare and sort 2D and 3D shapes."
+      },
+      {
+        "evalMode": "faces_properties",
+        "label": "Faces & Properties (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "faces-and-properties"
+        ],
+        "description": "Analyze faces, edges, vertices, and movement properties."
+      },
+      {
+        "evalMode": "shape_riddle",
+        "label": "Shape Riddle (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "shape-riddle"
+        ],
+        "description": "Deductive identification from property clues."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "shape-tracer",
+    "domain": "math",
+    "description": "Interactive shape construction canvas with 4 progressive challenge types: trace (follow dotted outlines), complete (finish half-drawn shapes), draw-from-description (build shapes from verbal property ",
+    "constraints": "Canvas coordinate space is 500x400. All vertex coordinates must be within bounds (x: 40-460, y: 40-360). Shapes should be large enough for small hands to tap. Maximum 6 challenges per activity.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "trace",
+        "label": "Trace (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "trace"
+        ],
+        "description": "Follow a dotted shape outline by tapping vertices in order."
+      },
+      {
+        "evalMode": "connect_dots",
+        "label": "Connect Dots (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "connect-dots"
+        ],
+        "description": "Connect numbered dots in order to reveal the shape."
+      },
+      {
+        "evalMode": "complete",
+        "label": "Complete (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "complete"
+        ],
+        "description": "Finish a partially drawn shape by connecting the remaining sides."
+      },
+      {
+        "evalMode": "draw_from_description",
+        "label": "Draw from Description (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "draw-from-description"
+        ],
+        "description": "Construct a shape from verbal property cues."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "math-fact-fluency",
+    "domain": "math",
+    "description": "Rapid-fire math fact fluency practice with 5 progressive challenge types: visual facts with dot arrays/ten-frames, bare equation solving, missing number problems, visual-equation matching, and timed s",
+    "constraints": "Facts limited to addition and subtraction within maxNumber (3, 5, or 10). Visual aids only in visual-fact and match phases. Speed round has no multiple choice. Time limits vary by phase (3-8 seconds).",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "visual_fact",
+        "label": "Visual Fact (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "visual-fact"
+        ],
+        "description": "Picture-based fact recognition with dot arrays, ten-frames, or fingers."
+      },
+      {
+        "evalMode": "match",
+        "label": "Match (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "match"
+        ],
+        "description": "Connect visual representations to their equations."
+      },
+      {
+        "evalMode": "equation_solve",
+        "label": "Equation Solve (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "equation-solve"
+        ],
+        "description": "Solve bare equations with multiple choice."
+      },
+      {
+        "evalMode": "missing_number",
+        "label": "Missing Number (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "missing-number"
+        ],
+        "description": "Find the unknown operand in an equation."
+      },
+      {
+        "evalMode": "speed_round",
+        "label": "Speed Round (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "speed-round"
+        ],
+        "description": "Timed fluency assessment — rapid recall without aids."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "strategy-picker",
+    "domain": "math",
+    "description": "An interactive strategy-comparison activity where students solve the same problem using 2-3 different strategies (counting on, make-ten, doubles, tally marks, draw objects), then compare and reflect o",
+    "constraints": "Numbers within 5 (K) or 10 (Grade 1). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "guided",
+        "label": "Guided Strategy (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "guided-strategy"
+        ],
+        "description": "Follow a given strategy with step-by-step scaffolding."
+      },
+      {
+        "evalMode": "match",
+        "label": "Match Strategy (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "match-strategy"
+        ],
+        "description": "Identify which strategy a worked solution uses."
+      },
+      {
+        "evalMode": "try_another",
+        "label": "Try Another (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "try-another"
+        ],
+        "description": "Solve the same problem using a different strategy."
+      },
+      {
+        "evalMode": "compare",
+        "label": "Compare (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "compare"
+        ],
+        "description": "Evaluate and reflect on multiple strategies."
+      },
+      {
+        "evalMode": "choose",
+        "label": "Choose Your Strategy (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "choose-your-strategy"
+        ],
+        "description": "Autonomous strategy selection for a new problem."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "number-tracer",
+    "domain": "math",
+    "description": "Canvas-based numeral writing practice. Students trace dotted digit paths, copy from a model, write from a prompt, or complete counting sequences. Essential for CC.K.CC.3 (write 0-20) and 1.NBT.1 (writ",
+    "constraints": "Best for K-Grade 1. Digit range: 0-20 for K, 0-120 for Grade 1. Use trace mode for beginners, sequence for advanced.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "trace",
+        "label": "Trace (Tier 1)",
+        "beta": 1,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "trace"
+        ],
+        "description": "Follow dotted numeral path with direction arrows."
+      },
+      {
+        "evalMode": "copy",
+        "label": "Copy (Tier 2)",
+        "beta": 2,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "copy"
+        ],
+        "description": "Write digit with model visible nearby."
+      },
+      {
+        "evalMode": "write",
+        "label": "Write (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "write"
+        ],
+        "description": "Write digit from text/audio prompt only."
+      },
+      {
+        "evalMode": "sequence",
+        "label": "Sequence (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "sequence"
+        ],
+        "description": "Write missing number in counting sequence."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "length-lab",
+    "domain": "math",
+    "description": "Interactive length measurement lab for Kindergarten. Students compare object lengths visually, tile non-standard units (cubes, paper clips) end-to-end to measure, arrange objects by length, and use in",
+    "constraints": "Objects limited to 1-12 unit lengths. K: compare + tile only. G1: order + indirect.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "compare",
+        "label": "Compare (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "compare"
+        ],
+        "description": "Which object is longer or shorter? Direct visual comparison."
+      },
+      {
+        "evalMode": "tile_and_count",
+        "label": "Tile & Count (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "tile_and_count"
+        ],
+        "description": "Tile non-standard units end-to-end along an object and count them."
+      },
+      {
+        "evalMode": "order",
+        "label": "Order (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "order"
+        ],
+        "description": "Arrange three objects from shortest to longest."
+      },
+      {
+        "evalMode": "indirect",
+        "label": "Indirect (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "indirect"
+        ],
+        "description": "Compare two objects transitively using a reference object."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "analog-clock",
+    "domain": "math",
+    "description": "Interactive analog clock with draggable hands, digital display sync, and timeline scrubber.",
+    "constraints": "K: hour and half-hour only (:00/:30). G1-2: quarter-hour (:15 intervals). G3-5: 5-minute intervals. Maximum 6 challenges per session.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "read",
+        "label": "Read Time (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "read"
+        ],
+        "description": "Read analog clock face and pick correct time from 4 options"
+      },
+      {
+        "evalMode": "set_time",
+        "label": "Set Time (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "set_time"
+        ],
+        "description": "Drag clock hands to show a given time"
+      },
+      {
+        "evalMode": "match",
+        "label": "Match (Tier 2)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "match"
+        ],
+        "description": "Match analog face to correct digital display from 4 options"
+      },
+      {
+        "evalMode": "elapsed",
+        "label": "Elapsed Time (Tier 3)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "elapsed"
+        ],
+        "description": "Determine elapsed time using real-time stopwatch"
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "lever-lab",
+    "domain": "engineering",
+    "description": "Interactive lever/fulcrum simulation for teaching simple machines. Students explore balance, mechanical advantage, and force trade-offs by manipulating loads, fulcrum position, and effort force. Featu",
+    "constraints": "Best for grades K-5. Use for simple machines, balance concepts, mechanical advantage, force multiplication. Themes adapt complexity: seesaw for K-2 (basic balance), excavator/crowbar for 3-5 (mechanical advantage). Supports both exploration (movable fulcrum) and problem-solving (fixed challenges).",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "pulley-system-builder",
+    "domain": "engineering",
+    "description": "Interactive pulley system simulation for teaching mechanical advantage and simple machines. Students build and explore pulley configurations by adding fixed and movable pulleys, threading rope, and li",
+    "constraints": "Best for grades K-5. Use for pulleys, mechanical advantage, force reduction, rope systems. Themes adapt complexity: flagpole for K-1 (direction change), well for 1-2 (fixed vs movable), crane/construction for 3-5 (mechanical advantage calculations). Supports exploration (add pulleys) and guided challenges (fixed configurations).",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "ramp-lab",
+    "domain": "engineering",
+    "description": "Interactive inclined plane (ramp) simulation for teaching simple machines. Students explore how ramps reduce the force needed to lift objects by trading distance for effort. Adjust angle, friction, an",
+    "constraints": "Best for grades K-5. Use for inclined planes, ramps, force reduction, friction effects. K-1: rolling vs sliding exploration (wheel vs box). 1-2: steeper = harder to push. 2-3: height vs length trade-off. 4-5: mechanical advantage calculations, force decomposition. Themes adapt context: skateboard for fun exploration, loading_dock/dump_truck for real-world applications.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "wheel-axle-explorer",
+    "domain": "engineering",
+    "description": "Interactive wheel and axle simulation for teaching simple machines and force multiplication. Students rotate wheels of different sizes connected to axles to discover how steering wheels, doorknobs, wi",
+    "constraints": "Best for grades K-5. Use for wheel and axle, force multiplication, gear ratios. K-1: doorknobs are easier than handles (doorknob theme). 1-2: well cranks and turning (well_crank theme). 2-3: bigger wheel = easier turn (winch theme). 4-5: mechanical advantage calculations, gear ratio introduction (steering_wheel theme). Supports exploration (adjustable sizes) and challenges (fixed configurations with loads to lift).",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "gear-train-builder",
+    "domain": "engineering",
+    "description": "Interactive gear train sandbox for teaching speed/torque trade-offs fundamental to all machinery. Students place gears on a grid, connect them by proximity (auto-mesh), rotate driver gear, and watch f",
+    "constraints": "Best for grades K-5. Use for gears, speed ratios, direction changes, torque trade-offs. K-1: gears turn together (toy theme, free play). 1-2: direction changes with each gear (showDirection). 2-3: big gear turns small gear fast (showSpeedRatio). 3-4: counting teeth for ratios (showTeethCount). 4-5: design challenges with specific output speeds (targetRatio). Supports free exploration and guided design challenges.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "bridge-builder",
+    "domain": "engineering",
+    "description": "Interactive 2D bridge construction canvas for teaching structural engineering. Students place beams, cables, and supports to span gaps, then test bridges with loads (cars, trucks, trains) to see if th",
+    "constraints": "Best for grades K-5. Use for bridges, structural engineering, trusses, load distribution. K-1: connect two sides (simple spanning). 1-2: supports at edges vs middle (support concepts). 2-3: triangles are strong (truss introduction). 3-4: load distribution concepts (stress visualization). 4-5: truss design optimization (budget constraints, efficiency). Supports free building exploration and guided design challenges with piece limits.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "tower-stacker",
+    "domain": "engineering",
+    "description": "Interactive vertical building challenge for teaching stability and center of gravity. Students stack blocks, beams, triangles, and arches to reach target heights while maintaining stability. Features ",
+    "constraints": "Best for grades K-5. Use for stacking, balance, stability, center of gravity, building design. K: simple stacking exploration (blocks theme, no wind). K-1: wider base = more stable (introduce stability concept). 2-3: center of gravity exploration (showCenterOfGravity: true). 3-4: material efficiency - height per piece (limited pieces). 4-5: wind resistance design (high wind strength, optimization). Supports free building and height challenges with piece limits.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "shape-strength-tester",
+    "domain": "engineering",
+    "description": "Interactive experimental rig for testing shape strength under load. Students discover why triangles dominate structural engineering by testing different 2D shapes (triangle, square, pentagon, hexagon)",
+    "constraints": "Best for grades K-5. Use for shapes in structures, triangulation, truss analysis, structural rigidity. K-1: shape recognition, triangles vs squares (simple comparison). 1-2: squares squish, triangles don\\",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "foundation-builder",
+    "domain": "engineering",
+    "description": "Interactive soil/foundation simulator for teaching why buildings need foundations and how engineers design them. Students select foundation types (spread, strip, slab, piles), adjust footing size, and",
+    "constraints": "Best for grades K-5. Use for foundations, soil types, pressure calculations, structural support. K-1: buildings need foundations, bigger is better (discovery). 1-2: bigger footings spread weight (like snowshoes). 2-3: different soils are stronger or weaker (soil comparison). 3-4: pressure = force ÷ area calculations (introduce formula). 4-5: foundation optimization (minimal area that still works). Supports free design exploration and guided challenges with target loads and soil types.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "excavator-arm-simulator",
+    "domain": "engineering",
+    "description": "Interactive multi-jointed excavator arm simulation with boom, stick, and bucket for teaching hydraulics, kinematics, and coordinated movement. Students control three joints (boom angle, stick angle, b",
+    "constraints": "Best for grades K-5. Use for excavators, construction equipment, multi-joint systems, hydraulics, kinematics, robotics. K-1: cause and effect with joints, basic digging (buttons control, cartoon theme). 1-2: reach and range exploration (sliders, show reach envelope). 2-3: sequencing dig operations (dig-move-dump sequences, challenges). 3-4: joint angle coordination (all three joints working together, angles shown). 4-5: reach envelope and efficiency optimization (minimize operations, advanced challenges, blueprint theme). Supports free exploration and guided challenges with material excavation targets and dump zones.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "dump-truck-loader",
+    "domain": "engineering",
+    "description": "Interactive dump truck loading and hauling simulation for teaching capacity, weight limits, and material transport efficiency. Students load material into the truck bed, monitor weight and volume capa",
+    "constraints": "Best for grades K-5. Use for dump trucks, capacity concepts, weight limits, material handling, construction equipment, efficiency. K: full and empty concepts (cartoon theme, simple loads). K-1: capacity and",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "construction-sequence-planner",
+    "domain": "engineering",
+    "description": "Interactive timeline/flowchart tool for ordering construction tasks and understanding dependencies. Students learn that building follows logical sequences by arranging tasks in order, drawing dependen",
+    "constraints": "Best for grades K-5. Use for construction sequencing, project planning, dependencies, logical ordering, critical path. K-1: first, then, last (3-4 simple tasks, list display). 1-2: some things must wait (4-5 tasks with simple dependencies, show arrows). 2-3: dependency chains (5-6 tasks, multiple dependencies, flowchart display). 3-4: parallel vs sequential (6-8 tasks, some can happen together, parallelAllowed: true). 4-5: critical path basics (8-10 tasks, timeline display, identify longest path). Supports progressive difficulty with three learning phases and animated sequence visualization.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "blueprint-canvas",
+    "domain": "engineering",
+    "description": "Grid-based drawing surface for creating top-down and side-view technical drawings. Students learn to communicate designs before building by sketching floor plans, elevations, and sections with measure",
+    "constraints": "Best for grades K-5. Use for floor plans, technical drawings, architectural design, spatial reasoning, scale drawings. K-1: bird\\",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "machine-profile",
+    "domain": "engineering",
+    "description": "Rich display profile for any vehicle or machine — the engineering equivalent of species-profile. Presents beautifully themed profiles for airplanes, trains, cars, ships, helicopters, submarines, bikes",
+    "constraints": "Best for grades K-5. Display-only (no direct evaluation). Use for any vehicle or machine topic: airplanes, cars, trains, ships, helicopters, trucks, submarines, bicycles, construction equipment, spacecraft. K-2: simple vocabulary, 2-3 sentence howItWorks, 3 keyComponents, fun analogies. 3-5: technical vocabulary, full paragraph howItWorks, 4-6 keyComponents, science connections.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "flight-forces-explorer",
+    "domain": "engineering",
+    "description": "Interactive four forces of flight visualization. Students manipulate thrust, angle of attack, and cargo loading to see how lift, weight, thrust, and drag determine flight behavior. Color-coded force a",
+    "constraints": "Best for grades K-5. K-2: simple force names, tap-to-identify, no numeric values, 1-2 easy challenges. 3-5: real force magnitudes, quantitative challenges, stall exploration, aircraft comparison. Evaluable: tracks challenges completed, forces identified, states explored, stall discovery.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "airfoil-lab",
+    "domain": "engineering",
+    "description": "Wing cross-section in a simulated wind tunnel. Students change the wing shape, angle of attack, and airspeed to observe how lift is generated. Animated streamlines, color-coded pressure maps, and forc",
+    "constraints": "Best for grades 1-5. 1-2: relative terms (more/less lift), flat vs curved comparison, no numeric coefficients. 3-5: quantitative results, Bernoulli\\",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "vehicle-comparison-lab",
+    "domain": "engineering",
+    "description": "Side-by-side vehicle comparison workspace with real data. Students compare airplanes, trains, cars, ships, bicycles, and spacecraft across speed, weight, capacity, range, and environmental impact. Bar",
+    "constraints": "Best for grades K-5. K-2: 4-5 vehicles, simple",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "propulsion-lab",
+    "domain": "engineering",
+    "description": "Interactive exploration of how vehicles generate thrust. Students see action/reaction force arrows for jets, propellers, wheels, sails, and rockets — all unified by Newton\\",
+    "constraints": "Best for grades 1-5. 1-2: 4 propulsion types, simple push-backward/go-forward concept, everyday analogies. 3-5: 5-6 types including rocket (vacuum discussion), medium dependency, action/reaction identification, efficiency comparisons. Evaluable: tracks pairs identified, what-if accuracy, types explored, medium understanding.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "propulsion-timeline",
+    "domain": "engineering",
+    "description": "Interactive timeline showing the evolution of transportation from walking to spacecraft. Scrub through eras, tap milestones for detail cards, filter by domain (land/sea/air/space), trace innovation ch",
+    "constraints": "Best for grades K-5. K-2: 6-8 milestones, simple sequencing with 4 items, 1 innovation chain. 3-5: 10-15 milestones, complex sequencing with 5-6 items, 2-3 innovation chains, speed record analysis. Evaluable: tracks milestones explored, sequencing accuracy, chains traced, domains explored, speed trend observation.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "In 1903, two brothers from Ohio built a wooden airplane and flew for just 12 seconds. TWELVE SECONDS changed everything!",
+    "domain": "engineering",
+    "description": "",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "paper-airplane-designer",
+    "domain": "engineering",
+    "description": "Interactive paper airplane design lab where students choose templates (dart, glider, stunt, wide body), customize wing geometry and fold parameters, then launch in simulated flight tests. Performance ",
+    "constraints": "Requires understanding of the 4-phase workflow: build → launch → analyze → iterate. Flight simulation is approximate — focus is on the design process, not physics accuracy.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "engine-explorer",
+    "domain": "engineering",
+    "description": "Interactive engine cutaway showing how different engine types work — pistons, turbines, electric motors. Students watch animated cycles, explore components, compare engines, and connect them to vehicl",
+    "constraints": "Requires engineType, components, cycle, energyFlow, and vehicleConnection data. Best for single engine type per instance — use multiple instances for comparison across types.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "vehicle-design-studio",
+    "domain": "engineering",
+    "description": "Engineering design process studio where students pick vehicle body, propulsion, and control parts then test against physics simulation. Includes radar performance chart, design log for iteration track",
+    "constraints": "Requires partsPalette with bodies, propulsion, and controls arrays. Each part needs numeric physics values. Challenges optional but recommended for grade 4-5.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "molecule-viewer",
+    "domain": "science",
+    "description": "Interactive 3D molecular structure visualization with CPK-colored atoms and chemical bonds. Perfect for chemistry lessons on molecular structure, bonding, organic compounds, crystal lattices, proteins",
+    "constraints": "Best for middle-school and above. Use for chemistry, biochemistry, organic chemistry, crystal structures, or any topic involving molecules, atoms, and chemical bonds.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "periodic-table",
+    "domain": "science",
+    "description": "Interactive periodic table of all 118 elements with detailed element information, electron shell visualization, stability charts, and category filtering. Perfect for teaching element properties, elect",
+    "constraints": "Best for middle-school and above. Use for chemistry lessons on periodic trends, element properties, atomic structure, electron configuration, or chemical families. Ideal for introducing the periodic table or exploring specific element groups.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "matter-explorer",
+    "domain": "science",
+    "description": "Interactive matter classification activity where students sort everyday objects (ice, water, air, rock, milk, steam) into solid, liquid, and gas bins. Features property inspector, temperature slider f",
+    "constraints": "Best for K-2. Use for early science lessons on states of matter, properties of materials, heating/cooling changes, and classification skills.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "reaction-lab",
+    "domain": "science",
+    "description": "Interactive chemistry experiment station where students combine real substances and observe reactions — fizzing, color changes, temperature changes, gas production, precipitates. Features split Real V",
+    "constraints": "Best for K-8. Use for chemistry lessons on chemical reactions, physical vs chemical change, states of matter changes, kitchen chemistry, acid-base reactions, oxidation, dissolution, and the scientific method. Grade-appropriate complexity adjusts automatically.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "equation-balancer",
+    "domain": "science",
+    "description": "Interactive chemical equation balancer with adjustable coefficients, live atom counter, molecule visualization, and balance scale. Students adjust coefficients to balance equations while tracking atom",
+    "constraints": "Requires equation data with reactants/products and atom counts. Max 10 compounds. Best for grade 6-8.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "energy-of-reactions",
+    "domain": "science",
+    "description": "Interactive energy-of-reactions visualization with enthalpy diagrams, temperature gauges, bond energy breakdowns, and catalyst comparisons. Students explore why reactions release or absorb heat throug",
+    "constraints": "Requires reaction data with energy values. Bond energy view only for grade 7-8. Best for grade 5-8.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "states-of-matter",
+    "domain": "science",
+    "description": "Interactive particle simulation where students control temperature and watch particles speed up, slow down, break free, or lock into place. Split view shows macroscopic substance (beaker) alongside pa",
+    "constraints": "Best for K-5. Use for science lessons on states of matter, particle model, phase changes, melting/boiling/freezing/condensation, temperature and energy, and kinetic theory. Grade-appropriate complexity adjusts automatically.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "mixing-and-dissolving",
+    "domain": "science",
+    "description": "Interactive solutions and mixtures explorer with beaker workspace, substance shelf, particle view, temperature control, saturation indicator, concentration meter, and separation tools. Students add su",
+    "constraints": "Requires substance data with solubility values. Best for grade 3-7. Solubility curve only for grade 6-7.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "atom-builder",
+    "domain": "science",
+    "description": "Interactive atom construction tool where students drag protons, neutrons, and electrons to build atoms from scratch. Features Bohr model visualization with electron shells, mini periodic table with li",
+    "constraints": "Best for grades 3-8. Use for chemistry lessons on atoms, subatomic particles, electron shells, element identity, ions, isotopes, periodic table connections, and electron configuration.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "molecule-constructor",
+    "domain": "science",
+    "description": "Interactive molecule-building workspace where students snap atoms together to form molecules. Atom palette with category-colored elements and valence connection dots. Click-to-bond interaction with si",
+    "constraints": "Best for grades 3-8. Use for chemistry lessons on chemical bonding, molecules, valence, molecular formulas, covalent bonds, Lewis structures, molecular shape, and properties from structure.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "ph-explorer",
+    "domain": "science",
+    "description": "Interactive pH scale exploration with rainbow gradient (0-14), substance testing with multiple indicators (litmus, cabbage juice, universal, phenolphthalein), acid/base/neutral sorting, neutralization",
+    "constraints": "Best for grades 4-8. Use for chemistry lessons on pH, acids and bases, indicators, neutralization, acid-base reactions, and the pH scale. Grade-appropriate complexity adjusts automatically.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "safety-lab",
+    "domain": "science",
+    "description": "Gamified lab safety training with interactive lab scene for hazard identification, PPE selection station with draggable equipment (goggles, gloves, apron, lab coat, face shield), GHS hazard symbol mat",
+    "constraints": "Best for K-8. Use for lab safety training, science safety rules, PPE selection, hazard identification, emergency procedures, and GHS hazard symbols. Should precede any hands-on chemistry activity.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "organism-card",
+    "domain": "biology",
+    "description": "Foundational organism information card with key biological attributes - the essential",
+    "constraints": "Use for K-8 students. Automatically adapts complexity based on grade level: K-2 shows only basic attributes with simple language; 3-5 adds body temperature, reproduction, and adaptations; 6-8 includes full taxonomic classification. Perfect for comparison activities, classification lessons, ecosystem studies, and building biology vocabulary. Use multiple organism-cards together for compare/contrast activities.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "species-profile",
+    "domain": "biology",
+    "description": "Comprehensive species profile with detailed information including physical characteristics (height, weight, length with real-world comparisons), diet and behavior, habitat and geographic/temporal dist",
+    "constraints": "Best for K-8 students learning about animals, dinosaurs, plants, or any biological species. Use for life sciences, paleontology, zoology, botany, ecology, and natural history. Ideal for teaching classification systems, adaptations, food chains, habitats, and evolutionary concepts. Works great for extinct and living species.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "classification-sorter",
+    "domain": "biology",
+    "description": "Interactive drag-and-drop classification activity where students categorize organisms or characteristics into labeled bins. The CORE",
+    "constraints": "Use for K-8 students learning classification, taxonomy, or characteristic-based sorting. K-2: Binary sorts only (2 categories, 6-8 items, simple language). 3-5: Multi-category sorts (3-5 categories, 8-10 items, introduces scientific vocabulary). 6-8: Complex or hierarchical sorts (3-6 categories, 10-12 items, formal classification systems). Always include 1-3",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "life-cycle-sequencer",
+    "domain": "biology",
+    "description": "Interactive temporal sequencing activity where students arrange stages of a biological process in correct temporal order. The CORE",
+    "constraints": "Use for K-8 students learning life cycles, developmental sequences, or cyclical processes. K-2: Simple linear sequences (4-6 stages, basic vocabulary, observable changes like",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "body-system-explorer",
+    "domain": "biology",
+    "description": "Interactive layered anatomy diagram of a biological system where students toggle layers (skeletal, muscular, circulatory, etc.), click organs for detailed information, and trace pathways through syste",
+    "constraints": "Use for grades 2-8 anatomy and physiology lessons. Supports all major body systems: digestive, circulatory, respiratory, nervous, skeletal, muscular, immune, endocrine, reproductive, urinary. Grade 2-4: Simple vocabulary, 4-6 main organs, basic pathways (3-5 steps), familiar analogies (stomach is like a blender). Grade 5-6: Scientific terminology, 6-8 organs, moderate pathways (5-7 steps), structure-function relationships. Grade 7-8: Medical terminology, 8-10+ organs with supporting structures, complex pathways (7-10+ steps), cellular/molecular detail. Perfect for anatomy units, health education, systems thinking, and understanding how body parts work together. Works great for compare/contrast (how digestive and circulatory systems interact), process understanding (how digestion works), and building mental models of body systems.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "habitat-diorama",
+    "domain": "biology",
+    "description": "A scene-based interactive ecosystem explorer presenting a habitat with clickable organisms and environmental features. The PRIMARY ecosystem primitive for biology. Students explore relationships (who ",
+    "constraints": "Use for K-8 students learning about ecosystems, habitats, food chains/webs, ecological relationships, or environmental science. K-2: Simple observation with 4-5 recognizable organisms (rabbit, owl, plants), basic predator-prey relationships only, 2-3 environmental features, NO disruption scenario (too complex). Focus on",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "bio-compare-contrast",
+    "domain": "biology",
+    "description": "Side-by-side or interactive Venn diagram comparison of two biological entities (organisms, cells, organs, processes, biomes). The ESSENTIAL",
+    "constraints": "Use for K-8 students learning through comparison and contrast. Works for any two biological entities that have both similarities AND meaningful differences. K-2: 4-6 attributes per entity, simple observable characteristics (size, color, where they live, what they eat), familiar comparisons (dog vs cat, tree vs flower), side-by-side mode recommended for viewing. 3-5: 6-8 attributes, introduce scientific vocabulary (warm-blooded, vertebrate, photosynthesis), functional characteristics (how it reproduces, how it moves), both modes work well. 6-8: 8-10 attributes, cellular/molecular details, evolutionary context, complex processes, venn-interactive mode excellent for formative assessment. ALWAYS ensure: (1) entities have BOTH similarities and differences (avoid comparing apples to oranges with nothing in common), (2) attributes are parallel and comparable (if comparing",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "bio-process-animator",
+    "domain": "biology",
+    "description": "Step-through animation of a biological process with narrated stages and checkpoint questions embedded at key moments. Students control playback (play, pause, step forward/back) and demonstrate compreh",
+    "constraints": "Use for grades 2-8 students learning multi-step biological processes. Grade 2-4: Simple vocabulary, 3-5 stages, basic comprehension checkpoints (",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "microscope-viewer",
+    "domain": "biology",
+    "description": "Simulated microscope experience with zoom levels, structure labeling tasks, and guided observation prompts. Students examine specimens at increasing magnification (40x, 100x, 400x) through a circular ",
+    "constraints": "Use for grades 3-8 students learning cell biology, microscopy, tissue types, or microorganisms. Grade 3-5: Simple vocabulary, 2-3 zoom levels, 2-4 structures per level, focus on observable features and shapes. Grade 6-8: Scientific terminology, 3-4 zoom levels, 3-6 structures per level including organelles, precise descriptions, structure-function connections. Works for any microscope-observable specimen: onion cells, cheek cells, blood cells, elodea, paramecium, amoeba, bacteria, muscle tissue, leaf cross-sections, mineral crystals. Perfect for teaching: cell structure, plant vs animal cells, microscope technique, scientific observation and recording, structure-function relationships.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "food-web-builder",
+    "domain": "biology",
+    "description": "Interactive food web construction where students draw energy-flow connections between organisms by clicking to create directional arrows. The CORE",
+    "constraints": "Use for grades 3-8 students learning food chains, food webs, trophic levels, or ecosystem dynamics. Grade 3-5: Simple food chains with 6-8 organisms, clear linear relationships (grass → rabbit → fox), focus on basic producer/consumer/predator progression, optional simple disruption scenario showing predictable effects. Grade 6-8: Complex food webs with 8-10 organisms showing interconnected relationships, organisms with multiple prey and predators, REQUIRED disruption scenarios demonstrating trophic cascades and keystone species effects, emphasis on systems thinking and indirect effects. Perfect for teaching: producers/consumers/decomposers, energy flow, food chains vs food webs, trophic levels, predator-prey relationships, ecosystem balance, keystone species, trophic cascades, population dynamics. Works for any ecosystem: grassland, forest, ocean, coral reef, desert, tundra, pond, wetland. Students click organisms to draw connections showing energy flow direction (arrow from prey → predator). Evaluation tracks connection accuracy, identifies missing/extra connections, and can include disruption prediction assessment for 6-8.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "adaptation-investigator",
+    "domain": "biology",
+    "description": "Interactive adaptation reasoning primitive that presents an organism\\",
+    "constraints": "Use for grades 2-8 students learning about adaptations, natural selection, structure-function relationships, or evolution. Grade 2-4: Simple observable traits (camouflage, thick fur, sharp claws), everyday vocabulary, 2 simple What If? scenarios, focus on",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "cell-builder",
+    "domain": "biology",
+    "description": "Three-phase interactive cell biology primitive. Phase 1 (Sort): Students classify which organelles belong in this cell type and which are distractors that don\\",
+    "constraints": "Use for grades 4-8 students learning cell structure and organelle functions. Grade 4-5: Simpler vocabulary, 5-7 major organelles plus 2-3 distractors, everyday analogies, simple quantity reasoning. Grade 6-8: Scientific terminology, 7-10 organelles plus 3-4 distractors including ER, Golgi apparatus, lysosomes, ribosomes. Supports specialized cell contexts:",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "inheritance-lab",
+    "domain": "biology",
+    "description": "Interactive Punnett square and trait prediction tool for genetics inheritance education. Students fill in gamete combinations in a Punnett square grid, predict offspring genotypic and phenotypic ratio",
+    "constraints": "Use for grades 6-8 students learning genetics, heredity, and Mendelian inheritance. Grade 6-7: Monohybrid crosses ONLY (2x2 Punnett square), complete dominance only, simple vocabulary (",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "dna-explorer",
+    "domain": "biology",
+    "description": "Interactive DNA structure explorer with double helix visualization, base pairing challenges, zoom levels from chromosome to molecular scale, and nucleotide reference. The CORE",
+    "constraints": "Use for grades 5-8 students learning DNA structure, genetics, or molecular biology. Grade 5-6: Base pairing rules only (A-T, C-G), short sequences (6-8 bases), simple vocabulary, structure and base-pairing modes only, 2-3 build challenges, 3 zoom levels. Grade 7-8: Hydrogen bond specifics, longer sequences (8-12 bases), scientific terminology (nucleotide, phosphodiester), all modes including transcription and replication, 3-4 build challenges including error identification, 4-5 zoom levels with molecular detail. Perfect for: DNA structure lessons, complementary base pairing practice, molecular genetics introduction, central dogma overview, nucleotide composition, chromosome structure.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "protein-folder",
+    "domain": "biology",
+    "description": "Interactive protein folding simulator where students visualize how a linear amino acid chain folds into a 3D structure based on chemical properties. Two-panel layout: left panel shows the amino acid s",
+    "constraints": "Use ONLY for grades 7-8 students learning protein structure, molecular biology, or biochemistry. This is an advanced molecular biology concept NOT appropriate for younger grades. Simplified to 8-14 amino acid residues (not full proteins). Best for: protein structure lessons, structure-function relationships, amino acid chemistry, mutation and disease, sickle cell anemia, cystic fibrosis, protein misfolding diseases, central dogma. Works well paired with dna-explorer (DNA → RNA → Protein pipeline) or bio-process-animator for protein synthesis visualization.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "energy-cycle-engine",
+    "domain": "biology",
+    "description": "Interactive dual-panel model showing the coupled relationship between photosynthesis and cellular respiration. Students manipulate input levels (light intensity, CO₂, glucose, O₂) via sliders and obse",
+    "constraints": "Use ONLY for grades 5-8 students learning about photosynthesis, cellular respiration, or energy flow in living systems. Grade 5-6: Simplified vocabulary, 2-3 stages per process, 3-4 experiments with basic cause-and-effect reasoning. Grade 7-8: Full scientific terminology, 3-4 stages with subcellular locations (thylakoid, matrix, cristae), 4-5 experiments requiring systems thinking and cascade reasoning. Perfect for: photosynthesis and respiration lessons, energy transformation, carbon cycle, plant biology, cellular energy, ATP production, comparing photosynthesis to respiration. Works well paired with bio-process-animator for individual process detail, or bio-compare-contrast for photosynthesis vs respiration comparison.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "evolution-timeline",
+    "domain": "biology",
+    "description": "Interactive deep-time timeline showing evolutionary events, branching points, and the emergence of major groups across geological time. Students navigate billions of years of history, explore mass ext",
+    "constraints": "Use for grades 4-8 students learning about evolution, geological time, history of life, mass extinctions, or evolutionary relationships. Grade 4-5: 8-12 events with simple engaging vocabulary, focus on events students recognize (dinosaurs, first animals, first plants), 2-3 lineages with clear linear paths, 2 scale anchors with familiar references (24-hour clock, football field), 2-3 most dramatic mass extinctions, avoid technical geological terms. Grade 6-8: 12-18 events covering molecular evolution through modern humans, scientific vocabulary with explanations, 3-5 lineages showing major transitions (fish to tetrapods, dinosaurs to birds), 2-3 scale anchors with both familiar and scientific references, all 5 major mass extinctions with scientific causes, can include geological terms, plate tectonics, atmospheric changes. Perfect for: history of life on Earth, evolution of specific groups (mammals, birds, flowering plants), mass extinction events, geological time periods, common ancestry and divergence, adaptive radiation. Works well paired with species-profile for individual organisms, life-cycle-sequencer for developmental processes, or bio-compare-contrast for comparing organisms across evolutionary time.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "solar-system-explorer",
+    "domain": "astronomy",
+    "description": "Interactive solar system model with accurate orbital mechanics, zoom controls, and planet details. Students explore planetary motion, compare sizes and distances, watch orbits in real-time, and discov",
+    "constraints": "Best for grades K-5. Learning progression: K (planet names, order, Earth), 1 (inner vs outer, sizes), 2 (orbits, day/year), 3 (moons, rings, AU), 4 (orbital periods, distances), 5 (Kepler\\",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "scale-comparator",
+    "domain": "astronomy",
+    "description": "Interactive scale comparison tool for celestial objects that helps students grasp mind-bending cosmic scales through familiar references. Students compare sizes, distances, masses, and light-travel ti",
+    "constraints": "Best for grades K-5 with distinct learning progressions. K: 2-3 objects (Earth, Moon), size only, no ratios, everyday references (balls). Grade 1: 3-4 planets, size comparisons, sport ball equivalents. Grade 2: Sun emphasis, integer ratios,",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "day-night-seasons",
+    "domain": "astronomy",
+    "description": "Interactive Earth model showing how rotation creates day/night and how tilted orbit creates seasons. Critical for correcting the common misconception that seasons come from distance to Sun. Students s",
+    "constraints": "Best for grades K-5 with distinct learning progressions. K: Focus on day/night only, 2-3 familiar locations, simple questions (",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "moon-phases-lab",
+    "domain": "astronomy",
+    "description": "Interactive Earth-Moon-Sun model that explains why the Moon appears to change shape through the lunar cycle. Students position Moon in orbit around Earth, view from Earth\\",
+    "constraints": "Best for grades K-5 with distinct learning progressions. K: from_earth view only, focus on",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "rocket-builder",
+    "domain": "astronomy",
+    "description": "Comprehensive rocket design and simulation tool where students assemble rockets from components, balance thrust and weight, and launch to see if their designs reach space. The flagship spaceflight pri",
+    "constraints": "Best for grades K-5 with distinct learning progressions. K: 1 stage, 3-5 simple components, no TWR/budget, target 10-20 km, focus on",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "orbit-mechanics-lab",
+    "domain": "astronomy",
+    "description": "Interactive orbital mechanics sandbox where students discover that orbiting is falling while moving sideways, and learn how to change orbits with carefully timed burns. Students launch objects at diff",
+    "constraints": "Best for grades K-5 with distinct learning progressions. K: Focus on",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "mission-planner",
+    "domain": "astronomy",
+    "description": "Simplified mission design tool where students plan trips to the Moon, Mars, and beyond. Students select destinations on an interactive D3 solar system map, choose launch windows based on planetary ali",
+    "constraints": "Best for grades K-5 with distinct learning progressions. K: 2-3 destinations (Moon, Mars), flyby mission, no trajectory/supplies/launch windows shown, focus on",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "telescope-simulator",
+    "domain": "astronomy",
+    "description": "Virtual telescope experience where students explore the night sky, find celestial objects, and understand how astronomers work. Features an interactive D3 circular viewport simulating telescope eyepie",
+    "constraints": "Best for grades K-5 with distinct learning progressions. K: binoculars, 3-4 bright objects (Moon, Venus, Jupiter), auto-focus, no grid/journal, 1-2 easy targets to find, focus on",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "light-shadow-lab",
+    "domain": "astronomy",
+    "description": "Interactive shadow exploration lab where students manipulate a virtual sun to observe how shadow length, direction, and shape change throughout the day. Perfect for teaching light and shadow phenomena",
+    "constraints": "Best for K-5. Requires understanding of directional vocabulary (East/West). Themes: playground (K-1), sundial (2-3), science_lab (4-5).",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "observe",
+        "label": "Observe (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "observe"
+        ],
+        "description": "Drag the sun to different positions and answer multiple-choice questions about shadow changes"
+      },
+      {
+        "evalMode": "predict",
+        "label": "Predict (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "predict"
+        ],
+        "description": "Given a sun position, predict the shadow direction and length before checking"
+      },
+      {
+        "evalMode": "measure",
+        "label": "Measure (Tier 3)",
+        "beta": 4.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "measure"
+        ],
+        "description": "Record shadow direction and length at multiple time points, identify the pattern"
+      },
+      {
+        "evalMode": "apply",
+        "label": "Apply (Tier 4)",
+        "beta": 6,
+        "scaffoldingMode": 6,
+        "challengeTypes": [
+          "apply"
+        ],
+        "description": "Reverse reasoning — determine time of day from shadow direction and length"
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "constellation-builder",
+    "domain": "astronomy",
+    "description": "Interactive connect-the-dots star field where students trace constellations by connecting stars. Builds spatial pattern recognition and star identification skills. Students connect numbered dots (guid",
+    "constraints": "Best for grades K-5. K: 3 constellations, numbered dots, large stars. Grade 1: 4-5 constellations, guided trace. Grade 2: unnumbered free connect, star brightness varies. Grade 3: identify mode, background distractors, seasonal grouping. Grade 4-5: seasonal sky rotation, no numbers, mythology connections.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "guided_trace",
+        "label": "Guided Trace (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "guided_trace"
+        ],
+        "description": "Numbered dots — student taps stars in order to trace the constellation"
+      },
+      {
+        "evalMode": "free_connect",
+        "label": "Free Connect (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "free_connect"
+        ],
+        "description": "No numbers — student identifies and connects correct stars from the field"
+      },
+      {
+        "evalMode": "identify",
+        "label": "Identify (Tier 3)",
+        "beta": 4.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "identify"
+        ],
+        "description": "Constellation lines already drawn — student selects the correct name from options"
+      },
+      {
+        "evalMode": "seasonal",
+        "label": "Seasonal (Tier 4)",
+        "beta": 6,
+        "scaffoldingMode": 6,
+        "challengeTypes": [
+          "seasonal"
+        ],
+        "description": "Identify which constellations are visible in a given season"
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "motion-diagram",
+    "domain": "physics",
+    "description": "Motion Diagram / Strobe Diagram showing object positions at equal time intervals with velocity and acceleration vectors. Perfect for teaching kinematics qualitatively. ESSENTIAL for Middle School - Hi",
+    "constraints": "Best for grades 6-12. Use uniform motion for MS, accelerated/projectile for HS, circular for AP.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "sound-wave-explorer",
+    "domain": "physics",
+    "description": "Interactive sound lab where students tap virtual objects to create vibrations, see real-time wave visualizations, and explore how force (volume) and speed (pitch) affect sound. Includes medium selecti",
+    "constraints": "Best for K-3. Themes: music_room (K-1), playground (1-2), science_lab (2-3). Keep oscillator frequencies in safe range (200-800Hz). Short tone bursts only.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "observe",
+        "label": "Observe (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "observe"
+        ],
+        "description": "Tap objects, watch vibrations animate, answer MC about what produces sound"
+      },
+      {
+        "evalMode": "predict",
+        "label": "Predict (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "predict"
+        ],
+        "description": "Adjust force/speed, predict pitch/volume change before hearing result"
+      },
+      {
+        "evalMode": "classify",
+        "label": "Classify (Tier 3)",
+        "beta": 4.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "classify"
+        ],
+        "description": "Compare objects/materials, rank by pitch or sort by sound travel properties"
+      },
+      {
+        "evalMode": "apply",
+        "label": "Apply (Tier 4)",
+        "beta": 6,
+        "scaffoldingMode": 6,
+        "challengeTypes": [
+          "apply"
+        ],
+        "description": "Reverse reasoning — hear a sound, identify the force/speed/medium that produced it"
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "sentence-analyzer",
+    "domain": "literacy",
+    "description": "Linguistic breakdown of sentence structure. Use for grammar, syntax, or language learning.",
+    "constraints": "Requires language/grammar content",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "word-builder",
+    "domain": "literacy",
+    "description": "Interactive morphology lab where students construct complex words from roots, prefixes, and suffixes to understand their meaning. Drag-and-drop construction with visual breakdown showing how word part",
+    "constraints": "Best for grades 3-8. Requires words that can be meaningfully broken into morphological components (prefixes, roots, suffixes).",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "phonics-blender",
+    "domain": "literacy",
+    "description": "Sound-by-sound word building with phoneme tiles. Students tap to hear individual sounds, then blend into words. Supports CVC, CVCE, blends, digraphs, diphthongs, and r-controlled vowels. Audio playbac",
+    "constraints": "Grades K-2 only. Requires phonics/decoding content.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "cvc",
+        "label": "CVC (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "cvc"
+        ],
+        "description": "Simple CVC blending (cat, dog)."
+      },
+      {
+        "evalMode": "cvce_blend",
+        "label": "CVCE & Blends (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "cvce",
+          "blend"
+        ],
+        "description": "Silent-e and consonant blends."
+      },
+      {
+        "evalMode": "digraph",
+        "label": "Digraphs (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "digraph"
+        ],
+        "description": "Two letters, one sound (sh, ch, th)."
+      },
+      {
+        "evalMode": "advanced",
+        "label": "Advanced (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "r-controlled",
+          "diphthong"
+        ],
+        "description": "R-controlled vowels and diphthongs."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "decodable-reader",
+    "domain": "literacy",
+    "description": "Controlled-vocabulary reading passages with per-word TTS support. Every word is tappable for pronunciation. Tracks which words students tap (decoding difficulty proxy). Includes embedded comprehension",
+    "constraints": "Grades K-2. Requires controlled phonics patterns matching student decoding level.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "rhyme-studio",
+    "domain": "literacy",
+    "description": "Interactive rhyme awareness activity with three progressive modes: Recognition (do these words rhyme?), Identification (which word rhymes?), and Production (type a rhyming word). Covers the full rhyme",
+    "constraints": "Requires 8-10 challenges mixing all three modes. Recognition challenges need doesRhyme boolean. Identification needs 2-3 options. Production needs acceptableAnswers array.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "recognition",
+        "label": "Recognition (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "recognition"
+        ],
+        "description": "Do these words rhyme? Yes or no decision."
+      },
+      {
+        "evalMode": "identification",
+        "label": "Identification (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "identification"
+        ],
+        "description": "Pick the rhyming word from 2-3 options."
+      },
+      {
+        "evalMode": "production",
+        "label": "Production (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "production"
+        ],
+        "description": "Generate a word that rhymes with the target."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "syllable-clapper",
+    "domain": "literacy",
+    "description": "Syllable clapping activity where students hear a word and tap/clap to count its syllables. Visual bar splits into color-coded syllable segments. AI tutor pronounces words and syllables. Supports 1-4 s",
+    "constraints": "Requires 1-4 syllable words appropriate for kindergarten. Each word needs correct syllable segmentation.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "easy",
+        "label": "Easy Words (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "easy"
+        ],
+        "description": "High-frequency 1-2 syllable words with clear boundaries. AI over-emphasizes beats and paces slowly."
+      },
+      {
+        "evalMode": "medium",
+        "label": "Medium Words (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "medium"
+        ],
+        "description": "2-3 syllable words, broader vocabulary including compound words. AI models once then lets student try."
+      },
+      {
+        "evalMode": "hard",
+        "label": "Hard Words (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "hard"
+        ],
+        "description": "3-4 syllable words with some ambiguous boundaries. AI says word naturally, student parses independently."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "phoneme-explorer",
+    "domain": "literacy",
+    "description": "Multi-mode phoneme awareness activity with four progressive modes:",
+    "constraints": "Use concrete, picturable words with clear emoji matches. K: CVC words, initial sounds only.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "isolate",
+        "label": "Isolate (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "isolate"
+        ],
+        "description": "Identify initial/final phoneme — hear a sound, pick the word that starts with it."
+      },
+      {
+        "evalMode": "blend",
+        "label": "Blend (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "blend"
+        ],
+        "description": "Combine phoneme tiles into a word — see /c/ /a/ /t/, pick "
+      },
+      {
+        "evalMode": "segment",
+        "label": "Segment (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "segment"
+        ],
+        "description": "Break a word into its component phonemes — pick correct breakdown."
+      },
+      {
+        "evalMode": "manipulate",
+        "label": "Manipulate (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "manipulate"
+        ],
+        "description": "Add, delete, or substitute a phoneme to create a new word."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "sound-swap",
+    "domain": "literacy",
+    "description": "Interactive phoneme manipulation activity where students add, delete, or substitute individual sounds in words to create new words.",
+    "constraints": "Use simple CVC/CVCC words. All result words must be real words. Use proper phoneme notation with slashes.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "addition",
+        "label": "Addition (Tier 1)",
+        "beta": 2,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "addition"
+        ],
+        "description": "Add a phoneme to make a new word."
+      },
+      {
+        "evalMode": "deletion",
+        "label": "Deletion (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "deletion"
+        ],
+        "description": "Remove a phoneme — what word remains?"
+      },
+      {
+        "evalMode": "substitution",
+        "label": "Substitution (Tier 3)",
+        "beta": 4,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "substitution"
+        ],
+        "description": "Swap a phoneme to change the word."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "letter-spotter",
+    "domain": "literacy",
+    "description": "Interactive letter recognition with three modes: Name It (sentence spotter — hear a sentence, spot the missing letter hidden by an emoji),",
+    "constraints": "Requires letterGroup (1-4). Group 1: s,a,t,i,p,n. Group 2: adds c,k,e,h,r,m,d.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "name_it",
+        "label": "Name It (Sentence Spotter)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "name-it"
+        ],
+        "description": "Hear a sentence spoken aloud, spot which letter an emoji is hiding in a key word."
+      },
+      {
+        "evalMode": "find_it",
+        "label": "Find It (Visual Search)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "find-it"
+        ],
+        "description": "Hear a letter name, find all instances in a 4x4 grid."
+      },
+      {
+        "evalMode": "match_it",
+        "label": "Match It (Case Matching)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "match-it"
+        ],
+        "description": "See an uppercase letter, match it to the correct lowercase form."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "letter-sound-link",
+    "domain": "literacy",
+    "description": "Audio-first letter-sound correspondence activity. Three modes: see a letter and hear two sounds via speaker bubbles (pick the right one),",
+    "constraints": "Requires AI tutor voice connection for phoneme pronunciation. Supports 4 cumulative letter groups.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "see_hear",
+        "label": "See-Hear (Letter → Sound)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "see-hear"
+        ],
+        "description": "See a letter displayed, pick its sound from options."
+      },
+      {
+        "evalMode": "hear_see",
+        "label": "Hear-See (Sound → Letter)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "hear-see"
+        ],
+        "description": "Hear a phoneme, identify which letter makes that sound."
+      },
+      {
+        "evalMode": "keyword_match",
+        "label": "Keyword Match (Letter → Word)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "keyword-match"
+        ],
+        "description": "Match a letter to its keyword association (e.g., s → sun)."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "cvc-speller",
+    "domain": "literacy",
+    "description": "Audio-first CVC word encoding with three progressive task modes. Fill-the-Vowel: hear a word, see consonant frame (c_t),",
+    "constraints": "Only CVC (3-letter) words. One vowel focus per activity. Requires AI tutor voice for pronunciation.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "fill_vowel",
+        "label": "Fill the Vowel (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "fill-vowel"
+        ],
+        "description": "Hear word, pick missing vowel from 2 confusable options in a C_C frame."
+      },
+      {
+        "evalMode": "spell_word",
+        "label": "Spell It (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "spell-word"
+        ],
+        "description": "Hear word, spell all 3 letters in Elkonin boxes from a letter bank."
+      },
+      {
+        "evalMode": "word_sort",
+        "label": "Word Sort (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "word-sort"
+        ],
+        "description": "Hear words, sort into 2 vowel-sound buckets (e.g., short-a vs short-e)."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "word-workout",
+    "domain": "literacy",
+    "description": "CVC word application activity with four modes: Real vs. Nonsense (discriminate real from made-up words),",
+    "constraints": "Requires mode selection. Real/Nonsense needs phonetically plausible nonsense words.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "real_vs_nonsense",
+        "label": "Real vs Nonsense (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "real-vs-nonsense"
+        ],
+        "description": "Is this a real word? Recognition-level decoding."
+      },
+      {
+        "evalMode": "picture_match",
+        "label": "Picture Match (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "picture-match"
+        ],
+        "description": "Match decoded word to picture — word-meaning connection."
+      },
+      {
+        "evalMode": "word_chains",
+        "label": "Word Chains (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "word-chains"
+        ],
+        "description": "Read chain of words with one-letter changes."
+      },
+      {
+        "evalMode": "sentence_reading",
+        "label": "Sentence Reading (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "sentence-reading"
+        ],
+        "description": "Read word in decodable sentence context."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "story-map",
+    "domain": "literacy",
+    "description": "Interactive plot structure diagram where students identify and place story elements on a visual arc. Supports beginning-middle-end (K-1), story mountain (2-3), full plot diagram (4-5), and hero\\",
+    "constraints": "Requires narrative text. Structure type should match grade level.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "bme",
+        "label": "BME (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "bme"
+        ],
+        "description": "Beginning-Middle-End (K-1)."
+      },
+      {
+        "evalMode": "story_mountain",
+        "label": "Story Mountain (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "story-mountain"
+        ],
+        "description": "5-part narrative arc (2-3)."
+      },
+      {
+        "evalMode": "plot_diagram",
+        "label": "Plot Diagram (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "plot-diagram"
+        ],
+        "description": "Freytag\\"
+      },
+      {
+        "evalMode": "heros_journey",
+        "label": "Hero\\",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "heros-journey"
+        ],
+        "description": "Complex narrative structure (5-6)."
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "character-web",
+    "domain": "literacy",
+    "description": "Interactive node-and-edge graph for character analysis and relationship mapping. Students build character profiles with traits and text evidence citations, then map relationships between characters. T",
+    "constraints": "Requires narrative text with 2+ characters. Best for grades 2-6.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "poetry-lab",
+    "domain": "literacy",
+    "description": "Dual-mode poetry primitive. Analysis mode: examine poems with interactive annotations for rhyme scheme, meter, figurative language, and structure. Composition mode: write poetry within structured temp",
+    "constraints": "Best for grades 1-6. Analysis mode needs a poem; composition mode needs a template type.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "analysis",
+        "label": "Analysis (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "analysis"
+        ],
+        "description": "Identify poetic elements in given poem."
+      },
+      {
+        "evalMode": "composition",
+        "label": "Composition (Tier 5)",
+        "beta": 6,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "composition"
+        ],
+        "description": "Compose poem using template structure."
+      }
+    ],
+    "hasTutoring": false
+  },
+  {
+    "id": "genre-explorer",
+    "domain": "literacy",
+    "description": "Students examine text excerpts and classify them by genre using feature checklists. Supports fiction, nonfiction, poetry, drama, folktale, myth, fable, biography, informational, persuasive. Side-by-si",
+    "constraints": "Best for grades 1-6. Needs text excerpts from different genres.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "text-structure-analyzer",
+    "domain": "literacy",
+    "description": "Students identify organizational structure of informational passages: cause-effect, compare-contrast, problem-solution, chronological, or description. Highlight signal words, select structure type, dr",
+    "constraints": "Best for grades 2-6. Requires informational text with clear organizational structure.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "chronological_description",
+        "label": "Chronological/Description (Tier 1)",
+        "beta": 2,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "chronological",
+          "description"
+        ],
+        "description": "Identify sequence or descriptive structure."
+      },
+      {
+        "evalMode": "cause_effect",
+        "label": "Cause-Effect (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "cause-effect"
+        ],
+        "description": "Identify cause and effect relationships."
+      },
+      {
+        "evalMode": "compare_contrast",
+        "label": "Compare-Contrast (Tier 3)",
+        "beta": 3,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "compare-contrast"
+        ],
+        "description": "Analyze similarities and differences."
+      },
+      {
+        "evalMode": "problem_solution",
+        "label": "Problem-Solution (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "problem-solution"
+        ],
+        "description": "Identify problem and proposed solutions."
+      }
+    ],
+    "hasTutoring": false
+  },
+  {
+    "id": "evidence-finder",
+    "domain": "literacy",
+    "description": "Students find and highlight specific text evidence supporting claims in informational passages. Supports multiple claims, evidence strength ranking, and Claim-Evidence-Reasoning (CER) framework. Multi",
+    "constraints": "Best for grades 2-6. Requires informational passage with identifiable evidence.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "paragraph-architect",
+    "domain": "literacy",
+    "description": "Scaffolded paragraph construction using hamburger model (topic sentence -> details -> conclusion). Supports informational, narrative, and opinion paragraph types. Sentence-starter frames, linking word",
+    "constraints": "Best for grades 1-6. Select paragraph type appropriate to grade level.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "informational",
+        "label": "Informational (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "informational"
+        ],
+        "description": "Structured informational paragraph."
+      },
+      {
+        "evalMode": "narrative",
+        "label": "Narrative (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "narrative"
+        ],
+        "description": "Narrative paragraph with elements."
+      },
+      {
+        "evalMode": "opinion",
+        "label": "Opinion (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "opinion"
+        ],
+        "description": "Opinion with claim + support."
+      }
+    ],
+    "hasTutoring": false
+  },
+  {
+    "id": "story-planner",
+    "domain": "literacy",
+    "description": "Pre-writing planning tool for narrative writing. Students fill structured cards: characters, setting, conflict, key events, resolution, theme. Generates visual story arc from inputs. AI-generated char",
+    "constraints": "Best for K-6. Focus complexity on grade level.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "opinion-builder",
+    "domain": "literacy",
+    "description": "Structured scaffold for opinion/argumentative writing. Uses OREO model (grades 2-4) transitioning to CER framework (grades 5-6). Students construct arguments piece by piece with validation. Counter-ar",
+    "constraints": "Best for grades 2-4 (OREO), grades 5-6 (CER).",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "oreo",
+        "label": "OREO (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "oreo"
+        ],
+        "description": "Opinion-Reason-Example-Opinion (grades 2-4)."
+      },
+      {
+        "evalMode": "cer",
+        "label": "CER (Tier 4)",
+        "beta": 5.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "cer"
+        ],
+        "description": "Claim-Evidence-Reasoning (grades 5-6)."
+      }
+    ],
+    "hasTutoring": false
+  },
+  {
+    "id": "revision-workshop",
+    "domain": "literacy",
+    "description": "Students apply specific revision strategies to draft passages: adding details, strengthening word choice, combining sentences, fixing run-ons, improving transitions, reorganizing. Before/after compari",
+    "constraints": "Best for grades 2-6. Focus on one revision skill at a time.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "add_details",
+        "label": "Add Details (Tier 1)",
+        "beta": 2,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "add-details"
+        ],
+        "description": "Expand with sensory/specific details."
+      },
+      {
+        "evalMode": "word_choice",
+        "label": "Word Choice (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "word-choice"
+        ],
+        "description": "Replace weak/vague words."
+      },
+      {
+        "evalMode": "combine_sentences",
+        "label": "Combine Sentences (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "combine-sentences"
+        ],
+        "description": "Combine choppy sentences."
+      },
+      {
+        "evalMode": "transitions",
+        "label": "Transitions (Tier 3)",
+        "beta": 4.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "transitions"
+        ],
+        "description": "Add/improve transition words."
+      },
+      {
+        "evalMode": "reorganize",
+        "label": "Reorganize (Tier 4)",
+        "beta": 5.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "reorganize"
+        ],
+        "description": "Reorder for logical flow."
+      },
+      {
+        "evalMode": "concision",
+        "label": "Concision (Tier 5)",
+        "beta": 6.5,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "concision"
+        ],
+        "description": "Eliminate wordiness."
+      }
+    ],
+    "hasTutoring": false
+  },
+  {
+    "id": "listen-and-respond",
+    "domain": "literacy",
+    "description": "Listening comprehension primitive where passage is delivered via TTS audio only (text hidden during listening). Students answer questions from literal recall to inference. Supports replay of specific ",
+    "constraints": "Best for K-6. Passage text is hidden during listening phase.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "read-aloud-studio",
+    "domain": "literacy",
+    "description": "Fluency practice with three modes: Model (TTS with karaoke-style word highlighting), Practice (student records via microphone), Compare (side-by-side playback). Tracks WPM. Student self-assessment onl",
+    "constraints": "Best for grades 1-6. Requires microphone for practice mode. No AI grading of speech.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "sentence-builder",
+    "domain": "literacy",
+    "description": "Students construct grammatical sentences by arranging color-coded word/phrase tiles by grammatical role (subject=blue, predicate=red, object=green, modifier=yellow). Progressive complexity from simple",
+    "constraints": "Best for grades 1-6. Sentence complexity should match grade level.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "simple",
+        "label": "Simple (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "simple"
+        ],
+        "description": "Build simple sentence from tiles."
+      },
+      {
+        "evalMode": "compound",
+        "label": "Compound (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "compound"
+        ],
+        "description": "Join clauses with conjunction."
+      },
+      {
+        "evalMode": "complex",
+        "label": "Complex (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "complex"
+        ],
+        "description": "Subordinate clause construction."
+      },
+      {
+        "evalMode": "compound_complex",
+        "label": "Compound-Complex (Tier 5)",
+        "beta": 7,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "compound-complex"
+        ],
+        "description": "Multi-clause sentence building."
+      }
+    ],
+    "hasTutoring": false
+  },
+  {
+    "id": "context-clues-detective",
+    "domain": "literacy",
+    "description": "Students determine unfamiliar word meaning using context clues. Teaches clue types: definition, synonym/antonym, example, inference. Students highlight clues, identify type, provide meaning. Dictionar",
+    "constraints": "Best for grades 2-6. Requires passage with context clues near target word.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "definition",
+        "label": "Definition (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "definition"
+        ],
+        "description": "Meaning stated directly in text."
+      },
+      {
+        "evalMode": "synonym_antonym",
+        "label": "Synonym/Antonym (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "synonym",
+          "antonym"
+        ],
+        "description": "Meaning from similar/opposite words."
+      },
+      {
+        "evalMode": "example",
+        "label": "Example (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "example"
+        ],
+        "description": "Meaning from given examples."
+      },
+      {
+        "evalMode": "inference",
+        "label": "Inference (Tier 4)",
+        "beta": 5.5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "inference"
+        ],
+        "description": "Meaning from broader context."
+      }
+    ],
+    "hasTutoring": false
+  },
+  {
+    "id": "figurative-language-finder",
+    "domain": "literacy",
+    "description": "Students identify and classify figurative language in passages: simile, metaphor, personification, hyperbole, idiom, alliteration, onomatopoeia, imagery. Color-coded highlighting by type. Literal tran",
+    "constraints": "Best for grades 3-6. Requires passage rich in figurative language.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "sound_devices",
+        "label": "Sound Devices (Tier 1)",
+        "beta": 2,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "alliteration",
+          "onomatopoeia"
+        ],
+        "description": "Identify sound-based devices."
+      },
+      {
+        "evalMode": "comparison",
+        "label": "Comparison (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "simile",
+          "metaphor"
+        ],
+        "description": "Identify explicit/implicit comparisons."
+      },
+      {
+        "evalMode": "advanced",
+        "label": "Advanced (Tier 3)",
+        "beta": 4.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "personification",
+          "hyperbole",
+          "imagery"
+        ],
+        "description": "Non-literal expression identification."
+      },
+      {
+        "evalMode": "idiom",
+        "label": "Idiom (Tier 5)",
+        "beta": 6,
+        "scaffoldingMode": 5,
+        "challengeTypes": [
+          "idiom"
+        ],
+        "description": "Interpret culturally specific expressions."
+      }
+    ],
+    "hasTutoring": false
+  },
+  {
+    "id": "spelling-pattern-explorer",
+    "domain": "literacy",
+    "description": "Students investigate word groups sharing spelling patterns, discover underlying rules, then apply via audio dictation practice. Supports word families, vowel patterns, suffix rules, Latin/Greek roots.",
+    "constraints": "Best for grades 1-6. Pattern complexity should match grade level.",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "short_vowel",
+        "label": "Short Vowel (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "short-vowel"
+        ],
+        "description": "CVC and short vowel patterns."
+      },
+      {
+        "evalMode": "long_vowel",
+        "label": "Long Vowel (Tier 2)",
+        "beta": 2.5,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "long-vowel"
+        ],
+        "description": "CVCe, vowel teams."
+      },
+      {
+        "evalMode": "r_controlled",
+        "label": "R-Controlled (Tier 3)",
+        "beta": 3.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "r-controlled"
+        ],
+        "description": "ar, er, ir, or, ur patterns."
+      },
+      {
+        "evalMode": "silent_letter",
+        "label": "Silent Letter (Tier 3)",
+        "beta": 4,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "silent-letter"
+        ],
+        "description": "Silent letter conventions."
+      },
+      {
+        "evalMode": "morphological",
+        "label": "Morphological (Tier 4)",
+        "beta": 5,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "suffix-change",
+          "latin-root"
+        ],
+        "description": "Morpheme-based spelling."
+      }
+    ],
+    "hasTutoring": false
+  },
+  {
+    "id": "media-player",
+    "domain": "media",
+    "description": "Interactive audio-visual lesson player with synchronized narration, images, and segment-by-segment knowledge checks. Multi-segment presentation where each segment has AI-generated voiceover narration,",
+    "constraints": "Best for topics that benefit from sequential, narrative-driven explanation with comprehension checks (processes, stories, step-by-step concepts). Each lesson typically has 3-4 segments. Each segment includes one multiple-choice knowledge check question. Best for grades 3+ due to knowledge check reading requirements. Students progress through segments sequentially and can retry questions up to 3 times before seeing the answer.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": true
+  },
+  {
+    "id": "flashcard-deck",
+    "domain": "media",
+    "description": "Interactive flashcard deck for rapid-fire memorization and active recall practice. Students flip cards to reveal answers, mark whether they know each concept, and track their progress. Perfect for voc",
+    "constraints": "Best for content with discrete facts or term-definition pairs. Typically generates 12-20 cards per deck. Ideal for review, test prep, or building fluency. Works for all grade levels - vocabulary and definitions adapt to audience. Use when students need active recall practice rather than passive reading.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "image-comparison",
+    "domain": "media",
+    "description": "Interactive before/after image slider for visualizing transformations, processes, or changes. Students drag a slider to reveal differences between two AI-generated images showing a progression (e.g., ",
+    "constraints": "Best for topics with clear visual transformations or progressive states. Works for all subjects - science (metamorphosis, phase changes, reactions), history (before/after events), geography (erosion, urban development), biology (life cycles, cellular processes), physics (states of matter, optical phenomena). The AI automatically determines the most educational before/after progression for the topic.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "image-panel",
+    "domain": "media",
+    "description": "AI-generated images for visual context (maps, diagrams, illustrations, historical scenes, scientific visualizations). Subject-agnostic - works for geography, history, science, literature, art, or any ",
+    "constraints": "Best for topics that benefit from visual representation. Automatically categorizes and styles based on subject matter.",
+    "supportsEvaluation": true,
+    "evalModes": [],
+    "hasTutoring": false
+  },
+  {
+    "id": "knowledge-check",
+    "domain": "assessment",
+    "description": "Assessment checkpoint with single or multiple problems of various types (multiple choice, true/false, fill-in-blanks, matching, sequencing, categorization, scenario, short answer).",
+    "constraints": "Typically one per exhibit, at the end",
+    "supportsEvaluation": true,
+    "evalModes": [
+      {
+        "evalMode": "recall",
+        "label": "Recall (Tier 1)",
+        "beta": 1.5,
+        "scaffoldingMode": 1,
+        "challengeTypes": [
+          "multiple_choice",
+          "true_false",
+          "fill_in_blanks",
+          "matching_activity"
+        ],
+        "description": "Fact retrieval: "
+      },
+      {
+        "evalMode": "apply",
+        "label": "Apply (Tier 2)",
+        "beta": 3,
+        "scaffoldingMode": 2,
+        "challengeTypes": [
+          "multiple_choice",
+          "true_false",
+          "fill_in_blanks",
+          "matching_activity",
+          "sequencing_activity"
+        ],
+        "description": "Application: "
+      },
+      {
+        "evalMode": "analyze",
+        "label": "Analyze (Tier 3)",
+        "beta": 4.5,
+        "scaffoldingMode": 3,
+        "challengeTypes": [
+          "multiple_choice",
+          "fill_in_blanks",
+          "sequencing_activity",
+          "categorization_activity"
+        ],
+        "description": "Analysis: "
+      },
+      {
+        "evalMode": "evaluate",
+        "label": "Evaluate (Tier 4)",
+        "beta": 6,
+        "scaffoldingMode": 4,
+        "challengeTypes": [
+          "multiple_choice",
+          "fill_in_blanks",
+          "categorization_activity"
+        ],
+        "description": "Evaluation: "
+      }
+    ],
+    "hasTutoring": true
+  },
+  {
+    "id": "scale-spectrum",
+    "domain": "assessment",
+    "description": "Interactive spectrum for placing items along a continuum. Use for teaching nuanced judgments, degrees of intensity, moral/ethical reasoning, or comparative analysis.",
+    "constraints": "Best for middle-school and above. Requires items that can be meaningfully positioned on a spectrum.",
+    "supportsEvaluation": false,
+    "evalModes": [],
+    "hasTutoring": false
+  }
+]

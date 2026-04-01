@@ -26,14 +26,8 @@ from app.db.firestore_curriculum_service import firestore_curriculum_sync
 
 logger = logging.getLogger(__name__)
 
-# Grades that need the string label mapped
-GRADE_LABELS = {
-    "PK": "Pre-K", "K": "Kindergarten",
-    "1": "1st Grade", "2": "2nd Grade", "3": "3rd Grade",
-    "4": "4th Grade", "5": "5th Grade", "6": "6th Grade",
-    "7": "7th Grade", "8": "8th Grade", "9": "9th Grade",
-    "10": "10th Grade", "11": "11th Grade", "12": "12th Grade",
-}
+# Re-export from canonical grades module
+from app.models.grades import GRADE_LABELS
 
 # Fields stored on unit entries for authoring lifecycle only
 AUTHORING_METADATA_FIELDS = {
@@ -788,8 +782,6 @@ class DraftCurriculumService:
                         entry["target_primitive"] = ss["target_primitive"]
                     if ss.get("target_eval_modes"):
                         entry["target_eval_modes"] = ss["target_eval_modes"]
-                    if ss.get("primitive_ids"):
-                        entry["primitive_ids"] = ss["primitive_ids"]
                     index[ss["subskill_id"]] = entry
 
         doc["subskill_index"] = index

@@ -1,6 +1,8 @@
 /**
  * React hooks for Curriculum Authoring
  * Uses React Query for efficient server state management
+ *
+ * All subject-scoped hooks require grade alongside subject_id.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,30 +25,28 @@ import type {
 
 export const QUERY_KEYS = {
   subjects: (includeDrafts?: boolean) => ['subjects', { includeDrafts }] as const,
-  subject: (subjectId: string) => ['subject', subjectId] as const,
-  curriculumTree: (subjectId: string, includeDrafts?: boolean) =>
-    ['curriculumTree', subjectId, { includeDrafts }] as const,
-  units: (subjectId: string, includeDrafts?: boolean) =>
-    ['units', subjectId, { includeDrafts }] as const,
-  unit: (unitId: string) => ['unit', unitId] as const,
-  skills: (unitId: string, includeDrafts?: boolean) =>
-    ['skills', unitId, { includeDrafts }] as const,
-  subskills: (skillId: string, includeDrafts?: boolean) =>
-    ['subskills', skillId, { includeDrafts }] as const,
-  entityPrerequisites: (entityId: string, entityType: EntityType, includeDrafts?: boolean) =>
-    ['entityPrerequisites', entityId, entityType, { includeDrafts }] as const,
-  subjectGraph: (subjectId: string, includeDrafts?: boolean) =>
-    ['subjectGraph', subjectId, { includeDrafts }] as const,
-  baseSkills: (subjectId: string) => ['baseSkills', subjectId] as const,
-  draftChanges: (subjectId: string) => ['draftChanges', subjectId] as const,
-  versionHistory: (subjectId: string) => ['versionHistory', subjectId] as const,
-  activeVersion: (subjectId: string) => ['activeVersion', subjectId] as const,
-  graphStatus: (subjectId: string) => ['graphStatus', subjectId] as const,
+  subject: (subjectId: string, grade: string) => ['subject', subjectId, grade] as const,
+  curriculumTree: (subjectId: string, grade: string, includeDrafts?: boolean) =>
+    ['curriculumTree', subjectId, grade, { includeDrafts }] as const,
+  units: (subjectId: string, grade: string, includeDrafts?: boolean) =>
+    ['units', subjectId, grade, { includeDrafts }] as const,
+  unit: (unitId: string, grade: string, subjectId: string) => ['unit', unitId, grade, subjectId] as const,
+  skills: (unitId: string, grade: string, subjectId: string, includeDrafts?: boolean) =>
+    ['skills', unitId, grade, subjectId, { includeDrafts }] as const,
+  subskills: (skillId: string, grade: string, subjectId: string, includeDrafts?: boolean) =>
+    ['subskills', skillId, grade, subjectId, { includeDrafts }] as const,
+  entityPrerequisites: (entityId: string, entityType: EntityType, grade: string, subjectId: string, includeDrafts?: boolean) =>
+    ['entityPrerequisites', entityId, entityType, grade, subjectId, { includeDrafts }] as const,
+  subjectGraph: (subjectId: string, grade: string, includeDrafts?: boolean) =>
+    ['subjectGraph', subjectId, grade, { includeDrafts }] as const,
+  baseSkills: (subjectId: string, grade: string) => ['baseSkills', subjectId, grade] as const,
+  draftChanges: (subjectId: string, grade: string) => ['draftChanges', subjectId, grade] as const,
+  versionHistory: (subjectId: string, grade: string) => ['versionHistory', subjectId, grade] as const,
+  activeVersion: (subjectId: string, grade: string) => ['activeVersion', subjectId, grade] as const,
+  graphStatus: (subjectId: string, grade: string) => ['graphStatus', subjectId, grade] as const,
   cachedSubjects: () => ['cachedSubjects'] as const,
   allCachedGraphs: () => ['allCachedGraphs'] as const,
   primitives: () => ['primitives'] as const,
-  subskillPrimitives: (subskillId: string, subjectId: string) =>
-    ['subskillPrimitives', subskillId, subjectId] as const,
 };
 
 // ==================== CURRICULUM HOOKS ====================
@@ -58,51 +58,51 @@ export function useSubjects(includeDrafts: boolean = false) {
   });
 }
 
-export function useSubject(subjectId: string) {
+export function useSubject(subjectId: string, grade: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.subject(subjectId),
-    queryFn: () => curriculumAuthoringAPI.getSubject(subjectId),
-    enabled: !!subjectId,
+    queryKey: QUERY_KEYS.subject(subjectId, grade),
+    queryFn: () => curriculumAuthoringAPI.getSubject(subjectId, grade),
+    enabled: !!subjectId && !!grade,
   });
 }
 
-export function useCurriculumTree(subjectId: string, includeDrafts: boolean = false) {
+export function useCurriculumTree(subjectId: string, grade: string, includeDrafts: boolean = false) {
   return useQuery({
-    queryKey: QUERY_KEYS.curriculumTree(subjectId, includeDrafts),
-    queryFn: () => curriculumAuthoringAPI.getCurriculumTree(subjectId, includeDrafts),
-    enabled: !!subjectId,
+    queryKey: QUERY_KEYS.curriculumTree(subjectId, grade, includeDrafts),
+    queryFn: () => curriculumAuthoringAPI.getCurriculumTree(subjectId, grade, includeDrafts),
+    enabled: !!subjectId && !!grade,
   });
 }
 
-export function useUnits(subjectId: string, includeDrafts: boolean = false) {
+export function useUnits(subjectId: string, grade: string, includeDrafts: boolean = false) {
   return useQuery({
-    queryKey: QUERY_KEYS.units(subjectId, includeDrafts),
-    queryFn: () => curriculumAuthoringAPI.getUnits(subjectId, includeDrafts),
-    enabled: !!subjectId,
+    queryKey: QUERY_KEYS.units(subjectId, grade, includeDrafts),
+    queryFn: () => curriculumAuthoringAPI.getUnits(subjectId, grade, includeDrafts),
+    enabled: !!subjectId && !!grade,
   });
 }
 
-export function useUnit(unitId: string) {
+export function useUnit(unitId: string, grade: string, subjectId: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.unit(unitId),
-    queryFn: () => curriculumAuthoringAPI.getUnit(unitId),
-    enabled: !!unitId,
+    queryKey: QUERY_KEYS.unit(unitId, grade, subjectId),
+    queryFn: () => curriculumAuthoringAPI.getUnit(unitId, grade, subjectId),
+    enabled: !!unitId && !!grade && !!subjectId,
   });
 }
 
-export function useSkills(unitId: string, includeDrafts: boolean = false) {
+export function useSkills(unitId: string, grade: string, subjectId: string, includeDrafts: boolean = false) {
   return useQuery({
-    queryKey: QUERY_KEYS.skills(unitId, includeDrafts),
-    queryFn: () => curriculumAuthoringAPI.getSkills(unitId, includeDrafts),
-    enabled: !!unitId,
+    queryKey: QUERY_KEYS.skills(unitId, grade, subjectId, includeDrafts),
+    queryFn: () => curriculumAuthoringAPI.getSkills(unitId, grade, subjectId, includeDrafts),
+    enabled: !!unitId && !!grade && !!subjectId,
   });
 }
 
-export function useSubskills(skillId: string, includeDrafts: boolean = false) {
+export function useSubskills(skillId: string, grade: string, subjectId: string, includeDrafts: boolean = false) {
   return useQuery({
-    queryKey: QUERY_KEYS.subskills(skillId, includeDrafts),
-    queryFn: () => curriculumAuthoringAPI.getSubskills(skillId, includeDrafts),
-    enabled: !!skillId,
+    queryKey: QUERY_KEYS.subskills(skillId, grade, subjectId, includeDrafts),
+    queryFn: () => curriculumAuthoringAPI.getSubskills(skillId, grade, subjectId, includeDrafts),
+    enabled: !!skillId && !!grade && !!subjectId,
   });
 }
 
@@ -123,8 +123,8 @@ export function useUpdateSubject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ subjectId, data }: { subjectId: string; data: SubjectUpdate }) =>
-      curriculumAuthoringAPI.updateSubject(subjectId, data),
+    mutationFn: ({ subjectId, data, grade }: { subjectId: string; data: SubjectUpdate; grade: string }) =>
+      curriculumAuthoringAPI.updateSubject(subjectId, data, grade),
     onSuccess: (_, { subjectId }) => {
       queryClient.invalidateQueries({ queryKey: ['subject', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
@@ -136,7 +136,8 @@ export function useCreateUnit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UnitCreate) => curriculumAuthoringAPI.createUnit(data),
+    mutationFn: ({ data, grade }: { data: UnitCreate; grade: string }) =>
+      curriculumAuthoringAPI.createUnit(data, grade),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['units', result.subject_id] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree', result.subject_id] });
@@ -148,8 +149,8 @@ export function useUpdateUnit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ unitId, data }: { unitId: string; data: UnitUpdate }) =>
-      curriculumAuthoringAPI.updateUnit(unitId, data),
+    mutationFn: ({ unitId, data, grade, subjectId }: { unitId: string; data: UnitUpdate; grade: string; subjectId: string }) =>
+      curriculumAuthoringAPI.updateUnit(unitId, data, grade, subjectId),
     onSuccess: (result, { unitId }) => {
       queryClient.invalidateQueries({ queryKey: ['unit', unitId] });
       queryClient.invalidateQueries({ queryKey: ['units', result.subject_id] });
@@ -162,7 +163,8 @@ export function useDeleteUnit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (unitId: string) => curriculumAuthoringAPI.deleteUnit(unitId),
+    mutationFn: ({ unitId, grade, subjectId }: { unitId: string; grade: string; subjectId: string }) =>
+      curriculumAuthoringAPI.deleteUnit(unitId, grade, subjectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['units'] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
@@ -174,7 +176,8 @@ export function useCreateSkill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: SkillCreate) => curriculumAuthoringAPI.createSkill(data),
+    mutationFn: ({ data, grade, subjectId }: { data: SkillCreate; grade: string; subjectId: string }) =>
+      curriculumAuthoringAPI.createSkill(data, grade, subjectId),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['skills', result.unit_id] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
@@ -186,8 +189,8 @@ export function useUpdateSkill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ skillId, data }: { skillId: string; data: SkillUpdate }) =>
-      curriculumAuthoringAPI.updateSkill(skillId, data),
+    mutationFn: ({ skillId, data, grade, subjectId }: { skillId: string; data: SkillUpdate; grade: string; subjectId: string }) =>
+      curriculumAuthoringAPI.updateSkill(skillId, data, grade, subjectId),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['skills', result.unit_id] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
@@ -199,7 +202,8 @@ export function useDeleteSkill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (skillId: string) => curriculumAuthoringAPI.deleteSkill(skillId),
+    mutationFn: ({ skillId, grade, subjectId }: { skillId: string; grade: string; subjectId: string }) =>
+      curriculumAuthoringAPI.deleteSkill(skillId, grade, subjectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['skills'] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
@@ -211,7 +215,8 @@ export function useCreateSubskill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: SubskillCreate) => curriculumAuthoringAPI.createSubskill(data),
+    mutationFn: ({ data, grade, subjectId }: { data: SubskillCreate; grade: string; subjectId: string }) =>
+      curriculumAuthoringAPI.createSubskill(data, grade, subjectId),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['subskills', result.skill_id] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
@@ -223,8 +228,8 @@ export function useUpdateSubskill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ subskillId, data }: { subskillId: string; data: SubskillUpdate }) =>
-      curriculumAuthoringAPI.updateSubskill(subskillId, data),
+    mutationFn: ({ subskillId, data, grade, subjectId }: { subskillId: string; data: SubskillUpdate; grade: string; subjectId: string }) =>
+      curriculumAuthoringAPI.updateSubskill(subskillId, data, grade, subjectId),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['subskills', result.skill_id] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
@@ -236,7 +241,8 @@ export function useDeleteSubskill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (subskillId: string) => curriculumAuthoringAPI.deleteSubskill(subskillId),
+    mutationFn: ({ subskillId, grade, subjectId }: { subskillId: string; grade: string; subjectId: string }) =>
+      curriculumAuthoringAPI.deleteSubskill(subskillId, grade, subjectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subskills'] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
@@ -249,29 +255,31 @@ export function useDeleteSubskill() {
 export function useEntityPrerequisites(
   entityId: string,
   entityType: EntityType,
+  grade: string,
+  subjectId: string,
   includeDrafts: boolean = false,
   options?: { enabled?: boolean }
 ) {
   return useQuery({
-    queryKey: QUERY_KEYS.entityPrerequisites(entityId, entityType, includeDrafts),
-    queryFn: () => curriculumAuthoringAPI.getEntityPrerequisites(entityId, entityType, includeDrafts),
-    enabled: (options?.enabled ?? true) && !!entityId && !!entityType,
+    queryKey: QUERY_KEYS.entityPrerequisites(entityId, entityType, grade, subjectId, includeDrafts),
+    queryFn: () => curriculumAuthoringAPI.getEntityPrerequisites(entityId, entityType, grade, subjectId, includeDrafts),
+    enabled: (options?.enabled ?? true) && !!entityId && !!entityType && !!grade && !!subjectId,
   });
 }
 
-export function useSubjectGraph(subjectId: string, includeDrafts: boolean = false) {
+export function useSubjectGraph(subjectId: string, grade: string, includeDrafts: boolean = false) {
   return useQuery({
-    queryKey: QUERY_KEYS.subjectGraph(subjectId, includeDrafts),
-    queryFn: () => curriculumAuthoringAPI.getSubjectGraph(subjectId, includeDrafts),
-    enabled: !!subjectId,
+    queryKey: QUERY_KEYS.subjectGraph(subjectId, grade, includeDrafts),
+    queryFn: () => curriculumAuthoringAPI.getSubjectGraph(subjectId, grade, includeDrafts),
+    enabled: !!subjectId && !!grade,
   });
 }
 
-export function useBaseSkills(subjectId: string) {
+export function useBaseSkills(subjectId: string, grade: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.baseSkills(subjectId),
-    queryFn: () => curriculumAuthoringAPI.getBaseSkills(subjectId),
-    enabled: !!subjectId,
+    queryKey: QUERY_KEYS.baseSkills(subjectId, grade),
+    queryFn: () => curriculumAuthoringAPI.getBaseSkills(subjectId, grade),
+    enabled: !!subjectId && !!grade,
   });
 }
 
@@ -340,11 +348,11 @@ export function useImproveDescription() {
 
 // ==================== PUBLISHING HOOKS ====================
 
-export function useDraftChanges(subjectId: string) {
+export function useDraftChanges(subjectId: string, grade: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.draftChanges(subjectId),
-    queryFn: () => curriculumAuthoringAPI.getDraftChanges(subjectId),
-    enabled: !!subjectId,
+    queryKey: QUERY_KEYS.draftChanges(subjectId, grade),
+    queryFn: () => curriculumAuthoringAPI.getDraftChanges(subjectId, grade),
+    enabled: !!subjectId && !!grade,
   });
 }
 
@@ -352,10 +360,9 @@ export function usePublishSubject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ subjectId, request }: { subjectId: string; request: PublishRequest }) =>
-      curriculumAuthoringAPI.publishSubject(subjectId, request),
+    mutationFn: ({ subjectId, request, grade }: { subjectId: string; request: PublishRequest; grade: string }) =>
+      curriculumAuthoringAPI.publishSubject(subjectId, request, grade),
     onSuccess: (_, { subjectId }) => {
-      // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: ['subject', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['draftChanges', subjectId] });
@@ -365,19 +372,19 @@ export function usePublishSubject() {
   });
 }
 
-export function useVersionHistory(subjectId: string) {
+export function useVersionHistory(subjectId: string, grade: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.versionHistory(subjectId),
-    queryFn: () => curriculumAuthoringAPI.getVersionHistory(subjectId),
-    enabled: !!subjectId,
+    queryKey: QUERY_KEYS.versionHistory(subjectId, grade),
+    queryFn: () => curriculumAuthoringAPI.getVersionHistory(subjectId, grade),
+    enabled: !!subjectId && !!grade,
   });
 }
 
-export function useActiveVersion(subjectId: string) {
+export function useActiveVersion(subjectId: string, grade: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.activeVersion(subjectId),
-    queryFn: () => curriculumAuthoringAPI.getActiveVersion(subjectId),
-    enabled: !!subjectId,
+    queryKey: QUERY_KEYS.activeVersion(subjectId, grade),
+    queryFn: () => curriculumAuthoringAPI.getActiveVersion(subjectId, grade),
+    enabled: !!subjectId && !!grade,
   });
 }
 
@@ -385,8 +392,8 @@ export function useRollbackVersion() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ subjectId, versionId }: { subjectId: string; versionId: string }) =>
-      curriculumAuthoringAPI.rollbackVersion(subjectId, versionId),
+    mutationFn: ({ subjectId, versionId, grade }: { subjectId: string; versionId: string; grade: string }) =>
+      curriculumAuthoringAPI.rollbackVersion(subjectId, versionId, grade),
     onSuccess: (_, { subjectId }) => {
       queryClient.invalidateQueries({ queryKey: ['subject', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['curriculumTree', subjectId] });
@@ -428,39 +435,14 @@ export function usePrimitives() {
   });
 }
 
-export function useSubskillPrimitives(subskillId: string | undefined, subjectId: string | undefined) {
-  return useQuery({
-    queryKey: QUERY_KEYS.subskillPrimitives(subskillId!, subjectId!),
-    queryFn: () => curriculumAuthoringAPI.getSubskillPrimitives(subskillId!, subjectId!),
-    enabled: !!subskillId && !!subjectId,
-  });
-}
-
-export function useUpdateSubskillPrimitives() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ subskillId, primitiveIds, subjectId }: {
-      subskillId: string;
-      primitiveIds: string[];
-      subjectId: string;
-    }) => curriculumAuthoringAPI.updateSubskillPrimitives(subskillId, primitiveIds, subjectId),
-    onSuccess: (_, variables) => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.subskillPrimitives(variables.subskillId, variables.subjectId) });
-      queryClient.invalidateQueries({ queryKey: ['curriculumTree'] });
-      queryClient.invalidateQueries({ queryKey: ['subskill', variables.subskillId] });
-    },
-  });
-}
 
 // ==================== GRAPH CACHING HOOKS ====================
 
-export function useGraphStatus(subjectId: string) {
+export function useGraphStatus(subjectId: string, grade: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.graphStatus(subjectId),
-    queryFn: () => curriculumGraphAPI.getGraphStatus(subjectId),
-    enabled: !!subjectId,
+    queryKey: QUERY_KEYS.graphStatus(subjectId, grade),
+    queryFn: () => curriculumGraphAPI.getGraphStatus(subjectId, grade),
+    enabled: !!subjectId && !!grade,
   });
 }
 
@@ -475,8 +457,8 @@ export function useRegenerateGraph() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ subjectId, includeDrafts }: { subjectId: string; includeDrafts?: boolean }) =>
-      curriculumGraphAPI.regenerateGraph(subjectId, includeDrafts),
+    mutationFn: ({ subjectId, grade, includeDrafts }: { subjectId: string; grade: string; includeDrafts?: boolean }) =>
+      curriculumGraphAPI.regenerateGraph(subjectId, grade, includeDrafts),
     onSuccess: (_, { subjectId }) => {
       queryClient.invalidateQueries({ queryKey: ['graphStatus', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['subjectGraph', subjectId] });
@@ -489,9 +471,9 @@ export function useRegenerateAllGraphs() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (subjectId: string) =>
-      curriculumGraphAPI.regenerateAllVersions(subjectId),
-    onSuccess: (_, subjectId) => {
+    mutationFn: ({ subjectId, grade }: { subjectId: string; grade: string }) =>
+      curriculumGraphAPI.regenerateAllVersions(subjectId, grade),
+    onSuccess: (_, { subjectId }) => {
       queryClient.invalidateQueries({ queryKey: ['graphStatus', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['subjectGraph', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['cachedSubjects'] });
@@ -503,8 +485,8 @@ export function useInvalidateGraphCache() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ subjectId, versionType }: { subjectId: string; versionType?: 'draft' | 'published' }) =>
-      curriculumGraphAPI.invalidateCache(subjectId, versionType),
+    mutationFn: ({ subjectId, grade, versionType }: { subjectId: string; grade: string; versionType?: 'draft' | 'published' }) =>
+      curriculumGraphAPI.invalidateCache(subjectId, grade, versionType),
     onSuccess: (_, { subjectId }) => {
       queryClient.invalidateQueries({ queryKey: ['graphStatus', subjectId] });
       queryClient.invalidateQueries({ queryKey: ['subjectGraph', subjectId] });
@@ -529,7 +511,6 @@ export function useDeleteAllCachedGraphs() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.allCachedGraphs() });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.cachedSubjects() });
-      // Invalidate all graph statuses
       queryClient.invalidateQueries({ queryKey: ['graphStatus'] });
       queryClient.invalidateQueries({ queryKey: ['subjectGraph'] });
     },
@@ -544,7 +525,6 @@ export function useDeleteGraphsByIds() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.allCachedGraphs() });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.cachedSubjects() });
-      // Invalidate all graph statuses
       queryClient.invalidateQueries({ queryKey: ['graphStatus'] });
       queryClient.invalidateQueries({ queryKey: ['subjectGraph'] });
     },
