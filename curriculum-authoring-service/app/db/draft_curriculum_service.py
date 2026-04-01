@@ -321,6 +321,8 @@ class DraftCurriculumService:
                     }
                     if subskill.get("target_primitive"):
                         ss_entry["target_primitive"] = subskill["target_primitive"]
+                    if subskill.get("target_eval_modes"):
+                        ss_entry["target_eval_modes"] = subskill["target_eval_modes"]
                     sk["subskills"].append(ss_entry)
 
                     # Update subskill_index (only if unit is accepted)
@@ -340,6 +342,8 @@ class DraftCurriculumService:
                         }
                         if subskill.get("target_primitive"):
                             idx_entry["target_primitive"] = subskill["target_primitive"]
+                        if subskill.get("target_eval_modes"):
+                            idx_entry["target_eval_modes"] = subskill["target_eval_modes"]
                         doc.setdefault("subskill_index", {})[subskill["subskill_id"]] = idx_entry
 
                     self._recompute_stats(doc)
@@ -463,6 +467,8 @@ class DraftCurriculumService:
                     }
                     if ss.get("target_primitive"):
                         idx_entry["target_primitive"] = ss["target_primitive"]
+                    if ss.get("target_eval_modes"):
+                        idx_entry["target_eval_modes"] = ss["target_eval_modes"]
                     index[ss["subskill_id"]] = idx_entry
 
         self._recompute_stats(doc)
@@ -655,17 +661,31 @@ class DraftCurriculumService:
         """Seed curriculum_drafts from existing curriculum_published docs.
 
         Use this once to populate drafts for subjects that were published
-        before the drafts collection existed.
+        before the drafts collection existed.  Overwrites empty drafts
+        (shell docs with no curriculum content).
+
+        ``grade`` accepts either the short code ("K") or the Firestore
+        document key ("Kindergarten") — both are matched.
         """
         from app.db.firestore_graph_service import firestore_graph_service
+        from app.models.grades import GRADE_LABELS
 
         count = 0
-        grades_to_scan = [grade] if grade else []
 
-        if not grades_to_scan:
-            # Discover all grades
-            for grade_doc in firestore_graph_service.curriculum_published.stream():
-                grades_to_scan.append(grade_doc.id)
+        # Discover all published grade doc IDs, then filter if caller specified one
+        all_grade_ids = [g.id for g in firestore_graph_service.curriculum_published.stream()]
+
+        if grade:
+            # Match by exact id, short code, or label
+            label = GRADE_LABELS.get(grade, "")
+            grades_to_scan = [
+                gid for gid in all_grade_ids
+                if gid == grade or gid == label
+            ]
+            if not grades_to_scan:
+                logger.warning(f"No published grade matching '{grade}' (tried '{grade}' and '{label}'). Available: {all_grade_ids}")
+        else:
+            grades_to_scan = all_grade_ids
 
         for g in grades_to_scan:
             subjects_ref = (
@@ -677,15 +697,16 @@ class DraftCurriculumService:
                 subject_id = doc.id
                 data = doc.to_dict()
 
-                # Check if draft already exists
+                # Check if draft already exists AND has content
                 existing = await self.get_draft(g, subject_id)
-                if existing:
+                if existing and existing.get("curriculum"):
                     logger.info(f"Draft already exists for {subject_id} (grade={g}), skipping")
                     continue
 
+                action = "Overwrote empty draft" if existing else "Backfilled draft"
                 await self.save_draft(g, subject_id, data)
                 count += 1
-                logger.info(f"Backfilled draft for {subject_id} (grade={g})")
+                logger.info(f"{action} for {subject_id} (grade={g})")
 
         return {"backfilled": count}
 
@@ -765,6 +786,8 @@ class DraftCurriculumService:
                     }
                     if ss.get("target_primitive"):
                         entry["target_primitive"] = ss["target_primitive"]
+                    if ss.get("target_eval_modes"):
+                        entry["target_eval_modes"] = ss["target_eval_modes"]
                     if ss.get("primitive_ids"):
                         entry["primitive_ids"] = ss["primitive_ids"]
                     index[ss["subskill_id"]] = entry
@@ -811,7 +834,7 @@ class DraftCurriculumService:
             record["created_by"] = "auto-publish"
             batch.set(doc_ref, record)
             written += 1
-            logger.info(f"[LINEAGE] {old_id} → {record.get('canonical_id')} ({record['operation']}) — auto-created")
+            logger.info(f"[LINEAGE] {old_id} → {record.get('canonical_ids', [])} ({record['operation']}) — auto-created")
 
         if written > 0:
             batch.commit()

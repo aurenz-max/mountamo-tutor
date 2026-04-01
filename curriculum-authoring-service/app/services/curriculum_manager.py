@@ -42,6 +42,53 @@ class CurriculumManager:
             return None
         return {"grade": subject.get("grade", ""), "subject_id": subject_id}
 
+    async def validate_grade_subject(self, grade: str, subject_id: str) -> Dict[str, str]:
+        """Validate that grade + subject_id are a valid pair.
+
+        Returns ``{"grade": grade, "subject_id": subject_id}`` on success.
+        Raises ``ValueError`` with a human-readable message on failure,
+        including a hint about which subject_id actually matches the grade
+        when there's a mismatch.
+        """
+        from app.models.grades import validate_grade as _validate_grade, GRADE_LABELS
+        _validate_grade(grade)  # raises ValueError for bad grade codes
+
+        subject = await firestore_reader.get_subject(subject_id)
+        if not subject:
+            # Subject doesn't exist — suggest alternatives in this grade
+            all_subjects = await firestore_reader.get_all_subjects()
+            same_grade = [
+                s["subject_id"] for s in all_subjects
+                if s.get("grade") == grade or s.get("grade") == GRADE_LABELS.get(grade)
+            ]
+            hint = f" Subjects in grade {grade}: {same_grade}" if same_grade else ""
+            raise ValueError(
+                f"Subject '{subject_id}' not found.{hint}"
+            )
+
+        actual_grade = subject.get("grade", "")
+        # Normalise: Firestore may store "Kindergarten" or "K", "1" or "1st Grade"
+        grade_matches = (
+            actual_grade == grade
+            or actual_grade == GRADE_LABELS.get(grade, "")
+        )
+        if not grade_matches:
+            # Find the correct subject_id for the requested grade
+            all_subjects = await firestore_reader.get_all_subjects()
+            subject_name = subject.get("subject_name", "")
+            correct = [
+                s["subject_id"] for s in all_subjects
+                if s.get("subject_name") == subject_name
+                and (s.get("grade") == grade or s.get("grade") == GRADE_LABELS.get(grade, ""))
+            ]
+            hint = f" Did you mean: {correct[0]}?" if correct else ""
+            raise ValueError(
+                f"Grade mismatch: subject '{subject_id}' is grade "
+                f"'{actual_grade}', not grade '{grade}'.{hint}"
+            )
+
+        return {"grade": grade, "subject_id": subject_id}
+
     async def _resolve_from_unit(self, unit_id: str, subject_id: Optional[str] = None) -> Optional[Dict[str, str]]:
         """Resolve grade + subject_id from a unit_id. Uses subject_id for O(1) lookup when provided."""
         if subject_id:
@@ -61,9 +108,24 @@ class CurriculumManager:
         return await self._resolve_from_unit(skill.get("unit_id", ""))
 
     async def _resolve_from_subskill(self, subskill_id: str, subject_id: Optional[str] = None) -> Optional[Dict[str, str]]:
-        """Resolve grade + subject_id from a subskill_id. Uses subject_id for O(1) lookup when provided."""
+        """Resolve grade + subject_id from a subskill_id. Uses subject_id for O(1) lookup when provided.
+
+        When subject_id is provided, verifies the subskill actually lives in
+        that subject.  If not, falls back to a scan so callers that pass the
+        wrong subject (e.g. MATHEMATICS instead of MATHEMATICS_G1) still work.
+        """
         if subject_id:
-            return await self._resolve_subject_context(subject_id)
+            ctx = await self._resolve_subject_context(subject_id)
+            if ctx:
+                # Verify the subskill is actually in this subject
+                doc = await firestore_reader._get_subject_doc(subject_id)
+                if doc and subskill_id in doc.get("subskill_index", {}):
+                    return ctx
+                # Wrong subject — fall through to scan
+                logger.warning(
+                    f"Subskill {subskill_id} not in subject {subject_id}, "
+                    "scanning to find correct subject"
+                )
         subskill = await firestore_reader.get_subskill(subskill_id)
         if not subskill:
             return None

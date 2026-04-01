@@ -16,6 +16,7 @@ import {
 } from '../../../evaluation';
 import type { HowItWorksMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SpotlightCard } from '../../../components/SpotlightCard';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -25,6 +26,8 @@ export interface HowItWorksData {
   title: string;
   subtitle: string;
   overview: string;
+
+  category?: 'science' | 'engineering' | 'nature' | 'cooking' | 'technology' | 'body' | 'history';
 
   steps: Array<{
     stepNumber: number;
@@ -44,6 +47,17 @@ export interface HowItWorksData {
     totalTime?: string;
     keyTakeaway: string;
   };
+
+  quickFacts?: {
+    duration?: string;
+    whereItHappens?: string;
+    inventedBy?: string;
+    funComparison?: string;
+    energySource?: string;
+  };
+
+  realWorldExamples?: string[];
+  relatedProcesses?: string[];
 
   challenges?: Array<{
     type: 'sequence' | 'identify' | 'predict' | 'explain';
@@ -68,6 +82,22 @@ export interface HowItWorksData {
 }
 
 // ============================================================================
+// Process Category Theming
+// ============================================================================
+
+const PROCESS_CATEGORIES: Record<string, { text: string; accent: string; rgb: string; icon: string }> = {
+  science:     { text: 'text-emerald-300', accent: '#10b981', rgb: '16, 185, 129', icon: '🔬' },
+  engineering: { text: 'text-amber-300',   accent: '#f59e0b', rgb: '245, 158, 11', icon: '⚙️' },
+  nature:      { text: 'text-green-300',   accent: '#22c55e', rgb: '34, 197, 94',  icon: '🌿' },
+  cooking:     { text: 'text-orange-300',  accent: '#f97316', rgb: '249, 115, 22', icon: '🍳' },
+  technology:  { text: 'text-cyan-300',    accent: '#06b6d4', rgb: '6, 182, 212',  icon: '💻' },
+  body:        { text: 'text-rose-300',    accent: '#fb7185', rgb: '251, 113, 133', icon: '🫀' },
+  history:     { text: 'text-violet-300',  accent: '#a78bfa', rgb: '167, 139, 250', icon: '📜' },
+};
+
+const DEFAULT_COLORS = { text: 'text-blue-300', accent: '#60a5fa', rgb: '96, 165, 250', icon: '⚡' };
+
+// ============================================================================
 // Props
 // ============================================================================
 
@@ -85,8 +115,12 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     title,
     subtitle,
     overview,
+    category,
     steps = [],
     summary,
+    quickFacts,
+    realWorldExamples,
+    relatedProcesses,
     challenges = [],
     instanceId,
     skillId,
@@ -96,14 +130,19 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
+  const colors = PROCESS_CATEGORIES[category || ''] || DEFAULT_COLORS;
+
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
-  const [currentStep, setCurrentStep] = useState(0);
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([0]));
   const [expandedDetails, setExpandedDetails] = useState<Set<number>>(new Set());
-  const [showSummary, setShowSummary] = useState(false);
-  const [showKeyTermDef, setShowKeyTermDef] = useState<number | null>(null);
+  const [showKeyTermDef, setShowKeyTermDef] = useState<Set<number>>(new Set());
+
+  // Image generation state per step
+  const [stepImages, setStepImages] = useState<Record<number, string>>({});
+  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
 
   // Challenge state
   const [showChallenges, setShowChallenges] = useState(false);
@@ -120,7 +159,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   const [sequenceCorrect, setSequenceCorrect] = useState(false);
 
   // Timing
-  const [stepEntryTime, setStepEntryTime] = useState(Date.now());
+  const stepEntryTimes = useRef<Record<number, number>>({ 0: Date.now() });
   const [stepTimes, setStepTimes] = useState<number[]>([]);
 
   // Stable instance ID
@@ -130,7 +169,36 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   const totalSteps = steps.length;
   const stepsExplored = visitedSteps.size;
   const allStepsExplored = stepsExplored >= totalSteps;
-  const currentStepData = steps[currentStep];
+
+  // Collect fun facts and key terms for promoted sections
+  const allFunFacts = useMemo(() =>
+    steps
+      .filter(s => s.funFact)
+      .map(s => ({ stepNumber: s.stepNumber, fact: s.funFact! })),
+    [steps]
+  );
+
+  const allKeyTerms = useMemo(() =>
+    steps
+      .filter(s => s.keyTerm)
+      .map(s => ({ stepNumber: s.stepNumber, term: s.keyTerm!.term, definition: s.keyTerm!.definition })),
+    [steps]
+  );
+
+  // Quick facts entries for rendering
+  const quickFactEntries = useMemo(() => {
+    if (!quickFacts) return [];
+    const labels: Record<string, string> = {
+      duration: '⏱ Duration',
+      whereItHappens: '📍 Where',
+      inventedBy: '💡 Invented By',
+      funComparison: '🤯 Fun Comparison',
+      energySource: '⚡ Energy Source',
+    };
+    return Object.entries(quickFacts)
+      .filter(([, v]) => v)
+      .map(([k, v]) => ({ label: labels[k] || k, value: v! }));
+  }, [quickFacts]);
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -157,13 +225,10 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     title,
     overview,
     totalSteps,
-    currentStep: currentStep + 1,
-    currentStepTitle: currentStepData?.title || '',
-    detailExpanded: expandedDetails.has(currentStep),
     stepsExplored,
     challengesCompleted: challengeAnswers.length,
     totalChallenges: challenges.length,
-  }), [title, overview, totalSteps, currentStep, currentStepData, expandedDetails, stepsExplored, challengeAnswers.length, challenges.length]);
+  }), [title, overview, totalSteps, stepsExplored, challengeAnswers.length, challenges.length]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'how-it-works',
@@ -186,44 +251,89 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   }, [isConnected, title, subtitle, overview, totalSteps, challenges.length, sendText]);
 
   // -------------------------------------------------------------------------
-  // Step Navigation
+  // IntersectionObserver for scroll-based step tracking
   // -------------------------------------------------------------------------
-  const recordStepTime = useCallback(() => {
-    const elapsed = Date.now() - stepEntryTime;
-    setStepTimes(prev => {
-      const next = [...prev];
-      next[currentStep] = (next[currentStep] || 0) + elapsed;
-      return next;
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const stepIdx = Number(entry.target.getAttribute('data-step-index'));
+            if (!isNaN(stepIdx)) {
+              setVisitedSteps(prev => {
+                if (prev.has(stepIdx)) return prev;
+                const next = new Set(prev);
+                next.add(stepIdx);
+                return next;
+              });
+              // Record entry time
+              if (!stepEntryTimes.current[stepIdx]) {
+                stepEntryTimes.current[stepIdx] = Date.now();
+              }
+            }
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    stepRefs.current.forEach(ref => {
+      if (ref) observer.observe(ref);
     });
-  }, [currentStep, stepEntryTime]);
 
-  const handleStepChange = useCallback((newStep: number) => {
-    if (newStep < 0 || newStep >= totalSteps) return;
+    return () => observer.disconnect();
+  }, [steps.length]);
 
-    recordStepTime();
-    setStepEntryTime(Date.now());
-    setCurrentStep(newStep);
-    setShowKeyTermDef(null);
+  // -------------------------------------------------------------------------
+  // Image Generation
+  // -------------------------------------------------------------------------
+  const handleGenerateImage = useCallback(async (stepIndex: number, imagePrompt: string) => {
+    if (loadingImages.has(stepIndex) || stepImages[stepIndex]) return;
 
-    setVisitedSteps(prev => {
+    setLoadingImages(prev => new Set(prev).add(stepIndex));
+    setImageErrors(prev => {
       const next = new Set(prev);
-      next.add(newStep);
+      next.delete(stepIndex);
       return next;
     });
 
-    if (isConnected) {
-      const stepData = steps[newStep];
-      const prevStepTitle = steps[currentStep]?.title || '';
-      sendText(
-        `[STEP_NAVIGATION] Student moved to Step ${newStep + 1} of ${totalSteps}: "${stepData?.title}". `
-        + `Previous step: "${prevStepTitle}". Steps explored: ${visitedSteps.has(newStep) ? stepsExplored : stepsExplored + 1}/${totalSteps}. `
-        + `Briefly introduce this step and connect to the previous one.`,
-        { silent: true }
-      );
-    }
-  }, [totalSteps, currentStep, steps, recordStepTime, visitedSteps, stepsExplored, isConnected, sendText]);
+    try {
+      const response = await fetch('/api/lumina', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generateConceptImage',
+          params: {
+            prompt: `Educational illustration: ${imagePrompt}. Style: Clear, colorful, educational diagram suitable for students. No text in the image.`,
+            aspectRatio: '16:9',
+          },
+        }),
+      });
 
-  // Track detail expansion
+      if (!response.ok) throw new Error('Image generation failed');
+
+      const result = await response.json();
+      if (result.image) {
+        setStepImages(prev => ({ ...prev, [stepIndex]: result.image }));
+      } else {
+        setImageErrors(prev => new Set(prev).add(stepIndex));
+      }
+    } catch {
+      setImageErrors(prev => new Set(prev).add(stepIndex));
+    } finally {
+      setLoadingImages(prev => {
+        const next = new Set(prev);
+        next.delete(stepIndex);
+        return next;
+      });
+    }
+  }, [loadingImages, stepImages]);
+
+  // -------------------------------------------------------------------------
+  // Detail Expansion
+  // -------------------------------------------------------------------------
   const handleDetailExpand = useCallback((stepIndex: number) => {
     setExpandedDetails(prev => {
       const next = new Set(prev);
@@ -257,13 +367,6 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     }
   }, [allStepsExplored, totalSteps, challenges.length, isConnected, sendText]);
 
-  // Show summary when all steps explored
-  useEffect(() => {
-    if (allStepsExplored && !showSummary) {
-      setShowSummary(true);
-    }
-  }, [allStepsExplored, showSummary]);
-
   // -------------------------------------------------------------------------
   // Challenge Handling
   // -------------------------------------------------------------------------
@@ -273,7 +376,6 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     setShowChallenges(true);
     setCurrentChallengeIndex(0);
     setCurrentAttempts(0);
-    // Initialize sequence order if first challenge is sequence type
     if (challenges[0]?.type === 'sequence' && challenges[0].sequenceItems) {
       setSequenceOrder(shuffleArray(challenges[0].sequenceItems.map(i => i.id)));
     }
@@ -332,6 +434,15 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     }
   }, [currentChallenge, sequenceOrder, currentAttempts, isConnected, sendText]);
 
+  const recordAllStepTimes = useCallback(() => {
+    const now = Date.now();
+    const times = steps.map((_, i) => {
+      const entry = stepEntryTimes.current[i];
+      return entry ? now - entry : 0;
+    });
+    setStepTimes(times);
+  }, [steps]);
+
   const handleNextChallenge = useCallback(() => {
     setSelectedOption(null);
     setShowChallengeFeedback(false);
@@ -340,9 +451,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     setCurrentAttempts(0);
 
     if (currentChallengeIndex + 1 >= challenges.length) {
-      // All challenges done
       setAllChallengesComplete(true);
-      recordStepTime();
+      recordAllStepTimes();
 
       const correctCount = challengeAnswers.filter(a => a.correct).length;
       const totalAttempts = challengeAnswers.reduce((sum, a) => sum + a.attempts, 0);
@@ -358,13 +468,11 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
         );
       }
 
-      // Submit evaluation
       if (!hasSubmittedEvaluation) {
         const avgTimePerStep = totalSteps > 0
           ? Math.round(stepTimes.reduce((a, b) => a + (b || 0), 0) / totalSteps)
           : 0;
 
-        // Calculate type-specific accuracies
         const byType = (type: string) => {
           const relevant = challenges
             .map((c, i) => ({ ...c, answer: challengeAnswers[i] }))
@@ -399,7 +507,6 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     } else {
       const nextIdx = currentChallengeIndex + 1;
       setCurrentChallengeIndex(nextIdx);
-      // Initialize sequence order if next challenge is sequence type
       if (challenges[nextIdx]?.type === 'sequence' && challenges[nextIdx].sequenceItems) {
         setSequenceOrder(shuffleArray(challenges[nextIdx].sequenceItems!.map(i => i.id)));
       }
@@ -407,7 +514,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   }, [
     currentChallengeIndex, challenges, challengeAnswers, stepsExplored, totalSteps,
     expandedDetails, stepTimes, isConnected, sendText, hasSubmittedEvaluation,
-    submitEvaluation, recordStepTime,
+    submitEvaluation, recordAllStepTimes,
   ]);
 
   // Auto-submit for display-only mode (no challenges)
@@ -436,82 +543,184 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   }, [challenges.length, allStepsExplored, hasSubmittedEvaluation, stepsExplored, totalSteps, expandedDetails, stepTimes, submitEvaluation]);
 
   // -------------------------------------------------------------------------
-  // Render: Step Content
+  // Sequence reorder helper
   // -------------------------------------------------------------------------
-  const renderStep = () => {
-    if (!currentStepData) return null;
+  const moveSequenceItem = useCallback((fromIndex: number, direction: number) => {
+    const toIndex = fromIndex + direction;
+    if (toIndex < 0 || toIndex >= sequenceOrder.length) return;
+    setSequenceOrder(prev => {
+      const next = [...prev];
+      [next[fromIndex], next[toIndex]] = [next[toIndex], next[fromIndex]];
+      return next;
+    });
+    setSequenceChecked(false);
+  }, [sequenceOrder.length]);
 
-    return (
-      <div className="space-y-4">
-        {/* Step header */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-sm font-bold shrink-0">
-            {currentStep + 1}
+  // -------------------------------------------------------------------------
+  // Render: Step Image
+  // -------------------------------------------------------------------------
+  const renderStepImage = (stepIndex: number, imagePrompt: string) => {
+    const imageUrl = stepImages[stepIndex];
+    const isLoading = loadingImages.has(stepIndex);
+    const hasError = imageErrors.has(stepIndex);
+
+    if (isLoading) {
+      return (
+        <SpotlightCard color={colors.rgb}>
+          <div className="rounded-xl overflow-hidden bg-black/40 backdrop-blur-sm border border-white/10 p-8 flex flex-col items-center justify-center min-h-[200px]">
+            <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mb-3" style={{ borderColor: colors.accent, borderTopColor: 'transparent' }} />
+            <p className={`${colors.text} text-sm font-medium mb-2`}>Generating visualization...</p>
+            <p className="text-xs text-slate-500 italic text-center max-w-sm">&quot;{imagePrompt}&quot;</p>
           </div>
-          <h3 className="text-slate-100 text-base font-semibold">{currentStepData.title}</h3>
-        </div>
+        </SpotlightCard>
+      );
+    }
 
-        {/* Step description */}
-        <p className="text-slate-300 text-sm leading-relaxed pl-11">
-          {currentStepData.description}
-        </p>
-
-        {/* Key Term callout */}
-        {currentStepData.keyTerm && (
-          <div className="ml-11">
-            <button
-              onClick={() => setShowKeyTermDef(showKeyTermDef === currentStep ? null : currentStep)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-400/20 text-amber-300 text-xs font-medium hover:bg-amber-500/20 transition-all"
-            >
-              <span>Key Term:</span>
-              <span className="font-semibold">{currentStepData.keyTerm.term}</span>
-              <span className="text-amber-400/60">{showKeyTermDef === currentStep ? '▲' : '▼'}</span>
-            </button>
-            {showKeyTermDef === currentStep && (
-              <p className="mt-2 text-slate-400 text-xs border-l-2 border-amber-400/20 pl-3">
-                {currentStepData.keyTerm.definition}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* What's Happening? accordion */}
-        {currentStepData.whatsHappening && (
-          <div className="ml-11">
-            <Accordion
-              type="multiple"
-              value={expandedDetails.has(currentStep) ? [`detail-${currentStep}`] : []}
-              onValueChange={(vals) => {
-                if (vals.includes(`detail-${currentStep}`)) {
-                  if (!expandedDetails.has(currentStep)) handleDetailExpand(currentStep);
-                } else {
-                  if (expandedDetails.has(currentStep)) handleDetailExpand(currentStep);
-                }
-              }}
-            >
-              <AccordionItem value={`detail-${currentStep}`} className="border-white/10">
-                <AccordionTrigger className="text-cyan-300 text-xs font-medium hover:text-cyan-200 py-2">
-                  What&apos;s Happening?
-                </AccordionTrigger>
-                <AccordionContent className="text-slate-300 text-sm leading-relaxed pb-3">
-                  {currentStepData.whatsHappening}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        )}
-
-        {/* Fun Fact */}
-        {currentStepData.funFact && (
-          <div className="ml-11 p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
-            <div className="flex items-start gap-2">
-              <Badge className="bg-purple-500/20 border-purple-400/30 text-purple-300 text-[10px] shrink-0">
-                Fun Fact
-              </Badge>
-              <p className="text-slate-300 text-xs leading-relaxed">{currentStepData.funFact}</p>
+    if (imageUrl) {
+      return (
+        <SpotlightCard color={colors.rgb}>
+          <div className="relative rounded-xl overflow-hidden bg-black/60 backdrop-blur-sm border border-white/10">
+            <img
+              src={imageUrl}
+              alt={`Step ${stepIndex + 1}`}
+              className="w-full h-auto object-cover"
+              loading="lazy"
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent p-3">
+              <p className="text-xs text-slate-400 italic">{imagePrompt}</p>
             </div>
           </div>
+        </SpotlightCard>
+      );
+    }
+
+    return (
+      <SpotlightCard color={colors.rgb}>
+        <div className="rounded-xl overflow-hidden bg-black/20 backdrop-blur-sm border border-dashed border-white/20 p-6 flex flex-col items-center justify-center min-h-[180px]">
+          <p className="text-slate-400 text-sm text-center mb-3 italic max-w-sm">{imagePrompt}</p>
+          {!hasError && (
+            <Button
+              onClick={() => handleGenerateImage(stepIndex, imagePrompt)}
+              variant="ghost"
+              className={`bg-white/5 ${colors.text} border border-white/20 hover:bg-white/10 text-xs`}
+            >
+              Generate Visual
+            </Button>
+          )}
+          {hasError && (
+            <p className="text-xs text-slate-600">Image generation unavailable</p>
+          )}
+        </div>
+      </SpotlightCard>
+    );
+  };
+
+  // -------------------------------------------------------------------------
+  // Render: Single Step (scroll layout)
+  // -------------------------------------------------------------------------
+  const renderTimelineStep = (step: HowItWorksData['steps'][0], index: number) => {
+    const isVisited = visitedSteps.has(index);
+
+    return (
+      <div
+        key={index}
+        ref={(el) => { stepRefs.current[index] = el; }}
+        data-step-index={index}
+        className="relative"
+      >
+        {/* Timeline connector line */}
+        {index < totalSteps - 1 && (
+          <div
+            className="absolute left-4 top-14 bottom-0 w-0.5"
+            style={{
+              background: `linear-gradient(to bottom, ${colors.accent}40, ${colors.accent}10)`,
+            }}
+          />
         )}
+
+        <div className="flex gap-4">
+          {/* Step number circle */}
+          <div
+            className="flex items-center justify-center w-9 h-9 rounded-full shrink-0 text-sm font-bold transition-all duration-500 mt-1"
+            style={{
+              backgroundColor: isVisited ? `${colors.accent}30` : 'rgba(255,255,255,0.05)',
+              borderColor: isVisited ? `${colors.accent}60` : 'rgba(255,255,255,0.15)',
+              borderWidth: '1px',
+              color: isVisited ? colors.accent : 'rgb(148,163,184)',
+            }}
+          >
+            {index + 1}
+          </div>
+
+          {/* Step content */}
+          <div className="flex-1 space-y-3 pb-8">
+            <h3 className="text-slate-100 text-base font-semibold">{step.title}</h3>
+
+            {/* Step image */}
+            <div className="max-w-lg">
+              {renderStepImage(index, step.imagePrompt)}
+            </div>
+
+            <p className="text-slate-300 text-sm leading-relaxed">{step.description}</p>
+
+            {/* Key Term callout */}
+            {step.keyTerm && (
+              <button
+                onClick={() => setShowKeyTermDef(prev => {
+                  const next = new Set(prev);
+                  next.has(index) ? next.delete(index) : next.add(index);
+                  return next;
+                })}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-400/20 text-amber-300 text-xs font-medium hover:bg-amber-500/20 transition-all"
+              >
+                <span>Key Term:</span>
+                <span className="font-semibold">{step.keyTerm.term}</span>
+                <span className="text-amber-400/60">{showKeyTermDef.has(index) ? '▲' : '▼'}</span>
+              </button>
+            )}
+            {step.keyTerm && showKeyTermDef.has(index) && (
+              <p className="text-slate-400 text-xs border-l-2 border-amber-400/20 pl-3">
+                {step.keyTerm.definition}
+              </p>
+            )}
+
+            {/* What's Happening? accordion */}
+            {step.whatsHappening && (
+              <Accordion
+                type="multiple"
+                value={expandedDetails.has(index) ? [`detail-${index}`] : []}
+                onValueChange={(vals) => {
+                  if (vals.includes(`detail-${index}`)) {
+                    if (!expandedDetails.has(index)) handleDetailExpand(index);
+                  } else {
+                    if (expandedDetails.has(index)) handleDetailExpand(index);
+                  }
+                }}
+              >
+                <AccordionItem value={`detail-${index}`} className="border-white/10">
+                  <AccordionTrigger className="text-cyan-300 text-xs font-medium hover:text-cyan-200 py-2">
+                    What&apos;s Happening?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-slate-300 text-sm leading-relaxed pb-3">
+                    {step.whatsHappening}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+
+            {/* Inline fun fact (kept small — promoted grid is below) */}
+            {step.funFact && (
+              <div className="p-2.5 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                <div className="flex items-start gap-2">
+                  <Badge className="bg-purple-500/20 border-purple-400/30 text-purple-300 text-[10px] shrink-0">
+                    Fun Fact
+                  </Badge>
+                  <p className="text-slate-300 text-xs leading-relaxed">{step.funFact}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   };
@@ -653,20 +862,6 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   };
 
   // -------------------------------------------------------------------------
-  // Sequence reorder helper
-  // -------------------------------------------------------------------------
-  const moveSequenceItem = useCallback((fromIndex: number, direction: number) => {
-    const toIndex = fromIndex + direction;
-    if (toIndex < 0 || toIndex >= sequenceOrder.length) return;
-    setSequenceOrder(prev => {
-      const next = [...prev];
-      [next[fromIndex], next[toIndex]] = [next[toIndex], next[fromIndex]];
-      return next;
-    });
-    setSequenceChecked(false);
-  }, [sequenceOrder.length]);
-
-  // -------------------------------------------------------------------------
   // Render: Results
   // -------------------------------------------------------------------------
   const renderResults = () => {
@@ -697,122 +892,274 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   // Main Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">&#9881;</span>
-            <CardTitle className="text-slate-100 text-lg">How It Works: {title}</CardTitle>
-          </div>
-          <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
-            {totalSteps} Steps
-          </Badge>
-        </div>
-        {subtitle && <p className="text-slate-400 text-sm mt-1">{subtitle}</p>}
-        <p className="text-slate-500 text-xs mt-1">{overview}</p>
-      </CardHeader>
+    <div className={`space-y-6 ${className || ''}`}>
+      {/* ── Header Card ── */}
+      <Card className="relative overflow-hidden backdrop-blur-xl bg-gradient-to-br from-slate-900/90 to-slate-800/90 border-white/10 shadow-2xl">
+        {/* Ambient glow orb */}
+        <div
+          className="absolute -top-20 -right-20 w-60 h-60 rounded-full blur-[120px] opacity-20 pointer-events-none"
+          style={{ backgroundColor: colors.accent }}
+        />
 
-      <CardContent className="space-y-5">
-        {allChallengesComplete ? (
-          renderResults()
-        ) : showChallenges ? (
-          <div className="border-t border-white/10 pt-4">
-            <p className="text-slate-300 text-xs font-medium mb-3 uppercase tracking-wider">
-              Comprehension Check
-            </p>
-            {renderChallenge()}
+        <CardHeader className="relative z-10 pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{colors.icon}</span>
+              <div>
+                <CardTitle className="text-slate-100 text-xl font-bold">
+                  How It Works: {title}
+                </CardTitle>
+                {subtitle && <p className="text-slate-400 text-sm mt-0.5">{subtitle}</p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {category && (
+                <Badge
+                  className="text-xs border"
+                  style={{
+                    backgroundColor: `${colors.accent}15`,
+                    borderColor: `${colors.accent}40`,
+                    color: colors.accent,
+                  }}
+                >
+                  {category}
+                </Badge>
+              )}
+              <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
+                {totalSteps} Steps
+              </Badge>
+            </div>
           </div>
-        ) : (
-          <>
-            {/* Step Progress Indicator */}
-            <div className="flex items-center justify-center gap-2">
-              {steps.map((_, i) => (
-                <button
+          <p className="text-slate-400 text-sm mt-2 leading-relaxed">{overview}</p>
+        </CardHeader>
+      </Card>
+
+      {allChallengesComplete ? (
+        /* ── Results ── */
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl">
+          <CardContent className="pt-6">
+            {renderResults()}
+          </CardContent>
+        </Card>
+      ) : showChallenges ? (
+        /* ── Challenge Section ── */
+        <SpotlightCard color={colors.rgb}>
+          <Card className="backdrop-blur-xl bg-slate-900/40 border-0 shadow-2xl">
+            <CardContent className="pt-6">
+              <p className="text-slate-300 text-xs font-medium mb-3 uppercase tracking-wider">
+                Comprehension Check
+              </p>
+              {renderChallenge()}
+            </CardContent>
+          </Card>
+        </SpotlightCard>
+      ) : (
+        <>
+          {/* ── Two-Column Layout: Timeline + Sidebar ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left column: Timeline Steps (2/3 width) */}
+            <div className="lg:col-span-2 space-y-2">
+              {steps.map((step, i) => renderTimelineStep(step, i))}
+            </div>
+
+            {/* Right column: Quick Facts + Summary (1/3 width) */}
+            <div className="space-y-4">
+              {/* Quick Facts */}
+              {quickFactEntries.length > 0 && (
+                <SpotlightCard color={colors.rgb}>
+                  <Card className="backdrop-blur-xl bg-slate-900/40 border-0">
+                    <CardContent className="pt-5 pb-4">
+                      <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>
+                        Quick Facts
+                      </p>
+                      <div className="space-y-2.5">
+                        {quickFactEntries.map((entry, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="text-sm shrink-0">{entry.label.split(' ')[0]}</span>
+                            <div>
+                              <p className="text-slate-500 text-[10px] uppercase tracking-wider">
+                                {entry.label.split(' ').slice(1).join(' ')}
+                              </p>
+                              <p className="text-slate-200 text-sm">{entry.value}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </SpotlightCard>
+              )}
+
+              {/* Process Summary */}
+              {summary && (
+                <SpotlightCard color={colors.rgb}>
+                  <Card className="backdrop-blur-xl bg-slate-900/40 border-0">
+                    <CardContent className="pt-5 pb-4">
+                      <Accordion type="multiple" defaultValue={['summary']}>
+                        <AccordionItem value="summary" className="border-white/10">
+                          <AccordionTrigger className={`${colors.text} text-xs font-medium uppercase tracking-wider py-2`}>
+                            Process Summary
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-3 pb-3">
+                            <p className="text-slate-200 text-sm leading-relaxed">{summary.text}</p>
+                            {summary.totalTime && (
+                              <div className="flex items-center gap-2">
+                                <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-400 text-xs">
+                                  Duration
+                                </Badge>
+                                <span className="text-slate-300 text-xs">{summary.totalTime}</span>
+                              </div>
+                            )}
+                            <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                              <p className="text-emerald-300 text-xs font-medium mb-1">Key Takeaway</p>
+                              <p className="text-slate-200 text-sm">{summary.keyTakeaway}</p>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </CardContent>
+                  </Card>
+                </SpotlightCard>
+              )}
+
+              {/* Glossary (promoted key terms) */}
+              {allKeyTerms.length > 0 && (
+                <SpotlightCard color={colors.rgb}>
+                  <Card className="backdrop-blur-xl bg-slate-900/40 border-0">
+                    <CardContent className="pt-5 pb-4">
+                      <Accordion type="multiple">
+                        <AccordionItem value="glossary" className="border-white/10">
+                          <AccordionTrigger className="text-amber-300 text-xs font-medium uppercase tracking-wider py-2">
+                            Glossary ({allKeyTerms.length} terms)
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-3 pb-3">
+                            {allKeyTerms.map((kt, i) => (
+                              <div key={i} className="space-y-0.5">
+                                <p className="text-amber-300 text-xs font-semibold">
+                                  {kt.term}
+                                  <span className="text-slate-600 font-normal ml-1.5">Step {kt.stepNumber}</span>
+                                </p>
+                                <p className="text-slate-400 text-xs leading-relaxed">{kt.definition}</p>
+                              </div>
+                            ))}
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </CardContent>
+                  </Card>
+                </SpotlightCard>
+              )}
+
+              {/* Exploration Progress */}
+              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-500 text-xs">{stepsExplored} of {totalSteps} steps explored</span>
+                    {allStepsExplored && (
+                      <Badge className="bg-emerald-500/15 border-emerald-400/30 text-emerald-300 text-[10px]">
+                        Complete
+                      </Badge>
+                    )}
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${(stepsExplored / Math.max(totalSteps, 1)) * 100}%`,
+                        backgroundColor: colors.accent,
+                      }}
+                    />
+                  </div>
+                  {allStepsExplored && challenges.length > 0 && !showChallenges && (
+                    <Button
+                      variant="ghost"
+                      className="w-full mt-3 bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300 text-xs h-8"
+                      onClick={handleStartChallenges}
+                    >
+                      Start Challenges ({challenges.length})
+                    </Button>
+                  )}
+                  {!allStepsExplored && (
+                    <p className="text-slate-600 text-[10px] mt-2">Scroll through all steps to unlock challenges</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* ── Bottom Sections ── */}
+
+          {/* Fascinating Facts grid */}
+          {allFunFacts.length > 1 && (
+            <div>
+              <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>
+                Fascinating Facts
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {allFunFacts.map((ff, i) => (
+                  <SpotlightCard key={i} color={colors.rgb}>
+                    <div className="p-4 backdrop-blur-xl bg-slate-900/40 rounded-xl">
+                      <div className="flex items-start gap-2">
+                        <span className="text-purple-400 text-sm shrink-0">✨</span>
+                        <div>
+                          <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1">Step {ff.stepNumber}</p>
+                          <p className="text-slate-200 text-sm leading-relaxed">{ff.fact}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </SpotlightCard>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Real World Examples */}
+          {realWorldExamples && realWorldExamples.length > 0 && (
+            <SpotlightCard color={colors.rgb}>
+              <Card className="backdrop-blur-xl bg-slate-900/40 border-0">
+                <CardContent className="pt-5 pb-4">
+                  <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>
+                    Real World Examples
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {realWorldExamples.map((ex, i) => (
+                      <Badge
+                        key={i}
+                        className="bg-white/5 border border-white/10 text-slate-200 text-xs font-normal px-3 py-1"
+                      >
+                        {ex}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </SpotlightCard>
+          )}
+
+          {/* Related Processes footer */}
+          {relatedProcesses && relatedProcesses.length > 0 && (
+            <div className="flex items-center gap-3 flex-wrap pt-1">
+              <span className="text-slate-600 text-xs uppercase tracking-wider">Explore next:</span>
+              {relatedProcesses.map((rp, i) => (
+                <Badge
                   key={i}
-                  onClick={() => handleStepChange(i)}
-                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                    i === currentStep
-                      ? 'bg-blue-400 scale-125 ring-2 ring-blue-400/30'
-                      : visitedSteps.has(i)
-                        ? 'bg-emerald-400/60 hover:bg-emerald-400/80'
-                        : 'bg-white/20 hover:bg-white/30'
-                  }`}
-                  title={`Step ${i + 1}: ${steps[i]?.title}`}
-                />
+                  className="text-xs font-normal px-3 py-1 cursor-default"
+                  style={{
+                    backgroundColor: `${colors.accent}10`,
+                    borderColor: `${colors.accent}30`,
+                    color: colors.accent,
+                    borderWidth: '1px',
+                  }}
+                >
+                  {rp}
+                </Badge>
               ))}
             </div>
-
-            {/* Step Content */}
-            <div className="min-h-[160px]">{renderStep()}</div>
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between pt-2">
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 text-xs h-8"
-                onClick={() => handleStepChange(currentStep - 1)}
-                disabled={currentStep === 0}
-              >
-                Previous
-              </Button>
-
-              <span className="text-slate-500 text-xs">
-                Step {currentStep + 1} of {totalSteps}
-              </span>
-
-              {currentStep < totalSteps - 1 ? (
-                <Button
-                  variant="ghost"
-                  className="bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300 text-xs h-8"
-                  onClick={() => handleStepChange(currentStep + 1)}
-                >
-                  Next
-                </Button>
-              ) : (
-                <div className="w-[72px]" /> // Spacer for alignment
-              )}
-            </div>
-
-            {/* Summary section (shown when all steps explored) */}
-            {showSummary && summary && (
-              <div className="border-t border-white/10 pt-4 space-y-3">
-                <p className="text-slate-300 text-xs font-medium uppercase tracking-wider">Process Summary</p>
-                <p className="text-slate-200 text-sm leading-relaxed">{summary.text}</p>
-                {summary.totalTime && (
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-400 text-xs">
-                      Duration
-                    </Badge>
-                    <span className="text-slate-300 text-xs">{summary.totalTime}</span>
-                  </div>
-                )}
-                <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                  <p className="text-emerald-300 text-xs font-medium mb-1">Key Takeaway</p>
-                  <p className="text-slate-200 text-sm">{summary.keyTakeaway}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Exploration Progress & Start Challenges */}
-            <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-white/5">
-              <span>{stepsExplored} of {totalSteps} steps explored</span>
-              {allStepsExplored && challenges.length > 0 && !showChallenges && (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300 text-xs h-8"
-                  onClick={handleStartChallenges}
-                >
-                  Start Challenges ({challenges.length})
-                </Button>
-              )}
-              {!allStepsExplored && (
-                <span className="text-slate-600">Explore all steps to unlock challenges</span>
-              )}
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </>
+      )}
+    </div>
   );
 };
 

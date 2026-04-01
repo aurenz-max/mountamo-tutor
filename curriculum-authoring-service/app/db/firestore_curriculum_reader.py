@@ -343,21 +343,14 @@ class FirestoreCurriculumReader:
         result = []
         for ss in skill_doc.get("subskills", []):
             result.append({
-                "subskill_id": ss["subskill_id"],
+                **ss,
                 "skill_id": skill_id,
-                "subskill_description": ss.get("subskill_description", ""),
-                "subskill_order": ss.get("subskill_order"),
-                "difficulty_start": ss.get("difficulty_start"),
-                "difficulty_end": ss.get("difficulty_end"),
-                "target_difficulty": ss.get("target_difficulty"),
-                "target_primitive": ss.get("target_primitive"),
-                "primitive_ids": ss.get("primitive_ids"),
                 "version_id": version_id,
                 "is_draft": False,
                 "created_at": now,
                 "updated_at": now,
             })
-        result.sort(key=lambda x: (x.get("subskill_order") or 0, x["subskill_id"]))
+        result.sort(key=lambda x: (x.get("subskill_order") or 0, x.get("subskill_id", "")))
         return result
 
     async def get_subskills_by_skill_ids(self, skill_ids: List[str], subject_id: Optional[str] = None, include_drafts: bool = False) -> List[Dict[str, Any]]:
@@ -367,29 +360,39 @@ class FirestoreCurriculumReader:
             result.extend(await self.get_subskills_by_skill(sid, subject_id=subject_id, include_drafts=include_drafts))
         return result
 
+    def _subskill_from_index(self, entry: Dict[str, Any], doc: Dict[str, Any]) -> Dict[str, Any]:
+        """Build a subskill response from a subskill_index entry + its parent doc metadata.
+
+        Pass-through: all fields in the index entry are forwarded automatically,
+        so adding a new field to the index never requires updating this method.
+        """
+        return {
+            **entry,
+            "version_id": doc.get("version_id", ""),
+            "is_draft": False,
+            "created_at": doc.get("updated_at", ""),
+            "updated_at": doc.get("updated_at", ""),
+        }
+
     async def get_subskill(self, subskill_id: str, subject_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """Find a subskill. Uses subject_id + subskill_index for O(1) lookup when provided."""
+        """Find a subskill. Uses subject_id + subskill_index for O(1) lookup when provided.
+
+        If subject_id is given but the subskill isn't in that subject, falls
+        back to a full scan so callers don't get a silent None when they pass
+        the wrong subject (e.g. MATHEMATICS instead of MATHEMATICS_G1).
+        """
         if subject_id:
             doc = await self._get_subject_doc(subject_id)
             if doc:
                 idx = doc.get("subskill_index", {})
                 if subskill_id in idx:
-                    entry = idx[subskill_id]
-                    return {
-                        "subskill_id": subskill_id,
-                        "skill_id": entry.get("skill_id", ""),
-                        "subskill_description": entry.get("subskill_description", ""),
-                        "subskill_order": entry.get("subskill_order"),
-                        "difficulty_start": entry.get("difficulty_start"),
-                        "difficulty_end": entry.get("difficulty_end"),
-                        "target_difficulty": entry.get("target_difficulty"),
-                        "target_primitive": entry.get("target_primitive"),
-                        "primitive_ids": entry.get("primitive_ids"),
-                        "version_id": doc.get("version_id", ""),
-                        "is_draft": False,
-                        "created_at": doc.get("updated_at", ""),
-                        "updated_at": doc.get("updated_at", ""),
-                    }
+                    return self._subskill_from_index(idx[subskill_id], doc)
+            # subject_id was provided but subskill not found there — fall through
+            # to scan so we can still find it in the correct subject.
+            logger.warning(
+                f"Subskill {subskill_id} not found in subject {subject_id}, "
+                "falling back to scan"
+            )
 
         # Fallback: scan using subskill_index
         for collection_name in ("curriculum_drafts", "curriculum_published"):
@@ -399,22 +402,7 @@ class FirestoreCurriculumReader:
                     self._grade_cache[subject_doc.id] = grade_doc.id
                     idx = d.get("subskill_index", {})
                     if subskill_id in idx:
-                        entry = idx[subskill_id]
-                        return {
-                            "subskill_id": subskill_id,
-                            "skill_id": entry.get("skill_id", ""),
-                            "subskill_description": entry.get("subskill_description", ""),
-                            "subskill_order": entry.get("subskill_order"),
-                            "difficulty_start": entry.get("difficulty_start"),
-                            "difficulty_end": entry.get("difficulty_end"),
-                            "target_difficulty": entry.get("target_difficulty"),
-                            "target_primitive": entry.get("target_primitive"),
-                            "primitive_ids": entry.get("primitive_ids"),
-                            "version_id": d.get("version_id", ""),
-                            "is_draft": False,
-                            "created_at": d.get("updated_at", ""),
-                            "updated_at": d.get("updated_at", ""),
-                        }
+                        return self._subskill_from_index(idx[subskill_id], d)
         return None
 
     # ==================== HIERARCHICAL TREE ====================
@@ -441,6 +429,8 @@ class FirestoreCurriculumReader:
                         },
                         "is_draft": False,
                         "primitives": ss.get("primitive_ids") or [],
+                        "target_primitive": ss.get("target_primitive"),
+                        "target_eval_modes": ss.get("target_eval_modes"),
                     }
                     for ss in sk.get("subskills", [])
                 ]
@@ -486,6 +476,7 @@ class FirestoreCurriculumReader:
             for sk in u.get("skills", []):
                 for ss in sk.get("subskills", []):
                     rows.append({
+                        # Parent context (unit + skill)
                         "subject": subject_name,
                         "grade": grade,
                         "subject_id": subject_id,
@@ -495,13 +486,8 @@ class FirestoreCurriculumReader:
                         "skill_id": sk["skill_id"],
                         "skill_description": sk.get("skill_description", ""),
                         "skill_order": sk.get("skill_order"),
-                        "subskill_id": ss["subskill_id"],
-                        "subskill_description": ss.get("subskill_description", ""),
-                        "subskill_order": ss.get("subskill_order"),
-                        "difficulty_start": ss.get("difficulty_start"),
-                        "difficulty_end": ss.get("difficulty_end"),
-                        "target_difficulty": ss.get("target_difficulty"),
-                        "target_primitive": ss.get("target_primitive"),
+                        # Subskill fields — pass-through so new fields propagate automatically
+                        **ss,
                         "primitive_ids": ss.get("primitive_ids", []),
                         "version_id": vid,
                         "version_number": vnum,

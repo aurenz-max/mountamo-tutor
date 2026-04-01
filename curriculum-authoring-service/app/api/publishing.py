@@ -33,9 +33,18 @@ async def get_draft_changes(
 @router.post("/subjects/{subject_id}/publish", response_model=PublishResponse)
 async def publish_subject(
     subject_id: str,
-    publish_request: PublishRequest
+    publish_request: PublishRequest = None
 ):
-    """Publish all draft changes for a subject"""
+    """Publish all draft changes for a subject.
+
+    subject_id from the URL path is authoritative.  The request body is
+    optional — an empty POST (or ``{}``) is fine.  If the body contains
+    a ``subject_id`` it is overridden by the path parameter.
+    """
+    if publish_request is None:
+        publish_request = PublishRequest()
+    # Path param is authoritative — always override body
+    publish_request.subject_id = subject_id
     try:
         # Publish the curriculum changes
         result = await version_control.publish(

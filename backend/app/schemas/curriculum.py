@@ -49,13 +49,15 @@ class CurriculumSubskill(BaseModel):
     id: str = Field(..., description="Subskill ID (e.g., 'SS001-04-E', 'COUNT001-01-A')")
     description: str = Field(..., description="Subskill description")
     target_primitive: Optional[str] = Field(None, description="Target Lumina primitive for this subskill (e.g., 'number-line', 'phonics-blender')")
+    target_eval_modes: Optional[list[str]] = Field(None, description="Curriculum-assigned eval modes for this subskill (e.g., ['subitize', 'build']). When set, Pulse selects the best mode from this list instead of all modes.")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "id": "SS001-04-E",
                 "description": "Create simple maps showing locations of local public services",
-                "target_primitive": "map-builder"
+                "target_primitive": "map-builder",
+                "target_eval_modes": ["explore"]
             }
         }
 
@@ -109,6 +111,7 @@ class CurriculumItem(BaseModel):
     difficulty_end: Optional[int] = None
     target_difficulty: Optional[int] = None
     target_primitive: Optional[str] = None
+    target_eval_modes: Optional[list[str]] = None
 
     def to_curriculum_metadata(self) -> CurriculumMetadata:
         """Convert to CurriculumMetadata schema"""
@@ -126,7 +129,8 @@ class CurriculumItem(BaseModel):
             subskill=CurriculumSubskill(
                 id=self.subskill_id,
                 description=self.subskill_description,
-                target_primitive=self.target_primitive
+                target_primitive=self.target_primitive,
+                target_eval_modes=self.target_eval_modes
             )
         )
 

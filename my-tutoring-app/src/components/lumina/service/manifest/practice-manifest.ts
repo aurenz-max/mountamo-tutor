@@ -516,6 +516,8 @@ export interface PulseManifestItemInput {
   subject: string;
   /** Curriculum-assigned primitive from curriculum_published (e.g. 'number-line', 'ten-frame') */
   primitive_affinity?: string;
+  /** Curriculum-assigned eval mode — tells the generator which mode to use (e.g. 'subitize', 'plot') */
+  eval_mode_hint?: string;
 }
 
 /**
@@ -551,12 +553,15 @@ export const generatePulseManifest = async (
     const affinityLine = item.primitive_affinity
       ? `\n- PREFERRED PRIMITIVE: "${item.primitive_affinity}" (curriculum-assigned — use this if it exists in the catalog and fits the skill)`
       : '';
+    const evalModeLine = item.eval_mode_hint
+      ? `\n- EVAL MODE: "${item.eval_mode_hint}" (curriculum-assigned — use this mode for the primitive)`
+      : '';
 
     return `### Item ${i + 1}: "${item.item_id}"
 - Skill: ${item.description}
 - Band: ${bandLabel}
 - Scaffolding: Mode ${item.target_mode}/6 — "${scaffolding.label}" (difficulty: ${scaffolding.difficulty})
-- ${scaffolding.instruction}${affinityLine}`;
+- ${scaffolding.instruction}${affinityLine}${evalModeLine}`;
   }).join('\n\n');
 
   const prompt = `You are an educational content designer creating a Lumina Pulse session — an adaptive, multi-skill practice loop.

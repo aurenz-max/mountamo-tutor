@@ -3,7 +3,7 @@ Curriculum Lineage API endpoints.
 
 CRUD operations for the curriculum_lineage Firestore collection which maps
 deprecated subskill/skill IDs to their canonical successors, enabling
-student data migration when curriculum iterates.
+student data resolution when curriculum iterates.
 """
 
 import logging
@@ -22,16 +22,8 @@ router = APIRouter()
 # Request / response models (self-contained — avoids cross-service import)
 # ---------------------------------------------------------------------------
 
-class DataPolicyModel(BaseModel):
-    competency: str = "transfer"
-    mastery_lifecycle: str = "transfer"
-    ability: str = "transfer"
-    attempts_reviews: str = "retag"
-
-
 class LineageCreateRequest(BaseModel):
     old_id: str
-    canonical_id: Optional[str] = None
     canonical_ids: List[str] = Field(default_factory=list)
     operation: str  # rename | merge | split | retire
     level: str = "subskill"  # subskill | skill
@@ -40,14 +32,10 @@ class LineageCreateRequest(BaseModel):
     subject_id: str
     grade: str = ""
     description: str = ""
-    merge_sources: List[str] = Field(default_factory=list)
-    split_targets: List[str] = Field(default_factory=list)
-    data_policy: DataPolicyModel = Field(default_factory=DataPolicyModel)
 
 
 class LineageResponse(BaseModel):
     old_id: str
-    canonical_id: Optional[str] = None
     canonical_ids: List[str] = Field(default_factory=list)
     operation: str
     level: str = "subskill"
@@ -92,11 +80,9 @@ async def create_lineage_record(body: LineageCreateRequest):
     """
     client = _get_firestore_client()
 
-    # Validate operation
     if body.operation not in ("rename", "merge", "split", "retire"):
         raise HTTPException(status_code=400, detail=f"Invalid operation: {body.operation}")
 
-    # Check for existing record
     doc_ref = client.collection("curriculum_lineage").document(body.old_id)
     existing = doc_ref.get()
     if existing.exists:
@@ -105,33 +91,24 @@ async def create_lineage_record(body: LineageCreateRequest):
             detail=f"Lineage record for '{body.old_id}' already exists. Use PUT to update.",
         )
 
-    # Normalise canonical_ids
-    canonical_ids = body.canonical_ids or []
-    if body.canonical_id and body.canonical_id not in canonical_ids:
-        canonical_ids = [body.canonical_id] + canonical_ids
-
     now = datetime.now(timezone.utc).isoformat()
     data = {
         "old_id": body.old_id,
-        "canonical_id": body.canonical_id,
-        "canonical_ids": canonical_ids,
+        "canonical_ids": body.canonical_ids,
         "operation": body.operation,
         "level": body.level,
         "old_skill_id": body.old_skill_id,
         "canonical_skill_id": body.canonical_skill_id,
         "subject_id": body.subject_id,
         "grade": body.grade,
-        "version_id": "",  # filled at publish time
+        "version_id": "",
         "description": body.description,
-        "merge_sources": body.merge_sources,
-        "split_targets": body.split_targets,
-        "data_policy": body.data_policy.model_dump(),
         "created_at": now,
         "created_by": "api",
     }
 
     doc_ref.set(data)
-    logger.info(f"[LINEAGE] {body.old_id} → {body.canonical_id} ({body.operation}) — created")
+    logger.info(f"[LINEAGE] {body.old_id} → {body.canonical_ids} ({body.operation}) — created")
 
     return LineageResponse(**data)
 
@@ -146,14 +123,9 @@ async def update_lineage_record(old_id: str, body: LineageCreateRequest):
     if not existing.exists:
         raise HTTPException(status_code=404, detail=f"No lineage record for '{old_id}'")
 
-    canonical_ids = body.canonical_ids or []
-    if body.canonical_id and body.canonical_id not in canonical_ids:
-        canonical_ids = [body.canonical_id] + canonical_ids
-
     data = existing.to_dict()
     data.update({
-        "canonical_id": body.canonical_id,
-        "canonical_ids": canonical_ids,
+        "canonical_ids": body.canonical_ids,
         "operation": body.operation,
         "level": body.level,
         "old_skill_id": body.old_skill_id,
@@ -161,9 +133,6 @@ async def update_lineage_record(old_id: str, body: LineageCreateRequest):
         "subject_id": body.subject_id,
         "grade": body.grade,
         "description": body.description,
-        "merge_sources": body.merge_sources,
-        "split_targets": body.split_targets,
-        "data_policy": body.data_policy.model_dump(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     })
 
@@ -233,11 +202,9 @@ async def check_lineage_coverage(subject_id: str):
 
     client = _get_firestore_client()
 
-    # Get published subskill_index
     published = await firestore_graph_service.get_published_curriculum(subject_id)
     published_index = set((published or {}).get("subskill_index", {}).keys())
 
-    # Get draft subskill_index
     grade = (published or {}).get("grade", "K")
     draft = await draft_curriculum.get_draft(grade, subject_id)
     draft_index = set((draft or {}).get("subskill_index", {}).keys())
@@ -245,7 +212,6 @@ async def check_lineage_coverage(subject_id: str):
     removed = published_index - draft_index
     added = draft_index - published_index
 
-    # Check lineage coverage for removed IDs
     covered = []
     missing = []
     for old_id in removed:

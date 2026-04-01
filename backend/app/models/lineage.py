@@ -17,19 +17,6 @@ from pydantic import BaseModel, Field
 
 
 # ---------------------------------------------------------------------------
-# Data combination policy — tells the lazy migrator how to handle each
-# student-data collection when migrating from old → canonical ID(s).
-# ---------------------------------------------------------------------------
-
-class DataPolicy(BaseModel):
-    """Per-collection migration strategy for a lineage record."""
-    competency: Literal["transfer", "merge_weighted", "drop"] = "transfer"
-    mastery_lifecycle: Literal["transfer", "merge_highest_gate", "reset"] = "transfer"
-    ability: Literal["transfer", "keep_both"] = "transfer"
-    attempts_reviews: Literal["retag"] = "retag"
-
-
-# ---------------------------------------------------------------------------
 # Core lineage record
 # ---------------------------------------------------------------------------
 
@@ -46,13 +33,9 @@ class LineageRecord(BaseModel):
 
     # Identity
     old_id: str = Field(..., description="The deprecated subskill_id (or skill_id)")
-    canonical_id: Optional[str] = Field(
-        default=None,
-        description="Single canonical target (rename/retire). None for retire with no successor.",
-    )
     canonical_ids: List[str] = Field(
         default_factory=list,
-        description="All canonical targets (for splits → multiple; for rename → single-element list)",
+        description="Canonical targets (single-element for rename, multiple for split, empty for retire)",
     )
     operation: LineageOperation = Field(..., description="Type of curriculum change")
     level: LineageLevel = Field(default="subskill", description="Whether this is a subskill or skill lineage")
@@ -67,19 +50,6 @@ class LineageRecord(BaseModel):
     version_id: str = Field(default="", description="Publish version that created this record")
     description: str = Field(default="", description="Human-readable summary of the change")
 
-    # Merge/split metadata
-    merge_sources: List[str] = Field(
-        default_factory=list,
-        description="For merge: all old IDs that were combined into canonical_id",
-    )
-    split_targets: List[str] = Field(
-        default_factory=list,
-        description="For split: all new IDs the old single ID became",
-    )
-
-    # Data combination hints
-    data_policy: DataPolicy = Field(default_factory=DataPolicy)
-
     # Audit
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
@@ -90,7 +60,6 @@ class LineageRecord(BaseModel):
 class LineageCreate(BaseModel):
     """Request body for creating a lineage record via API."""
     old_id: str
-    canonical_id: Optional[str] = None
     canonical_ids: List[str] = Field(default_factory=list)
     operation: LineageOperation
     level: LineageLevel = "subskill"
@@ -99,9 +68,6 @@ class LineageCreate(BaseModel):
     subject_id: str
     grade: str = ""
     description: str = ""
-    merge_sources: List[str] = Field(default_factory=list)
-    split_targets: List[str] = Field(default_factory=list)
-    data_policy: DataPolicy = Field(default_factory=DataPolicy)
 
 
 class LineageCheckResult(BaseModel):

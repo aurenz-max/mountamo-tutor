@@ -74,6 +74,7 @@ export interface PulseItemSpec {
   eval_mode_name?: string;      // e.g. 'recall', 'apply', 'analyze', 'evaluate'
   lesson_group_id: string;
   primitive_affinity?: string;
+  eval_mode_hint?: string;  // curriculum-assigned eval mode (e.g. 'subitize', 'plot')
   frontier_context?: ItemFrontierContext;
 }
 

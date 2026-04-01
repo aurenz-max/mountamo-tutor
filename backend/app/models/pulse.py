@@ -123,6 +123,7 @@ class PulseItemSpec(BaseModel):
     eval_mode_name: Optional[str] = None
     lesson_group_id: str = ""
     primitive_affinity: Optional[str] = None
+    eval_mode_hint: Optional[str] = None
     frontier_context: Optional[ItemFrontierContext] = None
 
 

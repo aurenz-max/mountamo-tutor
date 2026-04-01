@@ -496,13 +496,6 @@ class FirestoreService:
                 old_ref = self._competencies_subcollection(student_id).document(old_doc_id)
                 old_doc = old_ref.get()
                 if old_doc.exists:
-                    # Trigger lazy migration in background
-                    from ..services.lazy_migration import lazy_migration_service
-                    import asyncio
-                    asyncio.create_task(lazy_migration_service.migrate_competency(
-                        self, student_id, subject, skill_id, subskill_id,
-                        canonical_skill, canonical_subskill
-                    ))
                     return old_doc.to_dict()
 
             # Return default competency structure
@@ -1099,11 +1092,6 @@ class FirestoreService:
             if canonical != subskill_id:
                 old_doc = collection.document(subskill_id).get()
                 if old_doc.exists:
-                    from ..services.lazy_migration import lazy_migration_service
-                    import asyncio
-                    asyncio.create_task(lazy_migration_service.migrate_mastery_lifecycle(
-                        self, student_id, subskill_id, canonical
-                    ))
                     return old_doc.to_dict()
 
             return None

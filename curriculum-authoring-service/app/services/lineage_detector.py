@@ -109,7 +109,6 @@ def detect_changes(
                     subject_id=subject_id,
                     grade=grade,
                     description=f"Merged into '{new_index[new_id].get('subskill_description', '')}'",
-                    merge_sources=unmatched_r,
                 ))
                 matched_removed.add(old_id)
             matched_added.add(new_id)
@@ -132,7 +131,6 @@ def detect_changes(
                 subject_id=subject_id,
                 grade=grade,
                 description=f"Split into {len(unmatched_a)} subskills",
-                split_targets=unmatched_a,
             ))
             matched_removed.add(old_id)
             for a in unmatched_a:
@@ -240,8 +238,6 @@ def _make_record(
     grade: str = "",
     description: str = "",
     canonical_ids: Optional[List[str]] = None,
-    merge_sources: Optional[List[str]] = None,
-    split_targets: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """Build a lineage record dict."""
     old_entry = old_index.get(old_id, {})
@@ -249,7 +245,6 @@ def _make_record(
 
     record = {
         "old_id": old_id,
-        "canonical_id": canonical_id,
         "canonical_ids": canonical_ids or ([canonical_id] if canonical_id else []),
         "operation": operation,
         "level": "subskill",
@@ -258,13 +253,5 @@ def _make_record(
         "subject_id": subject_id,
         "grade": grade,
         "description": description,
-        "merge_sources": merge_sources or [],
-        "split_targets": split_targets or [],
-        "data_policy": {
-            "competency": "merge_weighted" if operation == "merge" else "transfer",
-            "mastery_lifecycle": "merge_highest_gate" if operation == "merge" else "transfer",
-            "ability": "transfer",
-            "attempts_reviews": "retag",
-        },
     }
     return record

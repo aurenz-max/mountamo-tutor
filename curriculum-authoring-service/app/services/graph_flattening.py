@@ -165,6 +165,10 @@ class GraphFlatteningService:
                     tp = sub.get("target_primitive")
                     if tp:
                         node["primitive_type"] = tp
+                    # Map curriculum target_eval_modes → eval_modes for Pulse engine
+                    eval_modes = sub.get("target_eval_modes")
+                    if eval_modes:
+                        node["eval_modes"] = eval_modes
                     nodes.append(node)
 
         return nodes

@@ -265,6 +265,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
         subskill_id: spec.subskill_id,
         subject: spec.subject,
         primitive_affinity: spec.primitive_affinity,
+        eval_mode_hint: spec.eval_mode_hint,
       })),
       gradeLevel,
       recentPrimitives: recentPrimitives?.length ? recentPrimitives : undefined,

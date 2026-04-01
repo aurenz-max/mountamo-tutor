@@ -80,10 +80,10 @@ const stepSchema: Schema = {
     title: { type: Type.STRING, description: "Short title for this step (2-5 words)" },
     description: { type: Type.STRING, description: "2-3 sentence description of what happens in this step" },
     whatsHappening: { type: Type.STRING, description: "Optional deeper explanation of the underlying mechanism (1-2 sentences)" },
-    imagePrompt: { type: Type.STRING, description: "Detailed prompt for AI image generation depicting this step" },
+    imagePrompt: { type: Type.STRING, description: "Detailed prompt for AI image generation depicting this step visually — describe the scene, colors, and key elements" },
     keyTermTerm: { type: Type.STRING, description: "Optional key vocabulary term introduced in this step" },
     keyTermDefinition: { type: Type.STRING, description: "Definition of the key term (required if keyTermTerm provided)" },
-    funFact: { type: Type.STRING, description: "Optional fun fact related to this step" },
+    funFact: { type: Type.STRING, description: "A surprising, fun fact related to this step — include a number or comparison" },
   },
   required: ["stepNumber", "title", "description", "imagePrompt"],
 };
@@ -132,25 +132,52 @@ const summarySchema: Schema = {
   required: ["text", "keyTakeaway"],
 };
 
+const quickFactsSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    duration: { type: Type.STRING, description: "How long the process takes (e.g. 'About 2 hours', 'Over millions of years')" },
+    whereItHappens: { type: Type.STRING, description: "Where this process occurs (e.g. 'Inside your stomach', 'In the clouds')" },
+    inventedBy: { type: Type.STRING, description: "Who discovered/invented/first described it (if applicable)" },
+    funComparison: { type: Type.STRING, description: "Kid-friendly size/speed/scale comparison (e.g. 'Faster than a cheetah!')" },
+    energySource: { type: Type.STRING, description: "What powers or drives the process (e.g. 'Heat from the sun', 'Chemical reactions')" },
+  },
+};
+
 const howItWorksSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     title: { type: Type.STRING, description: "Title for the process (e.g. 'How Recycling Works')" },
     subtitle: { type: Type.STRING, description: "Short subtitle expanding on the title" },
     overview: { type: Type.STRING, description: "1-2 sentence overview of the process" },
+    category: {
+      type: Type.STRING,
+      enum: ["science", "engineering", "nature", "cooking", "technology", "body", "history"],
+      description: "Process category for theming — pick the best match",
+    },
     steps: {
       type: Type.ARRAY,
       items: stepSchema,
       description: "4-6 sequential steps of the process",
     },
     summary: summarySchema,
+    quickFacts: quickFactsSchema,
+    realWorldExamples: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "2-4 real-world examples where this process is seen (e.g. 'Your kitchen faucet', 'Car wash sprayers')",
+    },
+    relatedProcesses: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "2-3 related processes the student might explore next",
+    },
     challenges: {
       type: Type.ARRAY,
       items: challengeSchema,
       description: "3-4 comprehension challenges about the process",
     },
   },
-  required: ["title", "subtitle", "overview", "steps", "summary", "challenges"],
+  required: ["title", "subtitle", "overview", "category", "steps", "summary", "challenges"],
 };
 
 // ---------------------------------------------------------------------------
@@ -163,6 +190,10 @@ function validateHowItWorksData(raw: any): HowItWorksData {
   const title = raw.title || 'How It Works';
   const subtitle = raw.subtitle || '';
   const overview = raw.overview || '';
+
+  // --- Category ---
+  const validCategories = ['science', 'engineering', 'nature', 'cooking', 'technology', 'body', 'history'];
+  const category = validCategories.includes(raw.category) ? raw.category : undefined;
 
   // --- Steps (4-6) ---
   let steps: HowItWorksData['steps'] = [];
@@ -203,6 +234,30 @@ function validateHowItWorksData(raw: any): HowItWorksData {
   };
   if (raw.summary?.totalTime) {
     summary.totalTime = String(raw.summary.totalTime);
+  }
+
+  // --- Quick Facts ---
+  let quickFacts: HowItWorksData['quickFacts'] = undefined;
+  if (raw.quickFacts && typeof raw.quickFacts === 'object') {
+    const qf: NonNullable<HowItWorksData['quickFacts']> = {};
+    if (raw.quickFacts.duration) qf.duration = String(raw.quickFacts.duration);
+    if (raw.quickFacts.whereItHappens) qf.whereItHappens = String(raw.quickFacts.whereItHappens);
+    if (raw.quickFacts.inventedBy) qf.inventedBy = String(raw.quickFacts.inventedBy);
+    if (raw.quickFacts.funComparison) qf.funComparison = String(raw.quickFacts.funComparison);
+    if (raw.quickFacts.energySource) qf.energySource = String(raw.quickFacts.energySource);
+    if (Object.keys(qf).length > 0) quickFacts = qf;
+  }
+
+  // --- Real World Examples ---
+  let realWorldExamples: string[] | undefined = undefined;
+  if (Array.isArray(raw.realWorldExamples) && raw.realWorldExamples.length > 0) {
+    realWorldExamples = raw.realWorldExamples.slice(0, 5).map(String);
+  }
+
+  // --- Related Processes ---
+  let relatedProcesses: string[] | undefined = undefined;
+  if (Array.isArray(raw.relatedProcesses) && raw.relatedProcesses.length > 0) {
+    relatedProcesses = raw.relatedProcesses.slice(0, 4).map(String);
   }
 
   // --- Challenges (3-4) ---
@@ -260,8 +315,6 @@ function validateHowItWorksData(raw: any): HowItWorksData {
         return { ...base, sequenceItems, correctOrder };
       }
 
-      // explain is now handled as MC above (same as identify/predict)
-
       return base;
     });
   }
@@ -281,8 +334,12 @@ function validateHowItWorksData(raw: any): HowItWorksData {
     title,
     subtitle,
     overview,
+    category,
     steps,
     summary,
+    quickFacts,
+    realWorldExamples,
+    relatedProcesses,
     challenges,
   };
 }
@@ -333,7 +390,7 @@ TOPIC / PROCESS: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 
 ## Your Mission:
-Create a clear, engaging "How It Works" explanation of "${topic}" that walks students through the sequential stages of the process.
+Create a clear, engaging "How It Works" explanation of "${topic}" that walks students through the sequential stages of the process. Make the content RICH and MAGAZINE-QUALITY — not a simple text slideshow.
 
 ${challengeTypeSection}
 
@@ -342,22 +399,40 @@ ${challengeTypeSection}
 ### Title & Overview
 - Title should be clear and engaging (e.g. "How Recycling Works", "How Your Heart Pumps Blood")
 - Subtitle adds context or scope
-- Overview is a 1-2 sentence hook
+- Overview is a 1-2 sentence hook that makes students curious
+
+### Category
+- Pick the BEST category for theming: science, engineering, nature, cooking, technology, body, or history
 
 ### Steps (4-6 items)
 - Each step represents a distinct stage in the process
 - Steps must be in chronological/logical order
 - stepNumber starts at 1
 - title: 2-5 word label for the step
-- description: 2-3 sentences explaining what happens
-- whatsHappening (optional): Deeper explanation of the underlying mechanism
-- imagePrompt: Detailed description for AI image generation showing this step visually
-- keyTermTerm + keyTermDefinition (optional): Important vocabulary introduced at this step
-- funFact (optional): Interesting tidbit related to this step
+- description: 2-3 sentences explaining what happens — vivid, concrete language
+- whatsHappening: Deeper explanation of the underlying mechanism (1-2 sentences) — ALWAYS provide this
+- imagePrompt: DETAILED prompt for AI image generation — describe the visual scene, key objects, colors, perspective. Be specific enough that an AI could paint the scene (e.g. "Cross-section view of a human stomach showing food being broken down by acid, with labeled enzymes, pink tissue walls, and a greenish liquid pool — educational illustration style")
+- keyTermTerm + keyTermDefinition: Important vocabulary — aim for at least 2-3 key terms across all steps
+- funFact: A SURPRISING, specific fact with a number or comparison — aim for at least 3 across all steps
+
+### Quick Facts
+Provide quick reference facts about the process:
+- duration: How long the process takes in real life
+- whereItHappens: Where this process occurs
+- inventedBy: Who discovered or first described it (if applicable)
+- funComparison: A kid-friendly "wow" comparison (e.g. "Your small intestine is as long as a school bus!")
+- energySource: What powers or drives the process
+Provide at least 3 of these 5 fields.
+
+### Real World Examples (2-4 items)
+Everyday places students can see this process: "Your kitchen faucet", "A car engine", "When you breathe"
+
+### Related Processes (2-3 items)
+What related processes might interest a student next: "Water Treatment", "Evaporation", "Cloud Formation"
 
 ### Summary
 - text: 1-2 sentence wrap-up of the whole process
-- totalTime (optional): How long the process takes in real life
+- totalTime: How long the process takes in real life
 - keyTakeaway: The single most important insight
 
 ### Challenges (3-4 items)
@@ -390,9 +465,9 @@ For "explain" challenges:
 - Distractors should be plausible but incorrect reasons
 
 ## Grade-Level Adaptation:
-- For K-2: Simple vocabulary, 4 steps max, very concrete everyday processes, relatable comparisons
-- For 3-5: More detail, introduce scientific terms with definitions, real-world processes
-- For 6-8: Complex processes, technical vocabulary, connections to broader systems
+- For K-2: Simple vocabulary, 4 steps max, very concrete everyday processes, relatable comparisons, fun comparisons required
+- For 3-5: More detail, introduce scientific terms with definitions, real-world processes, include inventor/history where relevant
+- For 6-8: Complex processes, technical vocabulary, connections to broader systems, more quickFacts depth
 
 ## Critical Rules:
 1. Steps MUST be in correct chronological/logical order
@@ -403,6 +478,8 @@ For "explain" challenges:
 6. For sequence challenges, correctOrderCsv must contain all provided item IDs
 7. Mix challenge types for variety (unless constrained by eval mode)
 8. Each challenge should reference a specific relatedStep number
+9. EVERY step should have a vivid, detailed imagePrompt
+10. Include funFacts and keyTerms generously — these create the "magazine" feel
 
 Now generate the How It Works content.`;
 
@@ -429,6 +506,10 @@ Now generate the How It Works content.`;
       title: data.title,
       steps: data.steps.length,
       challenges: data.challenges?.length ?? 0,
+      category: data.category,
+      quickFacts: data.quickFacts ? Object.keys(data.quickFacts).length : 0,
+      realWorldExamples: data.realWorldExamples?.length ?? 0,
+      relatedProcesses: data.relatedProcesses?.length ?? 0,
     });
 
     return data;

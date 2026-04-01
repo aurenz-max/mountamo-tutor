@@ -97,12 +97,17 @@ class PulseEngine:
 
     @staticmethod
     def select_best_mode(
-        theta: float, primitive_type: str
+        theta: float, primitive_type: str,
+        allowed_modes: list[str] | None = None,
     ) -> tuple[int, float, str]:
         """Select the eval mode that gives maximum Fisher information.
 
         Returns (mode_number, target_beta, eval_mode_name). Falls back to
         theta_to_mode() for primitives not in the registry.
+
+        If *allowed_modes* is provided (from curriculum target_eval_modes),
+        only those modes are considered — IRT selects the best within the
+        curriculum-constrained set.
         """
         modes = PROBLEM_TYPE_REGISTRY.get(primitive_type)
         if not modes:
@@ -119,6 +124,9 @@ class PulseEngine:
         sorted_modes = sorted(modes.items(), key=lambda x: x[1].prior_beta)
 
         for idx, (eval_mode_name, config) in enumerate(sorted_modes, start=1):
+            # If curriculum constrains the allowed modes, skip others
+            if allowed_modes and eval_mode_name not in allowed_modes:
+                continue
             a, c = get_item_discrimination(primitive_type, eval_mode_name)
             info = item_information(theta, a, config.prior_beta, c)
             if info > best_info:
@@ -425,7 +433,8 @@ class PulseEngine:
                 theta = theta_map.get(skill_id, transfer_prior)
                 sigma = sigma_map.get(skill_id, DEFAULT_THETA_SIGMA)
             prim_type = node.get("primitive_type", "ten-frame")
-            _, beta, eval_mode_name = self.select_best_mode(theta, prim_type)
+            allowed_modes = node.get("eval_modes")  # curriculum-constrained
+            _, beta, eval_mode_name = self.select_best_mode(theta, prim_type, allowed_modes)
             a, c = get_item_discrimination(prim_type, eval_mode_name)
 
             # Decay-adjusted theta for tested skills (forgetting model)
@@ -492,7 +501,8 @@ class PulseEngine:
             theta = theta_map.get(skill_id, transfer_prior)
             sigma = sigma_map.get(skill_id, DEFAULT_THETA_SIGMA)
 
-            _, beta, eval_mode_name = self.select_best_mode(theta, prim_type)
+            allowed_modes = node.get("eval_modes")  # curriculum-constrained
+            _, beta, eval_mode_name = self.select_best_mode(theta, prim_type, allowed_modes)
             a, c = get_item_discrimination(prim_type, eval_mode_name)
 
             info = item_information(theta, a, beta, c)
@@ -516,13 +526,16 @@ class PulseEngine:
 
             theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
             prim_type = node.get("primitive_type", "ten-frame")
+            allowed_modes = node.get("eval_modes")  # curriculum-constrained
 
             if band_label == PulseBand.FRONTIER.value:
                 mode = FRONTIER_PROBE_MODE
                 beta = mode_to_beta(FRONTIER_PROBE_MODE)
                 eval_mode = None
             else:
-                mode, beta, eval_mode_name = self.select_best_mode(theta, prim_type)
+                mode, beta, eval_mode_name = self.select_best_mode(
+                    theta, prim_type, allowed_modes
+                )
                 eval_mode = eval_mode_name if eval_mode_name != "default" else None
 
             items.append(PulseItemSpec(
@@ -536,6 +549,7 @@ class PulseEngine:
                 target_beta=beta,
                 eval_mode_name=eval_mode,
                 primitive_affinity=prim_type,
+                eval_mode_hint=eval_mode if allowed_modes else None,
                 lesson_group_id=f"{band_label}-{skill_id}",
             ))
 

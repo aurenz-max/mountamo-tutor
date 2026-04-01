@@ -18,7 +18,7 @@ Bidirectional audit between curriculum content and Lumina primitives. Finds wher
 | `full-loop` | `/curriculum-lumina-audit full-loop SCIENCE` | Run audit → upgrade → gaps → report in sequence |
 | `lineage-check` | `/curriculum-lumina-audit lineage-check SCIENCE` | Pre-publish: verify all subskill ID changes have lineage records |
 
-> **Subject IDs** are bare enums (e.g. `MATHEMATICS`, `LANGUAGE_ARTS`, `SCIENCE`, `SOCIAL_STUDIES`). Grade is a separate parameter, not embedded in the ID. See README § "Subject ID Format".
+> **Subject IDs** are bare enums (e.g. `MATHEMATICS`, `LANGUAGE_ARTS`, `SCIENCE`, `SOCIAL_STUDIES`). Grade is a separate parameter, not embedded in the ID. Some subjects include a grade suffix (e.g. `MATHEMATICS_G1` for Grade 1, `MATHEMATICS` for Kindergarten). All write endpoints require both `grade` and `subject_id` as query params — the service validates the pair and gives clear error messages on mismatch. See README § "Subject ID Format" and "Grade Resolution".
 
 ---
 
@@ -36,11 +36,12 @@ Bidirectional audit between curriculum content and Lumina primitives. Finds wher
      - `mapped_count` / `unmapped_count` totals
    - No grade param needed — reads from `curriculum_published/{grade}/subjects/{subject_id}` in Firestore
    - `target_primitive` is available on every subskill in the curriculum tree
+   - `target_eval_modes` (list of strings) is available on subskills that have curriculum-assigned eval modes
 
    **b. Draft curriculum (for auditing unpublished changes)** — Authoring service at `http://localhost:8001`
    - `GET /api/ai/author-previews/{subject_id}?grade={grade}` — all units with skills/subskills
    - `grade` query param is **required** (e.g. `?grade=K`, `?grade=1`)
-   - Each subskill has `target_primitive`, `subskill_description`, `difficulty_start/end`, `standards_alignment`
+   - Each subskill has `target_primitive`, `target_eval_modes`, `subskill_description`, `difficulty_start/end`, `standards_alignment`
    - See README § "AI Authoring" for response schema
 
    > **Which to use:** Default to the published path (a) for audits — it's what Lumina actually reads. Use the draft path (b) when auditing unpublished changes before publishing.
@@ -166,20 +167,34 @@ For YELLOW classification, use this heuristic:
 | BLUE (AI tutor) | 2 (2%) |
 | Unique primitives used | 28 / 153 |
 | Catalog utilization | 18% |
+
+### Eval Mode Coverage
+
+| Metric | Value |
+|--------|-------|
+| Subskills with target_primitive in registry | 78 |
+| With target_eval_modes assigned | 52 (67%) |
+| Missing target_eval_modes | 26 (33%) |
+| Using single eval mode (locked) | 40 |
+| Using multiple eval modes (IRT-constrained) | 12 |
 ```
+
+> **Eval mode coverage** measures how many subskills have curriculum-assigned `target_eval_modes`. When present, Pulse selects the IRT-optimal mode *within* the allowed set instead of searching all modes. Missing eval modes means Pulse falls back to unconstrained IRT selection (which may pick a pedagogically wrong mode).
 
 #### Per-Unit Breakdown
 
 ```
 ### SCI001: Physical Sciences — Sound and Light
 
-| Subskill | Current Primitive | Class | Recommended | Rationale |
-|----------|------------------|-------|-------------|-----------|
-| SCI001-01-a | sound-wave-explorer | GREEN | — | Purpose-built for vibration observation |
-| SCI001-01-c | multiple-choice | RED | knowledge-check | MC about sound properties → knowledge-check has richer assessment |
-| SCI001-03-b | multiple-choice | RED | sorting-station | Classifying materials by transparency → sorting-station with material categories |
-| SCI001-04-d | multiple-choice | RED | vehicle-comparison-lab | Comparing communication devices → vehicle-comparison-lab with device data |
+| Subskill | Current Primitive | Eval Modes | Class | Recommended | Rationale |
+|----------|------------------|------------|-------|-------------|-----------|
+| SCI001-01-a | sound-wave-explorer | [observe] | GREEN | — | Purpose-built for vibration observation |
+| SCI001-01-c | multiple-choice | — | RED | knowledge-check | MC about sound properties → knowledge-check has richer assessment |
+| SCI001-03-b | multiple-choice | — | RED | sorting-station | Classifying materials by transparency → sorting-station with material categories |
+| SCI001-04-d | multiple-choice | — | RED | vehicle-comparison-lab | Comparing communication devices → vehicle-comparison-lab with device data |
 ```
+
+> **Eval Modes column:** Shows the subskill's `target_eval_modes` list. "—" means no eval modes assigned (Pulse uses unconstrained IRT selection). Flag GREEN subskills with missing eval modes — they have a primitive but Pulse may pick the wrong mode.
 
 #### Primitive Recommendations
 
@@ -235,20 +250,20 @@ Re-author RED and YELLOW subskills to use better primitives.
    Approve? (y/n/select specific ones)
    ```
 
-3. **Flag compound subskills for splitting.** If a subskill covers two distinct pedagogical concepts (e.g., "compare quantities AND count backward"), it cannot get a clean primitive assignment. Split it into two subskills before upgrading — each gets its own primitive, `subskill_order`, and difficulty range. Use `POST /api/curriculum/subskills?subject_id={subject_id}` for the new subskill.
+3. **Flag compound subskills for splitting.** If a subskill covers two distinct pedagogical concepts (e.g., "compare quantities AND count backward"), it cannot get a clean primitive assignment. Split it into two subskills before upgrading — each gets its own primitive, `subskill_order`, and difficulty range. Use `POST /api/curriculum/subskills?grade={grade}&subject_id={subject_id}` for the new subskill.
 
 4. **For each approved upgrade**, call `POST /api/ai/generate-skill` to regenerate the subskill with the new target primitive, OR if the subskill description just needs the `target_primitive` field swapped (description already fits), patch it directly:
    ```bash
-   curl -X PUT "http://localhost:8001/api/curriculum/subskills/{subskill_id}?subject_id={subject_id}" \
+   curl -X PUT "http://localhost:8001/api/curriculum/subskills/{subskill_id}?grade={grade}&subject_id={subject_id}" \
      -H "Content-Type: application/json" \
-     -d '{"target_primitive": "new-primitive", "primitive_ids": ["new-primitive"]}'
+     -d '{"target_primitive": "new-primitive", "primitive_ids": ["new-primitive"], "target_eval_modes": ["mode1", "mode2"]}'
    ```
-   > **Always pass `?subject_id=`** — without it the endpoint does a slow-path scan that is unreliable on large subjects (README § "Gotchas" item 1).
+   > **Both `grade` and `subject_id` are required** on all write endpoints. The service validates the pair and returns a clear error on mismatch (README § "Gotchas" item 1).
 
 5. **For subskills needing description rewrites** (the Focus/Examples/Constraints need to match the new primitive's capabilities):
    - Read the new primitive's `description` and `constraints` from the catalog
    - Generate a new subskill description that leverages the primitive's specific features
-   - Use `PUT /api/curriculum/subskills/{id}?subject_id={subject_id}` with the full `SubskillUpdate` body
+   - Use `PUT /api/curriculum/subskills/{id}?grade={grade}&subject_id={subject_id}` with the full `SubskillUpdate` body
 
 6. **Log all changes:**
    ```
@@ -391,6 +406,7 @@ Runs the complete bidirectional audit and improvement cycle.
 | PURPLE (needs primitive) | 4 | 4 | — |
 | Unique primitives | 28 | 41 | +13 |
 | Catalog utilization | 18% | 27% | +9% |
+| Eval mode coverage | 52% | 88% | +36% |
 
 ### Primitive Development Backlog (from PURPLE items)
 Written to: my-tutoring-app/qa/PRIMITIVE_GAPS.md
@@ -528,6 +544,24 @@ When evaluating whether a catalog primitive is a good match for a subskill, chec
    - Does the primitive have a `tutoring` object with scaffolding levels?
    - Richer tutoring = better adaptive learning
 
+### Eval Mode Assignment Rules
+
+When upgrading or auditing a subskill that has a `target_primitive` in `PROBLEM_TYPE_REGISTRY`:
+
+1. **Read the subskill description** — what pedagogical action does it describe?
+2. **Look up the primitive's eval modes** in the registry (see `EVAL_MODE_ENRICHMENT.md` for the full reference)
+3. **Pick 1-3 modes** that match the subskill's intent:
+   - **Single mode** (`["subitize"]`) — lock when the subskill IS that mode (e.g. "subitize dot patterns")
+   - **Multiple modes** (`["subitize", "build"]`) — allow when the subskill spans several activities (e.g. "explore ten-frame representations")
+   - **All modes** (omit field / `null`) — only for assessment-focused subskills where IRT should freely select
+4. **Validate** that every mode in the list is a valid key in `PROBLEM_TYPE_REGISTRY[target_primitive]`
+5. **Include `target_eval_modes` in the PATCH body** alongside `target_primitive`:
+   ```bash
+   curl -X PUT "http://localhost:8001/api/curriculum/subskills/{id}?grade={grade}&subject_id={subject_id}" \
+     -H "Content-Type: application/json" \
+     -d '{"target_primitive": "ten-frame", "target_eval_modes": ["subitize", "build"]}'
+   ```
+
 ### Red Flags in Current Assignments
 
 Watch for these patterns that indicate a bad primitive match:
@@ -579,8 +613,8 @@ Watch for these patterns that indicate a bad primitive match:
 ## Checklist
 
 - [ ] Parsed command and arguments (subject_id, optional --unit filter)
-- [ ] For `audit`: loaded curriculum + catalog, classified all subskills, presented dashboard + per-unit tables
-- [ ] For `upgrade`: presented upgrade plan, got user approval, re-authored subskills, re-audited
+- [ ] For `audit`: loaded curriculum + catalog, classified all subskills, presented dashboard (incl. eval mode coverage) + per-unit tables
+- [ ] For `upgrade`: presented upgrade plan (incl. target_eval_modes), got user approval, re-authored subskills, re-audited
 - [ ] For `gaps`: generated PRIMITIVE_GAPS.md with blocked subskills and proposed primitives
 - [ ] For `unused`: showed unused primitives by domain with recommendations
 - [ ] For `full-loop`: ran all phases in sequence, presented before/after report

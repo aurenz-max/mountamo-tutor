@@ -147,6 +147,7 @@ class SubskillUpdate(BaseModel):
     difficulty_end: Optional[float] = None
     target_difficulty: Optional[float] = None
     target_primitive: Optional[str] = None
+    target_eval_modes: Optional[List[str]] = None
     primitive_ids: Optional[List[str]] = None
 
 
@@ -157,6 +158,7 @@ class Subskill(SubskillBase):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     target_primitive: Optional[str] = None
+    target_eval_modes: Optional[List[str]] = None
     primitive_ids: Optional[List[str]] = None
     primitives: List["Primitive"] = []
 
@@ -211,6 +213,8 @@ class SubskillNode(BaseModel):
     difficulty_range: Optional[dict] = None
     is_draft: bool
     primitives: List[str] = []  # primitive IDs assigned to this subskill
+    target_primitive: Optional[str] = None
+    target_eval_modes: Optional[List[str]] = None
 
 
 class SkillNode(BaseModel):
@@ -267,6 +271,7 @@ class FlattenedCurriculumRow(BaseModel):
     target_difficulty: Optional[float] = None
     primitives: Optional[List[str]] = None  # List of primitive IDs
     target_primitive: Optional[str] = None
+    target_eval_modes: Optional[List[str]] = None
     primitive_ids: Optional[List[str]] = None
 
     # Metadata

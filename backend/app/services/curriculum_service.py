@@ -290,6 +290,8 @@ class CurriculumService:
                     }
                     if subskill.get("target_primitive"):
                         ss_entry["target_primitive"] = subskill["target_primitive"]
+                    if subskill.get("target_eval_modes"):
+                        ss_entry["target_eval_modes"] = subskill["target_eval_modes"]
                     skill_entry["subskills"].append(ss_entry)
                 unit_entry["skills"].append(skill_entry)
             structured.append(unit_entry)
@@ -332,6 +334,8 @@ class CurriculumService:
             }
             if row.get("target_primitive"):
                 ss_entry["target_primitive"] = row["target_primitive"]
+            if row.get("target_eval_modes"):
+                ss_entry["target_eval_modes"] = row["target_eval_modes"]
             current_skill["subskills"].append(ss_entry)
 
         return structured
@@ -445,6 +449,7 @@ class CurriculumService:
                     'target_difficulty': row.get('target_difficulty'),
                     'grade': row.get('grade'),
                     'target_primitive': row.get('target_primitive'),
+                    'target_eval_modes': row.get('target_eval_modes'),
                 }
 
                 self._cache_set(cache_key, metadata)

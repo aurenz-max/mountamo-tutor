@@ -56,8 +56,12 @@ class DraftSummary(BaseModel):
 
 
 class PublishRequest(BaseModel):
-    """Request to publish draft changes"""
-    subject_id: str
+    """Request to publish draft changes.
+
+    subject_id can be provided here or via the URL path parameter.
+    If both are provided, the path parameter wins.
+    """
+    subject_id: Optional[str] = None
     version_description: Optional[str] = None
     change_summary: Optional[str] = None
 

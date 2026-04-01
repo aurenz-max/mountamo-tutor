@@ -52,6 +52,7 @@ Subject  (e.g. "Language Arts", grade "1")
             └── Subskill  (e.g. LA001-01-A "Segment a CVC word into three phonemes")
                  ├── difficulty_start / difficulty_end / target_difficulty (0-10 scale)
                  ├── target_primitive (Lumina primitive ID or "ai-tutor-session")
+                 ├── target_eval_modes[] (curriculum-assigned eval modes, e.g. ["subitize", "build"])
                  ├── primitive_ids[] (assigned Lumina primitives)
                  ├── standards_alignment (e.g. "1.OA.1")
                  └── knowledge graph edges
@@ -128,7 +129,11 @@ curriculum_edges
 
 ### Grade Resolution
 
-The service resolves `subject_id → grade` by scanning both `curriculum_drafts` and `curriculum_published` collections, then caches the mapping. Most API endpoints accept `subject_id` and resolve the grade automatically. Some require explicit `grade` parameter (authoring endpoints).
+Write endpoints (POST/PUT/DELETE) require both `grade` and `subject_id` as explicit query parameters. This maps directly to the Firestore path `curriculum_drafts/{grade}/subjects/{subject_id}` and avoids silent misrouting (e.g. `MATHEMATICS` is Kindergarten, `MATHEMATICS_G1` is Grade 1).
+
+Read endpoints resolve grade automatically by scanning `curriculum_drafts` and `curriculum_published` collections, then cache the mapping.
+
+If grade and subject_id don't match, the API returns a 400 with a helpful hint: *"Grade mismatch: subject 'MATHEMATICS_G1' is grade '1', not grade 'K'. Did you mean: MATHEMATICS?"*
 
 ---
 
@@ -137,8 +142,10 @@ The service resolves `subject_id → grade` by scanning both `curriculum_drafts`
 ```
 Authoring Service (port 8001)
     ├── writes → Firestore curriculum_drafts (source of truth)
+    │   └── subskills carry: target_primitive, target_eval_modes[], difficulty, etc.
     ├── on publish → Firestore curriculum_published (immutable snapshot)
     ├── on publish → BigQuery (non-blocking analytics export)
+    ├── on deploy → graph flatten: target_primitive → primitive_type, target_eval_modes → eval_modes
     └── on edge mutation → Firestore curriculum_graphs/edges subcollection
                                 │
                                 ├── reads → Backend CurriculumService (platform API, port 8000)
@@ -175,9 +182,9 @@ Authoring Service (port 8001)
 |--------|------|-------------|------|---------|
 | `GET` | `/api/curriculum/subjects/{subject_id}/units` | `include_drafts?` | — | List units by subject |
 | `GET` | `/api/curriculum/units/{unit_id}` | — | — | Get one unit |
-| `POST` | `/api/curriculum/units` | — | `UnitCreate` | Create unit |
-| `PUT` | `/api/curriculum/units/{unit_id}` | `subject_id?` | `UnitUpdate` | Update unit |
-| `DELETE` | `/api/curriculum/units/{unit_id}` | `subject_id?` | — | Delete unit |
+| `POST` | `/api/curriculum/units` | **`grade`**, `subject_id` (in body) | `UnitCreate` | Create unit |
+| `PUT` | `/api/curriculum/units/{unit_id}` | **`grade`**, **`subject_id`** | `UnitUpdate` | Update unit |
+| `DELETE` | `/api/curriculum/units/{unit_id}` | **`grade`**, **`subject_id`** | — | Delete unit |
 
 #### Skills
 
@@ -185,9 +192,9 @@ Authoring Service (port 8001)
 |--------|------|-------------|------|---------|
 | `GET` | `/api/curriculum/units/{unit_id}/skills` | `include_drafts?`, `subject_id?` | — | List skills by unit |
 | `GET` | `/api/curriculum/skills/{skill_id}` | — | — | Get one skill |
-| `POST` | `/api/curriculum/skills` | `subject_id?` | `SkillCreate` | Create skill |
-| `PUT` | `/api/curriculum/skills/{skill_id}` | `subject_id?` | `SkillUpdate` | Update skill |
-| `DELETE` | `/api/curriculum/skills/{skill_id}` | `subject_id?` | — | Delete skill |
+| `POST` | `/api/curriculum/skills` | **`grade`**, **`subject_id`** | `SkillCreate` | Create skill |
+| `PUT` | `/api/curriculum/skills/{skill_id}` | **`grade`**, **`subject_id`** | `SkillUpdate` | Update skill |
+| `DELETE` | `/api/curriculum/skills/{skill_id}` | **`grade`**, **`subject_id`** | — | Delete skill |
 
 #### Subskills
 
@@ -195,9 +202,9 @@ Authoring Service (port 8001)
 |--------|------|-------------|------|---------|
 | `GET` | `/api/curriculum/skills/{skill_id}/subskills` | `include_drafts?`, `subject_id?` | — | List subskills by skill |
 | `GET` | `/api/curriculum/subskills/{subskill_id}` | — | — | Get one subskill |
-| `POST` | `/api/curriculum/subskills` | `subject_id?` | `SubskillCreate` | Create subskill |
-| `PUT` | `/api/curriculum/subskills/{subskill_id}` | `subject_id?` | `SubskillUpdate` | Update subskill |
-| `DELETE` | `/api/curriculum/subskills/{subskill_id}` | `subject_id?` | — | Delete subskill |
+| `POST` | `/api/curriculum/subskills` | **`grade`**, **`subject_id`** | `SubskillCreate` | Create subskill |
+| `PUT` | `/api/curriculum/subskills/{subskill_id}` | **`grade`**, **`subject_id`** | `SubskillUpdate` | Update subskill |
+| `DELETE` | `/api/curriculum/subskills/{subskill_id}` | **`grade`**, **`subject_id`** | — | Delete subskill |
 
 **SubskillUpdate body** (all fields optional):
 ```json
@@ -208,11 +215,12 @@ Authoring Service (port 8001)
   "difficulty_end": 5.0,
   "target_difficulty": 3.0,
   "target_primitive": "number-line",
+  "target_eval_modes": ["plot", "jump"],
   "primitive_ids": ["number-line", "ten-frame"]
 }
 ```
 
-> **Gotcha:** Always pass `?subject_id=SUBJECT_ID` on update/delete. Without it, the service does a slow-path scan across all subjects which is unreliable on large datasets.
+> **Required:** All write endpoints (POST/PUT/DELETE) require both `?grade=` and `?subject_id=`. The service validates the pair and returns a helpful error on mismatch. Example: `PUT /api/curriculum/subskills/{id}?grade=1&subject_id=MATHEMATICS_G1`
 
 #### Primitives
 
@@ -221,7 +229,7 @@ Authoring Service (port 8001)
 | `GET` | `/api/curriculum/primitives` | — | — | List all primitives |
 | `GET` | `/api/curriculum/primitives/categories/{category}` | — | — | Filter by category |
 | `GET` | `/api/curriculum/subskills/{subskill_id}/primitives` | `subject_id` | — | Get assigned primitives |
-| `PUT` | `/api/curriculum/subskills/{subskill_id}/primitives` | `subject_id` | `["prim-1", "prim-2"]` | Assign primitives |
+| `PUT` | `/api/curriculum/subskills/{subskill_id}/primitives` | **`grade`**, **`subject_id`** | `["prim-1", "prim-2"]` | Assign primitives |
 
 #### Repair
 
@@ -461,7 +469,7 @@ Returns `{ "accepted": 2, "edge_ids": ["edge-uuid1", "edge-uuid2"] }`.
 | Method | Path | Query Params | Body | Purpose |
 |--------|------|-------------|------|---------|
 | `GET` | `/api/publishing/subjects/{subject_id}/draft-changes` | — | — | View pending changes |
-| `POST` | `/api/publishing/subjects/{subject_id}/publish` | — | `PublishRequest` | Publish draft → immutable version |
+| `POST` | `/api/publishing/subjects/{subject_id}/publish` | — | `PublishRequest?` | Publish draft → immutable version |
 | `GET` | `/api/publishing/subjects/{subject_id}/versions` | — | — | Version history |
 | `GET` | `/api/publishing/subjects/{subject_id}/active-version` | — | — | Current active version |
 | `POST` | `/api/publishing/subjects/{subject_id}/rollback/{version_id}` | — | — | Rollback to prior version |
@@ -476,10 +484,17 @@ Returns `{ "accepted": 2, "edge_ids": ["edge-uuid1", "edge-uuid2"] }`.
 | `GET` | `/api/publishing/subjects/{subject_id}/flatten/preview` | `published_only?` | — | Preview flattened graph |
 | `POST` | `/api/publishing/subjects/{subject_id}/deploy/repair` | — | — | Fix version_id mismatches |
 
-**PublishRequest:**
+**PublishRequest (optional body):**
+
+The `subject_id` in the URL path is authoritative — the request body is optional. An empty POST or `{}` body is fine.
+
+```json
+{}
+```
+
+Or with optional metadata:
 ```json
 {
-  "subject_id": "MATHEMATICS",
   "version_description": "Added geometry unit",
   "change_summary": "3 units, 12 skills, 48 subskills added"
 }
@@ -548,10 +563,13 @@ Superseded by the typed edges system (`/api/edges`). Retained for backward compa
 ### Workflow C: Audit Primitive Coverage (used by `/curriculum-lumina-audit`)
 
 ```
-1. GET  /api/ai/author-previews/{subject_id}?grade={grade}  → Pull all subskills with target_primitive
+1. GET  /api/ai/author-previews/{subject_id}?grade={grade}  → Pull all subskills with target_primitive + target_eval_modes
 2. Read Lumina catalog files from my-tutoring-app/.../catalog/
-3. Classify each subskill (GREEN/YELLOW/RED/PURPLE/BLUE)
-4. PUT  /api/curriculum/subskills/{id}?subject_id={id}       → Update primitives for RED/YELLOW
+3. Classify each subskill (GREEN/YELLOW/RED/PURPLE/BLUE) + check eval mode coverage
+4. PUT  /api/curriculum/subskills/{id}?grade={grade}&subject_id={subject_id}
+   Body: {"target_primitive": "...", "target_eval_modes": ["mode1", "mode2"]}
+5. POST /api/publishing/subjects/{subject_id}/publish   → Publish
+6. POST /api/publishing/subjects/{subject_id}/deploy    → Deploy to curriculum_published
 ```
 
 ### Workflow D: Diagnose Graph Health (used by `/curriculum-graph`)
@@ -570,12 +588,22 @@ Superseded by the typed edges system (`/api/edges`). Retained for backward compa
 
 ## Gotchas & Known Issues
 
-### 1. Always pass `subject_id` query parameter
+### 1. Write endpoints require `grade` + `subject_id`
 
-Most update/delete endpoints have a `subject_id?` query parameter. Without it, the service scans all subjects to find the entity — slow and unreliable. Always pass it:
+All POST/PUT/DELETE endpoints on units, skills, and subskills require both `grade` and `subject_id` as query parameters. This maps directly to the Firestore path and prevents silent misrouting.
 
 ```
-PUT /api/curriculum/subskills/{id}?subject_id=MATHEMATICS
+PUT /api/curriculum/subskills/{id}?grade=1&subject_id=MATHEMATICS_G1
+```
+
+If you pass the wrong grade, you get a clear error:
+```json
+{"detail": "Grade mismatch: subject 'MATHEMATICS_G1' is grade '1', not grade 'K'. Did you mean: MATHEMATICS?"}
+```
+
+If you omit grade entirely:
+```json
+{"detail": [{"type": "missing", "loc": ["query", "grade"], "msg": "Field required"}]}
 ```
 
 ### 2. `connect-skills` creates suggestions, not edges
@@ -617,6 +645,18 @@ POST /api/publishing/.../deploy
 ### 8. Grade is required on authoring endpoints
 
 The `author-unit`, `accept`, `reject`, and `regenerate` endpoints all require `grade` in the request body (not just `subject_id`). Missing it causes a 422 validation error.
+
+### 9. `target_eval_modes` constrains Pulse eval mode selection
+
+`target_eval_modes` is an optional `List[str]` on each subskill. When set, the Pulse engine's `select_best_mode()` only considers modes in that list (IRT-optimal within the constrained set). When absent/null, Pulse searches all modes for the primitive (unconstrained IRT — may pick a pedagogically wrong mode).
+
+```
+["subitize"]               → locked to subitize mode
+["subitize", "build"]      → IRT picks best of those two per session
+null / absent              → IRT searches all modes (assessment use case)
+```
+
+Every value in the list must be a valid eval mode key in `PROBLEM_TYPE_REGISTRY[target_primitive]`. The graph flattener maps `target_eval_modes` → `eval_modes` on flattened nodes, and Pulse reads `node.get("eval_modes")`. See `docs/prds/EVAL_MODE_ENRICHMENT.md` for the full registry reference.
 
 ---
 

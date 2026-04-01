@@ -161,7 +161,8 @@ class SubskillIdResolver:
             # Skip records for a different level
             if record.get("level", "subskill") != level:
                 return current
-            canonical = record.get("canonical_id")
+            canonical_ids = record.get("canonical_ids") or []
+            canonical = canonical_ids[0] if canonical_ids else record.get("canonical_id")
             if not canonical:
                 # Retired with no successor — return the original
                 return current
