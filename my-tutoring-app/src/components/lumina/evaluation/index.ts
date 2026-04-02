@@ -166,6 +166,7 @@ export type {
   HowItWorksMetrics,
   TimelineExplorerMetrics,
   VocabularyExplorerMetrics,
+  DigitalSkillsSimMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

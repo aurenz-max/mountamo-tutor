@@ -454,6 +454,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "recall":   PriorConfig(3.5, "Unguided recall with matching and fill-in-blank"),
         "apply":    PriorConfig(5.5, "Contextual usage and fill-in-blank"),
     },
+    # -----------------------------------------------------------------
+    # Digital skills primitives
+    # -----------------------------------------------------------------
+    "digital-skills-sim": {
+        "click":  PriorConfig(-1.5, "Click accuracy and speed practice"),
+        "drag":   PriorConfig(-1.0, "Drag objects to target zones"),
+        "type":   PriorConfig(-0.5, "Find and press the correct key"),
+    },
 }
 
 # Default prior for unregistered primitive_type/eval_mode combinations

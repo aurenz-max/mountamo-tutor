@@ -137,7 +137,8 @@ class SubskillBase(BaseModel):
 
 class SubskillCreate(SubskillBase):
     """Model for creating a new subskill"""
-    pass
+    target_primitive: Optional[str] = None
+    target_eval_modes: Optional[List[str]] = None
 
 
 class SubskillUpdate(BaseModel):

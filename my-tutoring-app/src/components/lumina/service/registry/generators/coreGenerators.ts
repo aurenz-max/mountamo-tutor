@@ -77,6 +77,7 @@ import { generateFactFile } from '../../core/gemini-fact-file';
 import { generateHowItWorks } from '../../core/gemini-how-it-works';
 import { generateTimelineExplorer } from '../../core/gemini-timeline-explorer';
 import { generateVocabularyExplorer } from '../../core/gemini-vocabulary-explorer';
+import { generateDigitalSkillsSim } from '../../core/gemini-digital-skills-sim';
 
 
 // ============================================================================
@@ -601,8 +602,15 @@ registerGenerator('vocabulary-explorer', async (item, topic, gradeContext) => ({
   data: await generateVocabularyExplorer(topic, gradeContext, item.config),
 }));
 
+// Digital Skills Sim (click, drag, type practice for K-1)
+registerGenerator('digital-skills-sim', async (item, topic, gradeContext) => ({
+  type: 'digital-skills-sim',
+  instanceId: item.instanceId,
+  data: await generateDigitalSkillsSim(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 25 core components registered from dedicated service files
+// Migration status: 26 core components registered from dedicated service files
 // Math primitives (bar-model, number-line, etc.) moved to mathGenerators.ts
 // NO IMPORTS FROM geminiService.ts - all generators use dedicated files
 // ============================================================================

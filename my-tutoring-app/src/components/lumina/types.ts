@@ -1046,6 +1046,7 @@ export type ComponentId =
   | 'fast-fact'          // Interactive fast fact display
   | 'feature-exhibit'    // The deep dive editorial
   | 'detail-drawer'      // (Usually triggered by interaction, but can be pre-seeded)
+  | 'digital-skills-sim' // Interactive digital skills simulation
   | 'fact-file'          // Interactive fact file display
   | 'how-it-works'       // Interactive how-it-works explainer
   | 'timeline-explorer'  // Interactive timeline explorer
@@ -1622,3 +1623,6 @@ export type { LetterSpotterData } from './primitives/visual-primitives/literacy/
 export type { LetterSoundLinkData } from './primitives/visual-primitives/literacy/LetterSoundLink';
 export type { CvcSpellerData } from './primitives/visual-primitives/literacy/CvcSpeller';
 export type { WordWorkoutData } from './primitives/visual-primitives/literacy/WordWorkout';
+
+// Core
+export type { DigitalSkillsSimData } from './primitives/visual-primitives/core/DigitalSkillsSim';

@@ -58,6 +58,7 @@ import AnalogClock from '../primitives/visual-primitives/math/AnalogClock';
 import FactFile from '../primitives/visual-primitives/core/FactFile';
 import HowItWorks from '../primitives/visual-primitives/core/HowItWorks';
 import FastFact from '../primitives/visual-primitives/core/FastFact';
+import DigitalSkillsSim from '../primitives/visual-primitives/core/DigitalSkillsSim';
 import TimelineExplorer from '../primitives/visual-primitives/core/TimelineExplorer';
 import VocabularyExplorer from '../primitives/visual-primitives/core/VocabularyExplorer';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
@@ -1763,6 +1764,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'word-workout': {
     component: WordWorkout,
     sectionTitle: 'Word Workout',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'digital-skills-sim': {
+    component: DigitalSkillsSim,
+    sectionTitle: 'Digital Skills Sim',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

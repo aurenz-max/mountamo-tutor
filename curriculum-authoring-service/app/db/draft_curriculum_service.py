@@ -27,7 +27,7 @@ from app.db.firestore_curriculum_service import firestore_curriculum_sync
 logger = logging.getLogger(__name__)
 
 # Re-export from canonical grades module
-from app.models.grades import GRADE_LABELS
+from app.models.grades import GRADE_LABELS, grades_match, normalise_grade
 
 # Fields stored on unit entries for authoring lifecycle only
 AUTHORING_METADATA_FIELDS = {
@@ -57,7 +57,15 @@ class DraftCurriculumService:
     # ==================== Document-level helpers ====================
 
     def _ref(self, grade: str, subject_id: str):
-        """Get doc reference for a draft subject."""
+        """Get doc reference for a draft subject.
+
+        TODO: Normalise grade to long-form (e.g. "K" → "Kindergarten") before
+        building the Firestore path.  The reader already does this via
+        _grade_variants(), but writes use the raw string — so ``grade="K"``
+        silently creates a *new* doc at ``curriculum_drafts/K/…`` instead of
+        updating the existing ``curriculum_drafts/Kindergarten/…`` doc.
+        Fix: call ``normalise_grade(grade)`` here (from app.models.grades).
+        """
         return (
             self._client
             .collection(self.COLLECTION)
@@ -670,14 +678,13 @@ class DraftCurriculumService:
         all_grade_ids = [g.id for g in firestore_graph_service.curriculum_published.stream()]
 
         if grade:
-            # Match by exact id, short code, or label
-            label = GRADE_LABELS.get(grade, "")
+            # Match by exact id, short code, or long-form label
             grades_to_scan = [
                 gid for gid in all_grade_ids
-                if gid == grade or gid == label
+                if grades_match(gid, grade)
             ]
             if not grades_to_scan:
-                logger.warning(f"No published grade matching '{grade}' (tried '{grade}' and '{label}'). Available: {all_grade_ids}")
+                logger.warning(f"No published grade matching '{grade}'. Available: {all_grade_ids}")
         else:
             grades_to_scan = all_grade_ids
 

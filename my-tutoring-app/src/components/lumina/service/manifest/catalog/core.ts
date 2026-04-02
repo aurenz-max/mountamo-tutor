@@ -671,4 +671,54 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'digital-skills-sim',
+    description: 'Guided tutorial teaching fundamental digital device skills: clicking targets, dragging objects to zones, and typing on a virtual keyboard. Gamified with score tracking. Perfect for teaching basic computer interaction. ESSENTIAL for K-1 digital literacy.',
+    constraints: 'K-1 only. Challenges are very simple motor-skill tasks, not academic content.',
+    evalModes: [
+      {
+        evalMode: 'click',
+        label: 'Click Practice (Easy)',
+        beta: -1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['click'],
+        description: 'Click accuracy and speed practice',
+      },
+      {
+        evalMode: 'drag',
+        label: 'Drag Practice (Easy)',
+        beta: -1.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['drag'],
+        description: 'Drag objects to target zones',
+      },
+      {
+        evalMode: 'type',
+        label: 'Type Practice (Easy)',
+        beta: -0.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['type'],
+        description: 'Find and press the correct key',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Student is practicing basic digital skills: {{currentPhase}} phase, challenge {{challengeIndex}} of {{totalChallenges}}. Current instruction: "{{instruction}}".',
+      contextKeys: ['title', 'currentPhase', 'challengeIndex', 'totalChallenges', 'instruction'],
+      scaffoldingLevels: {
+        level1:
+          '"Can you find the [target]? Look carefully at the screen!"',
+        level2:
+          '"Try moving your mouse slowly toward the [target]. Take your time!"',
+        level3:
+          '"I see the [target] right here — move your mouse to it and click! You can do it!"',
+      },
+      commonStruggles: [
+        { pattern: 'Student clicks but misses the target repeatedly', response: 'Encourage slower, more deliberate mouse movement. Suggest making the pointer touch the target before clicking.' },
+        { pattern: 'Student cannot complete drag — drops item before reaching zone', response: 'Remind student to hold the mouse button down while moving. Practice the hold-and-move motion.' },
+        { pattern: 'Student presses wrong keys repeatedly', response: 'Point out where the highlighted key is on the keyboard. Use positional hints like "top row" or "bottom left".' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

@@ -10,6 +10,7 @@ from google.oauth2 import service_account
 import os
 
 from app.core.config import settings
+from app.models.grades import normalise_grade
 
 logger = logging.getLogger(__name__)
 

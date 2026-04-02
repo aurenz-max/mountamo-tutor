@@ -20,11 +20,12 @@
 | GAP-010 | HIGH | LANGUAGE_ARTS (K), LANGUAGE_ARTS_G1 | ~20 (LA004, LA005, LA006 sorting/categorization subskills) | `word-sorter` | SMALL | OPEN |
 | GAP-011 | MEDIUM | LANGUAGE_ARTS (K) | 7 (LA006-06 Text Features A-G) | `book-explorer` | SMALL | OPEN |
 | GAP-012 | MEDIUM | LANGUAGE_ARTS (K), LANGUAGE_ARTS_G1 | 3 (LA004-01-G/K, LA004-02-C) | `sentence-builder` | MEDIUM | CLOSED |
-| GAP-013 | LOW | SCIENCE (K) | 1 (SCI001-02-D) | `material-properties-tester` | MEDIUM | OPEN |
-| GAP-014 | LOW | SCIENCE (K) | 1 (SCI003-01-E) | `weather-station` | MEDIUM | OPEN |
+| GAP-013 | LOW | SCIENCE (K) | 1 (SCI001-02-D) | `material-properties-tester` | MEDIUM | CLOSED — assigned `matter-explorer` |
+| GAP-014 | LOW | SCIENCE (K) | 1 (SCI003-01-E) | `weather-station` | MEDIUM | CLOSED — assigned `take-home-activity` |
 | GAP-015 | LOW | SCIENCE (K) | 1 (SCI004-02-E) | `digital-skills-sim` | SMALL | OPEN |
+| GAP-016 | MEDIUM | MATHEMATICS (K) | 2 (MEAS001-01-F, MEAS001-04-E) | `capacity-lab` | MEDIUM | OPEN |
 
-**Totals:** 15 gaps | 5 HIGH, 6 MEDIUM, 4 LOW | ~64 subskills affected | 4 CLOSED (GAP-005, GAP-006, GAP-012 + GAP-003 backlog)
+**Totals:** 16 gaps | 5 HIGH, 7 MEDIUM, 4 LOW | ~66 subskills affected | 6 CLOSED (GAP-005, GAP-006, GAP-012, GAP-013, GAP-014 + GAP-003 backlog)
 
 ---
 
@@ -939,8 +940,40 @@ Guided tutorial with 3 phases: **Click Practice** (click targets that appear on 
 
 ---
 
+## GAP-016: capacity-lab
+
+**Priority:** MEDIUM — 2 K subskills using `knowledge-check` as fallback; cross-grade potential for science measurement units
+
+### Curriculum Need
+
+| Subject | Subskill | Current Workaround | Why Workaround Fails |
+|---------|----------|--------------------|---------------------|
+| MATHEMATICS (K) | MEAS001-01-F | `knowledge-check` with recall/apply modes | "Compare and measure capacity using water/sand with containers" is a hands-on activity — quiz format misses the pour/fill/compare interaction entirely |
+| MATHEMATICS (K) | MEAS001-04-E | `knowledge-check` with recall/apply modes | "Measure and compare volumes using standard measuring tools (cups, spoons)" needs visual liquid levels and tool selection, not text-based recall |
+
+**Why no existing primitive fits:** `measurement-tools` is ruler-based (linear length only). No primitive handles liquid volume, container filling, or capacity comparison. Science subjects will also need beaker/graduated-cylinder interactions in later grades.
+
+### Proposed Design
+
+Interactive workspace with **containers** (cups, bottles, beakers, bowls) and **fill materials** (water, sand, rice). Three phases:
+
+1. **Fill** — drag a pour source to fill a container, watch level rise with animation
+2. **Compare** — two containers side by side, predict which holds more, then pour to verify
+3. **Measure** — use standard tools (measuring cups, spoons) to measure how much a container holds, record the number
+
+Visual: glass-style containers with animated liquid levels. Containers can be different shapes (tall/thin vs short/wide) to teach conservation of volume.
+
+**Eval modes:** `fill` (fill to a target level), `compare` (which holds more?), `measure` (how many cups does it hold?)
+**Grade band:** K-2 (K: compare only, G1-2: measure with standard units)
+**Catalog domain:** math
+**Complexity:** MEDIUM — liquid animation, pour interaction, multiple container shapes, measurement recording
+**Standards:** K.MD.1 (describe measurable attributes), K.MD.2 (compare two objects with a measurable attribute), 1.MD.2 (express length of an object as a whole number of length units)
+
+---
+
 ## Next Steps
 
+> **2026-04-01:** MATHEMATICS (K) audit + upgrade. 3 tape-diagram subskills upgraded to addition-subtraction-scene. GAP-016 (`capacity-lab`) added for 2 capacity/volume subskills.
 > **2026-03-31:** SCIENCE (K) full audit + upgrade completed. 85/88 subskills assigned primitives (was 0/88). 3 PURPLE gaps added (GAP-013/014/015). Published + deployed version 88.
 > **2026-03-29:** GAP-012 (`sentence-builder`) closed.
 

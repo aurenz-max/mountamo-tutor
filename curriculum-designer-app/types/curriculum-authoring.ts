@@ -83,6 +83,8 @@ export interface SubskillBase {
   difficulty_start?: number;
   difficulty_end?: number;
   target_difficulty?: number;
+  target_primitive?: string;
+  target_eval_modes?: string[];
 }
 
 export interface SubskillCreate extends SubskillBase {}
@@ -142,6 +144,8 @@ export interface SubskillNode {
     target?: number;
   };
   is_draft: boolean;
+  target_primitive?: string;
+  target_eval_modes?: string[];
   primitives?: Primitive[];
 }
 

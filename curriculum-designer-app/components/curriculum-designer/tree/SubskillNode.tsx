@@ -31,6 +31,8 @@ export function SubskillNode({
         difficulty_start: subskill.difficulty_range?.start,
         difficulty_end: subskill.difficulty_range?.end,
         target_difficulty: subskill.difficulty_range?.target,
+        target_primitive: subskill.target_primitive,
+        target_eval_modes: subskill.target_eval_modes,
         is_draft: subskill.is_draft,
         version_id: '',
         created_at: '',

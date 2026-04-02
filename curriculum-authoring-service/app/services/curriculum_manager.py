@@ -40,7 +40,7 @@ class CurriculumManager:
         including a hint about which subject_id actually matches the grade
         when there's a mismatch.
         """
-        from app.models.grades import validate_grade as _validate_grade, GRADE_LABELS
+        from app.models.grades import validate_grade as _validate_grade, grades_match
         _validate_grade(grade)  # raises ValueError for bad grade codes
 
         subject = await firestore_reader.get_subject(grade, subject_id)
@@ -49,7 +49,7 @@ class CurriculumManager:
             all_subjects = await firestore_reader.get_all_subjects()
             same_grade = [
                 s["subject_id"] for s in all_subjects
-                if s.get("grade") == grade or s.get("grade") == GRADE_LABELS.get(grade)
+                if grades_match(s.get("grade", ""), grade)
             ]
             hint = f" Subjects in grade {grade}: {same_grade}" if same_grade else ""
             raise ValueError(
@@ -57,19 +57,14 @@ class CurriculumManager:
             )
 
         actual_grade = subject.get("grade", "")
-        # Normalise: Firestore may store "Kindergarten" or "K", "1" or "1st Grade"
-        grade_matches = (
-            actual_grade == grade
-            or actual_grade == GRADE_LABELS.get(grade, "")
-        )
-        if not grade_matches:
+        if not grades_match(actual_grade, grade):
             # Find the correct subject_id for the requested grade
             all_subjects = await firestore_reader.get_all_subjects()
             subject_name = subject.get("subject_name", "")
             correct = [
                 s["subject_id"] for s in all_subjects
                 if s.get("subject_name") == subject_name
-                and (s.get("grade") == grade or s.get("grade") == GRADE_LABELS.get(grade, ""))
+                and grades_match(s.get("grade", ""), grade)
             ]
             hint = f" Did you mean: {correct[0]}?" if correct else ""
             raise ValueError(
@@ -253,14 +248,19 @@ class CurriculumManager:
 
     async def create_subskill(self, subskill: SubskillCreate, version_id: str, grade: str, subject_id: str) -> Subskill:
         """Add a subskill to a skill in the draft doc."""
-        await draft_curriculum.add_subskill(grade, subject_id, subskill.skill_id, {
+        subskill_data = {
             "subskill_id": subskill.subskill_id,
             "subskill_description": subskill.subskill_description,
             "subskill_order": subskill.subskill_order,
             "difficulty_start": subskill.difficulty_start,
             "difficulty_end": subskill.difficulty_end,
             "target_difficulty": subskill.target_difficulty,
-        })
+        }
+        if subskill.target_primitive is not None:
+            subskill_data["target_primitive"] = subskill.target_primitive
+        if subskill.target_eval_modes is not None:
+            subskill_data["target_eval_modes"] = subskill.target_eval_modes
+        await draft_curriculum.add_subskill(grade, subject_id, subskill.skill_id, subskill_data)
 
         now = datetime.utcnow().isoformat()
         return Subskill(
@@ -271,6 +271,8 @@ class CurriculumManager:
             difficulty_start=subskill.difficulty_start,
             difficulty_end=subskill.difficulty_end,
             target_difficulty=subskill.target_difficulty,
+            target_primitive=subskill.target_primitive,
+            target_eval_modes=subskill.target_eval_modes,
             version_id=version_id,
             is_draft=True,
             created_at=now,

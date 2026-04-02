@@ -100,7 +100,13 @@ class VersionControl:
         active_version = await self.get_active_version(subject_id)
         active_version_id = active_version.version_id if active_version else None
 
-        draft_entities = await firestore_reader.get_draft_entities(subject_id)
+        if not grade:
+            # Resolve grade from subject metadata
+            subjects = await firestore_reader.get_all_subjects()
+            match = next((s for s in subjects if s.get("subject_id") == subject_id), None)
+            if match:
+                grade = match.get("grade")
+        draft_entities = await firestore_reader.get_draft_entities(grade, subject_id)
 
         entity_type_map = {
             "subjects": "subject",
@@ -142,7 +148,8 @@ class VersionControl:
     async def publish(
         self,
         publish_request: PublishRequest,
-        user_id: str
+        user_id: str,
+        grade: Optional[str] = None
     ) -> PublishResponse:
         """Publish all draft changes for a subject.
 
@@ -152,7 +159,7 @@ class VersionControl:
         now = datetime.utcnow()
 
         # Validate
-        draft_summary = await self.get_draft_changes(publish_request.subject_id)
+        draft_summary = await self.get_draft_changes(publish_request.subject_id, grade=grade)
         if not draft_summary.can_publish:
             raise ValueError(f"Cannot publish: {draft_summary.validation_errors}")
 

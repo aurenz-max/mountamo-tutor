@@ -701,20 +701,34 @@ class FirestoreService:
         Get published curriculum document for a subject.
 
         Reads from curriculum_published/{grade}/subjects/{subject_id}.
-        If grade is provided, does a direct O(1) lookup.
+        If grade is provided, does a direct O(1) lookup (tries both
+        short-code and long-form keys, e.g. 'K' and 'Kindergarten').
         Otherwise searches across all grades.
 
         Returns:
             Full curriculum document with hierarchy, subskill_index, and stats,
             or None if not deployed yet.
         """
+        # Grade alias map for Firestore doc key lookup
+        _GRADE_ALIASES = {
+            "K": "Kindergarten", "Kindergarten": "K",
+            "PK": "Pre-K", "Pre-K": "PK",
+            **{str(i): f"{i}{'st' if i==1 else 'nd' if i==2 else 'rd' if i==3 else 'th'} Grade"
+               for i in range(1, 13)},
+            **{f"{i}{'st' if i==1 else 'nd' if i==2 else 'rd' if i==3 else 'th'} Grade": str(i)
+               for i in range(1, 13)},
+        }
+
         try:
             if grade:
-                # Direct O(1) lookup
-                doc_ref = self.client.collection('curriculum_published').document(grade).collection('subjects').document(subject_id)
-                doc = doc_ref.get()
-                if doc.exists:
-                    return doc.to_dict()
+                # Try the grade key as-is first, then its alias
+                for key in [grade, _GRADE_ALIASES.get(grade)]:
+                    if not key:
+                        continue
+                    doc_ref = self.client.collection('curriculum_published').document(key).collection('subjects').document(subject_id)
+                    doc = doc_ref.get()
+                    if doc.exists:
+                        return doc.to_dict()
                 return None
 
             # Search across all grades

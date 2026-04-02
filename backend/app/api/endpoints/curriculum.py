@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Query
 from typing import Dict, Any, List, Optional
 
 from app.dependencies import get_curriculum_service
@@ -31,11 +31,12 @@ async def get_available_subjects(
 @public_router.get("/curriculum/{subject}")
 async def get_subject_curriculum(
     subject: str,
+    grade: Optional[str] = Query(None, description="Grade filter (e.g. 'K', 'Kindergarten', '1')"),
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
 ) -> Dict[str, Any]:
     """Get complete curriculum structure for a subject from cloud storage"""
     try:
-        curriculum = await curriculum_service.get_curriculum(subject)
+        curriculum = await curriculum_service.get_curriculum(subject, grade=grade)
         if not curriculum:
             raise HTTPException(status_code=404, detail=f"Curriculum not found for subject: {subject}")
 
@@ -95,6 +96,7 @@ async def get_detailed_objectives(
 @public_router.get("/primitive-mappings/{subject}")
 async def get_primitive_mappings(
     subject: str,
+    grade: Optional[str] = Query(None, description="Grade filter (e.g. 'K', 'Kindergarten', '1')"),
     curriculum_service: CurriculumService = Depends(get_curriculum_service)
 ) -> Dict[str, Any]:
     """Get primitive mappings for all subskills in a subject.
@@ -103,7 +105,7 @@ async def get_primitive_mappings(
     of unique primitives and their subskill counts.
     """
     try:
-        curriculum = await curriculum_service.get_curriculum(subject)
+        curriculum = await curriculum_service.get_curriculum(subject, grade=grade)
         if not curriculum:
             raise HTTPException(status_code=404, detail=f"Curriculum not found for subject: {subject}")
 

@@ -52,7 +52,7 @@ async def publish_subject(
 
     try:
         # 1. Version bookkeeping + edge publishing
-        result = await version_control.publish(publish_request, "local-dev-user")
+        result = await version_control.publish(publish_request, "local-dev-user", grade=grade)
 
         # 2. Deploy draft → curriculum_published (lineage-validated)
         await curriculum_manager.deploy_curriculum_to_firestore(

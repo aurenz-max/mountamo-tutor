@@ -466,13 +466,22 @@ No separate "deploy" step is needed.
 
 ## Gotchas & Known Issues
 
-### 1. Write endpoints require `grade` + `subject_id`
+### 1. Write endpoints require `grade` + `subject_id` (long-form grade!)
 
 All POST/PUT/DELETE endpoints on units, skills, and subskills require both `grade` and `subject_id` as query parameters. This maps directly to the Firestore path and prevents silent misrouting.
 
+**IMPORTANT:** Write endpoints require the **long-form** grade stored in Firestore (e.g. `Kindergarten`, `1st Grade`), not short codes (`K`, `1`). Read endpoints accept both forms via alias resolution, but writes use the grade string directly as the Firestore document ID. Using a short code on a write **silently creates a new document** at the wrong path instead of updating the existing one.
+
 ```
-PUT /api/curriculum/subskills/{id}?grade=1&subject_id=MATHEMATICS_G1
+# CORRECT — long-form grade matches Firestore doc ID
+PUT /api/curriculum/subskills/{id}?grade=Kindergarten&subject_id=MATHEMATICS
+PUT /api/curriculum/subskills/{id}?grade=1st%20Grade&subject_id=MATHEMATICS_G1
+
+# WRONG — silently writes to curriculum_drafts/K/... instead of curriculum_drafts/Kindergarten/...
+PUT /api/curriculum/subskills/{id}?grade=K&subject_id=MATHEMATICS
 ```
+
+> **TODO:** Fix `draft_curriculum_service._ref()` to call `normalise_grade()` so writes accept short codes too. See the TODO in that method.
 
 ### 2. `connect-skills` creates suggestions, not edges
 

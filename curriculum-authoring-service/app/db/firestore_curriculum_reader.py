@@ -56,29 +56,53 @@ class FirestoreCurriculumReader:
         """Get the suggestions subcollection for a (grade, subject) pair."""
         return self._graph_ref(grade, subject_id).collection("suggestions")
 
+    # ==================== Grade resolution ====================
+
+    def _grade_variants(self, grade: str) -> list[str]:
+        """Return the grade string and its alias (if any) so Firestore lookups
+        work regardless of whether the caller passes '1' or '1st Grade'."""
+        from app.models.grades import GRADE_ALIASES, GRADE_CODES
+        variants = [grade]
+        # short → long
+        if grade in GRADE_ALIASES:
+            variants.append(GRADE_ALIASES[grade])
+        # long → short (reverse lookup)
+        for short, long in GRADE_ALIASES.items():
+            if long == grade and short not in variants:
+                variants.append(short)
+        return variants
+
     # ==================== Draft doc access ====================
 
     async def _get_draft_doc(self, grade: str, subject_id: str) -> Optional[Dict[str, Any]]:
-        """Get the hierarchical draft doc for a subject."""
-        doc = (
-            self._client.collection("curriculum_drafts")
-            .document(grade)
-            .collection("subjects")
-            .document(subject_id)
-            .get()
-        )
-        return doc.to_dict() if doc.exists else None
+        """Get the hierarchical draft doc for a subject.
+        Tries the given grade and its alias (e.g. '1' then '1st Grade')."""
+        for g in self._grade_variants(grade):
+            doc = (
+                self._client.collection("curriculum_drafts")
+                .document(g)
+                .collection("subjects")
+                .document(subject_id)
+                .get()
+            )
+            if doc.exists:
+                return doc.to_dict()
+        return None
 
     async def _get_published_doc(self, grade: str, subject_id: str) -> Optional[Dict[str, Any]]:
-        """Get the hierarchical published doc for a subject."""
-        doc = (
-            self._client.collection("curriculum_published")
-            .document(grade)
-            .collection("subjects")
-            .document(subject_id)
-            .get()
-        )
-        return doc.to_dict() if doc.exists else None
+        """Get the hierarchical published doc for a subject.
+        Tries the given grade and its alias."""
+        for g in self._grade_variants(grade):
+            doc = (
+                self._client.collection("curriculum_published")
+                .document(g)
+                .collection("subjects")
+                .document(subject_id)
+                .get()
+            )
+            if doc.exists:
+                return doc.to_dict()
+        return None
 
     async def _get_subject_doc(self, grade: str, subject_id: str) -> Optional[Dict[str, Any]]:
         """Get draft doc, falling back to published. Grade is required."""

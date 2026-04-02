@@ -264,8 +264,12 @@ class RateLimiter:
     
     def _start_cleanup(self):
         """Start background cleanup task"""
-        if self._cleanup_task is None:
-            self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+        try:
+            loop = asyncio.get_running_loop()
+            if self._cleanup_task is None:
+                self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+        except RuntimeError:
+            pass  # No running loop yet; cleanup will start on first request
     
     async def _cleanup_loop(self):
         """Clean up old entries every 5 minutes"""

@@ -235,6 +235,18 @@ Re-author RED and YELLOW subskills to use better primitives.
 
 ### Steps
 
+0. **Smoke test** — Before any bulk operations, verify one read→write→publish roundtrip:
+   ```bash
+   # 1. Read a subskill (short grade OK here)
+   curl -s "http://localhost:8001/api/curriculum/subskills/{any_id}?grade=K&subject_id={subject_id}"
+   # 2. Write it back (MUST use long-form grade: Kindergarten, 1st Grade, etc.)
+   curl -s -X PUT "http://localhost:8001/api/curriculum/subskills/{any_id}?grade=Kindergarten&subject_id={subject_id}" \
+     -H "Content-Type: application/json" -d '{"target_primitive": "same-value"}'
+   # 3. Publish
+   curl -s -X POST "http://localhost:8001/api/publishing/subjects/{subject_id}/publish?grade=Kindergarten"
+   ```
+   If any step fails, fix the endpoint formatting before proceeding. See README § "Gotchas" item 1 for the long-form grade requirement.
+
 1. **Run audit** (or use cached audit results from same conversation)
 2. **Present upgrade plan** to user for approval:
    ```

@@ -143,22 +143,24 @@ class CurriculumService:
         # Fallback: normalise to UPPER_SNAKE_CASE
         return subject.upper().replace(" ", "_")
 
-    async def _get_firestore_doc(self, subject: str) -> Optional[Dict[str, Any]]:
+    async def _get_firestore_doc(self, subject: str, grade: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Get a published curriculum doc from Firestore, using cache.
 
         Accepts either a subject_name ('Language Arts') or subject_id ('LANGUAGE_ARTS').
+        When grade is provided, does a direct O(1) lookup for that grade's doc.
         """
         # Resolve to subject_id for Firestore lookup
         subject_id = await self._resolve_subject_id(subject)
 
-        cache_key = f"firestore_doc_{subject_id}"
+        grade_suffix = f"_{grade}" if grade else ""
+        cache_key = f"firestore_doc_{subject_id}{grade_suffix}"
         if cache_key in self._cache and self._is_cache_valid(cache_key):
             return self._cache[cache_key]
 
         if not self.firestore_service:
             return None
 
-        doc = await self.firestore_service.get_published_curriculum(subject_id)
+        doc = await self.firestore_service.get_published_curriculum(subject_id, grade=grade)
         if doc:
             self._cache_set(cache_key, doc)
         return doc
@@ -203,19 +205,21 @@ class CurriculumService:
         self._cache_set(cache_key, subjects)
         return subjects
 
-    async def get_curriculum(self, subject: str) -> List[Dict]:
+    async def get_curriculum(self, subject: str, grade: Optional[str] = None) -> List[Dict]:
         """Get hierarchical curriculum data for a subject.
 
         Accepts either a subject_name ('Language Arts') or subject_id ('LANGUAGE_ARTS').
+        When grade is provided, does a direct O(1) lookup for that grade's published doc.
         """
         subject_id = await self._resolve_subject_id(subject)
-        cache_key = f"curriculum_{subject_id.lower()}"
+        grade_suffix = f"_{grade}" if grade else ""
+        cache_key = f"curriculum_{subject_id.lower()}{grade_suffix}"
         if cache_key in self._cache and self._is_cache_valid(cache_key):
             return self._cache[cache_key]
 
         # Try Firestore first
         if self._use_firestore:
-            doc = await self._get_firestore_doc(subject_id)
+            doc = await self._get_firestore_doc(subject_id, grade=grade)
             if doc and "curriculum" in doc:
                 structured = self._structure_firestore_curriculum(doc)
                 self._cache_set(cache_key, structured)

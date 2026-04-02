@@ -2928,14 +2928,15 @@ export interface PaperAirplaneDesignerMetrics extends BasePrimitiveMetrics {
 
 export interface EngineExplorerMetrics extends BasePrimitiveMetrics {
   type: 'engine-explorer';
-  componentsIdentified: number;
-  componentsTotal: number;
-  cycleStagesUnderstood: number;
-  energyFlowTraced: boolean;
-  comparisonsExplored: number;
-  vehicleMatchesCorrect: number;
-  vehicleMatchesTotal: number;
-  engineTypesExplored: number;
+  zonesExplored: number;
+  zonesTotal: number;
+  fuelAdjustments: number;
+  loadExperiments: number;
+  challengesCompleted: number;
+  challengesCorrect: number;
+  challengesTotal: number;
+  peakRPMReached: number;
+  engineStalledCount: number;
   attemptsCount: number;
 }
 
@@ -3003,6 +3004,17 @@ export interface VocabularyExplorerMetrics extends BasePrimitiveMetrics {
   challengeAttempts: number;
   averageTimePerTerm: number;
   relatedWordClicks: number;
+}
+
+export interface DigitalSkillsSimMetrics extends BasePrimitiveMetrics {
+  type: 'digital-skills-sim';
+  clickAccuracy: number;
+  dragAccuracy: number;
+  typeAccuracy: number;
+  totalAttempts: number;
+  averageTimeMs: number;
+  challengesCompleted: number;
+  totalChallenges: number;
 }
 
 export type PrimitiveMetrics =
@@ -3158,7 +3170,8 @@ export type PrimitiveMetrics =
   | FactFileMetrics
   | HowItWorksMetrics
   | TimelineExplorerMetrics
-  | VocabularyExplorerMetrics;
+  | VocabularyExplorerMetrics
+  | DigitalSkillsSimMetrics;
 
 // =============================================================================
 // Session & Summary Types
