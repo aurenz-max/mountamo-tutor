@@ -159,7 +159,6 @@ class GraphFlatteningService:
                         "skill_id": skill_id,
                         "unit_id": unit_id,
                         "subskill_order": sub.get("subskill_order", 0),
-                        "primitives": sub.get("primitives", []),
                     }
                     # Map curriculum target_primitive → primitive_type for Pulse engine
                     tp = sub.get("target_primitive")

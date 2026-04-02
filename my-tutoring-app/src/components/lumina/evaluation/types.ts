@@ -2359,6 +2359,13 @@ export interface WordWorkoutMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface WordSorterMetrics extends BasePrimitiveMetrics {
+  type: 'word-sorter';
+  sortingAccuracy: number;
+  attemptsCount: number;
+  wordsProcessed: number;
+}
+
 // -----------------------------------------------------------------------------
 // Literacy Primitives (Wave 1)
 // -----------------------------------------------------------------------------
@@ -3166,6 +3173,7 @@ export type PrimitiveMetrics =
   | CvcSpellerMetrics
   // Literacy (Wave 5)
   | WordWorkoutMetrics
+  | WordSorterMetrics
   // Core
   | FactFileMetrics
   | HowItWorksMetrics

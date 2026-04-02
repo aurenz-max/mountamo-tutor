@@ -36,6 +36,7 @@ import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotte
 import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
 import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
 import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
+import WordSorter from '../primitives/visual-primitives/literacy/WordSorter';
 
 import {
   EvaluationProvider,
@@ -64,7 +65,8 @@ type PrimitiveType =
   | 'letter-spotter'
   | 'letter-sound-link'
   | 'cvc-speller'
-  | 'word-workout';
+  | 'word-workout'
+  | 'word-sorter';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -110,6 +112,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'context-clues-detective', label: 'Context Clues', icon: '🕵️', topic: 'Determining word meaning from context', strand: 'L', wave: 2 },
   { value: 'figurative-language-finder', label: 'Figurative Language', icon: '🎨', topic: 'Finding similes and metaphors', strand: 'L', wave: 3 },
   { value: 'spelling-pattern-explorer', label: 'Spelling Patterns', icon: '🔠', topic: 'Silent-e spelling rule', strand: 'L', wave: 4 },
+  { value: 'word-sorter', label: 'Word Sorter', icon: '📂', topic: 'Sorting nouns and verbs', strand: 'L', wave: 5 },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -191,6 +194,8 @@ const PrimitiveRenderer: React.FC<{
       return <CvcSpeller data={data as Parameters<typeof CvcSpeller>[0]['data']} />;
     case 'word-workout':
       return <WordWorkout data={data as Parameters<typeof WordWorkout>[0]['data']} />;
+    case 'word-sorter':
+      return <WordSorter data={data as Parameters<typeof WordSorter>[0]['data']} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">

@@ -1178,4 +1178,64 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     ],
     supportsEvaluation: true,
   },
+  {
+    id: 'word-sorter',
+    description:
+      'Interactive word sorting — drag word cards into labeled category buckets. Supports binary sorting (noun/verb, singular/plural), '
+      + 'ternary sorting (past/present/future, noun/verb/adjective), and pair matching (antonyms, irregular plurals). '
+      + 'ESSENTIAL for K-2 grammar, vocabulary, and comprehension.',
+    constraints:
+      'Requires 2-3 bucket categories per challenge. Words must be age-appropriate and sortable by a single clear criterion. '
+      + 'Match pairs limited to 5-6 per challenge.',
+    evalModes: [
+      {
+        evalMode: 'binary_sort',
+        label: 'Two Buckets (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['binary_sort'],
+        description: 'Sort word cards into 2 labeled buckets (e.g., nouns vs verbs, singular vs plural)',
+      },
+      {
+        evalMode: 'ternary_sort',
+        label: 'Three Buckets (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['ternary_sort'],
+        description: 'Sort word cards into 3 labeled buckets (e.g., past/present/future tense)',
+      },
+      {
+        evalMode: 'match_pairs',
+        label: 'Match Pairs (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['match_pairs'],
+        description: 'Match word pairs (singular→plural, word→antonym, word→synonym)',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Student is sorting words by {{sortingTopic}}. Challenge: {{instruction}}. Mode: {{challengeType}}. '
+        + 'Sorted {{wordsSorted}}/{{totalWords}} words. Attempt: {{attemptNumber}}. '
+        + 'Challenge {{currentChallengeIndex}}/{{totalChallenges}}.',
+      contextKeys: [
+        'challengeType', 'instruction', 'bucketLabels', 'wordsSorted', 'totalWords',
+        'attemptNumber', 'currentChallengeIndex', 'totalChallenges', 'gradeLevel', 'sortingTopic',
+      ],
+      scaffoldingLevels: {
+        level1:
+          '"Look at this word carefully. Read it aloud. Now look at the bucket labels — which group does it belong to?"',
+        level2:
+          '"The word is {{currentWord}}. Think about what kind of word it is. Is it a {{bucketLabels}} word? Try saying it in a sentence to help you decide."',
+        level3:
+          '"{{currentWord}} is a {{correctCategory}} word. See how it fits with the other {{correctCategory}} words in that bucket? They all share something in common!"',
+      },
+      commonStruggles: [
+        { pattern: 'Student places word in wrong bucket repeatedly', response: '"Let\'s think about this word together. Say it aloud: [word]. Now, does it describe a thing (noun), an action (verb), or how something looks (adjective)? That tells us which bucket!"' },
+        { pattern: 'Student hesitates and does not tap any word', response: '"Pick any word to start — there is no wrong order! Tap one and read it aloud. Then we will figure out where it goes together."' },
+        { pattern: 'Student confuses similar categories (e.g., noun vs verb for words like "run")', response: '"Some words can be tricky! Think about how the word is used HERE. Is \'run\' a thing you do (verb) or a thing you go on (noun)? The sentence around it gives you the clue."' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

@@ -13,7 +13,7 @@
 | percent-bar | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/percent-bar-2026-03-15.md) |
 | measurement-tools | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/measurement-tools-2026-03-15.md) |
 | tape-diagram | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/tape-diagram-2026-03-15.md) |
-| sorting-station | 6 | 6 | 0 | 2026-03-15 | [report](eval-reports/sorting-station-2026-03-15.md) |
+| sorting-station | 6 | 6 | 0 | 2026-04-01 | [report](eval-reports/sorting-station-2026-04-01.md) |
 | number-sequencer | 5 | 5 | 0 | 2026-03-18 | [report](eval-reports/number-sequencer-2026-03-15.md) |
 | base-ten-blocks | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/base-ten-blocks-2026-03-15.md) |
 | phonics-blender | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phonics-blender-2026-03-15.md) |

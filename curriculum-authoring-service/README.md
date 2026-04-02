@@ -147,13 +147,13 @@ Authoring Service (port 8001)
     |-- writes -> Firestore curriculum_drafts (source of truth)
     |   +-- subskills carry: target_primitive, target_eval_modes[], difficulty, etc.
     |-- on publish -> Firestore curriculum_published (snapshot)
-    |-- on publish -> graph flatten: target_primitive -> primitive_type, target_eval_modes -> eval_modes
     +-- on edge mutation -> Firestore curriculum_graphs/edges subcollection
-                                |
-                                |-- reads -> Backend CurriculumService (platform API, port 8000)
-                                |-- reads -> LearningPathsService (prerequisite gating)
-                                |-- reads -> PulseEngine (adaptive session assembly, BFS)
-                                +-- reads -> Frontend (renders curriculum)
+
+Backend (port 8000) — JIT graph flattening
+    |-- reads curriculum_published/{grade}/subjects/{subject_id} for nodes
+    |-- reads curriculum_graphs/{grade}/subjects/{subject_id}/edges/ for edges
+    |-- assembles flat {nodes, edges} format on first request (cached in-memory)
+    +-- consumed by: LearningPathsService, PulseEngine, CurriculumService, Frontend
 ```
 
 ---
@@ -376,7 +376,7 @@ Authoring Service (port 8001)
 | Method | Path | Query Params | Body | Purpose |
 |--------|------|-------------|------|---------|
 | `GET` | `/api/publishing/subjects/{subject_id}/draft-changes` | -- | -- | View pending changes |
-| `POST` | `/api/publishing/subjects/{subject_id}/publish` | -- | `PublishRequest?` | Publish + deploy + flatten (single action) |
+| `POST` | `/api/publishing/subjects/{subject_id}/publish` | -- | `PublishRequest?` | Publish + deploy (single action) |
 | `GET` | `/api/publishing/subjects/{subject_id}/versions` | -- | -- | Version history |
 | `GET` | `/api/publishing/subjects/{subject_id}/active-version` | -- | -- | Current active version |
 | `POST` | `/api/publishing/subjects/{subject_id}/rollback/{version_id}` | -- | -- | Rollback to prior version |
@@ -388,9 +388,8 @@ Authoring Service (port 8001)
 1. Creates a new version record
 2. Publishes graph edges (sets `is_draft=false`)
 3. Copies draft -> `curriculum_published` (lineage-validated, accepted units only)
-4. Rebuilds the flat graph cache for Pulse/LearningPaths
 
-No separate "deploy" step is needed.
+No separate "deploy" step is needed. The backend JIT-flattens the graph on first read from the hierarchical collections.
 
 **PublishRequest (optional body):**
 ```json

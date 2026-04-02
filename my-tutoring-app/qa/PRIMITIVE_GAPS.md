@@ -8,10 +8,10 @@
 
 | ID | Priority | Subject(s) Blocked | Subskills Blocked | Proposed Primitive | Complexity | Status |
 |----|----------|-------------------|-------------------|-------------------|------------|--------|
-| GAP-001 | HIGH | SCIENCE_G1 | 1 (+ cross-grade potential) | `light-shadow-lab` | MEDIUM | OPEN |
-| GAP-002 | MEDIUM | SCIENCE_G1 | 3 (SCI003-04-a/b/c stretch-fit) | `constellation-builder` (or telescope-simulator enhancement) | SMALL-MEDIUM | OPEN |
+| GAP-001 | HIGH | SCIENCE_G1 | 1 (+ cross-grade potential) | `light-shadow-lab` | MEDIUM | CLOSED |
+| GAP-002 | MEDIUM | SCIENCE_G1 | 3 (SCI003-04-a/b/c stretch-fit) | `constellation-builder` (or telescope-simulator enhancement) | SMALL-MEDIUM | CLOSED |
 | GAP-003 | LOW | SCIENCE_G1, MATHEMATICS_G1 | 1 (absorbed into sorting-station) | `bar-graph-builder` | SMALL | BACKLOG |
-| GAP-004 | MEDIUM | MATHEMATICS_G1 | 3 (PTRN001-04-a/b/c) | `hundreds-chart` | MEDIUM | OPEN |
+| GAP-004 | MEDIUM | MATHEMATICS_G1 | 3 (PTRN001-04-a/b/c) | `hundreds-chart` | MEDIUM | CLOSED |
 | GAP-005 | HIGH | MATHEMATICS (K) | 5 (MEAS001-03-a/b/c, 04-a, 04-d) | `analog-clock` | MEDIUM | CLOSED |
 | GAP-006 | HIGH | MATHEMATICS (K) | 4 (MEAS001-01-a/b, 02-a/b) | `length-lab` | MEDIUM | CLOSED |
 | GAP-007 | MEDIUM | MATHEMATICS (K) | 2 (MEAS001-07-a, 07-c) | `coin-counter` | SMALL-MEDIUM | OPEN |
@@ -22,16 +22,18 @@
 | GAP-012 | MEDIUM | LANGUAGE_ARTS (K), LANGUAGE_ARTS_G1 | 3 (LA004-01-G/K, LA004-02-C) | `sentence-builder` | MEDIUM | CLOSED |
 | GAP-013 | LOW | SCIENCE (K) | 1 (SCI001-02-D) | `material-properties-tester` | MEDIUM | CLOSED — assigned `matter-explorer` |
 | GAP-014 | LOW | SCIENCE (K) | 1 (SCI003-01-E) | `weather-station` | MEDIUM | CLOSED — assigned `take-home-activity` |
-| GAP-015 | LOW | SCIENCE (K) | 1 (SCI004-02-E) | `digital-skills-sim` | SMALL | OPEN |
+| GAP-015 | LOW | SCIENCE (K) | 1 (SCI004-02-E) | `digital-skills-sim` | SMALL | CLOSED |
 | GAP-016 | MEDIUM | MATHEMATICS (K) | 2 (MEAS001-01-F, MEAS001-04-E) | `capacity-lab` | MEDIUM | OPEN |
 
-**Totals:** 16 gaps | 5 HIGH, 7 MEDIUM, 4 LOW | ~66 subskills affected | 6 CLOSED (GAP-005, GAP-006, GAP-012, GAP-013, GAP-014 + GAP-003 backlog)
+**Totals:** 16 gaps | 5 HIGH, 7 MEDIUM, 4 LOW | ~66 subskills affected | 10 CLOSED (GAP-001, GAP-002, GAP-004, GAP-005, GAP-006, GAP-012, GAP-013, GAP-014, GAP-015 + GAP-003 backlog) | 6 OPEN
 
 ---
 
-## GAP-001: light-shadow-lab
+## GAP-001: light-shadow-lab ✓ CLOSED
 
-**Priority:** HIGH — core 1st grade phenomenon with no primitive coverage
+> **Status:** Built and registered. `LightShadowLab.tsx` lives at `my-tutoring-app/src/components/lumina/primitives/visual-primitives/astronomy/LightShadowLab.tsx`, registered in `primitiveRegistry.tsx` and types.ts.
+
+**Priority (was):** HIGH — core 1st grade phenomenon with no primitive coverage
 
 ### Curriculum Need
 
@@ -133,9 +135,11 @@ tutoring: {
 
 ---
 
-## GAP-002: constellation-builder
+## GAP-002: constellation-builder ✓ CLOSED
 
-**Priority:** MEDIUM — telescope-simulator is a stretch-fit for pattern recognition
+> **Status:** Built and registered. `ConstellationBuilder.tsx` lives at `my-tutoring-app/src/components/lumina/primitives/visual-primitives/astronomy/ConstellationBuilder.tsx`, registered in `primitiveRegistry.tsx` and types.ts.
+
+**Priority (was):** MEDIUM — telescope-simulator is a stretch-fit for pattern recognition
 
 ### Curriculum Need
 
@@ -298,9 +302,11 @@ Students construct bar graphs by dragging pre-filled values into columns, then a
 
 ---
 
-## GAP-004: hundreds-chart
+## GAP-004: hundreds-chart ✓ CLOSED
 
-**Blocked subskills:** PTRN001-04-a, PTRN001-04-b, PTRN001-04-c
+> **Status:** Built and registered. `HundredsChart.tsx` lives at `my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/HundredsChart.tsx`, registered in `primitiveRegistry.tsx` and types.ts.
+
+**Blocked subskills (was):** PTRN001-04-a, PTRN001-04-b, PTRN001-04-c
 **Pedagogical goal:** Students interact with a 10x10 grid (1-100) to highlight skip-counting patterns, complete sequences, and discover vertical/horizontal/diagonal relationships in the number grid.
 **Why no existing primitive fits:**
 - `skip-counting-runner` — uses a linear number line, not a 2D grid. The grid topology (columns = same ones digit, rows = same tens digit) is the entire point of hundreds chart activities.
@@ -916,9 +922,11 @@ Virtual weather station with 3 instruments: **Thermometer** (read temperature wi
 
 ---
 
-## GAP-015: digital-skills-sim
+## GAP-015: digital-skills-sim ✓ CLOSED
 
-**Priority:** LOW — single K subskill, digital skills are incidental to the platform
+> **Status:** Built and registered. `DigitalSkillsSim.tsx` lives at `my-tutoring-app/src/components/lumina/primitives/visual-primitives/core/DigitalSkillsSim.tsx`, registered in `primitiveRegistry.tsx` and types.ts.
+
+**Priority (was):** LOW — single K subskill, digital skills are incidental to the platform
 
 ### Curriculum Need
 
@@ -973,16 +981,20 @@ Visual: glass-style containers with animated liquid levels. Containers can be di
 
 ## Next Steps
 
+> **2026-04-01:** Bulk closure — GAP-001 (`light-shadow-lab`), GAP-002 (`constellation-builder`), GAP-004 (`hundreds-chart`), GAP-015 (`digital-skills-sim`) all verified built + registered. 10/16 gaps now closed.
 > **2026-04-01:** MATHEMATICS (K) audit + upgrade. 3 tape-diagram subskills upgraded to addition-subtraction-scene. GAP-016 (`capacity-lab`) added for 2 capacity/volume subskills.
 > **2026-03-31:** SCIENCE (K) full audit + upgrade completed. 85/88 subskills assigned primitives (was 0/88). 3 PURPLE gaps added (GAP-013/014/015). Published + deployed version 88.
 > **2026-03-29:** GAP-012 (`sentence-builder`) closed.
 
-1. **GAP-008 (`sight-word-trainer`):** `/primitive sight-word-trainer` — 4 K subskills blocked (placeholder `knowledge-check`); highest ROI K-1 literacy build; cross-grade value up to G2
-2. **GAP-005 (`analog-clock`):** `/primitive analog-clock` — 5 K subskills blocked, highest impact K math build
-3. **GAP-006 (`length-lab`):** `/primitive length-lab` — 4 K subskills blocked, core K.MD.1/K.MD.2 standard
-4. **GAP-007 (`coin-counter`):** `/primitive coin-counter` — 2 K subskills blocked, SMALL-MEDIUM build
-5. **GAP-001 (`light-shadow-lab`):** Already built! Assigned to SCI001-03-E, SCI003-03-C in this audit
-6. **GAP-002 (`constellation-builder`):** Already built! Available for future SCI003 space subskills
-7. **GAP-013 (`material-properties-tester`):** `/primitive material-properties-tester` — 1 K subskill blocked, MEDIUM build
-8. **Phantom primitive audit:** `/curriculum-lumina-audit audit LANGUAGE_ARTS_G1` and `SOCIAL_STUDIES_G1` to find more phantom assignments
-9. **Authoring service fix:** Add catalog validation to the author-unit endpoint to prevent future phantom primitives
+### Remaining Open Gaps (priority order)
+
+1. **GAP-010 (`word-sorter`):** HIGH — ~20 literacy subskills blocked across grammar, vocabulary, and comprehension. SMALL build (same interaction as sorting-station). Highest ROI remaining gap.
+2. **GAP-008 (`sight-word-trainer`):** HIGH — 4 K subskills blocked; highest ROI K-1 literacy build; cross-grade value up to G2. SMALL-MEDIUM build.
+3. **GAP-007 (`coin-counter`):** MEDIUM — 2 K subskills blocked, SMALL-MEDIUM build
+4. **GAP-016 (`capacity-lab`):** MEDIUM — 2 K subskills blocked, MEDIUM build
+5. **GAP-011 (`book-explorer`):** MEDIUM — 7 LA006-06 text features subskills blocked, SMALL build
+6. **GAP-009 (`letter-tracer`):** MEDIUM — 4 letter formation subskills blocked, MEDIUM build (canvas stroke detection)
+
+### Maintenance tasks
+7. **Phantom primitive audit:** `/curriculum-lumina-audit audit LANGUAGE_ARTS_G1` and `SOCIAL_STUDIES_G1` to find more phantom assignments
+8. **Authoring service fix:** Add catalog validation to the author-unit endpoint to prevent future phantom primitives

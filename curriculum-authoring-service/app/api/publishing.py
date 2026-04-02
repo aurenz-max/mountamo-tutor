@@ -42,7 +42,9 @@ async def publish_subject(
       1. Copy draft → curriculum_published (lineage-validated, accepted units only)
       2. Publish graph edges (set is_draft=False)
       3. Update version record
-      4. Rebuild flat graph cache for Pulse/LearningPaths
+
+    The backend JIT-flattens the graph on first read from the hierarchical
+    collections, so no flat cache rebuild is needed here.
 
     subject_id from the URL path is authoritative.
     """
@@ -60,13 +62,6 @@ async def publish_subject(
             subject_id=subject_id,
             deployed_by="auto-publish"
         )
-
-        # 3. Rebuild flat graph cache (what Pulse/LearningPaths actually read)
-        try:
-            graph_flattening_service.rebuild_cache(subject_id, published_only=True)
-            graph_flattening_service.rebuild_cache(subject_id, published_only=False)
-        except Exception as e:
-            logger.error(f"Graph cache rebuild failed (non-critical): {e}")
 
         return result
 

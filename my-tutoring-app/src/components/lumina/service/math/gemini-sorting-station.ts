@@ -560,10 +560,18 @@ export const generateSortingStation = async (
       const idx = allChallenges.length;
       ch.id = `c${idx + 1}`;
 
-      // Re-number object IDs to be globally unique
+      // Re-number object IDs to be globally unique, tracking old→new mapping
+      const idMap = new Map<string, string>();
       for (const obj of ch.objects) {
         globalObjId++;
-        obj.id = `obj${globalObjId}`;
+        const newId = `obj${globalObjId}`;
+        idMap.set(obj.id, newId);
+        obj.id = newId;
+      }
+
+      // Update oddOneOut reference to match re-numbered ID
+      if (ch.oddOneOut && idMap.has(ch.oddOneOut)) {
+        ch.oddOneOut = idMap.get(ch.oddOneOut)!;
       }
 
       allChallenges.push(ch);

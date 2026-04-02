@@ -35,6 +35,15 @@ AUTHORING_METADATA_FIELDS = {
     "lumina_coverage", "rejection_feedback",
 }
 
+# Legacy top-level document fields that are vestigial / duplicate subskill data.
+# primitives_config was a denormalized array that duplicated target_primitive /
+# target_eval_modes with old field names (primitive_id / eval_modes).
+LEGACY_DOC_FIELDS = {"primitives_config"}
+
+# Legacy field names on subskill entries that duplicate the canonical
+# target_primitive / target_eval_modes fields.
+LEGACY_SUBSKILL_FIELDS = {"primitive_id", "eval_modes"}
+
 
 def _is_accepted(unit: Dict[str, Any]) -> bool:
     """A unit is accepted if status == 'accepted' or status is absent (legacy)."""
@@ -611,6 +620,10 @@ class DraftCurriculumService:
         if not doc:
             raise ValueError(f"No draft found for {subject_id} (grade={grade})")
 
+        # Clean legacy fields from draft so they don't keep propagating
+        self._strip_legacy_fields(doc)
+        await self.save_draft(grade, subject_id, doc)
+
         published = deepcopy(doc)
 
         # Filter to accepted units only and strip authoring metadata
@@ -712,6 +725,26 @@ class DraftCurriculumService:
         return {"backfilled": count}
 
     # ==================== Internal helpers ====================
+
+    @staticmethod
+    def _strip_legacy_fields(doc: Dict[str, Any]) -> None:
+        """Remove vestigial top-level fields and legacy subskill field names.
+
+        Canonical fields are ``target_primitive`` and ``target_eval_modes``
+        on each subskill entry.  Legacy aliases (``primitive_id``,
+        ``eval_modes``) and the denormalized ``primitives_config`` array are
+        stripped so the published document has a single source of truth.
+        """
+        # Remove legacy top-level arrays
+        for field in LEGACY_DOC_FIELDS:
+            doc.pop(field, None)
+
+        # Remove legacy field names from subskill entries
+        for unit in doc.get("curriculum", []):
+            for skill in unit.get("skills", []):
+                for ss in skill.get("subskills", []):
+                    for field in LEGACY_SUBSKILL_FIELDS:
+                        ss.pop(field, None)
 
     @staticmethod
     def _strip_authoring_metadata(unit: Dict[str, Any]) -> Dict[str, Any]:

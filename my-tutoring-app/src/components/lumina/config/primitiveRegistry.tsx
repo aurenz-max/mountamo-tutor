@@ -164,6 +164,7 @@ import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotte
 import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
 import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
 import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
+import WordSorter from '../primitives/visual-primitives/literacy/WordSorter';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -1764,6 +1765,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'word-workout': {
     component: WordWorkout,
     sectionTitle: 'Word Workout',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'word-sorter': {
+    component: WordSorter,
+    sectionTitle: 'Word Sorter',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

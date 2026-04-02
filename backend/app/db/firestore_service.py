@@ -3,6 +3,7 @@
 from google.cloud import firestore
 from google.cloud.firestore import Client
 from google.oauth2 import service_account
+from collections import Counter
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional, Union
 import logging
@@ -21,7 +22,8 @@ class FirestoreService:
         students/{student_id}/reviews/{review_id}
         students/{student_id}/competencies/{subject}_{skill}_{subskill}
 
-    Curriculum graphs remain a flat top-level collection (read-only).
+    Curriculum graphs are JIT-flattened from hierarchical Firestore
+    (curriculum_published + curriculum_graphs edges subcollection).
 
     All student-data lookups by subskill_id or skill_id are transparently
     resolved through the SubskillIdResolver so that curriculum iteration
@@ -48,7 +50,7 @@ class FirestoreService:
             else:
                 self.client = firestore.Client(project=self.project_id)
 
-            # Collection reference for curriculum graphs (read-only, flat)
+            # Collection reference for curriculum graphs (hierarchical edges)
             self.curriculum_graphs = self.client.collection('curriculum_graphs')
 
             # Initialize the lineage resolver with this Firestore client
@@ -545,6 +547,148 @@ class FirestoreService:
     # CURRICULUM GRAPH METHODS (READ-ONLY)
     # ============================================================================
 
+    # ------------------------------------------------------------------
+    # JIT graph flattening helpers
+    # ------------------------------------------------------------------
+
+    # Grade suffix → Firestore grade doc ID hints for fast resolution.
+    _GRADE_SUFFIX_HINTS: Dict[str, List[str]] = {
+        "_GK": ["Kindergarten", "K"],
+        "_GPK": ["Pre-K", "PK"],
+        **{f"_G{i}": [str(i), f"{i}{'st' if i==1 else 'nd' if i==2 else 'rd' if i==3 else 'th'} Grade"]
+           for i in range(1, 13)},
+    }
+
+    def _strip_grade_suffix(self, subject_id: str) -> tuple:
+        """Strip grade suffix from subject_id, returning (bare_id, grade_hints).
+
+        E.g. "MATHEMATICS_GK" → ("MATHEMATICS", ["Kindergarten", "K"])
+             "MATHEMATICS"    → ("MATHEMATICS", [])
+        """
+        for suffix, hints in self._GRADE_SUFFIX_HINTS.items():
+            if subject_id.endswith(suffix):
+                return subject_id[:-len(suffix)], hints
+        return subject_id, []
+
+    def _resolve_grade_for_subject(
+        self, subject_id: str, collection_name: str = "curriculum_published",
+        grade_hints: Optional[List[str]] = None,
+    ) -> Optional[str]:
+        """Find which grade document contains this subject.
+
+        If grade_hints are provided (from a grade suffix), try those first
+        for an O(1) lookup before falling back to a full scan.
+        """
+        # Fast path: try grade hints first
+        for hint in (grade_hints or []):
+            doc_ref = (
+                self.client.collection(collection_name)
+                .document(hint)
+                .collection("subjects")
+                .document(subject_id)
+            )
+            if doc_ref.get().exists:
+                return hint
+
+        # Slow path: scan all grade documents
+        for grade_doc in self.client.collection(collection_name).stream():
+            subj_ref = grade_doc.reference.collection("subjects").document(subject_id)
+            if subj_ref.get().exists:
+                return grade_doc.id
+        return None
+
+    def _read_nodes_from_curriculum(
+        self, grade: str, subject_id: str, collection_name: str = "curriculum_published"
+    ) -> List[Dict[str, Any]]:
+        """Build flat node list from a hierarchical curriculum document."""
+        doc_ref = (
+            self.client.collection(collection_name)
+            .document(grade)
+            .collection("subjects")
+            .document(subject_id)
+        )
+        doc = doc_ref.get()
+        if not doc.exists:
+            return []
+
+        data = doc.to_dict()
+        nodes: List[Dict[str, Any]] = []
+
+        units = data.get("curriculum", data.get("units", []))
+        for unit in units:
+            unit_id = unit.get("unit_id", "")
+            for skill in unit.get("skills", []):
+                skill_id = skill.get("skill_id", "")
+                nodes.append({
+                    "id": skill_id,
+                    "type": "skill",
+                    "entity_type": "skill",
+                    "label": skill.get("skill_description", skill_id),
+                    "unit_id": unit_id,
+                    "unit_title": unit.get("unit_title", ""),
+                    "skill_order": skill.get("skill_order", 0),
+                })
+
+                for sub in skill.get("subskills", []):
+                    sub_id = sub.get("subskill_id", "")
+                    node: Dict[str, Any] = {
+                        "id": sub_id,
+                        "type": "subskill",
+                        "entity_type": "subskill",
+                        "label": sub.get("subskill_description", sub_id),
+                        "skill_id": skill_id,
+                        "unit_id": unit_id,
+                        "subskill_order": sub.get("subskill_order", 0),
+                    }
+                    tp = sub.get("target_primitive")
+                    if tp:
+                        node["primitive_type"] = tp
+                    eval_modes = sub.get("target_eval_modes")
+                    if eval_modes:
+                        node["eval_modes"] = eval_modes
+                    nodes.append(node)
+
+        return nodes
+
+    def _read_edges_from_graph(
+        self, grade: str, subject_id: str, published_only: bool = True
+    ) -> List[Dict[str, Any]]:
+        """Read edges from curriculum_graphs/{grade}/subjects/{subject_id}/edges/."""
+        edges_coll = (
+            self.curriculum_graphs
+            .document(grade)
+            .collection("subjects")
+            .document(subject_id)
+            .collection("edges")
+        )
+
+        query = edges_coll.where("is_draft", "==", False) if published_only else edges_coll
+
+        edges: List[Dict[str, Any]] = []
+        for doc in query.stream():
+            e = doc.to_dict()
+            edges.append({
+                "id": e.get("edge_id", ""),
+                "source": e.get("source_entity_id", ""),
+                "source_type": e.get("source_entity_type", ""),
+                "target": e.get("target_entity_id", ""),
+                "target_type": e.get("target_entity_type", ""),
+                "threshold": e.get("min_proficiency_threshold", 0.8),
+                "relationship": e.get("relationship", "prerequisite"),
+                "strength": e.get("strength", 1.0),
+                "is_prerequisite": e.get("is_prerequisite", True),
+                "rationale": e.get("rationale"),
+                "authored_by": e.get("authored_by", "human"),
+                "confidence": e.get("confidence"),
+                "version_id": e.get("version_id"),
+            })
+
+        return edges
+
+    # ------------------------------------------------------------------
+    # Public graph accessor — JIT flattens from hierarchical Firestore
+    # ------------------------------------------------------------------
+
     async def get_curriculum_graph(
         self,
         subject_id: str,
@@ -552,21 +696,24 @@ class FirestoreService:
         version_id: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Get curriculum graph from Firestore
+        Get curriculum graph by JIT-flattening from hierarchical Firestore.
 
-        Reads the cached graph written by curriculum authoring service.
-        Returns graph structure with nodes and edges.
+        Reads nodes from curriculum_published (or curriculum_drafts) and edges
+        from curriculum_graphs/{grade}/subjects/{subject_id}/edges/, then
+        assembles the flat {nodes, edges} format that Pulse/LearningPaths expect.
+
+        Callers (LearningPathsService) cache the result in-memory, so this
+        only runs once per subject per backend process.
 
         Args:
             subject_id: Subject identifier (e.g., "MATHEMATICS", "LANGUAGE_ARTS")
             version_type: "published" or "draft" (default: "published")
-            version_id: Specific version ID (optional, uses latest if not specified)
+            version_id: Ignored (kept for interface compatibility)
 
         Returns:
             {
                 "id": str,
                 "subject_id": str,
-                "version_id": str,
                 "version_type": str,
                 "graph": {
                     "nodes": [...],
@@ -578,61 +725,73 @@ class FirestoreService:
             }
         """
         try:
-            # If no version_id specified, get the latest for this type
-            if not version_id:
-                query = self.curriculum_graphs \
-                    .where('subject_id', '==', subject_id) \
-                    .where('version_type', '==', version_type) \
-                    .order_by('generated_at', direction=firestore.Query.DESCENDING) \
-                    .limit(1)
+            collection_name = (
+                "curriculum_published" if version_type == "published"
+                else "curriculum_drafts"
+            )
 
-                docs = list(query.stream())
+            # Strip grade suffix (e.g. MATHEMATICS_GK → MATHEMATICS)
+            # and extract grade hints for fast resolution.
+            bare_subject_id, grade_hints = self._strip_grade_suffix(subject_id)
 
-                # Fallback: grade-prefixed cache docs store the original
-                # subject in base_subject_id (e.g. subject_id=MATHEMATICS_GK,
-                # base_subject_id=MATHEMATICS). Try that if direct match fails.
-                if not docs:
-                    fallback_query = self.curriculum_graphs \
-                        .where('base_subject_id', '==', subject_id) \
-                        .where('version_type', '==', version_type) \
-                        .limit(1)
-                    docs = list(fallback_query.stream())
+            grade = self._resolve_grade_for_subject(
+                bare_subject_id, collection_name, grade_hints
+            )
+            if not grade:
+                logger.info(
+                    f"No {collection_name} document found for {bare_subject_id}"
+                )
+                return None
 
-                if docs:
-                    doc = docs[0]
-                    doc_data = doc.to_dict()
+            nodes = self._read_nodes_from_curriculum(grade, bare_subject_id, collection_name)
+            published_only = version_type == "published"
+            edges = self._read_edges_from_graph(grade, bare_subject_id, published_only)
 
-                    # Update last accessed time
-                    doc_data["last_accessed"] = datetime.now(timezone.utc).isoformat()
-                    doc.reference.update({"last_accessed": doc_data["last_accessed"]})
+            now = datetime.now(timezone.utc).isoformat()
+            skill_count = sum(1 for n in nodes if n.get("type") == "skill")
+            subskill_count = sum(1 for n in nodes if n.get("type") == "subskill")
+            rel_counts = Counter(e.get("relationship", "prerequisite") for e in edges)
 
-                    logger.info(f"Retrieved curriculum graph for {subject_id} (type: {version_type})")
-                    return doc_data
-                else:
-                    logger.info(f"No curriculum graph found for {subject_id} (type: {version_type})")
-                    return None
-            else:
-                # Get specific version
-                doc_id = f"{subject_id}_{version_id}_{version_type}"
-                doc_ref = self.curriculum_graphs.document(doc_id)
-                doc = doc_ref.get()
+            result: Dict[str, Any] = {
+                "id": f"{subject_id}_jit_{version_type}",
+                "subject_id": subject_id,
+                "grade": grade,
+                "base_subject_id": bare_subject_id,
+                "version_id": "latest",
+                "version_type": version_type,
+                "graph": {
+                    "nodes": nodes,
+                    "edges": edges,
+                },
+                "metadata": {
+                    "entity_counts": {
+                        "skills": skill_count,
+                        "subskills": subskill_count,
+                        "total": len(nodes),
+                    },
+                    "edge_count": len(edges),
+                    "edge_counts": {
+                        "total": len(edges),
+                        "prerequisite": rel_counts.get("prerequisite", 0),
+                        "builds_on": rel_counts.get("builds_on", 0),
+                        "reinforces": rel_counts.get("reinforces", 0),
+                        "parallel": rel_counts.get("parallel", 0),
+                        "applies": rel_counts.get("applies", 0),
+                    },
+                },
+                "generated_at": now,
+                "last_accessed": now,
+                "source": "jit_flatten",
+            }
 
-                if doc.exists:
-                    doc_data = doc.to_dict()
-
-                    # Update last accessed time
-                    doc_data["last_accessed"] = datetime.now(timezone.utc).isoformat()
-                    doc_ref.update({"last_accessed": doc_data["last_accessed"]})
-
-                    logger.info(f"Retrieved curriculum graph for {subject_id} (version: {version_id})")
-                    return doc_data
-                else:
-                    logger.info(f"Curriculum graph not found for {subject_id}")
-                    return None
+            logger.info(
+                f"JIT-flattened graph for {bare_subject_id} (grade={grade}): "
+                f"{len(nodes)} nodes, {len(edges)} edges"
+            )
+            return result
 
         except Exception as e:
-            logger.error(f"Error retrieving curriculum graph: {str(e)}")
-            # On error, return None to allow fallback logic
+            logger.error(f"Error JIT-flattening curriculum graph: {str(e)}")
             return None
 
     async def get_graph_status(

@@ -80,6 +80,53 @@ function formatPrimitiveType(type: string): string {
   return type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+// ── Vertical progress bar (like the tweet) ───────────────────────
+
+const VerticalProgressBar: React.FC<{
+  results: PrimitiveEvaluationResult[];
+}> = ({ results }) => {
+  if (results.length === 0) return null;
+
+  // Show current position label
+  const correct = results.filter(r => r.success).length;
+
+  return (
+    <div className="flex flex-col items-center gap-1.5 py-2">
+      {/* Current count */}
+      <div className="text-center mb-1">
+        <div className="text-sm font-bold text-blue-400 leading-none">{correct}</div>
+        <div className="text-[9px] text-slate-500 leading-none mt-0.5">of {results.length}</div>
+      </div>
+
+      {/* Vertical bar segments — newest at top */}
+      <div className="flex flex-col-reverse gap-0.5 flex-1 min-h-0">
+        {results.map((result, i) => (
+          <div
+            key={result.attemptId}
+            className="relative w-2 rounded-full transition-all duration-500 ease-out"
+            style={{
+              height: `${Math.max(8, Math.min(24, 160 / Math.max(results.length, 4)))}px`,
+              backgroundColor: result.success
+                ? 'rgb(52, 211, 153)' // emerald-400
+                : 'rgb(244, 63, 94)', // rose-500
+              opacity: 1,
+              animation: i === results.length - 1 ? 'segmentPop 400ms cubic-bezier(0.34, 1.56, 0.64, 1)' : undefined,
+              boxShadow: result.success
+                ? '0 0 6px rgba(52, 211, 153, 0.4)'
+                : '0 0 6px rgba(244, 63, 94, 0.3)',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* END label */}
+      <div className="text-[8px] font-mono uppercase tracking-widest text-slate-600 mt-1">
+        END
+      </div>
+    </div>
+  );
+};
+
 // ── Mini score ring (SVG) ────────────────────────────────────────
 
 const MiniScoreRing: React.FC<{ score: number; size?: number }> = ({
@@ -230,8 +277,8 @@ export const EvaluationResultsIndicator: React.FC = () => {
   const t = TIER[tier];
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 w-80">
-      {/* Keyframes for slide-in animation */}
+    <div className="fixed bottom-6 right-6 z-40 flex items-end gap-2">
+      {/* Keyframes */}
       <style>{`
         @keyframes slideIn {
           from { opacity: 0; transform: translateY(8px); }
@@ -241,10 +288,27 @@ export const EvaluationResultsIndicator: React.FC = () => {
           from { opacity: 0; transform: translateY(16px) scale(0.97); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
+        @keyframes segmentPop {
+          0%   { transform: scaleY(0); opacity: 0; }
+          60%  { transform: scaleY(1.3); }
+          100% { transform: scaleY(1); opacity: 1; }
+        }
       `}</style>
 
+      {/* ── Vertical progress bar ── */}
+      <div
+        className="backdrop-blur-xl bg-slate-900/50 border border-white/10 rounded-xl px-2 py-1 shadow-lg"
+        style={{
+          animation: 'fadeInUp 400ms ease-out',
+          maxHeight: '240px',
+        }}
+      >
+        <VerticalProgressBar results={submittedResults} />
+      </div>
+
+      {/* ── Results card ── */}
       <Card
-        className={`backdrop-blur-xl bg-slate-900/70 border-white/10 shadow-2xl ${t.glow} overflow-hidden transition-all duration-300`}
+        className={`w-80 backdrop-blur-xl bg-slate-900/70 border-white/10 shadow-2xl ${t.glow} overflow-hidden transition-all duration-300`}
         style={{ animation: 'fadeInUp 400ms ease-out' }}
       >
         <CardContent className="p-0">

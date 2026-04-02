@@ -55,6 +55,7 @@ import { generateLetterSpotter } from '../../literacy/gemini-letter-spotter';
 import { generateLetterSoundLink } from '../../literacy/gemini-letter-sound-link';
 import { generateCvcSpeller } from '../../literacy/gemini-cvc-speller';
 import { generateWordWorkout } from '../../literacy/gemini-word-workout';
+import { generateWordSorter } from '../../literacy/gemini-word-sorter';
 
 // ============================================================================
 // Helper Types
@@ -645,4 +646,27 @@ registerGenerator('word-workout', async (item, topic, gradeContext) => ({
   data: await generateWordWorkout(topic, gradeContext, item.config),
 }));
 
-console.log('📚 Literacy generators registered: 26 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout)');
+// ============================================================================
+// Language — Word Sorter
+// ============================================================================
+
+/**
+ * Word Sorter - Drag word cards into category buckets
+ *
+ * Perfect for:
+ * - K-2 grammar, vocabulary, and comprehension sorting
+ * - Binary sort (2 buckets), ternary sort (3 buckets), pair matching
+ * - Parts of speech, singular/plural, opposites, synonyms
+ *
+ * Grade Scaling:
+ * - K: Simple concrete categories, every card has emoji, 1-syllable words
+ * - Grade 1: Nouns/verbs, singular/plural, beginning sounds
+ * - Grade 2: Tense sorting, compound words, synonyms/antonyms
+ */
+registerGenerator('word-sorter', async (item, topic, gradeContext) => ({
+  type: 'word-sorter',
+  instanceId: item.instanceId,
+  data: await generateWordSorter(topic, gradeContext, item.config),
+}));
+
+console.log('📚 Literacy generators registered: 27 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter)');

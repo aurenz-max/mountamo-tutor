@@ -37,6 +37,7 @@ import { PlannerDashboard } from './components/PlannerDashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { EvaluationProvider } from './evaluation';
 import { EvaluationResultsIndicator } from './components/EvaluationResultsIndicator';
+import { CelebrationLayer } from './components/CelebrationLayer';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 import type { CurriculumContext } from './components/CurriculumBrowser';
@@ -860,6 +861,7 @@ export default function App() {
 
                 {/* Evaluation Results Indicator */}
                 <EvaluationResultsIndicator />
+                <CelebrationLayer />
 
                 {/* Exhibit Complete Footer — shown during daily session mode */}
                 {sessionReturn === 'daily-session' && sessionCurrentBlock && (

@@ -392,6 +392,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "word_chains":      PriorConfig(3.5, "Application: read one-letter-change chains"),
         "sentence_reading": PriorConfig(5.0, "Production: read word in sentence context"),
     },
+    "word-sorter": {
+        "binary_sort":  PriorConfig(1.5, "Sort word cards into 2 labeled buckets"),
+        "ternary_sort": PriorConfig(2.5, "Sort word cards into 3 labeled buckets"),
+        "match_pairs":  PriorConfig(3.5, "Match word pairs (singular→plural, antonyms, etc.)"),
+    },
     # -----------------------------------------------------------------
     # Engineering primitives
     # -----------------------------------------------------------------

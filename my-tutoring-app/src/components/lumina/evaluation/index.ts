@@ -161,6 +161,7 @@ export type {
   LetterSoundLinkMetrics,
   CvcSpellerMetrics,
   WordWorkoutMetrics,
+  WordSorterMetrics,
   // Core metrics
   FactFileMetrics,
   HowItWorksMetrics,
