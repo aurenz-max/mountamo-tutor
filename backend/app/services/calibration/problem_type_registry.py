@@ -267,11 +267,34 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "sequence_story":     PriorConfig(5.0, "Transitional: ordinals in story context"),
         "build_sequence":     PriorConfig(6.5, "Symbolic: construct ordering from scratch"),
     },
+    "coin-counter": {
+        "identify":    PriorConfig(1.0, "Name coins by appearance"),
+        "count-like":  PriorConfig(1.5, "Count sets of same coin type"),
+        "count-mixed": PriorConfig(2.5, "Count mixed coin sets"),
+        "compare":     PriorConfig(3.0, "Compare two coin groups"),
+        "make-amount": PriorConfig(3.5, "Build a target amount with coins"),
+        "make-change": PriorConfig(4.5, "Calculate change from a purchase"),
+        "fewest-coins": PriorConfig(5.0, "Make amount using minimum coins"),
+    },
+    "time-sequencer": {
+        "sequence-3":        PriorConfig(1.0, "Order 3 daily events"),
+        "time-of-day":       PriorConfig(1.5, "Match events to morning/afternoon/night"),
+        "sequence-5":        PriorConfig(2.0, "Order 5 daily events"),
+        "before-after":      PriorConfig(2.5, "What happens before/after X?"),
+        "duration-compare":  PriorConfig(3.0, "Which takes longer?"),
+        "read-schedule":     PriorConfig(4.0, "Read a simple daily schedule with clock times"),
+    },
     "analog-clock": {
         "read":      PriorConfig(1.5, "Read analog clock face and pick correct time"),
         "set_time":  PriorConfig(3.0, "Drag clock hands to show a given time"),
         "match":     PriorConfig(3.5, "Match analog face to digital display"),
         "elapsed":   PriorConfig(5.0, "Determine elapsed time using stopwatch"),
+    },
+    "spatial-scene": {
+        "identify":          PriorConfig(1.0, "Identify position word from multiple choice"),
+        "place":             PriorConfig(2.5, "Place object at described position on grid"),
+        "describe":          PriorConfig(3.5, "Select position word for shown arrangement"),
+        "follow_directions": PriorConfig(5.0, "Multi-step spatial placement"),
     },
     # -----------------------------------------------------------------
     # Assessment primitives

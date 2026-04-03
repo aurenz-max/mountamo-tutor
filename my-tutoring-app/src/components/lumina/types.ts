@@ -1086,6 +1086,7 @@ export type ComponentId =
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
   | 'balance-scale'      // Interactive balance scale for equation solving
+  | 'coin-counter'       // Interactive coin counting and money skills
   | 'comparison-builder' // Interactive comparison builder for comparing quantities and values
   | 'coordinate-graph'   // 2D Cartesian coordinate plane for plotting points, lines, curves, and regions
   | 'slope-triangle'     // Right triangle overlay showing rise/run for slope visualization
@@ -1097,10 +1098,12 @@ export type ComponentId =
 
   // Math Phase 2 Primitives (K-5 Foundations)
   | 'ten-frame'          // 2x5 grid manipulative for subitizing, composing/decomposing numbers, and making ten (K-2)
+  | 'time-sequencer'     // Interactive time sequencing for building temporal reasoning
   | 'counting-board'     // Flexible counting workspace with draggable objects, subitizing, and counting strategies (K-1)
   | 'pattern-builder'   // Pattern recognition, extension, creation for algebraic thinking (K-3)
   | 'skip-counting-runner' // Rhythmic skip counting with number line jumps, arrays, and multiplication connection (1-3)
   | 'sorting-station'     // Interactive sorting station for categorizing objects into groups
+  | 'spatial-scene'        // Interactive spatial scene for math visualization
   | 'strategy-picker'     // Interactive strategy picker for math problem-solving
   | 'regrouping-workbench' // Addition/subtraction with carrying/borrowing using base-ten blocks and written algorithm (1-4)
   | 'multiplication-explorer' // Multi-representation multiplication workspace: equal groups, arrays, repeated addition, number line, area model (2-4)
@@ -1580,6 +1583,7 @@ export type { RegroupingWorkbenchData } from './primitives/visual-primitives/mat
 export type { MultiplicationExplorerData } from './primitives/visual-primitives/math/MultiplicationExplorer';
 export type { MeasurementToolsData } from './primitives/visual-primitives/math/MeasurementTools';
 export type { ShapeBuilderData } from './primitives/visual-primitives/math/ShapeBuilder';
+export type { SpatialSceneData } from './primitives/visual-primitives/math/SpatialScene';
 export type { NumberLineData, NumberLineOperation, NumberLineChallenge } from './primitives/visual-primitives/math/NumberLine';
 export type { NumberSequencerData } from './primitives/visual-primitives/math/NumberSequencer';
 export type { BaseTenBlocksData, BaseTenBlocksChallenge } from './primitives/visual-primitives/math/BaseTenBlocks';
@@ -1614,6 +1618,8 @@ export type { StrategyPickerData } from './primitives/visual-primitives/math/Str
 export type { HundredsChartData } from './primitives/visual-primitives/math/HundredsChart';
 export type { LengthLabData } from './primitives/visual-primitives/math/LengthLab';
 export type { AnalogClockData } from './primitives/visual-primitives/math/AnalogClock';
+export type { CoinCounterData } from './primitives/visual-primitives/math/CoinCounter';
+export type { TimeSequencerData } from './primitives/visual-primitives/math/TimeSequencer';
 
 // Literacy
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';

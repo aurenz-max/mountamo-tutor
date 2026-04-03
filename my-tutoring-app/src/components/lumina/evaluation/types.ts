@@ -3024,6 +3024,30 @@ export interface DigitalSkillsSimMetrics extends BasePrimitiveMetrics {
   totalChallenges: number;
 }
 
+export interface CoinCounterMetrics extends BasePrimitiveMetrics {
+  type: 'coin-counter';
+  accuracy: number;
+  totalAttempts: number;
+  challengesCompleted: number;
+  challengesTotal: number;
+}
+
+export interface TimeSequencerMetrics extends BasePrimitiveMetrics {
+  type: 'time-sequencer';
+  accuracy: number;
+  totalAttempts: number;
+  challengesCompleted: number;
+  challengesTotal: number;
+}
+
+export interface SpatialSceneMetrics extends BasePrimitiveMetrics {
+  type: 'spatial-scene';
+  accuracy: number;
+  totalAttempts: number;
+  challengesCompleted: number;
+  challengesTotal: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -3179,7 +3203,10 @@ export type PrimitiveMetrics =
   | HowItWorksMetrics
   | TimelineExplorerMetrics
   | VocabularyExplorerMetrics
-  | DigitalSkillsSimMetrics;
+  | DigitalSkillsSimMetrics
+  | CoinCounterMetrics
+  | TimeSequencerMetrics
+  | SpatialSceneMetrics;
 
 // =============================================================================
 // Session & Summary Types

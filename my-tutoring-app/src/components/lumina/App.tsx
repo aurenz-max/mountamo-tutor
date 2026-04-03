@@ -30,7 +30,7 @@ import ChemistryPrimitivesTester from './components/ChemistryPrimitivesTester';
 import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
 import CalibrationSimulator from './components/CalibrationSimulator';
-import { PulseSession } from './pulse/PulseSession';
+import { PulseAdaptiveSession } from './pulse/PulseAdaptiveSession';
 import { ExhibitProvider } from './contexts/ExhibitContext';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
@@ -604,9 +604,10 @@ export default function App() {
         {/* PRACTICE MODE STATE */}
         {phase === GameState.IDLE && activePanel === 'practice-mode' && (
           <div className="flex-1 animate-fade-in">
-            <PulseSession
+            <PulseAdaptiveSession
               onBack={() => setActivePanel(null)}
               gradeLevel={gradeLevel}
+              debugMode
             />
           </div>
         )}

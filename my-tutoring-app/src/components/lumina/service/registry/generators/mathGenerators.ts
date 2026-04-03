@@ -50,6 +50,9 @@ import { generateNumberTracer } from '../../math/gemini-number-tracer';
 import { generateHundredsChart } from '../../math/gemini-hundreds-chart';
 import { generateLengthLab } from '../../math/gemini-length-lab';
 import { generateAnalogClock } from '../../math/gemini-analog-clock';
+import { generateCoinCounter } from '../../math/gemini-coin-counter';
+import { generateTimeSequencer } from '../../math/gemini-time-sequencer';
+import { generateSpatialScene } from '../../math/gemini-spatial-scene';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -379,6 +382,27 @@ registerGenerator('analog-clock', async (item, topic, gradeContext) => ({
   type: 'analog-clock',
   instanceId: item.instanceId,
   data: await generateAnalogClock(topic, gradeContext, item.config),
+}));
+
+// Coin Counter (K-3 coin identification, counting, making amounts, comparing, making change)
+registerGenerator('coin-counter', async (item, topic, gradeContext) => ({
+  type: 'coin-counter',
+  instanceId: item.instanceId,
+  data: await generateCoinCounter(topic, gradeContext, item.config),
+}));
+
+// Time Sequencer (K-2 event ordering, time-of-day matching, before/after, duration, schedules)
+registerGenerator('time-sequencer', async (item, topic, gradeContext) => ({
+  type: 'time-sequencer',
+  instanceId: item.instanceId,
+  data: await generateTimeSequencer(topic, gradeContext, item.config),
+}));
+
+// Spatial Scene (K-1 grid-based spatial reasoning: positions, placement, directions)
+registerGenerator('spatial-scene', async (item, topic, gradeContext) => ({
+  type: 'spatial-scene',
+  instanceId: item.instanceId,
+  data: await generateSpatialScene(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

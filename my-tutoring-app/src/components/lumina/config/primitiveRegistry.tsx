@@ -40,6 +40,7 @@ import DotPlot from '../primitives/visual-primitives/math/DotPlot';
 import Histogram from '../primitives/visual-primitives/math/Histogram';
 import TwoWayTable from '../primitives/visual-primitives/math/TwoWayTable';
 import TenFrame from '../primitives/visual-primitives/math/TenFrame';
+import TimeSequencer from '../primitives/visual-primitives/math/TimeSequencer';
 import CountingBoard from '../primitives/visual-primitives/math/CountingBoard';
 import PatternBuilder from '../primitives/visual-primitives/math/PatternBuilder';
 import SkipCountingRunner from '../primitives/visual-primitives/math/SkipCountingRunner';
@@ -48,6 +49,7 @@ import MultiplicationExplorer from '../primitives/visual-primitives/math/Multipl
 import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTools';
 import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
 import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
+import SpatialScene from '../primitives/visual-primitives/math/SpatialScene';
 import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
 import NumberTracer from '../primitives/visual-primitives/math/NumberTracer';
 import MathFactFluency from '../primitives/visual-primitives/math/MathFactFluency';
@@ -55,6 +57,7 @@ import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker'
 import HundredsChart from '../primitives/visual-primitives/math/HundredsChart';
 import LengthLab from '../primitives/visual-primitives/math/LengthLab';
 import AnalogClock from '../primitives/visual-primitives/math/AnalogClock';
+import CoinCounter from '../primitives/visual-primitives/math/CoinCounter';
 import FactFile from '../primitives/visual-primitives/core/FactFile';
 import HowItWorks from '../primitives/visual-primitives/core/HowItWorks';
 import FastFact from '../primitives/visual-primitives/core/FastFact';
@@ -399,6 +402,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  'coin-counter': {
+    component: CoinCounter,
+    sectionTitle: 'Coin Counter',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   'bar-model': {
     component: BarModel,
     sectionTitle: 'Bar Model',
@@ -608,6 +621,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  'spatial-scene': {
+    component: SpatialScene,
+    sectionTitle: 'Spatial Scene',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   'strategy-picker': {
     component: StrategyPicker,
     sectionTitle: 'Strategy Picker',
@@ -690,6 +713,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'time-sequencer': {
+    component: TimeSequencer,
+    sectionTitle: 'Time Sequencer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 

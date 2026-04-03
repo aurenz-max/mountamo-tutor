@@ -168,6 +168,9 @@ export type {
   TimelineExplorerMetrics,
   VocabularyExplorerMetrics,
   DigitalSkillsSimMetrics,
+  CoinCounterMetrics,
+  TimeSequencerMetrics,
+  SpatialSceneMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,
