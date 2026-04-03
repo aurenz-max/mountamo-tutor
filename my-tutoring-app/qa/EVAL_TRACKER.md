@@ -65,8 +65,9 @@
 | hundreds-chart | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/hundreds-chart-2026-03-29.md) |
 | length-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/length-lab-2026-03-29.md) |
 | analog-clock | 4 | 0 | 4 | 2026-03-29 | [report](eval-reports/analog-clock-2026-03-29.md) |
+| media-player | 1 | 0 | 1 | 2026-04-02 | [report](eval-reports/media-player-2026-04-02.md) |
 
-**Totals:** 211/231 modes passing (91.3%) | 27 open issues (13 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 211/232 modes passing (91.0%) | 30 open issues (14 CRITICAL, 16 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -193,6 +194,9 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | AC-2 | analog-clock | set_time | CRITICAL | Broken interaction | Drag handler only moves minute hand; hour changes on minute wraparound but stale closure breaks detection. Minutes can't pass 45, hour hand can't change. | COMPONENT |
 | AC-3 | analog-clock | elapsed | HIGH | Wrong answer | Generator auto-correction skips elapsed type — Gemini always outputs `correctOptionIndex: 0` regardless of which option is correct | GENERATOR |
 | FB-1 | fraction-bar | all (build phase) | HIGH | AI responsiveness | `shadedCount` in aiPrimitiveData triggers `updateContext` on every partition click — floods Gemini, causes response lag (SP-12) | COMPONENT + BACKEND |
+| MP-1 | media-player | walkthrough | CRITICAL | UI overflow | Title is raw verbose topic string — `Interactive Lesson: ${topic}` renders multi-sentence paragraph at 3xl font, consuming entire intro card | GENERATOR |
+| MP-2 | media-player | walkthrough | HIGH | Hidden CTA | "Begin Lesson" button pushed below fold by massive title — intro overlay has no scroll, students can't start lesson | COMPONENT |
+| MP-3 | media-player | — | HIGH | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — can't participate in eval-test or pulse agent | CATALOG |
 
 ---
 

@@ -50,6 +50,7 @@ from ..models.pulse import (
     SkillUnlockProgress,
     ThetaUpdate,
     UnitProgress,
+    max_beta_for_modes,
     mode_to_beta,
     theta_to_mode,
 )
@@ -312,6 +313,8 @@ class PulseEngine:
         items: List[PulseItemSpec] = []
         for i, probe in enumerate(probes):
             node = node_map.get(probe.subskill_id, {})
+            prim_type = node.get("primitive_type", "ten-frame")
+            allowed_modes = node.get("eval_modes")
             items.append(PulseItemSpec(
                 item_id=f"pulse-item-{i:03d}",
                 band=PulseBand.FRONTIER,
@@ -321,6 +324,8 @@ class PulseEngine:
                 description=probe.description or node.get("description", ""),
                 target_mode=FRONTIER_PROBE_MODE,
                 target_beta=mode_to_beta(FRONTIER_PROBE_MODE),
+                primitive_affinity=prim_type,
+                gate_reference_beta=max_beta_for_modes(prim_type, allowed_modes),
                 lesson_group_id=f"cold-{i:03d}",
             ))
 
@@ -550,6 +555,7 @@ class PulseEngine:
                 eval_mode_name=eval_mode,
                 primitive_affinity=prim_type,
                 eval_mode_hint=eval_mode if allowed_modes else None,
+                gate_reference_beta=max_beta_for_modes(prim_type, allowed_modes),
                 lesson_group_id=f"{band_label}-{skill_id}",
             ))
 
@@ -969,6 +975,7 @@ class PulseEngine:
             item_beta=cal_result.get("calibrated_beta"),
             primitive_type=result.primitive_type,
             avg_a=cal_result.get("discrimination_a"),
+            gate_reference_beta=item_spec.get("gate_reference_beta"),
         )
 
         # Attach blended-P context to IRT data (from gate derivation)

@@ -110,10 +110,17 @@ def derive_gate_from_irt(
     avg_a: float = 1.4,
     empirical_p: Optional[float] = None,
     n_observations: int = 0,
+    gate_reference_beta: Optional[float] = None,
 ) -> tuple[int, str, float]:
     """
-    Pure function: derive mastery gate from P(correct) at the item's actual β,
-    blended with empirical pass rate when sufficient observations exist.
+    Pure function: derive mastery gate from P(correct), blended with
+    empirical pass rate when sufficient observations exist.
+
+    Gate 4 uses `gate_reference_beta` (the hardest curriculum-assigned
+    mode's β) when available, so that mastery is judged against the
+    difficulty the curriculum actually requires — not whatever mode
+    Fisher-info selected for measurement.  Gates 1-3 continue using
+    `item_beta` (the tested mode).
 
     Checks gates 4→3→2→1 (highest first) and returns the highest passed gate.
     No side effects, no stored state.
@@ -130,23 +137,29 @@ def derive_gate_from_irt(
 
     Returns (gate, retention_state, p_blended).
     """
-    p_irt = p_correct(theta, avg_a, item_beta)
-
-    # Credibility-blend with empirical pass rate when available
-    if empirical_p is not None and n_observations > 0:
-        z = n_observations / (n_observations + GATE_CREDIBILITY_K)
-        p = z * empirical_p + (1.0 - z) * p_irt
-    else:
-        p = p_irt
-
     for gate in (4, 3, 2, 1):
+        # G4: check against hardest curriculum-assigned β (if available)
+        # G1-3: check against the tested item's β
+        beta = (
+            gate_reference_beta if gate == 4 and gate_reference_beta is not None
+            else item_beta
+        )
+        p_irt = p_correct(theta, avg_a, beta)
+
+        # Credibility-blend with empirical pass rate when available
+        if empirical_p is not None and n_observations > 0:
+            z = n_observations / (n_observations + GATE_CREDIBILITY_K)
+            p = z * empirical_p + (1.0 - z) * p_irt
+        else:
+            p = p_irt
+
         if p >= GATE_P_THRESHOLDS[gate]:
             if gate >= 4:
                 return gate, "mastered", p
             else:
                 return gate, "active", p
 
-    return 0, "not_started", p
+    return 0, "not_started", p_correct(theta, avg_a, item_beta)
 
 
 class MasteryLifecycleEngine:
@@ -181,6 +194,7 @@ class MasteryLifecycleEngine:
         item_beta: Optional[float] = None,
         primitive_type: Optional[str] = None,
         avg_a: Optional[float] = None,
+        gate_reference_beta: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
         Process a single evaluation event and update the mastery lifecycle.
@@ -203,6 +217,9 @@ class MasteryLifecycleEngine:
             sigma: Freshly-updated uncertainty (from CalibrationEngine).
             primitive_type: Primitive type for beta range lookup (2PL gate checks).
             avg_a: Average discrimination for the skill's items (2PL gate checks).
+            gate_reference_beta: Hardest curriculum-assigned β for this subskill.
+                Used for Gate 4 checks instead of item_beta so mastery is judged
+                against the difficulty the curriculum requires.
 
         Returns:
             Updated mastery lifecycle dict.
@@ -271,6 +288,7 @@ class MasteryLifecycleEngine:
             lifecycle, score, passed, ts, now, global_rate,
             theta=theta, sigma=sigma, item_beta=item_beta, avg_a=avg_a,
             skill_beta_median=skill_beta_median,
+            gate_reference_beta=gate_reference_beta,
         )
 
         # Append to gate history (capped to prevent unbounded doc growth)
@@ -420,13 +438,15 @@ class MasteryLifecycleEngine:
         item_beta: Optional[float] = None,
         avg_a: Optional[float] = None,
         skill_beta_median: Optional[float] = None,
+        gate_reference_beta: Optional[float] = None,
     ) -> MasteryLifecycle:
         """
         Unified eval handler — activation + gate advancement in one pass.
 
         Gate and retention state are derived directly from IRT (θ+σ) via
-        derive_gate_from_irt(). Gate checks P(correct) at the item's actual
-        β (the mode selected for this student), not the primitive's hardest mode.
+        derive_gate_from_irt(). Gates 1-3 check P(correct) at the item's
+        actual β. Gate 4 checks P at gate_reference_beta (the hardest
+        curriculum-assigned mode) when available.
 
         If the subskill is not_started and IRT qualifies for gate >= 1,
         activates retention and then derives the full gate in one step
@@ -460,6 +480,7 @@ class MasteryLifecycleEngine:
                 theta, sigma, item_beta, a,
                 empirical_p=emp_p,
                 n_observations=n_obs,
+                gate_reference_beta=gate_reference_beta,
             )
 
             # Stash blended-P context for callers (not persisted to Firestore)

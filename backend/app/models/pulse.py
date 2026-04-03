@@ -124,6 +124,7 @@ class PulseItemSpec(BaseModel):
     lesson_group_id: str = ""
     primitive_affinity: Optional[str] = None
     eval_mode_hint: Optional[str] = None
+    gate_reference_beta: Optional[float] = None
     frontier_context: Optional[ItemFrontierContext] = None
 
 
@@ -286,3 +287,22 @@ def theta_to_mode(theta: float) -> int:
 def mode_to_beta(mode: int) -> float:
     """Get the prior β for a given mode."""
     return MODE_PRIOR_BETA.get(mode, 3.5)
+
+
+def max_beta_for_modes(primitive_type: str, allowed_modes: list[str] | None) -> float | None:
+    """Return the highest prior β across curriculum-assigned eval modes.
+
+    Used as the reference difficulty for Gate 4 checks: the student must
+    demonstrate P(correct) ≥ 0.90 at the hardest mode the curriculum
+    actually assigns to this subskill — not the hardest the primitive
+    is *capable* of, and not the mode Fisher-info happened to select.
+    """
+    from app.services.calibration.problem_type_registry import PROBLEM_TYPE_REGISTRY
+
+    if not allowed_modes:
+        return None
+    modes = PROBLEM_TYPE_REGISTRY.get(primitive_type)
+    if not modes:
+        return None
+    betas = [modes[m].prior_beta for m in allowed_modes if m in modes]
+    return max(betas) if betas else None
