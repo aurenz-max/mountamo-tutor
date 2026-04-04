@@ -12,6 +12,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { createSubRangePool } from './numberPoolService';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -249,6 +250,9 @@ export const generateNumberLine = async (
     intent: string;
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode: string;
+    /** Structured number range from the manifest — controls grade-appropriate values. */
+    numberRange: { min: number; max: number };
+    difficulty: string;
   }>
 ): Promise<NumberLineData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -266,6 +270,12 @@ export const generateNumberLine = async (
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Build number pool (Gemini structured output is near-deterministic — we own the randomness) ──
+  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true });
+  console.log(`[NumberLine] display:`, pool?.displayRange ?? 'none', `pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
+
+  const rangeSection = pool?.toPromptSection() ?? '';
+
   const prompt = `You are generating an interactive Number Line activity for elementary math education.
 
 CONTEXT:
@@ -275,14 +285,16 @@ CONTEXT:
 
 ${challengeTypeSection}
 
-${!evalConstraint ? `
-GRADE-LEVEL GUIDELINES:
+${rangeSection}
+
+${!evalConstraint && !pool ? `
+GRADE-LEVEL GUIDELINES (use when no explicit range is provided):
 - K-2 (gradeBand "K-2"):
   * Use ONLY integers, numberType "integer"
   * Range: 0 to 20 (or a subset like 0-10 for Kindergarten)
   * Interaction modes: "plot" (place a number) or "jump" (addition/subtraction hops)
   * Challenge types: "plot_point" (for plot mode) or "show_jump" (for jump mode)
-  * Use warm, simple language ("Can you find where 7 lives on the number line?")
+  * Use warm, simple language
   * Operations: simple +1, +2, +3, +5 jumps; always start within range
 
 - 3-5 (gradeBand "3-5"):
@@ -291,8 +303,13 @@ GRADE-LEVEL GUIDELINES:
   * All interaction modes available: "plot", "jump", "compare", "order"
   * Challenge types: "plot_point", "show_jump", "order_values", "find_between"
   * More formal language but still encouraging
-  * Fractions: use halves, thirds, fourths, eighths; range typically 0-2 or 0-3
-  * Decimals: range typically 0-5 or 0-10
+` : ''}
+${!evalConstraint && pool ? `
+INFER GRADE BAND FROM RANGE:
+- Range within 0-20 with integers: gradeBand "K-2", numberType "integer", modes "plot" or "jump"
+- Range within 0-100 with integers: gradeBand "K-2" or "3-5", numberType "integer"
+- Range includes fractions/decimals or negatives: gradeBand "3-5"
+- Range > 100: gradeBand "3-5", numberType "integer"
 ` : ''}
 
 INTERACTION MODE → CHALLENGE TYPE MAPPING:
@@ -326,6 +343,8 @@ Return the complete number line data structure.`;
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
+      temperature: 0.9,
+      topP: 0.95,
       responseMimeType: "application/json",
       responseSchema: activeSchema,
     },

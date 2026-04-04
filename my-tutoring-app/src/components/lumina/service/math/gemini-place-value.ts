@@ -8,6 +8,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { createNumberPool } from './numberPoolService';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -17,28 +18,28 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   identify: {
     promptDoc:
       `"identify": Simple 2-digit numbers, focus on recognizing place names. `
-      + `Use numbers like 35, 47, 72. Set highlightedDigitPlace to ones (0) or tens (1). `
+      + `Choose a 2-digit number with non-zero digits. Set highlightedDigitPlace to ones (0) or tens (1). `
       + `Great for K-2 students just learning place value vocabulary. Grades K-2.`,
     schemaDescription: "'identify' (recognize place names, K-2)",
   },
   build: {
     promptDoc:
       `"build": 3-digit numbers, focus on constructing the number in the chart. `
-      + `Use numbers like 253, 481, 706. Set minPlace=0, maxPlace=2. `
+      + `Choose a 3-digit number with varied digits. Set minPlace=0, maxPlace=2. `
       + `Phase 3 (build) is the primary challenge. Grades 2-3.`,
     schemaDescription: "'build' (construct number in chart, 2-3)",
   },
   compare: {
     promptDoc:
-      `"compare": 3-4 digit numbers. Generate a more challenging number with multiple non-zero digits. `
-      + `Use numbers like 3472, 5831, 2097. Set minPlace=0, maxPlace=3. `
+      `"compare": 3-4 digit numbers. Generate a number with multiple non-zero digits. `
+      + `Choose a varied number within the given range. Set minPlace=0, maxPlace=3. `
       + `Pick an interior place for highlighting. Grades 3-4.`,
     schemaDescription: "'compare' (multi-digit place reasoning, 3-4)",
   },
   expanded_form: {
     promptDoc:
       `"expanded_form": 4+ digit numbers or decimals, with showExpandedForm=true. `
-      + `Use numbers like 12450.75, 3245.5, 125456. Include decimal places when appropriate. `
+      + `Choose a varied number with decimals when appropriate. `
       + `Set minPlace to cover decimal digits, maxPlace to cover integer digits. Grades 5+.`,
     schemaDescription: "'expanded_form' (expanded form with larger numbers, 5+)",
   },
@@ -169,6 +170,9 @@ export const generatePlaceValueChart = async (
   config?: Partial<PlaceValueChartData> & {
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /** Structured number range from the manifest — controls grade-appropriate values. */
+    numberRange?: { min: number; max: number };
+    difficulty?: string;
   }
 ): Promise<PlaceValueChartData> => {
   // ---------------------------------------------------------------------------
@@ -186,6 +190,14 @@ export const generatePlaceValueChart = async (
     : placeValueChartSchema;
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Build number pool (Gemini structured output is near-deterministic — we own the randomness) ──
+  const pool = createNumberPool(config?.numberRange, { minNonZeroDigits: 2 });
+  console.log(`[PlaceValueChart] pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
+
+  const rangeSection = pool?.toPromptSection({
+    extraInstructions: `- Use the FIRST number (${pool.primary}) as the targetNumber for this activity.\n- Infer minPlace/maxPlace from the number (e.g., 3-digit → maxPlace 2, 4-digit → maxPlace 3, etc.)`,
+  }) ?? '';
+
   const prompt = `
 Create a MULTI-PHASE place value chart problem for "${topic}" for ${gradeLevel} students.
 
@@ -196,17 +208,19 @@ PROBLEM FLOW (three phases):
 
 ${challengeTypeSection}
 
-${!evalConstraint ? `
-GRADE-APPROPRIATE TARGET NUMBERS:
-- Grades K-1: 2-digit whole numbers (e.g., 35, 72)
+${rangeSection}
+
+${!evalConstraint && !pool ? `
+GRADE-APPROPRIATE TARGET NUMBERS (use when no explicit range is provided):
+- Grades K-1: 2-digit whole numbers
   -> minPlace: 0, maxPlace: 1
-- Grades 1-2: 2- to 3-digit whole numbers (e.g., 47, 253)
+- Grades 1-2: 2- to 3-digit whole numbers
   -> minPlace: 0, maxPlace: 2
-- Grades 3-4: 3- to 4-digit whole numbers (e.g., 1,450, 5,832)
+- Grades 3-4: 3- to 4-digit whole numbers
   -> minPlace: 0, maxPlace: 3 or 4
-- Grades 5-6: Include decimals (e.g., 3,245.75, 12,450.5)
+- Grades 5-6: Include decimals
   -> minPlace: -2, maxPlace: 4 or 5
-- Grades 7-8: Larger numbers with decimals (e.g., 125,456.125)
+- Grades 7-8: Larger numbers with decimals
   -> minPlace: -3, maxPlace: 5 or 6
 ` : ''}
 
@@ -239,18 +253,17 @@ Use this exact place position. Ensure the digit at this place in targetNumber is
 ` : ''}
 
 ADDITIONAL GUIDELINES:
-- title: Use format like "Explore 3,472" or "Place Value Challenge: 253"
-- description: Introduce the challenge warmly, e.g., "Let's explore the number 3,472! First, identify which place the highlighted digit is in, then figure out its value, and finally build the whole number!"
+- title: Use format like "Explore [number]" or "Place Value Challenge: [number]"
+- description: Introduce the challenge warmly, referencing the target number
 - showExpandedForm: true (helps students see the breakdown during build phase)
 - showMultipliers: true for grades K-4, optional for 5+
 - gradeLevel: echo back the grade level string
-
-EXAMPLE OUTPUT:
+EXAMPLE OUTPUT (structure only${pool?.numbers ? ` — use targetNumber ${pool?.numbers[0]} as specified above` : ''}):
 {
   "challengeType": "compare",
-  "title": "Explore 3,472",
-  "description": "Let's explore 3,472! Which place is the highlighted digit in? What is it worth? Then build the whole number!",
-  "targetNumber": 3472,
+  "title": "Explore ${pool?.numbers?.[0] ?? '[your number]'}",
+  "description": "Let's explore ${pool?.numbers?.[0] ?? '[your number]'}! Which place is the highlighted digit in? What is it worth? Then build the whole number!",
+  "targetNumber": ${pool?.numbers?.[0] ?? 3472},
   "highlightedDigitPlace": 2,
   "minPlace": 0,
   "maxPlace": 3,
@@ -268,6 +281,8 @@ Return a complete multi-phase place value chart problem.
     model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
+      temperature: 0.9,
+      topP: 0.95,
       thinkingConfig: {
         thinkingLevel: ThinkingLevel.LOW,
       },

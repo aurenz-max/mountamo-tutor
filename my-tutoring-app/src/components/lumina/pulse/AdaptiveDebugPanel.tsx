@@ -6,6 +6,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { AdaptiveItemResult, SessionDecision, ManifestLatencyEntry } from './adaptiveEngine/types';
 
+export interface SessionHistoryEntry {
+  componentId: string;
+  difficulty: string;
+  score?: number;
+  topic?: string;
+  status: 'done' | 'active' | 'queued';
+}
+
 interface AdaptiveDebugPanelProps {
   results: AdaptiveItemResult[];
   decisions: SessionDecision[];
@@ -13,6 +21,8 @@ interface AdaptiveDebugPanelProps {
   currentScaffoldingMode: number;
   workedExamplesInserted: number;
   isHydrating: boolean;
+  sessionHistory: SessionHistoryEntry[];
+  prefetchedCount: number;
   onRestart?: () => void;
 }
 
@@ -32,6 +42,8 @@ export const AdaptiveDebugPanel: React.FC<AdaptiveDebugPanelProps> = ({
   currentScaffoldingMode,
   workedExamplesInserted,
   isHydrating,
+  sessionHistory,
+  prefetchedCount,
   onRestart,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,7 +61,7 @@ export const AdaptiveDebugPanel: React.FC<AdaptiveDebugPanelProps> = ({
       >
         <span className="flex items-center gap-3">
           <span className="font-mono">
-            items:{scored.length} mode:{currentScaffoldingMode} examples:{workedExamplesInserted}
+            items:{scored.length} mode:{currentScaffoldingMode} examples:{workedExamplesInserted} prefetched:{prefetchedCount}
           </span>
           {isHydrating && (
             <span className="text-cyan-400 animate-pulse">hydrating...</span>
@@ -141,6 +153,39 @@ export const AdaptiveDebugPanel: React.FC<AdaptiveDebugPanelProps> = ({
                           {e.latencyMs}ms
                         </span>
                         <span className="text-slate-700">{e.itemCount} item{e.itemCount !== 1 ? 's' : ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Session history (what Gemini sees) */}
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+                    Session History (sent to Gemini)
+                  </h4>
+                  <div className="space-y-1 font-mono text-xs">
+                    {sessionHistory.length === 0 && (
+                      <span className="text-slate-600">Empty — next call has no context</span>
+                    )}
+                    {sessionHistory.map((h, i) => (
+                      <div key={i} className="flex gap-2">
+                        <span className={
+                          h.status === 'done' ? 'text-emerald-500'
+                            : h.status === 'active' ? 'text-cyan-400 animate-pulse'
+                            : 'text-amber-400'
+                        }>
+                          {h.status}
+                        </span>
+                        <span className="text-cyan-400">{h.componentId}</span>
+                        <span className="text-slate-600">{h.difficulty}</span>
+                        {h.score !== undefined && (
+                          <span className="text-slate-400">{h.score}%</span>
+                        )}
+                        {h.topic && (
+                          <span className="text-slate-600 truncate max-w-[200px]" title={h.topic}>
+                            {h.topic.length > 40 ? h.topic.slice(0, 40) + '...' : h.topic}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>

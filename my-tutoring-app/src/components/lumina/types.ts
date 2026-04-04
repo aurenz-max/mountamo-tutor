@@ -1430,6 +1430,8 @@ export interface VisualPrimitiveSpec {
   componentId: ComponentId;
   /** Natural-language instructions for the generator (what to build, target values, etc.) */
   intent: string;
+  /** Structured number range from the manifest — grade+mode appropriate. Null for non-numeric primitives. */
+  numberRange?: { min: number; max: number } | null;
   successCriteria: {
     description: string;
     targetValue?: string;

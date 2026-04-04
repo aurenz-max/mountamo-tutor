@@ -49,7 +49,7 @@ function computeSkillSummaries(results: AdaptiveItemResult[]): SkillSummary[] {
     else if (items.length === 1) label = 'new!';
 
     summaries.push({
-      topic: `Challenge ${batchIdx + 1}`,
+      topic: `Challenge ${summaries.length + 1}`,
       scores,
       avgScore: avg,
       label,
@@ -67,7 +67,7 @@ function generateMessage(results: AdaptiveItemResult[], decisions: SessionDecisi
     ? scored.reduce((a, r) => a + r.score, 0) / scored.length
     : 0;
 
-  if (earlyExit) return "You crushed it! Mastery demonstrated \u2014 come back tomorrow for new challenges!";
+  if (earlyExit) return "You crushed it! Mastery demonstrated \u2014 want to keep going or call it a win?";
   if (avgScore >= 85) return "Fantastic work! You're showing real confidence with this material.";
   if (avgScore >= 65) return "Great effort! You're building solid understanding \u2014 keep practicing!";
   return "Good work sticking with it! Every attempt makes you stronger.";

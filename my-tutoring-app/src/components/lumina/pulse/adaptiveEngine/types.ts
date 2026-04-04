@@ -1,4 +1,4 @@
-import type { HydratedPracticeItem, PracticeItemResult, ComponentId } from '../../types';
+import type { HydratedPracticeItem, PracticeItemResult } from '../../types';
 import type { GradeLevel } from '../../components/GradeLevelSelector';
 
 // ---------------------------------------------------------------------------
@@ -64,42 +64,27 @@ export interface AdaptiveItemResult {
 export type TransitionType = 'switch' | 'example' | 'celebration';
 
 // ---------------------------------------------------------------------------
-// Session state (owned by useAdaptiveSession)
+// ViewSlice — the frozen snapshot that React reads via useSyncExternalStore
 // ---------------------------------------------------------------------------
 
-export interface AdaptiveSessionState {
+export interface ViewSlice {
   phase: AdaptivePhase;
-  topic: string;
-  gradeLevel: GradeLevel;
-  subject: string;
-
-  // Item pipeline
   currentItem: HydratedPracticeItem | null;
-  prefetchedItems: HydratedPracticeItem[];
   itemIndex: number;
-
-  // Results & decisions
   results: AdaptiveItemResult[];
   decisions: SessionDecision[];
-
-  // Adaptive state
   currentScaffoldingMode: number;
   workedExamplesInserted: number;
-  manifestBatchIndex: number;
-
-  // Transition
   transitionType: TransitionType | null;
-  pendingDecision: SessionDecision | null;
-
-  // Streaming
   isHydrating: boolean;
   streamingMessage: string;
-
-  // Timing
-  sessionStartedAt: number | null;
-
-  // Error
   error: string | null;
+  topic: string;
+  subject: string;
+  gradeLevel: GradeLevel;
+  sessionStartedAt: number | null;
+  latencyLog: ManifestLatencyEntry[];
+  prefetchedCount: number;
 }
 
 // ---------------------------------------------------------------------------

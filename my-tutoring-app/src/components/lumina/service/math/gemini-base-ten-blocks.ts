@@ -15,6 +15,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { createNumberPool } from './numberPoolService';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -176,6 +177,9 @@ export const generateBaseTenBlocks = async (
     intent?: string;
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
+    /** Structured number range from the manifest — controls grade-appropriate values. */
+    numberRange?: { min: number; max: number };
+    difficulty?: string;
   }
 ): Promise<BaseTenBlocksData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -193,6 +197,14 @@ export const generateBaseTenBlocks = async (
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Build number pool (Gemini structured output is near-deterministic — we own the randomness) ──
+  const pool = createNumberPool(config?.numberRange, { minNonZeroDigits: 2 });
+  console.log(`[BaseTenBlocks] pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
+
+  const rangeSection = pool?.toPromptSection({
+    extraInstructions: '- Use the FIRST number as the primary numberValue for the activity.\n- Pick from the remaining numbers for individual challenge targetNumbers.',
+  }) ?? '';
+
   const prompt = `You are generating a Base-Ten Blocks visualization for elementary math education.
 
 CONTEXT:
@@ -204,8 +216,10 @@ Generate base-ten blocks content that helps students understand place value (one
 
 ${challengeTypeSection}
 
-${!evalConstraint ? `
-GRADE BAND GUIDELINES:
+${rangeSection}
+
+${!evalConstraint && !pool ? `
+GRADE BAND GUIDELINES (use when no explicit range is provided):
 
 K-1 (Kindergarten-Grade 1):
 - Numbers 1-20 only
@@ -214,8 +228,6 @@ K-1 (Kindergarten-Grade 1):
 - decimalMode: false
 - Simple challenges: build_number, read_blocks
 - 2-3 challenges max
-- Very simple instructions with encouraging language
-- Example challenge: { type: 'build_number', instruction: 'Can you build the number 14?', targetNumber: 14, hint: '14 has 1 ten and 4 ones' }
 
 2-3 (Grades 2-3):
 - Numbers 1-999
@@ -224,8 +236,6 @@ K-1 (Kindergarten-Grade 1):
 - decimalMode: false
 - Challenges: build_number, read_blocks, regroup, add_with_blocks
 - 3-4 challenges
-- Introduce regrouping (trading 10 ones for 1 ten, etc.)
-- Example challenge: { type: 'regroup', instruction: 'Regroup 15 ones into tens and ones', targetNumber: 15, hint: '15 ones = 1 ten and 5 ones' }
 
 4-5 (Grades 4-5):
 - Numbers up to 9999, may include decimals
@@ -234,8 +244,12 @@ K-1 (Kindergarten-Grade 1):
 - decimalMode: true if topic involves decimals
 - Challenges: all types including add_with_blocks, subtract_with_blocks
 - 3-5 challenges
-- More complex operations and multi-step problems
-- Example challenge: { type: 'add_with_blocks', instruction: 'Add 347 + 285 using blocks', targetNumber: 632, secondNumber: 285, hint: 'Start by adding the ones. Do you need to regroup?' }
+` : ''}
+${!evalConstraint && pool ? `
+INFER GRADE BAND FROM RANGE:
+- Range max <= 20: gradeBand 'K-1', maxPlace 'tens', interactionMode 'build', 2-3 challenges
+- Range max <= 999: gradeBand '2-3', maxPlace 'hundreds', interactionMode 'build' or 'regroup', 3-4 challenges
+- Range max >= 1000: gradeBand '4-5', maxPlace 'thousands', interactionMode 'operate' or 'decompose', 3-5 challenges
 ` : ''}
 
 REQUIREMENTS:
@@ -257,6 +271,8 @@ Return the complete base-ten blocks data structure.`;
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
+      temperature: 0.9,
+      topP: 0.95,
       responseMimeType: "application/json",
       responseSchema: activeSchema,
     },

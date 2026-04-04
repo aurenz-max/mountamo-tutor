@@ -39,6 +39,9 @@ export async function hydratePracticeManifest(
     if (item.visualPrimitive) {
       // Visual primitive path: use existing generator registry
       try {
+        const nr = item.visualPrimitive.numberRange;
+        console.log(`[Hydrator] ${item.visualPrimitive.componentId} numberRange from manifest:`, nr ?? 'none');
+
         const manifestItem = {
           componentId: item.visualPrimitive.componentId,
           instanceId: item.instanceId,
@@ -46,6 +49,9 @@ export async function hydratePracticeManifest(
           intent: item.visualPrimitive.intent || item.problemText,
           config: {
             intent: item.visualPrimitive.intent || item.problemText,
+            // Pass structured number range from manifest so generators use grade-appropriate values
+            ...(nr && { numberRange: nr }),
+            difficulty: item.difficulty,
           },
         };
 

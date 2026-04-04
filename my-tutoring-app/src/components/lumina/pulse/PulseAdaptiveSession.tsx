@@ -193,17 +193,33 @@ export const PulseAdaptiveSession: React.FC<PulseAdaptiveSessionProps> = ({
         {/* LOADING PHASE                                                  */}
         {/* ============================================================= */}
         {session.phase === 'loading' && (
-          <div className="flex flex-col items-center justify-center py-24 space-y-6 animate-fade-in">
-            <motion.div
-              className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/30 to-cyan-500/30 border border-violet-500/20 flex items-center justify-center"
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <span className="text-3xl">{'\u26A1'}</span>
-            </motion.div>
-            <p className="text-slate-400 text-sm animate-pulse">
-              {session.streamingMessage || 'Preparing your session...'}
-            </p>
+          <div className="animate-fade-in">
+            {/* Show progress bar if mid-session (not initial load) */}
+            {session.itemIndex > 0 && (
+              <div className="flex items-center gap-3 mb-4">
+                <button onClick={onBack} className="text-sm text-slate-500 hover:text-slate-300 transition-colors">&larr;</button>
+                <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-violet-500 to-cyan-400 rounded-full"
+                    animate={{ width: `${Math.min(100, ((session.itemIndex + 1) / 10) * 100)}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                </div>
+                <span className="text-xs text-slate-600 font-mono">{session.itemIndex + 1}</span>
+              </div>
+            )}
+            <div className="flex flex-col items-center justify-center py-24 space-y-6">
+              <motion.div
+                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/30 to-cyan-500/30 border border-violet-500/20 flex items-center justify-center"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <span className="text-3xl">{'\u26A1'}</span>
+              </motion.div>
+              <p className="text-slate-400 text-sm animate-pulse">
+                {session.streamingMessage || 'Preparing your session...'}
+              </p>
+            </div>
           </div>
         )}
 
@@ -244,6 +260,7 @@ export const PulseAdaptiveSession: React.FC<PulseAdaptiveSessionProps> = ({
 
             {/* The primitive */}
             <PracticeManifestRenderer
+              key={session.currentItem.manifestItem.instanceId}
               item={session.currentItem}
               itemIndex={session.itemIndex}
               onItemComplete={handleItemComplete}
@@ -322,6 +339,8 @@ export const PulseAdaptiveSession: React.FC<PulseAdaptiveSessionProps> = ({
               sessionStartedAt={session.sessionStartedAt}
               topic={session.topic}
               onDone={handleDone}
+              showExtension={session.decisions.some((d) => d.action === 'early-exit')}
+              onKeepGoing={session.acceptExtension}
             />
           </div>
         )}
@@ -367,6 +386,8 @@ export const PulseAdaptiveSession: React.FC<PulseAdaptiveSessionProps> = ({
             currentScaffoldingMode={session.currentScaffoldingMode}
             workedExamplesInserted={session.workedExamplesInserted}
             isHydrating={session.isHydrating}
+            sessionHistory={session.getSessionHistory()}
+            prefetchedCount={session.prefetchedCount}
             onRestart={handleRestart}
           />
         )}

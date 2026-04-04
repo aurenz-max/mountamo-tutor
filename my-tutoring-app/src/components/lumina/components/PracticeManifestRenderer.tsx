@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { getPrimitive } from '../config/primitiveRegistry';
 import { HydratedPracticeItem, PracticeItemResult, ComponentId } from '../types';
 import { KnowledgeCheck } from '../primitives/KnowledgeCheck';
@@ -18,7 +18,9 @@ interface PracticeManifestRendererProps {
  * - A visual primitive with a problem-text header (the visual IS the answer)
  * - A standard KnowledgeCheck problem (traditional text-based)
  *
- * Follows the same primitive registry lookup pattern as ManifestOrderRenderer.
+ * IMPORTANT: Parent MUST pass key={item.manifestItem.instanceId} so this
+ * component fully remounts per item. This eliminates stale-closure bugs
+ * from manual state resets.
  */
 export const PracticeManifestRenderer: React.FC<PracticeManifestRendererProps> = ({
   item,
@@ -26,18 +28,12 @@ export const PracticeManifestRenderer: React.FC<PracticeManifestRendererProps> =
   onItemComplete,
 }) => {
   const startTimeRef = useRef(Date.now());
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-
-  // Reset timer when item changes
-  React.useEffect(() => {
-    startTimeRef.current = Date.now();
-    setHasSubmitted(false);
-  }, [item.manifestItem.instanceId]);
+  const submittedRef = useRef(false);
 
   // Handle evaluation result from visual primitive
   const handleVisualEvaluation = useCallback((result: PrimitiveEvaluationResult) => {
-    if (hasSubmitted) return;
-    setHasSubmitted(true);
+    if (submittedRef.current) return;
+    submittedRef.current = true;
 
     onItemComplete({
       instanceId: item.manifestItem.instanceId,
@@ -49,12 +45,12 @@ export const PracticeManifestRenderer: React.FC<PracticeManifestRendererProps> =
       durationMs: Date.now() - startTimeRef.current,
       evaluationResult: result,
     });
-  }, [item, itemIndex, onItemComplete, hasSubmitted]);
+  }, [item, itemIndex, onItemComplete]);
 
   // Handle evaluation result from standard KnowledgeCheck problem
   const handleStandardEvaluation = useCallback((result: PrimitiveEvaluationResult) => {
-    if (hasSubmitted) return;
-    setHasSubmitted(true);
+    if (submittedRef.current) return;
+    submittedRef.current = true;
 
     onItemComplete({
       instanceId: item.manifestItem.instanceId,
@@ -66,7 +62,7 @@ export const PracticeManifestRenderer: React.FC<PracticeManifestRendererProps> =
       durationMs: Date.now() - startTimeRef.current,
       evaluationResult: result,
     });
-  }, [item, itemIndex, onItemComplete, hasSubmitted]);
+  }, [item, itemIndex, onItemComplete]);
 
   const { manifestItem, visualData, problemData } = item;
 

@@ -11,7 +11,7 @@ export const ADAPTIVE = {
   // --- Session bounds ---
   MIN_ITEMS: 3,                 // minimum items before early exit allowed
   MAX_ITEMS: 10,                // hard cap
-  INITIAL_BATCH_SIZE: 2,        // first manifest call generates 2 items
+  INITIAL_BATCH_SIZE: 1,        // first manifest call generates 1 item (prefetch starts immediately)
   PREFETCH_SIZE: 1,             // prefetch 1 item while student works
 
   // --- Early exit ---

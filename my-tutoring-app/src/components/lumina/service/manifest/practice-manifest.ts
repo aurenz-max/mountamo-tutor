@@ -115,6 +115,16 @@ const practiceManifestSchema: Schema = {
                 type: Type.STRING,
                 description: "Natural-language instructions for the generator: what to build, target values, task type, difficulty context. The dedicated generator will handle full configuration."
               },
+              numberRange: {
+                type: Type.OBJECT,
+                nullable: true,
+                description: "Structured number range for this primitive based on the student's grade and scaffolding level. Required for math primitives that generate numbers (e.g., place-value-chart, base-ten-blocks, number-line). Null for non-numeric primitives.",
+                properties: {
+                  min: { type: Type.NUMBER, description: "Minimum value (inclusive) appropriate for this student's level" },
+                  max: { type: Type.NUMBER, description: "Maximum value (inclusive) appropriate for this student's level" },
+                },
+                required: ["min", "max"],
+              },
               successCriteria: {
                 type: Type.OBJECT,
                 properties: {
@@ -124,7 +134,7 @@ const practiceManifestSchema: Schema = {
                 required: ["description"],
               },
             },
-            required: ["componentId", "intent", "successCriteria"],
+            required: ["componentId", "intent", "numberRange", "successCriteria"],
           },
           standardProblem: {
             type: Type.OBJECT,
@@ -158,7 +168,7 @@ export interface PracticeManifestOptions {
   /** When true, forces every item to use a different visual primitive or problem type. Duplicate primitives are converted to standard problems. */
   enforceDiversity?: boolean;
   /** Primitives already used in this session with scores. Guides the model toward variety and appropriate difficulty. */
-  sessionHistory?: Array<{ componentId: string; difficulty: string; score?: number }>;
+  sessionHistory?: Array<{ componentId: string; difficulty: string; score?: number; topic?: string }>;
   /** Target scaffolding mode (1-6) from the backend IRT calibration system. Controls difficulty via scaffolding level, not item content. */
   targetMode?: number;
   /** Pulse band context: 'current' (learning), 'review' (retest), 'frontier' (probing ahead). */
@@ -266,14 +276,22 @@ Choose different visual primitives from the catalog to keep the experience fresh
   }
 
   if (options?.sessionHistory && options.sessionHistory.length > 0) {
-    const scored = options.sessionHistory.filter(h => (h.score ?? 0) >= 0);
-    const generated = options.sessionHistory.filter(h => (h.score ?? 0) < 0);
+    const scored = options.sessionHistory.filter(h => h.score !== undefined && h.score >= 0);
+    const generated = options.sessionHistory.filter(h => h.score === undefined || h.score < 0);
+
+    // Extract topic context from all entries to maintain session coherence
+    const allTopics = options.sessionHistory
+      .map(h => h.topic)
+      .filter((t): t is string => !!t);
 
     if (scored.length > 0) {
-      parts.push(`Earlier in this session the student completed: ${scored.map(h => `${h.componentId} (${h.difficulty}, scored ${h.score}%)`).join(', ')}.`);
+      parts.push(`Earlier in this session the student completed: ${scored.map(h => `${h.componentId} (${h.difficulty}, scored ${h.score}%)${h.topic ? ` — ${h.topic}` : ''}`).join(', ')}.`);
     }
     if (generated.length > 0) {
-      parts.push(`These primitives are ALREADY QUEUED for this session and must NOT be repeated: ${generated.map(h => h.componentId).join(', ')}. Pick a DIFFERENT primitive from the catalog.`);
+      parts.push(`These primitives are ALREADY QUEUED for this session and must NOT be repeated: ${generated.map(h => `${h.componentId}${h.topic ? ` (${h.topic})` : ''}`).join(', ')}. Pick a DIFFERENT primitive from the catalog.`);
+    }
+    if (allTopics.length > 0) {
+      parts.push(`SESSION COHERENCE: This session is focused on: ${allTopics[0]}. Continue in the SAME skill area and grade level. Do NOT jump to an unrelated topic. Build on what came before — deepen the same concept with a different visual or increase difficulty.`);
     }
     if (scored.length > 0) {
       parts.push('Vary primitives when possible, but repeating at a harder level is fine.');
@@ -322,6 +340,14 @@ For each problem, decide:
 
 ## VISUAL PRIMITIVE RULES
 - The "intent" field is natural language describing what the generator should build (target values, task type, context). Dedicated generators handle the full configuration — you just describe what you want.
+- "numberRange": For math primitives that work with numbers (place-value-chart, base-ten-blocks, number-line, counting-board, ten-frame, etc.), set numberRange to {min, max} appropriate for the student's grade AND scaffolding mode. Examples:
+  * Kindergarten mode 1: {"min": 1, "max": 10}
+  * Grade 1 mode 2: {"min": 1, "max": 20}
+  * Grade 2 mode 3: {"min": 10, "max": 100}
+  * Grade 3 mode 4: {"min": 100, "max": 1000}
+  * Grade 4 mode 5: {"min": 100, "max": 9999}
+  * Grade 5+ mode 6: {"min": 1000, "max": 99999}
+  Set to null for non-numeric primitives (fraction-circles, shape-builder, etc.).
 - successCriteria.description: tell the student what to DO
 - successCriteria.targetValue: the expected answer
 
@@ -360,6 +386,7 @@ This is a diagnostic assessment — each item must test a DIFFERENT facet of the
       "visualPrimitive": {
         "componentId": "fraction-circles",
         "intent": "Build a fraction circle for 1/3. Task type: build. The student shades one out of three equal sections.",
+        "numberRange": null,
         "successCriteria": {
           "description": "Shade the circle to show 1/3",
           "targetValue": "1/3"
@@ -593,6 +620,11 @@ For each item, decide:
 
 ## VISUAL PRIMITIVE RULES
 - The "intent" field is natural language describing what the generator should build. Dedicated generators handle configuration.
+- "numberRange": For math primitives that work with numbers, set numberRange to {min, max} appropriate for the item's grade AND scaffolding mode. Match the mode level:
+  * Mode 1-2 (concrete/pictorial): small numbers (e.g., K: 1-10, G1: 1-20, G2: 10-100)
+  * Mode 3-4 (transitional): moderate numbers (e.g., G2: 10-200, G3: 100-1000, G4: 100-5000)
+  * Mode 5-6 (symbolic): wider ranges (e.g., G3: 100-2000, G4: 1000-9999, G5+: 1000-99999)
+  Set to null for non-numeric primitives.
 - successCriteria.description: tell the student what to DO
 - successCriteria.targetValue: the expected answer
 - Match the difficulty/scaffolding level specified per item. Item at mode 1 should use concrete manipulatives; item at mode 5 should use abstract symbolic.
