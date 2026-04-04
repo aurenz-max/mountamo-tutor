@@ -72,12 +72,15 @@ export class SessionKernel {
   // (which races with the in-flight prefetch), we just wait for delivery.
   private waitingForDelivery = false;
   private pendingMode = 0;
+  private deliveryRetries = 0;
+  private deliveryTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   // -- Adaptive state --
   private results: AdaptiveItemResult[] = [];
   private decisions: SessionDecision[] = [];
   private scaffoldingMode: number = ADAPTIVE.INITIAL_SCAFFOLDING_MODE;
   private workedExamplesInserted = 0;
+  private extensionsAccepted = 0;
 
   // -- Tracking --
   private generatedPrimitives: GeneratedPrimitive[] = [];
@@ -212,6 +215,7 @@ export class SessionKernel {
       [...this.results, adaptiveResult],
       this.workedExamplesInserted,
       this.itemQueue.length > 0,
+      this.extensionsAccepted,
     );
 
     console.log(
@@ -259,6 +263,7 @@ export class SessionKernel {
   }
 
   async acceptExtension(): Promise<void> {
+    this.extensionsAccepted++;
     this.phase = 'loading';
     this.loadingMessage = 'Generating more challenges...';
     this.notify();
@@ -285,6 +290,30 @@ export class SessionKernel {
   declineExtension(): void {
     this.phase = 'summary';
     this.notify();
+  }
+
+  /** Skip the current item without scoring — just advance to the next one. */
+  skipItem(): void {
+    if (this.phase !== 'practicing') return;
+
+    // Check session bounds — don't skip past MAX_ITEMS
+    // (itemIndex is 0-based, so itemIndex+1 is the count of items seen)
+    if (this.itemIndex + 1 >= ADAPTIVE.MAX_ITEMS) {
+      this.phase = 'summary';
+      this.notify();
+      return;
+    }
+
+    if (this.itemQueue.length > 0) {
+      // advanceFromQueue already increments itemIndex
+      this.advanceFromQueue();
+      this.notify();
+      this.prefetch(this.scaffoldingMode);
+    } else {
+      // Queue empty — wait for prefetch delivery
+      this.itemIndex++;
+      this.waitForDelivery(this.scaffoldingMode);
+    }
   }
 
   getSessionHistory(): Array<{ componentId: string; difficulty: string; score?: number; topic?: string; status: 'done' | 'active' | 'queued' }> {
@@ -324,11 +353,14 @@ export class SessionKernel {
     this.hydrationInFlight = false;
     this.waitingForDelivery = false;
     this.pendingMode = 0;
+    this.deliveryRetries = 0;
+    this.clearDeliveryTimeout();
     this.batchIndex = 0;
     this.results = [];
     this.decisions = [];
     this.scaffoldingMode = ADAPTIVE.INITIAL_SCAFFOLDING_MODE;
     this.workedExamplesInserted = 0;
+    this.extensionsAccepted = 0;
     this.generatedPrimitives = [];
     this.latencyLog = [];
     this.loadingMessage = '';
@@ -423,6 +455,8 @@ export class SessionKernel {
    * Signal that we need the next item but the queue is empty.
    * Shows a loading state and ensures a prefetch is running.
    * When the prefetch delivers, it will auto-advance.
+   * Includes a timeout: if nothing arrives within DELIVERY_TIMEOUT_MS,
+   * retry the prefetch (up to MAX_DELIVERY_RETRIES).
    */
   private waitForDelivery(targetMode: number): void {
     this.waitingForDelivery = true;
@@ -431,9 +465,44 @@ export class SessionKernel {
     this.phase = 'loading';
     this.notify();
 
+    this.startDeliveryTimeout();
+
     // Ensure a prefetch is running
     if (!this.hydrationInFlight) {
       this.prefetch(targetMode);
+    }
+  }
+
+  private startDeliveryTimeout(): void {
+    this.clearDeliveryTimeout();
+    this.deliveryTimeoutId = setTimeout(() => {
+      if (!this.waitingForDelivery) return;
+
+      if (this.deliveryRetries < ADAPTIVE.MAX_DELIVERY_RETRIES) {
+        console.warn(
+          `[Pulse] Delivery timeout (${ADAPTIVE.DELIVERY_TIMEOUT_MS}ms) — ` +
+          `retry ${this.deliveryRetries + 1}/${ADAPTIVE.MAX_DELIVERY_RETRIES}`,
+        );
+        this.deliveryRetries++;
+        this.hydrationInFlight = false; // force-clear so prefetch can run
+        this.loadingMessage = 'Taking a bit longer than usual...';
+        this.notify();
+        this.prefetch(this.pendingMode);
+      } else {
+        console.error('[Pulse] Delivery timeout — max retries exhausted');
+        this.waitingForDelivery = false;
+        this.clearDeliveryTimeout();
+        this.phase = 'error';
+        this.error = 'Could not load the next challenge. Please try again.';
+        this.notify();
+      }
+    }, ADAPTIVE.DELIVERY_TIMEOUT_MS);
+  }
+
+  private clearDeliveryTimeout(): void {
+    if (this.deliveryTimeoutId !== null) {
+      clearTimeout(this.deliveryTimeoutId);
+      this.deliveryTimeoutId = null;
     }
   }
 
@@ -533,6 +602,7 @@ export class SessionKernel {
   /**
    * Background prefetch — skips if one is already in flight.
    * When items arrive and the session is waiting, auto-advances.
+   * If hydration returns 0 items while waiting, retries immediately.
    */
   private async prefetch(targetMode: number): Promise<void> {
     if (this.hydrationInFlight) {
@@ -553,10 +623,32 @@ export class SessionKernel {
       if (this.waitingForDelivery && this.itemQueue.length > 0) {
         console.log('[Pulse] Prefetch delivered — auto-advancing');
         this.waitingForDelivery = false;
+        this.deliveryRetries = 0;
+        this.clearDeliveryTimeout();
         this.advanceFromQueue();
         this.notify();
         // Start next prefetch to keep the queue stocked
         this.prefetch(this.pendingMode);
+      } else if (this.waitingForDelivery && items.length === 0) {
+        // Hydration succeeded but returned 0 items (e.g. generator produced
+        // malformed JSON). Retry immediately instead of deadlocking.
+        if (this.deliveryRetries < ADAPTIVE.MAX_DELIVERY_RETRIES) {
+          this.deliveryRetries++;
+          console.warn(
+            `[Pulse] Prefetch returned 0 items while waiting — ` +
+            `retry ${this.deliveryRetries}/${ADAPTIVE.MAX_DELIVERY_RETRIES}`,
+          );
+          this.loadingMessage = 'Trying a different challenge...';
+          this.notify();
+          this.prefetch(targetMode);
+        } else {
+          console.error('[Pulse] Prefetch returned 0 items — max retries exhausted');
+          this.waitingForDelivery = false;
+          this.clearDeliveryTimeout();
+          this.phase = 'error';
+          this.error = 'Could not load the next challenge. Please try again.';
+          this.notify();
+        }
       } else {
         this.notify();
       }
@@ -565,12 +657,25 @@ export class SessionKernel {
       this.hydrationInFlight = false;
 
       if (this.waitingForDelivery) {
-        // We were counting on this prefetch — show error
-        this.waitingForDelivery = false;
-        this.phase = 'error';
-        this.error = 'Failed to load next challenge';
+        if (this.deliveryRetries < ADAPTIVE.MAX_DELIVERY_RETRIES) {
+          this.deliveryRetries++;
+          console.warn(
+            `[Pulse] Prefetch error while waiting — ` +
+            `retry ${this.deliveryRetries}/${ADAPTIVE.MAX_DELIVERY_RETRIES}`,
+          );
+          this.loadingMessage = 'Trying a different challenge...';
+          this.notify();
+          this.prefetch(targetMode);
+        } else {
+          this.waitingForDelivery = false;
+          this.clearDeliveryTimeout();
+          this.phase = 'error';
+          this.error = 'Failed to load next challenge';
+          this.notify();
+        }
+      } else {
+        this.notify();
       }
-      this.notify();
     }
   }
 }

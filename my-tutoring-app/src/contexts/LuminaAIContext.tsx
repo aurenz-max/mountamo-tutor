@@ -113,7 +113,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const sessionStartTimeRef = useRef<number>(0);
 
   // Use the proven queued audio playback hook
-  const { processAndPlayRawAudio, stopAudioPlayback } = useAudioPlayback({ sampleRate: 24000 });
+  const { processAndPlayRawAudio, stopAudioPlayback, resetForNextTurn } = useAudioPlayback({ sampleRate: 24000 });
 
   // Call hooks at top level (Rules of Hooks) and store in refs for use in callbacks
   const exhibitContext = useExhibitContext();
@@ -251,6 +251,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }));
         } else if (messageType === 'ai_turn_end') {
           setIsAIResponding(false);
+          resetForNextTurn();
         } else if (messageType === 'primitive_switched') {
           console.log(`Lumina AI: switched to ${message.primitive_type} (${message.instance_id})`);
           activePrimitiveIdRef.current = message.instance_id;
@@ -279,7 +280,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     socket.onerror = (error) => {
       console.error('Lumina AI WebSocket error:', error);
     };
-  }, [processAndPlayRawAudio]);
+  }, [processAndPlayRawAudio, resetForNextTurn]);
 
   // Helper to close any existing socket
   const closeExistingSocket = useCallback(() => {

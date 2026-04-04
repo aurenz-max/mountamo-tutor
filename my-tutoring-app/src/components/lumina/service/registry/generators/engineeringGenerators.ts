@@ -32,6 +32,7 @@ import { generatePropulsionTimeline } from '../../engineering/gemini-propulsion-
 import { generatePaperAirplaneDesigner } from '../../engineering/gemini-paper-airplane-designer';
 import { generateEngineExplorer } from '../../engineering/gemini-engine-explorer';
 import { generateVehicleDesignStudio } from '../../engineering/gemini-vehicle-design-studio';
+import { generateHydraulicsLab } from '../../engineering/gemini-hydraulics-lab';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -191,6 +192,13 @@ registerGenerator('vehicle-design-studio', async (item, topic, gradeContext) => 
   data: await generateVehicleDesignStudio(topic, gradeContext, item.config),
 }));
 
+// Hydraulics Lab (Pascal's Law — hydraulic force multiplication)
+registerGenerator('hydraulics-lab', async (item, topic, gradeContext) => ({
+  type: 'hydraulics-lab',
+  instanceId: item.instanceId,
+  data: await generateHydraulicsLab(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 22/22 engineering primitives registered
+// Migration status: 23/23 engineering primitives registered
 // ============================================================================

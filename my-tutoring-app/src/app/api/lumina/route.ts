@@ -263,6 +263,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(hydratedItems);
       }
 
+      case 'generateTopicSuggestions': {
+        const { generateTopicSuggestions } = await import(
+          '@/components/lumina/service/topic-suggestions/gemini-topic-suggestions'
+        );
+        const suggestions = await generateTopicSuggestions(
+          params.gradeLevel,
+          params.count,
+          params.previousTopics
+        );
+        return NextResponse.json(suggestions);
+      }
+
       default:
         return NextResponse.json(
           { error: `Unknown action: ${action}` },

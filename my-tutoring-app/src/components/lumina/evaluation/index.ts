@@ -58,6 +58,7 @@ export type {
   AirfoilLabMetrics,
   VehicleComparisonLabMetrics,
   PropulsionLabMetrics,
+  HydraulicsLabMetrics,
   PropulsionTimelineMetrics,
   PaperAirplaneDesignerMetrics,
   EngineExplorerMetrics,

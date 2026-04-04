@@ -271,7 +271,7 @@ export const generateNumberLine = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   // ── Build number pool (Gemini structured output is near-deterministic — we own the randomness) ──
-  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true });
+  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
   console.log(`[NumberLine] display:`, pool?.displayRange ?? 'none', `pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
 
   const rangeSection = pool?.toPromptSection() ?? '';

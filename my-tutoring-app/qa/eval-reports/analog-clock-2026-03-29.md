@@ -4,41 +4,51 @@
 
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
-| read      | FAIL   | 1      |
-| set_time  | FAIL   | 3      |
-| match     | FAIL   | 1      |
-| elapsed   | FAIL   | 2      |
+| read      | PASS (after fix) | 1 (fixed) |
+| set_time  | PASS (after fix) | 3 (fixed) |
+| match     | PASS (after fix) | 1 (fixed) |
+| elapsed   | PASS (after fix) | 2 (fixed) |
 
-## Issues
+## Issues (all fixed)
 
 ### AC-1: read / match — Digital display leaks the answer
 - **Severity:** CRITICAL
-- **What's broken:** `digitalDisplay` at line 789 always renders `formatTime(displayHour, displayMinute)`. In read/match modes, `displayHour/displayMinute` are set to the target answer (line 429-431). Student sees e.g. "11:30" in the digital display and picks "11:30" from MC options — assessment completely defeated.
-- **Data:** `displayHour = targetHour, displayMinute = targetMinute` in read/match modes
-- **Fix in:** COMPONENT — hide digital display during read/match/set_time until student answers correctly
+- **What was broken:** `digitalDisplay` always rendered `formatTime(displayHour, displayMinute)`. In read/match modes, student saw the target time in the digital display — assessment completely defeated.
+- **Fix:** Digital display now only shown for `elapsed` mode or after `isCurrentChallengeCorrect`. Hidden in read/match/set_time until answered.
+- **Fix in:** COMPONENT
 
 ### AC-2: set_time — Minute hand can't cross past 45 minutes (hour never advances)
 - **Severity:** CRITICAL
-- **What's broken:** The drag handler (lines 527-557) has two bugs:
-  1. **Stale closure:** `prevMin = displayMinute` (line 547) reads React state which doesn't update between rapid pointermove events within the same render frame. Multiple drag events fire before React re-renders, so `displayMinute` stays frozen at the last-rendered value.
-  2. **Off-by-one boundary:** `prevMin > 45` (line 548) uses strict greater-than, but grade '1-2' snapping maxes out at 45. `45 > 45` is always **false** — the hour can never advance for K/1-2 grade bands.
-- **Result:** User drags minute hand to :45 but can't cross to :00. Hour hand never changes. Clock appears to "jump backwards" when trying to cross the 12 o'clock position.
-- **Data:** `snapMinute('1-2') → [0, 15, 30, 45]`, stale `displayMinute` in closure
-- **Fix in:** COMPONENT — use a ref for previous minute (sync update in handler), change boundary to `>=`/`<=`
+- **What was broken:** Drag handler had stale closure (`displayMinute` state didn't update between rapid pointermove events) and off-by-one boundary (`> 45` instead of `>= 45`).
+- **Fix:** Replaced state-based `prevMin` with `prevMinuteRef` (sync ref update in handler). Changed boundary to `>= 45` / `<= 15` for wraparound detection.
+- **Fix in:** COMPONENT
 
 ### AC-3: set_time — Digital clock should be hidden
 - **Severity:** HIGH
-- **What's broken:** The digital display shows the current time being set, making set_time mode too easy — student can just drag until the digital readout matches the target instead of learning to read the analog hands.
-- **Fix in:** COMPONENT — hide digital display in set_time mode
+- **What was broken:** Digital display showed the time being set, making set_time trivial — drag until readout matches target.
+- **Fix:** Same conditional as AC-1 — digital display hidden in set_time mode.
+- **Fix in:** COMPONENT
 
 ### AC-4: set_time — AI re-introduces activity on every clock reset
 - **Severity:** HIGH
-- **What's broken:** `aiPrimitiveData` memo (lines 489-501) includes `displayedTime: formatTime(displayHour, displayMinute)`. In set_time mode, every drag event changes `displayHour`/`displayMinute`, causing a context update to Gemini. When the clock resets to 12:00 (new challenge or failed drag), Gemini sees a fresh-looking state and responds with "Welcome! We're going to have so much fun learning..." — repeating the introduction on every reset.
-- **Data:** Logs show repeated "Welcome! We're going..." on context updates with `displayedTime: "12:00"`
-- **Fix in:** COMPONENT — remove `displayedTime` from aiPrimitiveData (answer check messages already include it)
+- **What was broken:** `aiPrimitiveData` included `displayedTime` which changed on every drag, triggering Gemini context updates. Reset to 12:00 caused repeated "Welcome!" introductions.
+- **Fix:** Removed `displayedTime` from `aiPrimitiveData`. Answer check messages already include time context.
+- **Fix in:** COMPONENT
 
 ### AC-5: elapsed — correctOptionIndex always 0 (wrong answer marked correct)
 - **Severity:** HIGH
-- **What's broken:** Generator auto-correction (lines 263-276) only validates `correctOptionIndex` for read/match types by matching targetTime against options. For elapsed challenges, Gemini consistently outputs `correctOptionIndex: 0` regardless of which option contains the correct elapsed duration. Most elapsed challenges are impossible to answer "correctly."
-- **Data:** All 6 elapsed challenges had `correctOptionIndex: 0`; e.g. c1 answer is "30 minutes" (option2) but correctOptionIndex=0 points to "10 minutes"
-- **Fix in:** GENERATOR — compute elapsed duration from start→target, match against options, derive correctOptionIndex
+- **What was broken:** Generator auto-correction only validated correctOptionIndex for read/match types. Elapsed challenges always got `correctOptionIndex: 0`.
+- **Fix:** Generator now derives elapsed duration from `startHour/startMinute → targetHour/targetMinute`, builds human-readable elapsed strings, and matches against options to derive `correctOptionIndex`.
+- **Fix in:** GENERATOR
+
+## Root Cause
+
+Component had answer leakage (digital display visible in assessment modes) and a drag interaction bug (stale React closure + off-by-one boundary). Generator lacked elapsed-specific correctOptionIndex derivation.
+
+## Fix Summary
+
+All fixes applied across component and generator:
+1. **AC-1/AC-3**: Digital display conditionally rendered — only for elapsed mode or after correct answer
+2. **AC-2**: Drag handler uses `prevMinuteRef` (ref) with `>= 45` / `<= 15` boundaries
+3. **AC-4**: `displayedTime` removed from `aiPrimitiveData`
+4. **AC-5**: Generator computes elapsed duration and derives `correctOptionIndex` from options

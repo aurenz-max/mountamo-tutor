@@ -26,6 +26,7 @@ import FlightForcesExplorer from '../primitives/visual-primitives/engineering/Fl
 import AirfoilLab from '../primitives/visual-primitives/engineering/AirfoilLab';
 import VehicleComparisonLab from '../primitives/visual-primitives/engineering/VehicleComparisonLab';
 import PropulsionLab from '../primitives/visual-primitives/engineering/PropulsionLab';
+import HydraulicsLab from '../primitives/visual-primitives/engineering/HydraulicsLab';
 import PropulsionTimeline from '../primitives/visual-primitives/engineering/PropulsionTimeline';
 import PaperAirplaneDesigner from '../primitives/visual-primitives/engineering/PaperAirplaneDesigner';
 import EngineExplorer from '../primitives/visual-primitives/engineering/EngineExplorer';
@@ -50,7 +51,7 @@ type PrimitiveType =
   | 'lever-lab' | 'pulley-system-builder' | 'ramp-lab' | 'wheel-axle-explorer' | 'gear-train-builder'
   | 'bridge-builder' | 'tower-stacker' | 'shape-strength-tester' | 'foundation-builder'
   | 'excavator-arm-simulator' | 'dump-truck-loader' | 'construction-sequence-planner' | 'blueprint-canvas'
-  | 'machine-profile' | 'flight-forces-explorer' | 'airfoil-lab' | 'vehicle-comparison-lab' | 'propulsion-lab' | 'propulsion-timeline'
+  | 'machine-profile' | 'flight-forces-explorer' | 'airfoil-lab' | 'vehicle-comparison-lab' | 'propulsion-lab' | 'hydraulics-lab' | 'propulsion-timeline'
   | 'paper-airplane-designer'
   | 'engine-explorer'
   | 'vehicle-design-studio';
@@ -88,6 +89,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'airfoil-lab', label: 'Airfoil Lab', icon: '🪽', topic: 'Understanding wing shapes and how lift is generated', strand: 'VF' },
   { value: 'vehicle-comparison-lab', label: 'Vehicle Comparison', icon: '📊', topic: 'Comparing vehicles across speed, weight, and capacity', strand: 'VF' },
   { value: 'propulsion-lab', label: 'Propulsion Lab', icon: '🚀', topic: 'Newton\'s Third Law and how vehicles generate thrust', strand: 'VF' },
+  { value: 'hydraulics-lab', label: 'Hydraulics Lab', icon: '🔧', topic: 'Hydraulic force multiplication', strand: 'VF' },
   { value: 'propulsion-timeline', label: 'Propulsion Timeline', icon: '⏳', topic: 'History of transportation from walking to spacecraft', strand: 'VF' },
   { value: 'paper-airplane-designer', label: 'Paper Airplane Designer', icon: '✈️', topic: 'Designing and testing paper airplanes using the engineering design process', strand: 'VF' },
   { value: 'engine-explorer', label: 'Engine Explorer', icon: '🔧', topic: 'Exploring engine types, components, and energy cycles', strand: 'VF' },
@@ -242,12 +244,16 @@ const PrimitiveRenderer: React.FC<{
       return (
         <FlightForcesExplorer
           data={{
-            ...(data as Parameters<typeof FlightForcesExplorer>[0]['data']),
+            title: 'Flight Forces Explorer',
+            description: 'Four Forces of Flight',
+            overview: 'Watch air particles flow around the wing',
+            aircraftType: 'cessna',
+            aircraftName: 'Cessna 172',
+            gradeBand: '3-5',
             instanceId: `flight-forces-explorer-${Date.now()}`,
             skillId: 'engineering-aerodynamics',
             subskillId: 'four-forces-of-flight',
             objectiveId: 'understand-flight-forces',
-            onEvaluationSubmit,
           }}
         />
       );
@@ -281,12 +287,26 @@ const PrimitiveRenderer: React.FC<{
       return (
         <PropulsionLab
           data={{
-            ...(data as Parameters<typeof PropulsionLab>[0]['data']),
+            title: 'Propulsion Lab',
+            description: "Newton's Third Law",
+            overview: 'Explore how different vehicles create thrust',
+            gradeBand: '3-5',
             instanceId: `propulsion-lab-${Date.now()}`,
             skillId: 'engineering-propulsion',
             subskillId: 'newtons-third-law',
             objectiveId: 'understand-propulsion',
-            onEvaluationSubmit,
+          } as Parameters<typeof PropulsionLab>[0]['data']}
+        />
+      );
+    case 'hydraulics-lab':
+      return (
+        <HydraulicsLab
+          data={{
+            ...(data as Parameters<typeof HydraulicsLab>[0]['data']),
+            instanceId: `hydraulics-lab-${Date.now()}`,
+            skillId: 'engineering-hydraulics',
+            subskillId: 'force-multiplication',
+            objectiveId: 'understand-hydraulic-force',
           }}
         />
       );

@@ -1,10 +1,8 @@
 import { Type, Schema } from "@google/genai";
-import { TimeSequencerData } from "../../primitives/visual-primitives/math/TimeSequencer";
+import { TimeSequencerData, TimeSequencerChallenge } from "../../primitives/visual-primitives/math/TimeSequencer";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
-  constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
@@ -49,239 +47,585 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
-// Valid periods for validation
+// Shared constants
 // ---------------------------------------------------------------------------
 
 const VALID_PERIODS = ["morning", "afternoon", "evening", "night"];
 const VALID_ANSWERS = ["A", "B", "same"];
 
+const SCENARIO_THEMES = [
+  "a school day morning routine",
+  "a weekend day at home",
+  "getting ready for a field trip",
+  "a birthday party day",
+  "a rainy day schedule",
+  "a visit to grandma's house",
+];
+
+function randomTheme(): string {
+  return SCENARIO_THEMES[Math.floor(Math.random() * SCENARIO_THEMES.length)];
+}
+
+const SHARED_CONTEXT = `Use relatable daily routine activities with fun emojis.
+Emojis to use: 🌅 ☀️ 🌙 🍳 🎒 📚 🏃 🍽️ 🛁 😴 🦷 🚌 🌇 ⭐ 🧹 🎨 🎵 🐕 🍎 🥤
+Use warm, encouraging instruction text appropriate for young children.
+Include helpful hints that guide without giving the answer.`;
+
 // ---------------------------------------------------------------------------
-// Flattened Gemini schema (arrays → indexed fields)
+// Per-mode schemas — flat, focused, no nullable fields
 // ---------------------------------------------------------------------------
 
-const timeSequencerSchema: Schema = {
+const sequenceEventsSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: {
-      type: Type.STRING,
-      description: "Title for the time/sequencing activity (e.g., 'My Daily Routine!')",
-    },
-    description: {
-      type: Type.STRING,
-      description: "Brief educational description",
-    },
-    gradeBand: {
-      type: Type.STRING,
-      description: "Grade band: 'K', '1', or '2'",
-    },
+    title: { type: Type.STRING, description: "Activity title" },
+    description: { type: Type.STRING, description: "Brief educational description" },
     challenges: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
-          id: { type: Type.STRING, description: "Unique challenge ID (e.g., 'c1')" },
-          type: {
-            type: Type.STRING,
-            description:
-              "Challenge type: 'sequence-events', 'match-time-of-day', 'before-after', 'duration-compare', 'read-schedule'",
-          },
-          instruction: {
-            type: Type.STRING,
-            description: "Student-facing instruction, warm and encouraging",
-          },
+          id: { type: Type.STRING, description: "Unique ID e.g. 'c1'" },
+          instruction: { type: Type.STRING, description: "Student-facing instruction" },
           hint: { type: Type.STRING, description: "Hint shown after incorrect attempts" },
-
-          // --- sequence-events: flattened events array + correctOrderCsv ---
-          event0Id: { type: Type.STRING, description: "1st event ID (sequence-events)", nullable: true },
-          event0Label: { type: Type.STRING, description: "1st event label", nullable: true },
-          event0Emoji: { type: Type.STRING, description: "1st event emoji", nullable: true },
-          event0TypicalTime: { type: Type.STRING, description: "1st event typical time", nullable: true },
-          event1Id: { type: Type.STRING, description: "2nd event ID", nullable: true },
-          event1Label: { type: Type.STRING, description: "2nd event label", nullable: true },
-          event1Emoji: { type: Type.STRING, description: "2nd event emoji", nullable: true },
-          event1TypicalTime: { type: Type.STRING, description: "2nd event typical time", nullable: true },
-          event2Id: { type: Type.STRING, description: "3rd event ID", nullable: true },
-          event2Label: { type: Type.STRING, description: "3rd event label", nullable: true },
-          event2Emoji: { type: Type.STRING, description: "3rd event emoji", nullable: true },
-          event2TypicalTime: { type: Type.STRING, description: "3rd event typical time", nullable: true },
-          event3Id: { type: Type.STRING, description: "4th event ID", nullable: true },
+          event0Id: { type: Type.STRING, description: "1st event ID (e.g. 'e1')" },
+          event0Label: { type: Type.STRING, description: "1st event label" },
+          event0Emoji: { type: Type.STRING, description: "1st event emoji" },
+          event1Id: { type: Type.STRING, description: "2nd event ID" },
+          event1Label: { type: Type.STRING, description: "2nd event label" },
+          event1Emoji: { type: Type.STRING, description: "2nd event emoji" },
+          event2Id: { type: Type.STRING, description: "3rd event ID" },
+          event2Label: { type: Type.STRING, description: "3rd event label" },
+          event2Emoji: { type: Type.STRING, description: "3rd event emoji" },
+          event3Id: { type: Type.STRING, description: "4th event ID (use empty string if fewer than 4 events)", nullable: true },
           event3Label: { type: Type.STRING, description: "4th event label", nullable: true },
           event3Emoji: { type: Type.STRING, description: "4th event emoji", nullable: true },
-          event3TypicalTime: { type: Type.STRING, description: "4th event typical time", nullable: true },
-          event4Id: { type: Type.STRING, description: "5th event ID", nullable: true },
+          event4Id: { type: Type.STRING, description: "5th event ID (use empty string if fewer than 5 events)", nullable: true },
           event4Label: { type: Type.STRING, description: "5th event label", nullable: true },
           event4Emoji: { type: Type.STRING, description: "5th event emoji", nullable: true },
-          event4TypicalTime: { type: Type.STRING, description: "5th event typical time", nullable: true },
-          event5Id: { type: Type.STRING, description: "6th event ID", nullable: true },
-          event5Label: { type: Type.STRING, description: "6th event label", nullable: true },
-          event5Emoji: { type: Type.STRING, description: "6th event emoji", nullable: true },
-          event5TypicalTime: { type: Type.STRING, description: "6th event typical time", nullable: true },
-          correctOrderCsv: { type: Type.STRING, description: "Comma-separated event IDs in correct chronological order", nullable: true },
-
-          // --- match-time-of-day: single event + correctPeriod ---
-          eventId: { type: Type.STRING, description: "Single event ID (match-time-of-day)", nullable: true },
-          eventLabel: { type: Type.STRING, description: "Single event label", nullable: true },
-          eventEmoji: { type: Type.STRING, description: "Single event emoji", nullable: true },
-          eventTypicalTime: { type: Type.STRING, description: "Single event typical time", nullable: true },
-          correctPeriod: { type: Type.STRING, description: "Correct time period: 'morning', 'afternoon', 'evening', or 'night'", nullable: true },
-
-          // --- before-after: referenceEvent + relation + options + correctEvent ---
-          referenceEventId: { type: Type.STRING, description: "Reference event ID (before-after)", nullable: true },
-          referenceEventLabel: { type: Type.STRING, description: "Reference event label", nullable: true },
-          referenceEventEmoji: { type: Type.STRING, description: "Reference event emoji", nullable: true },
-          relation: { type: Type.STRING, description: "'before' or 'after'", nullable: true },
-          option0Id: { type: Type.STRING, description: "Option 1 ID", nullable: true },
-          option0Label: { type: Type.STRING, description: "Option 1 label", nullable: true },
-          option0Emoji: { type: Type.STRING, description: "Option 1 emoji", nullable: true },
-          option1Id: { type: Type.STRING, description: "Option 2 ID", nullable: true },
-          option1Label: { type: Type.STRING, description: "Option 2 label", nullable: true },
-          option1Emoji: { type: Type.STRING, description: "Option 2 emoji", nullable: true },
-          option2Id: { type: Type.STRING, description: "Option 3 ID", nullable: true },
-          option2Label: { type: Type.STRING, description: "Option 3 label", nullable: true },
-          option2Emoji: { type: Type.STRING, description: "Option 3 emoji", nullable: true },
-          option3Id: { type: Type.STRING, description: "Option 4 ID", nullable: true },
-          option3Label: { type: Type.STRING, description: "Option 4 label", nullable: true },
-          option3Emoji: { type: Type.STRING, description: "Option 4 emoji", nullable: true },
-          correctEvent: { type: Type.STRING, description: "Correct option event ID (before-after)", nullable: true },
-
-          // --- duration-compare: eventA + eventB + correctAnswer ---
-          eventAId: { type: Type.STRING, description: "Event A ID (duration-compare)", nullable: true },
-          eventALabel: { type: Type.STRING, description: "Event A label", nullable: true },
-          eventAEmoji: { type: Type.STRING, description: "Event A emoji", nullable: true },
-          eventBId: { type: Type.STRING, description: "Event B ID (duration-compare)", nullable: true },
-          eventBLabel: { type: Type.STRING, description: "Event B label", nullable: true },
-          eventBEmoji: { type: Type.STRING, description: "Event B emoji", nullable: true },
-          correctAnswer: { type: Type.STRING, description: "Which takes longer: 'A', 'B', or 'same'", nullable: true },
-
-          // --- read-schedule: flattened schedule + targetTime + correctActivity + options ---
-          schedule0Time: { type: Type.STRING, description: "Schedule entry 1 time", nullable: true },
-          schedule0Activity: { type: Type.STRING, description: "Schedule entry 1 activity", nullable: true },
-          schedule0Emoji: { type: Type.STRING, description: "Schedule entry 1 emoji", nullable: true },
-          schedule1Time: { type: Type.STRING, description: "Schedule entry 2 time", nullable: true },
-          schedule1Activity: { type: Type.STRING, description: "Schedule entry 2 activity", nullable: true },
-          schedule1Emoji: { type: Type.STRING, description: "Schedule entry 2 emoji", nullable: true },
-          schedule2Time: { type: Type.STRING, description: "Schedule entry 3 time", nullable: true },
-          schedule2Activity: { type: Type.STRING, description: "Schedule entry 3 activity", nullable: true },
-          schedule2Emoji: { type: Type.STRING, description: "Schedule entry 3 emoji", nullable: true },
-          schedule3Time: { type: Type.STRING, description: "Schedule entry 4 time", nullable: true },
-          schedule3Activity: { type: Type.STRING, description: "Schedule entry 4 activity", nullable: true },
-          schedule3Emoji: { type: Type.STRING, description: "Schedule entry 4 emoji", nullable: true },
-          schedule4Time: { type: Type.STRING, description: "Schedule entry 5 time", nullable: true },
-          schedule4Activity: { type: Type.STRING, description: "Schedule entry 5 activity", nullable: true },
-          schedule4Emoji: { type: Type.STRING, description: "Schedule entry 5 emoji", nullable: true },
-          schedule5Time: { type: Type.STRING, description: "Schedule entry 6 time", nullable: true },
-          schedule5Activity: { type: Type.STRING, description: "Schedule entry 6 activity", nullable: true },
-          schedule5Emoji: { type: Type.STRING, description: "Schedule entry 6 emoji", nullable: true },
-          targetTime: { type: Type.STRING, description: "Target time to look up in schedule", nullable: true },
-          correctActivity: { type: Type.STRING, description: "Correct activity at targetTime", nullable: true },
-          activityOption0: { type: Type.STRING, description: "Activity option 1", nullable: true },
-          activityOption1: { type: Type.STRING, description: "Activity option 2", nullable: true },
-          activityOption2: { type: Type.STRING, description: "Activity option 3", nullable: true },
-          activityOption3: { type: Type.STRING, description: "Activity option 4", nullable: true },
+          correctOrderCsv: { type: Type.STRING, description: "Comma-separated event IDs in correct chronological order" },
         },
-        required: ["id", "type", "instruction", "hint"],
+        required: ["id", "instruction", "hint", "event0Id", "event0Label", "event0Emoji", "event1Id", "event1Label", "event1Emoji", "event2Id", "event2Label", "event2Emoji", "correctOrderCsv"],
       },
-      description: "Array of 5-6 progressive challenges",
+      description: "Array of sequence challenges",
     },
   },
-  required: ["title", "description", "gradeBand", "challenges"],
+  required: ["title", "description", "challenges"],
+};
+
+const matchTimeOfDaySchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Activity title" },
+    description: { type: Type.STRING, description: "Brief educational description" },
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING, description: "Unique ID" },
+          instruction: { type: Type.STRING, description: "Student-facing instruction" },
+          hint: { type: Type.STRING, description: "Hint" },
+          eventLabel: { type: Type.STRING, description: "Activity label" },
+          eventEmoji: { type: Type.STRING, description: "Activity emoji" },
+          correctPeriod: { type: Type.STRING, description: "'morning', 'afternoon', 'evening', or 'night'" },
+        },
+        required: ["id", "instruction", "hint", "eventLabel", "eventEmoji", "correctPeriod"],
+      },
+    },
+  },
+  required: ["title", "description", "challenges"],
+};
+
+const beforeAfterSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Activity title" },
+    description: { type: Type.STRING, description: "Brief educational description" },
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING, description: "Unique ID" },
+          instruction: { type: Type.STRING, description: "Student-facing instruction" },
+          hint: { type: Type.STRING, description: "Hint" },
+          referenceLabel: { type: Type.STRING, description: "Reference event label" },
+          referenceEmoji: { type: Type.STRING, description: "Reference event emoji" },
+          relation: { type: Type.STRING, description: "'before' or 'after'" },
+          option0Label: { type: Type.STRING, description: "Option 1 label" },
+          option0Emoji: { type: Type.STRING, description: "Option 1 emoji" },
+          option1Label: { type: Type.STRING, description: "Option 2 label" },
+          option1Emoji: { type: Type.STRING, description: "Option 2 emoji" },
+          option2Label: { type: Type.STRING, description: "Option 3 label" },
+          option2Emoji: { type: Type.STRING, description: "Option 3 emoji" },
+          correctOptionIndex: { type: Type.NUMBER, description: "Index of correct option (0, 1, or 2)" },
+        },
+        required: ["id", "instruction", "hint", "referenceLabel", "referenceEmoji", "relation", "option0Label", "option0Emoji", "option1Label", "option1Emoji", "option2Label", "option2Emoji", "correctOptionIndex"],
+      },
+    },
+  },
+  required: ["title", "description", "challenges"],
+};
+
+const durationCompareSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Activity title" },
+    description: { type: Type.STRING, description: "Brief educational description" },
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING, description: "Unique ID" },
+          instruction: { type: Type.STRING, description: "Student-facing instruction" },
+          hint: { type: Type.STRING, description: "Hint" },
+          eventALabel: { type: Type.STRING, description: "Event A label" },
+          eventAEmoji: { type: Type.STRING, description: "Event A emoji" },
+          eventBLabel: { type: Type.STRING, description: "Event B label" },
+          eventBEmoji: { type: Type.STRING, description: "Event B emoji" },
+          correctAnswer: { type: Type.STRING, description: "'A', 'B', or 'same'" },
+        },
+        required: ["id", "instruction", "hint", "eventALabel", "eventAEmoji", "eventBLabel", "eventBEmoji", "correctAnswer"],
+      },
+    },
+  },
+  required: ["title", "description", "challenges"],
+};
+
+const readScheduleSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Activity title" },
+    description: { type: Type.STRING, description: "Brief educational description" },
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING, description: "Unique ID" },
+          instruction: { type: Type.STRING, description: "Student-facing instruction" },
+          hint: { type: Type.STRING, description: "Hint" },
+          schedule0Time: { type: Type.STRING, description: "Schedule entry 1 time" },
+          schedule0Activity: { type: Type.STRING, description: "Schedule entry 1 activity" },
+          schedule0Emoji: { type: Type.STRING, description: "Schedule entry 1 emoji" },
+          schedule1Time: { type: Type.STRING, description: "Schedule entry 2 time" },
+          schedule1Activity: { type: Type.STRING, description: "Schedule entry 2 activity" },
+          schedule1Emoji: { type: Type.STRING, description: "Schedule entry 2 emoji" },
+          schedule2Time: { type: Type.STRING, description: "Schedule entry 3 time" },
+          schedule2Activity: { type: Type.STRING, description: "Schedule entry 3 activity" },
+          schedule2Emoji: { type: Type.STRING, description: "Schedule entry 3 emoji" },
+          schedule3Time: { type: Type.STRING, description: "Schedule entry 4 time" },
+          schedule3Activity: { type: Type.STRING, description: "Schedule entry 4 activity" },
+          schedule3Emoji: { type: Type.STRING, description: "Schedule entry 4 emoji" },
+          targetTime: { type: Type.STRING, description: "Time to look up" },
+          correctActivity: { type: Type.STRING, description: "Activity at targetTime" },
+          wrongOption1: { type: Type.STRING, description: "Wrong activity option 1" },
+          wrongOption2: { type: Type.STRING, description: "Wrong activity option 2" },
+          wrongOption3: { type: Type.STRING, description: "Wrong activity option 3" },
+        },
+        required: ["id", "instruction", "hint", "schedule0Time", "schedule0Activity", "schedule0Emoji", "schedule1Time", "schedule1Activity", "schedule1Emoji", "schedule2Time", "schedule2Activity", "schedule2Emoji", "schedule3Time", "schedule3Activity", "schedule3Emoji", "targetTime", "correctActivity", "wrongOption1", "wrongOption2", "wrongOption3"],
+      },
+    },
+  },
+  required: ["title", "description", "challenges"],
 };
 
 // ---------------------------------------------------------------------------
-// Flat → structured helpers
+// Per-mode sub-generators
 // ---------------------------------------------------------------------------
 
-interface FlatChallenge {
-  [key: string]: unknown;
+interface SubResult {
+  title: string;
+  description: string;
+  challenges: TimeSequencerChallenge[];
 }
 
-function collectEventCards(flat: FlatChallenge, prefix: string, maxSlots: number) {
-  const cards: { id: string; label: string; emoji: string; typicalTime?: string }[] = [];
-  for (let i = 0; i < maxSlots; i++) {
-    const id = flat[`${prefix}${i}Id`];
-    const label = flat[`${prefix}${i}Label`];
-    const emoji = flat[`${prefix}${i}Emoji`];
-    const time = flat[`${prefix}${i}TypicalTime`];
-    if (typeof id === "string" && typeof label === "string" && typeof emoji === "string") {
-      const card: { id: string; label: string; emoji: string; typicalTime?: string } = { id, label, emoji };
-      if (typeof time === "string" && time) card.typicalTime = time;
-      cards.push(card);
+async function generateSequenceEvents(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+): Promise<SubResult> {
+  const theme = randomTheme();
+  const prompt = `
+Create ${count} "sequence-events" challenges for teaching "${topic}" to ${gradeLevel} students.
+Theme: ${theme}.
+
+Each challenge: give 3-5 daily routine events. Student must tap them in chronological order.
+- Use event IDs like "e1", "e2", etc.
+- correctOrderCsv: comma-separated event IDs in the correct chronological order.
+- For K: 3 events max. For Grade 1-2: 4-5 events.
+- All event IDs must be unique within each challenge.
+- correctOrderCsv MUST contain exactly the same IDs as the events listed.
+- Vary the scenarios — don't repeat the same events across challenges.
+
+${SHARED_CONTEXT}
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: sequenceEventsSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) return { title: "", description: "", challenges: [] };
+
+  // Post-process: flat → structured
+  const challenges: TimeSequencerChallenge[] = data.challenges.map((flat: Record<string, unknown>, i: number) => {
+    const events: { id: string; label: string; emoji: string }[] = [];
+    for (let j = 0; j < 5; j++) {
+      const id = flat[`event${j}Id`];
+      const label = flat[`event${j}Label`];
+      const emoji = flat[`event${j}Emoji`];
+      if (typeof id === "string" && id && typeof label === "string" && typeof emoji === "string") {
+        events.push({ id, label, emoji });
+      }
     }
-  }
-  return cards.length > 0 ? cards : undefined;
-}
 
-function collectSingleEvent(flat: FlatChallenge, prefix: string) {
-  const id = flat[`${prefix}Id`];
-  const label = flat[`${prefix}Label`];
-  const emoji = flat[`${prefix}Emoji`];
-  const time = flat[`${prefix}TypicalTime`];
-  if (typeof id === "string" && typeof label === "string" && typeof emoji === "string") {
-    const card: { id: string; label: string; emoji: string; typicalTime?: string } = { id, label, emoji };
-    if (typeof time === "string" && time) card.typicalTime = time;
-    return card;
-  }
-  return undefined;
-}
-
-function collectSingleEventNoTime(flat: FlatChallenge, prefix: string) {
-  const id = flat[`${prefix}Id`];
-  const label = flat[`${prefix}Label`];
-  const emoji = flat[`${prefix}Emoji`];
-  if (typeof id === "string" && typeof label === "string" && typeof emoji === "string") {
-    return { id, label, emoji };
-  }
-  return undefined;
-}
-
-function collectScheduleEntries(flat: FlatChallenge, maxSlots: number) {
-  const entries: { time: string; activity: string; emoji: string }[] = [];
-  for (let i = 0; i < maxSlots; i++) {
-    const time = flat[`schedule${i}Time`];
-    const activity = flat[`schedule${i}Activity`];
-    const emoji = flat[`schedule${i}Emoji`];
-    if (typeof time === "string" && typeof activity === "string" && typeof emoji === "string") {
-      entries.push({ time, activity, emoji });
+    // Parse and validate correctOrderCsv
+    const csvStr = typeof flat.correctOrderCsv === "string" ? flat.correctOrderCsv : "";
+    const orderIds = csvStr.split(",").map((s: string) => s.trim()).filter(Boolean);
+    const eventIdSet = new Set(events.map((e) => e.id));
+    const validOrder = orderIds.filter((id: string) => eventIdSet.has(id));
+    // Fill missing IDs
+    for (const e of events) {
+      if (!validOrder.includes(e.id)) validOrder.push(e.id);
     }
-  }
-  return entries.length > 0 ? entries : undefined;
+
+    return {
+      id: `c${i + 1}`,
+      type: "sequence-events" as const,
+      instruction: (flat.instruction as string) || "Put these events in order!",
+      hint: (flat.hint as string) || "Think about what happens first in your day!",
+      events: events.length >= 2 ? events : undefined,
+      correctOrder: events.length >= 2 ? validOrder : undefined,
+    };
+  }).filter((ch: TimeSequencerChallenge) => ch.events && ch.events.length >= 2);
+
+  return { title: data.title || "", description: data.description || "", challenges };
 }
 
-function collectActivityOptions(flat: FlatChallenge) {
-  const opts: string[] = [];
-  for (let i = 0; i < 4; i++) {
-    const v = flat[`activityOption${i}`];
-    if (typeof v === "string" && v) opts.push(v);
-  }
-  return opts.length > 0 ? opts : undefined;
+async function generateMatchTimeOfDay(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+): Promise<SubResult> {
+  const theme = randomTheme();
+  const prompt = `
+Create ${count} "match-time-of-day" challenges for teaching "${topic}" to ${gradeLevel} students.
+Theme: ${theme}.
+
+Each challenge: show ONE activity. Student picks whether it happens in morning, afternoon, evening, or night.
+- correctPeriod must be exactly one of: 'morning', 'afternoon', 'evening', 'night'.
+- For K: only use morning, afternoon, night (no evening).
+- Use a variety of daily activities (eating, sleeping, school, play, etc.).
+
+${SHARED_CONTEXT}
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: matchTimeOfDaySchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) return { title: "", description: "", challenges: [] };
+
+  const challenges: TimeSequencerChallenge[] = data.challenges.map((flat: Record<string, unknown>, i: number) => {
+    const period = typeof flat.correctPeriod === "string" ? flat.correctPeriod.toLowerCase() : "";
+    return {
+      id: `c${i + 1}`,
+      type: "match-time-of-day" as const,
+      instruction: (flat.instruction as string) || "When does this happen?",
+      hint: (flat.hint as string) || "Think about when you do this activity!",
+      event: {
+        id: `evt${i + 1}`,
+        label: (flat.eventLabel as string) || "Activity",
+        emoji: (flat.eventEmoji as string) || "🌟",
+      },
+      correctPeriod: (VALID_PERIODS.includes(period) ? period : "morning") as TimeSequencerChallenge["correctPeriod"],
+    };
+  });
+
+  return { title: data.title || "", description: data.description || "", challenges };
 }
 
-function collectOptionEvents(flat: FlatChallenge, maxSlots: number) {
-  const cards: { id: string; label: string; emoji: string }[] = [];
-  for (let i = 0; i < maxSlots; i++) {
-    const id = flat[`option${i}Id`];
-    const label = flat[`option${i}Label`];
-    const emoji = flat[`option${i}Emoji`];
-    if (typeof id === "string" && typeof label === "string" && typeof emoji === "string") {
-      cards.push({ id, label, emoji });
+async function generateBeforeAfter(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+): Promise<SubResult> {
+  const theme = randomTheme();
+  const prompt = `
+Create ${count} "before-after" challenges for teaching "${topic}" to ${gradeLevel} students.
+Theme: ${theme}.
+
+Each challenge: show a reference event. Ask "What happens BEFORE/AFTER [event]?"
+Provide 3 options. correctOptionIndex is the 0-based index of the correct answer.
+- relation must be 'before' or 'after'.
+- correctOptionIndex must be 0, 1, or 2.
+- Use varied daily activities that have clear temporal relationships.
+
+${SHARED_CONTEXT}
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: beforeAfterSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) return { title: "", description: "", challenges: [] };
+
+  const challenges: TimeSequencerChallenge[] = data.challenges.map((flat: Record<string, unknown>, i: number) => {
+    const options: { id: string; label: string; emoji: string }[] = [];
+    for (let j = 0; j < 3; j++) {
+      const label = flat[`option${j}Label`];
+      const emoji = flat[`option${j}Emoji`];
+      if (typeof label === "string" && typeof emoji === "string") {
+        options.push({ id: `opt${j}`, label, emoji });
+      }
     }
-  }
-  return cards.length > 0 ? cards : undefined;
+
+    const rel = typeof flat.relation === "string" ? flat.relation.toLowerCase() : "";
+    const correctIdx = typeof flat.correctOptionIndex === "number"
+      ? Math.min(Math.max(0, Math.floor(flat.correctOptionIndex)), options.length - 1)
+      : 0;
+
+    return {
+      id: `c${i + 1}`,
+      type: "before-after" as const,
+      instruction: (flat.instruction as string) || "What happens next?",
+      hint: (flat.hint as string) || "Think about your daily routine!",
+      referenceEvent: {
+        id: `ref${i}`,
+        label: (flat.referenceLabel as string) || "Event",
+        emoji: (flat.referenceEmoji as string) || "🌟",
+      },
+      relation: ((rel === "before" || rel === "after") ? rel : "after") as "before" | "after",
+      options,
+      correctEvent: options[correctIdx]?.id ?? options[0]?.id,
+    };
+  }).filter((ch: TimeSequencerChallenge) => ch.options && ch.options.length >= 2);
+
+  return { title: data.title || "", description: data.description || "", challenges };
+}
+
+async function generateDurationCompare(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+): Promise<SubResult> {
+  const theme = randomTheme();
+  const prompt = `
+Create ${count} "duration-compare" challenges for teaching "${topic}" to ${gradeLevel} students.
+Theme: ${theme}.
+
+Each challenge: show two activities. Student picks which takes longer.
+- correctAnswer must be exactly 'A', 'B', or 'same'.
+- Choose activities with clearly different durations (e.g. brushing teeth vs going to school).
+- Include 1 'same' answer if ${count} >= 3.
+
+${SHARED_CONTEXT}
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: durationCompareSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) return { title: "", description: "", challenges: [] };
+
+  const challenges: TimeSequencerChallenge[] = data.challenges.map((flat: Record<string, unknown>, i: number) => {
+    const ans = typeof flat.correctAnswer === "string" ? flat.correctAnswer : "";
+    return {
+      id: `c${i + 1}`,
+      type: "duration-compare" as const,
+      instruction: (flat.instruction as string) || "Which takes longer?",
+      hint: (flat.hint as string) || "Think about how much time each activity takes!",
+      eventA: {
+        id: `eA${i}`,
+        label: (flat.eventALabel as string) || "Activity A",
+        emoji: (flat.eventAEmoji as string) || "🌟",
+      },
+      eventB: {
+        id: `eB${i}`,
+        label: (flat.eventBLabel as string) || "Activity B",
+        emoji: (flat.eventBEmoji as string) || "⭐",
+      },
+      correctAnswer: (VALID_ANSWERS.includes(ans) ? ans : "A") as "A" | "B" | "same",
+    };
+  });
+
+  return { title: data.title || "", description: data.description || "", challenges };
+}
+
+async function generateReadSchedule(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+): Promise<SubResult> {
+  const theme = randomTheme();
+  const prompt = `
+Create ${count} "read-schedule" challenges for teaching "${topic}" to ${gradeLevel} students.
+Theme: ${theme}.
+
+Each challenge: show a 4-entry daily schedule with clock times (e.g. "8:00 AM", "12:30 PM").
+Ask what happens at targetTime. Provide 3 wrong options plus the correct one.
+- correctActivity MUST match the activity in the schedule at targetTime EXACTLY.
+- wrongOption1/2/3 must be plausible activities NOT at that time.
+- Schedule entries should be in chronological order.
+- Grade 2+ content — use simple clock times.
+
+${SHARED_CONTEXT}
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: readScheduleSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) return { title: "", description: "", challenges: [] };
+
+  const challenges: TimeSequencerChallenge[] = data.challenges.map((flat: Record<string, unknown>, i: number) => {
+    const schedule: { time: string; activity: string; emoji: string }[] = [];
+    for (let j = 0; j < 4; j++) {
+      const time = flat[`schedule${j}Time`];
+      const activity = flat[`schedule${j}Activity`];
+      const emoji = flat[`schedule${j}Emoji`];
+      if (typeof time === "string" && typeof activity === "string" && typeof emoji === "string") {
+        schedule.push({ time, activity, emoji });
+      }
+    }
+
+    const correctActivity = (flat.correctActivity as string) || "";
+    const wrong1 = (flat.wrongOption1 as string) || "";
+    const wrong2 = (flat.wrongOption2 as string) || "";
+    const wrong3 = (flat.wrongOption3 as string) || "";
+
+    // Derive correctActivity from schedule if Gemini didn't match
+    const targetTime = (flat.targetTime as string) || "";
+    const scheduleEntry = schedule.find((s) => s.time === targetTime);
+    const derivedCorrect = scheduleEntry?.activity ?? correctActivity;
+
+    // Build shuffled activity options
+    const allOpts = [derivedCorrect, wrong1, wrong2, wrong3].filter(Boolean);
+    // Shuffle
+    for (let k = allOpts.length - 1; k > 0; k--) {
+      const r = Math.floor(Math.random() * (k + 1));
+      [allOpts[k], allOpts[r]] = [allOpts[r], allOpts[k]];
+    }
+
+    return {
+      id: `c${i + 1}`,
+      type: "read-schedule" as const,
+      instruction: (flat.instruction as string) || `What happens at ${targetTime}?`,
+      hint: (flat.hint as string) || "Look at the schedule and find the time!",
+      schedule: schedule.length >= 3 ? schedule : undefined,
+      targetTime,
+      correctActivity: derivedCorrect,
+      activityOptions: allOpts.length >= 2 ? allOpts : undefined,
+    };
+  }).filter((ch: TimeSequencerChallenge) => ch.schedule && ch.activityOptions);
+
+  return { title: data.title || "", description: data.description || "", challenges };
 }
 
 // ---------------------------------------------------------------------------
-// Generator
+// Generator dispatch map
 // ---------------------------------------------------------------------------
 
-/**
- * Generate time sequencer data for interactive time-of-day ordering,
- * event matching, before/after, duration comparison, and schedule reading.
- *
- * Grade-aware content:
- * - K: simple 3-event sequences, morning/afternoon/night only.
- * - Grade 1: 4-5 event sequences, before/after, duration compare.
- * - Grade 2: read-schedule with clock times, all challenge types.
- */
+type SubGenerator = (
+  topic: string,
+  gradeLevel: string,
+  count: number,
+) => Promise<SubResult>;
+
+const GENERATOR_MAP: Record<string, SubGenerator> = {
+  "sequence-events": generateSequenceEvents,
+  "match-time-of-day": generateMatchTimeOfDay,
+  "before-after": generateBeforeAfter,
+  "duration-compare": generateDurationCompare,
+  "read-schedule": generateReadSchedule,
+};
+
+// ---------------------------------------------------------------------------
+// Fallback challenges
+// ---------------------------------------------------------------------------
+
+const FALLBACKS: Record<string, TimeSequencerChallenge> = {
+  "sequence-events": {
+    id: "c1",
+    type: "sequence-events",
+    instruction: "Put these morning events in order!",
+    hint: "Think about what you do first when you wake up.",
+    events: [
+      { id: "e1", label: "Wake up", emoji: "🌅" },
+      { id: "e2", label: "Brush teeth", emoji: "🦷" },
+      { id: "e3", label: "Eat breakfast", emoji: "🍳" },
+    ],
+    correctOrder: ["e1", "e2", "e3"],
+  },
+  "match-time-of-day": {
+    id: "c1",
+    type: "match-time-of-day",
+    instruction: "When do you eat breakfast?",
+    hint: "Do you eat breakfast when you first wake up?",
+    event: { id: "e1", label: "Eat breakfast", emoji: "🍳" },
+    correctPeriod: "morning",
+  },
+  "before-after": {
+    id: "c1",
+    type: "before-after",
+    instruction: "What happens AFTER you wake up?",
+    hint: "Think about the first thing you do after opening your eyes.",
+    referenceEvent: { id: "e1", label: "Wake up", emoji: "🌅" },
+    relation: "after",
+    options: [
+      { id: "e2", label: "Brush teeth", emoji: "🦷" },
+      { id: "e3", label: "Go to sleep", emoji: "😴" },
+      { id: "e4", label: "Eat dinner", emoji: "🍽️" },
+    ],
+    correctEvent: "e2",
+  },
+  "duration-compare": {
+    id: "c1",
+    type: "duration-compare",
+    instruction: "Which takes longer?",
+    hint: "Think about how much time each activity usually takes.",
+    eventA: { id: "e1", label: "Brush teeth", emoji: "🦷" },
+    eventB: { id: "e2", label: "Go to school", emoji: "🚌" },
+    correctAnswer: "B",
+  },
+  "read-schedule": {
+    id: "c1",
+    type: "read-schedule",
+    instruction: "Look at the schedule. What happens at 9:00 AM?",
+    hint: "Find 9:00 AM on the schedule and read the activity.",
+    schedule: [
+      { time: "8:00 AM", activity: "Breakfast", emoji: "🍳" },
+      { time: "9:00 AM", activity: "Math class", emoji: "📚" },
+      { time: "12:00 PM", activity: "Lunch", emoji: "🍽️" },
+      { time: "3:00 PM", activity: "Go home", emoji: "🚌" },
+    ],
+    targetTime: "9:00 AM",
+    correctActivity: "Math class",
+    activityOptions: ["Breakfast", "Math class", "Lunch", "Go home"],
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Main orchestrator
+// ---------------------------------------------------------------------------
+
 export const generateTimeSequencer = async (
   topic: string,
   gradeLevel: string,
@@ -294,264 +638,72 @@ export const generateTimeSequencer = async (
     CHALLENGE_TYPE_DOCS,
   );
 
-  // ── Build mode-constrained schema ──
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(timeSequencerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
-    : timeSequencerSchema;
-
-  // ── Build prompt ──
-  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
-
-  // Randomize theme
-  const scenarioThemes = [
-    "a school day morning routine",
-    "a weekend day at home",
-    "getting ready for a field trip",
-    "a birthday party day",
-    "a rainy day schedule",
-    "a visit to grandma's house",
-  ];
-  const randomTheme = scenarioThemes[Math.floor(Math.random() * scenarioThemes.length)];
-
-  const prompt = `
-Create an educational time sequencing activity for teaching "${topic}" to ${gradeLevel} students.
-Theme this activity around ${randomTheme}.
-
-CONTEXT:
-- Students learn to understand the order of daily events, time-of-day concepts, and schedules.
-- Use relatable daily routine activities with fun emojis.
-- Emojis to use: 🌅 ☀️ 🌙 🍳 🎒 📚 🏃 🍽️ 🛁 😴 🦷 🚌 🌇 ⭐ 🧹 🎨 🎵 🐕 🍎 🥤
-
-GRADE-LEVEL GUIDELINES:
-- Grade K: ONLY use "sequence-events" (3 events max) and "match-time-of-day" (morning/afternoon/night only, no evening). Keep very simple.
-- Grade 1: Use "sequence-events" (4-5 events), "match-time-of-day" (all 4 periods), "before-after", and "duration-compare".
-- Grade 2: All types including "read-schedule" with clock times (e.g., "8:00 AM", "12:30 PM").
-
-${challengeTypeSection}
-
-FIELD GUIDELINES PER CHALLENGE TYPE:
-- "sequence-events": Set event0Id..event5Id, event0Label..event5Label, event0Emoji..event5Emoji, event0TypicalTime..event5TypicalTime. Set correctOrderCsv as comma-separated IDs in chronological order. Event IDs should be short like "e1", "e2", etc.
-- "match-time-of-day": Set eventId, eventLabel, eventEmoji, eventTypicalTime (the single event). Set correctPeriod to 'morning', 'afternoon', 'evening', or 'night'.
-- "before-after": Set referenceEventId, referenceEventLabel, referenceEventEmoji. Set relation ('before' or 'after'). Set option0Id..option3Id, option0Label..option3Label, option0Emoji..option3Emoji (3-4 choices). Set correctEvent to the correct option's ID.
-- "duration-compare": Set eventAId, eventALabel, eventAEmoji and eventBId, eventBLabel, eventBEmoji. Set correctAnswer to 'A', 'B', or 'same'.
-- "read-schedule": Set schedule0Time..schedule5Time, schedule0Activity..schedule5Activity, schedule0Emoji..schedule5Emoji (4-6 schedule entries in time order). Set targetTime (e.g., "9:00 AM"). Set correctActivity (the activity at that time). Set activityOption0..activityOption3 (4 choices including the correct one).
-
-IMPORTANT VALIDATION RULES:
-- For "sequence-events": correctOrderCsv MUST contain exactly the same IDs as the events listed, in chronological order.
-- For "before-after": correctEvent MUST be one of the option IDs.
-- For "read-schedule": correctActivity MUST be one of activityOption0-3, and MUST match the schedule entry at targetTime.
-- All event IDs must be unique within each challenge.
-
-REQUIREMENTS:
-1. Generate 5-6 challenges that progress in difficulty.
-2. Use warm, encouraging instruction text appropriate for young children.
-3. Include helpful hints that guide without giving the answer.
-4. Set gradeBand based on grade level (K, 1, or 2).
-5. Use varied daily routine scenarios — don't repeat the same events across challenges.
-6. Emojis should clearly represent the activity.
-
-Return the complete time sequencer configuration.
-`;
-
   logEvalModeResolution("TimeSequencer", config?.targetEvalMode, evalConstraint);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
+  // ── Determine allowed types ──
+  const allTypes = Object.keys(CHALLENGE_TYPE_DOCS);
+  const allowedTypes = evalConstraint?.allowedTypes ?? allTypes;
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  // ── Determine challenge count per type ──
+  // Target ~5 total challenges
+  const totalTarget = 5;
+  const challengesPerType = Math.max(1, Math.ceil(totalTarget / allowedTypes.length));
 
-  if (!data) {
-    throw new Error("No valid time sequencer data returned from Gemini API");
-  }
-
-  // ── Validate gradeBand ──
-  const validGrades = ["K", "1", "2"];
-  if (!validGrades.includes(data.gradeBand)) {
-    const gl = gradeLevel.toLowerCase();
-    if (gl.includes("kinder") || gl.includes("k")) data.gradeBand = "K";
-    else if (gl.includes("2")) data.gradeBand = "2";
-    else data.gradeBand = "1";
-  }
-
-  // ── Reconstruct arrays from flat fields & validate per challenge ──
-  const validTypes = ["sequence-events", "match-time-of-day", "before-after", "duration-compare", "read-schedule"];
-
-  data.challenges = (data.challenges || [])
-    .filter((c: FlatChallenge) => validTypes.includes(c.type as string))
-    .map((flat: FlatChallenge) => {
-      const challenge: Record<string, unknown> = {
-        id: flat.id,
-        type: flat.type,
-        instruction: flat.instruction,
-        hint: flat.hint || "Think about what happens during your day!",
-      };
-
-      switch (flat.type) {
-        case "sequence-events": {
-          const events = collectEventCards(flat, "event", 6);
-          if (events && events.length >= 2) {
-            challenge.events = events;
-            // Parse and validate correctOrderCsv
-            const csvStr = typeof flat.correctOrderCsv === "string" ? flat.correctOrderCsv : "";
-            const orderIds = csvStr.split(",").map((s: string) => s.trim()).filter(Boolean);
-            const eventIdSet = new Set(events.map((e) => e.id));
-            // Filter to only valid IDs
-            const validOrder = orderIds.filter((id: string) => eventIdSet.has(id));
-            // If order is incomplete, fill in missing IDs at end
-            if (validOrder.length < events.length) {
-              for (const e of events) {
-                if (!validOrder.includes(e.id)) validOrder.push(e.id);
-              }
-            }
-            challenge.correctOrder = validOrder;
-          }
-          break;
-        }
-        case "match-time-of-day": {
-          const evt = collectSingleEvent(flat, "event");
-          if (evt) challenge.event = evt;
-          const period = typeof flat.correctPeriod === "string" ? flat.correctPeriod.toLowerCase() : "";
-          challenge.correctPeriod = VALID_PERIODS.includes(period) ? period : "morning";
-          break;
-        }
-        case "before-after": {
-          const ref = collectSingleEventNoTime(flat, "referenceEvent");
-          if (ref) challenge.referenceEvent = ref;
-          const rel = typeof flat.relation === "string" ? flat.relation.toLowerCase() : "";
-          challenge.relation = (rel === "before" || rel === "after") ? rel : "after";
-          const options = collectOptionEvents(flat, 4);
-          if (options) {
-            challenge.options = options;
-            // Validate correctEvent is one of the option IDs
-            const optionIds = new Set(options.map((o) => o.id));
-            if (typeof flat.correctEvent === "string" && optionIds.has(flat.correctEvent)) {
-              challenge.correctEvent = flat.correctEvent;
-            } else if (options.length > 0) {
-              challenge.correctEvent = options[0].id;
-            }
-          }
-          break;
-        }
-        case "duration-compare": {
-          const evtA = collectSingleEventNoTime(flat, "eventA");
-          const evtB = collectSingleEventNoTime(flat, "eventB");
-          if (evtA) challenge.eventA = evtA;
-          if (evtB) challenge.eventB = evtB;
-          const ans = typeof flat.correctAnswer === "string" ? flat.correctAnswer : "";
-          challenge.correctAnswer = VALID_ANSWERS.includes(ans) ? ans : "A";
-          break;
-        }
-        case "read-schedule": {
-          const schedule = collectScheduleEntries(flat, 6);
-          if (schedule) challenge.schedule = schedule;
-          if (typeof flat.targetTime === "string") challenge.targetTime = flat.targetTime;
-          const actOpts = collectActivityOptions(flat);
-          if (actOpts) {
-            challenge.activityOptions = actOpts;
-            // Validate correctActivity is in options
-            if (typeof flat.correctActivity === "string" && actOpts.includes(flat.correctActivity)) {
-              challenge.correctActivity = flat.correctActivity;
-            } else if (actOpts.length > 0) {
-              // Try to find the correct one from the schedule
-              if (schedule && typeof flat.targetTime === "string") {
-                const entry = schedule.find((s) => s.time === flat.targetTime);
-                if (entry && actOpts.includes(entry.activity)) {
-                  challenge.correctActivity = entry.activity;
-                } else {
-                  challenge.correctActivity = actOpts[0];
-                }
-              } else {
-                challenge.correctActivity = actOpts[0];
-              }
-            }
-          }
-          break;
-        }
-      }
-
-      return challenge;
-    });
-
-  // ── Fallback if empty ──
-  if (data.challenges.length === 0) {
-    const fallbackType = evalConstraint?.allowedTypes[0] ?? "sequence-events";
-    console.log(`[TimeSequencer] No valid challenges — using ${fallbackType} fallback`);
-    const fallbacks: Record<string, Record<string, unknown>> = {
-      "sequence-events": {
-        id: "c1",
-        type: "sequence-events",
-        instruction: "Put these morning events in order!",
-        hint: "Think about what you do first when you wake up.",
-        events: [
-          { id: "e1", label: "Wake up", emoji: "🌅" },
-          { id: "e2", label: "Brush teeth", emoji: "🦷" },
-          { id: "e3", label: "Eat breakfast", emoji: "🍳" },
-        ],
-        correctOrder: ["e1", "e2", "e3"],
-      },
-      "match-time-of-day": {
-        id: "c1",
-        type: "match-time-of-day",
-        instruction: "When do you eat breakfast?",
-        hint: "Do you eat breakfast when you first wake up?",
-        event: { id: "e1", label: "Eat breakfast", emoji: "🍳" },
-        correctPeriod: "morning",
-      },
-      "before-after": {
-        id: "c1",
-        type: "before-after",
-        instruction: "What happens AFTER you wake up?",
-        hint: "Think about the first thing you do after opening your eyes.",
-        referenceEvent: { id: "e1", label: "Wake up", emoji: "🌅" },
-        relation: "after",
-        options: [
-          { id: "e2", label: "Brush teeth", emoji: "🦷" },
-          { id: "e3", label: "Go to sleep", emoji: "😴" },
-          { id: "e4", label: "Eat dinner", emoji: "🍽️" },
-        ],
-        correctEvent: "e2",
-      },
-      "duration-compare": {
-        id: "c1",
-        type: "duration-compare",
-        instruction: "Which takes longer?",
-        hint: "Think about how much time each activity usually takes.",
-        eventA: { id: "e1", label: "Brush teeth", emoji: "🦷" },
-        eventB: { id: "e2", label: "Go to school", emoji: "🚌" },
-        correctAnswer: "B",
-      },
-      "read-schedule": {
-        id: "c1",
-        type: "read-schedule",
-        instruction: "Look at the schedule. What happens at 9:00 AM?",
-        hint: "Find 9:00 AM on the schedule and read the activity.",
-        schedule: [
-          { time: "8:00 AM", activity: "Breakfast", emoji: "🍳" },
-          { time: "9:00 AM", activity: "Math class", emoji: "📚" },
-          { time: "12:00 PM", activity: "Lunch", emoji: "🍽️" },
-          { time: "3:00 PM", activity: "Go home", emoji: "🚌" },
-        ],
-        targetTime: "9:00 AM",
-        correctActivity: "Math class",
-        activityOptions: ["Breakfast", "Math class", "Lunch", "Go home"],
-      },
-    };
-    data.challenges = [fallbacks[fallbackType] ?? fallbacks["sequence-events"]];
-  }
-
-  // Final log
-  const typeBreakdown = (data.challenges as Array<{ type: string }>)
-    .map((c) => c.type)
-    .join(", ");
-  console.log(
-    `[TimeSequencer] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`,
+  // ── Dispatch sub-generators in parallel ──
+  const results = await Promise.all(
+    allowedTypes
+      .filter((t) => GENERATOR_MAP[t])
+      .map((t) => GENERATOR_MAP[t](topic, gradeLevel, challengesPerType)),
   );
 
-  return data as TimeSequencerData;
+  // ── Combine results ──
+  let allChallenges: TimeSequencerChallenge[] = [];
+  let title = "";
+  let description = "";
+
+  for (const result of results) {
+    if (!title && result.title) title = result.title;
+    if (!description && result.description) description = result.description;
+
+    for (const ch of result.challenges) {
+      const idx = allChallenges.length;
+      ch.id = `c${idx + 1}`;
+      allChallenges.push(ch);
+    }
+  }
+
+  // ── Trim to target if we got too many ──
+  if (allChallenges.length > totalTarget + 1) {
+    allChallenges = allChallenges.slice(0, totalTarget + 1);
+  }
+
+  // ── Fallback if empty ──
+  if (allChallenges.length === 0) {
+    const fallbackType = allowedTypes[0] ?? "sequence-events";
+    console.log(`[TimeSequencer] No valid challenges — using ${fallbackType} fallback`);
+    allChallenges = [FALLBACKS[fallbackType] ?? FALLBACKS["sequence-events"]];
+  }
+
+  // ── Resolve grade band ──
+  const gl = gradeLevel.toLowerCase();
+  let gradeBand: "K" | "1" | "2" = "1";
+  if (gl.includes("kinder") || gl.includes("k")) gradeBand = "K";
+  else if (gl.includes("2")) gradeBand = "2";
+
+  // ── Fallback title/description ──
+  if (!title) title = "Time & Sequencing";
+  if (!description) description = "Learn about the order of daily events and time concepts!";
+
+  // Final log
+  const typeBreakdown = allChallenges.map((c) => c.type).join(", ");
+  console.log(
+    `[TimeSequencer] Final: ${allChallenges.length} challenge(s) → [${typeBreakdown}]`,
+  );
+
+  return {
+    title,
+    description,
+    gradeBand,
+    challenges: allChallenges,
+  } as TimeSequencerData;
 };

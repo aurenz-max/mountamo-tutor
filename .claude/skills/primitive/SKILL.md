@@ -4,9 +4,21 @@ All primitive code lives under `my-tutoring-app/src/components/lumina/`. Do NOT 
 
 All paths below are relative to `my-tutoring-app/src/components/`.
 
-## Context Efficiency: Main Agent + Subagent Handoffs
+## Architecture: Sequential Focused Agents
 
-This skill is designed for **context efficiency**. The main agent handles the creative work (designing and writing the component), then delegates mechanical registration tasks to parallel subagents. Each subagent reads only the 1-2 files it needs — the main agent never loads the full docs.
+This skill uses **sequential agent phases** to maximize quality at each step. The main agent handles creative work (component design), then hands off to focused agents with tight mandates:
+
+```
+Phase 1: Requirements        (main agent)
+Phase 2: Component            (main agent — creative work)
+Phase 3: Mechanical registration (4-5 parallel subagents — types, catalog, eval, tester, backend)
+Phase 4: Generator             (FOCUSED agent — schema, prompt, post-validation)
+Phase 5: Type check            (main agent — compile everything)
+Phase 6: QA                    (FOCUSED agent — eval-test + G1-G5 sync rules)
+Phase 7: Report / Fix loop     (main agent)
+```
+
+**Why the generator gets its own phase:** The generator is where quality lives or dies. It needs the component's render logic as input (to know which fields are required per challenge type) and focused attention on schema design and post-validation. Doing it in parallel with mechanical tasks produces sloppy generators.
 
 **DO NOT read `ADDING_PRIMITIVES.md` or `ADDING_TUTORING_SCAFFOLD.md`** — those are 1500+ lines of reference docs meant for humans. Everything you need is in this skill file.
 
@@ -170,12 +182,26 @@ After writing the component, note:
 - The **pedagogical moments** you wired (for catalog tutoring field)
 - The **key data fields** the AI tutor needs to see (for contextKeys)
 - Whether it has **2+ challenge types** that warrant eval modes (for IRT difficulty targeting)
+- The **required fields per challenge type** — for each `render<Type>Challenge()` function in the component, list every data field it reads. This is the CONTRACT the generator must fulfill.
+
+**IMPORTANT — Required Fields Manifest:** Before proceeding to Phase 3, create a structured list like this:
+
+```
+REQUIRED FIELDS PER CHALLENGE TYPE:
+- type="identify": targetCoin (answer), options[] (MC choices), coins[] (visual display)
+- type="count": displayedCoins[] (visual), correctTotal (answer, must equal sum of displayedCoins)
+- type="compare": groupA[] (visual), groupB[] (visual), correctGroup (answer, must match actual totals)
+```
+
+This manifest is passed to the Generator Agent in Phase 4. It prevents the #1 source of bugs: generators producing data the component can't render.
 
 ---
 
-## Phase 3: Parallel Subagent Handoffs
+## Phase 3: Parallel Mechanical Subagents
 
-After the component is written, launch **4-5 parallel subagents** using the Task tool. Each reads only the files it needs. Launch Subagent E only if the primitive has eval modes.
+After the component is written, launch **4-5 parallel subagents** using the Agent tool. Each reads only the files it needs. These are all mechanical registration tasks — no creative decisions.
+
+**IMPORTANT: The generator is NOT built here.** It gets its own focused phase next.
 
 ### Subagent A: "Register types & primitive UI"
 
@@ -213,59 +239,7 @@ Tasks:
 Both edits are append operations — match the existing style in each file.
 ```
 
-### Subagent B: "Create generator & register"
-
-Prompt template:
-```
-Create a Gemini content generator for a new Lumina primitive and register it.
-
-Component ID: `<id>`
-Data interface: `<Name>Data`
-Import path: `../../primitives/visual-primitives/<domain>/<Name>`
-Domain: `<domain>`
-Purpose: <what the primitive teaches>
-Grade range: <grade range>
-Eval mode constraint target: <which field on which array the challenge types map to, e.g., `challenges[].type` or `selfChecks[].difficulty`>
-
-Tasks:
-1. Read one existing generator from the same domain for the pattern:
-   - `my-tutoring-app/src/components/lumina/service/<domain>/gemini-<existing>.ts`
-
-2. Create `my-tutoring-app/src/components/lumina/service/<domain>/gemini-<id>.ts`:
-   - Import `{ Type, Schema } from "@google/genai"` and `{ ai } from "../geminiClient"`
-   - Import `{ <Name>Data } from '../../primitives/visual-primitives/<domain>/<Name>'` (NEVER redefine the interface)
-   - If the primitive has 2+ challenge types, also import eval mode utilities:
-     `import { resolveEvalModeConstraint, constrainChallengeTypeEnum, buildChallengeTypePromptSection, type ChallengeTypeDoc } from '../evalMode';`
-   - If using eval modes, define a `CHALLENGE_TYPE_DOCS` record at the top with `promptDoc` + `schemaDescription` per challenge type (see `gemini-ten-frame.ts` for the pattern)
-   - Define a Gemini JSON schema matching the data interface.
-     **IMPORTANT — Flatten arrays inside challenge/item objects** to avoid malformed LLM JSON:
-     - `options: string[]` → `option0`, `option1`, `option2`, `option3` (separate STRING fields)
-     - `sequenceItems: {id, text}[]` → `orderItem0Id`/`orderItem0Text` through `orderItem4Id`/`orderItem4Text`
-     - `matchPairs: {term, def}[]` → `matchTerm0`/`matchDef0` through `matchTerm3`/`matchDef3`
-     - `relatedWords: string[]` → `relatedWord0`, `relatedWord1`, `relatedWord2`
-     - `correctOrder: string[]` → `correctOrderCsv` (comma-separated string)
-     - `correctPairs: [n,n][]` → `correctPairsCsv` (format: `"0-0,1-1,2-2"`)
-     The validation function then reconstructs the nested arrays from flat fields.
-     See `gemini-fact-file.ts` or `gemini-how-it-works.ts` for concrete examples.
-   - Export `generate<Name>` function with signature: `(topic: string, gradeLevel: string, config?: Partial<...>) => Promise<<Name>Data>`
-   - Config type should include `targetEvalMode?: string` if eval modes are used
-   - Use model `"gemini-flash-lite-latest"` with `responseMimeType: "application/json"`
-   - If eval modes: call `resolveEvalModeConstraint()`, `constrainChallengeTypeEnum()`, and `buildChallengeTypePromptSection()` before the Gemini call. `constrainChallengeTypeEnum()` targets the enum field specified by the eval mode constraint target (e.g., the `type` enum on `challenges[]` items, or `difficulty` enum on `selfChecks[]` items). Pass `activeSchema` (not base schema) to Gemini.
-   - Add validation/defaults after parsing
-
-3. Read `my-tutoring-app/src/components/lumina/service/registry/generators/<domain>Generators.ts`
-   - Add import: `import { generate<Name> } from '../../<domain>/gemini-<id>';`
-   - Add registration:
-     ```
-     registerGenerator('<id>', async (item, topic, gradeContext) => ({
-       type: '<id>',
-       instanceId: item.instanceId,
-       data: await generate<Name>(topic, gradeContext, item.config),
-     }));
-     ```
-```
-
-### Subagent C: "Add catalog entry with tutoring"
+### Subagent B: "Add catalog entry with tutoring"
 
 Prompt template:
 ```
@@ -294,12 +268,12 @@ Tasks:
        {
          evalMode: '<mode_key>',
          label: '<Mode Label (Tier)>',
-         beta: <IRT prior β — must match backend problem_type_registry.py>,
+         beta: <IRT prior beta>,
          scaffoldingMode: <1-6>,
          challengeTypes: ['<type1>'],
          description: '<What this mode tests>',
        },
-       // ... more modes, ordered lowest β → highest β
+       // ... more modes, ordered lowest beta to highest beta
      ],
      <if interactive, add tutoring field:>
      tutoring: {
@@ -314,7 +288,7 @@ Tasks:
          { pattern: '<Observable behavior>', response: '<Actionable tutor response>' },
        ],
      },
-     supportsEvaluation: true,  // ← Add for evaluable primitives (used by practice-visual-catalog)
+     supportsEvaluation: true,
    },
    ```
 
@@ -325,7 +299,7 @@ Rules for tutoring field:
 - commonStruggles describe OBSERVABLE behavior, not vague labels
 ```
 
-### Subagent D: "Evaluation types & tester"
+### Subagent C: "Evaluation types & tester"
 
 Prompt template (only if interactive):
 ```
@@ -357,7 +331,7 @@ Tasks:
    - Add render case in the component (follow existing pattern — do NOT pass onEvaluationSubmit to avoid double submission)
 ```
 
-### Subagent E: "Backend problem type registry" (only if eval modes)
+### Subagent D: "Backend problem type registry" (only if eval modes)
 
 Prompt template:
 ```
@@ -384,9 +358,153 @@ Write the edit. Do not just describe the change.
 
 ---
 
-## Phase 4: Type Check (Main Agent)
+## Phase 4: Focused Generator Agent
 
-After all subagents complete, run: `cd my-tutoring-app && npx tsc --noEmit`
+**This is the most important phase.** The generator determines whether the primitive actually works. Launch a single focused agent with a tight mandate.
+
+**Why separate:** The generator needs to understand the component's render paths to know which fields are truly required per challenge type. It also needs focused attention on schema design (flat vs nested, required vs nullable) and post-validation (reject vs fallback). This work should not compete for context with mechanical registration.
+
+### Generator Agent Prompt Template
+
+```
+Create a Gemini content generator for a Lumina primitive. This is the MOST CRITICAL file —
+it determines whether the primitive renders correctly or breaks silently.
+
+## Primitive Context
+
+Component ID: `<id>`
+Data interface: `<Name>Data`
+Import path: `../../primitives/visual-primitives/<domain>/<Name>`
+Domain: `<domain>`
+Purpose: <what the primitive teaches>
+Grade range: <grade range>
+
+## REQUIRED FIELDS CONTRACT
+
+These fields MUST be present in the generator output for each challenge type.
+The component READS these fields — if any are missing, the challenge renders broken.
+
+<paste the Required Fields Manifest from Phase 2c>
+
+## Your Tasks
+
+### Task 1: Read reference files
+
+1. Read the component file to understand exactly what fields each render function reads:
+   `my-tutoring-app/src/components/lumina/primitives/visual-primitives/<domain>/<Name>.tsx`
+
+2. Read ONE existing generator from the same domain for patterns:
+   `my-tutoring-app/src/components/lumina/service/<domain>/gemini-<existing>.ts`
+
+### Task 2: Design the schema
+
+Design a Gemini JSON schema that reliably produces valid data.
+
+**CRITICAL SCHEMA RULES:**
+
+1. **Decide: single-type sub-generators vs multi-type schema.**
+   - If 3+ challenge types: USE the orchestrator pattern (one Gemini call per type).
+     Each sub-generator has a simpler schema with NO nullable fields. See `gemini-tape-diagram.ts`.
+   - If 1-2 challenge types: a single schema is OK, but minimize nullable fields.
+
+2. **Flatten arrays inside challenge objects** to avoid malformed LLM JSON:
+   - `options: string[]` → `option0`, `option1`, `option2`, `option3`
+   - `coins: {type, count}[]` → `coin0Type`/`coin0Count` through `coin3Type`/`coin3Count`
+   - After Gemini call, reconstruct arrays from flat fields.
+
+3. **NEVER make a field nullable if the component reads it without a fallback.**
+   Cross-check against the Required Fields Contract above. If the component's render function
+   reads `challenge.displayedCoins` and renders it directly, then `displayedCoin0Type` must NOT
+   be nullable — it must be required for that challenge type.
+
+4. **If using multi-type schema with nullable fields:** After flat-field reconstruction,
+   VALIDATE that each challenge has all required fields for its type. REJECT (return null)
+   any challenge missing critical data. NEVER silently fall back to a default value.
+
+### Task 3: Write the generator
+
+Create: `my-tutoring-app/src/components/lumina/service/<domain>/gemini-<id>.ts`
+
+Structure:
+```typescript
+import { Type, Schema } from "@google/genai";
+import { <Name>Data } from "../../primitives/visual-primitives/<domain>/<Name>";
+import { ai } from "../geminiClient";
+
+// If 2+ challenge types, import eval mode utilities:
+import {
+  resolveEvalModeConstraint, constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection, logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// If 2+ challenge types, define CHALLENGE_TYPE_DOCS:
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  '<type>': {
+    promptDoc: `"<type>": <detailed description of what Gemini should generate>`,
+    schemaDescription: "'<type>' (<short label>)",
+  },
+};
+
+// Schema definition...
+// Generator function...
+// Post-validation...
+```
+
+**Generator function signature:**
+```typescript
+export const generate<Name> = async (
+  topic: string,
+  gradeLevel: string,
+  config?: Partial<{ targetEvalMode?: string }>,
+): Promise<<Name>Data> => { ... };
+```
+
+**Post-validation checklist (MANDATORY):**
+1. After Gemini returns, reconstruct arrays from flat fields
+2. For EACH challenge, validate required fields per type (use the contract)
+3. REJECT challenges missing required fields (return null, filter nulls)
+4. Recompute derived answers from visual data (e.g., correctTotal from displayedCoins)
+5. Log rejection counts so we can debug
+6. If all challenges rejected, use type-appropriate hardcoded fallback
+7. If eval mode requires semantic differentiation beyond challengeType
+   (e.g., "count-like" = single coin type), apply post-filter
+
+**Anti-patterns to AVOID:**
+- `correctTotal ?? 10` — silent fallback masks broken generation
+- `challenge.options = options ?? ['a','b','c','d']` — hardcoded fallback produces static challenges
+- Accepting a challenge with empty visual data (no coins, no groups, no items to interact with)
+
+### Task 4: Register the generator
+
+Read `my-tutoring-app/src/components/lumina/service/registry/generators/<domain>Generators.ts`
+- Add import: `import { generate<Name> } from '../../<domain>/gemini-<id>';`
+- Add registration:
+  ```
+  registerGenerator('<id>', async (item, topic, gradeContext) => ({
+    type: '<id>',
+    instanceId: item.instanceId,
+    data: await generate<Name>(topic, gradeContext, item.config),
+  }));
+  ```
+
+### Task 5: Self-verify
+
+After writing the generator, mentally trace one challenge through:
+1. Gemini returns flat fields → reconstruction → validation → component render
+2. For each required field in the contract, confirm the generator either:
+   a. Produces it reliably (non-nullable in schema), OR
+   b. Derives it in post-validation, OR
+   c. Rejects the challenge if missing
+
+If any required field can reach the component as undefined/empty, fix the generator before finishing.
+```
+
+---
+
+## Phase 5: Type Check (Main Agent)
+
+After all agents complete, run: `cd my-tutoring-app && npx tsc --noEmit`
 
 Fix any errors. Common issues:
 - Missing `ComponentId` entry in types.ts
@@ -395,70 +513,131 @@ Fix any errors. Common issues:
 
 **Known pre-existing error to IGNORE:** `ManifestViewer.tsx` has an incomplete `Record<ComponentId, string>` that is missing 140+ component IDs. This error predates your changes — do not try to fix it.
 
-## Phase 5: Smoke Test via Eval-Test API (Main Agent)
+---
 
-**Only if the primitive has eval modes (2+ challenge types).** Skip for display-only or single-phase primitives.
+## Phase 6: QA Agent
 
-After type-check passes, curl the eval-test endpoint for each eval mode to verify the generator produces valid data that the component can render.
+After type-check passes, launch a focused QA agent that runs eval-test and verifies generator↔component sync.
 
-### 5a. Test each eval mode
+**Only run if the primitive has eval modes.** Skip for display-only or single-phase primitives.
 
-For each eval mode defined in the catalog entry:
+### QA Agent Prompt Template
 
+```
+You are QA-testing a newly created Lumina primitive. Your job is to verify
+the generator produces data that the component can actually render correctly.
+
+## Primitive Context
+
+Component ID: `<id>`
+Component file: `my-tutoring-app/src/components/lumina/primitives/visual-primitives/<domain>/<Name>.tsx`
+Generator file: `my-tutoring-app/src/components/lumina/service/<domain>/gemini-<id>.ts`
+Eval modes: <list of eval mode keys>
+
+## REQUIRED FIELDS CONTRACT
+<paste the same manifest from Phase 2c>
+
+## Your Tasks
+
+### Task 1: Run eval-test for every eval mode
+
+For each eval mode:
 ```bash
 curl -s "http://localhost:3000/api/lumina/eval-test?componentId=<id>&evalMode=<mode>"
 ```
 
-If connection refused, tell the user: `cd my-tutoring-app && npm run dev` and wait for them to confirm the dev server is running before retrying.
+If connection refused, STOP and report: "Dev server not running — user must start it."
 
-**Tip:** To extract summary fields from curl JSON on Windows (no python3), use node:
-```bash
-curl -s "URL" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(JSON.stringify({status:d.status,evalMode:d.evalMode,validation:d.validation},null,2))"
+Display the response JSON for the user.
+
+### Task 2: Apply G1-G5 Sync Rules
+
+For each eval mode's response, check ALL of these:
+
+**G1 — Required fields per challenge type:**
+For each challenge in fullData, check every field in the Required Fields Contract.
+If a required field is missing or empty, flag as CRITICAL.
+
+**G2 — Flat-field reconstruction audit:**
+If the generator uses flat indexed fields (e.g., option0, option1), check whether
+reconstruction actually produced arrays. If >50% of challenges have empty arrays, flag CRITICAL.
+
+**G3 — Eval mode semantic differentiation:**
+If two eval modes share the same challengeTypes, verify their output actually differs.
+Generate both and compare. If indistinguishable, flag HIGH.
+
+**G4 — Answer derivability:**
+For each challenge, verify the correct answer can be computed from the visible data:
+- MC: correct answer is in the options array
+- Numeric: correctTotal equals sum of displayed items
+- Comparison: correctGroup matches actual group totals
+If not, flag CRITICAL.
+
+**G5 — Fallback quality audit:**
+Read the generator source. Find all fallback expressions (??, ||, ternary with default).
+For each one:
+- Is it reachable in normal operation? (Check if Gemini typically provides the field)
+- If it fires, does it produce a correct challenge?
+- If it fires for >30% of challenges, flag HIGH.
+
+### Task 3: Report results
+
+Print a results table:
+```
+QA Results — <id>
+| Eval Mode | API Status | Challenges | G1 | G2 | G3 | G4 | G5 | Verdict |
+|-----------|-----------|------------|----|----|----|----|----| --------|
+| <mode>    | pass      | 5          | OK | OK | OK | OK | OK | PASS    |
 ```
 
-### 5b. Analyze the response
+For any failures, include:
+- Which rule failed (G1-G5)
+- Which challenge(s) are affected
+- What field is missing/wrong
+- Whether the fix should go in GENERATOR, COMPONENT, or CATALOG
 
-For each response, check:
+### Task 4: Fix issues (if any)
 
-1. **Status**: `status` field should be `"pass"`. If `"fail"` or `"error"`, report the error immediately.
-2. **Challenge types**: `validation.typesFound` should only contain allowed types. `validation.disallowedTypes` should be empty/absent.
-3. **Challenge count**: `validation.challengeCount` should be > 0 (generator actually produced challenges).
-   - **Note:** The eval-test API only detects arrays named `challenges`, `words`, `instances`, `questions`, `items`, or `problems`. If your primitive uses a different array name (e.g., `selfChecks`, `events`, `terms`), `challengeCount: 0` is expected — verify the data shape manually in `fullData` instead.
-4. **Data shape**: Read the component source and verify that `fullData` contains the fields the component destructures from its `Data` interface. Flag any missing required fields.
-5. **Answer integrity**: Check that correct answers are not leaked in title, description, or hint fields visible before interaction.
-6. **Math correctness**: For math primitives, spot-check that operands produce the claimed results.
+If any G1-G5 checks fail:
+1. Read the generator source
+2. Identify the root cause (missing validation, silent fallback, unreliable schema field)
+3. Fix the generator
+4. Re-run the curl to confirm the fix
+5. Re-check the affected rules
 
-### 5c. Report results inline
+Repeat until all modes pass all rules.
 
-Print a compact results table:
+### Task 5: Save eval report
 
+Save to: `my-tutoring-app/qa/eval-reports/<id>-<YYYY-MM-DD>.md`
+Format:
+```markdown
+# Eval Report: <id> — <YYYY-MM-DD>
+
+## Results
+| Eval Mode | Status | Issues |
+|-----------|--------|--------|
+| <mode>    | PASS   | —      |
+
+## G1-G5 Sync Check: ALL PASS
+(or list any issues found and fixed)
 ```
-Eval-Test Smoke Results:
-| Eval Mode      | Status | Challenges | Types Found       | Issues |
-|----------------|--------|------------|-------------------|--------|
-| <mode>         | PASS   | 6          | [build, subitize] | —      |
 ```
-
-**If any mode fails:**
-- Show the error/validation message from the API
-- Read the generator and component to diagnose the root cause
-- Fix the issue (generator schema mismatch, missing field defaults, wrong type constraint)
-- Re-run the curl to confirm the fix
-
-**If ALL modes pass**, proceed to Phase 6.
 
 ---
 
-## Phase 6: Report (Main Agent)
+## Phase 7: Report (Main Agent)
 
-Report to the user:
+After QA passes, report to the user:
 - Files created/modified (list all)
 - Pedagogical moments wired (if interactive)
 - sendText tags defined
 - Tutoring scaffold added (or why skipped for display-only)
-- Eval modes added (if 2+ challenge types — list each mode with β value)
-- Eval-test smoke results (pass/fail per mode)
+- Eval modes added (if 2+ challenge types — list each mode with beta value)
+- QA results (pass/fail per mode, any G1-G5 issues found and fixed)
 - Backend problem_type_registry.py updated (if eval modes — confirm beta values match catalog)
+
+**If QA found and fixed issues**, mention what was caught and how. This validates the phased approach.
 
 ---
 
@@ -488,10 +667,13 @@ When adding a **new domain** (not new primitive in existing domain), also update
 2. **No double evaluation submission**: Tester does NOT pass `onEvaluationSubmit` — the `usePrimitiveEvaluation` hook handles context submission.
 3. **Use shadcn/ui**: Cards, Buttons, Badges, Accordions — never custom div-based UI patterns.
 4. **Write complete component files**: Use Write tool, not incremental edits, to prevent broken JSX.
+5. **Required Fields Manifest**: Always create one in Phase 2c and pass it to Phases 4 and 6.
+6. **Generator rejects, never silently falls back**: Missing visual data = reject challenge + log. Never `?? defaultValue` for fields the component renders.
+7. **Orchestrator pattern for 3+ challenge types**: One Gemini call per type, simpler schemas, no nullable fields.
 
 ## PRD Reference
 
 Primitive specs and requirements are documented in:
 - `lumina/docs/space-primitives-prd.md` — Astronomy/space primitives
-- `lumina/docs/lumina_difficulty_calibration_prd.md` — IRT calibration PRD (§5.3 prior difficulty table for β values)
+- `lumina/docs/lumina_difficulty_calibration_prd.md` — IRT calibration PRD (section 5.3 prior difficulty table for beta values)
 - `lumina/docs/ADDING_EVAL_MODES.md` — Full eval modes implementation guide

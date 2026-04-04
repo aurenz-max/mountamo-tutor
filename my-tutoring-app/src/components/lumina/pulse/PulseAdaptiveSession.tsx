@@ -20,7 +20,11 @@ import { AdaptiveDebugPanel } from './AdaptiveDebugPanel';
 
 const SUBJECTS = [
   { value: 'mathematics', label: 'Mathematics', icon: '\u{1F522}', color: '56, 189, 248' },
-  { value: 'science', label: 'Science', icon: '\u{1F52C}', color: '74, 222, 128' },
+  { value: 'engineering', label: 'Engineering', icon: '\u{2699}\uFE0F', color: '251, 146, 60' },
+  { value: 'physics', label: 'Physics', icon: '\u{269B}\uFE0F', color: '129, 140, 248' },
+  { value: 'chemistry', label: 'Chemistry', icon: '\u{1F9EA}', color: '52, 211, 153' },
+  { value: 'biology', label: 'Biology', icon: '\u{1F9EC}', color: '74, 222, 128' },
+  { value: 'astronomy', label: 'Astronomy', icon: '\u{1F52D}', color: '192, 132, 252' },
   { value: 'language-arts', label: 'Language Arts', icon: '\u{1F4D6}', color: '168, 85, 247' },
   { value: 'reading', label: 'Reading', icon: '\u{1F4DA}', color: '244, 114, 182' },
 ];
@@ -103,7 +107,7 @@ export const PulseAdaptiveSession: React.FC<PulseAdaptiveSessionProps> = ({
           <div className="flex flex-col items-center justify-center py-12 space-y-8 animate-fade-in">
             <SpotlightCard
               color="139, 92, 246"
-              className="bg-gradient-to-br from-violet-900/20 to-cyan-900/20 max-w-lg w-full"
+              className="bg-gradient-to-br from-violet-900/20 to-cyan-900/20 max-w-2xl w-full"
             >
               <div className="p-8 text-center space-y-6">
                 {/* Header */}
@@ -124,16 +128,19 @@ export const PulseAdaptiveSession: React.FC<PulseAdaptiveSessionProps> = ({
                     <h4 className="text-[10px] uppercase tracking-widest font-mono text-slate-500">
                       Pick a subject
                     </h4>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                       {SUBJECTS.map((s) => (
-                        <button
+                        <SpotlightCard
                           key={s.value}
+                          color={s.color}
                           onClick={() => setSelectedSubject(s.value)}
-                          className="glass-panel rounded-xl border border-white/10 p-4 text-center hover:border-white/25 transition-all hover:scale-[1.02] cursor-pointer"
+                          className="bg-slate-900/40"
                         >
-                          <span className="text-2xl block mb-1">{s.icon}</span>
-                          <span className="text-sm text-slate-200">{s.label}</span>
-                        </button>
+                          <div className="p-4 flex flex-col items-center text-center gap-2">
+                            <span className="text-3xl">{s.icon}</span>
+                            <span className="text-sm font-medium text-slate-200 group-hover:text-blue-200 transition-colors">{s.label}</span>
+                          </div>
+                        </SpotlightCard>
                       ))}
                     </div>
                   </div>
@@ -265,6 +272,17 @@ export const PulseAdaptiveSession: React.FC<PulseAdaptiveSessionProps> = ({
               itemIndex={session.itemIndex}
               onItemComplete={handleItemComplete}
             />
+
+            {/* Next / Skip button */}
+            <div className="flex justify-end mt-4">
+              <Button
+                onClick={session.skipItem}
+                variant="ghost"
+                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 hover:text-slate-200 text-sm"
+              >
+                Next &rarr;
+              </Button>
+            </div>
 
             {/* Loading overlay for when we're waiting on hydration mid-session */}
             {session.isHydrating && session.streamingMessage && (

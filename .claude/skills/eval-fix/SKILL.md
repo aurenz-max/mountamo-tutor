@@ -278,6 +278,82 @@ CHANGE: Recompute all startIndex/endIndex from the generated text:
 NOTE: Always trust .indexOf() over LLM-generated offsets.
 ```
 
+#### SP-14: Flat-field data loss — Gemini silently drops nullable fields
+```
+LOCATION: Generator post-process (after flat→structured reconstruction)
+ROOT CAUSE: Gemini Flash Lite skips nullable flat-indexed fields (coin0Type, displayedCoin0Type,
+  groupACoin0Type, option0, etc.). The reconstruction helper (collectCoinDefs, collectStrings)
+  returns empty arrays, and the challenge is accepted with wrong fallback values.
+
+STEP 1 — Identify required fields per challenge type:
+  Read the component's render function for each type. List every field it reads.
+  If the component reads `challenge.displayedCoins` → that field is REQUIRED for that type.
+
+STEP 2 — Add post-reconstruction validation:
+  After flat→structured reconstruction, validate each challenge:
+
+  case "count": {
+    const displayed = collectCoinDefs(flat, "displayedCoin", 4);
+    if (!displayed) {
+      // REJECT — can't render a counting challenge with no coins
+      rejectedCount.count++;
+      return null;
+    }
+    challenge.displayedCoins = displayed;
+    challenge.correctTotal = coinDefTotal(displayed); // recompute, never trust Gemini
+    break;
+  }
+
+  Then filter nulls: .filter(c => c !== null)
+
+STEP 3 — For fields the component falls back on (e.g., options with hardcoded default):
+  Derive from available data instead of hardcoding:
+
+  if (!options && isValidCoin(flat.targetCoin)) {
+    const target = flat.targetCoin;
+    const others = gradeCoinPool.filter(c => c !== target);
+    options = [target, ...others.slice(0, 3)].sort(() => Math.random() - 0.5);
+  }
+
+ANTI-PATTERN: Never use `?? defaultValue` for fields the component renders visually.
+  `correctTotal ?? 10` masks broken generation. REJECT instead.
+
+LOG: Always log rejection counts for debugging:
+  console.warn(`[Generator] Rejected ${count} challenge(s) with missing data`);
+```
+
+#### SP-15: Eval mode bleed — modes sharing challengeType produce identical output
+```
+LOCATION: Generator post-process (after all challenges are built)
+ROOT CAUSE: Two eval modes map to the same challengeType (e.g., "count-like" and "count-mixed"
+  both use challengeTypes: ['count']). The generator passes the type constraint but has no
+  mechanism to enforce the semantic difference between modes.
+
+STEP 1 — Identify the semantic difference:
+  Read the catalog entry's eval modes. For modes sharing a challengeType, determine what
+  makes them pedagogically different (e.g., single vs mixed coin types, simple vs complex).
+
+STEP 2 — Add a post-filter keyed on config.targetEvalMode:
+  // After all challenges are built and validated:
+  if (config?.targetEvalMode === "count-like") {
+    const before = data.challenges.length;
+    data.challenges = data.challenges.filter(c => {
+      if (c.type !== "count") return true;
+      const uniqueTypes = new Set(c.displayedCoins.map(d => d.type));
+      return uniqueTypes.size === 1; // single coin type only
+    });
+    if (data.challenges.length < before) {
+      console.log(`[Generator] count-like: filtered ${before - data.challenges.length} mixed challenges`);
+    }
+  }
+
+NOTE: This is a POST-FILTER, not a prompt constraint. The prompt can't reliably enforce
+  "only one coin type" — it's easier to generate broadly and filter.
+
+ALTERNATIVE for 3+ bleed pairs: Consider separate sub-generators per eval mode
+  (orchestrator pattern) so each call only knows about its semantic constraints.
+```
+
 #### SP-9: Generator ignores type constraint
 ```
 LOCATION: Generator eval-mode wiring
@@ -334,7 +410,21 @@ If connection refused, tell the user: `cd my-tutoring-app && npm run dev`
 3. Challenge types match the eval mode constraint
 4. No new issues introduced
 
-### 4c. Re-test ALL Modes (regression check)
+### 4c. G1-G5 Sync Verification (on fixed modes)
+
+After confirming the fixed mode passes eval-test, apply these sync checks to the **generated JSON**:
+
+| Rule | Check | Flag if... |
+|------|-------|------------|
+| **G1** Required fields | For each challenge, every field the component's render function reads is present and non-empty | Any required field is missing or empty → CRITICAL (fix not complete) |
+| **G2** Flat-field reconstruction | If generator uses flat indexed fields, check reconstructed arrays are populated | >50% of challenges have empty arrays → CRITICAL (SP-14 not resolved) |
+| **G3** Eval mode differentiation | If the fixed mode shares a challengeType with another mode, generate both and compare output | Output is indistinguishable → HIGH (SP-15 not resolved) |
+| **G4** Answer derivability | Correct answer can be computed from visible data (MC answer in options, total equals sum, comparison matches groups) | Answer doesn't match visible data → CRITICAL |
+| **G5** Fallback quality | Read generator source, find all `??`, `||`, ternary defaults. Check if any fire in the generated output | Silent fallback fires for >30% of challenges → HIGH (fix traded one bug for another) |
+
+If any G-rule fails, the fix is incomplete — go back to Phase 3 and address the specific rule.
+
+### 4d. Re-test ALL Modes (regression check)
 
 Re-run every eval mode for the primitive, not just the fixed one. Prompt and post-process changes can affect other modes.
 
@@ -438,6 +528,7 @@ All paths relative to `my-tutoring-app/src/components/lumina/` unless otherwise 
 - [ ] Checked fix approach guide — post-process validators won't create false negatives
 - [ ] TypeScript compiles cleanly (`npx tsc --noEmit`)
 - [ ] Re-tested the fixed eval mode(s)
+- [ ] G1-G5 sync verification passed on fixed modes
 - [ ] Re-tested ALL modes for regressions
 - [ ] For stochastic issues: tested 3x
 - [ ] Updated eval report

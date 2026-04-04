@@ -1225,6 +1225,7 @@ export type ComponentId =
   | 'propulsion-lab' // Newton's Third Law across propulsion types (jet, propeller, rocket, wheel)
   | 'propulsion-timeline' // Interactive timeline of transportation history from wheel to spacecraft
   | 'vehicle-design-studio' // Interactive vehicle design studio for engineering education
+  | 'hydraulics-lab' // Interactive hydraulics lab for fluid power and pressure concepts
 
   // Astronomy Primitives (K-5)
   | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
@@ -1568,10 +1569,10 @@ export type { ProteinFolderData, AminoAcidResidue, KeyInteraction, FoldingLevels
 export type { EnergyCycleEngineData, MoleculeInput, MoleculeOutput, PhotosynthesisData, CellularRespirationData, CouplingPoint, ExperimentScenario } from './primitives/visual-primitives/biology/EnergyCycleEngine';
 export type { EvolutionTimelineData, TimelineEra, TimelineEvent, Lineage, ScaleAnchor, MassExtinction } from './primitives/visual-primitives/biology/EvolutionTimeline';
 export type { MachineProfileData, QuickStats, KeyComponent, MachineHistory, FascinatingFact } from './primitives/visual-primitives/engineering/MachineProfile';
-export type { FlightForcesExplorerData, AircraftProfile, ForceInfo, FlightState, FlightChallenge } from './primitives/visual-primitives/engineering/FlightForcesExplorer';
+export type { FlightForcesExplorerData } from './primitives/visual-primitives/engineering/FlightForcesExplorer';
 export type { AirfoilLabData, AirfoilShape, AerodynamicResults, PresetComparison, AirfoilChallenge } from './primitives/visual-primitives/engineering/AirfoilLab';
 export type { VehicleComparisonLabData, ComparisonVehicle, ComparisonChallenge, SurprisingFact, VehicleMetric } from './primitives/visual-primitives/engineering/VehicleComparisonLab';
-export type { PropulsionLabData, PropulsionType, NewtonThirdLaw, WhatIfExperiment, PropulsionComparison } from './primitives/visual-primitives/engineering/PropulsionLab';
+export type { PropulsionLabData } from './primitives/visual-primitives/engineering/PropulsionLab';
 export type { PaperAirplaneDesignerData } from './primitives/visual-primitives/engineering/PaperAirplaneDesigner';
 export type { PropulsionTimelineData, TimelineMilestone, TimelineEra as PropulsionTimelineEra, SpeedRecord, SequencingChallenge, InnovationChain } from './primitives/visual-primitives/engineering/PropulsionTimeline';
 export type { VehicleDesignStudioData } from './primitives/visual-primitives/engineering/VehicleDesignStudio';
@@ -1606,6 +1607,7 @@ export type { MoleculeConstructorData } from './primitives/visual-primitives/che
 export type { EnergyOfReactionsData } from './primitives/visual-primitives/chemistry/EnergyOfReactions';
 export type { EquationBalancerData } from './primitives/visual-primitives/chemistry/EquationBalancer';
 export type { EngineExplorerData } from './primitives/visual-primitives/engineering/EngineExplorer';
+export type { HydraulicsLabData } from './primitives/visual-primitives/engineering/HydraulicsLab';
 export type { PhExplorerData } from './primitives/visual-primitives/chemistry/PhExplorer';
 export type { SafetyLabData } from './primitives/visual-primitives/chemistry/SafetyLab';
 export type { AdditionSubtractionSceneData } from './primitives/visual-primitives/math/AdditionSubtractionScene';

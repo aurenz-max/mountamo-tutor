@@ -87,6 +87,73 @@ interface StudentPoint {
 
 type LearningPhase = 'explore' | 'practice' | 'apply';
 
+interface LuminaNumberStepperProps {
+  value: string;
+  onChange: (value: string) => void;
+  step?: number;
+  placeholder?: string;
+  disabled?: boolean;
+  autoFocus?: boolean;
+  borderColor?: string;
+}
+
+const LuminaNumberStepper: React.FC<LuminaNumberStepperProps> = ({
+  value,
+  onChange,
+  step = 1,
+  placeholder = '?',
+  disabled = false,
+  autoFocus = false,
+  borderColor = 'border-slate-600',
+}) => {
+  const numValue = parseFloat(value);
+
+  const handleStep = (direction: 1 | -1) => {
+    if (disabled) return;
+    const current = isNaN(numValue) ? 0 : numValue;
+    const next = Math.round((current + direction * step) * 100) / 100;
+    onChange(String(next));
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    if (raw === '' || raw === '-' || /^-?\d*\.?\d*$/.test(raw)) {
+      onChange(raw);
+    }
+  };
+
+  return (
+    <div className="flex items-stretch gap-0">
+      <button
+        type="button"
+        onClick={() => handleStep(-1)}
+        disabled={disabled}
+        className="px-3 bg-slate-800/60 border-2 border-r-0 border-slate-600 rounded-l-lg text-slate-300 hover:bg-purple-500/20 hover:text-white hover:border-purple-500/50 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg select-none"
+      >
+        −
+      </button>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={handleTextChange}
+        disabled={disabled}
+        autoFocus={autoFocus}
+        placeholder={placeholder}
+        className={`flex-1 min-w-0 px-4 py-2.5 bg-slate-900 border-2 ${borderColor} text-white text-base font-semibold text-center focus:outline-none focus:border-purple-500 disabled:opacity-50 transition-colors`}
+      />
+      <button
+        type="button"
+        onClick={() => handleStep(1)}
+        disabled={disabled}
+        className="px-3 bg-slate-800/60 border-2 border-l-0 border-slate-600 rounded-r-lg text-slate-300 hover:bg-purple-500/20 hover:text-white hover:border-purple-500/50 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg select-none"
+      >
+        +
+      </button>
+    </div>
+  );
+};
+
 const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) => {
   const {
     topLabel,
@@ -635,13 +702,10 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                       </label>
                       <div className="max-w-xs mx-auto">
                         <label className="text-xs text-slate-400 block mb-2">{bottomLabel}:</label>
-                        <input
-                          type="number"
-                          step="0.1"
+                        <LuminaNumberStepper
                           value={studentUnitRate}
-                          onChange={(e) => setStudentUnitRate(e.target.value)}
-                          className="w-full px-4 py-3 bg-slate-900 border-2 border-slate-600 rounded-lg text-white text-lg font-semibold focus:outline-none focus:border-blue-500"
-                          placeholder="?"
+                          onChange={setStudentUnitRate}
+                          step={0.5}
                           autoFocus
                         />
                       </div>
@@ -711,20 +775,18 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                               {topLabel} = <span className="text-purple-300">{target.topValue}</span>
                             </label>
                             <div className="text-xs text-slate-500 mb-1">What is {bottomLabel}?</div>
-                            <input
-                              type="number"
-                              step="0.1"
+                            <LuminaNumberStepper
                               value={studentPoints[i].bottomValue}
-                              onChange={(e) => handleInputChange(i, 'bottomValue', e.target.value)}
+                              onChange={(val) => handleInputChange(i, 'bottomValue', val)}
+                              step={1}
                               disabled={hasSubmittedEvaluation}
-                              className={`w-full px-4 py-2.5 bg-slate-900 border-2 ${
+                              borderColor={
                                 studentPoints[i].bottomCorrect && attemptCount > 0
                                   ? 'border-green-500'
                                   : studentPoints[i].bottomValue && attemptCount > 0 && !studentPoints[i].bottomCorrect
                                   ? 'border-red-500'
                                   : 'border-slate-600'
-                              } rounded-lg text-white text-base font-semibold focus:outline-none focus:border-purple-500 disabled:opacity-50 transition-colors`}
-                              placeholder="?"
+                              }
                             />
                           </div>
                         </div>

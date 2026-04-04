@@ -533,7 +533,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
   // ── Render Helpers ─────────────────────────────────────────────────
 
   const renderIdentifyOrDescribe = () => {
-    if (!currentChallenge) return null;
+    if (!currentChallenge || !currentChallenge.targetObject) return null;
     const opts = currentChallenge.options || ['above', 'below', 'beside', 'next_to'];
 
     return (
@@ -570,7 +570,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
   };
 
   const renderPlace = () => {
-    if (!currentChallenge) return null;
+    if (!currentChallenge || !currentChallenge.targetObject) return null;
 
     return (
       <div className="space-y-4">

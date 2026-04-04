@@ -513,12 +513,23 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     }
   }, [currentChallenge, orderedEvents, selectedPeriod, selectedEvent, durationAnswer, scheduleAnswer]);
 
+  // ── Stable shuffle for sequence events ────────────────────────────
+  const shuffledEvents = useMemo(() => {
+    const events = [...(currentChallenge?.events || [])];
+    // Fisher-Yates shuffle seeded by challenge id length (stable per challenge)
+    for (let i = events.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [events[i], events[j]] = [events[j], events[i]];
+    }
+    return events;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
+
   // ── Render Helpers ─────────────────────────────────────────────────
 
   const renderSequenceEvents = () => {
     if (!currentChallenge) return null;
-    const events = currentChallenge.events || [];
-    // Show shuffled events (shuffled by not using correctOrder)
+    const events = shuffledEvents;
     const unselected = events.filter((e) => !orderedEvents.includes(e.id));
     const selected = orderedEvents.map((id) => events.find((e) => e.id === id)!).filter(Boolean);
 

@@ -18,6 +18,7 @@ export interface UseAdaptiveSessionReturn extends ViewSlice {
   handleTransitionEnd: () => void;
   acceptExtension: () => void;
   declineExtension: () => void;
+  skipItem: () => void;
   reset: () => void;
 }
 
@@ -56,6 +57,7 @@ export function useAdaptiveSession(): UseAdaptiveSessionReturn {
   const handleTransitionEnd = useCallback(() => kernel.endTransition(), [kernel]);
   const acceptExtension = useCallback(() => { kernel.acceptExtension(); }, [kernel]);
   const declineExtension = useCallback(() => kernel.declineExtension(), [kernel]);
+  const skipItem = useCallback(() => kernel.skipItem(), [kernel]);
   const reset = useCallback(() => kernel.reset(), [kernel]);
   const getSessionHistory = useCallback(() => kernel.getSessionHistory(), [kernel]);
 
@@ -67,6 +69,7 @@ export function useAdaptiveSession(): UseAdaptiveSessionReturn {
     handleTransitionEnd,
     acceptExtension,
     declineExtension,
+    skipItem,
     reset,
   };
 }

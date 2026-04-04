@@ -1,358 +1,224 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  type ChallengeTypeDoc,
+} from '../evalMode';
 
 // Import types from the component - single source of truth
 import type {
   FlightForcesExplorerData,
-  AircraftProfile,
-  ForceInfo,
-  FlightState,
-  FlightChallenge,
 } from '../../primitives/visual-primitives/engineering/FlightForcesExplorer';
 
-// Re-export for convenience if needed elsewhere
+// Re-export for convenience
 export type { FlightForcesExplorerData };
 
-/**
- * Schema for Aircraft Profile
- */
-const aircraftProfileSchema: Schema = {
+// ============================================================================
+// Eval Mode Challenge Type Docs
+// ============================================================================
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  predict: {
+    promptDoc: 'Predict: Ask what will happen BEFORE the student tries it. Focus on hypotheses about force balance outcomes.',
+    schemaDescription: 'predict — student predicts what will happen to the aircraft',
+  },
+  observe: {
+    promptDoc: 'Observe: Ask the student to watch the aircraft and describe what they see. Focus on visible evidence of forces at work.',
+    schemaDescription: 'observe — student watches simulation and explains what forces are doing',
+  },
+  adjust: {
+    promptDoc: 'Adjust: Ask the student to change a variable (thrust, angle) and observe the result. Focus on cause-and-effect reasoning.',
+    schemaDescription: 'adjust — student changes variables and compares outcomes',
+  },
+};
+
+// ============================================================================
+// Gemini Schemas — flat, simple, content-only (no physics params)
+// ============================================================================
+
+const challengeSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    name: {
-      type: Type.STRING,
-      description: "Display name of the aircraft (e.g., 'Cessna 172', 'Boeing 747', 'Paper Glider')"
-    },
+    id: { type: Type.STRING, description: "Unique ID like ch1, ch2, etc." },
     type: {
       type: Type.STRING,
-      enum: ["cessna", "jumbo_jet", "glider", "fighter", "biplane", "custom"],
-      description: "Aircraft type. K-2: cessna or biplane (simple). 3-5: any type including jumbo_jet, glider, fighter."
+      enum: ["predict", "observe", "adjust"],
+      description: "predict = what will happen, observe = watch and describe, adjust = change variables and see results",
     },
-    imagePrompt: {
-      type: Type.STRING,
-      description: "A descriptive prompt for generating or selecting an image of this aircraft."
-    },
-    emptyWeight: {
-      type: Type.NUMBER,
-      description: "Empty weight of the aircraft in Newtons. Cessna: ~7000, Jumbo jet: ~1800000, Glider: ~2500, Fighter: ~90000, Biplane: ~5000."
-    },
-    maxThrust: {
-      type: Type.NUMBER,
-      description: "Maximum thrust in Newtons. Cessna: ~2400, Jumbo jet: ~900000, Glider: 0, Fighter: ~130000, Biplane: ~2000."
-    },
-    wingArea: {
-      type: Type.NUMBER,
-      description: "Wing area in square meters. Cessna: ~16, Jumbo jet: ~540, Glider: ~18, Fighter: ~50, Biplane: ~25."
-    },
-    maxSpeed: {
-      type: Type.NUMBER,
-      description: "Maximum speed in m/s. Cessna: ~75, Jumbo jet: ~260, Glider: ~70, Fighter: ~600, Biplane: ~60."
-    }
+    instruction: { type: Type.STRING, description: "The question or task for the student." },
+    option0Id: { type: Type.STRING, description: "Option ID (e.g., 'a')" },
+    option0Text: { type: Type.STRING, description: "Option text for first choice" },
+    option1Id: { type: Type.STRING, description: "Option ID (e.g., 'b')" },
+    option1Text: { type: Type.STRING, description: "Option text for second choice" },
+    option2Id: { type: Type.STRING, description: "Option ID (e.g., 'c')" },
+    option2Text: { type: Type.STRING, description: "Option text for third choice" },
+    option3Id: { type: Type.STRING, description: "Option ID (e.g., 'd')" },
+    option3Text: { type: Type.STRING, description: "Option text for fourth choice" },
+    correctOptionId: { type: Type.STRING, description: "ID of the correct option (a, b, c, or d)." },
+    hint: { type: Type.STRING, description: "A helpful hint without giving the answer directly." },
   },
-  required: ["name", "type", "imagePrompt", "emptyWeight", "maxThrust", "wingArea", "maxSpeed"]
+  required: [
+    "id", "type", "instruction",
+    "option0Id", "option0Text", "option1Id", "option1Text",
+    "option2Id", "option2Text", "option3Id", "option3Text",
+    "correctOptionId", "hint",
+  ],
 };
 
-/**
- * Schema for Force Info
- */
-const forceInfoSchema: Schema = {
+const forceFactSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    magnitude: {
-      type: Type.NUMBER,
-      description: "Force magnitude in Newtons. Must be a positive number."
-    },
-    description: {
-      type: Type.STRING,
-      description: "Educational description of the force. K-2: simple ('Lift pushes the plane up'). 3-5: include real magnitudes and physics."
-    }
+    name: { type: Type.STRING, description: "Display name for this force (e.g., 'Lift')." },
+    description: { type: Type.STRING, description: "1-2 sentence explanation of how this force works in flight, grade-appropriate." },
+    analogy: { type: Type.STRING, description: "Kid-friendly everyday analogy (e.g., 'Like sticking your hand out a car window and tilting it up')." },
   },
-  required: ["magnitude", "description"]
+  required: ["name", "description", "analogy"],
 };
 
-/**
- * Schema for Flight State
- */
-const flightStateSchema: Schema = {
+const stateFactSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    condition: {
-      type: Type.STRING,
-      description: "Brief description of the conditions that produce this flight state (e.g., 'Thrust > Drag and nose angled up')."
-    },
-    name: {
-      type: Type.STRING,
-      enum: ["climbing", "descending", "cruising", "stalling", "accelerating"],
-      description: "The flight state name."
-    },
-    description: {
-      type: Type.STRING,
-      description: "Educational explanation of this flight state and what forces are at play."
-    },
-    narration: {
-      type: Type.STRING,
-      description: "Conversational narration for this state, as if a friendly instructor is explaining. Age-appropriate language."
-    }
+    name: { type: Type.STRING, description: "Display name for this flight state (e.g., 'Climbing')." },
+    description: { type: Type.STRING, description: "1-2 sentence explanation of what forces cause this state and what happens to the aircraft." },
   },
-  required: ["condition", "name", "description", "narration"]
+  required: ["name", "description"],
 };
 
-/**
- * Schema for Flight Challenge
- */
-const flightChallengeSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    id: {
-      type: Type.STRING,
-      description: "Unique identifier for this challenge (e.g., 'challenge-1', 'reach-cruising-altitude')."
-    },
-    instruction: {
-      type: Type.STRING,
-      description: "What the student needs to do (e.g., 'Adjust thrust to reach cruising altitude')."
-    },
-    targetConditions: {
-      type: Type.OBJECT,
-      properties: {
-        altitudeRange: {
-          type: Type.OBJECT,
-          properties: {
-            min: {
-              type: Type.NUMBER,
-              description: "Minimum altitude in meters for this challenge."
-            },
-            max: {
-              type: Type.NUMBER,
-              description: "Maximum altitude in meters for this challenge."
-            }
-          },
-          required: ["min", "max"]
-        },
-        speedRange: {
-          type: Type.OBJECT,
-          properties: {
-            min: {
-              type: Type.NUMBER,
-              description: "Minimum speed in m/s for this challenge."
-            },
-            max: {
-              type: Type.NUMBER,
-              description: "Maximum speed in m/s for this challenge."
-            }
-          },
-          required: ["min", "max"]
-        }
-      },
-      required: ["altitudeRange", "speedRange"],
-      description: "Target conditions the student must achieve."
-    },
-    hint: {
-      type: Type.STRING,
-      description: "A helpful hint if the student is struggling. Age-appropriate and encouraging."
-    }
-  },
-  required: ["id", "instruction", "targetConditions", "hint"]
-};
-
-/**
- * Schema for Show Options
- */
-const showOptionsSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    forceArrows: {
-      type: Type.BOOLEAN,
-      description: "Show force arrows on the aircraft. True for all grade levels."
-    },
-    forceValues: {
-      type: Type.BOOLEAN,
-      description: "Show numeric force values. False for K-2 (too complex), true for 3-5."
-    },
-    airflowStreamlines: {
-      type: Type.BOOLEAN,
-      description: "Show airflow streamlines around the aircraft. False for K-2, true for 3-5."
-    },
-    forceBalanceChart: {
-      type: Type.BOOLEAN,
-      description: "Show a chart comparing opposing forces. False for K-2, true for 3-5."
-    },
-    flightPathTrace: {
-      type: Type.BOOLEAN,
-      description: "Show the flight path trace. False for K-2, optional for 3-5."
-    },
-    altitudeIndicator: {
-      type: Type.BOOLEAN,
-      description: "Show an altitude indicator. False for K-2, true for 3-5."
-    }
-  },
-  required: ["forceArrows", "forceValues", "airflowStreamlines", "forceBalanceChart", "flightPathTrace", "altitudeIndicator"]
-};
-
-/**
- * Schema for Flight Forces Explorer Data
- */
 const flightForcesExplorerSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    aircraft: aircraftProfileSchema,
-    initialConditions: {
-      type: Type.OBJECT,
-      properties: {
-        altitude: {
-          type: Type.NUMBER,
-          description: "Starting altitude in meters (0-10000). K-2: 500-2000. 3-5: 1000-5000."
-        },
-        speed: {
-          type: Type.NUMBER,
-          description: "Starting speed in m/s (0-1000). Should be within the aircraft's capability."
-        },
-        thrustPercent: {
-          type: Type.NUMBER,
-          description: "Starting thrust as percentage of max (0-100). Typically 50-75 for initial state."
-        },
-        angleOfAttack: {
-          type: Type.NUMBER,
-          description: "Starting angle of attack in degrees (-10 to 25). Typically 2-5 for level flight."
-        },
-        cargoWeight: {
-          type: Type.NUMBER,
-          description: "Additional cargo weight in Newtons (>= 0). K-2: 0 (simple). 3-5: 0-5000 for challenges."
-        }
-      },
-      required: ["altitude", "speed", "thrustPercent", "angleOfAttack", "cargoWeight"],
-      description: "Initial flight conditions when the simulation starts."
-    },
-    forces: {
-      type: Type.OBJECT,
-      properties: {
-        lift: forceInfoSchema,
-        weight: forceInfoSchema,
-        thrust: forceInfoSchema,
-        drag: forceInfoSchema
-      },
-      required: ["lift", "weight", "thrust", "drag"],
-      description: "The four fundamental forces of flight with magnitudes and descriptions."
-    },
-    flightStates: {
-      type: Type.ARRAY,
-      items: flightStateSchema,
-      description: "Array of 4-5 flight states covering climbing, descending, cruising, stalling, and accelerating."
-    },
-    challenges: {
-      type: Type.ARRAY,
-      items: flightChallengeSchema,
-      description: "Array of 2-4 challenges for the student to complete."
-    },
-    showOptions: showOptionsSchema,
-    gradeBand: {
+    title: { type: Type.STRING, description: "Engaging activity title (e.g., 'Sky Forces: How Planes Really Fly')." },
+    description: { type: Type.STRING, description: "Short educational description of what students will learn." },
+    overview: { type: Type.STRING, description: "1-2 sentence conversational overview of the activity." },
+    aircraftType: {
       type: Type.STRING,
-      description: "Grade band for content calibration: 'K-2' or '3-5'."
-    }
+      enum: ["cessna", "jumbo_jet", "glider", "fighter"],
+      description: "Aircraft type. K-2: cessna or glider. 3-5: any type.",
+    },
+    aircraftName: { type: Type.STRING, description: "Friendly display name for the aircraft (e.g., 'Cessna 172', 'Boeing 747')." },
+    gradeBand: { type: Type.STRING, enum: ["1-2", "3-5"], description: "Grade band for complexity." },
+    // Challenges — flattened (up to 6)
+    challenge0: challengeSchema,
+    challenge1: challengeSchema,
+    challenge2: challengeSchema,
+    challenge3: { ...challengeSchema, nullable: true },
+    challenge4: { ...challengeSchema, nullable: true },
+    challenge5: { ...challengeSchema, nullable: true },
+    // Force facts — one per hardcoded force
+    forceFact_lift: forceFactSchema,
+    forceFact_weight: forceFactSchema,
+    forceFact_thrust: forceFactSchema,
+    forceFact_drag: forceFactSchema,
+    // Flight state facts — one per hardcoded state
+    stateFact_climbing: stateFactSchema,
+    stateFact_descending: stateFactSchema,
+    stateFact_cruising: stateFactSchema,
+    stateFact_stalling: stateFactSchema,
   },
-  required: ["aircraft", "initialConditions", "forces", "flightStates", "challenges", "showOptions", "gradeBand"]
+  required: [
+    "title", "description", "overview", "aircraftType", "aircraftName", "gradeBand",
+    "challenge0", "challenge1", "challenge2",
+    "forceFact_lift", "forceFact_weight", "forceFact_thrust", "forceFact_drag",
+    "stateFact_climbing", "stateFact_descending", "stateFact_cruising", "stateFact_stalling",
+  ],
 };
 
-/**
- * Generate Flight Forces Explorer data for visualization
- *
- * Creates flight forces simulations appropriate for K-5 engineering/science education:
- * - K-2: Simple force concepts (push/pull), basic aircraft, visual arrows only
- * - 3-5: Real force magnitudes, quantitative challenges, all visual options
- *
- * @param topic - The flight/forces topic or concept to teach
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns FlightForcesExplorerData with complete configuration
- */
+// ============================================================================
+// Generator
+// ============================================================================
+
 export const generateFlightForcesExplorer = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<FlightForcesExplorerData>
+  config?: Partial<{ targetEvalMode?: string }>
 ): Promise<FlightForcesExplorerData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'flight-forces-explorer',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // When an eval mode is active, constrain the type enum on each flattened
+  // challenge object so Gemini *cannot* produce disallowed types.
+  // Our schema has flattened `challenge0..challenge5` objects — constrain each manually.
+  let activeSchema = flightForcesExplorerSchema;
+  if (evalConstraint) {
+    activeSchema = JSON.parse(JSON.stringify(flightForcesExplorerSchema)) as Schema;
+    const props = (activeSchema as Record<string, unknown>).properties as Record<string, Record<string, unknown>>;
+    const descriptions = evalConstraint.allowedTypes
+      .map(t => CHALLENGE_TYPE_DOCS[t]?.schemaDescription ?? t)
+      .join(', ');
+    for (let i = 0; i < 6; i++) {
+      const ch = props[`challenge${i}`];
+      if (ch?.properties) {
+        const chProps = ch.properties as Record<string, Record<string, unknown>>;
+        if (chProps.type) {
+          chProps.type = { ...chProps.type, enum: evalConstraint.allowedTypes, description: `Challenge type: ${descriptions}` };
+        }
+      }
+    }
+  }
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
-Create an educational Flight Forces Explorer visualization for teaching "${topic}" to ${gradeLevel} students.
+Create educational content for a Flight Forces Explorer that teaches "${topic}" to ${gradeLevel} students.
 
-CONTEXT - FLIGHT FORCES:
-The Flight Forces Explorer teaches the four fundamental forces of flight through interactive simulation:
-1. LIFT - The upward force generated by the wings as air flows over them
-2. WEIGHT (GRAVITY) - The downward force pulling the aircraft toward the earth
-3. THRUST - The forward force generated by the engine(s)
-4. DRAG - The backward force caused by air resistance
+IMPORTANT: You are providing ONLY educational text content — descriptions, analogies, facts, and challenge questions.
+The component hardcodes all physics simulation, aircraft profiles (cessna, jumbo_jet, glider, fighter), forces (lift, weight, thrust, drag), and flight states (climbing, descending, cruising, stalling).
+You write the words and questions. You do NOT create physics parameters.
 
-KEY PHYSICS PRINCIPLES:
-- Lift > Weight = climbing; Lift < Weight = descending; Lift = Weight = level flight
-- Thrust > Drag = accelerating; Thrust < Drag = decelerating; Thrust = Drag = constant speed
-- Angle of attack affects lift: more angle = more lift (up to stall angle)
-- Speed affects lift: faster = more lift
-- Stalling occurs when the angle of attack is too high and lift drops suddenly
+FOUR FORCES OF FLIGHT FOCUS:
+Every challenge should relate to the four forces of flight and how they interact:
+- LIFT — The upward force from wings as air flows over them. Faster speed or steeper angle = more lift (until stall).
+- WEIGHT — Gravity pulling the aircraft down. Heavier aircraft need more lift.
+- THRUST — Forward force from the engine. More thrust = more speed = more lift.
+- DRAG — Air resistance slowing the aircraft. Faster speed = more drag.
+
+KEY CONCEPTS TO COVER:
+- Lift vs Weight: Lift > Weight = climbing; Lift < Weight = descending; balanced = cruising
+- Thrust vs Drag: Thrust > Drag = accelerating; balanced = constant speed
+- Stalling: Angle of attack too high — airflow separates from wing, lift drops suddenly
+- Different aircraft have different force balances (gliders have no thrust!)
+
+FORCE FACTS (provide educational text for each):
+- lift: How wings generate upward force by shaping airflow
+- weight: How gravity acts on the aircraft's mass
+- thrust: How engines push the aircraft forward
+- drag: How air resistance opposes motion
+
+FLIGHT STATE FACTS (provide educational text for each):
+- climbing: What forces cause the aircraft to gain altitude
+- descending: What forces cause the aircraft to lose altitude
+- cruising: How balanced forces maintain level flight
+- stalling: What happens when the angle of attack is too steep
+
+${challengeTypeSection}
+
+CHALLENGES (create 3-6 multiple choice questions):
+- Options: exactly 4 options (a, b, c, d). One correct.
+- Hints: helpful but don't give the answer.
 
 GRADE-LEVEL GUIDELINES:
+GRADES 1-2:
+- Simple language: "lift pushes the plane up", "gravity pulls it down"
+- Everyday analogies: kites, paper airplanes, birds, sticking hand out car window
+- 3-4 challenges maximum
+- Aircraft: cessna or glider (simple, relatable)
+- gradeBand: "1-2"
 
-K-2 (ages 5-8):
-- Concept: Simple force descriptions ("Lift pushes the plane up", "Gravity pulls the plane down")
-- Omit numeric values in force descriptions - use simple language only
-- Aircraft: Simple types only - cessna or biplane
-- Challenges: 1-2 easy challenges (e.g., "Make the plane go up!", "Keep the plane flying straight!")
-- showOptions: forceArrows: true, all others: false (keep it simple and visual)
-- Initial conditions: low altitude (500-2000m), moderate speed, simple angle
-- Force magnitudes: Use realistic values but descriptions should NOT reference numbers
-- Language: Conversational, encouraging, simple words
-- gradeBand: "K-2"
-
-3-5 (ages 8-11):
-- Concept: Real force magnitudes, cause-and-effect reasoning
-- Include numeric values in force descriptions and challenge targets
-- Aircraft: Any type - can use more complex aircraft (jumbo_jet, glider, fighter)
-- Challenges: 2-4 challenges requiring quantitative reasoning (e.g., "Reach cruising altitude between 3000-4000m at a speed of 60-80 m/s")
-- showOptions: All can be true - forceArrows, forceValues, airflowStreamlines, forceBalanceChart, flightPathTrace, altitudeIndicator
-- Initial conditions: varied altitude (1000-5000m), realistic speeds, meaningful angle of attack
-- Force magnitudes: Realistic and referenced in descriptions
-- Language: More technical but still accessible, introduce vocabulary like "angle of attack" and "drag coefficient"
+GRADES 3-5:
+- Scientific vocabulary: lift, drag, thrust, angle of attack, stall
+- Real aircraft examples and comparisons in descriptions
+- 4-6 challenges with force-balance reasoning
+- Aircraft: any type including jumbo_jet and fighter
 - gradeBand: "3-5"
 
-FLIGHT STATES:
-Always include 4-5 flight states covering these conditions:
-1. CLIMBING - Lift > Weight, thrust is high, nose angled up
-2. DESCENDING - Lift < Weight or thrust reduced, nose angled down
-3. CRUISING - Forces are balanced, level flight
-4. STALLING - Angle of attack too high, lift drops dramatically
-5. ACCELERATING - Thrust increased significantly, speed building up
-
-Each flight state MUST have:
-- condition: What causes this state (e.g., "Thrust at maximum, angle of attack at 10 degrees")
-- name: One of climbing, descending, cruising, stalling, accelerating
-- description: Educational explanation
-- narration: Conversational, friendly instructor voice narration (age-appropriate)
-
-AIRCRAFT PROFILES:
-- Cessna: emptyWeight ~7000N, maxThrust ~2400N, wingArea ~16m2, maxSpeed ~75 m/s
-- Jumbo Jet: emptyWeight ~1800000N, maxThrust ~900000N, wingArea ~540m2, maxSpeed ~260 m/s
-- Glider: emptyWeight ~2500N, maxThrust 0N (no engine!), wingArea ~18m2, maxSpeed ~70 m/s
-- Fighter: emptyWeight ~90000N, maxThrust ~130000N, wingArea ~50m2, maxSpeed ~600 m/s
-- Biplane: emptyWeight ~5000N, maxThrust ~2000N, wingArea ~25m2, maxSpeed ~60 m/s
-
-${config ? `
-CONFIGURATION HINTS FROM MANIFEST:
-${config.aircraft ? `- Aircraft type: ${config.aircraft.type}` : ''}
-${config.initialConditions ? `- Initial altitude: ${config.initialConditions.altitude}` : ''}
-${config.initialConditions?.speed !== undefined ? `- Initial speed: ${config.initialConditions.speed}` : ''}
-${config.initialConditions?.thrustPercent !== undefined ? `- Initial thrust%: ${config.initialConditions.thrustPercent}` : ''}
-${config.initialConditions?.angleOfAttack !== undefined ? `- Initial angle of attack: ${config.initialConditions.angleOfAttack}` : ''}
-${config.initialConditions?.cargoWeight !== undefined ? `- Cargo weight: ${config.initialConditions.cargoWeight}` : ''}
-${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-${config.showOptions ? `- Show options override provided` : ''}
-` : ''}
-
-VALIDATION REQUIREMENTS:
-1. aircraft must have a valid type (cessna, jumbo_jet, glider, fighter, biplane, or custom)
-2. All four forces (lift, weight, thrust, drag) must be present with magnitude and description
-3. flightStates must have at least 3 entries (ideally 4-5)
-4. challenges must have at least 1 entry (K-2: 1-2, 3-5: 2-4)
-5. initialConditions ranges: altitude 0-10000, speed 0-1000, thrustPercent 0-100, angleOfAttack -10 to 25, cargoWeight >= 0
-6. Include narration fields in all flight states - conversational and age-appropriate
-7. Force magnitudes should be physically reasonable for the chosen aircraft
-
-Return a complete Flight Forces Explorer configuration appropriate for the grade level and topic.
+${config?.targetEvalMode ? `Target eval mode: ${config.targetEvalMode}` : ''}
 `;
 
   const result = await ai.models.generateContent({
@@ -360,185 +226,89 @@ Return a complete Flight Forces Explorer configuration appropriate for the grade
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: flightForcesExplorerSchema
+      responseSchema: activeSchema,
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  const raw = result.text ? JSON.parse(result.text) : null;
+  if (!raw) throw new Error('No valid Flight Forces Explorer data returned from Gemini');
 
-  if (!data) {
-    throw new Error('No valid Flight Forces Explorer data returned from Gemini API');
+  // ---- Reconstruct nested structures from flat schema ----
+
+  // Challenges
+  const challenges: NonNullable<FlightForcesExplorerData['challenges']> = [];
+  for (let i = 0; i < 6; i++) {
+    const ch = raw[`challenge${i}`];
+    if (!ch?.instruction) continue;
+    challenges.push({
+      id: ch.id || `ch${i + 1}`,
+      type: ch.type || 'predict',
+      instruction: ch.instruction,
+      options: [
+        { id: ch.option0Id || 'a', text: ch.option0Text || '' },
+        { id: ch.option1Id || 'b', text: ch.option1Text || '' },
+        { id: ch.option2Id || 'c', text: ch.option2Text || '' },
+        { id: ch.option3Id || 'd', text: ch.option3Text || '' },
+      ].filter(o => o.text),
+      correctOptionId: ch.correctOptionId || 'a',
+      hint: ch.hint || 'Think about how the four forces balance!',
+    });
   }
 
-  // Validation: ensure aircraft has a valid type
-  const validAircraftTypes = ["cessna", "jumbo_jet", "glider", "fighter", "biplane", "custom"];
-  if (!data.aircraft || !validAircraftTypes.includes(data.aircraft.type)) {
-    console.warn('Invalid aircraft type. Setting default.');
-    if (!data.aircraft) {
-      data.aircraft = {
-        name: "Cessna 172",
-        type: "cessna",
-        imagePrompt: "A small single-engine Cessna 172 aircraft in flight against a blue sky",
-        emptyWeight: 7000,
-        maxThrust: 2400,
-        wingArea: 16,
-        maxSpeed: 75
+  // Force descriptions
+  const forceDescriptions: Record<string, { name: string; description: string; analogy: string }> = {};
+  for (const key of ['lift', 'weight', 'thrust', 'drag']) {
+    const fact = raw[`forceFact_${key}`];
+    if (fact?.name && fact?.description && fact?.analogy) {
+      forceDescriptions[key] = {
+        name: fact.name,
+        description: fact.description,
+        analogy: fact.analogy,
       };
     } else {
-      data.aircraft.type = "cessna";
+      forceDescriptions[key] = {
+        name: key.charAt(0).toUpperCase() + key.slice(1),
+        description: `The ${key} force acting on the aircraft.`,
+        analogy: 'Think about how forces push and pull!',
+      };
     }
   }
 
-  // Validation: ensure all four forces are present
-  if (!data.forces) {
-    data.forces = {};
-  }
-  if (!data.forces.lift) {
-    console.warn('Missing lift force. Setting default.');
-    data.forces.lift = { magnitude: 7000, description: "Lift pushes the plane up as air flows over the wings." };
-  }
-  if (!data.forces.weight) {
-    console.warn('Missing weight force. Setting default.');
-    data.forces.weight = { magnitude: 7000, description: "Gravity pulls the plane down toward the ground." };
-  }
-  if (!data.forces.thrust) {
-    console.warn('Missing thrust force. Setting default.');
-    data.forces.thrust = { magnitude: 2400, description: "The engine pushes the plane forward." };
-  }
-  if (!data.forces.drag) {
-    console.warn('Missing drag force. Setting default.');
-    data.forces.drag = { magnitude: 1200, description: "Air resistance slows the plane down." };
-  }
-
-  // Validation: ensure force magnitudes are positive numbers
-  for (const forceKey of ['lift', 'weight', 'thrust', 'drag'] as const) {
-    if (typeof data.forces[forceKey].magnitude !== 'number' || data.forces[forceKey].magnitude < 0) {
-      console.warn(`Invalid ${forceKey} magnitude. Setting default.`);
-      data.forces[forceKey].magnitude = forceKey === 'lift' ? 7000 : forceKey === 'weight' ? 7000 : forceKey === 'thrust' ? 2400 : 1200;
-    }
-  }
-
-  // Validation: ensure flightStates has at least 3 entries
-  if (!data.flightStates || data.flightStates.length < 3) {
-    console.warn('Insufficient flightStates. Setting defaults.');
-    data.flightStates = [
-      {
-        condition: "Thrust is high and nose is angled up",
-        name: "climbing",
-        description: "The plane is going up because lift is greater than weight.",
-        narration: "We're climbing! The engine is working hard and our wings are tilted up to push us higher into the sky."
-      },
-      {
-        condition: "Thrust is reduced and nose is angled down",
-        name: "descending",
-        description: "The plane is going down because weight is greater than lift.",
-        narration: "We're coming down now. We reduced the engine power, and gravity is gently pulling us lower."
-      },
-      {
-        condition: "All forces are balanced",
-        name: "cruising",
-        description: "The plane flies level because lift equals weight and thrust equals drag.",
-        narration: "Smooth sailing! All the forces are perfectly balanced, so we fly nice and level."
-      },
-      {
-        condition: "Angle of attack is too high",
-        name: "stalling",
-        description: "The plane loses lift because the wings are tilted too steeply.",
-        narration: "Whoa, we tilted the nose too high! The air can't flow smoothly over the wings anymore, so we're losing lift."
-      },
-      {
-        condition: "Thrust has been increased significantly",
-        name: "accelerating",
-        description: "The plane speeds up because thrust is greater than drag.",
-        narration: "Full throttle! The engine is pushing us forward faster than the air can slow us down. Feel the speed!"
-      }
-    ];
-  }
-
-  // Validation: ensure each flight state has required fields
-  const validStateNames = ["climbing", "descending", "cruising", "stalling", "accelerating"];
-  data.flightStates = data.flightStates.map((state: FlightState) => ({
-    condition: state.condition || "Forces are unbalanced",
-    name: validStateNames.includes(state.name) ? state.name : "cruising",
-    description: state.description || "The aircraft is in this flight state.",
-    narration: state.narration || state.description || "The aircraft is flying."
-  }));
-
-  // Validation: ensure challenges is an array with at least 1 entry
-  if (!data.challenges || !Array.isArray(data.challenges) || data.challenges.length < 1) {
-    console.warn('Insufficient challenges. Setting defaults.');
-    data.challenges = [
-      {
-        id: "challenge-1",
-        instruction: "Make the plane climb to a higher altitude!",
-        targetConditions: {
-          altitudeRange: { min: 2000, max: 4000 },
-          speedRange: { min: 30, max: 80 }
-        },
-        hint: "Try increasing the thrust and tilting the nose up a little."
-      }
-    ];
-  }
-
-  // Validation: ensure each challenge has required fields
-  data.challenges = data.challenges.map((challenge: FlightChallenge, index: number) => ({
-    id: challenge.id || `challenge-${index + 1}`,
-    instruction: challenge.instruction || "Complete this flight challenge!",
-    targetConditions: {
-      altitudeRange: {
-        min: challenge.targetConditions?.altitudeRange?.min ?? 1000,
-        max: challenge.targetConditions?.altitudeRange?.max ?? 5000
-      },
-      speedRange: {
-        min: challenge.targetConditions?.speedRange?.min ?? 20,
-        max: challenge.targetConditions?.speedRange?.max ?? 100
-      }
-    },
-    hint: challenge.hint || "Adjust the thrust and angle of attack to reach the target."
-  }));
-
-  // Validation: initialConditions ranges
-  if (!data.initialConditions) {
-    data.initialConditions = { altitude: 1000, speed: 50, thrustPercent: 60, angleOfAttack: 3, cargoWeight: 0 };
-  }
-  data.initialConditions.altitude = Math.max(0, Math.min(10000, data.initialConditions.altitude ?? 1000));
-  data.initialConditions.speed = Math.max(0, Math.min(1000, data.initialConditions.speed ?? 50));
-  data.initialConditions.thrustPercent = Math.max(0, Math.min(100, data.initialConditions.thrustPercent ?? 60));
-  data.initialConditions.angleOfAttack = Math.max(-10, Math.min(25, data.initialConditions.angleOfAttack ?? 3));
-  data.initialConditions.cargoWeight = Math.max(0, data.initialConditions.cargoWeight ?? 0);
-
-  // Validation: ensure showOptions exists with defaults
-  if (!data.showOptions) {
-    data.showOptions = {
-      forceArrows: true,
-      forceValues: false,
-      airflowStreamlines: false,
-      forceBalanceChart: false,
-      flightPathTrace: false,
-      altitudeIndicator: false
-    };
-  }
-
-  // Validation: default gradeBand based on gradeLevel
-  if (!data.gradeBand) {
-    const gradeNum = parseInt(gradeLevel.replace(/[^0-9]/g, ''), 10);
-    if (isNaN(gradeNum) || gradeNum <= 2) {
-      data.gradeBand = "K-2";
+  // Flight state descriptions
+  const flightStateDescriptions: Record<string, { name: string; description: string }> = {};
+  for (const key of ['climbing', 'descending', 'cruising', 'stalling']) {
+    const fact = raw[`stateFact_${key}`];
+    if (fact?.name && fact?.description) {
+      flightStateDescriptions[key] = {
+        name: fact.name,
+        description: fact.description,
+      };
     } else {
-      data.gradeBand = "3-5";
+      flightStateDescriptions[key] = {
+        name: key.charAt(0).toUpperCase() + key.slice(1),
+        description: `The aircraft is ${key}.`,
+      };
     }
   }
 
-  // Apply config overrides
-  if (config) {
-    if (config.aircraft) data.aircraft = { ...data.aircraft, ...config.aircraft };
-    if (config.initialConditions) data.initialConditions = { ...data.initialConditions, ...config.initialConditions };
-    if (config.forces) data.forces = { ...data.forces, ...config.forces };
-    if (config.flightStates) data.flightStates = config.flightStates;
-    if (config.challenges) data.challenges = config.challenges;
-    if (config.showOptions) data.showOptions = { ...data.showOptions, ...config.showOptions };
-    if (config.gradeBand) data.gradeBand = config.gradeBand;
-  }
+  // Aircraft type validation
+  const validAircraftTypes = ['cessna', 'jumbo_jet', 'glider', 'fighter'] as const;
+  const aircraftType = validAircraftTypes.includes(raw.aircraftType) ? raw.aircraftType : 'cessna';
+
+  // Grade band
+  const gradeBand = raw.gradeBand === '1-2' || raw.gradeBand === '3-5' ? raw.gradeBand : '3-5';
+
+  const data: FlightForcesExplorerData = {
+    title: raw.title || 'Sky Forces: How Planes Really Fly',
+    description: raw.description || 'Explore the four forces that keep aircraft in the sky!',
+    overview: raw.overview || 'Discover how lift, weight, thrust, and drag work together to make flight possible!',
+    aircraftType,
+    aircraftName: raw.aircraftName || 'Cessna 172',
+    gradeBand,
+    challenges: challenges.length > 0 ? challenges : undefined,
+    forceDescriptions,
+    flightStateDescriptions,
+  };
 
   return data;
 };

@@ -31,4 +31,8 @@ export const ADAPTIVE = {
 
   // --- Transition timing ---
   TRANSITION_DURATION_MS: 2500,   // animation duration (also masks hydration latency)
+
+  // --- Delivery resilience ---
+  MAX_DELIVERY_RETRIES: 3,        // retry prefetch this many times before erroring
+  DELIVERY_TIMEOUT_MS: 15_000,    // if no delivery within 15s, retry or error
 } as const;

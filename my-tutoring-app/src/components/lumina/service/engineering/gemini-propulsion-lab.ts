@@ -1,178 +1,210 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  type ChallengeTypeDoc,
+} from '../evalMode';
 
 // Import types from the component - single source of truth
 import type {
   PropulsionLabData,
-  PropulsionType,
-  NewtonThirdLaw,
-  WhatIfExperiment,
-  PropulsionComparison,
 } from '../../primitives/visual-primitives/engineering/PropulsionLab';
 
 // Re-export for convenience
 export type { PropulsionLabData };
 
-/**
- * Schema for Propulsion Type
- */
-const propulsionTypeSchema: Schema = {
+// ============================================================================
+// Eval Mode Challenge Type Docs
+// ============================================================================
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  predict: {
+    promptDoc: 'Predict: Ask what will happen BEFORE the student tries it. Focus on hypotheses about action/reaction.',
+    schemaDescription: 'predict — student predicts outcome before testing',
+  },
+  observe: {
+    promptDoc: 'Observe: Ask the student to watch particles and describe what they see. Focus on visible evidence of Newton\'s Third Law.',
+    schemaDescription: 'observe — student watches simulation and explains',
+  },
+  experiment: {
+    promptDoc: 'Experiment: Ask the student to change variables (propulsion type, medium) and compare results. Focus on medium dependence.',
+    schemaDescription: 'experiment — student designs tests and compares outcomes',
+  },
+};
+
+// ============================================================================
+// Gemini Schemas — flat, simple, content-only (no physics or propulsion params)
+// ============================================================================
+
+const challengeSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    id: { type: Type.STRING, description: "Unique identifier (kebab-case, e.g., 'jet-turbofan')." },
-    name: { type: Type.STRING, description: "Display name (e.g., 'Jet Turbofan Engine')." },
-    method: {
+    id: { type: Type.STRING, description: "Unique ID like ch1, ch2, etc." },
+    type: {
       type: Type.STRING,
-      enum: ["propeller_air", "jet", "propeller_water", "wheel_friction", "sail", "paddle", "rocket", "electric"],
-      description: "Type of propulsion method."
+      enum: ["predict", "observe", "experiment"],
+      description: "predict = what will happen, observe = watch and describe, experiment = change variables and see results",
     },
-    vehicle: { type: Type.STRING, description: "Real vehicle that uses this propulsion (e.g., 'Boeing 747')." },
-    actionDescription: { type: Type.STRING, description: "What gets pushed backward (the action). Kid-friendly language." },
-    reactionDescription: { type: Type.STRING, description: "The vehicle moving forward (the reaction). Kid-friendly language." },
-    medium: {
-      type: Type.STRING,
-      enum: ["air", "water", "ground", "vacuum", "wind"],
-      description: "What medium this propulsion pushes against."
-    },
-    thrustRange: {
-      type: Type.OBJECT,
-      properties: {
-        min: { type: Type.NUMBER, description: "Minimum thrust in the given unit." },
-        max: { type: Type.NUMBER, description: "Maximum thrust in the given unit." },
-        unit: { type: Type.STRING, description: "Unit of thrust (e.g., 'N', 'kN')." },
-      },
-      required: ["min", "max", "unit"]
-    },
-    efficiency: { type: Type.STRING, description: "Brief description of this method's efficiency." },
-    mediumRequired: { type: Type.BOOLEAN, description: "Whether this propulsion needs a medium to work (false for rockets)." },
-    analogy: { type: Type.STRING, description: "Kid-friendly analogy (e.g., 'Like a balloon zooming around a room')." },
-    imagePrompt: { type: Type.STRING, description: "Prompt for generating an illustration of this propulsion in action." },
+    instruction: { type: Type.STRING, description: "The question or task for the student." },
+    option0Id: { type: Type.STRING, description: "Option ID (e.g., 'a')" },
+    option0Text: { type: Type.STRING, description: "Option text for first choice" },
+    option1Id: { type: Type.STRING, description: "Option ID (e.g., 'b')" },
+    option1Text: { type: Type.STRING, description: "Option text for second choice" },
+    option2Id: { type: Type.STRING, description: "Option ID (e.g., 'c')" },
+    option2Text: { type: Type.STRING, description: "Option text for third choice" },
+    option3Id: { type: Type.STRING, description: "Option ID (e.g., 'd')" },
+    option3Text: { type: Type.STRING, description: "Option text for fourth choice" },
+    correctOptionId: { type: Type.STRING, description: "ID of the correct option (a, b, c, or d)." },
+    hint: { type: Type.STRING, description: "A helpful hint without giving the answer directly." },
   },
-  required: ["id", "name", "method", "vehicle", "actionDescription", "reactionDescription", "medium", "thrustRange", "efficiency", "mediumRequired", "analogy", "imagePrompt"]
+  required: [
+    "id", "type", "instruction",
+    "option0Id", "option0Text", "option1Id", "option1Text",
+    "option2Id", "option2Text", "option3Id", "option3Text",
+    "correctOptionId", "hint",
+  ],
 };
 
-/**
- * Schema for Newton's Third Law
- */
-const newtonThirdLawSchema: Schema = {
+const propulsionFactSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    statement: { type: Type.STRING, description: "Kid-friendly statement of Newton's Third Law." },
-    examples: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          action: { type: Type.STRING, description: "The action force." },
-          reaction: { type: Type.STRING, description: "The equal and opposite reaction." },
-          context: { type: Type.STRING, description: "Real-world context (e.g., 'When you jump, you push the ground down...')." },
-        },
-        required: ["action", "reaction", "context"]
-      },
-      description: "2-3 everyday examples of Newton's Third Law."
-    },
+    name: { type: Type.STRING, description: "Display name for this propulsion type (e.g., 'Jet Engine')." },
+    description: { type: Type.STRING, description: "1-2 sentence explanation of how this propulsion works, grade-appropriate." },
+    analogy: { type: Type.STRING, description: "Kid-friendly everyday analogy (e.g., 'Like a balloon zooming when you let go')." },
   },
-  required: ["statement", "examples"]
+  required: ["name", "description", "analogy"],
 };
 
-/**
- * Schema for What-If Experiment
- */
-const whatIfExperimentSchema: Schema = {
+const mediumFactSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    scenario: { type: Type.STRING, description: "A thought experiment scenario (e.g., 'What if you put a propeller in space?')." },
-    prediction_options: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3-4 possible answers for the student to choose from." },
-    correctAnswer: { type: Type.STRING, description: "The correct answer (must match one of prediction_options exactly)." },
-    explanation: { type: Type.STRING, description: "Kid-friendly explanation of the correct answer." },
-    relatedPropulsionId: { type: Type.STRING, description: "ID of the propulsion type this experiment relates to." },
+    name: { type: Type.STRING, description: "Display name for this medium (e.g., 'Air')." },
+    description: { type: Type.STRING, description: "1-2 sentence explanation of how this medium affects propulsion." },
   },
-  required: ["scenario", "prediction_options", "correctAnswer", "explanation", "relatedPropulsionId"]
+  required: ["name", "description"],
 };
 
-/**
- * Schema for Propulsion Comparison
- */
-const propulsionComparisonSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    propulsionA: { type: Type.STRING, description: "ID of first propulsion type." },
-    propulsionB: { type: Type.STRING, description: "ID of second propulsion type." },
-    question: { type: Type.STRING, description: "Guiding comparison question." },
-    insight: { type: Type.STRING, description: "Key insight from comparing these two." },
-  },
-  required: ["propulsionA", "propulsionB", "question", "insight"]
-};
-
-/**
- * Schema for Propulsion Lab Data
- */
 const propulsionLabSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    propulsionTypes: { type: Type.ARRAY, items: propulsionTypeSchema, description: "Array of 4-6 propulsion types to explore." },
-    newtonThirdLaw: newtonThirdLawSchema,
-    whatIfExperiments: { type: Type.ARRAY, items: whatIfExperimentSchema, description: "3-4 what-if thought experiments." },
-    comparisons: { type: Type.ARRAY, items: propulsionComparisonSchema, description: "2-3 propulsion comparisons." },
+    title: { type: Type.STRING, description: "Engaging activity title (e.g., 'Push It! Newton's Third Law Lab')." },
+    description: { type: Type.STRING, description: "Short educational description of what students will learn." },
+    overview: { type: Type.STRING, description: "1-2 sentence conversational overview of the lab activity." },
     gradeBand: { type: Type.STRING, enum: ["1-2", "3-5"], description: "Grade band for complexity." },
+    // Challenges — flattened (up to 6)
+    challenge0: challengeSchema,
+    challenge1: challengeSchema,
+    challenge2: challengeSchema,
+    challenge3: { ...challengeSchema, nullable: true },
+    challenge4: { ...challengeSchema, nullable: true },
+    challenge5: { ...challengeSchema, nullable: true },
+    // Propulsion facts — one per hardcoded type
+    propulsionFact_jet: propulsionFactSchema,
+    propulsionFact_rocket: propulsionFactSchema,
+    propulsionFact_propeller: propulsionFactSchema,
+    propulsionFact_sail: propulsionFactSchema,
+    // Medium facts — one per hardcoded medium
+    mediumFact_air: mediumFactSchema,
+    mediumFact_water: mediumFactSchema,
+    mediumFact_vacuum: mediumFactSchema,
   },
-  required: ["propulsionTypes", "newtonThirdLaw", "whatIfExperiments", "comparisons", "gradeBand"]
+  required: [
+    "title", "description", "overview", "gradeBand",
+    "challenge0", "challenge1", "challenge2",
+    "propulsionFact_jet", "propulsionFact_rocket", "propulsionFact_propeller", "propulsionFact_sail",
+    "mediumFact_air", "mediumFact_water", "mediumFact_vacuum",
+  ],
 };
 
-/**
- * Generate Propulsion Lab data
- */
+// ============================================================================
+// Generator
+// ============================================================================
+
 export const generatePropulsionLab = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<PropulsionLabData>
+  config?: Partial<{ targetEvalMode?: string }>
 ): Promise<PropulsionLabData> => {
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'propulsion-lab',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // When an eval mode is active, constrain the type enum on each flattened
+  // challenge object so Gemini *cannot* produce disallowed types.
+  // The standard constrainChallengeTypeEnum targets `challenges.items` (array form),
+  // but our schema has flattened `challenge0..challenge5` objects. We constrain each manually.
+  let activeSchema = propulsionLabSchema;
+  if (evalConstraint) {
+    activeSchema = JSON.parse(JSON.stringify(propulsionLabSchema)) as Schema;
+    const props = (activeSchema as Record<string, unknown>).properties as Record<string, Record<string, unknown>>;
+    const descriptions = evalConstraint.allowedTypes
+      .map(t => CHALLENGE_TYPE_DOCS[t]?.schemaDescription ?? t)
+      .join(', ');
+    for (let i = 0; i < 6; i++) {
+      const ch = props[`challenge${i}`];
+      if (ch?.properties) {
+        const chProps = ch.properties as Record<string, Record<string, unknown>>;
+        if (chProps.type) {
+          chProps.type = { ...chProps.type, enum: evalConstraint.allowedTypes, description: `Challenge type: ${descriptions}` };
+        }
+      }
+    }
+  }
+
+  // ── Build prompt ──
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
-Create a Propulsion Lab for teaching "${topic}" to ${gradeLevel} students.
+Create educational content for a Propulsion Lab that teaches "${topic}" to ${gradeLevel} students.
 
-CONTEXT — PROPULSION AND NEWTON'S THIRD LAW:
-This lab teaches how vehicles generate thrust through Newton's Third Law:
-"For every action, there is an equal and opposite reaction."
+IMPORTANT: You are providing ONLY educational text content — descriptions, analogies, facts, and challenge questions.
+The component hardcodes all physics simulation, propulsion types (jet, rocket, propeller, sail), and mediums (air, water, vacuum).
+You write the words and questions. You do NOT create physics parameters.
 
-KEY PROPULSION TYPES (include at least 4):
-1. Jet engine (jet) — Hot exhaust blasts backward → plane pushes forward. Vehicle: Boeing 747.
-2. Propeller in air (propeller_air) — Spinning blade pushes air backward → plane moves forward. Vehicle: Cessna 172.
-3. Propeller in water (propeller_water) — Spinning blade pushes water backward → ship moves forward. Vehicle: Container ship.
-4. Wheels on road (wheel_friction) — Tires push ground backward → car moves forward. Vehicle: Tesla.
-5. Sail (sail) — Wind pushes against sail → boat moves. Vehicle: Sailboat.
-6. Rocket (rocket) — Exhaust fires out the back → rocket moves forward. Works in vacuum! Vehicle: Space Shuttle.
-7. Paddle (paddle) — Push water backward with paddle → kayak moves forward. Vehicle: Kayak.
-8. Electric motor (electric) — Electromagnetic force spins wheels → vehicle moves. Vehicle: Electric train.
+NEWTON'S THIRD LAW FOCUS:
+Every challenge should relate to Newton's Third Law: "For every action, there is an equal and opposite reaction."
+Cover concepts like:
+- Action/reaction pairs in different propulsion types
+- How the medium affects thrust (air vs water vs vacuum)
+- Why rockets work in space but propellers don't
+- Comparing thrust in different mediums
 
-CRITICAL: Rockets work in vacuum (mediumRequired: false). Propellers/wheels/sails need a medium (mediumRequired: true).
+PROPULSION FACTS (provide educational text for each):
+- jet: Jet engines that push hot exhaust backward to move forward
+- rocket: Rockets that carry their own fuel and work in vacuum
+- propeller: Spinning blades that push air/water backward
+- sail: Catching wind to generate forward motion
+
+MEDIUM FACTS (provide educational text for each):
+- air: How air affects different propulsion types
+- water: How water's density changes thrust behavior
+- vacuum: Why only rockets work in space (nothing to push against for propellers/sails)
+
+${challengeTypeSection}
+
+CHALLENGES (create 3-6 multiple choice questions):
+- Options: exactly 4 options (a, b, c, d). One correct.
+- Hints: helpful but don't give the answer.
 
 GRADE-LEVEL GUIDELINES:
-
 GRADES 1-2:
-- Newton's Third Law in simplest terms: "Push backward → go forward"
-- 4 propulsion types maximum (balloon/jet, propeller, wheels, paddle)
-- Everyday analogies: balloon zooming, rowing a boat, pushing off a wall
-- thrustRange in simple numbers (e.g., 1-100 N)
-- 2-3 simple what-if experiments
+- Simple language: "push backward to go forward"
+- Everyday analogies: balloons, rowing boats, pushing off walls
+- 3-4 challenges maximum
 - gradeBand: "1-2"
 
 GRADES 3-5:
-- Full Newton's Third Law with action/reaction pair identification
-- 5-6 propulsion types including rocket (vacuum discussion)
-- Scientific language: thrust, medium, efficiency
-- Real thrust values (e.g., jet engine: 100,000-300,000 N)
-- 3-4 what-if experiments with medium dependency focus
+- Scientific vocabulary: thrust, medium, action/reaction, Newton's Third Law
+- Real-world vehicle examples in descriptions
+- 4-6 challenges with medium-dependency focus
 - gradeBand: "3-5"
 
-CRITICAL RULES:
-- correctAnswer must EXACTLY match one of the prediction_options
-- comparison propulsionA and propulsionB must match propulsionType ids
-- whatIfExperiment relatedPropulsionId must match a propulsionType id
-- analogy fields should reference experiences kids already know
-
-${config ? `CONFIGURATION HINTS:\n${JSON.stringify(config, null, 2)}` : ''}
-
-Return a complete Propulsion Lab configuration.
+${config?.targetEvalMode ? `Target eval mode: ${config.targetEvalMode}` : ''}
 `;
 
   const result = await ai.models.generateContent({
@@ -180,37 +212,84 @@ Return a complete Propulsion Lab configuration.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: propulsionLabSchema
+      responseSchema: activeSchema,
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  const raw = result.text ? JSON.parse(result.text) : null;
+  if (!raw) throw new Error('No valid Propulsion Lab data returned from Gemini');
 
-  if (!data) {
-    throw new Error('No valid Propulsion Lab data returned from Gemini API');
+  // ---- Reconstruct nested structures from flat schema ----
+
+  // Challenges
+  const challenges: PropulsionLabData['challenges'] = [];
+  for (let i = 0; i < 6; i++) {
+    const ch = raw[`challenge${i}`];
+    if (!ch?.instruction) continue;
+    challenges.push({
+      id: ch.id || `ch${i + 1}`,
+      type: ch.type || 'predict',
+      instruction: ch.instruction,
+      options: [
+        { id: ch.option0Id || 'a', text: ch.option0Text || '' },
+        { id: ch.option1Id || 'b', text: ch.option1Text || '' },
+        { id: ch.option2Id || 'c', text: ch.option2Text || '' },
+        { id: ch.option3Id || 'd', text: ch.option3Text || '' },
+      ].filter(o => o.text),
+      correctOptionId: ch.correctOptionId || 'a',
+      hint: ch.hint || 'Think about Newton\'s Third Law!',
+    });
   }
 
-  // Validation
-  if (!data.propulsionTypes || data.propulsionTypes.length < 2) {
-    throw new Error('Propulsion Lab requires at least 2 propulsion types');
-  }
-
-  // Ensure valid methods
-  const validMethods = ['propeller_air', 'jet', 'propeller_water', 'wheel_friction', 'sail', 'paddle', 'rocket', 'electric'];
-  for (const pt of data.propulsionTypes) {
-    if (!validMethods.includes(pt.method)) {
-      console.warn(`Invalid method "${pt.method}" for ${pt.name}. Defaulting to "jet".`);
-      pt.method = 'jet';
+  // Propulsion facts
+  const propulsionFacts: Record<string, { name: string; description: string; analogy: string }> = {};
+  for (const key of ['jet', 'rocket', 'propeller', 'sail']) {
+    const fact = raw[`propulsionFact_${key}`];
+    if (fact?.name && fact?.description && fact?.analogy) {
+      propulsionFacts[key] = {
+        name: fact.name,
+        description: fact.description,
+        analogy: fact.analogy,
+      };
+    } else {
+      // Defaults
+      propulsionFacts[key] = {
+        name: key.charAt(0).toUpperCase() + key.slice(1),
+        description: `A ${key}-based propulsion system.`,
+        analogy: 'Push backward to go forward!',
+      };
     }
   }
 
-  // Ensure correctAnswer matches prediction_options
-  for (const exp of data.whatIfExperiments || []) {
-    if (!exp.prediction_options.includes(exp.correctAnswer)) {
-      console.warn(`correctAnswer "${exp.correctAnswer}" not in prediction_options. Adding it.`);
-      exp.prediction_options.push(exp.correctAnswer);
+  // Medium facts
+  const mediumFacts: Record<string, { name: string; description: string }> = {};
+  for (const key of ['air', 'water', 'vacuum']) {
+    const fact = raw[`mediumFact_${key}`];
+    if (fact?.name && fact?.description) {
+      mediumFacts[key] = {
+        name: fact.name,
+        description: fact.description,
+      };
+    } else {
+      mediumFacts[key] = {
+        name: key.charAt(0).toUpperCase() + key.slice(1),
+        description: `Propulsion through ${key}.`,
+      };
     }
   }
+
+  // Grade band
+  const gradeBand = raw.gradeBand === '1-2' || raw.gradeBand === '3-5' ? raw.gradeBand : '3-5';
+
+  const data: PropulsionLabData = {
+    title: raw.title || 'Propulsion Lab: Newton\'s Third Law',
+    description: raw.description || 'Explore how different propulsion types use action and reaction!',
+    overview: raw.overview || 'Push backward to go forward — that\'s Newton\'s Third Law in action!',
+    gradeBand,
+    challenges: challenges.length > 0 ? challenges : undefined,
+    propulsionFacts,
+    mediumFacts,
+  };
 
   return data;
 };

@@ -429,6 +429,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "pulley-system":              {"default": PriorConfig(4.0, "Design pulley system")},
     "gear-train":                 {"default": PriorConfig(4.5, "Connect gears for target ratio")},
     "ramp-lab":                   {"default": PriorConfig(3.0, "Explore inclined planes")},
+    "hydraulics-lab": {
+        "predict": PriorConfig(-1.0, "Predict hydraulic outcomes before testing"),
+        "observe": PriorConfig(0.0, "Watch fluid particles and explain pressure transmission"),
+        "adjust":  PriorConfig(1.0, "Set piston sizes and forces to achieve specific outputs"),
+    },
     # -----------------------------------------------------------------
     # Science primitives
     # -----------------------------------------------------------------

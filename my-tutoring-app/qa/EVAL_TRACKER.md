@@ -37,7 +37,7 @@
 | ten-frame | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/ten-frame-2026-03-16.md) |
 | factor-tree | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/factor-tree-2026-03-16.md) |
 | addition-subtraction-scene | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/addition-subtraction-scene-2026-03-16.md) |
-| number-line | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/number-line-2026-03-17.md) |
+| number-line | 4 | 4 | 0 | 2026-04-03 | [report](eval-reports/number-line-2026-04-03.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/fraction-circles-2026-03-17.md) |
 | number-bond | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/number-bond-2026-03-17.md) |
 | pattern-builder | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/pattern-builder-2026-03-17.md) |
@@ -64,10 +64,14 @@
 | sound-wave-explorer | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/sound-wave-explorer-2026-03-29.md) |
 | hundreds-chart | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/hundreds-chart-2026-03-29.md) |
 | length-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/length-lab-2026-03-29.md) |
-| analog-clock | 4 | 0 | 4 | 2026-03-29 | [report](eval-reports/analog-clock-2026-03-29.md) |
+| analog-clock | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/analog-clock-2026-03-29.md) |
 | media-player | 1 | 0 | 1 | 2026-04-02 | [report](eval-reports/media-player-2026-04-02.md) |
+| shape-strength-tester | 0 | 0 | 0 | 2026-04-03 | [report](eval-reports/shape-strength-tester-2026-04-03.md) |
+| gear-train-builder | 0 | 0 | 0 | 2026-04-03 | [report](eval-reports/gear-train-builder-2026-04-03.md) |
+| coin-counter | 7 | 7 | 0 | 2026-04-04 | [report](eval-reports/coin-counter-2026-04-04.md) |
+| time-sequencer | 6 | 6 | 0 | 2026-04-04 | [report](eval-reports/time-sequencer-2026-04-04.md) |
 
-**Totals:** 211/232 modes passing (91.0%) | 30 open issues (14 CRITICAL, 16 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 228/245 modes passing (93.1%) | 32 open issues (15 CRITICAL, 17 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -92,7 +96,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-2: Generator produces values that overflow component's fixed UI slots
 
-**Affected:** regrouping-workbench (add_regroup Tier 3)
+**Affected:** regrouping-workbench (add_regroup Tier 3), ~~number-line (plot — sub-range span too wide for tick density)~~
 **Risk:** Any primitive with fixed-size input grids, button panels, or column layouts.
 **Root cause:** Generator prompt lacks hard constraints on value ranges. Component has hardcoded caps (e.g., `maxLength={1}`, `Math.min(maxRows, 6)`) that don't match what the LLM can produce.
 **Fix pattern:** Two-layer defense: (1) generator prompt constraints to keep values in range, (2) component-side post-validation to reject/clamp overflow.
@@ -103,7 +107,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 **Risk:** Any primitive where the generator creates multi-challenge sequences and the prompt describes all challenge types — LLM "helpfully" mixes types even when constrained to one.
 **Root cause:** Generator prompt describes all available challenge types, and the LLM creates a "progression" that includes other types despite the evalMode constraint.
 **Fix pattern:** Use orchestrator pattern with per-mode sub-generators (each LLM call only knows about one type). Alternatively, strongly constrain the prompt.
-**Status:** Fixed for sorting-station — refactored to orchestrator with 6 per-mode sub-generators (parallels tape-diagram TD-2 pattern).
+**Status:** Fixed for sorting-station and time-sequencer — refactored to orchestrator with per-mode sub-generators (parallels tape-diagram TD-2 pattern).
 
 ### SP-5: First challenge uses top-level data props instead of per-challenge config
 
@@ -156,6 +160,29 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 **Root cause:** `useLuminaAI` auto-syncs `primitiveData` to Gemini on every change (useEffect + 500ms debounce). Primitives include transient interaction state (shadedCount, marker position) that changes many times before the student submits. Gemini must process each message sequentially, causing response lag.
 **Fix pattern:** (A) Per-primitive: remove transient interaction fields from `aiPrimitiveData` — only send on submit via explicit `sendText`. (B) Systemic: backend replace-not-append for queued `update_context` messages (discard stale, keep newest). (C) Increase client debounce or add settling heuristic.
 
+### SP-13: Primitive has `supportsEvaluation: true` but no `evalModes` — adaptive session deadlocks
+
+**Affected:** media-player (MP-3), gear-train-builder (GT-1)
+**Risk:** Any primitive with `supportsEvaluation: true` but missing `evalModes` array. The adaptive session can select the primitive, but the manifest pipeline can't generate content. If `prefetch()` returns 0 items, `waitingForDelivery` is never cleared — permanent deadlock on "Preparing next challenge..."
+**Root cause:** Catalog entries were created with `supportsEvaluation: true` as a placeholder before eval modes were authored. No validation checks that `supportsEvaluation` implies a non-empty `evalModes` array.
+**Fix pattern:** Two layers: (1) Add `evalModes` to all affected catalog entries. (2) Session engine must handle empty prefetch defensively — clear `waitingForDelivery` and surface an error instead of deadlocking.
+
+### SP-14: Gemini Flash Lite silently drops nullable flat-indexed fields — generator produces structurally broken challenges
+
+**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04)
+**Risk:** Any primitive using the flattened-index pattern (e.g., `coin0Type`, `displayedCoin0Type`, `groupACoin0Type`, `option0..option3`) with nullable fields. Gemini Flash Lite frequently omits entire groups of these fields, producing challenges with missing visual data (no coins to count, no groups to compare). The generator's `collectCoinDefs`/`collectStrings` reconstruction returns empty arrays, and the challenge is accepted with wrong fallback values.
+**Root cause:** Flat-indexed fields are all `nullable: true` in the schema so Gemini can skip them without schema violation. Flash Lite takes the path of least resistance and omits fields it considers optional, especially when the prompt describes multiple challenge types. The generator's post-reconstruction validation was too permissive — it accepted challenges missing critical fields.
+**Fix pattern:** After flat→structured reconstruction, validate each challenge has all REQUIRED fields for its type. Reject (return null + filter) any challenge missing critical visual/interaction data. Never silently fall back to wrong values. For identify-type challenges, derive missing options from the answer field + grade-appropriate pool. Log all rejections for debugging.
+**Status:** Fixed for coin-counter — reject count without displayedCoins, compare without both groups, identify without targetCoin. Options derived from targetCoin when flat fields empty.
+
+### SP-15: Eval modes sharing the same challengeType have no semantic differentiation in generator
+
+**Affected:** coin-counter (count-like vs count-mixed — fixed 2026-04-04)
+**Risk:** Any primitive where two eval modes map to the same `challengeType` but with different pedagogical intent (e.g., "single coin type" vs "mixed coins", "simple" vs "complex"). The generator passes the challengeType constraint but has no mechanism to enforce the semantic difference between modes.
+**Root cause:** `resolveEvalModeConstraint` only constrains the `type` field value. It doesn't pass additional constraints (like "only one coin type") to the generator or post-process.
+**Fix pattern:** Generator must check `config?.targetEvalMode` (not just challengeType) and apply mode-specific post-filters. For coin-counter count-like: filter to challenges with exactly 1 unique coin type in displayedCoins.
+**Status:** Fixed for coin-counter — `count-like` post-filter enforces single-coin-type constraint.
+
 ### SP-4: Render path and validation path use different data sources
 
 **Affected:** number-sequencer (decade_fill — renderer uses `correctAnswers` to determine blanks, but check logic uses `blankIndices` from sequence nulls)
@@ -190,13 +217,17 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | SB-1 | sentence-builder | complex, compound_complex | CRITICAL | Impossible challenge | Duplicate tile IDs in validArrangements — student can't match with only 1 copy per tile; compound_complex ch2 unsolvable | GENERATOR |
 | SB-2 | sentence-builder | complex, compound_complex | HIGH | Wrong content | Alternative arrangements are ungrammatical (mid-sentence capitals, misplaced punctuation) — accepted as correct | GENERATOR |
 | SHB-3 | shape-builder | measure | HIGH | Trivial challenge | Measure mode has no answer input — student toggles Ruler button, measurements appear, Check Answer auto-passes. No comprehension assessed. | COMPONENT + GENERATOR |
-| AC-1 | analog-clock | read, match | CRITICAL | Answer leak | Digital display always shows `formatTime(targetHour, targetMinute)` — student reads answer instead of clock face | COMPONENT |
-| AC-2 | analog-clock | set_time | CRITICAL | Broken interaction | Drag handler only moves minute hand; hour changes on minute wraparound but stale closure breaks detection. Minutes can't pass 45, hour hand can't change. | COMPONENT |
-| AC-3 | analog-clock | elapsed | HIGH | Wrong answer | Generator auto-correction skips elapsed type — Gemini always outputs `correctOptionIndex: 0` regardless of which option is correct | GENERATOR |
 | FB-1 | fraction-bar | all (build phase) | HIGH | AI responsiveness | `shadedCount` in aiPrimitiveData triggers `updateContext` on every partition click — floods Gemini, causes response lag (SP-12) | COMPONENT + BACKEND |
 | MP-1 | media-player | walkthrough | CRITICAL | UI overflow | Title is raw verbose topic string — `Interactive Lesson: ${topic}` renders multi-sentence paragraph at 3xl font, consuming entire intro card | GENERATOR |
 | MP-2 | media-player | walkthrough | HIGH | Hidden CTA | "Begin Lesson" button pushed below fold by massive title — intro overlay has no scroll, students can't start lesson | COMPONENT |
 | MP-3 | media-player | — | HIGH | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — can't participate in eval-test or pulse agent | CATALOG |
+| NL-1 | number-line | plot | HIGH | UI overflow | `createSubRangePool` produces spans of 200-400 for large manifest ranges (observed: 459-774). 30+ tick labels overlap, student can't locate exact integers. Need `maxSpan` cap (~25) for number-line integers. | GENERATOR |
+| SS-1 | shape-strength-tester | — | CRITICAL | Broken interaction | Canvas click offset — `convertScreenToSVGCoords` manual scaling ignores SVG `preserveAspectRatio` padding, beams placed away from cursor | COMPONENT |
+| SS-2 | shape-strength-tester | — | CRITICAL | Wrong result | Collapsed structure passes — `survived` only checks beam breakage, not structural collapse. Tower falls flat, still PASSED | COMPONENT |
+| GT-1 | gear-train-builder | — | CRITICAL | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — adaptive session selects primitive but can't generate content | CATALOG |
+| GT-2 | gear-train-builder | — | CRITICAL | Session deadlock | When prefetch() returns 0 items (malformed 65K+ JSON from generator), `waitingForDelivery` never clears — permanent deadlock on "Preparing next challenge..." | SESSION ENGINE |
+| GT-3 | gear-train-builder | — | HIGH | Generator prompt | ~275-line prompt increases malformed JSON risk from Gemini; should be trimmed to essential constraints | GENERATOR |
+| ~~TS-3~~ | ~~time-sequencer~~ | ~~all~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Gemini omits type-specific fields (events, options, schedule) due to ~90 nullable fields in single multi-purpose schema (SP-3). Challenges render with instruction but no interactive content.~~ | ~~GENERATOR~~ |
 
 ---
 
@@ -204,6 +235,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| TS-3 | time-sequencer | 2026-04-04 | Orchestrator refactor (SP-3): split ~90-nullable-field monolith into 5 per-mode sub-generators with focused schemas (~10 fields each). All 6 eval modes pass. |
 | TF-1 | ten-frame | 2026-03-16 | Prompt updated: `showEmptyCount: false for make_ten` — previously told Gemini to set true, leaking the complement answer. |
 | TF-2 | ten-frame | 2026-03-16 | `add` promptDoc rewritten: frame starts empty, instruction must say "Place X, then add Y more" — not "You already have X counters." |
 | PB-1 | percent-bar | 2026-03-15 | Generator prompt updated: addition challenge type docs now explicitly require percentage questions, not dollar amounts. Added rule #7 to CRITICAL REQUIREMENTS. |
@@ -271,6 +303,14 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | LL-2 | length-lab | 2026-03-29 | POST-PROCESS-DERIVE: `order` case always overwrites `instruction` with template using actual deduped names — eliminates free-composed wrong-name bug. |
 | LL-3 | length-lab | 2026-03-29 | POST-PROCESS-DERIVE: `indirect` case clamps referenceObjectLength strictly between the two object lengths; regenerates clue0/clue1 from corrected values; always derives correctAnswer from lengths. |
 | LL-4 | length-lab | 2026-03-29 | Same fix as LL-3 — same root cause (referenceObjectLength not constrained to be strictly between object lengths). |
+| NL-1 | number-line | 2026-04-03 | Added `maxSpan: 25` to `createSubRangePool` call — caps display window at 25 units for integer number lines. For 0-1000 ranges, spans drop from 200-400 to ≤25 (SP-2). |
+| CC-1 | coin-counter | 2026-04-04 | Generator now derives `options` + `coins` from `targetCoin` + grade-appropriate coin pool when Gemini skips flat option/coin fields (SP-14). |
+| CC-2 | coin-counter | 2026-04-04 | Generator rejects count challenges missing `displayedCoins` instead of falling back to wrong correctTotal. Fallback challenges fill the gap (SP-14). |
+| CC-3 | coin-counter | 2026-04-04 | Generator rejects compare challenges missing either `groupA` or `groupB`. Prevents one-sided comparisons with wrong correctGroup (SP-14). |
+| CC-4 | coin-counter | 2026-04-04 | `count-like` eval mode now post-filters to single-coin-type challenges only. Mixed-coin challenges excluded (SP-15). |
+| AC-1 | analog-clock | 2026-04-04 | Digital display hidden in read/match/set_time modes — only shown for elapsed or after correct answer. Eliminates answer leakage. |
+| AC-2 | analog-clock | 2026-04-04 | Drag handler uses `prevMinuteRef` (ref, not state) with `>= 45` / `<= 15` boundaries. Hour advances correctly across all grade bands. |
+| AC-3 | analog-clock | 2026-04-04 | Generator derives elapsed duration from start→target times and matches against options to compute `correctOptionIndex`. |
 
 ---
 
@@ -288,3 +328,4 @@ Decisions that need product input before engineering can proceed.
 | 6 | base-ten-blocks | **RESOLVED** — Option B implemented: generator regroup prompt requires standard-form starting states; component initializes from first challenge targetNumber (2026-03-17) | — | — |
 | 7 | phoneme-explorer | **MITIGATED** — hardcoded quality fallbacks + sanitization replace "???" placeholders (2026-03-15). Flash-lite root cause remains; model upgrade still recommended for reliability | A) Switch to gemini-flash (not lite) for these modes (SMALL) | Option A for long-term reliability |
 | 8 | how-it-works | **RESOLVED** — Option A implemented: explain converted to MC format "Why is Step X important?" with 4 options, reusing existing MC rendering (2026-03-22) | — | — |
+| 9 | gear-train-builder | Session engine must handle empty prefetch defensively (SP-13) | A) Clear `waitingForDelivery` + show error on 0 prefetch B) Skip primitive entirely and route to next C) Both A + B | Option C — fail gracefully AND prevent routing to eval-less primitives |

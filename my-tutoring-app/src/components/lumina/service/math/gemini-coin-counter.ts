@@ -320,6 +320,18 @@ Return the complete coin counter configuration.
   // ── Reconstruct arrays from flat fields & validate per challenge ──
   const validTypes = ["identify", "count", "make-amount", "compare", "make-change"];
 
+  // Grade-appropriate coin pools for deriving missing options
+  const gradeCoinPool: CoinType[] =
+    data.gradeBand === "K"
+      ? ["penny", "nickel", "dime"]
+      : data.gradeBand === "1"
+        ? ["penny", "nickel", "dime", "quarter"]
+        : ["penny", "nickel", "dime", "quarter", "half-dollar", "dollar"];
+
+  type CoinType = "penny" | "nickel" | "dime" | "quarter" | "half-dollar" | "dollar";
+
+  const rejectedCount = { count: 0, compare: 0, identify: 0 };
+
   data.challenges = (data.challenges || [])
     .filter((c: FlatChallenge) => validTypes.includes(c.type as string))
     .map((flat: FlatChallenge) => {
@@ -335,8 +347,28 @@ Return the complete coin counter configuration.
           const coins = collectCoinDefs(flat, "coin", 4);
           if (coins) challenge.coins = coins;
           if (isValidCoin(flat.targetCoin)) challenge.targetCoin = flat.targetCoin;
-          const options = collectStrings(flat, "option", 4);
+          let options = collectStrings(flat, "option", 4);
+
+          // Derive options from targetCoin if Gemini didn't populate flat fields
+          if (!options && isValidCoin(flat.targetCoin)) {
+            const target = flat.targetCoin as CoinType;
+            const others = gradeCoinPool.filter((c) => c !== target);
+            // Pick 2-3 distractors, shuffle
+            const shuffled = others.sort(() => Math.random() - 0.5);
+            options = [target, ...shuffled.slice(0, Math.min(3, shuffled.length))];
+            options.sort(() => Math.random() - 0.5); // randomize order
+          }
+
           if (options) challenge.options = options;
+
+          // Derive coins from options if missing (so visual display matches)
+          if (!challenge.coins && Array.isArray(challenge.options)) {
+            challenge.coins = (challenge.options as string[]).map((t: string) => ({
+              type: t,
+              count: 1,
+            }));
+          }
+
           // Ensure targetCoin is in options
           if (
             challenge.targetCoin &&
@@ -344,6 +376,12 @@ Return the complete coin counter configuration.
             !challenge.options.includes(challenge.targetCoin)
           ) {
             (challenge.options as string[]).push(challenge.targetCoin as string);
+          }
+
+          // Reject if still no targetCoin
+          if (!challenge.targetCoin) {
+            rejectedCount.identify++;
+            return null;
           }
           break;
         }
@@ -354,7 +392,9 @@ Return the complete coin counter configuration.
             // Recompute correctTotal from actual coin values
             challenge.correctTotal = coinDefTotal(displayed);
           } else {
-            challenge.correctTotal = typeof flat.correctTotal === "number" ? flat.correctTotal : 10;
+            // REJECT: can't render a counting challenge with no coins
+            rejectedCount.count++;
+            return null;
           }
           break;
         }
@@ -368,17 +408,18 @@ Return the complete coin counter configuration.
         case "compare": {
           const groupA = collectCoinDefs(flat, "groupACoin", 3);
           const groupB = collectCoinDefs(flat, "groupBCoin", 3);
-          if (groupA) challenge.groupA = groupA;
-          if (groupB) challenge.groupB = groupB;
-          // Recompute correctGroup from actual values
-          if (groupA && groupB) {
-            const totalA = coinDefTotal(groupA);
-            const totalB = coinDefTotal(groupB);
-            challenge.correctGroup =
-              totalA > totalB ? "A" : totalB > totalA ? "B" : "equal";
-          } else {
-            challenge.correctGroup = flat.correctGroup ?? "A";
+          // REJECT if either group is missing — can't render a one-sided comparison
+          if (!groupA || !groupB) {
+            rejectedCount.compare++;
+            return null;
           }
+          challenge.groupA = groupA;
+          challenge.groupB = groupB;
+          // Recompute correctGroup from actual values
+          const totalA = coinDefTotal(groupA);
+          const totalB = coinDefTotal(groupB);
+          challenge.correctGroup =
+            totalA > totalB ? "A" : totalB > totalA ? "B" : "equal";
           break;
         }
         case "make-change": {
@@ -394,7 +435,34 @@ Return the complete coin counter configuration.
       }
 
       return challenge;
+    })
+    .filter((c: Record<string, unknown> | null) => c !== null);
+
+  // Log rejections
+  const totalRejected = rejectedCount.count + rejectedCount.compare + rejectedCount.identify;
+  if (totalRejected > 0) {
+    console.warn(
+      `[CoinCounter] Rejected ${totalRejected} challenge(s) with missing data: `
+      + `count=${rejectedCount.count}, compare=${rejectedCount.compare}, identify=${rejectedCount.identify}`,
+    );
+  }
+
+  // ── count-like constraint: filter to single-coin-type challenges ──
+  if (config?.targetEvalMode === "count-like") {
+    const before = data.challenges.length;
+    data.challenges = data.challenges.filter((c: Record<string, unknown>) => {
+      if (c.type !== "count") return true;
+      const coins = c.displayedCoins as { type: string; count: number }[] | undefined;
+      if (!coins) return false;
+      const uniqueTypes = new Set(coins.map((d: { type: string }) => d.type));
+      return uniqueTypes.size === 1;
     });
+    if (data.challenges.length < before) {
+      console.log(
+        `[CoinCounter] count-like: filtered ${before - data.challenges.length} mixed-coin challenge(s)`,
+      );
+    }
+  }
 
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {

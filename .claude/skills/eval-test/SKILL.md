@@ -132,6 +132,66 @@ Eval Rollup — <date>
 | **Wrong math** | Title says 450 but factors give 525 | Factual error |
 | **Grid overflow** | 15 items in a 4x3 grid | Items truncated |
 | **Hint reveals answer** | Hint contains the exact answer | Defeats the skill being tested |
+| **Missing visual data** | Count challenge with no `displayedCoins` | Empty render, can't answer |
+| **Silent fallback** | Missing field → hardcoded default | Wrong answer or trivial challenge |
+| **Eval mode bleed** | Two modes share challengeType, no differentiation | Mode doesn't test what it claims |
+
+## Step 2a: Generator↔Component Sync Check (NEW — run for every eval)
+
+After Step 2, perform these additional checks. These catch the class of bugs where the generator produces data that is structurally valid JSON but functionally broken for the component.
+
+### Rule G1: Required fields per challenge type
+
+For each challenge in the generated JSON, check that all fields the component **reads** for that challenge type are present and non-empty. Do NOT rely on the TypeScript type being optional (`?`) — if the component reads it without a fallback, it's required.
+
+**How to check:** Read the component's render function for each challenge type (e.g., `renderIdentifyChallenge`, `renderCountChallenge`). List every field accessed. Cross-check against the generated JSON.
+
+| If component reads... | And JSON has... | Verdict |
+|---|---|---|
+| `challenge.displayedCoins` with no fallback | `displayedCoins` missing or empty array | **CRITICAL** — empty render |
+| `challenge.options` with fallback to hardcoded array | `options` missing | **HIGH** — functional but static, reduced variety |
+| `challenge.correctTotal` derived from `displayedCoins` | `correctTotal` present but `displayedCoins` missing | **CRITICAL** — wrong answer, student sees nothing |
+| `challenge.groupA` and `challenge.groupB` | Either group missing | **CRITICAL** — one-sided comparison |
+
+### Rule G2: Nullable flat-field reconstruction audit
+
+If the generator uses a flattened schema (e.g., `coin0Type`, `coin1Type` instead of a `coins[]` array), check whether reconstruction actually produced data:
+
+1. Read the generator's reconstruction logic (e.g., `collectCoinDefs`, `collectStrings`)
+2. In the API response JSON, check if the reconstructed arrays are populated
+3. If arrays are empty/missing for >50% of challenges, flag as **CRITICAL** — the flat schema pattern is unreliable for this field group
+
+**Why this matters:** Gemini Flash Lite frequently skips nullable flat-indexed fields entirely (SP-14 in EVAL_TRACKER). The generator silently produces challenges with missing visual data.
+
+### Rule G3: Eval mode semantic differentiation
+
+When two or more eval modes share the same `challengeTypes` value in the catalog:
+
+1. Identify what makes them pedagogically different (e.g., count-like = single coin type, count-mixed = multiple coin types)
+2. Check if the generator enforces that distinction (post-filter, prompt constraint, or separate sub-generator)
+3. Generate data for each mode and verify the output actually differs
+
+If two modes produce indistinguishable output, flag as **HIGH** — the eval mode isn't testing what it claims.
+
+### Rule G4: Answer derivability from visible data
+
+For every challenge, verify that the **correct answer can be derived from what the student sees**:
+
+1. If the challenge shows coins/objects and asks for a total → check the displayed items actually sum to `correctTotal`
+2. If the challenge shows two groups and asks "which is more?" → check `correctGroup` matches the actual values
+3. If the instruction mentions specific items but the data shows different items → flag as **CRITICAL** (instruction-data mismatch)
+
+**Anti-pattern:** Generator computes `correctTotal` from Gemini's claimed value instead of from the actual `displayedCoins`. Always recompute answers from the visual data.
+
+### Rule G5: Fallback quality audit
+
+When the generator has a fallback path (e.g., `?? 10`, `?? "A"`, `|| ['penny','nickel','dime','quarter']`):
+
+1. Check if the fallback is reachable in normal operation (not just edge cases)
+2. If it's reachable, check if the fallback produces a **correct** challenge (right answer, solvable)
+3. If the fallback fires for >30% of challenges, flag as **HIGH** — the primary generation path is unreliable
+
+**Why this matters:** Silent fallbacks mask broken generation. A `correctTotal ?? 10` that fires on every challenge means students always see "10" regardless of the displayed coins.
 
 ## Key Files
 

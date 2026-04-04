@@ -106,33 +106,42 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'flight-forces-explorer',
-    description: 'Interactive four forces of flight visualization. Students manipulate thrust, angle of attack, and cargo loading to see how lift, weight, thrust, and drag determine flight behavior. Color-coded force arrows grow/shrink proportionally. Flight state indicator shows climbing, cruising, descending, or stalled. Includes challenge mode where students must achieve specific flight conditions. Compare different aircraft profiles. Teaches force balance, cause-and-effect, and aerodynamic fundamentals. Perfect for K-5 flight and aerodynamics education. ESSENTIAL for answering "How does an airplane fly?"',
+    description: 'Canvas particle-physics simulation of the four forces of flight. Hundreds of air particles stream around a wing cross-section in real time — particles above the wing move faster (visible lower pressure = lift). At high angle of attack particles detach and swirl to visualize stall. The plane moves up/down based on the live force balance. Force arrows emerge from the physics, not from labels. Controls: aircraft type (cessna, jumbo_jet, glider, fighter), thrust slider, angle of attack slider, cargo weight slider. Challenges are predict/observe/adjust MC questions. Perfect for K-5 flight and aerodynamics education. ESSENTIAL for answering "How does an airplane fly?"',
     constraints: 'Best for grades K-5. K-2: simple force names, tap-to-identify, no numeric values, 1-2 easy challenges. 3-5: real force magnitudes, quantitative challenges, stall exploration, aircraft comparison. Evaluable: tracks challenges completed, forces identified, states explored, stall discovery.',
     tutoring: {
-      taskDescription: 'Explore the four forces of flight (lift, weight, thrust, drag). Aircraft: {{aircraftName}}. Current state: {{flightState}}. Thrust: {{thrustPercent}}%. Angle: {{angleOfAttack}}°.',
-      contextKeys: ['aircraftName', 'flightState', 'thrustPercent', 'angleOfAttack', 'liftMagnitude', 'weightMagnitude', 'thrustMagnitude', 'dragMagnitude', 'altitude', 'speed', 'challengeActive', 'challengeGoal'],
+      taskDescription: 'Student explores four forces of flight by adjusting thrust, angle of attack, and cargo weight while watching air particle flow around the wing.',
+      contextKeys: ['aircraft', 'flightState', 'thrustPct', 'aoa', 'speed', 'altitude', 'stallCount', 'statesExplored', 'challengeProgress'],
       scaffoldingLevels: {
-        level1: '"What do you notice about the size of the force arrows right now?"',
-        level2: '"Lift pushes up, weight pushes down. Which one is bigger? What does that tell you about what the plane will do?"',
-        level3: '"When lift is greater than weight, the plane climbs. When thrust is greater than drag, it speeds up. To fly level, you need lift = weight AND thrust = drag."',
+        level1: '"Watch the tiny air particles flowing over the wing. Do you see how the ones on top move faster?"',
+        level2: '"Faster particles mean lower pressure above the wing. That pressure difference pushes the wing UP — that\'s lift! Now look at the force arrows."',
+        level3: '"When lift is greater than weight, the plane climbs. When thrust is greater than drag, it speeds up. To fly level, you need lift = weight AND thrust = drag. Try adjusting the sliders to balance all four forces."',
       },
       commonStruggles: [
-        { pattern: 'Cannot achieve level flight — keeps climbing or descending', response: '"Focus on just one pair first. Can you make lift and weight equal? Try adjusting the angle of attack."' },
-        { pattern: 'Stalls the aircraft repeatedly', response: '"When the angle is too steep, the air can\'t flow smoothly over the wing. Try a smaller angle — think of holding your hand flat out a car window."' },
-        { pattern: 'Ignores drag — focuses only on lift', response: '"There are four forces, not just two! What\'s happening in the forward-backward direction?"' },
+        { pattern: 'Doesn\'t connect particle speed to lift', response: '"Look closely at the particles above and below the wing. Which ones are moving faster? Faster air = lower pressure = the wing gets pushed UP."' },
+        { pattern: 'Afraid to try high angle of attack', response: '"Go ahead — crank that angle up! Something cool happens when it gets too steep. The particles will show you exactly what a stall looks like."' },
+        { pattern: 'Doesn\'t experiment with cargo weight', response: '"Try adding more cargo! Watch what happens to the weight arrow and the plane\'s altitude. Can you add thrust to compensate?"' },
         { pattern: 'Does not explore different aircraft profiles', response: '"Want to see how a glider is different from a jumbo jet? Try switching the aircraft!"' },
       ],
       aiDirectives: [
         {
-          title: 'FORCE STATE NARRATION',
-          instruction: 'When you receive [FLIGHT_STATE_CHANGE], briefly narrate what\'s happening in kid-friendly language. Example: "The plane is climbing because lift (the blue arrow) is bigger than weight (the red arrow)!" Keep it to one sentence.',
+          title: 'PARTICLE NARRATION',
+          instruction: 'When you receive [ACTIVITY_START] or [AIRCRAFT_CHANGED], draw attention to the particle flow. When [AOA_CHANGED] or [AOA_STALL_ZONE], narrate what\'s happening to the particles. When [STALL], describe the swirling detachment dramatically but reassuringly.',
         },
         {
           title: 'CHALLENGE COACHING',
-          instruction: 'When [CHALLENGE_STARTED], introduce the goal. When [CHALLENGE_FAILED], give a hint based on which forces are out of balance. When [CHALLENGE_COMPLETED], celebrate and explain why it worked.',
+          instruction: 'When [CHALLENGE_CORRECT], celebrate and reinforce the physics. When [CHALLENGE_INCORRECT], give a particle-based hint. When [ALL_COMPLETE], summarize what the student discovered about forces.',
+        },
+        {
+          title: 'CONTROL COACHING',
+          instruction: 'When [THRUST_CHANGED] or [CARGO_CHANGED], briefly connect the slider change to the force arrows and particle behavior. Keep it to one sentence.',
         },
       ],
     },
+    evalModes: [
+      { evalMode: 'predict', label: 'Predict (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['predict'], description: 'Predict flight outcomes before testing' },
+      { evalMode: 'observe', label: 'Observe (Medium)', beta: 0.0, scaffoldingMode: 3, challengeTypes: ['observe'], description: 'Watch particles and explain forces' },
+      { evalMode: 'adjust', label: 'Adjust (Hard)', beta: 1.0, scaffoldingMode: 5, challengeTypes: ['adjust'], description: 'Set controls to achieve specific flight states' },
+    ],
     supportsEvaluation: true,
   },
   {
@@ -190,29 +199,55 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     description: 'Interactive exploration of how vehicles generate thrust. Students see action/reaction force arrows for jets, propellers, wheels, sails, and rockets — all unified by Newton\'s Third Law. Toggle force arrow overlays, adjust throttle, compare propulsion types side-by-side, and test predictions in "What If?" experiments. Teaches that propellers need air but rockets work in vacuum. Perfect for grades 1-5 physics and engineering. ESSENTIAL for teaching Newton\'s Third Law through real vehicles.',
     constraints: 'Best for grades 1-5. 1-2: 4 propulsion types, simple push-backward/go-forward concept, everyday analogies. 3-5: 5-6 types including rocket (vacuum discussion), medium dependency, action/reaction identification, efficiency comparisons. Evaluable: tracks pairs identified, what-if accuracy, types explored, medium understanding.',
     tutoring: {
-      taskDescription: 'Explore propulsion through Newton\'s Third Law. Selected: {{selectedPropulsion}} ({{method}}). Medium: {{medium}}. Phase: {{phase}}. Throttle: {{throttle}}%.',
-      contextKeys: ['selectedPropulsion', 'method', 'medium', 'phase', 'showForceArrows', 'throttle', 'propulsionTypesExplored'],
+      taskDescription: 'Student explores Newton\'s Third Law by switching propulsion types (jet, rocket, propeller, sail) across mediums (air, water, vacuum) and watching particle physics.',
+      contextKeys: ['propulsion', 'medium', 'throttle', 'speed', 'exploredCombos', 'noThrustMoments', 'challengeProgress'],
       scaffoldingLevels: {
-        level1: '"Watch the arrows — something is being pushed backward. Can you see what it is?"',
-        level2: '"The engine pushes hot exhaust gas backward (that\'s the action), and the airplane moves forward (that\'s the reaction). It\'s like blowing up a balloon and letting it go!"',
-        level3: '"Newton\'s Third Law: every action has an equal and opposite reaction. Jets push exhaust backward, propellers push air backward, rockets push fuel backward. They all push something back to go forward!"',
+        level1: '"Look at the tiny particles shooting out the back. What do you notice about them when you change the throttle?"',
+        level2: '"Now try switching to the propeller and set the medium to vacuum. What happens to the particles? Why do you think the vehicle stopped moving?"',
+        level3: '"The rocket carries its own particles to push out — it doesn\'t need air! But the propeller pushes AIR backward. No air, no push. Try each propulsion type in vacuum and see which ones still work."',
       },
       commonStruggles: [
-        { pattern: 'Doesn\'t see the connection between propulsion types', response: '"Look — the jet engine and the propeller both push something backward. What\'s the same about ALL of these?"' },
-        { pattern: 'Thinks rockets need air', response: '"This is the coolest part — rockets carry their own reaction mass! They push exhaust out the back. What if there\'s no air? The rocket still works!"' },
-        { pattern: 'Confuses action and reaction', response: '"The action is what gets pushed BACKWARD. The reaction is the vehicle moving FORWARD. Remember the balloon: air goes backward, balloon goes forward!"' },
+        { pattern: 'Thinks propeller works in vacuum', response: '"Switch to the propeller and try vacuum — watch the particles. A propeller pushes air backward, but in vacuum there IS no air to push. What happens?"' },
+        { pattern: 'Doesn\'t experiment with different mediums', response: '"You\'ve been using air the whole time! Try switching to vacuum — something really interesting happens with some propulsion types."' },
+        { pattern: 'Doesn\'t connect exhaust particles to motion', response: '"Watch the particles carefully — they fly backward. Now look at the vehicle — it moves forward. Every particle that goes back pushes the vehicle forward. That\'s Newton\'s Third Law!"' },
+        { pattern: 'Confuses action and reaction', response: '"The particles going backward ARE the action. The vehicle moving forward IS the reaction. More particles backward = more speed forward!"' },
       ],
       aiDirectives: [
         {
-          title: 'PROPULSION SELECTION',
-          instruction: 'When [PROPULSION_SELECTED], describe this propulsion method using the analogy from the data. Connect it to the student\'s experience.',
+          title: 'ACTIVITY START',
+          instruction: 'When [ACTIVITY_START], welcome the student and invite them to pick a propulsion type. Don\'t explain the physics yet — let them discover it.',
         },
         {
-          title: 'WHAT-IF COACHING',
-          instruction: 'When [WHAT_IF_CORRECT], celebrate and reinforce the physics. When [WHAT_IF_INCORRECT], use the analogy to explain. Focus on medium dependency: "Can you push air if there is no air?"',
+          title: 'PROPULSION CHANGED',
+          instruction: 'When [PROPULSION_CHANGED], ask what they notice about the particles. Different propulsion types eject different particle patterns.',
+        },
+        {
+          title: 'MEDIUM CHANGED',
+          instruction: 'When [MEDIUM_CHANGED], ask what changed about the particles and the speed. Guide toward noticing that some propulsion types need a medium to push against.',
+        },
+        {
+          title: 'THROTTLE HIGH',
+          instruction: 'When [THROTTLE_HIGH], ask them to watch the particle rate and connect it to speed. More particles ejected = more thrust.',
+        },
+        {
+          title: 'NO THRUST MOMENT',
+          instruction: 'When [NO_THRUST], this is the key aha moment. The student has a propulsion type that doesn\'t work in the current medium (e.g., propeller in vacuum). Ask: "Why aren\'t there any particles? What does a propeller need to push against?"',
+        },
+        {
+          title: 'CHALLENGE COACHING',
+          instruction: 'When [CHALLENGE_CORRECT], celebrate and reinforce the physics principle. When [CHALLENGE_INCORRECT], don\'t reveal the answer — guide them to test it in the simulation.',
+        },
+        {
+          title: 'ALL COMPLETE',
+          instruction: 'When [ALL_COMPLETE], summarize what they discovered about Newton\'s Third Law and how different propulsion types work.',
         },
       ],
     },
+    evalModes: [
+      { evalMode: 'predict', label: 'Predict (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['predict'], description: 'Predict what will happen before testing' },
+      { evalMode: 'observe', label: 'Observe (Medium)', beta: 0.0, scaffoldingMode: 3, challengeTypes: ['observe'], description: 'Watch particles and explain what you see' },
+      { evalMode: 'experiment', label: 'Experiment (Hard)', beta: 1.0, scaffoldingMode: 5, challengeTypes: ['experiment'], description: 'Design experiments to test hypotheses' },
+    ],
     supportsEvaluation: true,
   },
   {
@@ -283,6 +318,91 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student has not tapped any zones to learn about them', response: 'Highlight that zones are tappable: "See those labeled areas? Tap on the Boiler to find out what is happening to the particles inside!"' },
         { pattern: 'Engine stalled from too much load and too little fuel', response: 'Guide: "The engine stopped! The load is too heavy. What could you do? Try adding more fuel to build more steam pressure."' },
         { pattern: 'Student struggles with challenge questions', response: 'Connect the question to what they can see: "Look at the simulation right now — watch what the particles do when you change the fuel. That will help you answer!"' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'hydraulics-lab',
+    description: 'Living Hydraulics particle simulation — students watch fluid particles transmit pressure between two connected pistons of different sizes. Canvas-based physics with input force, piston diameter, and load sliders that have real consequences. Demonstrates Pascal\'s Law (F₁/A₁ = F₂/A₂), force multiplication, and work conservation. Interactive zone exploration and MC challenges. Four scenarios: hydraulic press, car lift, excavator, brake system. Perfect for teaching fluid mechanics, force multiplication, and mechanical advantage. ESSENTIAL for grades 3-8 engineering and physics.',
+    constraints: 'Requires scenario type. Zone descriptions, challenges, and Pascal\'s Law explanation are generated content. Hydraulic geometry, particle physics, and force calculations are hardcoded in the component.',
+    evalModes: [
+      {
+        evalMode: 'predict',
+        label: 'Predict (Easy)',
+        beta: -1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['predict'],
+        description: 'Predict hydraulic outcomes before testing',
+      },
+      {
+        evalMode: 'observe',
+        label: 'Observe (Medium)',
+        beta: 0.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['observe'],
+        description: 'Watch fluid particles and explain pressure transmission',
+      },
+      {
+        evalMode: 'adjust',
+        label: 'Adjust (Hard)',
+        beta: 1.0,
+        scaffoldingMode: 5,
+        challengeTypes: ['adjust'],
+        description: 'Set piston sizes and forces to achieve specific outputs',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Student is exploring a living hydraulic system simulation ({{scenarioName}}) for {{realWorldContext}}. Input force: {{inputForce}}N, Small piston: {{smallDiameter}}cm, Large piston: {{largeDiameter}}cm, Load: {{loadWeight}}kg. Output force: {{outputForce}}N, Force ratio: {{forceRatio}}x, Lifting: {{isLifting}}. Zones explored: {{zonesExplored}}. Selected zone: {{selectedZone}}. Challenge progress: {{challengeProgress}}.',
+      contextKeys: ['scenario', 'scenarioName', 'realWorldContext', 'inputForce', 'smallDiameter', 'largeDiameter', 'loadWeight', 'systemPressure', 'outputForce', 'forceRatio', 'isLifting', 'zonesExplored', 'challengeProgress', 'selectedZone'],
+      scaffoldingLevels: {
+        level1: '"What do you notice about the fluid particles when you push harder on the small piston?"',
+        level2: '"Watch the force arrows — the input arrow is small but the output arrow is much bigger! That\'s because the large piston has a bigger area. More area means more force from the same pressure."',
+        level3: '"Pascal\'s Law says pressure is the same everywhere in the fluid. Pressure = Force ÷ Area. So if you push 100N on a 10cm² piston, the pressure is 10 N/cm². That same 10 N/cm² pushes on the big piston — and if it\'s 100cm², the output force is 10 × 100 = 1000N! That\'s why hydraulic machines are so powerful."',
+      },
+      commonStruggles: [
+        { pattern: 'Student has not adjusted any sliders', response: 'Try pushing on the small piston! Drag the Input Force slider to see what happens to the particles and the large piston.' },
+        { pattern: 'Student has not explored zones', response: 'Tap on the pistons and the pipe to learn what each part does!' },
+        { pattern: 'Student cannot lift the load', response: 'The output force needs to be bigger than the load weight. Try making the large piston wider or pushing harder on the small piston.' },
+        { pattern: 'Student confused about area vs diameter', response: 'Remember, area grows much faster than diameter because it depends on radius SQUARED. Doubling the diameter makes the area 4 times bigger!' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ACTIVITY START',
+          instruction: 'When [ACTIVITY_START], welcome the student and point out the two pistons and the fluid particles connecting them. Don\'t explain Pascal\'s Law yet — let them discover it.',
+        },
+        {
+          title: 'ZONE EXPLORED',
+          instruction: 'When [ZONE_EXPLORED], explain that zone with an analogy and connect it to Pascal\'s Law. Keep it conversational.',
+        },
+        {
+          title: 'FORCE CHANGED',
+          instruction: 'When [FORCE_CHANGED], draw attention to the particle color change and the output force arrow growing. Ask what they notice.',
+        },
+        {
+          title: 'PISTON SIZE CHANGED',
+          instruction: 'When [PISTON_SIZE_CHANGED], ask them to watch the force ratio change. Bigger area difference = bigger force multiplication.',
+        },
+        {
+          title: 'LOAD CHANGED',
+          instruction: 'When [LOAD_CHANGED], ask what happens when the load exceeds the output force. Guide them to increase force or piston size.',
+        },
+        {
+          title: 'FORCE MULTIPLICATION DISCOVERED',
+          instruction: 'When [FORCE_MULTIPLICATION_DISCOVERED], celebrate the >5:1 ratio achievement. This is the key aha moment — small force in, huge force out!',
+        },
+        {
+          title: 'WORK CONSERVATION',
+          instruction: 'When [WORK_CONSERVATION_MOMENT], explain that more force comes with less distance — the large piston moves less than the small one. Same work, different trade-off.',
+        },
+        {
+          title: 'CHALLENGE COACHING',
+          instruction: 'When [CHALLENGE_CORRECT], celebrate and reinforce Pascal\'s Law. When [CHALLENGE_INCORRECT], don\'t reveal the answer — guide them to test it in the simulation.',
+        },
+        {
+          title: 'ALL COMPLETE',
+          instruction: 'When [ALL_COMPLETE], summarize Pascal\'s Law and how hydraulic machines use it to multiply force. Connect to real-world hydraulic systems.',
+        },
       ],
     },
     supportsEvaluation: true,

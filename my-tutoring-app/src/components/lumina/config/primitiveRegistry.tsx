@@ -126,6 +126,7 @@ import PropulsionLab from '../primitives/visual-primitives/engineering/Propulsio
 import PropulsionTimeline from '../primitives/visual-primitives/engineering/PropulsionTimeline';
 import EngineExplorer from '../primitives/visual-primitives/engineering/EngineExplorer';
 import VehicleDesignStudio from '../primitives/visual-primitives/engineering/VehicleDesignStudio';
+import HydraulicsLab from '../primitives/visual-primitives/engineering/HydraulicsLab';
 // Astronomy Primitives
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
 import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
@@ -1423,6 +1424,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'vehicle-design-studio': {
     component: VehicleDesignStudio,
     sectionTitle: 'Vehicle Design Studio',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'hydraulics-lab': {
+    component: HydraulicsLab,
+    sectionTitle: 'Hydraulics Lab',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

@@ -165,6 +165,7 @@ export function createSubRangePool(
   options?: NumberPoolOptions & {
     spanFraction?: [number, number]; // [minFrac, maxFrac]
     minSpan?: number;
+    maxSpan?: number;
   },
 ): SubRangePool | null {
   if (!range) return null;
@@ -172,16 +173,20 @@ export function createSubRangePool(
   const {
     spanFraction = [0.2, 0.4],
     minSpan = 5,
+    maxSpan,
     count = 10,
     integers = true,
     ...rest
   } = options ?? {};
 
   const fullSpan = range.max - range.min;
-  const subSpan = Math.max(
+  let subSpan = Math.max(
     Math.ceil(fullSpan * (spanFraction[0] + Math.random() * (spanFraction[1] - spanFraction[0]))),
     minSpan,
   );
+  if (maxSpan !== undefined) {
+    subSpan = Math.min(subSpan, maxSpan);
+  }
   const displayMin = integers
     ? randInt(range.min, Math.max(range.min, range.max - subSpan))
     : randFloat(range.min, Math.max(range.min, range.max - subSpan), 1);

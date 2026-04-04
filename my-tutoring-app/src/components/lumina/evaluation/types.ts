@@ -2509,21 +2509,14 @@ export interface ListenAndRespondMetrics extends BasePrimitiveMetrics {
 
 export interface FlightForcesExplorerMetrics extends BasePrimitiveMetrics {
   type: 'flight-forces-explorer';
-
-  // Challenge completion
+  flightStatesExplored: number;
+  flightStatesTotal: number;
+  aircraftTypesExplored: number;
+  stallDiscoveries: number;
   challengesCompleted: number;
+  challengesCorrect: number;
   challengesTotal: number;
-
-  // Force identification
-  forcesIdentifiedCorrectly: number;
-  forcesTotal: number;            // Always 4
-
-  // Performance
-  timeToAchieveLevel: number;     // Seconds to reach target conditions in challenge mode
-  stateTransitionsExplored: number; // How many flight states discovered
-  aircraftProfilesCompared: number;
-  stallTriggered: boolean;
-  attemptsPerChallenge: number;   // Average attempts per challenge
+  attemptsCount: number;
 }
 
 // -----------------------------------------------------------------------------
@@ -2868,25 +2861,31 @@ export interface VehicleComparisonLabMetrics extends BasePrimitiveMetrics {
 
 export interface PropulsionLabMetrics extends BasePrimitiveMetrics {
   type: 'propulsion-lab';
+  combinationsExplored: number;
+  combinationsTotal: number;
+  challengesCompleted: number;
+  challengesCorrect: number;
+  challengesTotal: number;
+  noThrustDiscoveries: number;
+  vacuumExperimentDone: boolean;
+  attemptsCount: number;
+}
 
-  // Action/Reaction understanding
-  actionReactionPairsIdentified: number;
-  pairsTotal: number;
+// -----------------------------------------------------------------------------
+// Hydraulics Lab
+// -----------------------------------------------------------------------------
 
-  // What-If experiments
-  whatIfCorrect: number;
-  whatIfTotal: number;
-
-  // Exploration
-  propulsionTypesExplored: number;
-  newtonThirdUnderstood: boolean;
-
-  // Comparisons
-  comparisonsCompleted: number;
-  comparisonsTotal: number;
-
-  // Key insight
-  mediumDependencyUnderstood: boolean;
+export interface HydraulicsLabMetrics extends BasePrimitiveMetrics {
+  type: 'hydraulics-lab';
+  zonesExplored: number;
+  zonesTotal: number;
+  sliderAdjustments: number;
+  forceMultiplicationDiscovered: boolean;
+  workConservationObserved: boolean;
+  maxForceRatio: number;
+  challengesCompleted: number;
+  challengesCorrect: number;
+  challengesTotal: number;
   attemptsCount: number;
 }
 
@@ -3056,6 +3055,7 @@ export type PrimitiveMetrics =
   | AirfoilLabMetrics
   | VehicleComparisonLabMetrics
   | PropulsionLabMetrics
+  | HydraulicsLabMetrics
   | PropulsionTimelineMetrics
   | LeverLabMetrics
   | PulleySystemMetrics

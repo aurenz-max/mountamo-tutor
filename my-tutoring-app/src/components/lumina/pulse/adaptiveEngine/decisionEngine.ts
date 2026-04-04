@@ -17,6 +17,7 @@ export function decideNext(
   results: AdaptiveItemResult[],
   workedExamplesUsed: number,
   hasMorePrefetched: boolean,
+  extensionsAccepted: number = 0,
 ): SessionDecision {
   const now = Date.now();
   const scored = results.filter((r) => !r.isWorkedExample);
@@ -24,8 +25,12 @@ export function decideNext(
 
   // -----------------------------------------------------------------------
   // 1. EARLY EXIT — 3 consecutive high scores across 2+ manifest batches
+  //    After an extension, require at least MIN_ITEMS *new* items before
+  //    re-triggering early-exit (otherwise the student gets the celebration
+  //    screen again after just 1 item).
   // -----------------------------------------------------------------------
-  if (scored.length >= ADAPTIVE.MIN_ITEMS) {
+  const minForExit = ADAPTIVE.MIN_ITEMS + extensionsAccepted * ADAPTIVE.MIN_ITEMS;
+  if (scored.length >= minForExit) {
     const tail = scored.slice(-ADAPTIVE.EARLY_EXIT_STREAK);
     if (tail.length >= ADAPTIVE.EARLY_EXIT_STREAK) {
       const allHigh = tail.every((r) => r.score >= ADAPTIVE.HIGH_SCORE);
