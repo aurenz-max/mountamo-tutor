@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { DecodableReaderData } from "../../primitives/visual-primitives/literacy/DecodableReader";
+import { logEvalModeResolution } from '../evalMode';
 
 /**
  * Schema definition for Decodable Reader Data
@@ -126,8 +127,10 @@ const decodableReaderSchema: Schema = {
 export const generateDecodableReader = async (
   topic: string,
   gradeLevel: string = 'K',
-  config?: Partial<DecodableReaderData>
+  config?: Partial<DecodableReaderData> & { targetEvalMode?: string }
 ): Promise<DecodableReaderData> => {
+
+  logEvalModeResolution('DecodableReader', config?.targetEvalMode, null);
 
   const gradeContext: Record<string, string> = {
     'K': `

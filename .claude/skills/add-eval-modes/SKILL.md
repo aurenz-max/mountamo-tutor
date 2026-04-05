@@ -10,13 +10,16 @@ For full details on the architecture and design guidelines, see:
 ## When to Use This Skill
 
 Use this skill when:
-- Adding eval mode support to an existing primitive that has 2+ challenge types
-- The IRT calibration system needs to target specific difficulty tiers for a primitive
+- Adding eval mode support to an existing primitive (multi-mode OR single-mode)
+- The IRT calibration system needs β priors registered for a primitive
 - You want the generator to produce mode-constrained output without post-filtering
+
+**Two paths exist:**
+- **Multi-mode** (2+ challenge types): Full generator refactoring with schema constraining (Phase 3)
+- **Single-mode** (no constrainable enum): Catalog + registry + generator wiring for config flow and logging (Phase 3-S)
 
 **DO NOT use this skill for:**
 - Creating new primitives (use the `/primitive` skill — it includes eval mode steps)
-- Primitives with only one challenge type (no modes to separate)
 - Display-only / non-evaluable primitives
 
 ## Prerequisites
@@ -24,6 +27,8 @@ Use this skill when:
 The primitive must already have:
 - A working generator in `service/[domain]/gemini-[primitive].ts`
 - A catalog entry in `catalog/[domain].ts` with `supportsEvaluation: true`
+
+For **multi-mode** primitives, additionally:
 - A schema with a challenge-type field (see **Schema Field Variants** below)
 - 2+ distinct challenge types representing different difficulty levels
 
@@ -57,6 +62,9 @@ Math primitives use `challenges.items.properties.type`. Literacy primitives use 
    - `my-tutoring-app/src/components/lumina/service/[domain]/gemini-[primitive].ts`
    - Identify all challenge types in the schema and prompt
    - Note the schema structure — identify the challenge type field path (see **Schema Field Variants** in Prerequisites)
+   - **Determine if this is multi-mode or single-mode:**
+     - Multi-mode: Has a constrainable challenge-type enum with 2+ values representing distinct difficulty levels
+     - Single-mode: No challenge-type enum, or the enum doesn't map to difficulty levels (e.g., question format types like `multiple-choice`/`short-answer` that aren't difficulty dimensions)
 
 3. **Read the catalog entry**
    - `my-tutoring-app/src/components/lumina/service/manifest/catalog/[domain].ts`
@@ -118,7 +126,38 @@ Math primitives use `challenges.items.properties.type`. Literacy primitives use 
    - Use a descriptive verb when mapping to multiple types (e.g., `operate` → `['add', 'subtract']`)
    - β values must match `backend/app/services/calibration/problem_type_registry.py`
 
-### Phase 3: Refactor the Generator
+### Phase 3-S: Single-Mode Generator Wiring
+
+> **Use this phase instead of Phase 3 for single-mode primitives** (no constrainable challenge-type enum).
+> Even single-mode primitives need generator wiring so `targetEvalMode` flows through the system for logging and future expansion.
+
+7S. **Add imports and config type**
+
+    ```typescript
+    import { logEvalModeResolution } from '../evalMode';
+    ```
+
+    Update the config parameter type to include `targetEvalMode`:
+
+    ```typescript
+    config?: Partial<MyPrimitiveData> & { targetEvalMode?: string }
+    ```
+
+8S. **Add logging** at the top of the generator function, after any initial setup:
+
+    ```typescript
+    logEvalModeResolution('MyPrimitive', config?.targetEvalMode, null);
+    ```
+
+    The `null` third argument indicates no schema constraining — the log output will be:
+    - With eval mode: `[MyPrimitive] No targetEvalMode — full schema, mixed difficulty`
+    - Without: same (single-mode always generates standard content)
+
+9S. **Skip to Phase 4** — no CHALLENGE_TYPE_DOCS, no schema constraining, no prompt modification needed.
+
+### Phase 3: Refactor the Generator (Multi-Mode)
+
+> **Use this phase for multi-mode primitives** with 2+ constrainable challenge types.
 
 7. **Read the reference implementation** for the pattern:
    - `my-tutoring-app/src/components/lumina/service/math/gemini-ten-frame.ts`
@@ -338,21 +377,26 @@ Ten Frame is the reference. Read these files for the complete pattern:
 
 ## Checklist
 
-- [ ] Read the generator to identify all challenge types and schema structure
+### All Primitives (single-mode and multi-mode)
+
+- [ ] Read the generator to identify schema structure and determine single-mode vs multi-mode
 - [ ] Checked backend `problem_type_registry.py` for existing β priors
 - [ ] Designed eval mode progression with the user (types → modes → β values)
 - [ ] Added `evalModes` array to catalog entry, ordered by β
-- [ ] `challengeTypes` values match the generator's schema type strings
 - [ ] β values match backend `PROBLEM_TYPE_REGISTRY` (or added to both)
+- [ ] `targetEvalMode` added to config type
+- [ ] Logging added via `logEvalModeResolution()` from `evalMode/index.ts`
+- [ ] Generator registration in `registry/generators/[domain]Generators.ts` passes `item.config` through (via `getConfig(item)` or `...item.config`)
+- [ ] Backend `PROBLEM_TYPE_REGISTRY` in `problem_type_registry.py` updated with matching β priors (or confirmed existing entries match)
+- [ ] TypeScript compiles without errors
+- [ ] Reminded user to test each mode in Primitives Tester
+
+### Multi-Mode Only (additional steps)
+
+- [ ] `challengeTypes` values match the generator's schema type strings
 - [ ] Added `CHALLENGE_TYPE_DOCS` with `promptDoc` + `schemaDescription` per type
 - [ ] Generator calls `resolveEvalModeConstraint()` with correct `componentId`
 - [ ] Schema constrained via `constrainChallengeTypeEnum()` before Gemini call
 - [ ] Prompt built with `buildChallengeTypePromptSection()` (no hardcoded mode hints)
 - [ ] Removed old eval mode code (constraint maps, post-filtering, mode hint strings)
 - [ ] Fallback uses `evalConstraint?.allowedTypes[0]` for correct fallback type
-- [ ] `targetEvalMode` added to config type
-- [ ] Logging added via `logEvalModeResolution()` from `evalMode/index.ts`
-- [ ] Generator registration in `registry/generators/[domain]Generators.ts` spreads `...item.config`
-- [ ] Backend `PROBLEM_TYPE_REGISTRY` in `problem_type_registry.py` updated with matching β priors (or confirmed existing entries match)
-- [ ] TypeScript compiles without errors
-- [ ] Reminded user to test each mode in Primitives Tester

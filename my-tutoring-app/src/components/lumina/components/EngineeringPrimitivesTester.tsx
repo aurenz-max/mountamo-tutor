@@ -219,12 +219,27 @@ const PrimitiveRenderer: React.FC<{
       return (
         <ConstructionSequencePlanner
           data={{
-            ...(data as Parameters<typeof ConstructionSequencePlanner>[0]['data']),
+            title: 'Build a House',
+            description: 'Plan the construction sequence for a house. Can you build it in under 12 weeks?',
+            tasks: [
+              { id: 'excavate', name: 'Excavate Site', duration: 2, icon: '🚜', description: 'Dig out the building site', dependencies: [], category: 'foundation' as const },
+              { id: 'foundation', name: 'Pour Foundation', duration: 3, icon: '🏗️', description: 'Pour concrete foundation', dependencies: ['excavate'], category: 'foundation' as const },
+              { id: 'frame', name: 'Frame Walls', duration: 4, icon: '🔨', description: 'Build wall frames', dependencies: ['foundation'], category: 'structural' as const },
+              { id: 'roof', name: 'Install Roof', duration: 2, icon: '🏠', description: 'Put on the roof', dependencies: ['frame'], category: 'structural' as const },
+              { id: 'plumbing', name: 'Rough Plumbing', duration: 2, icon: '🚰', description: 'Install pipes', dependencies: ['frame'], category: 'mechanical' as const },
+              { id: 'electrical', name: 'Rough Electrical', duration: 2, icon: '💡', description: 'Run wiring', dependencies: ['frame'], category: 'mechanical' as const },
+              { id: 'drywall', name: 'Hang Drywall', duration: 2, icon: '🔲', description: 'Install drywall', dependencies: ['plumbing', 'electrical', 'roof'], category: 'finishing' as const },
+              { id: 'paint', name: 'Paint & Finish', duration: 2, icon: '🎨', description: 'Final finishes', dependencies: ['drywall'], category: 'finishing' as const },
+            ],
+            projectType: 'house' as const,
+            gradeLevel: '3' as const,
+            targetWeeks: 12,
+            parallelAllowed: true,
+            challenges: [],
             instanceId: `construction-sequence-planner-${Date.now()}`,
             skillId: 'engineering-project-planning',
             subskillId: 'task-sequencing',
             objectiveId: 'understand-construction-order',
-            onEvaluationSubmit,
           }}
         />
       );

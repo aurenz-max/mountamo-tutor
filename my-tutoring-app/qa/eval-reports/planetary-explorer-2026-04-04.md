@@ -5,31 +5,29 @@
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
 | explore   | PASS   | —      |
-| identify  | FAIL   | 1      |
+| identify  | PASS   | — (fixed 2026-04-05) |
 | compare   | PASS*  | —      |
 | apply     | PASS   | —      |
 
 *compare mode may hit fallback stochastically (see prior report). Fallback is structurally valid.
 
-## Issues
+## Fixed Issues
 
-### identify — Trivial identification: questions always about the current planet
+### PLE-1 (was PE-1): identify — Trivial identification (FIXED 2026-04-05)
 
-- **Severity:** CRITICAL
-- **What's broken:** In Identify mode, questions are generated per-planet and ask "Which planet has X?" while the student is currently viewing that planet — its name is shown in the header, its stats/description just read. The student trivially answers by picking the planet they're on. The mode tests nothing beyond basic UI reading.
-- **Data:** API response confirms: Jupiter stop asks "Which planet is the largest?" (answer: Jupiter). Saturn stop asks "Which planet has rings?" (answer: Saturn). Every question's answer = the current planet.
-- **Root cause:** Data architecture nests questions inside each `PlanetStop`. The generator prompt says "describe a planet without naming it" but Gemini generates questions about the planet it's currently describing. Even if Gemini asked about a *different* planet, the component shows the current planet name in the header — student can eliminate it.
-- **Fix in:** GENERATOR + COMPONENT
-- **Fix approach (two options):**
-  1. **Post-journey quiz phase** (recommended): After visiting all planets, present a pooled quiz where questions ask about any planet visited. Component hides planet-name headers during quiz. Generator builds cross-planet questions from the full set.
-  2. **Cross-planet questions per stop**: Each planet's identify questions ask about a *different* planet the student visited earlier. Component hides planet name during these questions. More complex to implement, less natural UX.
+- **Was:** In Identify mode, questions were generated per-planet and asked "Which planet has X?" while the student was currently viewing that planet — its name shown in header, its stats just read. The student trivially answered by picking the planet they were on.
+- **Fix:** Added post-journey quiz phase:
+  - **Generator:** For identify mode, generates cross-planet quiz questions at top level (`quizQuestions` field) using 8 flat schema slots (`quiz0Question` through `quiz7Question`). Each question describes a planet without naming it; options are planet names from the journey. `correctIndex` is derived from `correctPlanet` via `.findIndex()` (never trusts Gemini's index). Per-planet questions remain as simple warm-up (explore-level).
+  - **Component:** New `quiz` view mode shows after all planets visited. No planet name in header — only "Identification Quiz" label. Planet color dots shown next to options. Quiz results combined with per-planet results in evaluation.
+  - **Fallback:** Deterministic fallback builds quiz questions from planet stats when Gemini fails. `ensureQuizQuestions()` wrapper guarantees all code paths produce quiz questions in identify mode.
+- **Verification:** 3/3 stochastic runs produce quiz questions. Quiz questions are cross-planet (all planet names as options), no trivial answer leakage.
 
 ## G1-G5 Sync Check
 
 | Rule | Status | Notes |
 |------|--------|-------|
-| G1 — Required fields | PASS | All fields present across all modes |
-| G2 — Flat-field reconstruction | PASS | Stats and questions correctly reconstructed |
-| G3 — Eval mode differentiation | **FAIL (identify)** | Identify mode questions are semantically identical to explore — both ask about the current planet. The mode doesn't test identification. |
-| G4 — Answer derivability | PASS | Answers match visible data (the problem is the data is *too* visible) |
-| G5 — Fallback quality | PASS | Fallback produces valid challenges |
+| G1 — Required fields | PASS | All fields present across all modes, including quizQuestions for identify |
+| G2 — Flat-field reconstruction | PASS | Stats, per-planet questions, and quiz questions correctly reconstructed |
+| G3 — Eval mode differentiation | **PASS** | Identify mode now has unique quiz phase with cross-planet questions — distinct from explore |
+| G4 — Answer derivability | PASS | Quiz correctIndex derived from correctPlanet via findIndex (never trusts Gemini) |
+| G5 — Fallback quality | PASS | Deterministic fallback produces valid quiz questions from planet stat data |

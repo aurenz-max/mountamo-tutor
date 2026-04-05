@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { CharacterWebData } from "../../primitives/visual-primitives/literacy/CharacterWeb";
+import { logEvalModeResolution } from '../evalMode';
 
 const characterWebSchema: Schema = {
   type: Type.OBJECT,
@@ -49,8 +50,9 @@ const characterWebSchema: Schema = {
 export const generateCharacterWeb = async (
   topic: string,
   gradeLevel: string = '4',
-  config?: Partial<CharacterWebData>
+  config?: Partial<CharacterWebData> & { targetEvalMode?: string }
 ): Promise<CharacterWebData> => {
+  logEvalModeResolution('CharacterWeb', config?.targetEvalMode, null);
   const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
 
   const gradeNotes: Record<string, string> = {

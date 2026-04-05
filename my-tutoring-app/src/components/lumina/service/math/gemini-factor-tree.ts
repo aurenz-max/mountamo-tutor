@@ -52,6 +52,22 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Student must find factor pairs independently. Tests divisibility rule knowledge.`,
     schemaDescription: "'unguided' (medium composites, no hints)",
   },
+  unguided_large: {
+    promptDoc:
+      `"unguided_large": Larger composite numbers (40-80) without hints, reset allowed. `
+      + `guidedMode=false, allowReset=true, highlightPrimes=true, showExponentForm=true. `
+      + `Good numbers: 40, 42, 48, 54, 56, 60, 63, 72, 80. `
+      + `Step up from unguided: bigger numbers with more prime factors to track.`,
+    schemaDescription: "'unguided_large' (larger composites, no hints, reset allowed)",
+  },
+  assessment_intro: {
+    promptDoc:
+      `"assessment_intro": Medium-large composite numbers (40-80) with no hints and no reset. `
+      + `guidedMode=false, allowReset=false, highlightPrimes=true, showExponentForm=true. `
+      + `Good numbers: 40, 42, 48, 54, 56, 60, 63, 72, 80. `
+      + `Practice the no-retry format with moderate numbers before full assessment.`,
+    schemaDescription: "'assessment_intro' (medium-large composites, no hints, no reset)",
+  },
   assessment: {
     promptDoc:
       `"assessment": Larger composite numbers (40-100) with no hints and no reset. `
@@ -126,6 +142,8 @@ function validateRootValue(data: FactorTreeData & { challengeType?: string }): v
     guided_small: [4, 24],
     guided_medium: [24, 60],
     unguided: [20, 60],
+    unguided_large: [40, 80],
+    assessment_intro: [40, 80],
     assessment: [40, 100],
   };
   const [min, max] = ranges[ct ?? ''] ?? [4, 100];
@@ -136,6 +154,8 @@ function validateRootValue(data: FactorTreeData & { challengeType?: string }): v
       guided_small: 12,
       guided_medium: 36,
       unguided: 36,
+      unguided_large: 56,
+      assessment_intro: 60,
       assessment: 72,
     };
     console.warn(`[FactorTree] rootValue ${data.rootValue} out of range [${min}, ${max}] for ${ct}. Using fallback.`);
@@ -156,10 +176,10 @@ function enforceModeFlags(data: FactorTreeData & { challengeType?: string }): vo
   if (ct === 'guided_small' || ct === 'guided_medium') {
     data.guidedMode = true;
     data.allowReset = true;
-  } else if (ct === 'unguided') {
+  } else if (ct === 'unguided' || ct === 'unguided_large') {
     data.guidedMode = false;
     data.allowReset = true;
-  } else if (ct === 'assessment') {
+  } else if (ct === 'assessment_intro' || ct === 'assessment') {
     data.guidedMode = false;
     data.allowReset = false;
   }
@@ -280,7 +300,7 @@ Return the complete factor tree configuration.
   }
 
   // ── Validate challengeType ──
-  const validTypes = ['guided_small', 'guided_medium', 'unguided', 'assessment'];
+  const validTypes = ['guided_small', 'guided_medium', 'unguided', 'unguided_large', 'assessment_intro', 'assessment'];
   if (!validTypes.includes(data.challengeType)) {
     data.challengeType = evalConstraint?.allowedTypes[0] ?? 'guided_small';
   }

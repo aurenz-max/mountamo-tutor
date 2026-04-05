@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,8 @@ export interface PlanetQuestion {
   correctIndex: number;
   explanation: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  /** For identify-mode quiz questions: which planet is the correct answer */
+  aboutPlanetId?: string;
 }
 
 export interface PlanetStop {
@@ -51,6 +53,9 @@ export interface PlanetaryExplorerData {
   introduction: string;
   celebration: string;
   planets: PlanetStop[];
+
+  /** Cross-planet identification quiz (identify mode only) */
+  quizQuestions?: PlanetQuestion[];
 
   showOrbits?: boolean;
   showScale?: boolean;
@@ -100,7 +105,7 @@ interface FlatQuestion {
 // View modes
 // ============================================================================
 
-type ViewMode = 'overview' | 'planet-info' | 'planet-questions' | 'transition' | 'summary';
+type ViewMode = 'overview' | 'planet-info' | 'planet-questions' | 'transition' | 'quiz' | 'summary';
 
 // ============================================================================
 // Component
@@ -118,6 +123,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     introduction,
     celebration,
     planets = [],
+    quizQuestions = [],
     showOrbits = true,
     showScale = true,
     gradeLevel,
@@ -128,6 +134,8 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     exhibitId,
     onEvaluationSubmit,
   } = data;
+
+  const hasQuiz = quizQuestions.length > 0;
 
   // ── Stable refs ──
   const stableInstanceIdRef = useRef(instanceId || `planetary-explorer-${Date.now()}`);
@@ -142,7 +150,14 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
   const [tappedStats, setTappedStats] = useState<Set<string>>(new Set());
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
 
-  // ── Flatten questions for shared hooks ──
+  // ── Quiz state (identify mode) ──
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizSelectedOption, setQuizSelectedOption] = useState<number | null>(null);
+  const [quizShowFeedback, setQuizShowFeedback] = useState(false);
+  const [quizAttempts, setQuizAttempts] = useState(0);
+  const [quizResults, setQuizResults] = useState<Array<{ correct: boolean; attempts: number }>>([]);
+
+  // ── Flatten per-planet questions for shared hooks ──
   const flatQuestions = useMemo<FlatQuestion[]>(() =>
     planets.flatMap((planet, pi) =>
       planet.questions.map((q, qi) => ({
@@ -153,7 +168,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
       }))
     ), [planets]);
 
-  // ── Shared hooks ──
+  // ── Shared hooks (per-planet questions) ──
   const {
     currentIndex: currentQuestionIndex,
     currentAttempts,
@@ -164,7 +179,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     advance: advanceQuestion,
   } = useChallengeProgress({ challenges: flatQuestions, getChallengeId: (q) => q.id });
 
-  // Phase config: one phase per planet
+  // Phase config: one phase per planet + optional quiz phase
   const phaseConfig = useMemo<Record<string, PhaseConfig>>(() => {
     const config: Record<string, PhaseConfig> = {};
     for (const planet of planets) {
@@ -175,13 +190,55 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
         accentColor: undefined,
       };
     }
+    if (hasQuiz) {
+      config['__quiz__'] = {
+        label: 'Identification Quiz',
+        icon: '?',
+        accentColor: undefined,
+      };
+    }
     return config;
-  }, [planets]);
+  }, [planets, hasQuiz]);
+
+  // Build combined challenges + results for phase summary (per-planet + quiz)
+  const allChallengesForPhases = useMemo(() => {
+    const combined = [...flatQuestions.map((fq) => ({ ...fq }))];
+    if (hasQuiz) {
+      for (let i = 0; i < quizQuestions.length; i++) {
+        combined.push({
+          id: `quiz-q${i}`,
+          planetId: '__quiz__',
+          planetIndex: -1,
+          question: quizQuestions[i],
+        });
+      }
+    }
+    return combined;
+  }, [flatQuestions, quizQuestions, hasQuiz]);
+
+  const allResultsForPhases = useMemo(() => {
+    const combined = [...challengeResults];
+    for (let i = 0; i < quizResults.length; i++) {
+      combined.push({
+        challengeId: `quiz-q${i}`,
+        correct: quizResults[i].correct,
+        attempts: quizResults[i].attempts,
+        planetId: '__quiz__',
+        questionType: 'mc',
+        difficulty: quizQuestions[i]?.difficulty ?? 'medium',
+      });
+    }
+    return combined;
+  }, [challengeResults, quizResults, quizQuestions]);
+
+  const isFullyComplete = hasQuiz
+    ? allQuestionsComplete && quizResults.length >= quizQuestions.length
+    : allQuestionsComplete;
 
   const phaseResults = usePhaseResults({
-    challenges: flatQuestions,
-    results: challengeResults,
-    isComplete: allQuestionsComplete,
+    challenges: allChallengesForPhases,
+    results: allResultsForPhases,
+    isComplete: isFullyComplete,
     getChallengeType: (q) => q.planetId,
     phaseConfig,
   });
@@ -209,14 +266,15 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
   });
 
   // ── AI Tutoring ──
+  const currentQuizQuestion = hasQuiz ? quizQuestions[quizIndex] : undefined;
   const aiPrimitiveData = useMemo(() => ({
-    currentPlanet: currentPlanet?.planetId,
-    focusTheme: currentPlanet?.focusTheme,
+    currentPlanet: viewMode === 'quiz' ? undefined : currentPlanet?.planetId,
+    focusTheme: viewMode === 'quiz' ? 'Identification Quiz' : currentPlanet?.focusTheme,
     planetsVisited: planets.slice(0, currentPlanetIndex).map((p) => p.planetId),
     planetsRemaining: planets.slice(currentPlanetIndex + 1).map((p) => p.planetId),
-    questionText: currentFlatQuestion?.question.question,
+    questionText: viewMode === 'quiz' ? currentQuizQuestion?.question : currentFlatQuestion?.question.question,
     gradeLevel,
-  }), [currentPlanet, currentPlanetIndex, planets, currentFlatQuestion, gradeLevel]);
+  }), [currentPlanet, currentPlanetIndex, planets, currentFlatQuestion, currentQuizQuestion, gradeLevel, viewMode]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'planetary-explorer',
@@ -300,13 +358,21 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
       if (currentPlanetIndex < planets.length - 1) {
         // More planets to visit — show transition
         setViewMode('transition');
+      } else if (hasQuiz) {
+        // All planets done, quiz available — enter quiz mode
+        setViewMode('quiz');
+        setQuizIndex(0);
+        setQuizAttempts(0);
+        setQuizSelectedOption(null);
+        setQuizShowFeedback(false);
+        sendText(`[QUIZ_START] All planets visited! Now it's time for the identification quiz. The student will identify planets from descriptions. Encourage them.`, { silent: true });
       } else {
-        // All planets done — submit evaluation and show summary
+        // All planets done, no quiz — submit evaluation and show summary
         handleSubmitEvaluation();
         setViewMode('summary');
       }
     }
-  }, [currentPlanetQuestionIndex, currentPlanetQuestions, advanceQuestion, currentPlanet, currentPlanetIndex, planets, sendText]);
+  }, [currentPlanetQuestionIndex, currentPlanetQuestions, advanceQuestion, currentPlanet, currentPlanetIndex, planets, hasQuiz, sendText]);
 
   const handleNextPlanet = useCallback(() => {
     const nextIndex = currentPlanetIndex + 1;
@@ -326,11 +392,60 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     sendText(`[STAT_TAPPED] Student tapped "${statLabel}" for ${planetId}. Give interesting context or comparison.`, { silent: true });
   }, [sendText]);
 
+  // ── Quiz handlers ──
+
+  const handleQuizSelectOption = useCallback((optionIndex: number) => {
+    if (quizShowFeedback) return;
+    setQuizSelectedOption(optionIndex);
+  }, [quizShowFeedback]);
+
+  const handleQuizCheckAnswer = useCallback(() => {
+    if (quizSelectedOption === null || !currentQuizQuestion) return;
+
+    const correct = quizSelectedOption === currentQuizQuestion.correctIndex;
+    const newAttempts = quizAttempts + 1;
+    setQuizAttempts(newAttempts);
+
+    if (correct) {
+      setQuizShowFeedback(true);
+      setQuizResults((prev) => [...prev, { correct: true, attempts: newAttempts }]);
+      sendText(`[QUIZ_CORRECT] Student identified "${currentQuizQuestion.options[quizSelectedOption]}" correctly for "${currentQuizQuestion.question}". Brief praise.`, { silent: true });
+    } else if (newAttempts >= 2) {
+      setQuizShowFeedback(true);
+      setQuizResults((prev) => [...prev, { correct: false, attempts: newAttempts }]);
+      sendText(`[QUIZ_INCORRECT] Student chose "${currentQuizQuestion.options[quizSelectedOption]}" but correct is "${currentQuizQuestion.options[currentQuizQuestion.correctIndex]}". Explain why.`, { silent: true });
+    } else {
+      sendText(`[QUIZ_HINT] Student chose "${currentQuizQuestion.options[quizSelectedOption]}" but that's not right. Give a hint about the correct planet without naming it.`, { silent: true });
+      setQuizSelectedOption(null);
+    }
+  }, [quizSelectedOption, currentQuizQuestion, quizAttempts, sendText]);
+
+  const handleQuizNext = useCallback(() => {
+    const nextIndex = quizIndex + 1;
+    if (nextIndex < quizQuestions.length) {
+      setQuizIndex(nextIndex);
+      setQuizSelectedOption(null);
+      setQuizShowFeedback(false);
+      setQuizAttempts(0);
+      sendText(`[QUIZ_NEXT] Moving to quiz question ${nextIndex + 1} of ${quizQuestions.length}.`, { silent: true });
+    } else {
+      // Quiz complete — submit evaluation and show summary
+      // Use a timeout to let quizResults state settle before computing scores
+      handleSubmitEvaluation();
+      setViewMode('summary');
+    }
+  }, [quizIndex, quizQuestions.length, sendText]);
+
+  // ── Evaluation ──
+
   const handleSubmitEvaluation = useCallback(() => {
     const elapsedMs = Date.now() - startTimeRef.current;
-    const correctCount = challengeResults.filter((r) => r.correct).length;
-    const totalQuestions = flatQuestions.length;
-    const overallScore = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+
+    // Combine per-planet + quiz results for scoring
+    const allCorrect = challengeResults.filter((r) => r.correct).length
+      + quizResults.filter((r) => r.correct).length;
+    const totalQuestions = flatQuestions.length + quizQuestions.length;
+    const overallScore = totalQuestions > 0 ? Math.round((allCorrect / totalQuestions) * 100) : 0;
 
     const perPlanetScores: Record<string, number> = {};
     for (const planet of planets) {
@@ -341,11 +456,17 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
         : 0;
     }
 
+    // Add quiz score if applicable
+    if (quizResults.length > 0) {
+      const quizCorrect = quizResults.filter((r) => r.correct).length;
+      perPlanetScores['__quiz__'] = Math.round((quizCorrect / quizResults.length) * 100);
+    }
+
     const metrics: PlanetaryExplorerMetrics = {
       type: 'planetary-explorer',
       totalQuestions,
-      correctAnswers: correctCount,
-      accuracy: totalQuestions > 0 ? correctCount / totalQuestions : 0,
+      correctAnswers: allCorrect,
+      accuracy: totalQuestions > 0 ? allCorrect / totalQuestions : 0,
       planetsExplored: planets.length,
       perPlanetScores,
       statsExplored: tappedStats.size,
@@ -361,25 +482,29 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
       const score = perPlanetScores[p.planetId] ?? 0;
       return `${p.planetId}: ${score}%`;
     }).join(', ');
-    sendText(`[ALL_COMPLETE] Journey complete! Planet scores: ${phaseScoreStr}. Overall: ${overallScore}%. ${celebration}. Give encouraging planet-specific feedback.`, { silent: true });
+    const quizScoreStr = quizResults.length > 0 ? `, Quiz: ${perPlanetScores['__quiz__']}%` : '';
+    sendText(`[ALL_COMPLETE] Journey complete! Planet scores: ${phaseScoreStr}${quizScoreStr}. Overall: ${overallScore}%. ${celebration}. Give encouraging planet-specific feedback.`, { silent: true });
 
     return result;
-  }, [challengeResults, flatQuestions, planets, tappedStats, celebration, submitResult, sendText]);
+  }, [challengeResults, quizResults, flatQuestions, quizQuestions, planets, tappedStats, celebration, submitResult, sendText]);
 
   // ── Computed values ──
   const elapsedMs = Date.now() - startTimeRef.current;
   const overallScore = useMemo(() => {
-    if (flatQuestions.length === 0) return 0;
-    const correct = challengeResults.filter((r) => r.correct).length;
-    return Math.round((correct / flatQuestions.length) * 100);
-  }, [challengeResults, flatQuestions]);
+    const totalQ = flatQuestions.length + quizQuestions.length;
+    if (totalQ === 0) return 0;
+    const correct = challengeResults.filter((r) => r.correct).length
+      + quizResults.filter((r) => r.correct).length;
+    return Math.round((correct / totalQ) * 100);
+  }, [challengeResults, quizResults, flatQuestions, quizQuestions]);
 
   // ── Render helpers ──
 
   const renderSolarSystemCanvas = () => {
-    const activePlanetId = currentPlanet?.planetId?.toLowerCase();
+    const activePlanetId = viewMode === 'quiz' ? undefined : currentPlanet?.planetId?.toLowerCase();
     const visitedPlanetIds = new Set(planets.slice(0, currentPlanetIndex).map((p) => p.planetId.toLowerCase()));
     const journeyPlanetIds = new Set(planets.map((p) => p.planetId.toLowerCase()));
+    const allVisited = viewMode === 'quiz' || viewMode === 'summary';
 
     return (
       <div className="relative w-full h-48 md:h-64 overflow-hidden rounded-xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border border-white/5">
@@ -407,7 +532,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
         {Object.entries(PLANET_VISUALS).map(([id, vis]) => {
           const isInJourney = journeyPlanetIds.has(id);
           const isActive = activePlanetId === id;
-          const isVisited = visitedPlanetIds.has(id);
+          const isVisited = allVisited || visitedPlanetIds.has(id);
           const xPos = 40 + (vis.orbitRadius / 32) * 800;
           const size = Math.max(6, Math.min(24, 4 + Math.log2(vis.radiusScale + 1) * 8));
 
@@ -427,7 +552,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
               <div
                 className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full transition-all duration-500 ${
                   isActive ? 'ring-2 ring-white/60 scale-125 z-10' : ''
-                } ${isVisited ? 'opacity-60' : ''} ${!isInJourney ? 'opacity-20' : ''}`}
+                } ${isVisited && !isActive ? 'opacity-60' : ''} ${!isInJourney ? 'opacity-20' : ''}`}
                 style={{
                   left: `${Math.min(95, xPos / 10)}%`,
                   width: `${size}px`,
@@ -458,8 +583,8 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
         <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2">
           {planets.map((planet, i) => {
             const vis = getPlanetVisual(planet.planetId);
-            const isCurrent = i === currentPlanetIndex;
-            const isDone = i < currentPlanetIndex;
+            const isCurrent = !allVisited && i === currentPlanetIndex;
+            const isDone = allVisited || i < currentPlanetIndex;
             return (
               <div
                 key={planet.planetId}
@@ -473,6 +598,15 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
               />
             );
           })}
+          {/* Quiz progress dot */}
+          {hasQuiz && (
+            <div
+              className={`w-3 h-3 rounded-full border transition-all ${
+                viewMode === 'quiz' ? 'scale-125 animate-pulse border-amber-400/80 bg-amber-400' : viewMode === 'summary' ? 'border-amber-400/40 bg-amber-400' : 'border-white/20'
+              }`}
+              title="Identification Quiz"
+            />
+          )}
         </div>
 
         {/* Scale reference */}
@@ -686,7 +820,9 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
                   ? 'Next Question →'
                   : currentPlanetIndex < planets.length - 1
                     ? `Continue to Next Planet →`
-                    : 'See Results →'}
+                    : hasQuiz
+                      ? 'Start Identification Quiz →'
+                      : 'See Results →'}
               </Button>
             )}
           </CardContent>
@@ -729,6 +865,104 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     );
   };
 
+  const renderQuiz = () => {
+    if (!currentQuizQuestion || quizIndex >= quizQuestions.length) return null;
+
+    const q = currentQuizQuestion;
+    const questionNum = quizIndex + 1;
+    const totalQuiz = quizQuestions.length;
+    const lastResult = quizResults[quizResults.length - 1];
+
+    return (
+      <div className="space-y-4">
+        {renderSolarSystemCanvas()}
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full flex-shrink-0 bg-amber-400/80 flex items-center justify-center text-xs font-bold text-slate-900">
+                  ?
+                </div>
+                <span className="text-amber-300 text-sm font-medium">Identification Quiz</span>
+              </div>
+              <Badge variant="outline" className="border-amber-400/30 text-amber-300 bg-amber-400/10">
+                Q{questionNum}/{totalQuiz}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Question — NO planet name shown */}
+            <p className="text-slate-100 text-base font-medium leading-relaxed">{q.question}</p>
+
+            {/* Options (planet names) */}
+            <div className="space-y-2">
+              {q.options.map((option, i) => {
+                const planetVis = getPlanetVisual(option.toLowerCase());
+                let optionStyle = 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-slate-200';
+                if (quizShowFeedback) {
+                  if (i === q.correctIndex) {
+                    optionStyle = 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200';
+                  } else if (i === quizSelectedOption && i !== q.correctIndex) {
+                    optionStyle = 'bg-red-500/20 border-red-400/40 text-red-200';
+                  } else {
+                    optionStyle = 'bg-white/3 border-white/5 text-slate-500';
+                  }
+                } else if (i === quizSelectedOption) {
+                  optionStyle = 'bg-indigo-500/20 border-indigo-400/40 text-indigo-200';
+                }
+
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleQuizSelectOption(i)}
+                    disabled={quizShowFeedback}
+                    className={`w-full text-left p-3 rounded-lg border transition-all flex items-center gap-2 ${optionStyle}`}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: planetVis.color }}
+                    />
+                    <span className="text-slate-500 mr-1 text-sm">{String.fromCharCode(65 + i)}.</span>
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Feedback */}
+            {quizShowFeedback && (
+              <div className={`p-3 rounded-lg border ${
+                lastResult?.correct
+                  ? 'bg-emerald-500/10 border-emerald-400/20'
+                  : 'bg-amber-500/10 border-amber-400/20'
+              }`}>
+                <p className="text-slate-300 text-sm">{q.explanation}</p>
+              </div>
+            )}
+
+            {/* Action button */}
+            {!quizShowFeedback ? (
+              <Button
+                onClick={handleQuizCheckAnswer}
+                disabled={quizSelectedOption === null}
+                className="w-full bg-amber-600/80 hover:bg-amber-500/80 text-white border border-amber-400/30 disabled:opacity-40"
+              >
+                Check Answer
+              </Button>
+            ) : (
+              <Button
+                onClick={handleQuizNext}
+                className="w-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+              >
+                {quizIndex + 1 < quizQuestions.length ? 'Next Question →' : 'See Results →'}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   const renderSummary = () => (
     <div className="space-y-4">
       {renderSolarSystemCanvas()}
@@ -752,6 +986,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
       {viewMode === 'planet-info' && renderPlanetInfo()}
       {viewMode === 'planet-questions' && renderPlanetQuestions()}
       {viewMode === 'transition' && renderTransition()}
+      {viewMode === 'quiz' && renderQuiz()}
       {viewMode === 'summary' && renderSummary()}
     </div>
   );

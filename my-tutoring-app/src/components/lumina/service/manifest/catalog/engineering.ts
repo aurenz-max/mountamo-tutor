@@ -75,8 +75,27 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'construction-sequence-planner',
-    description: 'Interactive timeline/flowchart tool for ordering construction tasks and understanding dependencies. Students learn that building follows logical sequences by arranging tasks in order, drawing dependency arrows, and seeing what must come first. Features drag-and-drop task ordering, dependency visualization, sequence validation, and animated playthrough of construction steps. Teaches first-then-last sequencing, dependency understanding, parallel vs sequential task concepts, and critical path basics. Shows real-world connections: house construction, bridge building, project management, any multi-step construction project. Project types include house, bridge, tower, road, and playground. Features three learning phases: Explore (identify first task), Practice (order subset), Apply (complete sequence). Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching planning, sequencing, logical thinking, and construction project management.',
-    constraints: 'Best for grades K-5. Use for construction sequencing, project planning, dependencies, logical ordering, critical path. K-1: first, then, last (3-4 simple tasks, list display). 1-2: some things must wait (4-5 tasks with simple dependencies, show arrows). 2-3: dependency chains (5-6 tasks, multiple dependencies, flowchart display). 3-4: parallel vs sequential (6-8 tasks, some can happen together, parallelAllowed: true). 4-5: critical path basics (8-10 tasks, timeline display, identify longest path). Supports progressive difficulty with three learning phases and animated sequence visualization.',
+    description: 'Visual construction project planner ("Build It Right") where students arrange tasks and watch a Canvas build animation play out — if the order is wrong, the structure fails visually (walls collapse, roof falls) showing real consequences of bad sequencing. Features a Gantt timeline that animates week by week, critical path highlighting, "Build in under N weeks" deadline challenges, and parallel task discovery. Students learn that construction follows strict dependency rules by experiencing failure consequences, not just getting a wrong-answer message. Project types include house, bridge, tower, road, and playground. Teaches first-then-last sequencing, dependency chains, parallel vs sequential task concepts, critical path identification, and deadline optimization. ESSENTIAL for teaching planning, sequencing, logical thinking, and construction project management.',
+    constraints: 'Best for grades K-5. Use for construction sequencing, project planning, dependencies, critical path, deadline challenges. K-1: first, then, last (3-4 simple tasks, linear sequence, evalMode: sequence). 2-3: dependency chains (5-6 tasks, branching/converging deps, evalMode: dependency_chain). 3-4: parallel task discovery (6-8 tasks, parallelAllowed: true, "Build in under N weeks" challenge, evalMode: parallel). 4-5: critical path identification and optimization (8-10 tasks, identify longest path, deadline pressure, evalMode: critical_path). All modes feature Canvas build animation with visual failure consequences and Gantt timeline.',
+    tutoring: {
+      taskDescription: 'Planning a {{projectType}} construction project with {{taskCount}} tasks. Target: {{targetWeeks}} weeks. Student arranges tasks and watches the build animation to see consequences of their ordering.',
+      contextKeys: ['projectType', 'gradeLevel', 'taskCount', 'targetWeeks', 'criticalPathLength', 'parallelAllowed'],
+      scaffoldingLevels: {
+        level1: "What task has no dependencies? That's usually a good starting point.",
+        level2: 'Look at {{taskName}} — it needs {{depNames}} finished first. Where should it go in your schedule?',
+        level3: 'In construction, we always go: foundation → structure → systems (plumbing/electrical) → finishing (paint/windows). Try grouping your tasks by category.',
+      },
+      commonStruggles: [
+        { pattern: 'Student repeatedly places roof before walls', response: 'Ask them to think about what the roof sits ON — it needs walls to hold it up!' },
+        { pattern: 'Student ignores parallel opportunities', response: 'Point out that electrical and plumbing can happen at the same time since they use different parts of the house.' },
+      ],
+    },
+    evalModes: [
+      { evalMode: 'sequence', label: 'Sequence (Basic)', beta: -1.0, scaffoldingMode: 2, challengeTypes: ['sequence'], description: 'Order 4-5 linear tasks with clear dependencies' },
+      { evalMode: 'dependency_chain', label: 'Dependency Chain (Intermediate)', beta: 0.0, scaffoldingMode: 3, challengeTypes: ['sequence'], description: 'Order 5-6 tasks with branching/converging dependencies' },
+      { evalMode: 'parallel', label: 'Parallel Discovery (Advanced)', beta: 1.0, scaffoldingMode: 4, challengeTypes: ['parallel', 'deadline'], description: 'Find parallel paths to meet a deadline with 6-8 tasks' },
+      { evalMode: 'critical_path', label: 'Critical Path (Expert)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['critical_path', 'deadline'], description: 'Identify critical path and optimize 8-10 task schedule' },
+    ],
     supportsEvaluation: true,
   },
   {

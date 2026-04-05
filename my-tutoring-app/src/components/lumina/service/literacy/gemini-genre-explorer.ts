@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { GenreExplorerData } from "../../primitives/visual-primitives/literacy/GenreExplorer";
+import { logEvalModeResolution } from '../evalMode';
 
 const genreExplorerSchema: Schema = {
   type: Type.OBJECT,
@@ -40,8 +41,9 @@ const genreExplorerSchema: Schema = {
 export const generateGenreExplorer = async (
   topic: string,
   gradeLevel: string = '3',
-  config?: Partial<GenreExplorerData>
+  config?: Partial<GenreExplorerData> & { targetEvalMode?: string }
 ): Promise<GenreExplorerData> => {
+  logEvalModeResolution('GenreExplorer', config?.targetEvalMode, null);
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
 
   const gradeNotes: Record<string, string> = {

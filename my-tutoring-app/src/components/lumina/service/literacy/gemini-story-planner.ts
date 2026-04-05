@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { StoryPlannerData } from "../../primitives/visual-primitives/literacy/StoryPlanner";
+import { logEvalModeResolution } from '../evalMode';
 
 const storyPlannerSchema: Schema = {
   type: Type.OBJECT,
@@ -31,8 +32,9 @@ const storyPlannerSchema: Schema = {
 export const generateStoryPlanner = async (
   topic: string,
   gradeLevel: string = '3',
-  config?: Partial<StoryPlannerData>
+  config?: Partial<StoryPlannerData> & { targetEvalMode?: string }
 ): Promise<StoryPlannerData> => {
+  logEvalModeResolution('StoryPlanner', config?.targetEvalMode, null);
   const gradeLevelKey = ['K', '1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
 
   const gradeNotes: Record<string, string> = {

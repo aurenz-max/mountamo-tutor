@@ -57,13 +57,11 @@ const figurativeLanguageFinderSchema: Schema = {
         properties: {
           instanceId: { type: Type.STRING },
           text: { type: Type.STRING, description: "The figurative phrase as it appears in the passage" },
-          startIndex: { type: Type.NUMBER, description: "Character offset where the phrase starts in the passage" },
-          endIndex: { type: Type.NUMBER, description: "Character offset where the phrase ends in the passage" },
           type: { type: Type.STRING, enum: ["simile", "metaphor", "personification", "hyperbole", "idiom", "alliteration", "onomatopoeia", "imagery"] },
           literalMeaning: { type: Type.STRING, description: "What the phrase literally means" },
           explanation: { type: Type.STRING, description: "Why this is classified as this type" },
         },
-        required: ["instanceId", "text", "startIndex", "endIndex", "type", "literalMeaning", "explanation"]
+        required: ["instanceId", "text", "type", "literalMeaning", "explanation"]
       }
     },
     translateInstanceIds: { type: Type.ARRAY, items: { type: Type.STRING }, description: "2-3 instance IDs that students must write literal translations for" },
@@ -71,6 +69,24 @@ const figurativeLanguageFinderSchema: Schema = {
   },
   required: ["title", "gradeLevel", "passage", "instances", "translateInstanceIds", "availableTypes"]
 };
+
+/** SP-8 fix: LLMs can't compute character offsets — derive from passage.indexOf() */
+function recomputeOffsets(data: FigurativeLanguageFinderData): void {
+  const { passage, instances } = data;
+  if (!passage || !instances) return;
+
+  for (const inst of instances) {
+    const idx = passage.indexOf(inst.text);
+    if (idx >= 0) {
+      inst.startIndex = idx;
+      inst.endIndex = idx + inst.text.length;
+    } else {
+      console.warn(`[FigurativeLanguageFinder] recomputeOffsets: "${inst.text}" not found in passage`);
+      inst.startIndex = 0;
+      inst.endIndex = 0;
+    }
+  }
+}
 
 export const generateFigurativeLanguageFinder = async (
   topic: string,
@@ -122,11 +138,10 @@ AVAILABLE TYPES for this grade: ${activeTypes.join(', ')}
 ${challengeTypeSection}
 Rules:
 1. Write a passage that naturally embeds figurative language instances
-2. Mark EXACT startIndex and endIndex character offsets for each instance in the passage string
+2. Each instance "text" must be the EXACT substring as it appears in the passage (verbatim, case-sensitive)
 3. Each instance must have a clear literal meaning and explanation
 4. translateInstanceIds: pick 2-3 of the most interesting instances for literal translation
-5. availableTypes: include all types available at this grade (even if not all used in the passage)
-6. CRITICAL: Double-check character offsets! The text between startIndex and endIndex must match the "text" field exactly`;
+5. availableTypes: include all types available at this grade (even if not all used in the passage)`;
 
   try {
     const response = await ai.models.generateContent({
@@ -135,12 +150,13 @@ Rules:
       config: {
         responseMimeType: "application/json",
         responseSchema: activeSchema,
-        systemInstruction: 'You are an expert K-6 language arts instructor specializing in figurative language and literary devices. You create engaging passages rich in figurative language with clear, age-appropriate examples. You are meticulous about character offsets — count every character including spaces and punctuation. Literal meanings are written in student-friendly language.',
+        systemInstruction: 'You are an expert K-6 language arts instructor specializing in figurative language and literary devices. You create engaging passages rich in figurative language with clear, age-appropriate examples. Each instance "text" must be copied VERBATIM from the passage. Literal meanings are written in student-friendly language.',
       }
     });
     const text = response.text;
     if (!text) throw new Error("No data returned from Gemini API");
     const result = JSON.parse(text) as FigurativeLanguageFinderData;
+    recomputeOffsets(result);
     const { targetEvalMode: _unused, ...configRest } = config ?? {};
     void _unused;
     return { ...result, ...configRest };

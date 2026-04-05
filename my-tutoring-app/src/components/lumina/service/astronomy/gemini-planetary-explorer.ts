@@ -174,6 +174,46 @@ function buildFlatQuestionProperties(): Record<string, Schema> {
   return props;
 }
 
+// Helper: build flat quiz question fields (top-level, for identify mode)
+function buildFlatQuizQuestionProperties(): Record<string, Schema> {
+  const props: Record<string, Schema> = {};
+  for (let i = 0; i < 8; i++) {
+    const nullable = i >= 4; // quiz0-quiz3 required, quiz4-quiz7 optional
+    props[`quiz${i}Question`] = {
+      type: Type.STRING,
+      description: `Quiz question ${i}: Describe a planet's properties WITHOUT naming it. Ask "Which planet...?"`,
+      nullable,
+    };
+    props[`quiz${i}CorrectPlanet`] = {
+      type: Type.STRING,
+      enum: ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'],
+      description: `Quiz question ${i}: The planet being described (the correct answer)`,
+      nullable,
+    };
+    props[`quiz${i}Option0`] = { type: Type.STRING, description: `Quiz ${i}, option A (a planet name)`, nullable };
+    props[`quiz${i}Option1`] = { type: Type.STRING, description: `Quiz ${i}, option B (a planet name)`, nullable };
+    props[`quiz${i}Option2`] = { type: Type.STRING, description: `Quiz ${i}, option C (a planet name)`, nullable };
+    props[`quiz${i}Option3`] = { type: Type.STRING, description: `Quiz ${i}, option D (a planet name)`, nullable };
+    props[`quiz${i}CorrectIndex`] = {
+      type: Type.NUMBER,
+      description: `Quiz ${i}: Index (0-3) of the correct planet in the options. MUST match quiz${i}CorrectPlanet.`,
+      nullable,
+    };
+    props[`quiz${i}Explanation`] = {
+      type: Type.STRING,
+      description: `Quiz ${i}: Explanation of why this planet matches the description.`,
+      nullable,
+    };
+    props[`quiz${i}Difficulty`] = {
+      type: Type.STRING,
+      enum: ['easy', 'medium', 'hard'],
+      description: `Quiz ${i}: Difficulty level`,
+      nullable,
+    };
+  }
+  return props;
+}
+
 const planetaryExplorerResponseSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -236,6 +276,8 @@ const planetaryExplorerResponseSchema: Schema = {
       },
       description: 'Array of 3-5 planet stops. Order by relevance to the topic, NOT by distance from Sun.',
     },
+    // Flat quiz question fields for identify mode (top-level)
+    ...buildFlatQuizQuestionProperties(),
   },
   required: ['title', 'description', 'introduction', 'celebration', 'planets'],
 };
@@ -332,6 +374,80 @@ function reconstructQuestions(raw: any): PlanetQuestion[] {
   return questions;
 }
 
+/**
+ * Reconstruct quiz questions from flat quiz0..quiz7 fields (identify mode).
+ * Each quiz question asks "Which planet...?" with planet names as options.
+ * Derives correctIndex from correctPlanet + options to prevent LLM index errors.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function reconstructQuizQuestions(raw: any, journeyPlanetIds: string[]): PlanetQuestion[] {
+  const questions: PlanetQuestion[] = [];
+  let rejectedCount = 0;
+
+  for (let i = 0; i < 8; i++) {
+    const questionText = raw[`quiz${i}Question`];
+    const correctPlanet = raw[`quiz${i}CorrectPlanet`]?.toLowerCase();
+    const option0 = raw[`quiz${i}Option0`];
+    const option1 = raw[`quiz${i}Option1`];
+    const option2 = raw[`quiz${i}Option2`];
+    const option3 = raw[`quiz${i}Option3`];
+    const explanation = raw[`quiz${i}Explanation`];
+    const difficulty = raw[`quiz${i}Difficulty`];
+
+    // Skip if essential fields are missing
+    if (!questionText || !correctPlanet || !option0 || !option1 || !option2 || !option3 || !explanation) {
+      continue;
+    }
+
+    const options = [option0, option1, option2, option3];
+
+    // DERIVE correctIndex from correctPlanet — never trust Gemini's index
+    const correctIndex = options.findIndex(
+      (o) => o.toLowerCase().trim() === correctPlanet
+    );
+    if (correctIndex === -1) {
+      console.warn(`[PlanetaryExplorer] Quiz q${i}: correctPlanet "${correctPlanet}" not found in options [${options.join(', ')}]. Skipping.`);
+      rejectedCount++;
+      continue;
+    }
+
+    // Validate correctPlanet is one of the journey planets
+    if (!journeyPlanetIds.includes(correctPlanet)) {
+      console.warn(`[PlanetaryExplorer] Quiz q${i}: correctPlanet "${correctPlanet}" not in journey [${journeyPlanetIds.join(', ')}]. Skipping.`);
+      rejectedCount++;
+      continue;
+    }
+
+    // Check for duplicate options
+    const uniqueOptions = new Set(options.map((o) => o.toLowerCase().trim()));
+    if (uniqueOptions.size < 4) {
+      console.warn(`[PlanetaryExplorer] Quiz q${i}: duplicate options detected. Skipping.`);
+      rejectedCount++;
+      continue;
+    }
+
+    // Validate difficulty
+    const validDifficulties = ['easy', 'medium', 'hard'];
+    const resolvedDifficulty = validDifficulties.includes(difficulty) ? difficulty : 'medium';
+
+    questions.push({
+      question: questionText,
+      questionType: 'mc',
+      options,
+      correctIndex,
+      explanation,
+      difficulty: resolvedDifficulty as 'easy' | 'medium' | 'hard',
+      aboutPlanetId: correctPlanet,
+    });
+  }
+
+  if (rejectedCount > 0) {
+    console.log(`[PlanetaryExplorer] Quiz: ${rejectedCount} question(s) rejected, ${questions.length} survived.`);
+  }
+
+  return questions;
+}
+
 // ============================================================================
 // HARDCODED FALLBACK (Earth + Mars)
 // ============================================================================
@@ -415,38 +531,56 @@ function buildFallback(gradeLevel: string): PlanetaryExplorerData {
 // EVAL MODE-SPECIFIC PROMPT GUIDANCE
 // ============================================================================
 
-function getEvalModeGuidance(evalMode: string | undefined): string {
+function getEvalModeGuidance(evalMode: string | undefined, planetIds: string): string {
   switch (evalMode) {
     case 'explore':
       return `EVAL MODE — EXPLORE:
 - Every question should reference information visible in that planet's stats panel or description.
 - Recall-level: student reads the stats and answers. No cross-planet comparisons.
 - Prefer 'mc' and 'true-false' question types.
-- Questions should be answerable from the information provided on this planet's panel.`;
+- Questions should be answerable from the information provided on this planet's panel.
+- Do NOT generate quiz questions (quiz0-quiz7 fields). Leave them empty.`;
 
     case 'identify':
       return `EVAL MODE — IDENTIFY:
-- Questions should describe a planet WITHOUT naming it, then ask the student to identify which planet matches.
-- Include the correct planet name and 3 other planet names as options.
-- Use 'mc' question type. The question describes features, the options are planet names.
-- Example: "Which planet has a Great Red Spot and is the largest in our solar system?"`;
+This mode has TWO parts:
+
+**Part 1 — Per-planet questions (q0, q1, q2):**
+- Generate simple explore-level questions per planet (basic recall from stats).
+- These keep the journey interactive while students learn about each planet.
+- Use 'mc' type. Keep questions simple — they are warm-up, not the main assessment.
+
+**Part 2 — Post-journey quiz (quiz0 through quiz7):**
+- THIS IS THE MAIN ASSESSMENT. Generate 4-8 cross-planet identification questions.
+- Each question DESCRIBES a planet's properties WITHOUT naming it, then asks "Which planet...?"
+- ALL 4 options MUST be planet names from this journey: ${planetIds}
+- The quiz${'{'}N${'}'}CorrectPlanet field must be the lowercase planet name that is the answer.
+- The correct planet name MUST appear as one of quiz${'{'}N${'}'}Option0 through quiz${'{'}N${'}'}Option3.
+- Vary which planet is the answer — do NOT make all questions about the same planet.
+- Use distinctive properties that differentiate planets (size, rings, color, temperature, moons, distance).
+- Example: "Which planet is known for its beautiful rings and has over 80 moons?" (answer: Saturn)
+- Example: "Which planet is closest to the Sun and has no atmosphere?" (answer: Mercury)
+- Difficulty should progress: quiz0-quiz1 easy, quiz2-quiz4 medium, quiz5-quiz7 hard.`;
 
     case 'compare':
       return `EVAL MODE — COMPARE:
 - Questions should span 2 or more planets. The student must remember information from previous stops.
 - Use 'compare' question type primarily.
 - Example: "Which planet has a longer day — Mars or Jupiter?"
-- Ensure comparison questions reference planets the student has already visited (earlier in the list).`;
+- Ensure comparison questions reference planets the student has already visited (earlier in the list).
+- Do NOT generate quiz questions (quiz0-quiz7 fields). Leave them empty.`;
 
     case 'apply':
       return `EVAL MODE — APPLY:
 - Open reasoning questions about WHY things are the way they are.
 - Use 'mc' type but with reasoning-based options.
 - Example: "Why can't liquid water exist on the surface of Venus?" with options explaining different scientific reasons.
-- Questions should require applying knowledge, not just recalling facts.`;
+- Questions should require applying knowledge, not just recalling facts.
+- Do NOT generate quiz questions (quiz0-quiz7 fields). Leave them empty.`;
 
     default:
-      return `No specific eval mode — generate a natural mix of question types (mc, compare, true-false) progressing in difficulty.`;
+      return `No specific eval mode — generate a natural mix of question types (mc, compare, true-false) progressing in difficulty.
+- Do NOT generate quiz questions (quiz0-quiz7 fields). Leave them empty.`;
   }
 }
 
@@ -479,7 +613,24 @@ export const generatePlanetaryExplorer = async (
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
-  const evalModeGuidance = getEvalModeGuidance(config?.targetEvalMode);
+
+  // Build planet ID list for identify mode prompt
+  const validPlanetPool = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
+  const planetIdsList = validPlanetPool.slice(0, gradeConfig.numPlanets).join(', ');
+  const evalModeGuidance = getEvalModeGuidance(config?.targetEvalMode, planetIdsList);
+
+  const isIdentifyMode = config?.targetEvalMode === 'identify';
+
+  const quizInstructions = isIdentifyMode ? `
+**Post-Journey Quiz (IDENTIFY MODE ONLY — quiz0 through quiz7):**
+- Generate 4-8 identification questions using flat fields: quiz0Question, quiz0CorrectPlanet, quiz0Option0-quiz0Option3, quiz0CorrectIndex, quiz0Explanation, quiz0Difficulty. Same pattern for quiz1 through quiz7.
+- quiz0 through quiz3 are REQUIRED. quiz4 through quiz7 are optional (for more questions).
+- Each question describes a planet WITHOUT naming it. Options are planet names from the journey.
+- quiz${'{'}N${'}'}CorrectPlanet must be the lowercase planetId of the correct answer.
+- quiz${'{'}N${'}'}CorrectIndex must be the 0-based index of the correct planet name in quiz${'{'}N${'}'}Option0-Option3.
+- The correct planet MUST appear in the options.
+- Use all 4 option slots — fill with planet names from the journey (repeat one if fewer than 4 planets).
+` : '';
 
   const prompt = `
 Create an interactive Planetary Explorer journey for ${gradeLevel} students.
@@ -518,6 +669,8 @@ For each planet, provide:
 - NEVER include the answer in the question text, planet description, or fun fact.
 - Each option must be unique — no duplicate options within a question.
 
+${quizInstructions}
+
 ${challengeTypeSection}
 
 ${evalModeGuidance}
@@ -535,6 +688,15 @@ Generate a complete, pedagogically sound planetary exploration journey.
 `;
 
   logEvalModeResolution('PlanetaryExplorer', config?.targetEvalMode, evalConstraint);
+
+  // Helper: ensure identify mode always has quiz questions before returning
+  const ensureQuizQuestions = (data: PlanetaryExplorerData): PlanetaryExplorerData => {
+    if (!isIdentifyMode) return data;
+    if (data.quizQuestions && data.quizQuestions.length > 0) return data;
+    const quiz = buildFallbackQuizQuestions(data.planets);
+    console.log(`[PlanetaryExplorer] Identify mode: attached ${quiz.length} fallback quiz questions.`);
+    return { ...data, quizQuestions: quiz };
+  };
 
   try {
     const result = await ai.models.generateContent({
@@ -556,14 +718,14 @@ Generate a complete, pedagogically sound planetary exploration journey.
 
     if (!title || !description || !introduction || !celebration) {
       console.warn('[PlanetaryExplorer] Missing top-level fields. Using fallback.');
-      return buildFallback(resolvedGrade);
+      return ensureQuizQuestions(buildFallback(resolvedGrade));
     }
 
     // ── Reconstruct planets from flat Gemini fields ──
     const rawPlanets = raw.planets;
     if (!Array.isArray(rawPlanets) || rawPlanets.length === 0) {
       console.warn('[PlanetaryExplorer] No planets returned. Using fallback.');
-      return buildFallback(resolvedGrade);
+      return ensureQuizQuestions(buildFallback(resolvedGrade));
     }
 
     const validPlanets: PlanetStop[] = [];
@@ -614,8 +776,11 @@ Generate a complete, pedagogically sound planetary exploration journey.
         }
       }
 
-      if (questions.length < 2) {
-        console.warn(`[PlanetaryExplorer] Rejecting planet "${planetId}": only ${questions.length} valid questions (need >= 2)`);
+      // For identify mode, relax per-planet question minimum to 1
+      // (the quiz questions carry the pedagogical weight)
+      const minQuestions = isIdentifyMode ? 1 : 2;
+      if (questions.length < minQuestions) {
+        console.warn(`[PlanetaryExplorer] Rejecting planet "${planetId}": only ${questions.length} valid questions (need >= ${minQuestions})`);
         rejectedCount++;
         continue;
       }
@@ -640,7 +805,7 @@ Generate a complete, pedagogically sound planetary exploration journey.
 
     // If all planets rejected, use fallback
     if (validPlanets.length === 0) {
-      return buildFallback(resolvedGrade);
+      return ensureQuizQuestions(buildFallback(resolvedGrade));
     }
 
     // Ensure last planet has empty transition
@@ -660,7 +825,22 @@ Generate a complete, pedagogically sound planetary exploration journey.
     // Ensure minimum 2 planets (fallback if only 1)
     if (dedupedPlanets.length < 2) {
       console.warn('[PlanetaryExplorer] Fewer than 2 unique planets. Using fallback.');
-      return buildFallback(resolvedGrade);
+      return ensureQuizQuestions(buildFallback(resolvedGrade));
+    }
+
+    // ── Reconstruct quiz questions for identify mode ──
+    let quizQuestions: PlanetQuestion[] | undefined;
+    if (isIdentifyMode) {
+      const journeyPlanetIds = dedupedPlanets.map((p) => p.planetId);
+      quizQuestions = reconstructQuizQuestions(raw, journeyPlanetIds);
+
+      if (quizQuestions.length < 2) {
+        console.warn(`[PlanetaryExplorer] Identify mode: only ${quizQuestions.length} valid quiz questions (need >= 2). Building fallback quiz.`);
+        // Build minimal fallback quiz from planet data
+        quizQuestions = buildFallbackQuizQuestions(dedupedPlanets);
+      }
+
+      console.log(`[PlanetaryExplorer] Identify mode: ${quizQuestions.length} quiz questions reconstructed.`);
     }
 
     const finalData: PlanetaryExplorerData = {
@@ -670,13 +850,59 @@ Generate a complete, pedagogically sound planetary exploration journey.
       celebration,
       gradeLevel: resolvedGrade,
       planets: dedupedPlanets,
+      ...(quizQuestions ? { quizQuestions } : {}),
     };
 
-    console.log(`[PlanetaryExplorer] Generated successfully: ${dedupedPlanets.length} planets, ${dedupedPlanets.reduce((sum, p) => sum + p.questions.length, 0)} total questions.`);
+    const totalPerPlanet = dedupedPlanets.reduce((sum, p) => sum + p.questions.length, 0);
+    const quizCount = quizQuestions?.length ?? 0;
+    console.log(`[PlanetaryExplorer] Generated successfully: ${dedupedPlanets.length} planets, ${totalPerPlanet} per-planet questions, ${quizCount} quiz questions.`);
 
     return finalData;
   } catch (error) {
     console.error('[PlanetaryExplorer] Error generating content:', error);
-    return buildFallback(resolvedGrade);
+    return ensureQuizQuestions(buildFallback(resolvedGrade));
   }
 };
+
+/**
+ * Build deterministic fallback quiz questions from planet data.
+ * Used when Gemini fails to produce enough valid quiz questions for identify mode.
+ */
+function buildFallbackQuizQuestions(planets: PlanetStop[]): PlanetQuestion[] {
+  const questions: PlanetQuestion[] = [];
+  const planetNames = planets.map((p) => p.planetId.charAt(0).toUpperCase() + p.planetId.slice(1));
+
+  // Pad options to 4 if fewer than 4 planets
+  while (planetNames.length < 4) {
+    const fillers = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
+    const needed = fillers.find((f) => !planetNames.includes(f));
+    if (needed) planetNames.push(needed);
+    else break;
+  }
+
+  for (const planet of planets) {
+    const name = planet.planetId.charAt(0).toUpperCase() + planet.planetId.slice(1);
+    const stat = planet.keyStats[0];
+    if (!stat) continue;
+
+    // Shuffle options with correct answer at a random position
+    const otherNames = planetNames.filter((n) => n !== name);
+    const options = [name, ...otherNames.slice(0, 3)];
+    // Simple deterministic shuffle based on planet name length
+    const correctPos = planet.planetId.length % 4;
+    const removed = options.splice(options.indexOf(name), 1)[0];
+    options.splice(correctPos, 0, removed);
+
+    questions.push({
+      question: `Which planet has a ${stat.label.toLowerCase()} of ${stat.value}${stat.unit ? ' ' + stat.unit : ''}?`,
+      questionType: 'mc',
+      options,
+      correctIndex: correctPos,
+      explanation: `${name}'s ${stat.label.toLowerCase()} is ${stat.value}${stat.unit ? ' ' + stat.unit : ''}.`,
+      difficulty: 'easy',
+      aboutPlanetId: planet.planetId,
+    });
+  }
+
+  return questions;
+}

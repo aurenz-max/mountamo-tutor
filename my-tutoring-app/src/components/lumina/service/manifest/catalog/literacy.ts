@@ -137,6 +137,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'decodable-reader',
     description: 'Controlled-vocabulary reading passages with per-word TTS support. Every word is tappable for pronunciation. Tracks which words students tap (decoding difficulty proxy). Includes embedded comprehension question. Words color-coded by phonics pattern. ESSENTIAL for K-2 reading fluency.',
     constraints: 'Grades K-2. Requires controlled phonics patterns matching student decoding level.',
+    evalModes: [
+      { evalMode: 'default', label: 'Default (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['default'], description: 'Controlled-vocabulary reading with comprehension question.' },
+    ],
     supportsEvaluation: true,
     tutoring: {
       taskDescription:
@@ -834,6 +837,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'character-web',
     description: 'Interactive node-and-edge graph for character analysis and relationship mapping. Students build character profiles with traits and text evidence citations, then map relationships between characters. Tracks character change over time. Perfect for literary analysis grades 2-6.',
     constraints: 'Requires narrative text with 2+ characters. Best for grades 2-6.',
+    evalModes: [
+      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Character trait identification and relationship mapping.' },
+    ],
     supportsEvaluation: true,
   },
   {
@@ -850,6 +856,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'genre-explorer',
     description: 'Students examine text excerpts and classify them by genre using feature checklists. Supports fiction, nonfiction, poetry, drama, folktale, myth, fable, biography, informational, persuasive. Side-by-side comparison of different genres on same topic. Perfect for grades 1-6 genre study.',
     constraints: 'Best for grades 1-6. Needs text excerpts from different genres.',
+    evalModes: [
+      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Classify text excerpts by genre features.' },
+    ],
     supportsEvaluation: true,
   },
 
@@ -870,6 +879,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'evidence-finder',
     description: 'Students find and highlight specific text evidence supporting claims in informational passages. Supports multiple claims, evidence strength ranking, and Claim-Evidence-Reasoning (CER) framework. Multi-color highlighting. Perfect for grades 2-6 evidence-based reading.',
     constraints: 'Best for grades 2-6. Requires informational passage with identifiable evidence.',
+    evalModes: [
+      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Find and evaluate text evidence for claims.' },
+    ],
     supportsEvaluation: true,
     tutoring: {
       taskDescription: 'Find textual evidence for claims. Claim: {{currentClaim}}.',
@@ -959,6 +971,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'story-planner',
     description: 'Pre-writing planning tool for narrative writing. Students fill structured cards: characters, setting, conflict, key events, resolution, theme. Generates visual story arc from inputs. AI-generated character/setting illustrations. Connects to story-map for read-to-write cycle. Perfect for K-6 narrative writing.',
     constraints: 'Best for K-6. Focus complexity on grade level.',
+    evalModes: [
+      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Pre-writing narrative planning with story arc.' },
+    ],
     supportsEvaluation: true,
   },
   {
@@ -991,6 +1006,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'listen-and-respond',
     description: 'Listening comprehension primitive where passage is delivered via TTS audio only (text hidden during listening). Students answer questions from literal recall to inference. Supports replay of specific segments. Text reveal after submission. Perfect for K-6 listening comprehension.',
     constraints: 'Best for K-6. Passage text is hidden during listening phase.',
+    evalModes: [
+      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Audio-only listening comprehension with mixed question types.' },
+    ],
     supportsEvaluation: true,
   },
   {

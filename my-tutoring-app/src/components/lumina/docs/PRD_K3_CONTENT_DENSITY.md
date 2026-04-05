@@ -402,71 +402,297 @@ Use `/curriculum-author` to create these skill trees. Each subskill maps to a sp
 
 ### The Problem
 
-Current eval mode progressions often jump 2-3 difficulty levels. The IRT model needs granular signal — small steps where a student's probability of success shifts meaningfully between adjacent modes.
+Current eval mode progressions jump too far between adjacent modes. The IRT model needs granular signal — small steps where a student's P(correct) shifts meaningfully between adjacent modes. Our target: **≤1.0 β between adjacent modes**.
 
-### The Fix
+**The systemic cliff:** 13 of 17 K-3 math primitives share the same pattern — betas at 1.5, 2.5, 3.5, then a **1.5 jump to 5.0**. This isn't one-off; it's a template artifact. Every primitive built from the standard 4-tier template has this gap at the top.
 
-For each primitive used in K-3, ensure eval modes form a ladder where adjacent modes differ by at most 1.0 β.
+### 4.1 Full Audit — Current State (from catalog, verified 2026-04-05)
 
-**Example — `regrouping-workbench` current gaps:**
+#### Tier A: Primitives with 1.5+ β gaps (CRITICAL — blocks smooth progression)
 
-| Current Mode | β | Gap to Next |
-|-------------|---|-------------|
-| `add_no_regroup` (2-digit) | 1.5 | |
-| `subtract_no_regroup` (2-digit) | 2.0 | 0.5 ✅ |
-| `add_regroup` (2-digit) | 3.0 | **1.0** — borderline |
-| `subtract_regroup` (2-digit) | 3.5 | 0.5 ✅ |
-| `add_regroup` (3-digit) | 4.5 | **1.0** — borderline |
+**`multiplication-explorer`** — worst offender, 3 consecutive 1.5 gaps:
+| Mode | β | Gap | Grade |
+|------|---|-----|-------|
+| `build` | 1.5 | — | 2 |
+| `connect` | 2.5 | 1.0 ✅ | 2 |
+| `commutative` | 3.5 | 1.0 ✅ | 2-3 |
+| `distributive` | 5.0 | **1.5** ❌ | 3 |
+| `missing_factor` | 6.5 | **1.5** ❌ | 3 |
+| `fluency` | 8.0 | **1.5** ❌ | 3 |
 
-**Proposed insertion:**
-- `add_regroup_guided` (β 2.5) — regrouping with carry arrow shown, student confirms
-- `subtract_regroup_guided` (β 3.0) — borrowing with trade animation, student confirms
-- `add_3digit_no_regroup` (β 3.5) — 3-digit without carrying first
+**`regrouping-workbench`** — the G1-2 workhorse:
+| Mode | β | Gap | Grade |
+|------|---|-----|-------|
+| `add_no_regroup` | 1.5 | — | 1 |
+| `subtract_no_regroup` | 2.5 | 1.0 ✅ | 1 |
+| `add_regroup` | 3.5 | 1.0 ✅ | 1-2 |
+| `subtract_regroup` | 5.0 | **1.5** ❌ | 2 |
 
-### Primitives Needing Eval Mode Densification
+**Standard 4-tier template cliff (3.5→5.0)** — affects all of these:
+| Primitive | Mode at β 3.5 | Mode at β 5.0 | Grade span |
+|-----------|--------------|--------------|------------|
+| `fraction-circles` | `compare` | `equivalent` | 3 |
+| `fraction-bar` | `compare` | `add_subtract` | 3 |
+| `base-ten-blocks` | `regroup` | `operate` | 1-2 |
+| `comparison-builder` | `compare_numbers` | `order` | 1-2 |
+| `number-line` | `order` | `between` | 2-3 |
+| `tape-diagram` | `solve_comparison` | `multi_step` | 2-3 |
+| `area-model` | `multiply` | `factor` | 3 |
+| `place-value-chart` | `compare` | `expanded_form` | 2 |
+| `ten-frame` | `make_ten` | `operate` | K-1 |
+| `pattern-builder` | `translate` | `create` | K-1 |
+| `number-bond` | `fact_family` | `build_equation` | K-1 |
+| `addition-subtraction-scene` | `solve_story` | `create_story` | K-1 |
+| `shape-tracer` | `complete` | `draw_from_description` | K |
 
-| Primitive | Current Modes | Needed Additions | Priority |
-|-----------|--------------|-----------------|----------|
-| `regrouping-workbench` | 4 | +3 intermediate modes | High |
-| `multiplication-explorer` | 6 | +2 (single-digit before multi-digit) | High |
-| `fraction-circles` | 4 | +2 (unit fractions before non-unit) | High |
-| `analog-clock` | 4 | +1 (hour-only before half-hour) | Medium |
-| `base-ten-blocks` | 4 | +2 (2-digit build before 3-digit) | Medium |
-| `comparison-builder` | 4 | +1 (extend to 3-digit for G2) | Medium |
-| `skip-counting-runner` | 5 | +1 (count by 100s for G2) | Low |
+#### Tier B: Other notable gaps
+
+**`analog-clock`** — 1.5 gap at entry AND top:
+| Mode | β | Gap |
+|------|---|-----|
+| `read` | 1.5 | — |
+| `set_time` | 3.0 | **1.5** ❌ |
+| `match` | 3.5 | 0.5 ✅ |
+| `elapsed` | 5.0 | **1.5** ❌ |
+
+**`measurement-tools`** — 1.5 gap then 2.0 gap:
+| Mode | β | Gap |
+|------|---|-----|
+| `measure` | 1.5 | — |
+| `compare` | 3.0 | **1.5** ❌ |
+| `convert` | 5.0 | **2.0** ❌ |
+
+**`spatial-scene`** — 1.5 gap at entry AND top:
+| Mode | β | Gap |
+|------|---|-----|
+| `identify` | 1.0 | — |
+| `place` | 2.5 | **1.5** ❌ |
+| `describe` | 3.5 | 1.0 ✅ |
+| `follow_directions` | 5.0 | **1.5** ❌ |
+
+**`number-tracer`** — 1.5 gap in middle AND top:
+| Mode | β | Gap |
+|------|---|-----|
+| `trace` | 1.0 | — |
+| `copy` | 2.0 | 1.0 ✅ |
+| `write` | 3.5 | **1.5** ❌ |
+| `sequence` | 5.0 | **1.5** ❌ |
+
+#### Tier C: Bug — `coin-counter` ordering
+
+The catalog lists `make-amount` (β 3.5) before `compare` (β 3.0). The IRT engine reads these in order — **the beta values are non-monotonic**. This needs a catalog reorder, not just new modes.
+
+Correct sorted order: `identify` 1.0 → `count-like` 1.5 → `count-mixed` 2.5 → `compare` 3.0 → `make-amount` 3.5 → `make-change` 4.5 → `fewest-coins` 5.0
+
+#### Tier D: Well-structured (no changes needed)
+
+| Primitive | Modes | Max gap | Notes |
+|-----------|-------|---------|-------|
+| `time-sequencer` | 6 | 1.0 | Best progression in the catalog |
+| `coin-counter` | 7 | 1.0 | Good after reorder fix |
+| `counting-board` | 5 | 1.0 | Uses sub-1.0 steps at bottom |
+| `function-machine` | 4 | 1.0 | Tight 2.5→3.0→3.5→4.5 |
+| `sorting-station` | 6 | 1.0 | Good model to follow |
+
+### 4.2 Densification Plan — Concrete Mode Insertions
+
+**Target: ≤1.0 β between adjacent modes.** Each insertion below specifies the mode name, beta, scaffolding level, challenge type(s), and the pedagogical rationale.
+
+#### HIGH priority (K-2 critical path)
+
+**`regrouping-workbench`** — insert 2 modes:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `add_no_regroup` | 1.5 | 1 | existing | — |
+| `subtract_no_regroup` | 2.5 | 2 | existing | — |
+| `add_regroup` | 3.5 | 2 | existing | — |
+| **`add_regroup_3digit`** | **4.0** | **3** | `['add_regroup']` | 3-digit addition with regrouping — bridges 2-digit mastery to subtraction regrouping |
+| **`subtract_regroup_guided`** | **4.5** | **3** | `['subtract_regroup']` | Subtraction with visual trade animation shown first, student confirms the exchange |
+| `subtract_regroup` | 5.0 | 3 | existing | — |
+
+**`multiplication-explorer`** — insert 3 modes:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `commutative` | 3.5 | 2 | existing | — |
+| **`distributive_visual`** | **4.0** | **3** | `['distributive']` | Break apart with array model shown — visual scaffolding before abstract |
+| `distributive` | 5.0 | 3 | existing | — |
+| **`missing_factor_small`** | **5.5** | **3** | `['missing_factor']` | Missing factor with single-digit factors only (≤10×10) |
+| `missing_factor` | 6.5 | 4 | existing | — |
+| **`fluency_small`** | **7.0** | **4** | `['fluency']` | Timed facts within 5×5 before full 10×10 |
+| `fluency` | 8.0 | 4 | existing | — |
+
+**`base-ten-blocks`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `regroup` | 3.5 | 2 | existing | — |
+| **`operate_single_op`** | **4.0** | **3** | `['add_with_blocks']` | Addition only with blocks — before mixed add/subtract |
+| `operate` | 5.0 | 3 | existing | — |
+
+**`ten-frame`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `make_ten` | 3.5 | 2 | existing | — |
+| **`add_within_ten`** | **4.0** | **3** | `['operate']` | Addition only within 10 — bridges make-ten concept to mixed operations |
+| `operate` | 5.0 | 3 | existing | — |
+
+**`analog-clock`** — insert 2 modes:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `read` | 1.5 | 1 | existing | — |
+| **`read_half_hour`** | **2.0** | **1** | `['read']` | Read time to the half-hour — semantic differentiation via post-filter |
+| `set_time` | 3.0 | 2 | existing | — |
+| `match` | 3.5 | 2 | existing | — |
+| **`elapsed_hour`** | **4.0** | **3** | `['elapsed']` | Elapsed time in whole hours only — before arbitrary elapsed |
+| `elapsed` | 5.0 | 3 | existing | — |
+
+**`comparison-builder`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `compare_numbers` | 3.5 | 2 | existing | — |
+| **`order_3`** | **4.0** | **3** | `['order']` | Order 3 numbers — before ordering 4-5 numbers |
+| `order` | 5.0 | 3 | existing | — |
+
+**`number-bond`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `fact_family` | 3.5 | 2 | existing | — |
+| **`build_equation_guided`** | **4.0** | **3** | `['build_equation']` | Equation building with number bond visual still shown |
+| `build_equation` | 5.0 | 3 | existing | — |
+
+**`addition-subtraction-scene`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `solve_story` | 3.5 | 2 | existing | — |
+| **`create_story_guided`** | **4.0** | **3** | `['create_story']` | Create story from given equation — vs create_story which is fully open |
+| `create_story` | 5.0 | 3 | existing | — |
+
+#### MEDIUM priority (G2-3 path)
+
+**`fraction-circles`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `compare` | 3.5 | 2 | existing | — |
+| **`equivalent_visual`** | **4.0** | **3** | `['equivalent']` | Equivalent fractions with visual overlay showing equal parts |
+| `equivalent` | 5.0 | 3 | existing | — |
+
+**`fraction-bar`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `compare` | 3.5 | 2 | existing | — |
+| **`add_like_denom`** | **4.0** | **3** | `['add_subtract']` | Add/subtract with same denominator only — before mixed |
+| `add_subtract` | 5.0 | 3 | existing | — |
+
+**`number-line`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `order` | 3.5 | 2 | existing | — |
+| **`between_whole`** | **4.0** | **3** | `['find_between']` | Find number between two whole numbers — before fractions/decimals |
+| `between` | 5.0 | 3 | existing | — |
+
+**`tape-diagram`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `solve_comparison` | 3.5 | 3 | existing | — |
+| **`multi_step_guided`** | **4.0** | **3** | `['multi_step']` | 2-step problems with diagram partially pre-built |
+| `multi_step` | 5.0 | 4 | existing | — |
+
+**`area-model`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `multiply` | 3.5 | 2 | existing | — |
+| **`factor_guided`** | **4.0** | **3** | `['factor']` | Given area, find ONE missing dimension (other given) |
+| `factor` | 5.0 | 3 | existing | — |
+
+**`place-value-chart`** — insert 1 mode:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `compare` | 3.5 | 3 | existing | — |
+| **`expanded_form_3digit`** | **4.0** | **3** | `['expanded_form']` | Expanded form for 3-digit only — before 4+ digit |
+| `expanded_form` | 5.0 | 4 | existing | — |
+
+**`measurement-tools`** — insert 2 modes:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `measure` | 1.5 | 1 | existing | — |
+| **`estimate`** | **2.0** | **1** | `['compare']` | Estimate before measuring — builds intuition |
+| `compare` | 3.0 | 2 | existing | — |
+| **`convert_same_system`** | **4.0** | **3** | `['convert']` | Convert within same system (inches→feet) before cross-system |
+| `convert` | 5.0 | 3 | existing | — |
+
+**`spatial-scene`** — insert 2 modes:
+| Mode | β | Scaffold | Types | Rationale |
+|------|---|----------|-------|-----------|
+| `identify` | 1.0 | 1 | existing | — |
+| **`identify_left_right`** | **1.5** | **1** | `['identify']` | Left/right only — hardest positional words for K |
+| `place` | 2.5 | 2 | existing | — |
+| `describe` | 3.5 | 2 | existing | — |
+| **`follow_2step`** | **4.0** | **3** | `['follow_directions']` | Follow 2-step directions — before multi-step |
+| `follow_directions` | 5.0 | 3 | existing | — |
+
+#### LOW priority (defer if needed)
+
+| Primitive | Insert | β | Rationale |
+|-----------|--------|---|-----------|
+| `pattern-builder` | `create_guided` | 4.0 | Create pattern from given rule — before open create |
+| `shape-tracer` | `complete_guided` | 4.0 | Complete shape with dots shown — before freeform |
+| `number-tracer` | `write_guided` | 2.5 | Write with dotted guide — between copy and freehand |
+| `number-tracer` | `sequence_short` | 4.0 | Write sequence of 3 numbers — before longer sequences |
+| `skip-counting-runner` | `find_skip_value_small` | 4.0 | Find skip value for 2s, 5s, 10s only |
+
+### 4.3 Summary
+
+| Priority | Primitives | New modes | Gaps closed |
+|----------|-----------|-----------|-------------|
+| High | 8 | +12 | All K-2 critical path 1.5 gaps |
+| Medium | 8 | +10 | All G2-3 path 1.5 gaps |
+| Low | 4 | +5 | Remaining comfort gaps |
+| **Total** | **17** | **+27** | **Every 1.5+ gap in K-3 math** |
+
+Plus 1 bug fix: `coin-counter` eval mode reorder.
 
 ---
 
 ## 5. Execution Plan
 
-### Week 1: Close K-1 Gaps + Start G2 Authoring
+### Week 1: Close K-1 Gaps + Fix Foundation
 
 | Day | Task | Deliverable |
 |-----|------|-------------|
-| Mon | Build `CoinCounter` primitive | Component, generator, catalog, eval modes |
-| Tue | Build `TimeSequencer` primitive | Component, generator, catalog, eval modes |
-| Wed | Build `SpatialScene` (from existing PRD) | Component, generator, catalog, eval modes |
-| Thu | Build `CompareObjects` (from existing PRD) | Component, generator, catalog, eval modes |
-| Fri | `/eval-test` all 4 new primitives | Fix any generation/eval issues |
+| Mon | Fix `coin-counter` eval mode ordering bug | Catalog reorder, backend registry sync |
+| Mon | Build `CompareObjects` (from existing PRD) | Component, generator, catalog, eval modes |
+| Tue | Build `EquationBuilder` primitive | Component, generator, catalog, eval modes |
+| Wed | HIGH densification batch 1: `regrouping-workbench` (+2), `ten-frame` (+1), `base-ten-blocks` (+1) | 4 new eval modes — catalog + backend registry + generators |
+| Thu | HIGH densification batch 2: `analog-clock` (+2), `comparison-builder` (+1), `number-bond` (+1), `addition-subtraction-scene` (+1) | 5 new eval modes |
+| Fri | HIGH densification batch 3: `multiplication-explorer` (+3) | 3 new eval modes — most complex, needs orchestrator changes |
+| Fri | `/eval-test` all new eval modes | Fix any generation/eval issues |
 
-### Week 2: G2-3 Curriculum Authoring
+**Week 1 output:** +12 HIGH priority eval modes, 1 bug fix, 2 new primitives. Every K-2 critical path gap ≤1.0 β.
+
+### Week 2: G2-3 Content + Medium Densification
 
 | Day | Task | Deliverable |
 |-----|------|-------------|
-| Mon | Author G2 Unit 1-2 (place value, add/sub) | ~40 subskills with primitive mappings |
-| Tue | Author G2 Unit 3-5 (mult foundations, measurement, geometry) | ~30 subskills |
+| Mon | Author G2 Unit 1-2 (place value, add/sub) | ~40 subskills |
+| Tue | Author G2 Unit 3-5 (mult, measurement, geometry) | ~30 subskills |
+| Tue | MEDIUM densification batch 1: `fraction-circles` (+1), `fraction-bar` (+1), `number-line` (+1), `place-value-chart` (+1) | 4 new eval modes |
 | Wed | Author G3 Unit 1-2 (multiplication/division, NBT) | ~35 subskills |
 | Thu | Author G3 Unit 3-5 (fractions, measurement, geometry) | ~35 subskills |
-| Fri | Build `EquationBuilder` primitive | Component, generator, catalog, eval modes |
+| Thu | MEDIUM densification batch 2: `tape-diagram` (+1), `area-model` (+1), `measurement-tools` (+2), `spatial-scene` (+2) | 6 new eval modes |
+| Fri | `/eval-test` all MEDIUM eval modes | Fix any generation/eval issues |
 
-### Week 3: Densification + Integration Testing
+**Week 2 output:** +10 MEDIUM eval modes, ~140 subskills authored across G2-3. Every G2-3 path gap ≤1.0 β.
+
+### Week 3: Integration Testing + Polish
 
 | Day | Task | Deliverable |
 |-----|------|-------------|
-| Mon-Tue | Add intermediate eval modes to 7 primitives | ~12 new eval modes |
-| Wed | Wire all G2-3 subskills to primitive eval modes | Curriculum ↔ primitive mapping complete |
-| Thu | `/pulse-agent` run: simulate K→G3 student journeys | Identify dead ends, difficulty cliffs |
-| Fri | Fix issues from pulse run | Smooth K→G3 progression |
+| Mon | LOW densification: remaining 5 modes across 4 primitives | 5 eval modes (if time permits) |
+| Tue | `/pulse-agent` run: simulate K→G1 student journey | Identify dead ends, difficulty cliffs |
+| Wed | `/pulse-agent` run: simulate G1→G3 student journey | Verify G2-3 curriculum connectivity |
+| Thu | Fix issues from pulse runs | Smooth K→G3 progression |
+| Fri | Final β audit: scan every primitive, verify ≤1.0 gap rule | Publish audit report |
+
+**Week 3 output:** +5 LOW eval modes, validated K→G3 journey, audit report confirming ≤1.0 β invariant.
 
 ---
 
@@ -478,7 +704,7 @@ For each primitive used in K-3, ensure eval modes form a ladder where adjacent m
 |------|----------|---------------|
 | **Completeness** | Every Common Core K-3 math standard has ≥1 primitive + eval mode | Audit against CCSS checklist |
 | **Progression** | A student can advance K→G3 without hitting a content wall | `/pulse-agent` completes K→G3 journey |
-| **Granularity** | Adjacent eval modes differ by ≤1.0 β | Scan all eval mode β values |
+| **Granularity** | Adjacent eval modes differ by ≤1.0 β across all 17 K-3 math primitives | Automated β audit script (Week 3 deliverable) |
 | **Diversity** | Daily sessions include ≥3 different primitives | Check daily planner output |
 | **Fluency** | Timed practice available for +/- within 20 and × within 100 | `MathFactFluency` covers both |
 | **Real-world** | Money + time primitives present | `CoinCounter` + `TimeSequencer` exist |
@@ -504,6 +730,6 @@ For each primitive used in K-3, ensure eval modes form a ladder where adjacent m
 
 3. **Grade 2-3 curriculum authoring approach:** Use `/curriculum-author` with Gemini to generate subskill trees from the skeletons above, or hand-author? Recommendation: Gemini-generate from the skeleton, then human-review for correctness and primitive mapping accuracy.
 
-4. **Eval mode densification scope:** Adding 12+ eval modes across 7 primitives is significant. Should we prioritize only the K-2 path (where students will be first) and defer G3 densification?
+4. **Eval mode densification scope:** Adding 27 eval modes across 17 primitives is significant but phased: 12 HIGH (Week 1, K-2 critical path), 10 MEDIUM (Week 2, G2-3), 5 LOW (Week 3, comfort). The HIGH batch alone makes K-2 shippable. MEDIUM and LOW can slip if needed.
 
 5. **EquationBuilder vs extending AdditionSubtractionScene:** Could we add a "symbolic" mode to AdditionSubtractionScene instead of building a new primitive? The interaction model is different enough (tile-dragging vs story acting) that a separate primitive is cleaner, but this is a judgment call.

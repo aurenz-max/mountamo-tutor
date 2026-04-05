@@ -26,6 +26,7 @@ import './engineeringGenerators';
 import './mediaGenerators';
 import './foundationGenerators';
 import './biologyGenerators';
+import './chemistryGenerators';
 import './astronomyGenerators';
 import './physicsGenerators';
 import './literacyGenerators';

@@ -103,7 +103,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'between',
         label: 'Between (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['find_between'],
         description: 'Estimate and find values between marks.',
@@ -174,7 +174,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'operate',
         label: 'Operate (Transitional)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['add_with_blocks', 'subtract_with_blocks'],
         description: 'Operations: student adds or subtracts using blocks with regrouping/borrowing.',
@@ -241,7 +241,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'equivalent',
         label: 'Equivalent (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['equivalent'],
         description: 'Find equivalent fractions with different denominators.',
@@ -306,7 +306,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'add_subtract',
         label: 'Fraction Operations (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['add_subtract'],
         description: 'Fractions in addition/subtraction context.',
@@ -321,7 +321,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       { evalMode: 'identify', label: 'Identify Place (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['identify'], description: 'Simple 2-digit numbers, identify place name and value.' },
       { evalMode: 'build', label: 'Build Number (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['build'], description: '3-digit numbers, construct the number in the chart.' },
       { evalMode: 'compare', label: 'Compare Places (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['compare'], description: '3-4 digit numbers with multiple non-zero digits.' },
-      { evalMode: 'expanded_form', label: 'Expanded Form (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['expanded_form'], description: '4+ digit numbers or decimals with expanded form.' },
+      { evalMode: 'expanded_form', label: 'Expanded Form (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['expanded_form'], description: '4+ digit numbers or decimals with expanded form.' },
     ],
     tutoring: {
       taskDescription: 'Three-phase place value learning: identify the place of the highlighted digit in {{targetNumber}}, find its value, then build the number on the chart. Phase: {{currentPhase}}.',
@@ -418,7 +418,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'factor',
         label: 'Factor (Transitional)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['factor'],
         description: 'Reverse operation: partial products shown in grid, student discovers the factor decomposition (dimension labels). Grades 5-6.',
@@ -506,7 +506,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'unit_rate',
         label: 'Discover Unit Rate (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['unit_rate'],
         description: 'Given a non-unit pair, discover the unit rate through division.',
@@ -554,7 +554,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       { evalMode: 'represent', label: 'Represent (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['represent'], description: 'Build tape diagram from word problem, identify parts.' },
       { evalMode: 'solve_part_whole', label: 'Part-Whole (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['solve_part_whole'], description: 'Standard part-whole: given parts find total, or vice versa.' },
       { evalMode: 'solve_comparison', label: 'Comparison (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['solve_comparison'], description: 'Comparison problems with different quantity bars.' },
-      { evalMode: 'multi_step', label: 'Multi-Step (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['multi_step'], description: 'Multi-step problems requiring multiple operations.' },
+      { evalMode: 'multi_step', label: 'Multi-Step (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['multi_step'], description: 'Multi-step problems requiring multiple operations.' },
     ],
     tutoring: {
       taskDescription: 'Solve a part-whole word problem using a tape diagram. Phase: {{currentPhase}}. Total segments: {{totalSegments}}. Unknown segments: {{unknownCount}}.',
@@ -638,6 +638,22 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Medium composites (20-60) without hints. Student must find factor pairs independently.',
       },
       {
+        evalMode: 'unguided_large',
+        label: 'Unguided Large (Tier 4)',
+        beta: 4.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['unguided_large'],
+        description: 'Larger composites (40-80) without hints, reset allowed. More factors to decompose.',
+      },
+      {
+        evalMode: 'assessment_intro',
+        label: 'Assessment Intro (Tier 4+)',
+        beta: 5.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['assessment_intro'],
+        description: 'Medium-large composites (40-80), no hints, no reset. Practice no-retry format.',
+      },
+      {
         evalMode: 'assessment',
         label: 'Assessment (Tier 5)',
         beta: 6.5,
@@ -703,7 +719,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'find_multiplier',
         label: 'Find Multiplier (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['find-multiplier'],
         description: 'Discover the scale factor between ratios.',
@@ -711,7 +727,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'unit_rate',
         label: 'Unit Rate (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['unit-rate'],
         description: 'Reduce to unit rate and apply.',
@@ -742,7 +758,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'find_whole',
         label: 'Find Whole / Tax (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['addition'],
         description: 'Calculate total after adding a percentage (tax, tip, markup).',
@@ -750,7 +766,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'convert',
         label: 'Compare Percentages (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['comparison'],
         description: 'Compare percentages across different contexts.',
@@ -828,12 +844,36 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Understand balance = equal; missing addend problems.',
       },
       {
+        evalMode: 'equality_hard',
+        label: 'Equality Hard (Pictorial)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['equality_hard'],
+        description: 'Subtraction missing-addend and larger sums (10-20), still □ notation.',
+      },
+      {
         evalMode: 'one_step',
         label: 'One-Step (Pictorial–)',
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['one_step'],
         description: 'Solve single-operation equations with x.',
+      },
+      {
+        evalMode: 'one_step_hard',
+        label: 'One-Step Hard (Transitional)',
+        beta: 4.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['one_step_hard'],
+        description: 'One-step equations with multiply/divide (3x=12, x÷2=5).',
+      },
+      {
+        evalMode: 'two_step_intro',
+        label: 'Two-Step Intro (Transitional)',
+        beta: 5.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['two_step_intro'],
+        description: 'Simple two-step equations, small positive coefficients only (2x+1=7).',
       },
       {
         evalMode: 'two_step',
@@ -1049,7 +1089,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'multiply',
         label: 'Multiply (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['multiply'],
         description: 'Row-by-column matrix multiplication.',
@@ -1057,7 +1097,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'determinant_inverse',
         label: 'Determinant/Inverse (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['determinant', 'inverse'],
         description: 'Calculate determinant or find inverse of square matrices.',
@@ -1227,7 +1267,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'operate',
         label: 'Operate (Symbolic)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['add', 'subtract'],
         description: 'Addition and subtraction using the frame. Transitional symbolic — bridging concrete and abstract.',
@@ -1377,7 +1417,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'order',
         label: 'Order (Scaffold 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['order'],
         description: 'Order multiple values',
@@ -1443,7 +1483,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'create',
         label: 'Create (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['create'],
         description: 'Generate a pattern from a rule.',
@@ -1451,7 +1491,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'find_rule',
         label: 'Find Rule (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['find_rule'],
         description: 'Discover the underlying rule.',
@@ -1490,7 +1530,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'find_skip_value',
         label: 'Find Skip Value (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['find_skip_value'],
         description: 'Discover the skip interval from a displayed sequence.',
@@ -1498,7 +1538,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'connect_multiplication',
         label: 'Connect Multiplication (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['connect_multiplication'],
         description: 'Link skip counting to multiplication facts.',
@@ -1563,7 +1603,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'find_skip_value',
         label: 'Find Skip Value (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['find_skip_value'],
         description: 'Determine the skip interval from highlighted cells.',
@@ -1629,7 +1669,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'subtract_regroup',
         label: 'Subtract With Regrouping (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['subtract_regroup'],
         description: 'Subtraction problems that require borrowing.',
@@ -1694,7 +1734,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'distributive',
         label: 'Distributive (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['distributive'],
         description: 'Break apart harder facts using the distributive property.',
@@ -1702,7 +1742,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'missing_factor',
         label: 'Missing Factor (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['missing_factor'],
         description: 'Solve for an unknown factor given the product.',
@@ -1710,7 +1750,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'fluency',
         label: 'Fluency (Tier 6)',
-        beta: 8.0,
+        beta: 6.5,
         scaffoldingMode: 6,
         challengeTypes: ['fluency'],
         description: 'Rapid fact recall under time pressure.',
@@ -1792,16 +1832,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'compare',
         label: 'Compare (Tier 2)',
-        beta: 3.0,
+        beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['compare'],
         description: 'Measure and compare objects.',
       },
       {
-        evalMode: 'convert',
-        label: 'Convert (Tier 3)',
-        beta: 5.0,
+        evalMode: 'estimate',
+        label: 'Estimate (Tier 3)',
+        beta: 3.5,
         scaffoldingMode: 3,
+        challengeTypes: ['estimate'],
+        description: 'Measure with half-inch precision, reading between marks.',
+      },
+      {
+        evalMode: 'convert',
+        label: 'Convert (Tier 4)',
+        beta: 4.5,
+        scaffoldingMode: 4,
         challengeTypes: ['convert'],
         description: 'Measure and convert between units.',
       },
@@ -1839,7 +1887,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'compose',
         label: 'Compose (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['compose'],
         description: 'Combine shapes using pattern blocks.',
@@ -1847,7 +1895,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'find_symmetry',
         label: 'Find Symmetry (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['find_symmetry'],
         description: 'Analyze and draw lines of symmetry.',
@@ -1855,7 +1903,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'coordinate_shape',
         label: 'Coordinate Shape (Tier 6)',
-        beta: 8.0,
+        beta: 6.5,
         scaffoldingMode: 6,
         challengeTypes: ['coordinate_shape'],
         description: 'Build shapes by plotting vertices on a coordinate plane.',
@@ -1930,7 +1978,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'fill_missing',
         label: 'Fill Missing (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['fill-missing'],
         description: 'Complete gaps in a number sequence pattern.',
@@ -1938,7 +1986,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'decade_fill',
         label: 'Decade Fill (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['decade-fill'],
         description: 'Fill missing numbers across decade boundaries.',
@@ -2009,7 +2057,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'build_equation',
         label: 'Build Equation (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['build-equation'],
         description: 'Write symbolic equation.',
@@ -2063,7 +2111,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'create_story',
         label: 'Create Story (Scaffold 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['create-story'],
         description: 'Write story for given equation',
@@ -2118,7 +2166,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'sequence_story',
         label: 'Sequence Story (Scaffold 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['sequence-story'],
         description: 'Apply ordinals in context',
@@ -2126,7 +2174,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'build_sequence',
         label: 'Build Sequence (Scaffold 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['build-sequence'],
         description: 'Construct ordering from scratch',
@@ -2300,7 +2348,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'faces_properties',
         label: 'Faces & Properties (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['faces-and-properties'],
         description: 'Analyze faces, edges, vertices, and movement properties.',
@@ -2308,7 +2356,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'shape_riddle',
         label: 'Shape Riddle (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['shape-riddle'],
         description: 'Deductive identification from property clues.',
@@ -2362,7 +2410,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'draw_from_description',
         label: 'Draw from Description (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['draw-from-description'],
         description: 'Construct a shape from verbal property cues.',
@@ -2402,7 +2450,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'missing_number',
         label: 'Missing Number (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['missing-number'],
         description: 'Find the unknown operand in an equation.',
@@ -2410,7 +2458,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'speed_round',
         label: 'Speed Round (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['speed-round'],
         description: 'Timed fluency assessment — rapid recall without aids.',
@@ -2480,7 +2528,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'compare',
         label: 'Compare (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['compare'],
         description: 'Evaluate and reflect on multiple strategies.',
@@ -2488,7 +2536,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'choose',
         label: 'Choose Your Strategy (Tier 5)',
-        beta: 6.5,
+        beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['choose-your-strategy'],
         description: 'Autonomous strategy selection for a new problem.',
@@ -2534,7 +2582,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'write',
         label: 'Write (Tier 3)',
-        beta: 3.5,
+        beta: 3.0,
         scaffoldingMode: 3,
         challengeTypes: ['write'],
         description: 'Write digit from text/audio prompt only.',
@@ -2542,7 +2590,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'sequence',
         label: 'Sequence (Tier 4)',
-        beta: 5.0,
+        beta: 4.0,
         scaffoldingMode: 4,
         challengeTypes: ['sequence'],
         description: 'Write missing number in counting sequence.',
@@ -2581,7 +2629,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'indirect',
         label: 'Indirect (Tier 4)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['indirect'],
         description: 'Compare two objects transitively using a reference object.',
@@ -2624,7 +2672,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'set_time',
         label: 'Set Time (Tier 2)',
-        beta: 3.0,
+        beta: 2.5,
         scaffoldingMode: 3,
         challengeTypes: ['set_time'],
         description: 'Drag clock hands to show a given time',
@@ -2640,7 +2688,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'elapsed',
         label: 'Elapsed Time (Tier 3)',
-        beta: 5.0,
+        beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['elapsed'],
         description: 'Determine elapsed time using real-time stopwatch',
@@ -2740,20 +2788,20 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Count mixed coin sets (2 dimes + 3 pennies = 23¢)',
       },
       {
-        evalMode: 'make-amount',
-        label: 'Make Amount (Scaffold 2)',
-        beta: 3.5,
-        scaffoldingMode: 2,
-        challengeTypes: ['make-amount'],
-        description: 'Drag coins to build a target amount',
-      },
-      {
         evalMode: 'compare',
         label: 'Compare (Scaffold 2)',
         beta: 3.0,
         scaffoldingMode: 2,
         challengeTypes: ['compare'],
         description: 'Which coin group has more money?',
+      },
+      {
+        evalMode: 'make-amount',
+        label: 'Make Amount (Scaffold 2)',
+        beta: 3.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['make-amount'],
+        description: 'Drag coins to build a target amount',
       },
       {
         evalMode: 'make-change',
@@ -2874,7 +2922,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'place',
         label: 'Place (Scaffold 2)',
-        beta: 2.5,
+        beta: 2.0,
         scaffoldingMode: 2,
         challengeTypes: ['place'],
         description: 'Place object at described position: Put the ball above the box',
@@ -2882,7 +2930,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'describe',
         label: 'Describe (Scaffold 3)',
-        beta: 3.5,
+        beta: 3.0,
         scaffoldingMode: 3,
         challengeTypes: ['describe'],
         description: 'Select the position word for a shown arrangement',
@@ -2890,7 +2938,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       {
         evalMode: 'follow_directions',
         label: 'Follow Directions (Scaffold 4)',
-        beta: 5.0,
+        beta: 4.0,
         scaffoldingMode: 4,
         challengeTypes: ['follow_directions'],
         description: 'Multi-step spatial placement',

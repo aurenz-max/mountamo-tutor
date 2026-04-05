@@ -19,6 +19,7 @@ import { CORE_CATALOG } from './core';
 import { MATH_CATALOG } from './math';
 import { ENGINEERING_CATALOG } from './engineering';
 import { SCIENCE_CATALOG } from './science';
+import { CHEMISTRY_CATALOG } from './chemistry';
 import { BIOLOGY_CATALOG } from './biology';
 import { ASTRONOMY_CATALOG } from './astronomy';
 import { PHYSICS_CATALOG } from './physics';
@@ -36,6 +37,7 @@ export {
   MATH_CATALOG,
   ENGINEERING_CATALOG,
   SCIENCE_CATALOG,
+  CHEMISTRY_CATALOG,
   BIOLOGY_CATALOG,
   ASTRONOMY_CATALOG,
   PHYSICS_CATALOG,
@@ -60,6 +62,7 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
   ...MATH_CATALOG,
   ...ENGINEERING_CATALOG,
   ...SCIENCE_CATALOG,
+  ...CHEMISTRY_CATALOG,
   ...BIOLOGY_CATALOG,
   ...ASTRONOMY_CATALOG,
   ...PHYSICS_CATALOG,
@@ -83,6 +86,7 @@ export const CATALOGS_BY_DOMAIN: Record<string, ComponentDefinition[]> = {
   math: MATH_CATALOG,
   engineering: ENGINEERING_CATALOG,
   science: SCIENCE_CATALOG,
+  chemistry: CHEMISTRY_CATALOG,
   biology: BIOLOGY_CATALOG,
   astronomy: ASTRONOMY_CATALOG,
   physics: PHYSICS_CATALOG,

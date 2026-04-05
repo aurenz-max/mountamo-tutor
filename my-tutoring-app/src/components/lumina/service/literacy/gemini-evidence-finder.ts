@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { EvidenceFinderData } from "../../primitives/visual-primitives/literacy/EvidenceFinder";
+import { logEvalModeResolution } from '../evalMode';
 
 /**
  * Schema definition for Evidence Finder Data
@@ -111,8 +112,10 @@ const evidenceFinderSchema: Schema = {
 export const generateEvidenceFinder = async (
   topic: string,
   gradeLevel: string = '3',
-  config?: Partial<EvidenceFinderData>
+  config?: Partial<EvidenceFinderData> & { targetEvalMode?: string }
 ): Promise<EvidenceFinderData> => {
+
+  logEvalModeResolution('EvidenceFinder', config?.targetEvalMode, null);
 
   const gradeContext: Record<string, string> = {
     '2': `

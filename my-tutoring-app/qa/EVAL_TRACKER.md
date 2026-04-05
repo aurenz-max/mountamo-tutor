@@ -72,9 +72,14 @@
 | time-sequencer | 6 | 6 | 0 | 2026-04-04 | [report](eval-reports/time-sequencer-2026-04-04.md) |
 
 | spatial-scene | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/spatial-scene-2026-04-04.md) |
-| planetary-explorer | 4 | 3 | 1 | 2026-04-04 | [report](eval-reports/planetary-explorer-2026-04-04.md) |
+| planetary-explorer | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/planetary-explorer-2026-04-04.md) |
+| construction-sequence-planner | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/construction-sequence-planner-2026-04-05.md) |
+| read-aloud-studio | 0 | 0 | 0 | 2026-04-05 | [report](eval-reports/read-aloud-studio-2026-04-05.md) |
+| context-clues-detective | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/context-clues-detective-2026-04-05.md) |
+| figurative-language-finder | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/figurative-language-finder-2026-04-05.md) |
+| word-sorter | 3 | 3 | 0 | 2026-04-05 | [report](eval-reports/word-sorter-2026-04-05.md) |
 
-**Totals:** 245/253 modes passing (96.8%) | 20 open issues (7 CRITICAL, 13 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 261/268 modes passing (97.4%) | 15 open issues (1 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -137,7 +142,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-8: LLM cannot reliably compute character offsets in generated text
 
-**Affected:** poetry-lab (analysis — figurativeInstances), ~~text-structure-analyzer (all modes — signalWords)~~
+**Affected:** poetry-lab (analysis — figurativeInstances), ~~figurative-language-finder (all modes — instances)~~, ~~text-structure-analyzer (all modes — signalWords)~~
 **Risk:** Any literacy primitive that asks Gemini for startIndex/endIndex character positions within generated passages.
 **Root cause:** LLMs hallucinate plausible-looking character offset numbers. They cannot reliably count characters, especially in multi-line text.
 **Fix pattern:** Post-process: use `passage.indexOf(word)` to recompute indices from the `word`/`text` field. Never trust LLM-generated character offsets.
@@ -165,22 +170,22 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-13: Primitive has `supportsEvaluation: true` but no `evalModes` — adaptive session deadlocks
 
-**Affected:** media-player (MP-3), gear-train-builder (GT-1)
+**Affected:** media-player (MP-3), gear-train-builder (GT-1), read-aloud-studio (RA-1)
 **Risk:** Any primitive with `supportsEvaluation: true` but missing `evalModes` array. The adaptive session can select the primitive, but the manifest pipeline can't generate content. If `prefetch()` returns 0 items, `waitingForDelivery` is never cleared — permanent deadlock on "Preparing next challenge..."
 **Root cause:** Catalog entries were created with `supportsEvaluation: true` as a placeholder before eval modes were authored. No validation checks that `supportsEvaluation` implies a non-empty `evalModes` array.
 **Fix pattern:** Two layers: (1) Add `evalModes` to all affected catalog entries. (2) Session engine must handle empty prefetch defensively — clear `waitingForDelivery` and surface an error instead of deadlocking.
 
 ### SP-14: Gemini Flash Lite silently drops nullable flat-indexed fields — generator produces structurally broken challenges
 
-**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04), spatial-scene (identify, describe, place — SS-1)
+**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04), spatial-scene (identify, describe, place — SS-1), word-sorter (all modes — WS-1)
 **Risk:** Any primitive using the flattened-index pattern (e.g., `coin0Type`, `displayedCoin0Type`, `groupACoin0Type`, `option0..option3`) with nullable fields. Gemini Flash Lite frequently omits entire groups of these fields, producing challenges with missing visual data (no coins to count, no groups to compare). The generator's `collectCoinDefs`/`collectStrings` reconstruction returns empty arrays, and the challenge is accepted with wrong fallback values.
 **Root cause:** Flat-indexed fields are all `nullable: true` in the schema so Gemini can skip them without schema violation. Flash Lite takes the path of least resistance and omits fields it considers optional, especially when the prompt describes multiple challenge types. The generator's post-reconstruction validation was too permissive — it accepted challenges missing critical fields.
 **Fix pattern:** After flat→structured reconstruction, validate each challenge has all REQUIRED fields for its type. Reject (return null + filter) any challenge missing critical visual/interaction data. Never silently fall back to wrong values. For identify-type challenges, derive missing options from the answer field + grade-appropriate pool. Log all rejections for debugging.
-**Status:** Structurally eliminated for coin-counter via orchestrator refactor (per-type sub-generators with required fields). Open for spatial-scene.
+**Status:** Structurally eliminated for coin-counter and word-sorter via orchestrator refactor (per-type sub-generators with required fields). Open for spatial-scene.
 
 ### SP-15: Eval modes sharing the same challengeType have no semantic differentiation in generator
 
-**Affected:** coin-counter (count-like vs count-mixed — fixed 2026-04-04), planetary-explorer (identify vs explore — per-planet questions identical, PE-1)
+**Affected:** coin-counter (count-like vs count-mixed — fixed 2026-04-04), planetary-explorer (identify vs explore — fixed 2026-04-05 via post-journey quiz phase)
 **Risk:** Any primitive where two eval modes map to the same `challengeType` but with different pedagogical intent (e.g., "single coin type" vs "mixed coins", "simple" vs "complex"). The generator passes the challengeType constraint but has no mechanism to enforce the semantic difference between modes.
 **Root cause:** `resolveEvalModeConstraint` only constrains the `type` field value. It doesn't pass additional constraints (like "only one coin type") to the generator or post-process.
 **Fix pattern:** Generator must check `config?.targetEvalMode` (not just challengeType) and apply mode-specific post-filters. For coin-counter count-like: filter to challenges with exactly 1 unique coin type in displayedCoins.
@@ -226,7 +231,10 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | GT-1 | gear-train-builder | — | CRITICAL | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — adaptive session selects primitive but can't generate content | CATALOG |
 | GT-2 | gear-train-builder | — | CRITICAL | Session deadlock | When prefetch() returns 0 items (malformed 65K+ JSON from generator), `waitingForDelivery` never clears — permanent deadlock on "Preparing next challenge..." | SESSION ENGINE |
 | GT-3 | gear-train-builder | — | HIGH | Generator prompt | ~275-line prompt increases malformed JSON risk from Gemini; should be trimmed to essential constraints | GENERATOR |
-| PE-1 | planetary-explorer | identify | CRITICAL | Trivial challenge | Questions always about the current planet — student sees planet name in header, trivially picks it. Identify mode tests nothing beyond explore. Needs post-journey quiz phase or cross-planet questions with hidden headers. | GENERATOR + COMPONENT |
+| RA-1 | read-aloud-studio | — | HIGH | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — can't participate in eval-test or adaptive sessions (SP-13) | CATALOG |
+| ~~FL-1~~ | ~~figurative-language-finder~~ | ~~all modes~~ | ~~CRITICAL~~ | ~~Wrong indices~~ | ~~`startIndex`/`endIndex` 100% wrong — fixed: removed offsets from schema (LLM can't compute them), added `recomputeOffsets()` post-process deriving via `passage.indexOf()` (SP-8)~~ | ~~GENERATOR~~ |
+| ~~WS-1~~ | ~~word-sorter~~ | ~~all modes~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Flat→nested reconstruction produces empty `words[]`/`pairs[]` — Gemini skips flat fields (SP-14). Fixed: orchestrator refactor with 3 per-mode sub-generators, focused schemas, post-reconstruction validation.~~ | ~~GENERATOR~~ |
+| ~~PE-1~~ | ~~planetary-explorer~~ | ~~identify~~ | ~~CRITICAL~~ | ~~Trivial challenge~~ | ~~Questions always about the current planet — student sees planet name in header, trivially picks it. Fixed: post-journey quiz phase with cross-planet identification questions, planet names hidden during quiz.~~ | ~~GENERATOR + COMPONENT~~ |
 | ~~SS-1~~ | ~~spatial-scene~~ | ~~identify, describe~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Nullable sceneObj fields (SP-14) — Gemini skips them, grid empty, reference object invisible. Fixed: removed nullable, added required fields, post-process rejection~~ | ~~GENERATOR~~ |
 | ~~SS-2~~ | ~~spatial-scene~~ | ~~all~~ | ~~HIGH~~ | ~~Sparse grid~~ | ~~Only 2 scene object slots for 9-cell grid. Fixed: increased to 4 required slots with backdrop objects~~ | ~~GENERATOR~~ |
 | ~~SS-3~~ | ~~spatial-scene~~ | ~~identify, describe~~ | ~~HIGH~~ | ~~Missing data~~ | ~~targetObject not in sceneObjects. Fixed: post-process derivation ensures target + reference are in scene array~~ | ~~GENERATOR~~ |
@@ -238,6 +246,8 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| WS-1 | word-sorter | 2026-04-05 | ORCHESTRATOR-REFACTOR (SP-14): Replaced single mega-schema generator with 3 per-mode sub-generators (binary_sort, ternary_sort, match_pairs). Each has focused schema with only its fields and required markers. Post-reconstruction validation rejects challenges with insufficient words/pairs. 9/9 stochastic runs pass. |
+| PLE-1 | planetary-explorer | 2026-04-05 | ARCHITECTURE (SP-15): Added post-journey quiz phase for identify mode. Generator produces cross-planet identification questions via top-level `quizQuestions` field (8 flat slots). Component adds `quiz` view mode after all planets visited — no planet name shown in header. Deterministic fallback quiz derives questions from planet stats. Identify mode is now pedagogically distinct from explore. |
 | TS-1 | text-structure-analyzer | 2026-04-04 | POST-PROCESS-DERIVE (SP-8): Added recomputeSignalWordOffsets() — derives startIndex/endIndex via case-insensitive indexOf instead of trusting LLM offsets. |
 | TS-2 | text-structure-analyzer | 2026-04-04 | PROMPT-CHANGE (SP-3): Added per-structure signal word ownership lists to prompt. Prevents cross-contamination like "one solution" in compare-contrast. |
 | PA-1 | paragraph-architect | 2026-04-04 | EVAL-MODE-WIRING (SP-9): Registration defaulted paragraphType to 'informational'; config merge overwrote Gemini's correct output. Removed default + excluded paragraphType from merge. |

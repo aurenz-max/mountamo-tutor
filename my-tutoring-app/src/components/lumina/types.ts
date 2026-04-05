@@ -1584,6 +1584,7 @@ export type { PaperAirplaneDesignerData } from './primitives/visual-primitives/e
 export type { PropulsionTimelineData, TimelineMilestone, TimelineEra as PropulsionTimelineEra, SpeedRecord, SequencingChallenge, InnovationChain } from './primitives/visual-primitives/engineering/PropulsionTimeline';
 export type { VehicleDesignStudioData } from './primitives/visual-primitives/engineering/VehicleDesignStudio';
 export type { TransportChallengeData } from './primitives/visual-primitives/engineering/TransportChallenge';
+export type { ConstructionSequencePlannerData, ConstructionTask, ConstructionChallenge } from './primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 
 // Math Phase 2
 export type { TenFrameData } from './primitives/visual-primitives/math/TenFrame';

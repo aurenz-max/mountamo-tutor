@@ -43,6 +43,38 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Detailed step history showing each operation.`,
     schemaDescription: "'two_step' (multi-step equation)",
   },
+  equality_hard: {
+    promptDoc:
+      `"equality_hard": K-2 harder missing-addend problems with subtraction and larger numbers. `
+      + `Include SUBTRACTION equations: 12 - □ = 7, □ - 3 = 5. `
+      + `Use sums/differences in the range 10-20. Mix addition and subtraction. `
+      + `Still use □ or "mystery number" — no x notation. `
+      + `leftSide: [{value: 1, isVariable: true}, {value: 7}], rightSide: [{value: 12}], variableValue: 5. `
+      + `allowOperations: ['add', 'subtract']. gradeBand: 'K-2'. `
+      + `Focus on subtraction as "undoing" addition.`,
+    schemaDescription: "'equality_hard' (harder missing addend with subtraction)",
+  },
+  one_step_hard: {
+    promptDoc:
+      `"one_step_hard": Grades 3-4 one-step equations using multiplication or division. `
+      + `Examples: 3x = 12, x ÷ 2 = 5, 4x = 20. Use positive integers. `
+      + `Products under 50. Divisors 2-10. `
+      + `For multiplication: leftSide has multiple variable objects. 3x = 12 → leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}], rightSide: [{value: 12}], variableValue: 4. `
+      + `allowOperations: ['multiply', 'divide']. gradeBand: '3-4'. `
+      + `Step history should mention "divide both sides" or "how many groups of x make the total?"`,
+    schemaDescription: "'one_step_hard' (multiply/divide one-step equation)",
+  },
+  two_step_intro: {
+    promptDoc:
+      `"two_step_intro": Grades 4-5 simple two-step equations with small positive coefficients. `
+      + `Examples: 2x + 1 = 7, 3x - 2 = 10. Coefficients 2-4 only. `
+      + `All values positive. Results under 30. `
+      + `Two operations needed but keep numbers small and friendly. `
+      + `leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}, {value: 1}], rightSide: [{value: 7}], variableValue: 3. `
+      + `allowOperations: ['add', 'subtract', 'multiply', 'divide']. gradeBand: '3-4'. `
+      + `Step history: first undo addition/subtraction, then undo multiplication.`,
+    schemaDescription: "'two_step_intro' (simple two-step, small coefficients)",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -74,7 +106,7 @@ const balanceScaleChallengeSchema: Schema = {
   properties: {
     type: {
       type: Type.STRING,
-      enum: ["equality", "one_step", "two_step"],
+      enum: ["equality", "equality_hard", "one_step", "one_step_hard", "two_step_intro", "two_step"],
       description: "Difficulty tier of the challenge"
     },
     instruction: {
@@ -347,6 +379,21 @@ Return the complete balance scale configuration.
         leftSide: [{ value: 1, label: 'x', isVariable: true }, { value: 1, label: 'x', isVariable: true }, { value: 3 }],
         rightSide: [{ value: 11 }],
         variableValue: 4,
+      },
+      equality_hard: {
+        leftSide: [{ value: 1, isVariable: true }, { value: 7 }],
+        rightSide: [{ value: 12 }],
+        variableValue: 5,
+      },
+      one_step_hard: {
+        leftSide: [{ value: 1, label: 'x', isVariable: true }, { value: 1, label: 'x', isVariable: true }, { value: 1, label: 'x', isVariable: true }],
+        rightSide: [{ value: 12 }],
+        variableValue: 4,
+      },
+      two_step_intro: {
+        leftSide: [{ value: 1, label: 'x', isVariable: true }, { value: 1, label: 'x', isVariable: true }, { value: 1 }],
+        rightSide: [{ value: 7 }],
+        variableValue: 3,
       },
     };
     const fb = fallbacks[fallbackType] ?? fallbacks.one_step;

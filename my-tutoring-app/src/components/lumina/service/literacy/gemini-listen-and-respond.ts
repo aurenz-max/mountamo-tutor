@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { ListenAndRespondData } from "../../primitives/visual-primitives/literacy/ListenAndRespond";
+import { logEvalModeResolution } from '../evalMode';
 
 /**
  * Schema definition for Listen and Respond Data
@@ -148,8 +149,10 @@ export const generateListenAndRespond = async (
   topic: string,
   gradeLevel: string = '2',
   passageType: 'narrative' | 'informational' | 'persuasive' | 'dialogue' = 'narrative',
-  config?: Partial<ListenAndRespondData>
+  config?: Partial<ListenAndRespondData> & { targetEvalMode?: string }
 ): Promise<ListenAndRespondData> => {
+
+  logEvalModeResolution('ListenAndRespond', config?.targetEvalMode, null);
 
   const gradeGuidelines: Record<string, string> = {
     'K': `

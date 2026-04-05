@@ -1,10 +1,11 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import { WordSorterData } from '../../primitives/visual-primitives/literacy/WordSorter';
+import {
+  WordSorterData,
+  WordSorterChallenge,
+} from '../../primitives/visual-primitives/literacy/WordSorter';
 import {
   resolveEvalModeConstraint,
-  constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
@@ -29,175 +30,404 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
-// Flattened Gemini schema
-//
-// Gemini struggles with nested arrays of objects. We flatten:
-//   - words[] → word0Id, word0Text, word0Emoji, word0CorrectBucket ... word9*
-//   - pairs[] → pair0Id, pair0Term, pair0TermEmoji, pair0Match, pair0MatchEmoji ... pair5*
-//   - bucketLabels[] → bucketLabel0, bucketLabel1, bucketLabel2
-// The validation function reconstructs the nested arrays.
+// Grade-specific guidelines
 // ---------------------------------------------------------------------------
 
-function buildWordFields(): Record<string, Schema> {
-  const fields: Record<string, Schema> = {};
-  for (let i = 0; i < 10; i++) {
-    fields[`word${i}Id`] = { type: Type.STRING, description: `Word ${i} unique ID (e.g., 'w${i}')` };
-    fields[`word${i}Text`] = { type: Type.STRING, description: `Word ${i} display text` };
-    fields[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji (optional, use for K-level engagement)` };
-    fields[`word${i}CorrectBucket`] = { type: Type.STRING, description: `Word ${i} correct bucket label (must exactly match one of bucketLabel0/1/2)` };
-  }
-  return fields;
-}
-
-function buildPairFields(): Record<string, Schema> {
-  const fields: Record<string, Schema> = {};
-  for (let i = 0; i < 6; i++) {
-    fields[`pair${i}Id`] = { type: Type.STRING, description: `Pair ${i} unique ID (e.g., 'p${i}')` };
-    fields[`pair${i}Term`] = { type: Type.STRING, description: `Pair ${i} term word` };
-    fields[`pair${i}TermEmoji`] = { type: Type.STRING, description: `Pair ${i} term emoji (optional)` };
-    fields[`pair${i}Match`] = { type: Type.STRING, description: `Pair ${i} matching word` };
-    fields[`pair${i}MatchEmoji`] = { type: Type.STRING, description: `Pair ${i} match emoji (optional)` };
-  }
-  return fields;
-}
-
-const wordSorterSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    title: {
-      type: Type.STRING,
-      description: "Engaging title for the word sorting activity",
-    },
-    description: {
-      type: Type.STRING,
-      description: "Brief description of the sorting activity",
-    },
-    gradeLevel: {
-      type: Type.STRING,
-      description: "Target grade level (K, 1, or 2)",
-    },
-    sortingTopic: {
-      type: Type.STRING,
-      description: "Topic/theme of the sorting activity (e.g., 'Parts of Speech', 'Singular and Plural')",
-    },
-    challenges: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique challenge identifier (e.g., 'ch1', 'ch2')",
-          },
-          type: {
-            type: Type.STRING,
-            enum: ["binary_sort", "ternary_sort", "match_pairs"],
-            description: "Challenge type: 'binary_sort' (2 buckets), 'ternary_sort' (3 buckets), or 'match_pairs' (pair matching)",
-          },
-          instruction: {
-            type: Type.STRING,
-            description: "Clear instruction for the student (e.g., 'Sort these words into nouns and verbs')",
-          },
-          // Flattened bucket labels
-          bucketLabel0: {
-            type: Type.STRING,
-            description: "First bucket label (required for binary_sort and ternary_sort)",
-          },
-          bucketLabel1: {
-            type: Type.STRING,
-            description: "Second bucket label (required for binary_sort and ternary_sort)",
-          },
-          bucketLabel2: {
-            type: Type.STRING,
-            description: "Third bucket label (required for ternary_sort only, leave empty for binary_sort)",
-          },
-          // Flattened word fields
-          wordCount: {
-            type: Type.INTEGER,
-            description: "Number of populated word slots (6-8 for binary_sort, 8-10 for ternary_sort, 0 for match_pairs)",
-          },
-          ...buildWordFields(),
-          // Flattened pair fields
-          pairCount: {
-            type: Type.INTEGER,
-            description: "Number of populated pair slots (5-6 for match_pairs, 0 for sort types)",
-          },
-          ...buildPairFields(),
-        },
-        required: ["id", "type", "instruction"],
-      },
-      description: "Array of 3-4 word sorting challenges",
-    },
-  },
-  required: ["title", "gradeLevel", "sortingTopic", "challenges"],
+const GRADE_GUIDELINES: Record<string, string> = {
+  'K': `KINDERGARTEN: Use very simple, high-frequency 1-syllable words (cat, dog, big, run, red). `
+    + `Concrete categories (animals/food, big/small). Every word card MUST have an emoji. Warm, encouraging instructions.`,
+  '1': `GRADE 1: Use grade 1 vocabulary (sight words, CVC words, common nouns/verbs). `
+    + `Include emojis for most word cards. Clear, direct instructions.`,
+  '2': `GRADE 2: Use grade 2 vocabulary including common academic words. `
+    + `Include emojis where they add clarity. Can include simple grammatical terms.`,
 };
 
+function resolveGradeKey(gradeLevel: string): string {
+  if (['K', '1', '2'].includes(gradeLevel)) return gradeLevel;
+  return 'K';
+}
+
+const SYSTEM_INSTRUCTION =
+  `You are an expert K-2 literacy educator specializing in vocabulary, grammar, and word categorization. `
+  + `You create engaging, age-appropriate word sorting activities. You ensure educational accuracy and provide clear instructions.`;
+
 // ---------------------------------------------------------------------------
-// Flat → nested reconstruction
+// Per-mode schemas — focused, minimal fields
+// ---------------------------------------------------------------------------
+
+function buildBinarySortSchema(): Schema {
+  const wordProps: Record<string, Schema> = {};
+  for (let i = 0; i < 8; i++) {
+    wordProps[`word${i}Text`] = { type: Type.STRING, description: `Word ${i} display text` };
+    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji` };
+    wordProps[`word${i}Bucket`] = { type: Type.STRING, description: `Word ${i} correct bucket — must exactly match bucket0 or bucket1` };
+  }
+
+  return {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Engaging title for the sorting activity" },
+      sortingTopic: { type: Type.STRING, description: "Short label for the sorting theme" },
+      challenges: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING, description: "Unique ID (ch1, ch2, ...)" },
+            instruction: { type: Type.STRING, description: "Clear instruction for the student" },
+            bucket0: { type: Type.STRING, description: "First bucket label (e.g., 'Nouns')" },
+            bucket1: { type: Type.STRING, description: "Second bucket label (e.g., 'Verbs')" },
+            wordCount: { type: Type.INTEGER, description: "Number of words (6-8)" },
+            ...wordProps,
+          },
+          required: ["id", "instruction", "bucket0", "bucket1", "wordCount",
+            "word0Text", "word0Bucket", "word1Text", "word1Bucket",
+            "word2Text", "word2Bucket", "word3Text", "word3Bucket",
+            "word4Text", "word4Bucket", "word5Text", "word5Bucket"],
+        },
+        description: "3-4 binary sort challenges",
+      },
+    },
+    required: ["title", "sortingTopic", "challenges"],
+  };
+}
+
+function buildTernarySortSchema(): Schema {
+  const wordProps: Record<string, Schema> = {};
+  for (let i = 0; i < 10; i++) {
+    wordProps[`word${i}Text`] = { type: Type.STRING, description: `Word ${i} display text` };
+    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji` };
+    wordProps[`word${i}Bucket`] = { type: Type.STRING, description: `Word ${i} correct bucket — must exactly match bucket0, bucket1, or bucket2` };
+  }
+
+  return {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Engaging title for the sorting activity" },
+      sortingTopic: { type: Type.STRING, description: "Short label for the sorting theme" },
+      challenges: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING, description: "Unique ID (ch1, ch2, ...)" },
+            instruction: { type: Type.STRING, description: "Clear instruction for the student" },
+            bucket0: { type: Type.STRING, description: "First bucket label" },
+            bucket1: { type: Type.STRING, description: "Second bucket label" },
+            bucket2: { type: Type.STRING, description: "Third bucket label" },
+            wordCount: { type: Type.INTEGER, description: "Number of words (8-10)" },
+            ...wordProps,
+          },
+          required: ["id", "instruction", "bucket0", "bucket1", "bucket2", "wordCount",
+            "word0Text", "word0Bucket", "word1Text", "word1Bucket",
+            "word2Text", "word2Bucket", "word3Text", "word3Bucket",
+            "word4Text", "word4Bucket", "word5Text", "word5Bucket",
+            "word6Text", "word6Bucket", "word7Text", "word7Bucket"],
+        },
+        description: "3-4 ternary sort challenges",
+      },
+    },
+    required: ["title", "sortingTopic", "challenges"],
+  };
+}
+
+function buildMatchPairsSchema(): Schema {
+  const pairProps: Record<string, Schema> = {};
+  for (let i = 0; i < 6; i++) {
+    pairProps[`pair${i}Term`] = { type: Type.STRING, description: `Pair ${i} term word` };
+    pairProps[`pair${i}TermEmoji`] = { type: Type.STRING, description: `Pair ${i} term emoji` };
+    pairProps[`pair${i}Match`] = { type: Type.STRING, description: `Pair ${i} matching word` };
+    pairProps[`pair${i}MatchEmoji`] = { type: Type.STRING, description: `Pair ${i} match emoji` };
+  }
+
+  return {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Engaging title for the matching activity" },
+      sortingTopic: { type: Type.STRING, description: "Short label for the matching theme" },
+      challenges: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING, description: "Unique ID (ch1, ch2, ...)" },
+            instruction: { type: Type.STRING, description: "Clear instruction for the student" },
+            pairCount: { type: Type.INTEGER, description: "Number of pairs (5-6)" },
+            ...pairProps,
+          },
+          required: ["id", "instruction", "pairCount",
+            "pair0Term", "pair0Match", "pair1Term", "pair1Match",
+            "pair2Term", "pair2Match", "pair3Term", "pair3Match",
+            "pair4Term", "pair4Match"],
+        },
+        description: "3-4 match pairs challenges",
+      },
+    },
+    required: ["title", "sortingTopic", "challenges"],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Flat → structured reconstruction helpers
 // ---------------------------------------------------------------------------
 
 interface FlatChallenge {
-  id: string;
-  type: 'binary_sort' | 'ternary_sort' | 'match_pairs';
-  instruction: string;
-  bucketLabel0?: string;
-  bucketLabel1?: string;
-  bucketLabel2?: string;
-  wordCount?: number;
-  pairCount?: number;
   [key: string]: unknown;
 }
 
-function reconstructChallenge(flat: FlatChallenge) {
-  const { id, type, instruction } = flat;
-
-  // Reconstruct bucket labels
+function reconstructSortChallenge(
+  flat: FlatChallenge,
+  type: 'binary_sort' | 'ternary_sort',
+): WordSorterChallenge | null {
   const bucketLabels: string[] = [];
-  if (flat.bucketLabel0) bucketLabels.push(flat.bucketLabel0);
-  if (flat.bucketLabel1) bucketLabels.push(flat.bucketLabel1);
-  if (flat.bucketLabel2) bucketLabels.push(flat.bucketLabel2);
+  if (flat.bucket0) bucketLabels.push(flat.bucket0 as string);
+  if (flat.bucket1) bucketLabels.push(flat.bucket1 as string);
+  if (type === 'ternary_sort' && flat.bucket2) bucketLabels.push(flat.bucket2 as string);
 
-  if (type === 'match_pairs') {
-    // Reconstruct pairs array
-    const pairCount = (flat.pairCount as number) || 0;
-    const pairs = [];
-    for (let i = 0; i < Math.min(pairCount, 6); i++) {
-      const pId = flat[`pair${i}Id`] as string;
-      const term = flat[`pair${i}Term`] as string;
-      const match = flat[`pair${i}Match`] as string;
-      if (!pId || !term || !match) continue;
-      pairs.push({
-        id: pId,
-        term,
-        termEmoji: (flat[`pair${i}TermEmoji`] as string) || undefined,
-        match,
-        matchEmoji: (flat[`pair${i}MatchEmoji`] as string) || undefined,
-      });
-    }
-    return { id, type, instruction, pairs };
+  const expectedBuckets = type === 'binary_sort' ? 2 : 3;
+  if (bucketLabels.length < expectedBuckets) {
+    console.warn(`[WordSorter] Rejected ${type} challenge: only ${bucketLabels.length}/${expectedBuckets} buckets`);
+    return null;
   }
 
-  // binary_sort or ternary_sort — reconstruct words array
-  const wordCount = (flat.wordCount as number) || 0;
+  const maxWords = type === 'binary_sort' ? 8 : 10;
+  const wordCount = typeof flat.wordCount === 'number' ? Math.min(flat.wordCount, maxWords) : maxWords;
   const words = [];
-  for (let i = 0; i < Math.min(wordCount, 10); i++) {
-    const wId = flat[`word${i}Id`] as string;
-    const word = flat[`word${i}Text`] as string;
-    const correctBucket = flat[`word${i}CorrectBucket`] as string;
-    if (!wId || !word || !correctBucket) continue;
+
+  for (let i = 0; i < wordCount; i++) {
+    const text = flat[`word${i}Text`] as string | undefined;
+    const bucket = flat[`word${i}Bucket`] as string | undefined;
+    if (!text || !bucket) continue;
+
+    // Validate bucket matches one of the actual labels
+    const matchedBucket = bucketLabels.find(
+      (b) => b === bucket || b.toLowerCase() === bucket.toLowerCase(),
+    );
+    if (!matchedBucket) {
+      console.warn(`[WordSorter] Skipped word "${text}" — bucket "${bucket}" not in [${bucketLabels.join(', ')}]`);
+      continue;
+    }
+
     words.push({
-      id: wId,
-      word,
+      id: `w${i}`,
+      word: text,
       emoji: (flat[`word${i}Emoji`] as string) || undefined,
-      correctBucket,
+      correctBucket: matchedBucket,
     });
   }
 
-  return { id, type, instruction, bucketLabels, words };
+  const minWords = type === 'binary_sort' ? 4 : 6;
+  if (words.length < minWords) {
+    console.warn(`[WordSorter] Rejected ${type} challenge: only ${words.length}/${minWords} valid words`);
+    return null;
+  }
+
+  return {
+    id: flat.id as string,
+    type,
+    instruction: flat.instruction as string,
+    bucketLabels,
+    words,
+  };
+}
+
+function reconstructMatchPairsChallenge(flat: FlatChallenge): WordSorterChallenge | null {
+  const pairCount = typeof flat.pairCount === 'number' ? Math.min(flat.pairCount, 6) : 6;
+  const pairs = [];
+
+  for (let i = 0; i < Math.max(pairCount, 6); i++) {
+    const term = flat[`pair${i}Term`] as string | undefined;
+    const match = flat[`pair${i}Match`] as string | undefined;
+    if (!term || !match) continue;
+
+    pairs.push({
+      id: `p${i}`,
+      term,
+      termEmoji: (flat[`pair${i}TermEmoji`] as string) || undefined,
+      match,
+      matchEmoji: (flat[`pair${i}MatchEmoji`] as string) || undefined,
+    });
+  }
+
+  if (pairs.length < 3) {
+    console.warn(`[WordSorter] Rejected match_pairs challenge: only ${pairs.length}/3 valid pairs`);
+    return null;
+  }
+
+  return {
+    id: flat.id as string,
+    type: 'match_pairs',
+    instruction: flat.instruction as string,
+    pairs,
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Generator
+// Per-mode sub-generators
+// ---------------------------------------------------------------------------
+
+async function generateBinarySortChallenges(
+  topic: string,
+  gradeKey: string,
+): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
+  const prompt = `Create an interactive 2-BUCKET word sorting activity for "${topic}" (Grade ${gradeKey}).
+
+${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
+
+For each challenge:
+- instruction: Clear sorting instruction (e.g., "Sort these words into nouns and verbs")
+- bucket0, bucket1: Two category labels
+- wordCount: 6-8 words
+- word0Text..word7Text: The words to sort
+- word0Emoji..word7Emoji: Emoji for each word (required for K, recommended for grade 1-2)
+- word0Bucket..word7Bucket: Must EXACTLY match bucket0 or bucket1
+
+RULES:
+- Distribute words roughly evenly across the 2 buckets
+- Mix up word order — do NOT group by bucket
+- Do NOT reveal answers in the instruction
+- All words must be age-appropriate for grade ${gradeKey}
+
+Generate 3-4 challenges with different sorting criteria.`;
+
+  const result = await ai.models.generateContent({
+    model: 'gemini-flash-lite-latest',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: buildBinarySortSchema(),
+      systemInstruction: SYSTEM_INSTRUCTION,
+    },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) return { title: '', sortingTopic: '', challenges: [] };
+
+  const challenges = (data.challenges as FlatChallenge[])
+    .map((flat) => reconstructSortChallenge(flat, 'binary_sort'))
+    .filter((c): c is WordSorterChallenge => c !== null);
+
+  const rejected = (data.challenges as FlatChallenge[]).length - challenges.length;
+  if (rejected > 0) {
+    console.warn(`[WordSorter] binary_sort: rejected ${rejected} challenge(s) with missing data`);
+  }
+
+  return {
+    title: (data.title as string) || '',
+    sortingTopic: (data.sortingTopic as string) || '',
+    challenges,
+  };
+}
+
+async function generateTernarySortChallenges(
+  topic: string,
+  gradeKey: string,
+): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
+  const prompt = `Create an interactive 3-BUCKET word sorting activity for "${topic}" (Grade ${gradeKey}).
+
+${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
+
+For each challenge:
+- instruction: Clear sorting instruction (e.g., "Sort these words by tense")
+- bucket0, bucket1, bucket2: Three category labels
+- wordCount: 8-10 words
+- word0Text..word9Text: The words to sort
+- word0Emoji..word9Emoji: Emoji for each word
+- word0Bucket..word9Bucket: Must EXACTLY match bucket0, bucket1, or bucket2
+
+RULES:
+- Distribute words across all 3 buckets (at least 2 per bucket)
+- Mix up word order — do NOT group by bucket
+- Do NOT reveal answers in the instruction
+- All words must be age-appropriate for grade ${gradeKey}
+
+Generate 3-4 challenges with different sorting criteria.`;
+
+  const result = await ai.models.generateContent({
+    model: 'gemini-flash-lite-latest',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: buildTernarySortSchema(),
+      systemInstruction: SYSTEM_INSTRUCTION,
+    },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) return { title: '', sortingTopic: '', challenges: [] };
+
+  const challenges = (data.challenges as FlatChallenge[])
+    .map((flat) => reconstructSortChallenge(flat, 'ternary_sort'))
+    .filter((c): c is WordSorterChallenge => c !== null);
+
+  const rejected = (data.challenges as FlatChallenge[]).length - challenges.length;
+  if (rejected > 0) {
+    console.warn(`[WordSorter] ternary_sort: rejected ${rejected} challenge(s) with missing data`);
+  }
+
+  return {
+    title: (data.title as string) || '',
+    sortingTopic: (data.sortingTopic as string) || '',
+    challenges,
+  };
+}
+
+async function generateMatchPairsChallenges(
+  topic: string,
+  gradeKey: string,
+): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
+  const prompt = `Create an interactive word PAIR MATCHING activity for "${topic}" (Grade ${gradeKey}).
+
+${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
+
+For each challenge:
+- instruction: Clear matching instruction (e.g., "Match each word with its opposite")
+- pairCount: 5-6 pairs
+- pair0Term..pair5Term: The term words (left column)
+- pair0TermEmoji..pair5TermEmoji: Emoji for each term
+- pair0Match..pair5Match: The matching words (right column)
+- pair0MatchEmoji..pair5MatchEmoji: Emoji for each match
+
+RULES:
+- Each pair should have a clear, unambiguous relationship (opposites, synonyms, singular/plural, etc.)
+- Do NOT reveal answers through ordering — randomize the match column
+- All words must be age-appropriate for grade ${gradeKey}
+- For K: use simple opposites (big/small, hot/cold) or rhyming pairs (cat/hat)
+- For grade 1-2: can include singular/plural, word/antonym, word/synonym
+
+Generate 3-4 challenges with different matching criteria.`;
+
+  const result = await ai.models.generateContent({
+    model: 'gemini-flash-lite-latest',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: buildMatchPairsSchema(),
+      systemInstruction: SYSTEM_INSTRUCTION,
+    },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) return { title: '', sortingTopic: '', challenges: [] };
+
+  const challenges = (data.challenges as FlatChallenge[])
+    .map((flat) => reconstructMatchPairsChallenge(flat))
+    .filter((c): c is WordSorterChallenge => c !== null);
+
+  const rejected = (data.challenges as FlatChallenge[]).length - challenges.length;
+  if (rejected > 0) {
+    console.warn(`[WordSorter] match_pairs: rejected ${rejected} challenge(s) with missing data`);
+  }
+
+  return {
+    title: (data.title as string) || '',
+    sortingTopic: (data.sortingTopic as string) || '',
+    challenges,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Orchestrator
 // ---------------------------------------------------------------------------
 
 /**
@@ -207,10 +437,8 @@ function reconstructChallenge(flat: FlatChallenge) {
  * Students drag word cards into category buckets for grammar, vocabulary,
  * and comprehension sorting activities.
  *
- * Challenge types:
- * - binary_sort: 2 buckets, 6-8 word cards
- * - ternary_sort: 3 buckets, 8-10 word cards
- * - match_pairs: 5-6 word pairs to match
+ * Uses per-mode sub-generators (orchestrator pattern) to avoid Gemini Flash
+ * Lite dropping flat indexed fields in overly complex schemas (SP-14).
  *
  * @param topic - Sorting topic or theme (e.g., "Animals", "Action Words")
  * @param gradeLevel - Grade level ('K', '1', or '2')
@@ -231,166 +459,57 @@ export const generateWordSorter = async (
   );
   logEvalModeResolution('WordSorter', config?.targetEvalMode, evalConstraint);
 
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(wordSorterSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
-        fieldName: 'type',
-      })
-    : wordSorterSchema;
+  const gradeKey = resolveGradeKey(gradeLevel);
 
-  // Grade-specific guidelines
-  const gradeGuidelines: Record<string, string> = {
-    'K': `
-KINDERGARTEN GUIDELINES:
-- Use very simple, high-frequency words children know (cat, dog, big, run, red, etc.)
-- binary_sort: Use concrete categories (animals/food, big/small, colors)
-- ternary_sort: Simple 3-way sorts (animals/food/toys)
-- match_pairs: Simple opposites (big/small, hot/cold) or rhyming pairs (cat/hat)
-- Every word card MUST have an emoji for visual engagement
-- 6 words for binary_sort, 8 words for ternary_sort, 5 pairs for match_pairs
-- Use short 1-syllable words whenever possible
-- Instructions should be warm and encouraging
-`,
-    '1': `
-GRADE 1 GUIDELINES:
-- Use grade 1 vocabulary (sight words, CVC words, common nouns/verbs)
-- binary_sort: Nouns vs verbs, singular vs plural, beginning sounds
-- ternary_sort: Parts of speech (noun/verb/adjective), vowel sounds
-- match_pairs: Singular→plural, word→opposite, word→rhyme
-- Include emojis for most word cards
-- 7 words for binary_sort, 9 words for ternary_sort, 5-6 pairs for match_pairs
-- Instructions should be clear and direct
-`,
-    '2': `
-GRADE 2 GUIDELINES:
-- Use grade 2 vocabulary including common academic words
-- binary_sort: Past/present tense, compound/not compound, long/short vowel
-- ternary_sort: Past/present/future tense, noun/verb/adjective
-- match_pairs: Word→synonym, word→antonym, base→past tense
-- Include emojis where they add clarity
-- 8 words for binary_sort, 10 words for ternary_sort, 6 pairs for match_pairs
-- Instructions can include simple grammatical terms students have learned
-`,
+  // ── Determine which modes to generate ───────────────────────────────
+  const allowedTypes = evalConstraint
+    ? evalConstraint.allowedTypes
+    : ['binary_sort', 'ternary_sort', 'match_pairs'];
+
+  // ── Dispatch per-mode sub-generators in parallel ────────────────────
+  type SubResult = { title: string; sortingTopic: string; challenges: WordSorterChallenge[] };
+  const generators: Promise<SubResult>[] = [];
+
+  if (allowedTypes.includes('binary_sort')) {
+    generators.push(generateBinarySortChallenges(topic, gradeKey));
+  }
+  if (allowedTypes.includes('ternary_sort')) {
+    generators.push(generateTernarySortChallenges(topic, gradeKey));
+  }
+  if (allowedTypes.includes('match_pairs')) {
+    generators.push(generateMatchPairsChallenges(topic, gradeKey));
+  }
+
+  const subResults = await Promise.all(generators);
+
+  // ── Combine results ─────────────────────────────────────────────────
+  const allChallenges = subResults.flatMap((r) => r.challenges);
+  const firstTitle = subResults.find((r) => r.title)?.title || `Word Sorting: ${topic}`;
+  const firstTopic = subResults.find((r) => r.sortingTopic)?.sortingTopic || topic;
+
+  // Merge with any config overrides (excluding targetEvalMode)
+  const { targetEvalMode: _unused, ...configRest } = config ?? {};
+  void _unused;
+
+  const finalData: WordSorterData = {
+    title: firstTitle,
+    gradeLevel: gradeKey,
+    sortingTopic: firstTopic,
+    challenges: allChallenges,
+    ...configRest,
   };
 
-  const gradeLevelKey = ['K', '1', '2'].includes(gradeLevel) ? gradeLevel : 'K';
+  console.log('Word Sorter Generated:', {
+    title: finalData.title,
+    gradeLevel: finalData.gradeLevel,
+    sortingTopic: finalData.sortingTopic,
+    challengeCount: finalData.challenges?.length || 0,
+    challengeTypes: finalData.challenges?.map(ch => ch.type) || [],
+  });
 
-  // ── Build prompt ────────────────────────────────────────────────────
-  const challengeTypeSection = buildChallengeTypePromptSection(
-    evalConstraint,
-    CHALLENGE_TYPE_DOCS,
-  );
-
-  const generationPrompt = `Create an interactive word sorting activity for: "${topic}".
-
-TARGET GRADE LEVEL: ${gradeLevelKey}
-
-${!evalConstraint ? (gradeGuidelines[gradeLevelKey] || gradeGuidelines['K']) : ''}
-
-${challengeTypeSection}
-
-REQUIRED FIELDS:
-
-1. **title**: An engaging, kid-friendly title for the activity
-2. **gradeLevel**: "${gradeLevelKey}"
-3. **sortingTopic**: A short label for the sorting theme (e.g., "Parts of Speech", "Opposites")
-4. **challenges** (3-4 challenges):
-
-   For EACH challenge provide:
-   - id: Unique identifier (ch1, ch2, ch3, ch4)
-   - type: One of "binary_sort", "ternary_sort", or "match_pairs"
-   - instruction: Clear instruction for the student
-
-   FOR binary_sort challenges:
-   - bucketLabel0: First bucket name (e.g., "Nouns")
-   - bucketLabel1: Second bucket name (e.g., "Verbs")
-   - bucketLabel2: Leave as empty string ""
-   - wordCount: Number of words (6-8)
-   - word0Id through word[N]Id: Unique IDs (w0, w1, ...)
-   - word0Text through word[N]Text: The word to display
-   - word0Emoji through word[N]Emoji: An emoji for the word (use "" if none)
-   - word0CorrectBucket through word[N]CorrectBucket: Must EXACTLY match bucketLabel0 or bucketLabel1
-
-   FOR ternary_sort challenges:
-   - bucketLabel0: First bucket name
-   - bucketLabel1: Second bucket name
-   - bucketLabel2: Third bucket name
-   - wordCount: Number of words (8-10)
-   - Same word fields as binary_sort, but correctBucket can match any of the 3 labels
-
-   FOR match_pairs challenges:
-   - pairCount: Number of pairs (5-6)
-   - pair0Id through pair[N]Id: Unique IDs (p0, p1, ...)
-   - pair0Term through pair[N]Term: The term word
-   - pair0TermEmoji through pair[N]TermEmoji: Emoji for term (use "" if none)
-   - pair0Match through pair[N]Match: The matching word
-   - pair0MatchEmoji through pair[N]MatchEmoji: Emoji for match (use "" if none)
-   - wordCount: 0 (no words for match_pairs)
-   - bucketLabel0, bucketLabel1, bucketLabel2: all empty string ""
-
-CRITICAL RULES:
-- Each word's correctBucket must EXACTLY match one of the bucketLabel values
-- Words should be evenly distributed across buckets (not all in one bucket)
-- For match_pairs, terms and matches should be clearly related
-- Use age-appropriate vocabulary for grade ${gradeLevelKey}
-- Include emojis on word cards for K and grade 1 (every card should have one)
-- Do NOT reveal answers through the instruction text or card ordering
-- Mix up the order of words/pairs so they are NOT pre-sorted
-- Unused word/pair slots should have empty string values
-
-Now generate a word sorting activity for "${topic}" at grade level ${gradeLevelKey}. Create 3-4 varied challenges.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-flash-lite-latest',
-      contents: generationPrompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: activeSchema,
-        systemInstruction: `You are an expert K-2 literacy educator specializing in vocabulary, grammar, and word categorization. You create engaging, age-appropriate word sorting activities that teach students about parts of speech, word relationships, and language patterns. You understand developmental progression from kindergarten through grade 2. You make learning fun and accessible, using emojis and familiar vocabulary that excite young learners. You always ensure educational accuracy and provide clear, helpful instructions.`,
-      },
-    });
-
-    const text = response.text;
-    if (!text) {
-      throw new Error("No data returned from Gemini API");
-    }
-
-    const raw = JSON.parse(text) as {
-      title: string;
-      description?: string;
-      gradeLevel: string;
-      sortingTopic: string;
-      challenges: FlatChallenge[];
-    };
-
-    // Reconstruct nested arrays from flat fields
-    const challenges = (raw.challenges || []).map(reconstructChallenge);
-
-    // Merge with any config overrides (excluding targetEvalMode)
-    const { targetEvalMode: _unused, ...configRest } = config ?? {};
-    void _unused;
-
-    const finalData: WordSorterData = {
-      title: raw.title || `Word Sorting: ${topic}`,
-      description: raw.description,
-      gradeLevel: raw.gradeLevel || gradeLevelKey,
-      sortingTopic: raw.sortingTopic || topic,
-      challenges,
-      ...configRest,
-    };
-
-    console.log('Word Sorter Generated:', {
-      title: finalData.title,
-      gradeLevel: finalData.gradeLevel,
-      sortingTopic: finalData.sortingTopic,
-      challengeCount: finalData.challenges?.length || 0,
-      challengeTypes: finalData.challenges?.map(ch => ch.type) || [],
-    });
-
-    return finalData;
-
-  } catch (error) {
-    console.error("Error generating word sorter:", error);
-    throw error;
+  if (allChallenges.length === 0) {
+    throw new Error(`[WordSorter] All challenges rejected after generation — no valid data for types [${allowedTypes.join(', ')}]`);
   }
+
+  return finalData;
 };

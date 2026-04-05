@@ -28,6 +28,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Shapes should NOT be pre-sorted by width. Grades 2-3.`,
     schemaDescription: "'compare' (measure and compare objects)",
   },
+  estimate: {
+    promptDoc:
+      `"estimate": Student measures shapes with half-inch precision. `
+      + `Generate shapes with widths at 0.5 increments (e.g., 2.5, 3.5, 4.0, 5.5). `
+      + `Student must read between tick marks on the ruler. `
+      + `precision="half", gradeBand="3-5". Grades 2-3.`,
+    schemaDescription: "'estimate' (half-inch precision measurement)",
+  },
   convert: {
     promptDoc:
       `"convert": Student measures shapes in one unit then converts to another unit. `
@@ -48,7 +56,7 @@ const measurementToolsSchema: Schema = {
     challengeType: {
       type: Type.STRING,
       description: "Challenge type: 'measure' (direct measurement), 'compare' (measure and compare), 'convert' (measure and convert units)",
-      enum: ["measure", "compare", "convert"],
+      enum: ["measure", "compare", "estimate", "convert"],
     },
     title: {
       type: Type.STRING,
@@ -208,7 +216,7 @@ Return the complete measurement tools configuration.
   // ── Validation & sanitization ──────────────────────────────────
 
   // Challenge type
-  const validChallengeTypes = ['measure', 'compare', 'convert'];
+  const validChallengeTypes = ['measure', 'compare', 'estimate', 'convert'];
   if (!validChallengeTypes.includes(data.challengeType)) {
     data.challengeType = evalConstraint?.allowedTypes[0] ?? 'measure';
   }
