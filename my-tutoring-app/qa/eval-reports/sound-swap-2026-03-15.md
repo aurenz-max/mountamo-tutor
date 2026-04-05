@@ -4,32 +4,25 @@
 
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
-| addition | FAIL | 1 CRITICAL, 2 HIGH |
-| deletion | FAIL | 1 CRITICAL |
+| addition | PASS | — (fixed 2026-04-04) |
+| deletion | PASS | — (fixed 2026-04-04) |
 | substitution | PASS | — |
 
-## Issues
+## Fixed Issues (2026-04-04)
 
-### addition — Vowel changes during phoneme "addition" (c6)
-- **Severity:** CRITICAL
-- **What's broken:** Adding /s/ to beginning of "on" (/ɑn/) should produce "son" (/sɑn/), not "sun" (/sʌn/). The vowel changes from /ɑ/ to /ʌ/, which is substitution not addition.
-- **Data:** `originalWord: "on", addPhoneme: "/s/", resultWord: "sun"`
-- **Fix in:** GENERATOR
+### SW-1: addition — Vowel changes during phoneme "addition" (was CRITICAL)
+- **Fix:** PROMPT-CHANGE + POST-PROCESS-VALIDATE. Added curated VALID_ADDITION_PAIRS to prompt guiding Gemini toward known-good pairs. Added COMMON_WORDS post-process validation rejecting challenges where either word isn't a real English word. Gemini now consistently uses curated pairs (at→cat, an→man, it→hit, etc.).
 
-### addition — /ɹ/ vs /r/ phoneme notation inconsistency (c8)
-- **Severity:** HIGH
-- **What's broken:** Generator uses IPA `/ɹ/` but component's DISTRACTOR_PHONEMES uses `/r/`. Both could appear as options, confusing the student.
-- **Data:** `addPhoneme: "/ɹ/"` vs component constant `/r/`
-- **Fix in:** GENERATOR — use `/r/` consistently
+### SW-2: deletion — 5/9 result words were nonsense syllables (was CRITICAL)
+- **Fix:** PROMPT-CHANGE + POST-PROCESS-VALIDATE. Added curated VALID_DELETION_PAIRS to prompt. COMMON_WORDS post-process rejects challenges producing nonsense words like "un", "ig", "ap". Deletion mode now yields 5-8 valid challenges per run (nonsense pairs filtered out).
 
-### addition — Non-word originals "un" and "ig" (c8, c9)
-- **Severity:** HIGH
-- **What's broken:** "un" and "ig" are not real English words. Students add a phoneme to produce a real word, but starting with a non-word is pedagogically confusing for K students.
-- **Data:** `originalWord: "un"`, `originalWord: "ig"`
-- **Fix in:** GENERATOR
+### SW-3: addition — /ɹ/ vs /r/ notation mismatch (was HIGH)
+- **Fix:** PROMPT-CHANGE + POST-PROCESS-DERIVE. Prompt now explicitly says "Use /r/ for the R sound, NOT /ɹ/". Added IPA_NORMALIZATIONS post-process that maps /ɹ/, /ɾ/, /ɻ/ → /r/ in all phoneme arrays.
 
-### deletion — 5 of 9 result words are not real English words
-- **Severity:** CRITICAL
-- **What's broken:** Deleting initial phoneme from sun→"un", big→"ig", run→"un", pig→"ig", map→"ap". Catalog constraint says "All result words must be real words." Students identify nonsense syllables as the "answer."
-- **Data:** `resultWord: "un", "ig", "un", "ig", "ap"` (5 of 9 challenges)
-- **Fix in:** GENERATOR — select words where onset deletion produces real words (e.g., seat→eat, ball→all)
+### SW-4: addition — Non-word originals "un" and "ig" (was HIGH)
+- **Fix:** Same as SW-1/SW-2 — COMMON_WORDS validation rejects any challenge where originalWord isn't a real English word.
+
+## Notes
+
+- Deletion mode challenge count is variable (5-8 out of 9 generated) due to post-process rejection. The primitive handles variable challenge counts gracefully.
+- Stochastic verification: 3/3 passes for both addition and deletion modes.

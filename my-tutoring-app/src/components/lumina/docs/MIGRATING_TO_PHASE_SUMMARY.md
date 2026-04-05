@@ -314,17 +314,17 @@ It only computes when `isComplete` is true. Check that `allChallengesComplete` i
 
 ## Unmigrated Primitives
 
-These 18 primitives still use manual `setChallengeResults` / `setCurrentChallengeIndex` / `setCurrentAttempts`:
+These 11 non-math primitives still use manual `setChallengeResults` / `setCurrentChallengeIndex` / `setCurrentAttempts`:
 
-**Math:** BalanceScale, BaseTenBlocks, MeasurementTools, RegroupingWorkbench, ShapeBuilder, SkipCountingRunner
+**Chemistry (8):** EquationBalancer, EnergyOfReactions, MatterExplorer, MixingAndDissolving, PhExplorer, ReactionLab, SafetyLab, StatesOfMatter
 
-**Chemistry:** EquationBalancer, EnergyOfReactions, MatterExplorer, MixingAndDissolving, PhExplorer, ReactionLab, SafetyLab, StatesOfMatter
+**Engineering (1):** VehicleComparisonLab
 
-**Engineering:** VehicleComparisonLab
+**Literacy (1):** ContextCluesDetective
 
-**Literacy:** ContextCluesDetective, SentenceBuilder
+**Biology (1):** DnaExplorer
 
-**Biology:** DnaExplorer
+> **Note:** SentenceBuilder was migrated. All 50 math primitives with multi-phase support now use the hooks (34 via useChallengeProgress/usePhaseResults, 4 via manual PhaseResult[] construction).
 
 ---
 
@@ -339,3 +339,10 @@ Already migrated — use these as examples:
 | [NumberLine.tsx](../primitives/visual-primitives/math/NumberLine.tsx) | Custom accuracy-based scoring via `getScore` |
 | [PercentBar.tsx](../primitives/visual-primitives/math/PercentBar.tsx) | Unified challenges array built from separate Explore/Practice/Apply data fields |
 | [FunctionMachine.tsx](../primitives/visual-primitives/math/FunctionMachine.tsx) | Rule discovery + prediction phases |
+| [BalanceScale.tsx](../primitives/visual-primitives/math/BalanceScale.tsx) | Standard hooks migration with equality/one_step/two_step challenge types |
+| [DoubleNumberLine.tsx](../primitives/visual-primitives/math/DoubleNumberLine.tsx) | Manual PhaseResult[] (no challenges array) + AI tutoring added |
+| [TapeDiagram.tsx](../primitives/visual-primitives/math/TapeDiagram.tsx) | Manual PhaseResult[] per challenge mode + AI tutoring added |
+| [SkipCountingRunner.tsx](../primitives/visual-primitives/math/SkipCountingRunner.tsx) | Full hooks migration with 5 challenge types |
+| [ShapeComposer.tsx](../primitives/visual-primitives/math/ShapeComposer.tsx) | New primitive, built with hooks from the start |
+| [NetFolder.tsx](../primitives/visual-primitives/math/NetFolder.tsx) | New primitive, built with hooks from the start |
+| [SpatialScene.tsx](../primitives/visual-primitives/math/SpatialScene.tsx) | New primitive, built with hooks from the start |

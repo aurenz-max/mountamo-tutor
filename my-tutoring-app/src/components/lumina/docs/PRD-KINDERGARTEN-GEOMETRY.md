@@ -1,8 +1,18 @@
 # PRD: Kindergarten Geometry Primitives
 
-**Status:** Draft
+**Status:** Largely Complete (3/4 primitives shipped)
 **Date:** 2026-02-22
+**Last Audit:** 2026-04-04
 **Scope:** 4 new Lumina primitives targeting K-1 geometry standards
+
+> **Implementation Status (2026-04-04):**
+>
+> | Primitive | Status | Notes |
+> |-----------|--------|-------|
+> | `shape-sorter` | ✅ **Done** | Component, generator, catalog, eval modes, AI tutor. Challenge types narrowed to identify/count/sort (match/describe/real-world deferred). |
+> | `3d-shape-explorer` | ✅ **Done** | Registered as `3d-shape-explorer`. 5 challenge types (shape-riddle replaced compare). |
+> | `shape-tracer` | ✅ **Done** | All 4 PRD challenge types implemented (trace/complete/draw-from-description/connect-dots). |
+> | `shape-composer` | ❌ **Not Started** | No component, generator, catalog entry, or metrics. Blocks the 2D Shape Mastery progression (sorter → tracer → composer). |
 
 ---
 

@@ -10,6 +10,9 @@ import {
 } from '../../../evaluation';
 import type { SkipCountingRunnerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -74,6 +77,14 @@ const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
   connect: { label: 'Connect', description: 'Link to multiplication' },
 };
 
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  count_along:             { label: 'Count Along',    icon: '👀', accentColor: 'amber' },
+  predict:                 { label: 'Predict',        icon: '🎯', accentColor: 'orange' },
+  fill_missing:            { label: 'Fill Missing',   icon: '🧩', accentColor: 'cyan' },
+  find_skip_value:         { label: 'Find Skip Value',icon: '🔍', accentColor: 'purple' },
+  connect_multiplication:  { label: 'Multiply',       icon: '✖️', accentColor: 'emerald' },
+};
+
 const CHARACTER_EMOJI: Record<string, string> = {
   frog: '🐸',
   kangaroo: '🦘',
@@ -132,7 +143,19 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
   const [currentPhase, setCurrentPhase] = useState<Phase>(() => {
     if (challenges.length === 0) return 'watch';
     const firstType = challenges[0].type;
@@ -177,13 +200,6 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
 
   // Tracking
-  const [challengeResults, setChallengeResults] = useState<Array<{
-    challengeId: string;
-    correct: boolean;
-    type: string;
-    attempts: number;
-  }>>([]);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
   const [skipValuesExplored] = useState(new Set<number>([skipValue]));
@@ -234,9 +250,19 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<SkipCountingRunnerMetrics>({
     primitiveType: 'skip-counting-runner',
     instanceId: resolvedInstanceId,
@@ -354,7 +380,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     if (!currentChallenge || nextExpectedPosition === null) return false;
     const answer = parseInt(predictionInput, 10);
     const correct = answer === nextExpectedPosition;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setPredictedPosition(nextExpectedPosition);
@@ -399,7 +425,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     const answer = parseInt(fillInput, 10);
     // Check if the answer matches any hidden position that hasn't been found yet
     const correct = hiddenPos.includes(answer) && !landingSpots.includes(answer);
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setLandingSpots(prev => [...prev, answer].sort((a, b) => a - b));
@@ -427,7 +453,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     if (!currentChallenge) return false;
     const answer = parseInt(fillInput, 10);
     const correct = answer === skipValue;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setPatternIdentified(true);
@@ -460,7 +486,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     const productMatch = inputClean.match(/=?\s*(\d+)$/);
     const enteredProduct = productMatch ? parseInt(productMatch[1], 10) : parseInt(inputClean, 10);
     const correct = enteredProduct === expectedProduct || enteredProduct === currentPosition;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setMultiplicationConnectionMade(true);
@@ -520,15 +546,12 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     }
 
     if (correct) {
-      setChallengeResults(prev => [
-        ...prev,
-        {
-          challengeId: currentChallenge.id,
-          correct: true,
-          type: currentChallenge.type,
-          attempts: currentAttempts + 1,
-        },
-      ]);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts: currentAttempts + 1,
+        type: currentChallenge.type,
+      });
     }
   }, [
     currentChallenge, currentAttempts, nextExpectedPosition,
@@ -537,14 +560,20 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
   ]);
 
   const advanceToNextChallenge = useCallback(() => {
-    const nextIndex = currentChallengeIndex + 1;
+    if (!advanceProgress()) {
+      // All challenges complete — build phase score string for AI
+      const phaseScoreStr = phaseResults
+        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+        .join(', ');
+      const totalCorrect = challengeResults.filter(r => r.correct).length;
+      const overallPct = challenges.length > 0
+        ? Math.round((totalCorrect / challenges.length) * 100)
+        : 0;
 
-    if (nextIndex >= challenges.length) {
-      // All challenges complete
       sendText(
-        `[CHALLENGE_COMPLETE] The student completed all ${challenges.length} skip counting challenges! `
+        `[CHALLENGE_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
         + `Skip value: ${skipValue}. Jumps made: ${jumpCount}. Longest streak: ${longestStreak}. `
-        + `Celebrate and summarize what they learned about counting by ${skipValue}s.`,
+        + `Give encouraging phase-specific feedback about counting by ${skipValue}s.`,
         { silent: true }
       );
 
@@ -552,10 +581,6 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
       if (!hasSubmittedEvaluation) {
         const jumpResults = challengeResults.filter(r => r.type === 'count_along' || r.type === 'predict');
         const predictionResults = challengeResults.filter(r => r.type === 'predict');
-        const totalCorrect = challengeResults.filter(r => r.correct).length;
-        const score = challenges.length > 0
-          ? Math.round((totalCorrect / challenges.length) * 100)
-          : 0;
 
         const metrics: SkipCountingRunnerMetrics = {
           type: 'skip-counting-runner',
@@ -568,12 +593,12 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
           multiplicationConnectionMade,
           patternIdentified,
           longestCorrectStreak: longestStreak,
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+          attemptsCount: challengeResults.reduce((s, r) => s + (r.attempts ?? 0), 0),
         };
 
         submitEvaluation(
           totalCorrect === challenges.length,
-          score,
+          overallPct,
           metrics,
           { challengeResults }
         );
@@ -581,9 +606,8 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
       return;
     }
 
-    // Move to next challenge
-    setCurrentChallengeIndex(nextIndex);
-    setCurrentAttempts(0);
+    // advanceProgress() already incremented index and reset attempts.
+    // Reset domain-specific state:
     setFeedback('');
     setFeedbackType('');
     setPredictionInput('');
@@ -591,12 +615,13 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     setMultiplicationInput('');
     setFillInput('');
 
-    // Position character based on challenge's startPosition
+    // Position character based on next challenge's startPosition
+    const nextIndex = currentChallengeIndex + 1;
     const nextChallenge = challenges[nextIndex];
+    if (!nextChallenge) return;
     const targetPos = nextChallenge.startPosition;
 
     if (targetPos !== undefined) {
-      // Build landing spots from startFrom up to targetPos
       const spots: number[] = [];
       if (direction === 'forward') {
         for (let pos = startFrom; pos <= targetPos; pos += skipValue) spots.push(pos);
@@ -626,10 +651,10 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
       { silent: true }
     );
   }, [
-    currentChallengeIndex, challenges, challengeResults, sendText, skipValue,
+    advanceProgress, phaseResults, challengeResults, challenges, sendText, skipValue,
     jumpCount, longestStreak, hasSubmittedEvaluation, skipValuesExplored,
     backwardCountingAttempted, multiplicationConnectionMade, patternIdentified,
-    submitEvaluation, startFrom,
+    submitEvaluation, startFrom, currentChallengeIndex, direction,
   ]);
 
   // -------------------------------------------------------------------------
@@ -638,8 +663,13 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct
   );
-  const allChallengesComplete = challenges.length > 0
-    && challengeResults.filter(r => r.correct).length >= challenges.length;
+  // allChallengesComplete provided by useChallengeProgress
+
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    const correct = challengeResults.filter(r => r.correct).length;
+    return Math.round((correct / challenges.length) * 100);
+  }, [allChallengesComplete, challenges, challengeResults]);
 
   const isCountAlongComplete = currentPhase === 'watch' && nextExpectedPosition === null;
 
@@ -1032,10 +1062,6 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
                 <p className="text-emerald-400 text-sm font-medium mb-2">
                   All challenges complete!
                 </p>
-                <p className="text-slate-400 text-xs">
-                  {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-                  {longestStreak > 0 && ` · Best streak: ${longestStreak}`}
-                </p>
               </div>
             )}
           </div>
@@ -1046,6 +1072,18 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
           <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
           </div>
+        )}
+
+        {/* Phase Summary */}
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="Challenge Complete!"
+            celebrationMessage={`You completed all ${challenges.length} skip counting challenges!${longestStreak > 0 ? ` Best streak: ${longestStreak}!` : ''}`}
+            className="mt-4"
+          />
         )}
       </CardContent>
     </Card>

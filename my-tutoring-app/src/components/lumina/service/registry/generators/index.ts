@@ -29,6 +29,7 @@ import './biologyGenerators';
 import './astronomyGenerators';
 import './physicsGenerators';
 import './literacyGenerators';
+import './calendarGenerators';
 
 // Re-export registry functions for convenience
 export {

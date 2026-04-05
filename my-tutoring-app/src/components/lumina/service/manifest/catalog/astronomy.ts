@@ -162,4 +162,58 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'planetary-explorer',
+    description: 'Guided Gemini-driven solar system deep-dive where students explore 3-5 planets sequentially with targeted questions at every stop. Students journey from planet to planet, tap stats to learn about each world, answer questions about planetary properties, compare planets they have visited, and apply reasoning about temperature, atmosphere, and habitability. Features pedagogical moments at every stage: journey start, planet arrival, stat exploration, answer feedback, planet completion, transitions, and journey completion. Gemini generates contextual questions per planet based on focus themes (size, temperature, atmosphere, moons, rings, distance). Progressive difficulty from K (basic recall) to Grade 8 (cross-planet reasoning and application). Supports multiple-choice, true-false, and comparison challenge types. ESSENTIAL for teaching planetary science, comparative planetology, and scientific reasoning across K-8.',
+    constraints: 'Best for grades K-8. K-2: 3 planets, explore mode with true-false and simple MC, focus on one property per planet. Grades 3-5: 4 planets, identify and compare modes, multi-property focus themes, comparison challenges. Grades 6-8: 5 planets, apply mode, reasoning about habitability, atmosphere composition, and temperature patterns. Focus themes should be age-appropriate: size and color for K-1, temperature and moons for 2-3, atmosphere and habitability for 4-5, multi-factor reasoning for 6-8.',
+    evalModes: [
+      {
+        evalMode: 'explore',
+        label: 'Explore (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['mc', 'true-false'],
+        description: 'Basic recall after reading planet info',
+      },
+      {
+        evalMode: 'identify',
+        label: 'Identify (Tier 2)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['mc'],
+        description: 'Identify planets from descriptions without naming them',
+      },
+      {
+        evalMode: 'compare',
+        label: 'Compare (Tier 3)',
+        beta: 4.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['compare', 'mc'],
+        description: 'Compare properties across multiple planets visited',
+      },
+      {
+        evalMode: 'apply',
+        label: 'Apply (Tier 4)',
+        beta: 6.0,
+        scaffoldingMode: 6,
+        challengeTypes: ['mc', 'compare'],
+        description: 'Reasoning about why — apply knowledge of temperature, atmosphere, habitability',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Student is on a guided journey through the solar system, currently exploring {{currentPlanet}}. Focus theme: {{focusTheme}}. They are answering questions about planetary properties, comparisons, and reasoning.',
+      contextKeys: ['currentPlanet', 'focusTheme', 'questionText', 'studentAnswer', 'correctAnswer', 'planetsVisited', 'planetsRemaining', 'currentScore', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"Look at the stats panel — one of those numbers will help you."',
+        level2: '"The question is about {{focusTheme}}. Check the relevant stat value for {{currentPlanet}}."',
+        level3: '"Look at {{currentPlanet}}\'s stats carefully. Compare the values you see to what the question is asking about."',
+      },
+      commonStruggles: [
+        { pattern: 'Student taps answer without reading planet stats', response: '"Hold on! Before you answer, tap the stats panel for {{currentPlanet}}. The answer is hiding in those numbers."' },
+        { pattern: 'Student confuses properties between planets already visited', response: '"You have visited {{planetsVisited}} so far. Each planet has different numbers. Go back and check {{currentPlanet}}\'s stats — do not mix them up with the last planet!"' },
+        { pattern: 'Student struggles with comparison questions across planets', response: '"For comparison questions, think about one property at a time. Look at {{focusTheme}} for each planet you visited. Which one had the biggest or smallest value?"' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

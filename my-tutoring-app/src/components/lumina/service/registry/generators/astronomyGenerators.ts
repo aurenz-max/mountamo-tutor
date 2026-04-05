@@ -20,6 +20,7 @@ import { generateMissionPlanner } from '../../astronomy/gemini-mission-planner';
 import { generateTelescopeSimulator } from '../../astronomy/gemini-telescope-simulator';
 import { generateLightShadowLab } from '../../astronomy/gemini-light-shadow-lab';
 import { generateConstellationBuilder } from '../../astronomy/gemini-constellation-builder';
+import { generatePlanetaryExplorer } from '../../astronomy/gemini-planetary-explorer';
 
 // ============================================================================
 // Astronomy Primitives Registration (K-5)
@@ -95,6 +96,13 @@ registerGenerator('constellation-builder', async (item, topic, gradeContext) => 
   data: await generateConstellationBuilder(topic, gradeContext, item.config),
 }));
 
+// Planetary Explorer
+registerGenerator('planetary-explorer', async (item, topic, gradeContext) => ({
+  type: 'planetary-explorer',
+  instanceId: item.instanceId,
+  data: await generatePlanetaryExplorer(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 10/10 astronomy primitives registered
+// Migration status: 11/11 astronomy primitives registered
 // ============================================================================

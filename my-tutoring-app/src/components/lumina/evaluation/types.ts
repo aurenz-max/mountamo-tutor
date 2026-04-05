@@ -1494,6 +1494,17 @@ export interface ConstellationBuilderMetrics extends BasePrimitiveMetrics {
   durationMs: number;
 }
 
+export interface PlanetaryExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'planetary-explorer';
+  totalQuestions: number;
+  correctAnswers: number;
+  accuracy: number;
+  planetsExplored: number;
+  perPlanetScores: Record<string, number>;
+  statsExplored: number;
+  durationMs: number;
+}
+
 // -----------------------------------------------------------------------------
 // Physics Primitives
 // -----------------------------------------------------------------------------
@@ -2961,6 +2972,15 @@ export interface VehicleDesignStudioMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface TransportChallengeMetrics extends BasePrimitiveMetrics {
+  type: 'transport-challenge';
+  scenariosCompleted: number;
+  totalScenarios: number;
+  vehicleChoiceAccuracy: number;
+  tradeOffAccuracy: number;
+  averageConstraintsMet: number;
+}
+
 // -----------------------------------------------------------------------------
 // Core Primitives
 // -----------------------------------------------------------------------------
@@ -3047,6 +3067,50 @@ export interface SpatialSceneMetrics extends BasePrimitiveMetrics {
   challengesTotal: number;
 }
 
+export interface ShapeComposerMetrics extends BasePrimitiveMetrics {
+  type: 'shape-composer';
+  accuracy: number;
+  challengesCorrect: number;
+  challengesTotal: number;
+  totalPiecesUsed: number;
+  totalAttempts: number;
+  compositionAccuracy: number;
+  spatialReasoningScore: number;
+}
+
+export interface NetFolderMetrics extends BasePrimitiveMetrics {
+  type: 'net-folder';
+  solidsIdentified: number;
+  solidsTotal: number;
+  facesMatchedCorrectly: number;
+  facesTotal: number;
+  validNetsIdentified: number;
+  netsTotal: number;
+  surfaceAreaCorrect: number;
+  surfaceAreaTotal: number;
+  facesEdgesVerticesCounted: boolean;
+  totalAttempts: number;
+  accuracy: number;
+}
+
+// Calendar metrics
+export interface CalendarExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'calendar-explorer';
+  questionsCorrect: number;
+  questionsTotal: number;
+  accuracy: number;
+  attemptsCount: number;
+}
+
+export interface TimelineBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'timeline-builder';
+  eventsPlaced: number;
+  eventsTotal: number;
+  orderCorrect: boolean;
+  positionAccuracy: number;
+  attemptsCount: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -3070,6 +3134,7 @@ export type PrimitiveMetrics =
   | PaperAirplaneDesignerMetrics
   | EngineExplorerMetrics
   | VehicleDesignStudioMetrics
+  | TransportChallengeMetrics
   // Assessment
   | MultipleChoiceMetrics
   | FillInBlanksMetrics
@@ -3152,6 +3217,7 @@ export type PrimitiveMetrics =
   | TelescopeSimulatorMetrics
   | LightShadowLabMetrics
   | ConstellationBuilderMetrics
+  | PlanetaryExplorerMetrics
   // Physics
   | MotionDiagramMetrics
   | SoundWaveExplorerMetrics
@@ -3206,7 +3272,12 @@ export type PrimitiveMetrics =
   | DigitalSkillsSimMetrics
   | CoinCounterMetrics
   | TimeSequencerMetrics
-  | SpatialSceneMetrics;
+  | SpatialSceneMetrics
+  | ShapeComposerMetrics
+  | NetFolderMetrics
+  // Calendar
+  | CalendarExplorerMetrics
+  | TimelineBuilderMetrics;
 
 // =============================================================================
 // Session & Summary Types

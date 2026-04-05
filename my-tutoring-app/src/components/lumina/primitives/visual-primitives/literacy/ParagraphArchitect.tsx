@@ -9,6 +9,7 @@ import {
   usePrimitiveEvaluation,
   type ParagraphArchitectMetrics,
 } from '../../../evaluation';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 // =============================================================================
 // Data Interface
@@ -307,6 +308,42 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
   });
 
   // -------------------------------------------------------------------------
+  // AI Tutoring
+  // -------------------------------------------------------------------------
+
+  const resolvedInstanceId = instanceId || `paragraph-architect-${Date.now()}`;
+
+  const aiPrimitiveData = useMemo(
+    () => ({
+      paragraphType,
+      topic,
+      gradeLevel,
+      currentPhase,
+      exploreCompleted: exploreCorrect,
+      practiceSubmitted,
+      detailCount: currentPhase === 'apply'
+        ? applyDetails.filter((d) => d.trim().length > 0).length
+        : practiceDetails.filter((d) => d.trim().length > 0).length,
+      linkingWordsUsed: currentPhase === 'apply'
+        ? applyLinkingWordsUsed.length
+        : practiceLinkingWordsUsed.length,
+    }),
+    [
+      paragraphType, topic, gradeLevel, currentPhase,
+      exploreCorrect, practiceSubmitted,
+      applyDetails, practiceDetails,
+      applyLinkingWordsUsed, practiceLinkingWordsUsed,
+    ]
+  );
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'paragraph-architect',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
+  // -------------------------------------------------------------------------
   // Model paragraph parts for Explore phase
   // -------------------------------------------------------------------------
 
@@ -335,21 +372,37 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
       if (modelParagraph && sentence === modelParagraph.topicSentence) {
         setExploreCorrect(true);
         setFeedback('Correct! That is the topic sentence -- it tells the reader what the paragraph is about.');
+        sendText(
+          `[EXPLORE_CORRECT] The student correctly identified the topic sentence on attempt ${exploreAttempts + 1}. `
+          + `Congratulate them briefly and explain why it's the topic sentence.`,
+          { silent: true }
+        );
       } else {
         setExploreCorrect(false);
         setFeedback(
           'Not quite. The topic sentence is the first sentence that tells the main idea. Try again!'
         );
+        sendText(
+          `[EXPLORE_INCORRECT] The student chose "${sentence}" but it is not the topic sentence. `
+          + `Attempt ${exploreAttempts + 1}. Give a brief hint about what makes a topic sentence without revealing the answer.`,
+          { silent: true }
+        );
       }
     },
-    [modelParagraph]
+    [modelParagraph, sendText, exploreAttempts]
   );
 
   const handleMoveToPhase2 = useCallback(() => {
     setCurrentPhase('practice');
     setFeedback('');
     setSelectedModelPart(null);
-  }, []);
+    sendText(
+      `[PHASE_PRACTICE] The student is moving to the Practice phase. `
+      + `They will build a ${paragraphType} paragraph about "${topic}" using sentence frames. `
+      + `Briefly introduce the task and encourage them.`,
+      { silent: true }
+    );
+  }, [sendText, paragraphType, topic]);
 
   // -------------------------------------------------------------------------
   // Phase 2: Practice handlers
@@ -403,9 +456,24 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
       setFeedback(
         'Great job building your practice paragraph! Now move to the Apply phase to write your own paragraph from scratch.'
       );
+      sendText(
+        `[PRACTICE_COMPLETE] The student completed their practice paragraph using ${framesUsed} sentence frames `
+        + `and ${practiceLinkingWordsUsed.length} linking words. `
+        + `Celebrate briefly and encourage them to try writing on their own in the Apply phase.`,
+        { silent: true }
+      );
     } else {
+      const missing = [];
+      if (!hasTopicContent) missing.push('topic sentence');
+      if (!hasDetailContent) missing.push('detail sentence');
+      if (!hasConclusionContent) missing.push('concluding sentence');
       setFeedback(
         'Make sure you have a topic sentence, at least one detail, and a concluding sentence before submitting.'
+      );
+      sendText(
+        `[PRACTICE_INCOMPLETE] The student tried to submit but is missing: ${missing.join(', ')}. `
+        + `Give a brief, encouraging hint about what they still need without doing it for them.`,
+        { silent: true }
       );
     }
   }, [
@@ -415,12 +483,20 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
     practiceDetailFrames,
     practiceConclusionFrame,
     practiceConclusionFill,
+    practiceLinkingWordsUsed,
+    sendText,
   ]);
 
   const handleMoveToPhase3 = useCallback(() => {
     setCurrentPhase('apply');
     setFeedback('');
-  }, []);
+    sendText(
+      `[PHASE_APPLY] The student is moving to the Apply phase. `
+      + `They will write a ${paragraphType} paragraph about "${topic}" from scratch without sentence frames. `
+      + `Briefly introduce the challenge and encourage independence.`,
+      { silent: true }
+    );
+  }, [sendText, paragraphType, topic]);
 
   // -------------------------------------------------------------------------
   // Phase 3: Apply handlers
@@ -459,14 +535,29 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
     const hasConclusionContent = applyConclusionSentence.trim().length > 0;
 
     if (!hasTopicContent || filledDetails.length === 0 || !hasConclusionContent) {
+      const missing = [];
+      if (!hasTopicContent) missing.push('topic sentence');
+      if (filledDetails.length === 0) missing.push('detail sentence');
+      if (!hasConclusionContent) missing.push('concluding sentence');
       setFeedback(
         'Make sure you have a topic sentence, at least one detail sentence, and a concluding sentence.'
+      );
+      sendText(
+        `[APPLY_INCOMPLETE] The student tried to submit but is missing: ${missing.join(', ')}. `
+        + `Give a brief, encouraging reminder about the hamburger structure.`,
+        { silent: true }
       );
       return;
     }
 
     setApplySubmitted(true);
     setFeedback('Wonderful work! You wrote a complete paragraph on your own!');
+    sendText(
+      `[ALL_COMPLETE] The student finished writing a ${paragraphType} paragraph about "${topic}" `
+      + `with ${filledDetails.length} detail sentences and ${applyLinkingWordsUsed.length} linking words. `
+      + `Celebrate the full session and highlight what they did well.`,
+      { silent: true }
+    );
 
     // Submit evaluation
     if (!hasSubmittedEvaluation) {
@@ -538,6 +629,8 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
     concludingSentenceFrames,
     hasSubmittedEvaluation,
     submitEvaluation,
+    sendText,
+    topic,
   ]);
 
   // -------------------------------------------------------------------------

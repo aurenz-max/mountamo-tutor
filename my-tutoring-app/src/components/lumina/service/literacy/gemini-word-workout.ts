@@ -142,6 +142,8 @@ const sentenceReadingSchema: Schema = {
           cvcWords: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
+            minItems: "3",
+            description: "At least 3 different CVC words from the sentence",
           },
           sightWords: {
             type: Type.ARRAY,
@@ -232,6 +234,8 @@ Each challenge MUST have: id, sentence (4-8 words), cvcWords, sightWords, compre
 RULES:
 - ONLY use CVC words + approved sight words: ${APPROVED_SIGHT_WORDS}
 - CVC words should use mastered vowels: ${vowelStr}
+- Each sentence MUST contain at least 3 different CVC words
+- comprehensionAnswer MUST be one of the cvcWords
 - Comprehension questions should be simple who/what/where questions
 - Answers should be a single word from the sentence`
       );
@@ -299,6 +303,52 @@ function getFallbackChallenges(
 }
 
 // ============================================================================
+// Post-process: word-chain validation & changedPositions derivation
+// ============================================================================
+
+/**
+ * Validates a word chain: removes consecutive duplicates, checks each
+ * transition differs by exactly 1 character (same length), and recomputes
+ * changedPositions deterministically. Returns null if the chain is invalid.
+ */
+function validateWordChain(
+  ch: WordWorkoutChallenge
+): WordWorkoutChallenge | null {
+  if (!ch.chain || ch.chain.length < 2) return null;
+
+  // Remove consecutive duplicates
+  const deduped = [ch.chain[0]];
+  for (let i = 1; i < ch.chain.length; i++) {
+    if (ch.chain[i] !== ch.chain[i - 1]) {
+      deduped.push(ch.chain[i]);
+    }
+  }
+
+  if (deduped.length < 3) return null; // too short after dedup
+
+  // Validate each transition: same length, exactly 1 char different
+  const positions: number[] = [];
+  for (let i = 0; i < deduped.length - 1; i++) {
+    const a = deduped[i];
+    const b = deduped[i + 1];
+    if (a.length !== b.length) return null;
+
+    let diffCount = 0;
+    let diffPos = -1;
+    for (let j = 0; j < a.length; j++) {
+      if (a[j] !== b[j]) {
+        diffCount++;
+        diffPos = j;
+      }
+    }
+    if (diffCount !== 1) return null;
+    positions.push(diffPos);
+  }
+
+  return { ...ch, chain: deduped, changedPositions: positions };
+}
+
+// ============================================================================
 // Per-mode challenge generator
 // ============================================================================
 
@@ -328,13 +378,37 @@ async function generateModeChallenges(
     if (!text) throw new Error("Empty response");
 
     const result = JSON.parse(text);
-    const challenges: WordWorkoutChallenge[] = (result.challenges || []).map(
+    let challenges: WordWorkoutChallenge[] = (result.challenges || []).map(
       (ch: WordWorkoutChallenge, idx: number) => ({
         ...ch,
         id: ch.id || `c${idx + 1}`,
         mode,
       })
     );
+
+    // Post-process: validate word chains, derive changedPositions
+    if (mode === 'word-chains') {
+      const before = challenges.length;
+      challenges = challenges
+        .map(validateWordChain)
+        .filter((ch): ch is WordWorkoutChallenge => ch !== null);
+      if (challenges.length < before) {
+        console.warn(`[word-workout] word-chains: rejected ${before - challenges.length}/${before} invalid chains`);
+      }
+    }
+
+    // Post-process: reject sentence-reading with < 3 cvcWords
+    if (mode === 'sentence-reading') {
+      const before = challenges.length;
+      challenges = challenges.filter(ch => {
+        const words = ch.cvcWords || [];
+        const answer = ch.comprehensionAnswer || '';
+        return words.length >= 3 && words.some(w => w.toLowerCase() === answer.toLowerCase());
+      });
+      if (challenges.length < before) {
+        console.warn(`[word-workout] sentence-reading: rejected ${before - challenges.length}/${before} challenges with insufficient cvcWords`);
+      }
+    }
 
     if (challenges.length === 0) throw new Error("No challenges returned");
     return challenges;

@@ -372,7 +372,7 @@ Now generate a paragraph architect activity for "${topic}" at grade level ${grad
     const result = JSON.parse(text) as ParagraphArchitectData;
 
     // Merge with any config overrides (excluding targetEvalMode)
-    const { targetEvalMode: _unused, ...configRest } = config ?? {};
+    const { targetEvalMode: _unused, paragraphType: _unusedType, ...configRest } = config ?? {};
     const finalData: ParagraphArchitectData = {
       ...result,
       ...configRest,

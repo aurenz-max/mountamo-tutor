@@ -428,4 +428,50 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'transport-challenge',
+    description: 'Living transport simulation where students pick vehicles and watch animated trips play out. Students see 50 cars making round trips vs 2 buses vs 1 plane — the visual IS the explanation. Constraint bars (budget, time, CO₂) fill in real-time. Comparison tables reveal trade-offs. Perfect for K-5 engineering, logistics, and data-driven decision making. ESSENTIAL for teaching constraint analysis and transport planning.',
+    constraints: 'Best for grades 3-5. Use for transport logistics, constraint-based decisions, trade-off analysis, data comparison. Easy: single constraint, obvious answer. Medium: 2-3 constraints, multiple viable options. Hard: all constraints active, no perfect answer. Vehicles include cars, buses, vans, trains, planes with realistic capacity/speed/cost/CO2 data.',
+    evalModes: [
+      {
+        evalMode: 'single_constraint',
+        label: 'Single Constraint (Easy)',
+        beta: -1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['single_constraint'],
+        description: 'One constraint dominates, one obvious best vehicle',
+      },
+      {
+        evalMode: 'multi_constraint',
+        label: 'Multi Constraint (Medium)',
+        beta: 0.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['multi_constraint'],
+        description: 'Multiple constraints create trade-offs between vehicles',
+      },
+      {
+        evalMode: 'full_optimization',
+        label: 'Full Optimization (Hard)',
+        beta: 1.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['full_optimization'],
+        description: 'All constraints active, no perfect answer, must prioritize',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Student is choosing vehicles to transport {{peopleToTransport}} people from {{origin}} to {{destination}} under constraints: {{constraints}}. They watch an animated simulation showing vehicles making round trips.',
+      contextKeys: ['currentScenario', 'origin', 'destination', 'people', 'constraints'],
+      scaffoldingLevels: {
+        level1: '"How many trips do you think that vehicle would need? Look at its capacity."',
+        level2: '"Let\'s check the numbers: {{capacity}} people per trip for {{peopleToTransport}} people means... how many trips? Now multiply by the cost per trip."',
+        level3: '"This vehicle carries {{capacity}} people. For {{peopleToTransport}} people, that\'s {{trips}} trips. Each trip costs ${{costPerTrip}}, so total = {{trips}} × ${{costPerTrip}} = ${{totalCost}}. Does that fit the budget?"',
+      },
+      commonStruggles: [
+        { pattern: 'Student picks the fastest vehicle without checking budget', response: 'Ask: "That vehicle is fast! But how much will all those trips cost? Let\'s check the budget constraint."' },
+        { pattern: 'Student picks the cheapest per-trip vehicle without considering total trips', response: 'Ask: "That vehicle is cheap per trip, but how many trips will it need? What\'s the TOTAL cost?"' },
+        { pattern: 'Student ignores CO2 constraint', response: 'Point to the CO₂ bar: "Don\'t forget the environmental limit! How much CO₂ does each trip produce?"' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

@@ -31,6 +31,7 @@ import PropulsionTimeline from '../primitives/visual-primitives/engineering/Prop
 import PaperAirplaneDesigner from '../primitives/visual-primitives/engineering/PaperAirplaneDesigner';
 import EngineExplorer from '../primitives/visual-primitives/engineering/EngineExplorer';
 import VehicleDesignStudio from '../primitives/visual-primitives/engineering/VehicleDesignStudio';
+import TransportChallenge from '../primitives/visual-primitives/engineering/TransportChallenge';
 
 import {
   EvaluationProvider,
@@ -54,7 +55,8 @@ type PrimitiveType =
   | 'machine-profile' | 'flight-forces-explorer' | 'airfoil-lab' | 'vehicle-comparison-lab' | 'propulsion-lab' | 'hydraulics-lab' | 'propulsion-timeline'
   | 'paper-airplane-designer'
   | 'engine-explorer'
-  | 'vehicle-design-studio';
+  | 'vehicle-design-studio'
+  | 'transport-challenge';
 
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
@@ -94,6 +96,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'paper-airplane-designer', label: 'Paper Airplane Designer', icon: '✈️', topic: 'Designing and testing paper airplanes using the engineering design process', strand: 'VF' },
   { value: 'engine-explorer', label: 'Engine Explorer', icon: '🔧', topic: 'Exploring engine types, components, and energy cycles', strand: 'VF' },
   { value: 'vehicle-design-studio', label: 'Vehicle Design Studio', icon: '🚗', topic: 'Vehicle Engineering', strand: 'VF' },
+  { value: 'transport-challenge', label: 'Transport Challenge', icon: '🚛', topic: 'Choosing vehicles and optimizing transport under constraints', strand: 'VF' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -356,6 +359,18 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'engineering-vehicle-design',
             subskillId: 'iterative-design',
             objectiveId: 'understand-vehicle-engineering',
+          }}
+        />
+      );
+    case 'transport-challenge':
+      return (
+        <TransportChallenge
+          data={{
+            ...(data as Parameters<typeof TransportChallenge>[0]['data']),
+            instanceId: `transport-challenge-${Date.now()}`,
+            skillId: 'engineering-transport',
+            subskillId: 'vehicle-selection',
+            objectiveId: 'understand-transport-constraints',
           }}
         />
       );

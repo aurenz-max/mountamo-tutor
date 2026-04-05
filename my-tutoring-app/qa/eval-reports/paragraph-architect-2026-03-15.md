@@ -5,13 +5,12 @@
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
 | informational | PASS | — |
-| narrative | FAIL | 1 (CRITICAL) |
-| opinion | FAIL | 1 (CRITICAL) |
+| narrative | PASS | — |
+| opinion | PASS | — |
 
-## Issues
+## Resolved Issues (2026-04-04)
 
-### narrative, opinion — paragraphType always returns "informational"
-- **Severity:** CRITICAL
-- **What's broken:** Both narrative and opinion modes return `paragraphType: "informational"` instead of matching the eval mode. Student sees "Informational" label when they should see "Narrative" or "Opinion". IRT calibration data is corrupted since all modes record the same type.
-- **Data:** narrative mode: `paragraphType: "informational"`, opinion mode: `paragraphType: "informational"`
-- **Fix in:** GENERATOR — challengeTypes/paragraphType constraint not forwarded to LLM prompt
+### PA-1, PA-2 — paragraphType always returned "informational"
+- **Root cause:** SP-9 double override. Registration defaulted `paragraphType` to `'informational'` and passed it in config. Generator's config merge then overwrote Gemini's correct output with the default.
+- **Fix:** Removed `paragraphType` default from registration. Excluded `paragraphType` from generator config merge (same pattern as `targetEvalMode`).
+- **Files:** `service/literacy/gemini-paragraph-architect.ts`, `service/registry/generators/literacyGenerators.ts`

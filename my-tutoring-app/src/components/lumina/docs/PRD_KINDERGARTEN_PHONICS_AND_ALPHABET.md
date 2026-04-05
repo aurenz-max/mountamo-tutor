@@ -1,5 +1,29 @@
 # PRD: Kindergarten Phonological Awareness, Alphabet & CVC Primitives
 
+**Status:** Largely Complete (8/8 new primitives shipped, 0/3 enhancements done)
+**Last Audit:** 2026-04-04
+
+> **Implementation Status (2026-04-04):**
+>
+> **New Primitives — All 8 DONE:**
+> | Primitive | Component | Generator | Catalog + Scaffold | Eval Metrics | AI Tutor |
+> |-----------|-----------|-----------|-------------------|--------------|----------|
+> | `rhyme-studio` | ✅ | ✅ 383 LOC | ✅ | ✅ | ✅ |
+> | `syllable-clapper` | ✅ | ✅ 373 LOC | ✅ | ✅ | ✅ |
+> | `phoneme-explorer` | ✅ | ✅ 463 LOC | ✅ | ✅ | ✅ |
+> | `sound-swap` | ✅ | ✅ 609 LOC | ✅ | ✅ | ✅ |
+> | `letter-spotter` | ✅ | ✅ 436 LOC | ✅ | ✅ | ✅ |
+> | `letter-sound-link` | ✅ | ✅ 541 LOC | ✅ | ✅ | ✅ |
+> | `cvc-speller` | ✅ | ✅ 350 LOC | ✅ | ✅ | ✅ |
+> | `word-workout` | ✅ | ✅ 442 LOC | ✅ | ✅ | ✅ |
+>
+> **Enhancements — 0/3 DONE:**
+> | Enhancement | Status | What's Missing |
+> |-------------|--------|---------------|
+> | `phonics-blender` vowel-specific CVC mode | ❌ Not Started | No `vowelFocus` parameter in generator schema |
+> | `letter-tracing` generator + group progression | ❌ Not Started | No generator file, no catalog entry, no metrics — primitive itself doesn't exist |
+> | `decodable-reader` vowel-specific passage control | ❌ Not Started | No `vowelFocus` parameter in generator schema |
+
 ## Executive Summary
 
 Lumina's current literacy coverage has strong infrastructure for grades 2-6 (18 implemented primitives from the Language Arts Suite PRD) but **critical gaps at the kindergarten level** — the very foundation that all later literacy depends on. The existing early-literacy primitives (`rhyming-pairs`, `sound-sort`, `alphabet-sequence`, `sight-word-card`, `letter-tracing`) are **display-only** with no generators, no interactivity, and no evaluation metrics. Meanwhile, the two interactive K-2 primitives (`phonics-blender`, `decodable-reader`) cover only CVC blending and passage reading — missing syllable awareness, phoneme isolation, phoneme manipulation, letter recognition, letter-sound correspondence, CVC encoding, and CVC application activities.

@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
 import {
   usePrimitiveEvaluation,
   type TapeDiagramMetrics,
 } from '../../../evaluation';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import type { PhaseResult } from '../../../components/PhaseSummaryPanel';
 
 // ---------------------------------------------------------------------------
 // Data Interfaces
@@ -147,6 +150,8 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
     resetAttempt: resetEvaluationAttempt,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<TapeDiagramMetrics>({
     primitiveType: 'tape-diagram',
     instanceId: instanceId || `tape-diagram-${Date.now()}`,
@@ -173,6 +178,121 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     });
     return unknowns;
   }, [bars]);
+
+  // --- AI Tutoring ---
+  const aiPrimitiveData = useMemo(() => ({
+    challengeType,
+    currentPhase,
+    totalBars: bars.length,
+    unknownSegments: getAllUnknownSegments.length,
+    solvedSegments: Object.values(feedback).filter(f => f === 'correct').length,
+    totalHintsUsed,
+  }), [challengeType, currentPhase, bars.length, getAllUnknownSegments.length, feedback, totalHintsUsed]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'tape-diagram',
+    instanceId: instanceId || `tape-diagram-${Date.now()}`,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: 'Grade 3',
+  });
+
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Tape diagram: ${challengeType} mode. ${getAllUnknownSegments.length} unknowns to solve. `
+      + `${wordProblem ? `Problem: "${wordProblem}". ` : ''}`
+      + `Guide the student through the diagram.`,
+      { silent: true }
+    );
+  }, [isConnected, challengeType, getAllUnknownSegments.length, wordProblem, sendText]);
+
+  // --- Phase Results for PhaseSummaryPanel ---
+  const phaseResults = useMemo((): PhaseResult[] => {
+    if (!hasSubmittedEvaluation) return [];
+
+    if (challengeType === 'solve_part_whole') {
+      return [
+        {
+          label: 'Find the Whole',
+          score: wholeFound ? 100 : 0,
+          attempts: phaseAttempts.explore,
+          firstTry: wholeFound && phaseAttempts.explore <= 1,
+          icon: '🔍',
+          accentColor: 'blue',
+        },
+        {
+          label: 'Practice',
+          score: (() => {
+            const practiceUnknowns = getAllUnknownSegments.slice(0, 1);
+            const correct = practiceUnknowns.filter(({ barIndex, segmentIndex }) =>
+              feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
+            ).length;
+            return practiceUnknowns.length > 0 ? Math.round((correct / practiceUnknowns.length) * 100) : 100;
+          })(),
+          attempts: phaseAttempts.practice,
+          firstTry: phaseAttempts.practice <= 1,
+          icon: '📝',
+          accentColor: 'amber',
+        },
+        {
+          label: 'Apply',
+          score: (() => {
+            const allUnknowns = getAllUnknownSegments;
+            const correct = allUnknowns.filter(({ barIndex, segmentIndex }) =>
+              feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
+            ).length;
+            return allUnknowns.length > 0 ? Math.round((correct / allUnknowns.length) * 100) : 100;
+          })(),
+          attempts: phaseAttempts.apply,
+          firstTry: phaseAttempts.apply <= 1,
+          icon: '🎯',
+          accentColor: 'emerald',
+        },
+      ];
+    }
+
+    if (challengeType === 'multi_step') {
+      const solveOrder = multiStepData?.solveOrder || [2, 3];
+      return solveOrder.map((segIdx, i) => {
+        const key = getSegmentKey(0, segIdx);
+        const segment = bars[0]?.segments[segIdx];
+        const attempt = segmentAttempts.get(key);
+        return {
+          label: segment?.label || `Step ${i + 1}`,
+          score: feedback[key] === 'correct' ? 100 : 0,
+          attempts: attempt?.attempts || 0,
+          firstTry: attempt?.correctOnFirstTry || false,
+          icon: i === 0 ? '1️⃣' : '2️⃣',
+          accentColor: (i === 0 ? 'cyan' : 'purple') as PhaseResult['accentColor'],
+        };
+      });
+    }
+
+    // represent and solve_comparison: single phase
+    const allUnknowns = getAllUnknownSegments;
+    const correct = allUnknowns.filter(({ barIndex, segmentIndex }) =>
+      feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
+    ).length;
+    return [{
+      label: challengeType === 'represent' ? 'Represent' : 'Compare',
+      score: allUnknowns.length > 0 ? Math.round((correct / allUnknowns.length) * 100) : 100,
+      attempts: Array.from(segmentAttempts.values()).reduce((s, a) => s + a.attempts, 0),
+      firstTry: Array.from(segmentAttempts.values()).every(a => a.correctOnFirstTry),
+      icon: challengeType === 'represent' ? '📊' : '⚖️',
+      accentColor: 'orange',
+    }];
+  }, [hasSubmittedEvaluation, challengeType, wholeFound, phaseAttempts, getAllUnknownSegments, feedback, getSegmentKey, segmentAttempts, multiStepData, bars]);
+
+  const localOverallScore = useMemo(() => {
+    if (!hasSubmittedEvaluation) return 0;
+    const allUnknowns = getAllUnknownSegments;
+    const correct = allUnknowns.filter(({ barIndex, segmentIndex }) =>
+      feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
+    ).length;
+    return allUnknowns.length > 0 ? Math.round((correct / allUnknowns.length) * 100) : 0;
+  }, [hasSubmittedEvaluation, getAllUnknownSegments, feedback]);
 
   const handleAnswerChange = (barIndex: number, segmentIndex: number, value: string) => {
     const key = getSegmentKey(barIndex, segmentIndex);
@@ -444,6 +564,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           (bi === barIndex && si === segmentIndex) ? isCorrect : newFeedback[getSegmentKey(bi, si)] === 'correct'
         );
         if (nowAllCorrect) {
+          sendText('[ALL_COMPLETE] All segments solved! Celebrate.', { silent: true });
           const metrics = buildMetrics();
           submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, { studentWork: { userAnswers } });
         }
@@ -535,6 +656,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       if (Math.abs(inputWhole - actualTotal) < 0.01) {
         setWholeFound(true);
         setFeedback({ explore: 'correct' });
+        sendText('[PHASE_TRANSITION] Student found the whole. Moving to practice phase.', { silent: true });
         setTimeout(() => { setCurrentPhase('practice'); setFeedback({}); }, 2000);
       } else {
         setFeedback({ explore: 'incorrect' });
@@ -559,6 +681,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         if (currentPhase === 'practice') {
           const firstUnknown = allUnknowns[0];
           if (firstUnknown && getSegmentKey(firstUnknown.barIndex, firstUnknown.segmentIndex) === key) {
+            sendText('[PHASE_TRANSITION] Practice complete. Moving to apply phase.', { silent: true });
             setTimeout(() => setCurrentPhase('apply'), 1500);
           }
         } else if (currentPhase === 'apply') {
@@ -591,6 +714,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
               totalAttempts: totalAttemptCount,
               usedPartWholeStrategy: wholeFound,
             });
+            sendText('[ALL_COMPLETE] All segments solved! Celebrate.', { silent: true });
             submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, {
               studentWork: { userAnswers, phaseAttempts },
             });
@@ -737,6 +861,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           newFeedback[getSegmentKey(bi, si)] === 'correct'
         );
         if (allSolved) {
+          sendText('[ALL_COMPLETE] All segments solved! Celebrate.', { silent: true });
           const metrics = buildMetrics();
           submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, {
             studentWork: { userAnswers, comparisonData },
@@ -834,6 +959,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         const nextStep = currentStepIndex + 1;
         if (nextStep >= totalSteps) {
           // All steps complete
+          sendText('[ALL_COMPLETE] All segments solved! Celebrate.', { silent: true });
           const metrics = buildMetrics();
           submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, {
             studentWork: { userAnswers, stepsCompleted: totalSteps },
@@ -993,15 +1119,25 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
           {/* Final success state */}
           {hasSubmittedEvaluation && (
-            <div className="mt-8 p-6 bg-green-500/20 border-2 border-green-500/50 rounded-xl text-center">
-              <div className="text-green-400 font-bold text-xl mb-1">All Complete!</div>
-              <div className="text-green-300/80 mb-4">You&apos;ve mastered this tape diagram problem.</div>
-              <button
-                onClick={handleReset}
-                className="px-6 py-2 bg-orange-600/20 border-2 border-orange-500/40 text-orange-400 rounded-lg hover:bg-orange-600/30 transition-all font-semibold"
-              >
-                Try Another Problem
-              </button>
+            <div className="mt-8 space-y-4">
+              {phaseResults.length > 0 && (
+                <PhaseSummaryPanel
+                  phases={phaseResults}
+                  overallScore={submittedResult?.score ?? localOverallScore}
+                  durationMs={elapsedMs}
+                  heading="All Complete!"
+                  celebrationMessage="You've mastered this tape diagram problem!"
+                  className="mt-4"
+                />
+              )}
+              <div className="text-center">
+                <button
+                  onClick={handleReset}
+                  className="px-6 py-2 bg-orange-600/20 border-2 border-orange-500/40 text-orange-400 rounded-lg hover:bg-orange-600/30 transition-all font-semibold"
+                >
+                  Try Another Problem
+                </button>
+              </div>
             </div>
           )}
 

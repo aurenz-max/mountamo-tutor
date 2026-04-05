@@ -1,8 +1,11 @@
 # PRD: Math Primitives Multi-Phase Upgrade
 
+**Status:** Nearly Complete (38/42 interactive primitives have PhaseSummaryPanel — 90%)
+**Last Audit:** 2026-04-04
+
 ## Executive Summary
 
-Lumina's math primitives suite contains 30 components spanning K-8 mathematics. Two of these (FractionBar, PlaceValueChart) have been upgraded to a **multi-phase learning model** with the new `PhaseSummaryPanel` — a pedagogical pattern that decomposes a single math concept into sequential phases (identify, analyze, build) with per-phase scoring, AI tutoring at every transition, and a rich animated summary at completion. This PRD extends that pattern to the remaining math primitives that should support it, defining natural mastery evaluation moments for each and incorporating PhaseSummaryPanel throughout.
+Lumina's math primitives suite contains **50 components** spanning K-8 mathematics. 38 of 42 interactive primitives now have `PhaseSummaryPanel` — a pedagogical pattern that decomposes a single math concept into sequential phases (identify, analyze, build) with per-phase scoring, AI tutoring at every transition, and a rich animated summary at completion. This PRD tracks the remaining 4 primitives that still need the upgrade, and documents the phase designs for all upgraded primitives.
 
 ### Why Multi-Phase Matters
 
@@ -34,61 +37,99 @@ Each phase includes:
 - Score computation with attempt penalties
 - PhaseResult data flowing to PhaseSummaryPanel
 
-### All 30 Math Primitives — Current Phase Status
+### All 50 Math Primitives — Current Phase Status
 
-| # | Primitive | Grade | Has Phases | Has PhaseSummaryPanel | Has Eval | Has AI | Interaction Model |
-|---|-----------|-------|------------|----------------------|----------|--------|-------------------|
-| 1 | FractionBar | 2-5 | 3-phase | **Yes** | Yes | Yes | MC + Build (reference implementation) |
-| 2 | PlaceValueChart | 2-5 | 3-phase | **Yes** | Yes | Yes | MC + Build (reference implementation) |
-| 3 | BalanceScale | 3-8 | 4-mode | No | Yes | Yes | explore → identify → solve → verify |
-| 4 | FunctionMachine | 3-6 | 4-mode | No | Yes | Yes | observe → predict → discover → create |
-| 5 | CountingBoard | K-1 | 4-type | No | Yes | Yes | count → subitize → organize → countOn |
-| 6 | MeasurementTools | 1-5 | 4-mode | No | Yes | Yes | explore → estimate → precision → convert |
-| 7 | DoubleNumberLine | 5-7 | 3-mode | No | Yes | No | explore → practice → apply |
-| 8 | PercentBar | 5-7 | 4-mode | No | Yes | No | explore → practice → apply → complete |
-| 9 | TapeDiagram | 3-6 | 3-mode | No | Yes | No | explore → practice → apply |
-| 10 | RegroupingWorkbench | 1-4 | 4-mode | No | Yes | Yes | explore → regroup → solve → connect |
-| 11 | SkipCountingRunner | 1-3 | challenges | No | Yes | Yes | watch → jump → predict → connect |
-| 12 | TenFrame | K-2 | challenges | No | Yes | Yes | build → subitize → makeTen → operate |
-| 13 | PatternBuilder | K-3 | challenges | No | Yes | Yes | copy → identify → create → translate |
-| 14 | BaseTenBlocks | 1-4 | modes | No | Yes | Yes | build → decompose → regroup → operate |
-| 15 | NumberLine | 1-6 | implicit | No | Yes | Yes | explore → plot → operate → compare |
-| 16 | FractionCircles | 2-5 | none | No | Yes | No | Single interaction: shade sectors |
-| 17 | AreaModel | 3-5 | none | No | Yes | No | Single interaction: fill cells |
-| 18 | ArrayGrid | 2-4 | none | No | Yes | No | Single interaction: set grid |
-| 19 | MultiplicationExplorer | 2-4 | none | No | Yes | Yes | Single interaction: multi-rep |
-| 20 | FactorTree | 4-6 | none | No | Yes | Yes | Single interaction: build tree |
-| 21 | RatioTable | 5-7 | none | No | Yes | Yes | Single interaction: fill table |
-| 22 | ShapeBuilder | 2-5 | none | No | Yes | Yes | Single interaction: draw shapes |
-| 23 | BarModel | 1-5 | none | No | No | Yes | Static display |
-| 24 | CoordinateGraph | 5-8 | none | No | No | No | Static / interactive display |
-| 25 | SlopeTriangle | 7-8 | none | No | No | No | Interactive display |
-| 26 | SystemsEquationsVisualizer | 8 | none | No | No | No | Static display |
-| 27 | MatrixDisplay | 8+ | none | No | No | No | Static display |
-| 28 | DotPlot | 4-7 | none | No | No | No | Static display |
-| 29 | Histogram | 5-8 | none | No | No | No | Static display |
-| 30 | TwoWayTable | 7-8 | none | No | No | No | Static display |
+> **Audit 2026-04-04:** Suite grew from 30→50 primitives. 38/42 interactive primitives now have PhaseSummaryPanel (90%). 34 use standardized `useChallengeProgress`/`usePhaseResults` hooks; 4 use manual PhaseResult[] construction. Only 4 interactive primitives remain without PhaseSummaryPanel.
 
-**Summary:** 2/30 have PhaseSummaryPanel. 13 more have existing phase/mode infrastructure that should be upgraded. 7 single-interaction primitives are strong candidates for phase decomposition. 8 static displays are out of scope.
+#### Fully Upgraded — PhaseSummaryPanel + Hooks + AI + Eval (34 primitives)
+
+| # | Primitive | Grade | Interaction Model |
+|---|-----------|-------|-------------------|
+| 1 | AdditionSubtractionScene | K-2 | Multi-phase with hooks |
+| 2 | AnalogClock | 1-3 | Multi-phase with hooks |
+| 3 | BalanceScale | 3-8 | explore → identify → solve → verify |
+| 4 | BaseTenBlocks | 1-4 | build → decompose → regroup → operate |
+| 5 | CoinCounter | K-2 | Multi-phase with hooks |
+| 6 | ComparisonBuilder | K-2 | Multi-phase with hooks |
+| 7 | CountingBoard | K-1 | count → subitize → organize → countOn |
+| 8 | FractionCircles | 2-5 | Multi-phase with hooks |
+| 9 | FunctionMachine | 3-6 | observe → predict → discover → create |
+| 10 | HundredsChart | 1-3 | Multi-phase with hooks |
+| 11 | LengthLab | 1-3 | Multi-phase with hooks |
+| 12 | MathFactFluency | 1-4 | Multi-phase with hooks |
+| 13 | MeasurementTools | 1-5 | explore → estimate → precision → convert |
+| 14 | NetFolder | 3-6 | Multi-phase with hooks (new) |
+| 15 | NumberBond | K-2 | Multi-phase with hooks |
+| 16 | NumberLine | 1-6 | explore → plot → operate → compare |
+| 17 | NumberSequencer | K-2 | Multi-phase with hooks |
+| 18 | NumberTracer | K-1 | Multi-phase with hooks |
+| 19 | OrdinalLine | K-1 | Multi-phase with hooks |
+| 20 | PatternBuilder | K-3 | copy → identify → create → translate |
+| 21 | PercentBar | 5-7 | explore → practice → apply → complete |
+| 22 | RatioTable | 5-7 | Multi-phase with hooks |
+| 23 | RegroupingWorkbench | 1-4 | explore → regroup → solve → connect |
+| 24 | ShapeBuilder | 2-5 | Multi-phase with hooks |
+| 25 | ShapeComposer | 2-5 | Multi-phase with hooks (new) |
+| 26 | ShapeSorter | K-2 | Multi-phase with hooks |
+| 27 | ShapeTracer | K-2 | Multi-phase with hooks |
+| 28 | SkipCountingRunner | 1-3 | watch → jump → predict → connect |
+| 29 | SortingStation | K-2 | Multi-phase with hooks |
+| 30 | SpatialScene | K-2 | Multi-phase with hooks (new) |
+| 31 | StrategyPicker | 1-4 | Multi-phase with hooks |
+| 32 | TenFrame | K-2 | build → subitize → makeTen → operate |
+| 33 | ThreeDShapeExplorer | 2-5 | Multi-phase with hooks |
+| 34 | TimeSequencer | 1-3 | Multi-phase with hooks |
+
+#### PhaseSummaryPanel with Manual PhaseResult[] (4 primitives)
+
+| # | Primitive | Grade | Notes |
+|---|-----------|-------|-------|
+| 35 | DoubleNumberLine | 5-7 | Manual PhaseResult[], no challenges array |
+| 36 | FractionBar | 2-5 | Original reference implementation |
+| 37 | PlaceValueChart | 2-5 | Original reference implementation |
+| 38 | TapeDiagram | 3-6 | Manual PhaseResult[] per challenge mode |
+
+#### Needs Upgrade — No PhaseSummaryPanel (4 primitives)
+
+| # | Primitive | Grade | Has Eval | Has AI | Current Model |
+|---|-----------|-------|----------|--------|---------------|
+| 39 | AreaModel | 3-5 | Yes | No | Single interaction: fill cells |
+| 40 | ArrayGrid | 2-4 | Yes | No | Single interaction: set grid |
+| 41 | FactorTree | 4-6 | Yes | Yes | Single interaction: build tree |
+| 42 | MultiplicationExplorer | 2-4 | Yes | Yes | Single interaction: multi-rep |
+
+#### Out of Scope — Static Displays (8 primitives)
+
+| # | Primitive | Grade | Notes |
+|---|-----------|-------|-------|
+| 43 | BarModel | 1-5 | Has AI tutoring, no eval |
+| 44 | CoordinateGraph | 5-8 | Visualization only |
+| 45 | DotPlot | 4-7 | Visualization only |
+| 46 | Histogram | 5-8 | Visualization only |
+| 47 | MatrixDisplay | 8+ | Visualization only |
+| 48 | SlopeTriangle | 7-8 | Visualization only |
+| 49 | SystemsEquationsVisualizer | 8 | Visualization only |
+| 50 | TwoWayTable | 7-8 | Visualization only |
+
+**Summary:** 38/42 interactive primitives have PhaseSummaryPanel (90%). **4 remaining** need upgrade: AreaModel, ArrayGrid, FactorTree, MultiplicationExplorer (all Tier 3 — multi-phase decomposition). 8 static displays remain out of scope.
 
 ---
 
 ## Tier System
 
-### Tier 1: PhaseSummaryPanel Integration (8 primitives)
+### Tier 1: PhaseSummaryPanel Integration (8 primitives) — COMPLETE
 
-These already have multi-phase/multi-mode infrastructure with per-phase state tracking. They need:
-- PhaseSummaryPanel rendered at completion
-- PhaseResult[] computation from existing metrics
-- Minor refactoring of score aggregation
+All 8 primitives (BalanceScale, FunctionMachine, CountingBoard, MeasurementTools, DoubleNumberLine, PercentBar, TapeDiagram, RegroupingWorkbench) have PhaseSummaryPanel.
 
-### Tier 2: Phase Progression Hardening (5 primitives)
+### Tier 2: Phase Progression Hardening (5 primitives) — COMPLETE
 
-These have challenge-based progression that should be formalized into explicit phases with proper transitions and AI tutoring hooks at each boundary.
+All 5 primitives (SkipCountingRunner, TenFrame, PatternBuilder, BaseTenBlocks, NumberLine) have been upgraded with standardized hooks and PhaseSummaryPanel.
 
-### Tier 3: Multi-Phase Decomposition (7 primitives)
+### Tier 3: Multi-Phase Decomposition (7 primitives) — 3/7 COMPLETE, 4 REMAINING
 
-These are single-interaction primitives that should be decomposed into natural learning phases (identify → analyze → build).
+Completed: FractionCircles, RatioTable, ShapeBuilder — all upgraded with multi-phase hooks.
+
+**Remaining (4):** AreaModel, ArrayGrid, MultiplicationExplorer, FactorTree. These are single-interaction primitives that should be decomposed into natural learning phases (identify → analyze → build).
 
 ### Out of Scope: Static Displays (8 primitives)
 
@@ -96,7 +137,7 @@ BarModel, CoordinateGraph, SlopeTriangle, SystemsEquationsVisualizer, MatrixDisp
 
 ---
 
-## Tier 1: PhaseSummaryPanel Integration
+## Tier 1: PhaseSummaryPanel Integration (COMPLETE)
 
 ### 1.1 BalanceScale
 
@@ -276,13 +317,13 @@ Icons: [blocks, exchange, calculator, link]
 
 ---
 
-## Tier 2: Phase Progression Hardening
+## Tier 2: Phase Progression Hardening (COMPLETE)
 
-These primitives have challenge-based systems that need to be reframed as explicit phase progressions with proper phase state management, AI tutoring hooks at transitions, and PhaseSummaryPanel at completion.
+All Tier 2 primitives have been upgraded with standardized hooks (`useChallengeProgress`, `usePhaseResults`) and PhaseSummaryPanel. The phase designs below document the implemented progressions.
 
 ### 2.1 SkipCountingRunner
 
-**Current:** Challenge-sequence system with 5 challenge types (count_along, predict, fill_missing, find_skip_value, connect_multiplication). Has AI tutoring but no PhaseSummaryPanel.
+**Status:** COMPLETE — upgraded with full hooks and PhaseSummaryPanel.
 
 **Phase Redesign:**
 
@@ -295,18 +336,11 @@ The existing challenge types already map to a natural learning progression:
 | 3 | Fill the Gaps | `fill_missing` | Fill in missing values from a partial sequence | All hidden values found |
 | 4 | Connect to Multiplication | `connect_multiplication` | Write the multiplication fact | Correct equation |
 
-**Changes needed:**
-- Replace `currentChallengeIndex` with `currentPhase: Phase` state machine
-- Add `[PHASE_TRANSITION]` AI triggers between phases (partially exists)
-- Compute `PhaseResult[]` from `challengeResults` array
-- Render PhaseSummaryPanel after final phase completion
-- Update SkipCountingRunnerMetrics with `allPhasesCompleted`, `phaseScores`
-
 ---
 
 ### 2.2 TenFrame
 
-**Current:** Challenge types (build, subitize, makeTen, operate).
+**Status:** COMPLETE — upgraded with full hooks and PhaseSummaryPanel.
 
 **Phase Redesign:**
 
@@ -321,7 +355,7 @@ The existing challenge types already map to a natural learning progression:
 
 ### 2.3 PatternBuilder
 
-**Current:** Challenge types (copy, identify, create, translate).
+**Status:** COMPLETE — upgraded with full hooks and PhaseSummaryPanel.
 
 **Phase Redesign:**
 
@@ -336,7 +370,7 @@ The existing challenge types already map to a natural learning progression:
 
 ### 2.4 BaseTenBlocks
 
-**Current:** Mode-based with AI tutoring (build, decompose, regroup, operate).
+**Status:** COMPLETE — upgraded with full hooks and PhaseSummaryPanel.
 
 **Phase Redesign:**
 
@@ -351,7 +385,7 @@ The existing challenge types already map to a natural learning progression:
 
 ### 2.5 NumberLine
 
-**Current:** Implicit phases with AI tutoring.
+**Status:** COMPLETE — upgraded with full hooks and PhaseSummaryPanel.
 
 **Phase Redesign:**
 
@@ -363,13 +397,13 @@ The existing challenge types already map to a natural learning progression:
 
 ---
 
-## Tier 3: Multi-Phase Decomposition
+## Tier 3: Multi-Phase Decomposition (3/7 COMPLETE, 4 REMAINING)
 
-These single-interaction primitives should be redesigned with the Identify → Analyze → Build pattern.
+Completed: FractionCircles, RatioTable, ShapeBuilder. Remaining: AreaModel, ArrayGrid, MultiplicationExplorer, FactorTree.
 
-### 3.1 FractionCircles
+### 3.1 FractionCircles — COMPLETE
 
-**Current:** Single interaction — shade sectors to represent a fraction.
+**Status:** Upgraded with multi-phase hooks and PhaseSummaryPanel.
 
 **Phase Design:**
 
@@ -442,9 +476,9 @@ These single-interaction primitives should be redesigned with the Identify → A
 
 ---
 
-### 3.6 RatioTable
+### 3.6 RatioTable — COMPLETE
 
-**Current:** Single interaction — slider + answer.
+**Status:** Upgraded with multi-phase hooks and PhaseSummaryPanel.
 
 **Phase Design:**
 
@@ -456,9 +490,9 @@ These single-interaction primitives should be redesigned with the Identify → A
 
 ---
 
-### 3.7 ShapeBuilder
+### 3.7 ShapeBuilder — COMPLETE
 
-**Current:** Single interaction — draw shapes by connecting dots.
+**Status:** Upgraded with multi-phase hooks and PhaseSummaryPanel.
 
 **Phase Design:**
 
@@ -472,84 +506,38 @@ These single-interaction primitives should be redesigned with the Identify → A
 
 ## Implementation Plan
 
-### Phase 1: Tier 1 — PhaseSummaryPanel Integration (8 primitives)
+### Tier 1 — COMPLETE
 
-These are the lowest-effort, highest-impact upgrades. Each primitive already tracks phase state internally.
+All 8 primitives upgraded with PhaseSummaryPanel.
 
-**Per-primitive work:**
+### Tier 2 — COMPLETE
 
-1. Import `PhaseSummaryPanel` and `PhaseResult` type
-2. Add `useMemo` computing `PhaseResult[]` from existing attempt/score state (pattern: copy from FractionBar)
-3. Render `<PhaseSummaryPanel>` after evaluation submission
-4. Update metrics interface with `allPhasesCompleted` and `phaseScores` fields
-5. Add/verify `[PHASE_TRANSITION]` and `[ALL_COMPLETE]` AI tutoring triggers
+All 5 primitives upgraded with standardized hooks and PhaseSummaryPanel.
 
-**Estimated scope per primitive:** ~50-80 lines changed (import, summary computation, render, metrics)
+### Tier 3 — Remaining Work (4 primitives)
 
-**Order of implementation (by phase-readiness):**
-1. BalanceScale — cleanest 4-phase system, closest to FractionBar pattern
-2. FunctionMachine — well-defined phase boundaries
-3. RegroupingWorkbench — high pedagogical value (regrouping is a major misconception area)
-4. CountingBoard — K-1 impact (youngest learners benefit most from celebration)
-5. MeasurementTools — 4-phase with conversion capstone
-6. PercentBar — 3+1 phases, minimal changes needed
-7. DoubleNumberLine — 3-phase, needs AI tutoring hooks added
-8. TapeDiagram — 3-phase, needs AI tutoring hooks added
-
-### Phase 2: Tier 2 — Phase Progression Hardening (5 primitives)
-
-These need more significant refactoring to replace challenge-index-based navigation with explicit phase state machines.
+3 of 7 Tier 3 primitives are complete (FractionCircles, RatioTable, ShapeBuilder). The remaining 4 require full multi-phase decomposition — adding entirely new phases to currently single-step interactions.
 
 **Per-primitive work:**
 
-1. Replace `currentChallengeIndex` with `currentPhase: LearningPhase` union type
-2. Add phase transition logic with `[PHASE_TRANSITION]` AI events
-3. Add `PhaseResult[]` computation
-4. Render `PhaseSummaryPanel` at completion
-5. Update metrics with phase-level data
-
-**Estimated scope per primitive:** ~150-250 lines changed
-
-**Order of implementation:**
-1. SkipCountingRunner — most complex but highest impact (K-2 counting to multiplication bridge)
-2. TenFrame — foundational K-2 primitive
-3. PatternBuilder — algebraic thinking foundation
-4. BaseTenBlocks — place value understanding
-5. NumberLine — universal math tool
-
-### Phase 3: Tier 3 — Multi-Phase Decomposition (7 primitives)
-
-These require the most work — adding entirely new phases to currently single-step interactions.
-
-**Per-primitive work:**
-
-1. Design 3-phase UI with phase progress indicator (copy from FractionBar)
+1. Design 3-phase UI with phase progress indicator
 2. Add MC choice generation for identification phases
-3. Implement phase state machine with transitions
+3. Implement phase state machine with transitions using `useChallengeProgress`/`usePhaseResults`
 4. Add AI tutoring hooks at all pedagogical moments
 5. Implement evaluation metrics with per-phase scoring
 6. Render PhaseSummaryPanel
 
-**Estimated scope per primitive:** ~300-500 lines changed (essentially a rewrite of the interactive portion)
-
 **Generator updates required:**
-Each primitive's Gemini generator must be updated to produce MC choices for the new identification phases. This means updating:
-- `gemini-fraction-circles.ts` — add `numeratorChoices`, `denominatorChoices`
 - `gemini-area-model.ts` — add `dimensionChoices`, `areaChoices`
 - `gemini-array-grid.ts` — add `rowChoices`, `columnChoices`, `productChoices`
 - `gemini-multiplication-explorer.ts` — add `groupChoices`, `factChoices`
 - `gemini-factor-tree.ts` — add `primeClassificationChoices`, `factorPairChoices`
-- `gemini-ratio-table.ts` — add `ratioChoices`, `missingValueChoices`
-- `gemini-shape-builder.ts` — add `shapeNameChoices`, `propertyChoices`
 
 **Order of implementation:**
-1. FractionCircles — closest to FractionBar pattern (same domain, same data types)
-2. AreaModel — high impact for multiplication understanding
-3. ArrayGrid — pairs with AreaModel conceptually
-4. FactorTree — decomposition is naturally multi-phase
-5. MultiplicationExplorer — 4-phase multi-representation
-6. RatioTable — ratio reasoning diagnostics
-7. ShapeBuilder — geometry vocabulary + construction
+1. AreaModel — high impact for multiplication understanding
+2. ArrayGrid — pairs with AreaModel conceptually
+3. FactorTree — decomposition is naturally multi-phase
+4. MultiplicationExplorer — 4-phase multi-representation
 
 ---
 
@@ -617,7 +605,7 @@ Every multi-phase primitive MUST fire these AI tutoring events:
 ## Success Criteria
 
 ### Quantitative
-- All 20 eligible primitives have PhaseSummaryPanel integration
+- 38/42 interactive primitives have PhaseSummaryPanel (90% — 4 remaining)
 - Per-phase scoring data flows to the competency system
 - AI tutoring fires at every phase transition
 

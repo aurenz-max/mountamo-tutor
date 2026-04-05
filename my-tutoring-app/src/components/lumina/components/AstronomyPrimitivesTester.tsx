@@ -11,6 +11,7 @@ import MissionPlanner from '../primitives/visual-primitives/astronomy/MissionPla
 import TelescopeSimulator from '../primitives/visual-primitives/astronomy/TelescopeSimulator';
 import LightShadowLab from '../primitives/visual-primitives/astronomy/LightShadowLab';
 import ConstellationBuilder from '../primitives/visual-primitives/astronomy/ConstellationBuilder';
+import PlanetaryExplorer from '../primitives/visual-primitives/astronomy/PlanetaryExplorer';
 import type { EvalModeDefinition } from '../types';
 import {
   EvaluationProvider,
@@ -24,7 +25,7 @@ interface AstronomyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'solar-system-explorer' | 'scale-comparator' | 'day-night-seasons' | 'moon-phases-lab' | 'rocket-builder' | 'orbit-mechanics-lab' | 'mission-planner' | 'telescope-simulator' | 'light-shadow-lab' | 'constellation-builder';
+type PrimitiveType = 'solar-system-explorer' | 'scale-comparator' | 'day-night-seasons' | 'moon-phases-lab' | 'rocket-builder' | 'orbit-mechanics-lab' | 'mission-planner' | 'telescope-simulator' | 'light-shadow-lab' | 'constellation-builder' | 'planetary-explorer';
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -38,6 +39,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'telescope-simulator', label: 'Telescope Simulator', icon: '🔭', topic: 'Explore the night sky with a virtual telescope' },
   { value: 'light-shadow-lab', label: 'Light & Shadow Lab', icon: '☀️', topic: 'shadows and sunlight' },
   { value: 'constellation-builder', label: 'Constellation Builder', icon: '⭐', topic: 'Star patterns and constellations in the night sky' },
+  { value: 'planetary-explorer', label: 'Planetary Explorer', icon: '🪐', topic: 'Solar System Journey' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -136,6 +138,14 @@ const PrimitiveRenderer: React.FC<{
         <ConstellationBuilder
           data={{
             ...(data as Parameters<typeof ConstellationBuilder>[0]['data']),
+          }}
+        />
+      );
+    case 'planetary-explorer':
+      return (
+        <PlanetaryExplorer
+          data={{
+            ...(data as Parameters<typeof PlanetaryExplorer>[0]['data']),
           }}
         />
       );

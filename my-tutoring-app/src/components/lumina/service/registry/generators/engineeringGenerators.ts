@@ -33,6 +33,7 @@ import { generatePaperAirplaneDesigner } from '../../engineering/gemini-paper-ai
 import { generateEngineExplorer } from '../../engineering/gemini-engine-explorer';
 import { generateVehicleDesignStudio } from '../../engineering/gemini-vehicle-design-studio';
 import { generateHydraulicsLab } from '../../engineering/gemini-hydraulics-lab';
+import { generateTransportChallenge } from '../../engineering/gemini-transport-challenge';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -199,6 +200,13 @@ registerGenerator('hydraulics-lab', async (item, topic, gradeContext) => ({
   data: await generateHydraulicsLab(topic, gradeContext, item.config),
 }));
 
+// Transport Challenge (living transport simulation — vehicle optimization)
+registerGenerator('transport-challenge', async (item, topic, gradeContext) => ({
+  type: 'transport-challenge',
+  instanceId: item.instanceId,
+  data: await generateTransportChallenge(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 23/23 engineering primitives registered
+// Migration status: 24/24 engineering primitives registered
 // ============================================================================

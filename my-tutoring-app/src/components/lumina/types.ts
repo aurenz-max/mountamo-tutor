@@ -1086,6 +1086,8 @@ export type ComponentId =
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
   | 'balance-scale'      // Interactive balance scale for equation solving
+  | 'calendar-explorer'  // Interactive calendar exploration and date skills
+  | 'timeline-builder'   // Interactive timeline building and sequencing
   | 'coin-counter'       // Interactive coin counting and money skills
   | 'comparison-builder' // Interactive comparison builder for comparing quantities and values
   | 'coordinate-graph'   // 2D Cartesian coordinate plane for plotting points, lines, curves, and regions
@@ -1107,8 +1109,10 @@ export type ComponentId =
   | 'strategy-picker'     // Interactive strategy picker for math problem-solving
   | 'regrouping-workbench' // Addition/subtraction with carrying/borrowing using base-ten blocks and written algorithm (1-4)
   | 'multiplication-explorer' // Multi-representation multiplication workspace: equal groups, arrays, repeated addition, number line, area model (2-4)
+  | 'net-folder'              // Interactive net folding for 3D shape understanding
   | 'measurement-tools'       // Virtual measurement instruments: ruler, scale, measuring cup, thermometer for length, weight, capacity, temperature (1-5)
   | 'shape-builder'           // Interactive shape construction and property exploration
+  | 'shape-composer'          // Interactive shape composition
   | 'shape-sorter'            // Interactive shape sorting for categorizing shapes by attributes
   | 'shape-tracer'            // Interactive shape tracing
   | 'number-tracer'           // Interactive number tracing for digit formation and numeral recognition
@@ -1226,6 +1230,7 @@ export type ComponentId =
   | 'propulsion-timeline' // Interactive timeline of transportation history from wheel to spacecraft
   | 'vehicle-design-studio' // Interactive vehicle design studio for engineering education
   | 'hydraulics-lab' // Interactive hydraulics lab for fluid power and pressure concepts
+  | 'transport-challenge' // Interactive transport challenge
 
   // Astronomy Primitives (K-5)
   | 'solar-system-explorer' // Interactive solar system model with orbits, zoom, and planet details
@@ -1235,6 +1240,7 @@ export type ComponentId =
   | 'moon-phases-lab' // Interactive Earth-Moon-Sun model showing why Moon phases occur, with multiple view perspectives
   | 'rocket-builder' // Comprehensive rocket design and simulation tool for spaceflight education
   | 'orbit-mechanics-lab' // Interactive orbital mechanics sandbox for learning orbits, burns, and transfers
+  | 'planetary-explorer' // Interactive planetary exploration and comparison tool
   | 'mission-planner' // Interactive mission design tool for planning trips to the Moon, Mars, and beyond
   | 'telescope-simulator' // Virtual telescope experience for exploring the night sky with adjustable telescopes, magnification, and view modes
   | 'constellation-builder' // Interactive constellation building and identification tool
@@ -1550,6 +1556,7 @@ export type { OrbitMechanicsLabData, OrbitConfig, OrbitalBody } from './primitiv
 export type { TelescopeSimulatorData, CelestialTarget, JournalEntry, TelescopeType, SkyViewMode } from './primitives/visual-primitives/astronomy/TelescopeSimulator';
 export type { LightShadowLabData } from './primitives/visual-primitives/astronomy/LightShadowLab';
 export type { ConstellationBuilderData } from './primitives/visual-primitives/astronomy/ConstellationBuilder';
+export type { PlanetaryExplorerData } from './primitives/visual-primitives/astronomy/PlanetaryExplorer';
 export type { MotionDiagramData, PositionMarker, MotionType } from './primitives/visual-primitives/physics/MotionDiagram';
 export type { SoundWaveExplorerData } from './primitives/visual-primitives/physics/SoundWaveExplorer';
 export type { OrganismCardData, OrganismInfo, OrganismAttributes, OrganismClassification } from './primitives/visual-primitives/biology/OrganismCard';
@@ -1576,6 +1583,7 @@ export type { PropulsionLabData } from './primitives/visual-primitives/engineeri
 export type { PaperAirplaneDesignerData } from './primitives/visual-primitives/engineering/PaperAirplaneDesigner';
 export type { PropulsionTimelineData, TimelineMilestone, TimelineEra as PropulsionTimelineEra, SpeedRecord, SequencingChallenge, InnovationChain } from './primitives/visual-primitives/engineering/PropulsionTimeline';
 export type { VehicleDesignStudioData } from './primitives/visual-primitives/engineering/VehicleDesignStudio';
+export type { TransportChallengeData } from './primitives/visual-primitives/engineering/TransportChallenge';
 
 // Math Phase 2
 export type { TenFrameData } from './primitives/visual-primitives/math/TenFrame';
@@ -1586,6 +1594,7 @@ export type { RegroupingWorkbenchData } from './primitives/visual-primitives/mat
 export type { MultiplicationExplorerData } from './primitives/visual-primitives/math/MultiplicationExplorer';
 export type { MeasurementToolsData } from './primitives/visual-primitives/math/MeasurementTools';
 export type { ShapeBuilderData } from './primitives/visual-primitives/math/ShapeBuilder';
+export type { ShapeComposerData } from './primitives/visual-primitives/math/ShapeComposer';
 export type { SpatialSceneData } from './primitives/visual-primitives/math/SpatialScene';
 export type { NumberLineData, NumberLineOperation, NumberLineChallenge } from './primitives/visual-primitives/math/NumberLine';
 export type { NumberSequencerData } from './primitives/visual-primitives/math/NumberSequencer';
@@ -1623,7 +1632,10 @@ export type { HundredsChartData } from './primitives/visual-primitives/math/Hund
 export type { LengthLabData } from './primitives/visual-primitives/math/LengthLab';
 export type { AnalogClockData } from './primitives/visual-primitives/math/AnalogClock';
 export type { CoinCounterData } from './primitives/visual-primitives/math/CoinCounter';
+export type { CalendarExplorerData } from './primitives/visual-primitives/calendar/CalendarExplorer';
+export type { TimelineBuilderData } from './primitives/visual-primitives/calendar/TimelineBuilder';
 export type { TimeSequencerData } from './primitives/visual-primitives/math/TimeSequencer';
+export type { NetFolderData } from './primitives/visual-primitives/math/NetFolder';
 
 // Literacy
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';

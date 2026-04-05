@@ -296,6 +296,20 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "describe":          PriorConfig(3.5, "Select position word for shown arrangement"),
         "follow_directions": PriorConfig(5.0, "Multi-step spatial placement"),
     },
+    "shape-composer": {
+        "free-create":     PriorConfig(-1.0, "Open-ended shape composition exploration"),
+        "compose-match":   PriorConfig(-0.5, "Compose shapes to match a target silhouette"),
+        "compose-picture": PriorConfig(0.0, "Arrange shapes to compose a target picture"),
+        "decompose":       PriorConfig(0.5, "Identify component shapes of a composite"),
+        "how-many-ways":   PriorConfig(1.0, "Determine minimum pieces needed for composition"),
+    },
+    "net-folder": {
+        "count_faces_edges_vertices": PriorConfig(-0.8, "Count faces, edges, and vertices of a 3D solid"),
+        "identify_solid":             PriorConfig(-0.3, "Identify the 3D solid from its appearance or net"),
+        "match_faces":                PriorConfig(0.2, "Match highlighted net faces to corresponding solid faces"),
+        "valid_net":                  PriorConfig(0.7, "Determine whether a given 2D net folds into a valid solid"),
+        "surface_area":               PriorConfig(1.2, "Calculate surface area by summing face areas from the net"),
+    },
     # -----------------------------------------------------------------
     # Assessment primitives
     # -----------------------------------------------------------------
@@ -434,6 +448,16 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "observe": PriorConfig(0.0, "Watch fluid particles and explain pressure transmission"),
         "adjust":  PriorConfig(1.0, "Set piston sizes and forces to achieve specific outputs"),
     },
+    "transport-challenge": {
+        "single_constraint":  PriorConfig(-1.5, "One constraint, obvious best vehicle"),
+        "multi_constraint":   PriorConfig(0.0, "Multiple constraints with trade-offs"),
+        "full_optimization":  PriorConfig(1.5, "All constraints, no perfect answer"),
+    },
+    "propulsion-lab": {
+        "predict":    PriorConfig(-1.0, "Predict propulsion outcomes before testing"),
+        "observe":    PriorConfig(0.0, "Watch particles and explain Newton's Third Law"),
+        "experiment": PriorConfig(1.0, "Design experiments comparing propulsion in different mediums"),
+    },
     # -----------------------------------------------------------------
     # Science primitives
     # -----------------------------------------------------------------
@@ -454,6 +478,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "free_connect": PriorConfig(3.0, "No numbers — identify and connect correct stars from field"),
         "identify":     PriorConfig(4.5, "Lines drawn — select correct constellation name"),
         "seasonal":     PriorConfig(6.0, "Identify constellations visible in a given season"),
+    },
+    "planetary-explorer": {
+        "explore":  PriorConfig(1.5, "Basic recall after reading planet info"),
+        "identify": PriorConfig(3.0, "Identify planets from descriptions"),
+        "compare":  PriorConfig(4.5, "Compare properties across planets"),
+        "apply":    PriorConfig(6.0, "Reasoning about why — apply knowledge"),
     },
     # -----------------------------------------------------------------
     # Physics primitives
@@ -494,6 +524,19 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "click":  PriorConfig(-1.5, "Click accuracy and speed practice"),
         "drag":   PriorConfig(-1.0, "Drag objects to target zones"),
         "type":   PriorConfig(-0.5, "Find and press the correct key"),
+    },
+    # -----------------------------------------------------------------
+    # Calendar primitives
+    # -----------------------------------------------------------------
+    "calendar-explorer": {
+        "identify": PriorConfig(-1.5, "Find specific dates on calendar"),
+        "count":    PriorConfig(0.0, "Count specific days or days between dates"),
+        "pattern":  PriorConfig(1.5, "Discover and apply calendar patterns"),
+    },
+    "timeline-builder": {
+        "sequence-daily":    PriorConfig(-1.5, "Order events within a day"),
+        "sequence-yearly":   PriorConfig(0.0, "Order events across months/seasons"),
+        "place-historical":  PriorConfig(1.5, "Place events on decade/century timelines"),
     },
 }
 

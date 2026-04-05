@@ -63,6 +63,7 @@ export type {
   PaperAirplaneDesignerMetrics,
   EngineExplorerMetrics,
   VehicleDesignStudioMetrics,
+  TransportChallengeMetrics,
   // Assessment metrics
   MultipleChoiceMetrics,
   FillInBlanksMetrics,
@@ -125,6 +126,7 @@ export type {
   TelescopeSimulatorMetrics,
   LightShadowLabMetrics,
   ConstellationBuilderMetrics,
+  PlanetaryExplorerMetrics,
   // Biology metrics
   MicroscopeViewerMetrics,
   FoodWebBuilderMetrics,
@@ -172,6 +174,11 @@ export type {
   CoinCounterMetrics,
   TimeSequencerMetrics,
   SpatialSceneMetrics,
+  ShapeComposerMetrics,
+  NetFolderMetrics,
+  // Calendar metrics
+  CalendarExplorerMetrics,
+  TimelineBuilderMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

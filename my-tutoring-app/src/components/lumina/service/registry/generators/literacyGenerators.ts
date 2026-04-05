@@ -101,13 +101,11 @@ const getGradeBand = (gradeContext: string): string => {
  */
 registerGenerator('paragraph-architect', async (item, topic, gradeContext) => {
   const config = getConfig(item);
-  const paragraphType = config.paragraphType || 'informational';
 
   return {
     type: 'paragraph-architect',
     instanceId: item.instanceId,
     data: await generateParagraphArchitect(topic, gradeContext, {
-      paragraphType,
       ...config,
     }),
   };

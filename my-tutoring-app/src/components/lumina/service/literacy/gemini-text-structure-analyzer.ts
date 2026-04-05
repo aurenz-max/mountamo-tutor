@@ -110,6 +110,34 @@ const textStructureAnalyzerSchema: Schema = {
   required: ["title", "gradeLevel", "passage", "structureType", "signalWords", "structureOptions", "templateRegions", "keyIdeas"]
 };
 
+/**
+ * SP-8: Recompute startIndex/endIndex from passage text.
+ * LLMs cannot reliably compute character offsets — derive deterministically.
+ */
+function recomputeSignalWordOffsets(
+  passage: string,
+  signalWords: { word: string; startIndex: number; endIndex: number }[],
+): { word: string; startIndex: number; endIndex: number }[] {
+  const lowerPassage = passage.toLowerCase();
+  const recomputed: { word: string; startIndex: number; endIndex: number }[] = [];
+
+  for (const sw of signalWords) {
+    const searchWord = sw.word.toLowerCase();
+    const idx = lowerPassage.indexOf(searchWord);
+    if (idx >= 0) {
+      recomputed.push({
+        word: sw.word,
+        startIndex: idx,
+        endIndex: idx + sw.word.length,
+      });
+    } else {
+      console.warn(`[TextStructureAnalyzer] Signal word "${sw.word}" not found in passage — dropping`);
+    }
+  }
+
+  return recomputed;
+}
+
 export const generateTextStructureAnalyzer = async (
   topic: string,
   gradeLevel: string = '4',
@@ -176,11 +204,16 @@ ${structureTypeOverride}
 
 Rules:
 1. Write an informational passage using ONE primary structure from the available list
-2. Embed signal words naturally — mark their exact startIndex/endIndex character positions in the passage string
+2. Embed signal words naturally — include the word field with the exact text as it appears in the passage. Do NOT worry about startIndex/endIndex accuracy — they will be recomputed automatically.
 3. structureOptions: always provide 3-4 options including the correct one plus plausible distractors from the available structures list
 4. templateRegions: create regions matching the chosen structure (e.g. Cause/Effect for cause-effect, Before/After for chronological)
 5. keyIdeas: short excerpts from the passage that students drag to template regions
-6. CRITICAL: startIndex and endIndex must be exact character positions in the passage string. Double-check offsets!
+6. CRITICAL — Signal words must ONLY be words that belong to the chosen structure type. Do NOT include signal words from other structure types:
+   - cause-effect ONLY: "because", "so", "as a result", "therefore", "since", "due to", "consequently", "leads to"
+   - compare-contrast ONLY: "however", "similarly", "in contrast", "on the other hand", "both", "alike", "different", "whereas", "unlike"
+   - problem-solution ONLY: "the problem is", "one solution", "to fix this", "as a result", "solved by", "the challenge"
+   - chronological ONLY: "first", "then", "next", "finally", "after", "before", "later", "meanwhile", "during"
+   - description ONLY: "for example", "such as", "includes", "characteristics", "features", "specifically"
 7. Include authorPurposeExplanation for grades 5-6`;
 
   try {
@@ -196,6 +229,11 @@ Rules:
     const text = response.text;
     if (!text) throw new Error("No data returned from Gemini API");
     const result = JSON.parse(text) as TextStructureAnalyzerData;
+
+    // SP-8: Recompute signal word offsets — LLMs cannot count characters reliably
+    if (result.passage && result.signalWords) {
+      result.signalWords = recomputeSignalWordOffsets(result.passage, result.signalWords);
+    }
 
     // Exclude targetEvalMode from config spread
     const { targetEvalMode: _targetEvalMode, ...restConfig } = config || {};

@@ -4,7 +4,16 @@
 |---------|--------------|
 | Version | 1.0          |
 | Date    | March 2026   |
-| Status  | Draft        |
+| Status  | **Complete** ✅ (all 4 primitives shipped — 2026-04-04 audit) |
+
+> **Implementation Status (2026-04-04):** All 4 primitives fully implemented with components, Gemini generators, catalog entries (3 eval modes each with correct β values), backend problem type registry, evaluation metrics interfaces, and AI tutor integration via `useLuminaAI`. No gaps detected.
+>
+> | Primitive | Component | Generator | Catalog | Eval Modes | AI Tutor | Backend Registry |
+> |-----------|-----------|-----------|---------|------------|----------|-----------------|
+> | Fact File | ✅ 673 LOC | ✅ 495 LOC | ✅ β 1.5/3.5/5.0 | ✅ explore/recall/apply | ✅ 5 events | ✅ |
+> | How It Works | ✅ 1,179 LOC | ✅ 520 LOC | ✅ β 1.5/3.5/5.5 | ✅ guided/sequence/predict | ✅ 4 events | ✅ |
+> | Timeline Explorer | ✅ 982 LOC | ✅ 510 LOC | ✅ β 1.5/3.5/5.5 | ✅ explore/order/connect | ✅ 4 events | ✅ |
+> | Vocabulary Explorer | ✅ 833 LOC | ✅ 389 LOC | ✅ β 1.5/3.5/5.5 | ✅ explore/recall/apply | ✅ 6 events | ✅ |
 
 ---
 

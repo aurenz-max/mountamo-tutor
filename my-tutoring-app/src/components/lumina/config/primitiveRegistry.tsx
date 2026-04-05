@@ -48,6 +48,7 @@ import RegroupingWorkbench from '../primitives/visual-primitives/math/Regrouping
 import MultiplicationExplorer from '../primitives/visual-primitives/math/MultiplicationExplorer';
 import MeasurementTools from '../primitives/visual-primitives/math/MeasurementTools';
 import ShapeBuilder from '../primitives/visual-primitives/math/ShapeBuilder';
+import ShapeComposer from '../primitives/visual-primitives/math/ShapeComposer';
 import ShapeSorter from '../primitives/visual-primitives/math/ShapeSorter';
 import SpatialScene from '../primitives/visual-primitives/math/SpatialScene';
 import ShapeTracer from '../primitives/visual-primitives/math/ShapeTracer';
@@ -57,7 +58,10 @@ import StrategyPicker from '../primitives/visual-primitives/math/StrategyPicker'
 import HundredsChart from '../primitives/visual-primitives/math/HundredsChart';
 import LengthLab from '../primitives/visual-primitives/math/LengthLab';
 import AnalogClock from '../primitives/visual-primitives/math/AnalogClock';
+import CalendarExplorer from '../primitives/visual-primitives/calendar/CalendarExplorer';
+import TimelineBuilder from '../primitives/visual-primitives/calendar/TimelineBuilder';
 import CoinCounter from '../primitives/visual-primitives/math/CoinCounter';
+import NetFolder from '../primitives/visual-primitives/math/NetFolder';
 import FactFile from '../primitives/visual-primitives/core/FactFile';
 import HowItWorks from '../primitives/visual-primitives/core/HowItWorks';
 import FastFact from '../primitives/visual-primitives/core/FastFact';
@@ -127,6 +131,7 @@ import PropulsionTimeline from '../primitives/visual-primitives/engineering/Prop
 import EngineExplorer from '../primitives/visual-primitives/engineering/EngineExplorer';
 import VehicleDesignStudio from '../primitives/visual-primitives/engineering/VehicleDesignStudio';
 import HydraulicsLab from '../primitives/visual-primitives/engineering/HydraulicsLab';
+import TransportChallenge from '../primitives/visual-primitives/engineering/TransportChallenge';
 // Astronomy Primitives
 import SolarSystemExplorer from '../primitives/visual-primitives/astronomy/SolarSystemExplorer';
 import ScaleComparator from '../primitives/visual-primitives/astronomy/ScaleComparator';
@@ -138,6 +143,7 @@ import MissionPlanner from '../primitives/visual-primitives/astronomy/MissionPla
 import TelescopeSimulator from '../primitives/visual-primitives/astronomy/TelescopeSimulator';
 import LightShadowLab from '../primitives/visual-primitives/astronomy/LightShadowLab';
 import ConstellationBuilder from '../primitives/visual-primitives/astronomy/ConstellationBuilder';
+import PlanetaryExplorer from '../primitives/visual-primitives/astronomy/PlanetaryExplorer';
 // Physics Primitives
 import MotionDiagram from '../primitives/visual-primitives/physics/MotionDiagram';
 import SoundWaveExplorer from '../primitives/visual-primitives/physics/SoundWaveExplorer';
@@ -396,6 +402,26 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'analog-clock': {
     component: AnalogClock,
     sectionTitle: 'Analog Clock',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'calendar-explorer': {
+    component: CalendarExplorer,
+    sectionTitle: 'Calendar Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'timeline-builder': {
+    component: TimelineBuilder,
+    sectionTitle: 'Timeline Builder',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
@@ -797,6 +823,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  'shape-composer': {
+    component: ShapeComposer,
+    sectionTitle: 'Shape Composer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   'shape-sorter': {
     component: ShapeSorter,
     sectionTitle: 'Shape Sorter',
@@ -839,6 +875,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'length-lab': {
     component: LengthLab,
     sectionTitle: 'Length Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'net-folder': {
+    component: NetFolder,
+    sectionTitle: 'Net Folder',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
@@ -1441,6 +1487,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  'transport-challenge': {
+    component: TransportChallenge,
+    sectionTitle: 'Transport Challenge',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   // Astronomy Primitives
   'solar-system-explorer': {
     component: SolarSystemExplorer,
@@ -1526,6 +1582,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'constellation-builder': {
     component: ConstellationBuilder,
     sectionTitle: 'Constellation Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'planetary-explorer': {
+    component: PlanetaryExplorer,
+    sectionTitle: 'Planetary Explorer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

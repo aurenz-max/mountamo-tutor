@@ -4,21 +4,19 @@
 
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
-| chronological_description | FAIL | 1 (CRITICAL) |
-| cause_effect | FAIL | 1 (CRITICAL) |
-| compare_contrast | FAIL | 1 CRITICAL, 1 HIGH |
-| problem_solution | FAIL | 1 (CRITICAL) |
+| chronological_description | PASS | — |
+| cause_effect | PASS | — |
+| compare_contrast | PASS | — |
+| problem_solution | PASS | — |
 
-## Issues
+## Resolved Issues (2026-04-04)
 
-### ALL MODES — Signal word startIndex/endIndex offsets are wrong
-- **Severity:** CRITICAL
-- **What's broken:** 100% of signal word offsets are incorrect across all 4 modes. Component uses `passage.slice(sw.startIndex, sw.endIndex)` to create clickable spans — wrong offsets produce garbled text fragments. Phase 1 (Signal Words) is completely broken.
-- **Data:** All signalWords entries have startIndex/endIndex that don't match their `word` field position in the passage
-- **Fix in:** GENERATOR — post-process with `passage.indexOf(sw.word)` to recompute indices
+### TS-1 — Signal word startIndex/endIndex offsets wrong in 100% of responses
+- **Root cause:** SP-8 — LLMs cannot reliably compute character offsets.
+- **Fix:** POST-PROCESS-DERIVE. Added `recomputeSignalWordOffsets()` that uses case-insensitive `indexOf()` on the passage to derive correct offsets deterministically. Signal words not found in the passage are dropped with a warning.
+- **File:** `service/literacy/gemini-text-structure-analyzer.ts`
 
-### compare_contrast — "One solution" is a problem-solution signal word
-- **Severity:** HIGH
-- **What's broken:** Compare-contrast response includes "One solution" as a signal word, which is a problem-solution signal word. Confuses students about which words signal which structure.
-- **Data:** `signalWords` contains cross-structure-type signal word
-- **Fix in:** GENERATOR — strengthen prompt to forbid signal words from other structure types
+### TS-2 — Cross-structure signal words in compare_contrast
+- **Root cause:** SP-3 — prompt didn't forbid signal words from other structure types.
+- **Fix:** PROMPT-CHANGE. Added per-structure signal word ownership lists to prompt rule #6, explicitly listing which words belong to which structure type.
+- **File:** `service/literacy/gemini-text-structure-analyzer.ts`

@@ -126,14 +126,22 @@ function buildTargetObject(flat: FlatObj, gridSize: number): SceneObject | undef
   return undefined;
 }
 
-// Scene object schema fields (2 slots — enough for spatial reference)
+// Scene object schema fields — ALL required (SP-14: nullable fields cause Gemini to drop them)
 function sceneObjFields(slots: number): Record<string, Schema> {
   const fields: Record<string, Schema> = {};
   for (let i = 0; i < slots; i++) {
-    fields[`sceneObj${i}Name`] = { type: Type.STRING, description: `Scene object ${i + 1} name`, nullable: true };
-    fields[`sceneObj${i}Image`] = { type: Type.STRING, description: `Scene object ${i + 1} emoji`, nullable: true };
-    fields[`sceneObj${i}Row`] = { type: Type.NUMBER, description: `Scene object ${i + 1} row (0-2)`, nullable: true };
-    fields[`sceneObj${i}Col`] = { type: Type.NUMBER, description: `Scene object ${i + 1} col (0-2)`, nullable: true };
+    fields[`sceneObj${i}Name`] = { type: Type.STRING, description: `Scene object ${i + 1} name` };
+    fields[`sceneObj${i}Image`] = { type: Type.STRING, description: `Scene object ${i + 1} emoji` };
+    fields[`sceneObj${i}Row`] = { type: Type.NUMBER, description: `Scene object ${i + 1} row (0-2)` };
+    fields[`sceneObj${i}Col`] = { type: Type.NUMBER, description: `Scene object ${i + 1} col (0-2)` };
+  }
+  return fields;
+}
+
+function sceneObjRequiredFields(slots: number): string[] {
+  const fields: string[] = [];
+  for (let i = 0; i < slots; i++) {
+    fields.push(`sceneObj${i}Name`, `sceneObj${i}Image`, `sceneObj${i}Row`, `sceneObj${i}Col`);
   }
   return fields;
 }
@@ -157,7 +165,8 @@ const BASE_FIELDS: Record<string, Schema> = {
 // Per-mode schemas (flat, focused)
 // ---------------------------------------------------------------------------
 
-// identify & describe share the same schema
+// identify & describe share the same schema (4 scene object slots for a populated grid)
+const IDENTIFY_DESCRIBE_SLOTS = 4;
 const identifyDescribeSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -168,7 +177,7 @@ const identifyDescribeSchema: Schema = {
         type: Type.OBJECT,
         properties: {
           ...BASE_FIELDS,
-          ...sceneObjFields(2),
+          ...sceneObjFields(IDENTIFY_DESCRIBE_SLOTS),
           ...TARGET_FIELDS,
           correctPosition: { type: Type.STRING, description: "Correct position word (above, below, beside, left_of, right_of, next_to)" },
           referenceObjectName: { type: Type.STRING, description: "Name of the reference object" },
@@ -177,13 +186,14 @@ const identifyDescribeSchema: Schema = {
           option2: { type: Type.STRING, description: "Answer option 3" },
           option3: { type: Type.STRING, description: "Answer option 4" },
         },
-        required: ["id", "instruction", "hint", "targetName", "targetImage", "correctPosition", "referenceObjectName", "option0", "option1", "option2", "option3"],
+        required: ["id", "instruction", "hint", ...sceneObjRequiredFields(IDENTIFY_DESCRIBE_SLOTS), "targetName", "targetImage", "targetRow", "targetCol", "correctPosition", "referenceObjectName", "option0", "option1", "option2", "option3"],
       },
     },
   },
   required: ["challenges"],
 };
 
+const PLACE_SLOTS = 4;
 const placeSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -194,13 +204,13 @@ const placeSchema: Schema = {
         type: Type.OBJECT,
         properties: {
           ...BASE_FIELDS,
-          ...sceneObjFields(2),
+          ...sceneObjFields(PLACE_SLOTS),
           targetName: { type: Type.STRING, description: "Target object name (student places this)" },
           targetImage: { type: Type.STRING, description: "Target object emoji" },
           correctCellRow: { type: Type.NUMBER, description: "Correct row for placement (0-2)" },
           correctCellCol: { type: Type.NUMBER, description: "Correct col for placement (0-2)" },
         },
-        required: ["id", "instruction", "hint", "targetName", "targetImage", "correctCellRow", "correctCellCol"],
+        required: ["id", "instruction", "hint", ...sceneObjRequiredFields(PLACE_SLOTS), "targetName", "targetImage", "correctCellRow", "correctCellCol"],
       },
     },
   },
@@ -261,9 +271,12 @@ Theme: ${theme}.
 ${SHARED_CONTEXT}
 
 CHALLENGE TYPE: ${modeLabel}
-- Place 2 scene objects on a 3×3 grid.
+- Place 4 scene objects on a 3×3 grid. 2 are key objects (target + reference), 2 are backdrop objects that make the scene feel alive but aren't part of the question.
+- ALL 4 scene object slots (sceneObj0..sceneObj3) MUST be filled — no empty slots.
+- Each scene object must occupy a UNIQUE grid cell.
 - Set targetName/targetImage/targetRow/targetCol for the object being asked about.
-- Set referenceObjectName to the other object.
+- The target object MUST also be one of the 4 sceneObj slots (same name, image, row, col).
+- Set referenceObjectName to the reference object (must also be one of the 4 sceneObj slots).
 - correctPosition MUST accurately match the grid positions.
 - option0..option3 = correctPosition + 3 distractors (all valid position words).
 - Progress from easy to harder spatial relationships.
@@ -279,9 +292,39 @@ CHALLENGE TYPE: ${modeLabel}
   if (!data?.challenges) return [];
 
   const gridSize = 3;
-  return (data.challenges as FlatObj[]).map((flat) => {
-    const sceneObjects = collectSceneObjects(flat, 2, gridSize);
+  const validChallenges = (data.challenges as FlatObj[]).map((flat) => {
+    const sceneObjects = collectSceneObjects(flat, IDENTIFY_DESCRIBE_SLOTS, gridSize);
     const targetObject = buildTargetObject(flat, gridSize) ?? sceneObjects[0] ?? { name: "cat", image: "\u{1F431}", position: { row: 0, col: 0 } };
+
+    // SS-1: Reject challenges where Gemini dropped all scene objects
+    if (sceneObjects.length === 0) {
+      console.warn(`[SpatialScene] ${mode}: Rejected challenge with 0 scene objects`);
+      return null;
+    }
+
+    // SS-3: Ensure targetObject is in sceneObjects (derive by position match)
+    const targetInScene = sceneObjects.some(
+      (o) => o.position.row === targetObject.position.row && o.position.col === targetObject.position.col,
+    );
+    if (!targetInScene) {
+      sceneObjects.push(targetObject);
+    }
+
+    // SS-3: Ensure referenceObject is in sceneObjects
+    const refName = typeof flat.referenceObjectName === "string" ? flat.referenceObjectName : undefined;
+    if (refName && !sceneObjects.some((o) => o.name === refName)) {
+      // Find an unused cell for the reference object
+      const usedCells = new Set(sceneObjects.map((o) => `${o.position.row},${o.position.col}`));
+      let refPos = { row: 1, col: 1 };
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          if (!usedCells.has(`${r},${c}`)) { refPos = { row: r, col: c }; break; }
+        }
+        if (!usedCells.has(`${refPos.row},${refPos.col}`)) break;
+      }
+      sceneObjects.push({ name: refName, image: "📦", position: refPos });
+    }
+
     const pos = typeof flat.correctPosition === "string" && VALID_POSITIONS.includes(flat.correctPosition)
       ? flat.correctPosition : "above";
 
@@ -298,13 +341,15 @@ CHALLENGE TYPE: ${modeLabel}
       type: mode,
       instruction: String(flat.instruction ?? "Where is the object?"),
       hint: String(flat.hint ?? "Look at the grid!"),
-      sceneObjects: sceneObjects.length > 0 ? sceneObjects : [targetObject],
+      sceneObjects,
       targetObject,
       correctPosition: pos as SpatialSceneChallenge["correctPosition"],
-      referenceObjectName: typeof flat.referenceObjectName === "string" ? flat.referenceObjectName : undefined,
+      referenceObjectName: refName,
       options,
     };
   });
+
+  return validChallenges.filter((c): c is NonNullable<typeof c> => c !== null);
 }
 
 async function generatePlace(
@@ -317,9 +362,11 @@ Theme: ${theme}.
 ${SHARED_CONTEXT}
 
 CHALLENGE TYPE: place — student taps a grid cell to place an object.
-- Place 1-2 reference scene objects on a 3×3 grid.
+- Place 4 scene objects on a 3×3 grid as the existing scene (reference + backdrop objects).
+- ALL 4 scene object slots (sceneObj0..sceneObj3) MUST be filled — no empty slots.
+- Each scene object must occupy a UNIQUE grid cell.
 - Set targetName/targetImage for the object the student will place (do NOT set its row/col).
-- Set correctCellRow/correctCellCol for where the target should go.
+- Set correctCellRow/correctCellCol for where the target should go (must be an EMPTY cell).
 - Instruction says something like "Put the ball above the box".
 - Progress from easy to harder positions.
 `;
@@ -334,8 +381,8 @@ CHALLENGE TYPE: place — student taps a grid cell to place an object.
   if (!data?.challenges) return [];
 
   const gridSize = 3;
-  return (data.challenges as FlatObj[]).map((flat) => {
-    const sceneObjects = collectSceneObjects(flat, 2, gridSize);
+  const validChallenges = (data.challenges as FlatObj[]).map((flat) => {
+    const sceneObjects = collectSceneObjects(flat, PLACE_SLOTS, gridSize);
     const targetObject: SceneObject = {
       name: typeof flat.targetName === "string" ? flat.targetName : "ball",
       image: typeof flat.targetImage === "string" ? flat.targetImage : "\u{26BD}",
@@ -346,17 +393,25 @@ CHALLENGE TYPE: place — student taps a grid cell to place an object.
       col: typeof flat.correctCellCol === "number" ? clampGrid(flat.correctCellCol, gridSize) : 0,
     };
 
+    // SS-1: Reject challenges where Gemini dropped all scene objects
+    if (sceneObjects.length === 0) {
+      console.warn("[SpatialScene] place: Rejected challenge with 0 scene objects");
+      return null;
+    }
+
     return {
       id: String(flat.id ?? `c${Math.random().toString(36).slice(2, 6)}`),
       type: "place" as const,
       instruction: String(flat.instruction ?? "Place the object!"),
       hint: String(flat.hint ?? "Think about where things go!"),
-      sceneObjects: sceneObjects.length > 0 ? sceneObjects : [{ name: "house", image: "\u{1F3E0}", position: { row: 1, col: 1 } }],
+      sceneObjects,
       targetObject,
       correctPosition: "above" as const, // not used for place, but satisfies type
       correctCell,
     };
   });
+
+  return validChallenges.filter((c): c is NonNullable<typeof c> => c !== null);
 }
 
 async function generateFollowDirections(
@@ -434,8 +489,10 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
     instruction: "Where is the cat? Is it above or below the box?",
     hint: "Look at the grid - is the cat higher or lower than the box?",
     sceneObjects: [
+      { name: "cat", image: "\u{1F431}", position: { row: 0, col: 1 } },
       { name: "box", image: "\u{1F4E6}", position: { row: 2, col: 1 } },
       { name: "tree", image: "\u{1F333}", position: { row: 1, col: 0 } },
+      { name: "flower", image: "\u{1F338}", position: { row: 2, col: 2 } },
     ],
     targetObject: { name: "cat", image: "\u{1F431}", position: { row: 0, col: 1 } },
     correctPosition: "above",
@@ -446,7 +503,12 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
     id: "c1", type: "place",
     instruction: "Put the ball above the house!",
     hint: "Above means higher up on the grid.",
-    sceneObjects: [{ name: "house", image: "\u{1F3E0}", position: { row: 2, col: 1 } }],
+    sceneObjects: [
+      { name: "house", image: "\u{1F3E0}", position: { row: 2, col: 1 } },
+      { name: "tree", image: "\u{1F333}", position: { row: 1, col: 0 } },
+      { name: "car", image: "\u{1F697}", position: { row: 2, col: 2 } },
+      { name: "flower", image: "\u{1F338}", position: { row: 0, col: 0 } },
+    ],
     targetObject: { name: "ball", image: "\u{26BD}", position: { row: 0, col: 1 } },
     correctPosition: "above",
     correctCell: { row: 1, col: 1 },
@@ -455,7 +517,12 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
     id: "c1", type: "describe",
     instruction: "Look at the star and the tree. Where is the star?",
     hint: "Is the star higher, lower, or next to the tree?",
-    sceneObjects: [{ name: "tree", image: "\u{1F333}", position: { row: 1, col: 1 } }],
+    sceneObjects: [
+      { name: "star", image: "\u{2B50}", position: { row: 0, col: 1 } },
+      { name: "tree", image: "\u{1F333}", position: { row: 1, col: 1 } },
+      { name: "dog", image: "\u{1F415}", position: { row: 2, col: 0 } },
+      { name: "house", image: "\u{1F3E0}", position: { row: 2, col: 2 } },
+    ],
     targetObject: { name: "star", image: "\u{2B50}", position: { row: 0, col: 1 } },
     correctPosition: "above",
     referenceObjectName: "tree",

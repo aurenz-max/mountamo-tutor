@@ -2897,4 +2897,151 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
   },
+  {
+    id: 'shape-composer',
+    description: 'Interactive shape composition and decomposition workspace. Students compose larger shapes from smaller pieces (tangram-style), build pictures from shape palettes, and decompose composite shapes into basic components. Supports snap-to-fit placement, rotation, and guided decomposition. Perfect for teaching spatial reasoning, shape relationships, and geometry vocabulary at K-1 level. ESSENTIAL for kindergarten geometry composition standards.',
+    constraints: 'Requires K-1 grade band. Challenge types: compose-match, compose-picture, decompose, free-create, how-many-ways.',
+    evalModes: [
+      {
+        evalMode: 'free-create',
+        label: 'Free Create (Explore)',
+        beta: -1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['free-create'],
+        description: 'Open-ended shape composition exploration — always succeeds with 2+ shapes',
+      },
+      {
+        evalMode: 'compose-match',
+        label: 'Compose Match (Easy)',
+        beta: -0.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['compose-match'],
+        description: 'Drag pieces to fill a target silhouette with snap-to-fit guidance',
+      },
+      {
+        evalMode: 'compose-picture',
+        label: 'Compose Picture (Medium)',
+        beta: 0.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['compose-picture'],
+        description: 'Select and arrange shapes from a palette to recreate a target picture',
+      },
+      {
+        evalMode: 'decompose',
+        label: 'Decompose (Medium-Hard)',
+        beta: 0.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['decompose'],
+        description: 'Identify the basic shape components of a composite shape',
+      },
+      {
+        evalMode: 'how-many-ways',
+        label: 'How Many Ways (Hard)',
+        beta: 1.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['how-many-ways'],
+        description: 'Determine minimum pieces needed and explore multiple composition solutions',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Compose or decompose shapes. Challenge type: {{challengeType}}. Target: {{targetShape}}.',
+      contextKeys: ['challengeType', 'targetShape', 'targetPicture', 'piecesPlaced', 'totalPieces', 'expectedComponents', 'attemptNumber', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Look at the big shape. What smaller shapes could fit inside it?"',
+        level2: '"Try the triangle — can you turn it so it fits into the corner? Two triangles can make a square! You\'ve placed {{piecesPlaced}} of {{totalPieces}} pieces."',
+        level3: '"Two triangles make one big square. The triangle\'s pointy corner fits right into the square\'s corner. Try rotating the piece — press the rotate button!"',
+      },
+      commonStruggles: [
+        { pattern: 'Piece placed far from target position', response: '"Drag the shape closer to the outline. When it gets close enough, it will snap into place!"' },
+        { pattern: 'Student not rotating pieces', response: '"Try the rotate button! Sometimes a shape needs to be turned to fit."' },
+        { pattern: 'Wrong shapes selected for decompose', response: '"Look at the edges of the big shape. Can you see where one shape ends and another begins?"' },
+        { pattern: 'Stuck on how-many-ways', response: '"Start by trying to fill the shape with just triangles. How many do you need?"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'SPATIAL VOCABULARY COACHING',
+          instruction:
+            'Build spatial vocabulary: "Turn it," "Flip it," "Slide it over," "It fits in the corner." '
+            + 'Celebrate creative solutions — there is often more than one way to compose a shape! '
+            + 'In free-create mode, describe what you see: "Wow, you used a triangle on top and a square below — that looks like a house!" '
+            + 'Never say a solution is wrong if it is geometrically valid.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'net-folder',
+    description: '3D shape net folding/unfolding visualization with CSS 3D transforms. Shows relationship between 3D solids and 2D nets. Students rotate solids, unfold into nets, match face correspondence, validate nets, and calculate surface area. Supports cube, rectangular prism, triangular prism, and pyramid. Perfect for teaching spatial reasoning, 3D geometry, and surface area at grades 3-5. ESSENTIAL for geometry standards.',
+    constraints: 'Requires grade 3-5. Solid types: cube, rectangular_prism, triangular_prism, square_pyramid, triangular_pyramid. Challenge types: identify_solid, match_faces, valid_net, surface_area, count_faces_edges_vertices.',
+    evalModes: [
+      {
+        evalMode: 'count_faces_edges_vertices',
+        label: 'Count FEV (Easy)',
+        beta: -0.8,
+        scaffoldingMode: 1,
+        challengeTypes: ['count_faces_edges_vertices'],
+        description: 'Count faces, edges, and vertices of a 3D solid',
+      },
+      {
+        evalMode: 'identify_solid',
+        label: 'Identify Solid (Easy-Medium)',
+        beta: -0.3,
+        scaffoldingMode: 2,
+        challengeTypes: ['identify_solid'],
+        description: 'Identify the 3D solid from its appearance or net',
+      },
+      {
+        evalMode: 'match_faces',
+        label: 'Match Faces (Medium)',
+        beta: 0.2,
+        scaffoldingMode: 3,
+        challengeTypes: ['match_faces'],
+        description: 'Match highlighted net faces to corresponding solid faces',
+      },
+      {
+        evalMode: 'valid_net',
+        label: 'Valid Net (Medium-Hard)',
+        beta: 0.7,
+        scaffoldingMode: 4,
+        challengeTypes: ['valid_net'],
+        description: 'Determine whether a given 2D net folds into a valid solid',
+      },
+      {
+        evalMode: 'surface_area',
+        label: 'Surface Area (Hard)',
+        beta: 1.2,
+        scaffoldingMode: 5,
+        challengeTypes: ['surface_area'],
+        description: 'Calculate surface area by summing face areas from the net',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Explore a 3D {{solidType}} ({{solidName}}) and its 2D net. Challenge type: {{challengeType}}.',
+      contextKeys: ['solidType', 'solidName', 'faces', 'edges', 'vertices', 'netLayout', 'gradeBand', 'challengeType', 'instruction', 'attemptNumber', 'isFolded'],
+      scaffoldingLevels: {
+        level1: '"Look at the 3D shape. How many flat surfaces can you see?"',
+        level2: '"Try unfolding the shape. Each face of the solid becomes a flat piece in the net. Can you match the {{highlightedFace}} face?"',
+        level3: '"This is a {{solidName}} with {{faces}} faces. When you unfold it, the top face connects to the front. Count each face in the net — they should match the solid exactly."',
+      },
+      commonStruggles: [
+        { pattern: 'Student confuses faces and edges', response: '"A face is a flat surface — like the side of a box. An edge is where two faces meet — like a crease in the box."' },
+        { pattern: 'Student cannot match net faces to solid', response: '"Try the fold button to watch it fold up. See how the net piece becomes a face on the 3D shape?"' },
+        { pattern: 'Student miscounts surface area', response: '"Count the unit squares on each face separately, then add them all up. Write down each face area first."' },
+        { pattern: 'Student thinks invalid net is valid', response: '"Try folding the net in your mind. Do any faces overlap? If two pieces would end up on the same spot, it cannot fold into a solid."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'SPATIAL REASONING COACHING',
+          instruction:
+            'Guide students to build spatial visualization skills. '
+            + 'For grade 3: focus on naming shapes, counting faces/edges/vertices. Use concrete language: "This flat surface is called a face." '
+            + 'For grade 4: focus on net-solid correspondence. Encourage using the fold/unfold toggle: "Watch what happens when we unfold it!" '
+            + 'For grade 5: connect nets to surface area calculation. "Each face in the net has an area — add them all for surface area!" '
+            + 'Never give the answer directly — guide toward spatial insight.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

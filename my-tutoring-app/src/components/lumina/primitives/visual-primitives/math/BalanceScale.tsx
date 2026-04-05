@@ -10,6 +10,9 @@ import {
 } from '../../../evaluation';
 import type { BalanceScaleMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -72,6 +75,16 @@ interface StepEntry {
 }
 
 // ============================================================================
+// Phase Summary Config
+// ============================================================================
+
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  equality:  { label: 'Equality',  icon: '⚖️', accentColor: 'cyan' },
+  one_step:  { label: 'One-Step',  icon: '🔢', accentColor: 'purple' },
+  two_step:  { label: 'Two-Step',  icon: '🧮', accentColor: 'emerald' },
+};
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -113,10 +126,19 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [verifyInput, setVerifyInput] = useState('');
 
-  // Challenge state
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [challengeResults, setChallengeResults] = useState<Array<{ correct: boolean; steps: number; attempts: number }>>([]);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
+  // Challenge state (multi-phase hooks)
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.type + '-' + challenges.indexOf(ch),
+  });
 
   // Drag state
   const [draggedBlock, setDraggedBlock] = useState<BalanceScaleObject | null>(null);
@@ -156,9 +178,19 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<BalanceScaleMetrics>({
     primitiveType: 'balance-scale',
     instanceId: resolvedInstanceId,
@@ -347,7 +379,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   const handleVerify = useCallback(() => {
     const answer = parseFloat(verifyInput);
     const correct = Math.abs(answer - activeVariableValue) < 0.01;
-    setCurrentAttempts(a => a + 1);
+    incrementAttempts();
 
     if (correct) {
       setFeedback(`Correct! x = ${activeVariableValue}`);
@@ -355,7 +387,12 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
       sendText(`[ANSWER_CORRECT] Student verified x = ${activeVariableValue}. Celebrate!`, { silent: true });
 
       if (challenges.length > 0) {
-        setChallengeResults(prev => [...prev, { correct: true, steps: userSteps.length, attempts: currentAttempts + 1 }]);
+        recordResult({
+          challengeId: currentChallenge!.type + '-' + currentChallengeIndex,
+          correct: true,
+          attempts: currentAttempts + 1,
+          steps: userSteps.length,
+        });
       } else if (!hasSubmittedEvaluation) {
         const eq = formatEquation(initialLeft, initialRight);
         const metrics: BalanceScaleMetrics = {
@@ -391,12 +428,21 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
 
   // Challenge advance
   const advanceChallenge = useCallback(() => {
-    const nextIdx = currentChallengeIndex + 1;
-    if (nextIdx >= challenges.length) {
-      sendText(`[ALL_COMPLETE] All ${challenges.length} equations solved! Celebrate.`, { silent: true });
+    if (!advanceProgress()) {
+      // All challenges done — submit evaluation with phase scores
+      const phaseScoreStr = phaseResults
+        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+        .join(', ');
+      const correctCount = challengeResults.filter(r => r.correct).length;
+      const overallPct = Math.round((correctCount / challenges.length) * 100);
+
+      sendText(
+        `[ALL_COMPLETE] All ${challenges.length} equations solved! Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+        + `Give encouraging phase-specific feedback.`,
+        { silent: true }
+      );
+
       if (!hasSubmittedEvaluation) {
-        const correctCount = challengeResults.filter(r => r.correct).length;
-        const avgSteps = challengeResults.reduce((s, r) => s + r.steps, 0) / Math.max(challengeResults.length, 1);
         const metrics: BalanceScaleMetrics = {
           type: 'balance-scale',
           evalMode: 'default',
@@ -404,30 +450,31 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
           solutionFound: true,
           solutionValue: activeVariableValue,
           operationsPerformed: [],
-          stepsToSolve: Math.round(avgSteps),
+          stepsToSolve: 0,
           optimalSteps: 2,
-          efficiency: Math.min(1, 2 / Math.max(avgSteps, 1)),
+          efficiency: 1,
           phaseProgression: ['explore', 'solve', 'verify'],
           balanceMaintained: true,
           attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
         };
-        submitEvaluation(correctCount === challenges.length, Math.round((correctCount / challenges.length) * 100), metrics, { challengeResults });
+        submitEvaluation(correctCount === challenges.length, overallPct, metrics, { challengeResults });
       }
       return;
     }
-    const next = challenges[nextIdx];
-    setCurrentChallengeIndex(nextIdx);
-    setCurrentLeft(next.leftSide);
-    setCurrentRight(next.rightSide);
+    // Advanced to next challenge — reset domain state
+    const next = challenges[currentChallengeIndex + 1];
+    if (next) {
+      setCurrentLeft(next.leftSide);
+      setCurrentRight(next.rightSide);
+    }
     setPhase('explore');
     setUserSteps([]);
-    setCurrentAttempts(0);
     setFeedback('');
     setFeedbackType('');
     setVerifyInput('');
     setShowSolution(false);
-    sendText(`[NEXT_ITEM] Challenge ${nextIdx + 1}: "${next.instruction}". Introduce the equation.`, { silent: true });
-  }, [currentChallengeIndex, challenges, challengeResults, hasSubmittedEvaluation, initialLeft, initialRight, activeVariableValue, submitEvaluation, sendText]);
+    sendText(`[NEXT_ITEM] Challenge ${currentChallengeIndex + 2}: "${challenges[currentChallengeIndex + 1]?.instruction}". Introduce the equation.`, { silent: true });
+  }, [advanceProgress, phaseResults, challengeResults, challenges, currentChallengeIndex, hasSubmittedEvaluation, initialLeft, initialRight, activeVariableValue, submitEvaluation, sendText]);
 
   const handleReset = useCallback(() => {
     const left = currentChallenge?.leftSide ?? initialLeft;
@@ -445,7 +492,12 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   }, [currentChallenge, initialLeft, initialRight]);
 
   const isCurrentComplete = challenges.length > 0 && challengeResults.length > currentChallengeIndex && challengeResults[currentChallengeIndex]?.correct;
-  const allComplete = challenges.length > 0 && challengeResults.filter(r => r.correct).length >= challenges.length;
+
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    const correct = challengeResults.filter(r => r.correct).length;
+    return Math.round((correct / challenges.length) * 100);
+  }, [allChallengesComplete, challenges, challengeResults]);
 
   // Block palette
   const availableBlocks: BalanceScaleObject[] = [
@@ -649,7 +701,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
         )}
 
         {/* Verify Phase */}
-        {phase === 'verify' && !isCurrentComplete && !allComplete && (
+        {phase === 'verify' && !isCurrentComplete && !allChallengesComplete && (
           <div className="bg-slate-800/20 rounded-lg p-3 border border-white/5 space-y-2">
             <p className="text-slate-300 text-sm">What is the value of x?</p>
             <div className="flex items-center justify-center gap-3">
@@ -726,7 +778,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
 
         {/* Controls */}
         <div className="flex justify-center gap-2">
-          {isCurrentComplete && !allComplete && (
+          {isCurrentComplete && !allChallengesComplete && (
             <Button
               variant="ghost"
               className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
@@ -756,13 +808,15 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
           )}
         </div>
 
-        {allComplete && (
-          <div className="text-center">
-            <p className="text-emerald-400 text-sm font-medium mb-1">All equations solved!</p>
-            <p className="text-slate-400 text-xs">
-              {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-            </p>
-          </div>
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="All Equations Solved!"
+            celebrationMessage={`You completed all ${challenges.length} balance scale challenges!`}
+            className="mt-4"
+          />
         )}
 
         {/* Instructions */}

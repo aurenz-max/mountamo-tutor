@@ -1,6 +1,26 @@
 # K-5 Mathematics Visual Primitives — Phase 2
 ## Product Requirements Document — Lumina Platform
 
+**Status:** Largely Complete (10/12 new primitives shipped)
+**Last Audit:** 2026-04-04
+
+> **Implementation Status (2026-04-04):**
+>
+> | # | Primitive | Status | Notes |
+> |---|-----------|--------|-------|
+> | 1 | `ten-frame` | ✅ Done | Full phase system, eval hooks, AI tutoring |
+> | 2 | `counting-board` | ✅ Done | Full implementation |
+> | 3 | `pattern-builder` | ✅ Done | Full implementation |
+> | 4 | `skip-counting-runner` | ✅ Done | Full implementation |
+> | 5 | `regrouping-workbench` | ✅ Done | Full implementation |
+> | 6 | `multiplication-explorer` | ✅ Done | Full implementation |
+> | 7 | `clock-explorer` | ✅ Done | Shipped as `analog-clock` (name change) |
+> | 8 | `measurement-tools` | ✅ Done | Full implementation |
+> | 9 | `money-counter` | ✅ Done | Shipped as `coin-counter` (name change) |
+> | 10 | `shape-builder` | ✅ Done | Full implementation |
+> | 11 | `net-folder` | ❌ Not Started | 3D net folding visualization — no component, generator, or catalog |
+> | 12 | `angle-explorer` | ❌ Not Started | Protractor/angle measurement — no component, generator, or catalog |
+
 ### Overview
 
 This document defines Phase 2 interactive visual primitives for K-5 mathematics education within the Lumina platform. Phase 1 established 23 math primitives covering number sense through calculus preparation. **Phase 2 addresses the gaps uncovered in K-5 delivery** — the grade band where foundational mathematical thinking is built and where the platform's existing primitives are thinnest.

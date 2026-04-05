@@ -10,6 +10,180 @@ import {
 } from '../evalMode';
 
 // ---------------------------------------------------------------------------
+// Curated valid word pairs — guides Gemini toward real-word transformations
+// ---------------------------------------------------------------------------
+
+const VALID_ADDITION_PAIRS = [
+  // K: VC → CVC
+  'at→cat', 'at→bat', 'at→hat', 'at→mat', 'at→rat', 'at→sat', 'at→pat',
+  'an→can', 'an→fan', 'an→man', 'an→pan', 'an→ran', 'an→van', 'an→tan',
+  'it→bit', 'it→fit', 'it→hit', 'it→kit', 'it→lit', 'it→pit', 'it→sit',
+  'in→bin', 'in→fin', 'in→pin', 'in→tin', 'in→win',
+  'up→cup', 'up→pup',
+  'am→ham', 'am→jam', 'am→ram',
+  'ox→box', 'ox→fox',
+  'us→bus',
+  'ear→hear', 'ear→dear', 'ear→near', 'ear→year',
+  'all→ball', 'all→call', 'all→fall', 'all→hall', 'all→tall', 'all→wall',
+  'old→bold', 'old→cold', 'old→fold', 'old→gold', 'old→hold', 'old→told',
+  'eat→beat', 'eat→heat', 'eat→meat', 'eat→neat', 'eat→seat',
+  'ice→dice', 'ice→mice', 'ice→nice', 'ice→rice',
+  'age→cage', 'age→page', 'age→sage',
+  // Grade 1-2: CVC → CCVC / CVCC
+  'lip→slip', 'lip→clip', 'lip→flip',
+  'top→stop', 'rim→trim', 'rain→train', 'rain→brain', 'rain→grain',
+  'low→flow', 'low→slow', 'low→glow',
+  'rip→trip', 'rip→drip', 'rip→grip',
+  'lap→clap', 'lap→flap', 'lap→slap',
+  'lock→block', 'lock→clock',
+];
+
+const VALID_DELETION_PAIRS = [
+  // K: CVC → VC (reverse of addition)
+  'cat→at', 'bat→at', 'hat→at', 'mat→at', 'rat→at', 'sat→at',
+  'can→an', 'fan→an', 'man→an', 'pan→an', 'ran→an', 'van→an',
+  'bit→it', 'fit→it', 'hit→it', 'kit→it', 'lit→it', 'pit→it', 'sit→it',
+  'bin→in', 'fin→in', 'pin→in', 'tin→in', 'win→in',
+  'cup→up', 'pup→up',
+  'ham→am', 'jam→am', 'ram→am',
+  'box→ox', 'fox→ox',
+  'bus→us',
+  'hear→ear', 'dear→ear', 'near→ear', 'year→ear',
+  'ball→all', 'call→all', 'fall→all', 'hall→all', 'tall→all', 'wall→all',
+  'bold→old', 'cold→old', 'fold→old', 'gold→old', 'hold→old', 'told→old',
+  'beat→eat', 'heat→eat', 'meat→eat', 'neat→eat', 'seat→eat',
+  'dice→ice', 'mice→ice', 'nice→ice', 'rice→ice',
+  'cage→age', 'page→age', 'sage→age',
+  // Grade 1-2: CCVC → CVC
+  'slip→lip', 'clip→lip', 'flip→lip',
+  'stop→top', 'trim→rim', 'train→rain', 'brain→rain',
+  'flow→low', 'slow→low', 'glow→low',
+  'trip→rip', 'drip→rip', 'grip→rip',
+  'clap→lap', 'flap→lap', 'slap→lap',
+  'block→lock', 'clock→lock',
+];
+
+// Common K-2 English words for post-process validation
+const COMMON_WORDS = new Set([
+  // VC words
+  'at', 'an', 'in', 'it', 'on', 'up', 'us', 'am', 'if', 'ox',
+  'all', 'old', 'eat', 'ear', 'ice', 'age', 'arm', 'art', 'ask',
+  // CVC words
+  'bat', 'bed', 'big', 'bit', 'box', 'bud', 'bug', 'bun', 'bus', 'but', 'buy',
+  'cab', 'can', 'cap', 'car', 'cat', 'cop', 'cot', 'cow', 'cub', 'cup', 'cut',
+  'dad', 'day', 'did', 'dig', 'dim', 'dip', 'dog', 'dot', 'dry', 'dug', 'dye',
+  'fan', 'far', 'fat', 'fed', 'fig', 'fin', 'fit', 'fix', 'fly', 'fog', 'for',
+  'fox', 'fun', 'fur', 'gap', 'gas', 'get', 'god', 'got', 'gum', 'gun', 'gut', 'guy',
+  'had', 'ham', 'has', 'hat', 'hen', 'her', 'hid', 'him', 'hip', 'his', 'hit',
+  'hog', 'hop', 'hot', 'how', 'hub', 'hug', 'hum', 'hut',
+  'jam', 'jar', 'jaw', 'jet', 'job', 'jog', 'joy', 'jug',
+  'key', 'kid', 'kin', 'kit',
+  'lab', 'lad', 'lag', 'lap', 'law', 'lay', 'led', 'leg', 'let', 'lid',
+  'lip', 'lit', 'log', 'lot', 'low', 'lug',
+  'mad', 'man', 'map', 'mat', 'men', 'met', 'mix', 'mob', 'mom', 'mop',
+  'mud', 'mug', 'mum',
+  'nap', 'net', 'new', 'nod', 'nor', 'not', 'now', 'nun', 'nut',
+  'pad', 'pal', 'pan', 'pat', 'paw', 'pay', 'peg', 'pen', 'per', 'pet',
+  'pie', 'pig', 'pin', 'pit', 'pod', 'pop', 'pot', 'pox', 'pub', 'pug',
+  'pun', 'pup', 'put',
+  'rag', 'ram', 'ran', 'rap', 'rat', 'raw', 'ray', 'red', 'rib', 'rid',
+  'rig', 'rim', 'rip', 'rob', 'rod', 'rot', 'row', 'rug', 'run', 'rut',
+  'sad', 'sag', 'sap', 'sat', 'saw', 'say', 'sea', 'set', 'shy', 'sin',
+  'sip', 'sir', 'sis', 'sit', 'six', 'sky', 'sob', 'sod', 'son', 'sop',
+  'sow', 'spy', 'sub', 'sue', 'sum', 'sun', 'sup',
+  'tab', 'tag', 'tan', 'tap', 'tar', 'tax', 'tea', 'ten', 'the', 'tie',
+  'tin', 'tip', 'toe', 'ton', 'too', 'top', 'tow', 'toy', 'try', 'tub', 'tug',
+  'van', 'vat', 'vet', 'via', 'vow',
+  'wag', 'war', 'was', 'wax', 'way', 'web', 'wed', 'wet', 'who', 'why',
+  'wig', 'win', 'wit', 'woe', 'wok', 'won', 'wow',
+  'yak', 'yam', 'yap', 'yaw', 'yes', 'yet', 'you',
+  'zap', 'zen', 'zip', 'zoo',
+  // CCVC / CVCC / longer common words
+  'back', 'ball', 'band', 'bang', 'bank', 'bark', 'barn', 'base', 'bath',
+  'bean', 'bear', 'beat', 'been', 'bell', 'belt', 'bend', 'bent', 'best',
+  'bike', 'bird', 'bite', 'blow', 'blue', 'boat', 'body', 'bold', 'bone',
+  'book', 'boot', 'born', 'boss', 'both', 'bowl', 'bump', 'burn', 'bush',
+  'buzz', 'cage', 'cake', 'call', 'calm', 'came', 'camp', 'cape', 'card',
+  'care', 'cart', 'case', 'cash', 'cast', 'cave', 'chip', 'clam', 'clap',
+  'clay', 'clip', 'clock', 'club', 'clue', 'coat', 'code', 'coin', 'cold',
+  'come', 'cook', 'cool', 'copy', 'cord', 'corn', 'cost', 'crab', 'crop',
+  'crow', 'cube', 'curl', 'cute', 'damp', 'dare', 'dark', 'dart', 'dash',
+  'date', 'dawn', 'dead', 'deaf', 'deal', 'dear', 'deck', 'deep', 'deer',
+  'desk', 'dice', 'dirt', 'dish', 'dock', 'does', 'done', 'door', 'dose',
+  'dove', 'down', 'drag', 'draw', 'drip', 'drop', 'drum', 'duck', 'dull',
+  'dump', 'dusk', 'dust', 'each', 'earn', 'east', 'edge', 'face', 'fact',
+  'fade', 'fail', 'fair', 'fake', 'fall', 'fame', 'farm', 'fast', 'fate',
+  'fear', 'feed', 'feel', 'fell', 'felt', 'fill', 'film', 'find', 'fine',
+  'fire', 'firm', 'fish', 'fist', 'five', 'flag', 'flame', 'flap', 'flat',
+  'flew', 'flip', 'float', 'flow', 'fold', 'food', 'fool', 'foot', 'fork',
+  'form', 'frog', 'from', 'fuel', 'full', 'fund', 'fuse', 'gain', 'game',
+  'gate', 'gave', 'gift', 'girl', 'glad', 'glow', 'glue', 'goat', 'goes',
+  'gold', 'golf', 'gone', 'good', 'grab', 'gray', 'grew', 'grin', 'grip',
+  'grow', 'gulp', 'gust', 'hair', 'half', 'hall', 'hand', 'hang', 'hard',
+  'harm', 'hate', 'have', 'head', 'heal', 'hear', 'heat', 'held', 'help',
+  'here', 'hero', 'hide', 'high', 'hike', 'hill', 'hint', 'hold', 'hole',
+  'home', 'hood', 'hook', 'hope', 'horn', 'hose', 'host', 'hunt', 'hurt',
+  'into', 'iron', 'jack', 'jail', 'joke', 'jump', 'just', 'keen', 'keep',
+  'kick', 'kill', 'kind', 'king', 'kiss', 'kite', 'knee', 'knob', 'knot',
+  'know', 'lace', 'lack', 'lake', 'lamb', 'lamp', 'land', 'lane', 'last',
+  'late', 'lawn', 'lead', 'leaf', 'leak', 'lean', 'left', 'lend', 'less',
+  'life', 'lift', 'like', 'lime', 'limp', 'line', 'link', 'lion', 'list',
+  'live', 'load', 'loan', 'lock', 'long', 'look', 'loop', 'lord', 'lose',
+  'lost', 'loud', 'love', 'luck', 'lump', 'lung', 'made', 'mail', 'main',
+  'make', 'male', 'mall', 'many', 'mark', 'mask', 'mass', 'meal', 'mean',
+  'meet', 'melt', 'mice', 'mild', 'mile', 'milk', 'mill', 'mind', 'mine',
+  'miss', 'mode', 'mold', 'moon', 'more', 'moss', 'most', 'move', 'much',
+  'must', 'nail', 'name', 'near', 'neat', 'neck', 'need', 'nest', 'next',
+  'nice', 'nine', 'nope', 'nose', 'note', 'noun', 'once', 'only', 'open',
+  'oven', 'over', 'pace', 'pack', 'page', 'paid', 'pain', 'pair', 'pale',
+  'palm', 'park', 'part', 'pass', 'past', 'path', 'pave', 'peak', 'peel',
+  'pick', 'pile', 'pine', 'pink', 'pipe', 'plan', 'play', 'plot', 'plug',
+  'plum', 'plus', 'poem', 'pole', 'pond', 'pool', 'poor', 'pope', 'pork',
+  'pose', 'post', 'pour', 'pray', 'pull', 'pump', 'pure', 'push', 'quit',
+  'race', 'rack', 'rage', 'rail', 'rain', 'rake', 'rank', 'rare', 'rash',
+  'rate', 'read', 'real', 'rear', 'rent', 'rest', 'rice', 'rich', 'ride',
+  'ring', 'rise', 'risk', 'road', 'roam', 'rock', 'rode', 'role', 'roll',
+  'roof', 'room', 'root', 'rope', 'rose', 'rude', 'rule', 'rush', 'rust',
+  'safe', 'sage', 'said', 'sail', 'sake', 'sale', 'salt', 'same', 'sand',
+  'sang', 'save', 'seal', 'seed', 'seek', 'seem', 'seen', 'self', 'sell',
+  'send', 'sent', 'shed', 'ship', 'shop', 'shot', 'show', 'shut', 'sick',
+  'side', 'sign', 'silk', 'sing', 'sink', 'size', 'skin', 'skip', 'slam',
+  'slap', 'slid', 'slim', 'slip', 'slot', 'slow', 'snap', 'snow', 'soap',
+  'sock', 'soft', 'soil', 'sold', 'sole', 'some', 'song', 'soon', 'sort',
+  'soul', 'sour', 'spin', 'spot', 'star', 'stay', 'stem', 'step', 'stir',
+  'stop', 'such', 'suit', 'sure', 'swim', 'tail', 'take', 'tale', 'talk',
+  'tall', 'tank', 'tape', 'task', 'team', 'tear', 'tell', 'tend', 'tent',
+  'term', 'test', 'text', 'than', 'that', 'them', 'then', 'they', 'thin',
+  'this', 'thus', 'tick', 'tide', 'tidy', 'tile', 'till', 'time', 'tiny',
+  'tire', 'toad', 'told', 'toll', 'tone', 'took', 'tool', 'tops', 'tore',
+  'torn', 'toss', 'tour', 'town', 'trap', 'tray', 'tree', 'trim', 'trip',
+  'trot', 'true', 'tube', 'tuck', 'tune', 'turn', 'twin', 'type',
+  'upon', 'used', 'user', 'vale', 'vary', 'vast', 'verb', 'very', 'vest',
+  'view', 'vine', 'vote', 'wade', 'wage', 'wait', 'wake', 'walk', 'wall',
+  'wand', 'want', 'warm', 'warn', 'wash', 'wave', 'weak', 'wear', 'weed',
+  'week', 'well', 'went', 'were', 'west', 'what', 'when', 'wide', 'wife',
+  'wild', 'will', 'wind', 'wine', 'wing', 'wipe', 'wire', 'wise', 'wish',
+  'with', 'woke', 'wolf', 'wood', 'wool', 'word', 'wore', 'work', 'worm',
+  'worn', 'wrap', 'yard', 'year', 'yell', 'your', 'zero', 'zone',
+  // Additional short real words that appear in phoneme addition/deletion
+  'ream', 'seam', 'beam', 'team', 'cream', 'dream', 'stream',
+  'lock', 'block', 'clock', 'flock', 'knock', 'rock', 'sock', 'stock',
+  'rain', 'brain', 'chain', 'drain', 'grain', 'plain', 'spain', 'stain', 'train',
+  'rip', 'drip', 'grip', 'ship', 'skip', 'strip', 'trip', 'whip',
+]);
+
+// IPA normalization — map uncommon IPA symbols to component-friendly versions
+const IPA_NORMALIZATIONS: Record<string, string> = {
+  '/ɹ/': '/r/',
+  '/ɾ/': '/r/',
+  '/ɻ/': '/r/',
+};
+
+function normalizePhonemes(phonemes: string[]): string[] {
+  return phonemes.map(p => IPA_NORMALIZATIONS[p] ?? p);
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
@@ -315,6 +489,7 @@ ${challengeTypeSection}
 
 PHONEME NOTATION RULES:
 - Use IPA-style phoneme notation wrapped in forward slashes: /k/, /æ/, /t/, /s/, /b/, /ɪ/, /ʌ/, /ɛ/, /ɑ/, /ʊ/
+- Use /r/ for the R sound, NOT /ɹ/ or /ɾ/
 - Each phoneme in originalPhonemes and resultPhonemes must be a single sound in slashes
 - Example: "cat" = ["/k/", "/æ/", "/t/"], "bat" = ["/b/", "/æ/", "/t/"]
 - Digraphs like "sh" are ONE phoneme: /ʃ/. "ch" = /tʃ/. "th" = /θ/ or /ð/
@@ -326,9 +501,14 @@ PHONEME ARRAY RULES (CRITICAL):
 - For DELETION: originalPhonemes has exactly ONE more phoneme than resultPhonemes
 - For SUBSTITUTION: both arrays have the SAME length, differing at exactly ONE position
 
+CURATED WORD PAIRS (prefer these — both words are guaranteed real English words):
+Addition examples: ${VALID_ADDITION_PAIRS.slice(0, 20).join(', ')}
+Deletion examples: ${VALID_DELETION_PAIRS.slice(0, 20).join(', ')}
+You may create NEW pairs beyond this list, but BOTH originalWord and resultWord MUST be real English words that a K-2 student would recognize. "un", "ig", "ap", "og" are NOT real words — never use them.
+
 CRITICAL RULES:
-- EVERY result word must be a REAL English word (no nonsense words!)
-- EVERY original word must be a REAL English word
+- EVERY result word must be a REAL English word (no nonsense words like "un", "ig", "ap", "og"!)
+- EVERY original word must be a REAL English word (no nonsense words!)
 - Image descriptions should be brief (3-6 words) and kid-friendly
 - IDs should be sequential: "c1", "c2", "c3", etc.
 - Relate words to the topic "${topic}" when possible, but prioritize valid transformations
@@ -376,22 +556,37 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
     }
 
     // Map raw challenges → full SoundSwapChallenge by deriving operation fields
-    const challenges: SoundSwapChallenge[] = result.challenges.map(
-      (ch: Record<string, unknown>, idx: number) => {
+    let rejectedCount = 0;
+    const challenges: SoundSwapChallenge[] = result.challenges
+      .map((ch: Record<string, unknown>, idx: number) => {
+        const originalWord = ((ch.originalWord as string) || "").toLowerCase().trim();
+        const resultWord = ((ch.resultWord as string) || "").toLowerCase().trim();
+
+        // Reject challenges where either word is not a real English word
+        if (!originalWord || !resultWord || !COMMON_WORDS.has(originalWord) || !COMMON_WORDS.has(resultWord)) {
+          console.warn(`[SoundSwap] Rejected c${idx + 1}: "${originalWord}" → "${resultWord}" (not in COMMON_WORDS)`);
+          rejectedCount++;
+          return null;
+        }
+
         const raw: RawChallenge = {
           id: (ch.id as string) || `c${idx + 1}`,
           operation: ch.operation as RawChallenge["operation"],
           originalWord: (ch.originalWord as string) || "",
-          originalPhonemes: Array.isArray(ch.originalPhonemes) ? ch.originalPhonemes as string[] : [],
+          originalPhonemes: normalizePhonemes(Array.isArray(ch.originalPhonemes) ? ch.originalPhonemes as string[] : []),
           originalImage: (ch.originalImage as string) || (ch.originalWord as string) || "",
           resultWord: (ch.resultWord as string) || "",
-          resultPhonemes: Array.isArray(ch.resultPhonemes) ? ch.resultPhonemes as string[] : [],
+          resultPhonemes: normalizePhonemes(Array.isArray(ch.resultPhonemes) ? ch.resultPhonemes as string[] : []),
           resultImage: (ch.resultImage as string) || (ch.resultWord as string) || "",
         };
 
         return deriveOperationFields(raw);
-      }
-    );
+      })
+      .filter((ch: SoundSwapChallenge | null): ch is SoundSwapChallenge => ch !== null);
+
+    if (rejectedCount > 0) {
+      console.warn(`[SoundSwap] Rejected ${rejectedCount} challenge(s) with non-real words`);
+    }
 
     const finalData: SoundSwapData = {
       title: result.title,

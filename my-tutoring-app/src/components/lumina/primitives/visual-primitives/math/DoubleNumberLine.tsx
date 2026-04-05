@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   usePrimitiveEvaluation,
   type DoubleNumberLineMetrics,
 } from '../../../evaluation';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import type { PhaseResult } from '../../../components/PhaseSummaryPanel';
 
 /**
  * Double Number Line - Interactive proportional reasoning tool for teaching ratio relationships
@@ -195,6 +198,8 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
     resetAttempt: resetEvaluationAttempt,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<DoubleNumberLineMetrics>({
     primitiveType: 'double-number-line',
     instanceId: instanceId || `double-number-line-${Date.now()}`,
@@ -206,6 +211,40 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
       | ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void)
       | undefined,
   });
+
+  // AI tutoring integration
+  const aiPrimitiveData = useMemo(() => ({
+    topLabel,
+    bottomLabel,
+    currentPhase,
+    unitRateFound,
+    targetPointCount: targetPoints.length,
+    correctCount: studentPoints.filter((p, i) => {
+      const target = targetPoints[i];
+      const bv = parseFloat(p.bottomValue);
+      return !isNaN(bv) && Math.abs(bv - target.bottomValue) < 0.1;
+    }).length,
+    attemptCount,
+  }), [topLabel, bottomLabel, currentPhase, unitRateFound, targetPoints, studentPoints, attemptCount]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'double-number-line',
+    instanceId: instanceId || `double-number-line-${Date.now()}`,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: 'Grade 6',
+  });
+
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Double number line: ${topLabel} vs ${bottomLabel}. ${targetPoints.length} target points to find. `
+      + `${contextQuestion ? `Context: "${contextQuestion}". ` : ''}`
+      + `Guide the student to find the unit rate first.`,
+      { silent: true }
+    );
+  }, [isConnected, topLabel, bottomLabel, targetPoints.length, contextQuestion, sendText]);
 
   // Helper: check if value is within tolerance
   const isWithinTolerance = (student: number, target: number, tolerance = 0.1): boolean => {
@@ -246,6 +285,7 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
       setFeedback(`Perfect! You found the unit rate: 1 ${topLabel.toLowerCase()} = ${unitRatePoint.bottomValue} ${bottomLabel.toLowerCase()}. This is the key to solving the whole problem!`);
       setFeedbackType('success');
       setUnitRateFound(true);
+      sendText('[PHASE_TRANSITION] Student found unit rate. Moving to practice phase.', { silent: true });
       setTimeout(() => setCurrentPhase('practice'), 2000);
     } else {
       const hint = unitRatePoint.bottomValue < 10
@@ -353,6 +393,8 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
 
     const score = (correctPoints / targetPoints.length) * 100;
 
+    sendText('[ALL_COMPLETE] All points correct! Celebrate.', { silent: true });
+
     submitEvaluation(allPointsCorrect, score, metrics, {
       studentWork: { studentPoints: finalPoints },
     });
@@ -397,6 +439,68 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     const position = getBottomPosition(value);
     return { value, position };
   });
+
+  // Phase summary for evaluation results
+  const phaseResults = useMemo((): PhaseResult[] => {
+    if (!hasSubmittedEvaluation) return [];
+    const results: PhaseResult[] = [];
+
+    // Explore phase
+    results.push({
+      label: 'Find Unit Rate',
+      score: unitRateFound ? 100 : 0,
+      attempts: 1,
+      firstTry: unitRateFound,
+      icon: '🔍',
+      accentColor: 'blue',
+    });
+
+    // Practice phase (first 2 points)
+    const practicePoints = studentPoints.slice(0, 2);
+    const practiceCorrect = practicePoints.filter((p, i) => {
+      const target = targetPoints[i];
+      if (!target) return false;
+      const bv = parseFloat(p.bottomValue);
+      return !isNaN(bv) && Math.abs(bv - target.bottomValue) < 0.1;
+    }).length;
+    results.push({
+      label: 'Practice Scaling',
+      score: practicePoints.length > 0 ? Math.round((practiceCorrect / practicePoints.length) * 100) : 0,
+      attempts: attemptCount,
+      firstTry: practiceCorrect === practicePoints.length && attemptCount <= 1,
+      icon: '📐',
+      accentColor: 'amber',
+    });
+
+    // Apply phase (all points)
+    const allCorrect = studentPoints.filter((p, i) => {
+      const target = targetPoints[i];
+      if (!target) return false;
+      const bv = parseFloat(p.bottomValue);
+      return !isNaN(bv) && Math.abs(bv - target.bottomValue) < 0.1;
+    }).length;
+    results.push({
+      label: 'Apply Understanding',
+      score: targetPoints.length > 0 ? Math.round((allCorrect / targetPoints.length) * 100) : 0,
+      attempts: attemptCount,
+      firstTry: allCorrect === targetPoints.length && attemptCount <= 1,
+      icon: '🎯',
+      accentColor: 'emerald',
+    });
+
+    return results;
+  }, [hasSubmittedEvaluation, unitRateFound, studentPoints, targetPoints, attemptCount]);
+
+  const localOverallScore = useMemo(() => {
+    if (!hasSubmittedEvaluation) return 0;
+    const correct = studentPoints.filter((p, i) => {
+      const target = targetPoints[i];
+      if (!target) return false;
+      const bv = parseFloat(p.bottomValue);
+      return !isNaN(bv) && Math.abs(bv - target.bottomValue) < 0.1;
+    }).length;
+    return Math.round((correct / targetPoints.length) * 100);
+  }, [hasSubmittedEvaluation, studentPoints, targetPoints]);
 
   // Display points are the given hints
   const displayPoints = givenPoints;
@@ -823,6 +927,7 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                           if (practiceCorrect) {
                             setFeedback('Excellent! You\'ve got the pattern. Now try finding all the remaining points!');
                             setFeedbackType('success');
+                            sendText('[PHASE_TRANSITION] Practice complete. Moving to apply phase.', { silent: true });
                             setCurrentPhase('apply');
                           } else {
                             handleCheckAnswers();
@@ -852,6 +957,16 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                       </button>
                     )}
                   </>
+                )}
+                {hasSubmittedEvaluation && phaseResults.length > 0 && (
+                  <PhaseSummaryPanel
+                    phases={phaseResults}
+                    overallScore={submittedResult?.score ?? localOverallScore}
+                    durationMs={elapsedMs}
+                    heading="Challenge Complete!"
+                    celebrationMessage={`You found all ${targetPoints.length} proportional relationships!`}
+                    className="mt-4"
+                  />
                 )}
                 {hasSubmittedEvaluation && (
                   <button

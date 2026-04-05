@@ -20,15 +20,15 @@
 | rhyme-studio | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/rhyme-studio-2026-03-15.md) |
 | syllable-clapper | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/syllable-clapper-2026-03-15.md) |
 | phoneme-explorer | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phoneme-explorer-2026-03-15.md) |
-| sound-swap | 3 | 1 | 2 | 2026-03-15 | [report](eval-reports/sound-swap-2026-03-15.md) |
+| sound-swap | 3 | 3 | 0 | 2026-04-04 | [report](eval-reports/sound-swap-2026-03-15.md) |
 | letter-spotter | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/letter-spotter-2026-03-15.md) |
 | letter-sound-link | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/letter-sound-link-2026-03-15.md) |
 | cvc-speller | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/cvc-speller-2026-03-15.md) |
-| word-workout | 4 | 2 | 2 | 2026-03-15 | [report](eval-reports/word-workout-2026-03-15.md) |
+| word-workout | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/word-workout-2026-04-04.md) |
 | story-map | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/story-map-2026-03-15.md) |
 | poetry-lab | 2 | 0 | 2 | 2026-03-15 | [report](eval-reports/poetry-lab-2026-03-15.md) |
-| text-structure-analyzer | 4 | 0 | 4 | 2026-03-15 | [report](eval-reports/text-structure-analyzer-2026-03-15.md) |
-| paragraph-architect | 3 | 1 | 2 | 2026-03-15 | [report](eval-reports/paragraph-architect-2026-03-15.md) |
+| text-structure-analyzer | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/text-structure-analyzer-2026-03-15.md) |
+| paragraph-architect | 3 | 3 | 0 | 2026-04-04 | [report](eval-reports/paragraph-architect-2026-03-15.md) |
 | opinion-builder | 2 | 1 | 1 | 2026-03-15 | [report](eval-reports/opinion-builder-2026-03-15.md) |
 | revision-workshop | 6 | 5 | 1 | 2026-03-15 | [report](eval-reports/revision-workshop-2026-03-15.md) |
 | sentence-builder | 4 | 2 | 2 | 2026-03-15 | [report](eval-reports/sentence-builder-2026-03-15.md) |
@@ -71,7 +71,10 @@
 | coin-counter | 7 | 7 | 0 | 2026-04-04 | [report](eval-reports/coin-counter-2026-04-04.md) |
 | time-sequencer | 6 | 6 | 0 | 2026-04-04 | [report](eval-reports/time-sequencer-2026-04-04.md) |
 
-**Totals:** 228/245 modes passing (93.1%) | 32 open issues (15 CRITICAL, 17 HIGH, 0 MEDIUM, 0 LOW)
+| spatial-scene | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/spatial-scene-2026-04-04.md) |
+| planetary-explorer | 4 | 3 | 1 | 2026-04-04 | [report](eval-reports/planetary-explorer-2026-04-04.md) |
+
+**Totals:** 245/253 modes passing (96.8%) | 20 open issues (7 CRITICAL, 13 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -126,22 +129,22 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-7: Generator produces phonetically incorrect content (literacy)
 
-**Affected:** ~~rhyme-studio (recognition — false negatives)~~, ~~rhyme-studio (production)~~, ~~phoneme-explorer (blend)~~, ~~phonics-blender (cvce_blend)~~, sound-swap (addition, deletion)
+**Affected:** ~~rhyme-studio (recognition — false negatives)~~, ~~rhyme-studio (production)~~, ~~phoneme-explorer (blend)~~, ~~phonics-blender (cvce_blend)~~, ~~sound-swap (addition, deletion)~~
 **Risk:** All literacy primitives where Gemini generates phonetic/linguistic content — rhymes, phoneme breakdowns, syllable boundaries.
 **Root cause:** LLM phonetic knowledge is imperfect; no post-generation validation checks phonetic correctness. Suffix-based validators can't handle irregular spellings ("one"≠"-un", "eight"≠"-ate").
 **Fix pattern:** Add post-generation validation: (1) rhyme pairs share ending sounds, (2) blended phoneme letters concatenate to target word, (3) CVCE words actually follow the pattern. For irregular words, either exclude them from recognition pairs or use a phonetic lookup table.
-**Status:** Partially fixed — phoneme-explorer blend and phonics-blender cvce have post-generation validation. Rhyme-studio suffix validators removed (caused more harm than good for irregular spellings); now trusts Gemini + strong prompt. Stochastic false negatives remain for irregular words in recognition mode. Sound-swap still needs validation.
+**Status:** Fixed — all affected primitives resolved. Sound-swap fixed with curated word pair lists in prompt + COMMON_WORDS post-process validation rejecting nonsense words. IPA notation normalized (/ɹ/→/r/). Phoneme-explorer blend and phonics-blender cvce have post-generation validation. Rhyme-studio trusts Gemini + strong prompt.
 
 ### SP-8: LLM cannot reliably compute character offsets in generated text
 
-**Affected:** poetry-lab (analysis — figurativeInstances), text-structure-analyzer (all modes — signalWords)
+**Affected:** poetry-lab (analysis — figurativeInstances), ~~text-structure-analyzer (all modes — signalWords)~~
 **Risk:** Any literacy primitive that asks Gemini for startIndex/endIndex character positions within generated passages.
 **Root cause:** LLMs hallucinate plausible-looking character offset numbers. They cannot reliably count characters, especially in multi-line text.
 **Fix pattern:** Post-process: use `passage.indexOf(word)` to recompute indices from the `word`/`text` field. Never trust LLM-generated character offsets.
 
 ### SP-9: Generator ignores challengeType constraint — all modes return same type
 
-**Affected:** paragraph-architect (narrative returns "informational", opinion returns "informational"), ~~tape-diagram (all modes identical)~~, ~~sound-wave-explorer (apply returns observe/predict)~~
+**Affected:** ~~paragraph-architect (narrative returns "informational", opinion returns "informational")~~, ~~tape-diagram (all modes identical)~~, ~~sound-wave-explorer (apply returns observe/predict)~~
 **Risk:** Any primitive where the generator prompt doesn't forward the evalMode's challengeTypes constraint to Gemini.
 **Root cause:** The generator prompt describes all types but doesn't constrain Gemini to produce only the requested type. Gemini defaults to the most common/first-described type.
 **Fix pattern:** Generator must inject `constrainChallengeTypeEnum` or equivalent constraint that forces the output type to match the eval mode.
@@ -169,19 +172,19 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-14: Gemini Flash Lite silently drops nullable flat-indexed fields — generator produces structurally broken challenges
 
-**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04)
+**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04), spatial-scene (identify, describe, place — SS-1)
 **Risk:** Any primitive using the flattened-index pattern (e.g., `coin0Type`, `displayedCoin0Type`, `groupACoin0Type`, `option0..option3`) with nullable fields. Gemini Flash Lite frequently omits entire groups of these fields, producing challenges with missing visual data (no coins to count, no groups to compare). The generator's `collectCoinDefs`/`collectStrings` reconstruction returns empty arrays, and the challenge is accepted with wrong fallback values.
 **Root cause:** Flat-indexed fields are all `nullable: true` in the schema so Gemini can skip them without schema violation. Flash Lite takes the path of least resistance and omits fields it considers optional, especially when the prompt describes multiple challenge types. The generator's post-reconstruction validation was too permissive — it accepted challenges missing critical fields.
 **Fix pattern:** After flat→structured reconstruction, validate each challenge has all REQUIRED fields for its type. Reject (return null + filter) any challenge missing critical visual/interaction data. Never silently fall back to wrong values. For identify-type challenges, derive missing options from the answer field + grade-appropriate pool. Log all rejections for debugging.
-**Status:** Fixed for coin-counter — reject count without displayedCoins, compare without both groups, identify without targetCoin. Options derived from targetCoin when flat fields empty.
+**Status:** Structurally eliminated for coin-counter via orchestrator refactor (per-type sub-generators with required fields). Open for spatial-scene.
 
 ### SP-15: Eval modes sharing the same challengeType have no semantic differentiation in generator
 
-**Affected:** coin-counter (count-like vs count-mixed — fixed 2026-04-04)
+**Affected:** coin-counter (count-like vs count-mixed — fixed 2026-04-04), planetary-explorer (identify vs explore — per-planet questions identical, PE-1)
 **Risk:** Any primitive where two eval modes map to the same `challengeType` but with different pedagogical intent (e.g., "single coin type" vs "mixed coins", "simple" vs "complex"). The generator passes the challengeType constraint but has no mechanism to enforce the semantic difference between modes.
 **Root cause:** `resolveEvalModeConstraint` only constrains the `type` field value. It doesn't pass additional constraints (like "only one coin type") to the generator or post-process.
 **Fix pattern:** Generator must check `config?.targetEvalMode` (not just challengeType) and apply mode-specific post-filters. For coin-counter count-like: filter to challenges with exactly 1 unique coin type in displayedCoins.
-**Status:** Fixed for coin-counter — `count-like` post-filter enforces single-coin-type constraint.
+**Status:** Structurally eliminated for coin-counter via orchestrator — count-like and count-mixed have separate sub-generator prompts.
 
 ### SP-4: Render path and validation path use different data sources
 
@@ -196,21 +199,17 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 | ID | Primitive | Mode | Severity | Category | Summary | Fix Type |
 |----|-----------|------|----------|----------|---------|----------|
-| SW-1 | sound-swap | addition | CRITICAL | Wrong content | Adding /s/ to "on" should produce "son" not "sun" — vowel changes (substitution not addition) | GENERATOR |
-| SW-2 | sound-swap | deletion | CRITICAL | Wrong content | 5/9 result words are nonsense syllables (un, ig, ap) — catalog requires real words | GENERATOR |
-| SW-3 | sound-swap | addition | HIGH | Notation mismatch | Generator uses /ɹ/ but component DISTRACTOR_PHONEMES uses /r/ — both may appear as options | GENERATOR |
-| SW-4 | sound-swap | addition | HIGH | Wrong content | Non-word originals "un" and "ig" — not real English words for K students | GENERATOR |
-| WW-1 | word-workout | word_chains | CRITICAL | Wrong content | Chain c5 has duplicates (sob×3) and sip→sub changes 2 letters — violates one-letter-change rule | GENERATOR |
-| WW-2 | word-workout | sentence_reading | CRITICAL | Trivial challenge | c4 has only 1 cvcWord=comprehensionAnswer — single button rendered, impossible to answer wrong | GENERATOR |
+| ~~SW-1~~ | ~~sound-swap~~ | ~~addition~~ | ~~CRITICAL~~ | ~~Wrong content~~ | ~~Adding /s/ to "on" should produce "son" not "sun" — vowel changes (substitution not addition)~~ | ~~GENERATOR~~ |
+| ~~SW-2~~ | ~~sound-swap~~ | ~~deletion~~ | ~~CRITICAL~~ | ~~Wrong content~~ | ~~5/9 result words are nonsense syllables (un, ig, ap) — catalog requires real words~~ | ~~GENERATOR~~ |
+| ~~SW-3~~ | ~~sound-swap~~ | ~~addition~~ | ~~HIGH~~ | ~~Notation mismatch~~ | ~~Generator uses /ɹ/ but component DISTRACTOR_PHONEMES uses /r/ — both may appear as options~~ | ~~GENERATOR~~ |
+| ~~SW-4~~ | ~~sound-swap~~ | ~~addition~~ | ~~HIGH~~ | ~~Wrong content~~ | ~~Non-word originals "un" and "ig" — not real English words for K students~~ | ~~GENERATOR~~ |
+| ~~WW-1~~ | ~~word-workout~~ | ~~word_chains~~ | ~~CRITICAL~~ | ~~Wrong content~~ | ~~Chain c5 has duplicates (sob×3) and sip→sub changes 2 letters — violates one-letter-change rule~~ | ~~GENERATOR~~ |
+| ~~WW-2~~ | ~~word-workout~~ | ~~sentence_reading~~ | ~~CRITICAL~~ | ~~Trivial challenge~~ | ~~c4 has only 1 cvcWord=comprehensionAnswer — single button rendered, impossible to answer wrong~~ | ~~GENERATOR~~ |
 | SM-1 | story-map | all modes | HIGH | Trivial challenge | Character identification has no distractors — selecting all options = correct | COMPONENT |
 | SM-2 | story-map | all modes | HIGH | Trivial challenge | Setting distractors are hardcoded ("A spaceship - In the future") — obviously wrong for any story | COMPONENT + GENERATOR |
 | PL-1 | poetry-lab | analysis | CRITICAL | Wrong indices | figurativeInstances startIndex/endIndex don't match text in poem — highlights land on wrong text | GENERATOR |
 | PL-2 | poetry-lab | composition | CRITICAL | Missing fields | templateConstraints missing — lineCount defaults to 3 but prompt says "four-line poem" | GENERATOR |
 | PL-3 | poetry-lab | composition | HIGH | No validation | Without syllablesPerLine/rhymePattern, score is binary 85/30 — no meaningful assessment | GENERATOR |
-| TS-1 | text-structure-analyzer | all modes | CRITICAL | Wrong indices | Signal word startIndex/endIndex offsets wrong in 100% of responses — Phase 1 broken | GENERATOR |
-| TS-2 | text-structure-analyzer | compare_contrast | HIGH | Wrong content | "One solution" is a problem-solution signal word, not compare-contrast | GENERATOR |
-| PA-1 | paragraph-architect | narrative | CRITICAL | Wrong type | paragraphType returns "informational" instead of "narrative" | GENERATOR |
-| PA-2 | paragraph-architect | opinion | CRITICAL | Wrong type | paragraphType returns "informational" instead of "opinion" | GENERATOR |
 | OB-1 | opinion-builder | cer | CRITICAL | Wrong grade | CER mode gets grade 3 (needs 5+) — counter-argument phase skipped entirely | GENERATOR + EVAL-TEST |
 | OB-2 | opinion-builder | cer | HIGH | Validator gap | Eval-test validator doesn't check `framework` field — wrong framework passes validation | EVAL-TEST |
 | RV-1 | revision-workshop | reorganize | HIGH | Interaction mismatch | Reorganize expects drag-to-reorder but component only offers textareas — students must retype sentences | COMPONENT |
@@ -227,6 +226,10 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | GT-1 | gear-train-builder | — | CRITICAL | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — adaptive session selects primitive but can't generate content | CATALOG |
 | GT-2 | gear-train-builder | — | CRITICAL | Session deadlock | When prefetch() returns 0 items (malformed 65K+ JSON from generator), `waitingForDelivery` never clears — permanent deadlock on "Preparing next challenge..." | SESSION ENGINE |
 | GT-3 | gear-train-builder | — | HIGH | Generator prompt | ~275-line prompt increases malformed JSON risk from Gemini; should be trimmed to essential constraints | GENERATOR |
+| PE-1 | planetary-explorer | identify | CRITICAL | Trivial challenge | Questions always about the current planet — student sees planet name in header, trivially picks it. Identify mode tests nothing beyond explore. Needs post-journey quiz phase or cross-planet questions with hidden headers. | GENERATOR + COMPONENT |
+| ~~SS-1~~ | ~~spatial-scene~~ | ~~identify, describe~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Nullable sceneObj fields (SP-14) — Gemini skips them, grid empty, reference object invisible. Fixed: removed nullable, added required fields, post-process rejection~~ | ~~GENERATOR~~ |
+| ~~SS-2~~ | ~~spatial-scene~~ | ~~all~~ | ~~HIGH~~ | ~~Sparse grid~~ | ~~Only 2 scene object slots for 9-cell grid. Fixed: increased to 4 required slots with backdrop objects~~ | ~~GENERATOR~~ |
+| ~~SS-3~~ | ~~spatial-scene~~ | ~~identify, describe~~ | ~~HIGH~~ | ~~Missing data~~ | ~~targetObject not in sceneObjects. Fixed: post-process derivation ensures target + reference are in scene array~~ | ~~GENERATOR~~ |
 | ~~TS-3~~ | ~~time-sequencer~~ | ~~all~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Gemini omits type-specific fields (events, options, schedule) due to ~90 nullable fields in single multi-purpose schema (SP-3). Challenges render with instruction but no interactive content.~~ | ~~GENERATOR~~ |
 
 ---
@@ -235,6 +238,10 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| TS-1 | text-structure-analyzer | 2026-04-04 | POST-PROCESS-DERIVE (SP-8): Added recomputeSignalWordOffsets() — derives startIndex/endIndex via case-insensitive indexOf instead of trusting LLM offsets. |
+| TS-2 | text-structure-analyzer | 2026-04-04 | PROMPT-CHANGE (SP-3): Added per-structure signal word ownership lists to prompt. Prevents cross-contamination like "one solution" in compare-contrast. |
+| PA-1 | paragraph-architect | 2026-04-04 | EVAL-MODE-WIRING (SP-9): Registration defaulted paragraphType to 'informational'; config merge overwrote Gemini's correct output. Removed default + excluded paragraphType from merge. |
+| PA-2 | paragraph-architect | 2026-04-04 | Same fix as PA-1. |
 | TS-3 | time-sequencer | 2026-04-04 | Orchestrator refactor (SP-3): split ~90-nullable-field monolith into 5 per-mode sub-generators with focused schemas (~10 fields each). All 6 eval modes pass. |
 | TF-1 | ten-frame | 2026-03-16 | Prompt updated: `showEmptyCount: false for make_ten` — previously told Gemini to set true, leaking the complement answer. |
 | TF-2 | ten-frame | 2026-03-16 | `add` promptDoc rewritten: frame starts empty, instruction must say "Place X, then add Y more" — not "You already have X counters." |
@@ -308,9 +315,19 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | CC-2 | coin-counter | 2026-04-04 | Generator rejects count challenges missing `displayedCoins` instead of falling back to wrong correctTotal. Fallback challenges fill the gap (SP-14). |
 | CC-3 | coin-counter | 2026-04-04 | Generator rejects compare challenges missing either `groupA` or `groupB`. Prevents one-sided comparisons with wrong correctGroup (SP-14). |
 | CC-4 | coin-counter | 2026-04-04 | `count-like` eval mode now post-filters to single-coin-type challenges only. Mixed-coin challenges excluded (SP-15). |
+| CC-5 | coin-counter | 2026-04-04 | ORCHESTRATOR REFACTOR: Split monolithic generator (40+ nullable flat fields) into 5 per-type sub-generators with focused schemas (fields required, not nullable). Eliminates SP-14 and SP-15 by construction. All 7 eval modes pass. |
 | AC-1 | analog-clock | 2026-04-04 | Digital display hidden in read/match/set_time modes — only shown for elapsed or after correct answer. Eliminates answer leakage. |
+| WW-1 | word-workout | 2026-04-04 | POST-PROCESS-DERIVE: `validateWordChain()` removes consecutive duplicates, validates each transition differs by exactly 1 char, recomputes `changedPositions` deterministically. Rejects invalid chains. |
+| WW-2 | word-workout | 2026-04-04 | SCHEMA: Added `minItems: "3"` to `cvcWords` array in Gemini schema. Prompt reinforced. Post-process rejects challenges with < 3 cvcWords or answer not in cvcWords. |
 | AC-2 | analog-clock | 2026-04-04 | Drag handler uses `prevMinuteRef` (ref, not state) with `>= 45` / `<= 15` boundaries. Hour advances correctly across all grade bands. |
 | AC-3 | analog-clock | 2026-04-04 | Generator derives elapsed duration from start→target times and matches against options to compute `correctOptionIndex`. |
+| SS-1 | spatial-scene | 2026-04-04 | Removed `nullable: true` from all sceneObjFields + added to `required` arrays. Post-process rejects challenges with 0 scene objects (SP-14). |
+| SS-2 | spatial-scene | 2026-04-04 | Increased from 2 to 4 required scene object slots. Prompt requests 2 key + 2 backdrop objects. Fallbacks updated with 4 objects each. |
+| SS-3 | spatial-scene | 2026-04-04 | Post-process derivation: ensures targetObject and referenceObject are in sceneObjects array by position/name match; injects into unused grid cell if missing. |
+| SW-1 | sound-swap | 2026-04-04 | PROMPT-CHANGE + POST-PROCESS-VALIDATE (SP-7): Added curated VALID_ADDITION_PAIRS to prompt + COMMON_WORDS post-process rejecting non-real words. Eliminates vowel-change false additions. |
+| SW-2 | sound-swap | 2026-04-04 | PROMPT-CHANGE + POST-PROCESS-VALIDATE (SP-7): Added curated VALID_DELETION_PAIRS to prompt + COMMON_WORDS post-process. Nonsense results ("un", "ig", "ap") rejected. |
+| SW-3 | sound-swap | 2026-04-04 | PROMPT-CHANGE + POST-PROCESS-DERIVE: Prompt says "Use /r/ NOT /ɹ/". IPA_NORMALIZATIONS maps /ɹ/,/ɾ/,/ɻ/ → /r/ in all phoneme arrays. |
+| SW-4 | sound-swap | 2026-04-04 | Same fix as SW-1/SW-2 — COMMON_WORDS validation rejects challenges with non-real originalWord. |
 
 ---
 

@@ -221,24 +221,54 @@ ${config?.targetEvalMode ? `Target eval mode: ${config.targetEvalMode}` : ''}
 
   // ---- Reconstruct nested structures from flat schema ----
 
-  // Challenges
-  const challenges: PropulsionLabData['challenges'] = [];
+  const VALID_TYPES = ['predict', 'observe', 'experiment'] as const;
+  let rejectedCount = 0;
+
+  // Challenges — validate and REJECT, never silently fallback on critical fields
+  const challenges: NonNullable<PropulsionLabData['challenges']> = [];
   for (let i = 0; i < 6; i++) {
     const ch = raw[`challenge${i}`];
     if (!ch?.instruction) continue;
+
+    if (!ch.type || !(VALID_TYPES as readonly string[]).includes(ch.type)) {
+      console.warn(`[propulsion-lab] challenge${i} rejected: invalid type`);
+      rejectedCount++; continue;
+    }
+
+    const options = [
+      { id: ch.option0Id || 'a', text: ch.option0Text || '' },
+      { id: ch.option1Id || 'b', text: ch.option1Text || '' },
+      { id: ch.option2Id || 'c', text: ch.option2Text || '' },
+      { id: ch.option3Id || 'd', text: ch.option3Text || '' },
+    ].filter((o): o is { id: string; text: string } => !!o.text);
+
+    if (options.length < 2) {
+      console.warn(`[propulsion-lab] challenge${i} rejected: <2 options`);
+      rejectedCount++; continue;
+    }
+
+    if (!ch.correctOptionId || !options.some((o) => o.id === ch.correctOptionId)) {
+      console.warn(`[propulsion-lab] challenge${i} rejected: bad correctOptionId`);
+      rejectedCount++; continue;
+    }
+
+    if (!ch.hint) {
+      console.warn(`[propulsion-lab] challenge${i} rejected: no hint`);
+      rejectedCount++; continue;
+    }
+
     challenges.push({
       id: ch.id || `ch${i + 1}`,
-      type: ch.type || 'predict',
+      type: ch.type as 'predict' | 'observe' | 'experiment',
       instruction: ch.instruction,
-      options: [
-        { id: ch.option0Id || 'a', text: ch.option0Text || '' },
-        { id: ch.option1Id || 'b', text: ch.option1Text || '' },
-        { id: ch.option2Id || 'c', text: ch.option2Text || '' },
-        { id: ch.option3Id || 'd', text: ch.option3Text || '' },
-      ].filter(o => o.text),
-      correctOptionId: ch.correctOptionId || 'a',
-      hint: ch.hint || 'Think about Newton\'s Third Law!',
+      options,
+      correctOptionId: ch.correctOptionId,
+      hint: ch.hint,
     });
+  }
+
+  if (rejectedCount > 0) {
+    console.warn(`[propulsion-lab] ${rejectedCount} rejected, ${challenges.length} valid`);
   }
 
   // Propulsion facts

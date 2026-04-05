@@ -898,6 +898,62 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'opinion', label: 'Opinion (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['opinion'], description: 'Opinion with claim + support.' },
     ],
     supportsEvaluation: true,
+    tutoring: {
+      taskDescription:
+        'You are the writing coach for this paragraph-building activity. '
+        + 'The student is writing a {{paragraphType}} paragraph about "{{topic}}" at Grade {{gradeLevel}}. '
+        + 'They are using the hamburger model: topic sentence (top bun), detail sentences (filling), '
+        + 'concluding sentence (bottom bun). '
+        + 'Current phase: {{currentPhase}}. '
+        + 'Explore completed: {{exploreCompleted}}. Practice submitted: {{practiceSubmitted}}. '
+        + 'Detail sentences written: {{detailCount}}. Linking words used: {{linkingWordsUsed}}.',
+      contextKeys: [
+        'paragraphType', 'topic', 'gradeLevel', 'currentPhase',
+        'exploreCompleted', 'practiceSubmitted',
+        'detailCount', 'linkingWordsUsed',
+      ],
+      scaffoldingLevels: {
+        level1:
+          '"What is the most important thing you want to tell the reader about {{topic}}?" '
+          + '"Which sentence tells us what the whole paragraph is about?" '
+          + '"Can you add one more detail to support your main idea?"',
+        level2:
+          '"A {{paragraphType}} paragraph starts with a topic sentence that tells the main idea. '
+          + 'What is the main idea about {{topic}}?" '
+          + '"Good detail sentences give examples, facts, or reasons. '
+          + 'Try using a linking word like \'because\' or \'for example\' to connect your ideas." '
+          + '"Your concluding sentence should wrap up your paragraph—try restating the main idea in a new way."',
+        level3:
+          '"Let\'s build this step by step. First, your topic sentence: '
+          + 'pick a sentence starter and fill in what you want to say about {{topic}}." '
+          + '"Now add details. Each detail should support your topic sentence. '
+          + 'Use the sentence frames to help you start each one." '
+          + '"Finally, wrap it up: restate your main idea or tell the reader '
+          + 'why {{topic}} matters."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student writes detail sentences that do not relate to the topic sentence',
+          response: 'Read your topic sentence again. Does this detail tell us more about that main idea? If not, try a detail that connects back to your topic.',
+        },
+        {
+          pattern: 'Student skips the concluding sentence or writes a very short one',
+          response: 'Your paragraph needs a bottom bun! Try restating your main idea in different words, or tell the reader why this topic matters.',
+        },
+        {
+          pattern: 'Student writes only one detail sentence',
+          response: 'Strong paragraphs usually have 2–3 detail sentences. Can you think of another example, reason, or fact about your topic?',
+        },
+        {
+          pattern: 'Student does not use any linking words',
+          response: 'Linking words like "because," "also," and "for example" help connect your ideas. Try clicking a linking word chip to add one to your sentence.',
+        },
+        {
+          pattern: 'Student struggles to identify the topic sentence in the Explore phase',
+          response: 'The topic sentence is usually the first sentence. It tells the reader what the whole paragraph will be about. Which sentence does that?',
+        },
+      ],
+    },
   },
   {
     id: 'story-planner',

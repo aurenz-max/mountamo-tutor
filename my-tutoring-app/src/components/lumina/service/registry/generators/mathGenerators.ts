@@ -53,6 +53,8 @@ import { generateAnalogClock } from '../../math/gemini-analog-clock';
 import { generateCoinCounter } from '../../math/gemini-coin-counter';
 import { generateTimeSequencer } from '../../math/gemini-time-sequencer';
 import { generateSpatialScene } from '../../math/gemini-spatial-scene';
+import { generateShapeComposer } from '../../math/gemini-shape-composer';
+import { generateNetFolder } from '../../math/gemini-net-folder';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -403,6 +405,20 @@ registerGenerator('spatial-scene', async (item, topic, gradeContext) => ({
   type: 'spatial-scene',
   instanceId: item.instanceId,
   data: await generateSpatialScene(topic, gradeContext, item.config),
+}));
+
+// Shape Composer (K-1 shape composition, decomposition & spatial reasoning)
+registerGenerator('shape-composer', async (item, topic, gradeContext) => ({
+  type: 'shape-composer',
+  instanceId: item.instanceId,
+  data: await generateShapeComposer(topic, gradeContext, item.config),
+}));
+
+// Net Folder (3-5 3D shapes, nets, surface area, spatial reasoning)
+registerGenerator('net-folder', async (item, topic, gradeContext) => ({
+  type: 'net-folder',
+  instanceId: item.instanceId,
+  data: await generateNetFolder(topic, gradeContext, item.config),
 }));
 
 // ============================================================================
