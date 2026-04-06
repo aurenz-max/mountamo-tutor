@@ -445,6 +445,38 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   const [showingAnswer, setShowingAnswer] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
 
+  // ── Auto-submit evaluation when all challenges complete ──────────
+  const hasAutoSubmitted = useRef(false);
+  useEffect(() => {
+    if (!allChallengesComplete || hasAutoSubmitted.current) return;
+    hasAutoSubmitted.current = true;
+
+    const correctCount = challengeResults.filter(r => r.correct).length;
+    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
+    const overallScore = Math.round((correctCount / Math.max(challengeResults.length, 1)) * 100);
+
+    const metrics: PushPullArenaMetrics = {
+      type: 'push-pull-arena',
+      evalMode: currentChallenge?.type,
+      challengesCompleted: challengeResults.length,
+      challengesCorrect: correctCount,
+      totalAttempts,
+      accuracy: overallScore,
+      averageAttemptsPerChallenge: totalAttempts / Math.max(challengeResults.length, 1),
+    };
+
+    submitResult(overallScore >= 70, overallScore, metrics);
+    setSubmittedResult({ score: overallScore });
+
+    const phaseScoreStr = phaseResults.map(
+      p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
+    ).join(', ');
+    sendText(
+      `[ALL_COMPLETE] Student finished all push/pull challenges! Phase scores: ${phaseScoreStr || `Overall ${overallScore}%`}. Overall: ${overallScore}%. Give encouraging feedback about forces and motion.`,
+      { silent: true },
+    );
+  }, [allChallengesComplete, challengeResults, currentChallenge, submitResult, phaseResults, sendText]);
+
   // ── Initialize physics for current challenge ─────────────────────
   const initPhysics = useCallback((challenge: PushPullChallenge) => {
     const objs: PhysicsObject[] = [];
@@ -625,31 +657,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   // ── Advance to next challenge ────────────────────────────────────
   const handleNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
-      // All challenges done
-      const correctCount = challengeResults.filter(r => r.correct).length;
-      const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-      const overallScore = Math.round((correctCount / Math.max(challengeResults.length, 1)) * 100);
-
-      const metrics: PushPullArenaMetrics = {
-        type: 'push-pull-arena',
-        evalMode: currentChallenge?.type,
-        challengesCompleted: challengeResults.length,
-        challengesCorrect: correctCount,
-        totalAttempts,
-        accuracy: overallScore,
-        averageAttemptsPerChallenge: totalAttempts / Math.max(challengeResults.length, 1),
-      };
-
-      submitResult(overallScore >= 70, overallScore, metrics);
-      setSubmittedResult({ score: overallScore });
-
-      const phaseScoreStr = phaseResults.map(
-        p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
-      ).join(', ');
-      sendText(
-        `[ALL_COMPLETE] Student finished all push/pull challenges! Phase scores: ${phaseScoreStr || `Overall ${overallScore}%`}. Overall: ${overallScore}%. Give encouraging feedback about forces and motion.`,
-        { silent: true },
-      );
+      // All done — evaluation auto-submitted via useEffect above
       return;
     }
 
@@ -657,10 +665,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly.`,
       { silent: true },
     );
-  }, [
-    advanceProgress, challengeResults, currentChallenge,
-    submitResult, phaseResults, sendText, currentChallengeIndex, challenges.length,
-  ]);
+  }, [advanceProgress, sendText, currentChallengeIndex, challenges.length]);
 
   // Whether controls are user-adjustable (observe/design = yes, predict/compare = preset)
   const controlsInteractive = currentChallenge?.type === 'observe' || currentChallenge?.type === 'design' || allChallengesComplete;

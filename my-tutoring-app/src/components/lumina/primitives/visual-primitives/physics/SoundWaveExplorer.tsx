@@ -473,6 +473,39 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
   const [showingAnswer, setShowingAnswer] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
+
+  // ── Auto-submit evaluation when all challenges complete ──────────
+  const hasAutoSubmitted = useRef(false);
+  useEffect(() => {
+    if (!allChallengesComplete || hasAutoSubmitted.current) return;
+    hasAutoSubmitted.current = true;
+
+    const correctCount = challengeResults.filter(r => r.correct).length;
+    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
+    const overallScore = Math.round((correctCount / Math.max(challengeResults.length, 1)) * 100);
+
+    const metrics: SoundWaveExplorerMetrics = {
+      type: 'sound-wave-explorer',
+      evalMode: currentChallenge?.type,
+      challengesCompleted: challengeResults.length,
+      challengesCorrect: correctCount,
+      totalAttempts,
+      accuracy: overallScore,
+      averageAttemptsPerChallenge: totalAttempts / Math.max(challengeResults.length, 1),
+    };
+
+    submitResult(overallScore >= 70, overallScore, metrics);
+    setSubmittedResult({ score: overallScore });
+
+    const phaseScoreStr = phaseResults.map(
+      p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
+    ).join(', ');
+    sendText(
+      `[ALL_COMPLETE] Student finished all sound challenges! Phase scores: ${phaseScoreStr || `Overall ${overallScore}%`}. Overall: ${overallScore}%. Give encouraging feedback about sound and vibrations.`,
+      { silent: true },
+    );
+  }, [allChallengesComplete, challengeResults, currentChallenge, submitResult, phaseResults, sendText]);
+
   const vibrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Active object from challenge or first in list
@@ -598,31 +631,7 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
   // ── Advance to next challenge ────────────────────────────────────
   const handleNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
-      // All challenges done — compute and submit evaluation
-      const correctCount = challengeResults.filter(r => r.correct).length;
-      const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-      const overallScore = Math.round((correctCount / Math.max(challengeResults.length, 1)) * 100);
-
-      const metrics: SoundWaveExplorerMetrics = {
-        type: 'sound-wave-explorer',
-        evalMode: currentChallenge?.type,
-        challengesCompleted: challengeResults.length,
-        challengesCorrect: correctCount,
-        totalAttempts,
-        accuracy: overallScore,
-        averageAttemptsPerChallenge: totalAttempts / Math.max(challengeResults.length, 1),
-      };
-
-      submitResult(overallScore >= 70, overallScore, metrics);
-      setSubmittedResult({ score: overallScore });
-
-      const phaseScoreStr = phaseResults.map(
-        p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
-      ).join(', ');
-      sendText(
-        `[ALL_COMPLETE] Student finished all sound challenges! Phase scores: ${phaseScoreStr || `Overall ${overallScore}%`}. Overall: ${overallScore}%. Give encouraging feedback about sound and vibrations.`,
-        { silent: true },
-      );
+      // All done — evaluation auto-submitted via useEffect above
       return;
     }
 
@@ -630,10 +639,7 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly.`,
       { silent: true },
     );
-  }, [
-    advanceProgress, challengeResults, currentChallenge,
-    submitResult, phaseResults, sendText, currentChallengeIndex, challenges.length,
-  ]);
+  }, [advanceProgress, sendText, currentChallengeIndex, challenges.length]);
 
   // Whether sliders should be interactive (observe mode lets you explore)
   const slidersInteractive = currentChallenge?.type === 'observe' || allChallengesComplete;
