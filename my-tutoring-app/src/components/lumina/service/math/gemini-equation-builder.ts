@@ -20,7 +20,11 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `availableTiles MUST include all tokens from targetEquation PLUS 2-3 distractor tiles `
       + `(extra numbers or operators that do NOT belong). `
       + `Example: target "3 + 2 = 5" → tiles ["3", "+", "2", "=", "5", "4", "-"]. `
-      + `Use spaces in targetEquation between every token: "3 + 2 = 5" not "3+2=5".`,
+      + `Use spaces in targetEquation between every token: "3 + 2 = 5" not "3+2=5". `
+      + `CRITICAL: The instruction MUST NOT reveal the target equation. `
+      + `Describe the goal conceptually: "Build an addition equation that equals 5", `
+      + `"Use the tiles to make a true equation", "Can you find the right equation?". `
+      + `NEVER write the answer in the instruction text.`,
     schemaDescription: "'build' (construct equation from tiles)",
   },
   'missing-value': {
@@ -162,7 +166,7 @@ function buildEquationBuilderSchema(allowedTypes?: string[]): Schema {
     },
     instruction: {
       type: Type.STRING,
-      description: "Student-facing instruction, warm and encouraging. Reference the equation or concept being practiced.",
+      description: "Student-facing instruction, warm and encouraging. Describe the concept WITHOUT revealing the answer. For build/rewrite: NEVER include the target equation in the instruction.",
     },
   };
 
@@ -345,30 +349,21 @@ function validateBuild(raw: RawChallenge, maxNumber: number) {
     return null;
   }
 
-  // Reconstruct availableTiles from flat fields
-  const tiles: string[] = [];
+  // EB-2: Derive availableTiles deterministically — start from target tokens,
+  // then add unique distractors. Never trust Gemini's flat tile fields for dedup.
+  const targetTokens = tokenize(target);
+
+  // Start with exactly the tokens needed for the target equation
+  const tiles: string[] = [...targetTokens];
+  const tileSet = new Set(tiles);
+
+  // Collect Gemini's extra tiles as candidate distractors (deduplicated)
   for (let i = 0; i <= 6; i++) {
     const val = raw[`tile${i}`] as string | undefined;
-    if (val != null && val !== '') tiles.push(val);
-  }
-
-  // Ensure all target tokens are present in tiles
-  const targetTokens = tokenize(target);
-  const tilesCopy = [...tiles];
-  const missingTokens: string[] = [];
-
-  for (const token of targetTokens) {
-    const idx = tilesCopy.indexOf(token);
-    if (idx >= 0) {
-      tilesCopy.splice(idx, 1);
-    } else {
-      missingTokens.push(token);
+    if (val != null && val !== '' && !tileSet.has(val)) {
+      tiles.push(val);
+      tileSet.add(val);
     }
-  }
-
-  // Add missing tokens
-  for (const token of missingTokens) {
-    tiles.push(token);
   }
 
   // Ensure at least 2 distractors
@@ -380,21 +375,34 @@ function validateBuild(raw: RawChallenge, maxNumber: number) {
     for (let n = 0; n <= maxNumber && added < distractorsNeeded; n++) {
       if (!existingNumbers.has(n)) {
         tiles.push(String(n));
+        tileSet.add(String(n));
         added++;
       }
     }
     // Add a distractor operator if only numbers were added
-    if (!tiles.includes('-') && targetTokens.includes('+')) {
+    if (!tileSet.has('-') && targetTokens.includes('+')) {
       tiles.push('-');
-    } else if (!tiles.includes('+') && targetTokens.includes('-')) {
+    } else if (!tileSet.has('+') && targetTokens.includes('-')) {
       tiles.push('+');
     }
+  }
+
+  // EB-1: Strip answer leak — if instruction contains the target equation, replace it
+  let instruction = raw.instruction!;
+  const targetNormalized = target.replace(/\s+/g, '');
+  const instructionNormalized = instruction.replace(/\s+/g, '');
+  if (instructionNormalized.includes(targetNormalized)) {
+    // Extract just the result to give a hint without revealing the full equation
+    const eqParts = target.split('=').map(s => s.trim());
+    const result = eqParts[eqParts.length - 1];
+    instruction = `Can you build an equation that equals ${result}?`;
+    console.log(`[EquationBuilder] EB-1: Stripped leaked equation from build instruction`);
   }
 
   return buildValidChallenge({
     id: raw.id,
     type: 'build',
-    instruction: raw.instruction,
+    instruction,
     targetEquation: target,
     availableTiles: shuffle([...tiles]),
   });
@@ -768,10 +776,21 @@ function validateRewrite(raw: RawChallenge, maxNumber: number) {
     }
   }
 
+  // Strip answer leak — if instruction reveals any accepted form, replace it
+  let rewriteInstruction = raw.instruction!;
+  const rewriteInstrNorm = rewriteInstruction.replace(/\s+/g, '');
+  for (const form of acceptedForms) {
+    if (rewriteInstrNorm.includes(form.replace(/\s+/g, ''))) {
+      rewriteInstruction = `Can you write this equation another way?`;
+      console.log(`[EquationBuilder] Stripped leaked accepted form from rewrite instruction`);
+      break;
+    }
+  }
+
   return buildValidChallenge({
     id: raw.id,
     type: 'rewrite',
-    instruction: raw.instruction,
+    instruction: rewriteInstruction,
     originalEquation,
     acceptedForms,
     availableTiles: shuffle([...tiles]),
@@ -795,7 +814,7 @@ function getFallbackChallenges(
     'build': () => ({
       id: 'fallback-1',
       type: 'build',
-      instruction: `Build the equation: ${a} + ${b} = ${total}`,
+      instruction: `Can you build an equation that equals ${total}?`,
       targetEquation: `${a} + ${b} = ${total}`,
       availableTiles: shuffle([String(a), '+', String(b), '=', String(total), String(a + 1), '-']),
     }),
