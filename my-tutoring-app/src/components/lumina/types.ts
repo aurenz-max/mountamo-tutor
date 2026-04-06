@@ -1079,6 +1079,7 @@ export type ComponentId =
   | 'area-model'         // Area model for multiplication and distributive property
   | 'array-grid'         // Array/grid for multiplication and combinatorics
   | 'double-number-line' // Two parallel number lines showing proportional relationships
+  | 'equation-builder'   // Interactive equation building and solving
   | 'tape-diagram'       // Tape diagram / bar model for part-whole and comparison word problems
   | 'factor-tree'        // Tree diagram showing prime factorization
   | 'function-machine'   // Visual machine with input hopper, rule display, and output chute for function concepts
@@ -1612,6 +1613,7 @@ export type { FunctionMachineData, MachineConfig, FunctionMachineChallenge } fro
 export type { NumberBondData } from './primitives/visual-primitives/math/NumberBond';
 export type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
 export type { RatioTableData, RatioTableChallenge } from './primitives/visual-primitives/math/RatioTable';
+export type { EquationBuilderData } from './primitives/visual-primitives/math/EquationBuilder';
 
 // Chemistry
 export type { MatterExplorerData } from './primitives/visual-primitives/chemistry/MatterExplorer';

@@ -21,6 +21,7 @@ import PlaceValueChart from '../primitives/visual-primitives/math/PlaceValueChar
 import AreaModel from '../primitives/visual-primitives/math/AreaModel';
 import ArrayGrid from '../primitives/visual-primitives/math/ArrayGrid';
 import DoubleNumberLine from '../primitives/visual-primitives/math/DoubleNumberLine';
+import EquationBuilder from '../primitives/visual-primitives/math/EquationBuilder';
 import PercentBar from '../primitives/visual-primitives/math/PercentBar';
 import FactorTree from '../primitives/visual-primitives/math/FactorTree';
 import RatioTable from '../primitives/visual-primitives/math/RatioTable';
@@ -534,6 +535,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'double-number-line': {
     component: DoubleNumberLine,
     sectionTitle: 'Double Number Line',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'equation-builder': {
+    component: EquationBuilder,
+    sectionTitle: 'Equation Builder',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

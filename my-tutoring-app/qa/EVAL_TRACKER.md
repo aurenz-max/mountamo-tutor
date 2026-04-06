@@ -37,7 +37,7 @@
 | ten-frame | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/ten-frame-2026-03-16.md) |
 | factor-tree | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/factor-tree-2026-03-16.md) |
 | addition-subtraction-scene | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/addition-subtraction-scene-2026-03-16.md) |
-| number-line | 4 | 4 | 0 | 2026-04-03 | [report](eval-reports/number-line-2026-04-03.md) |
+| number-line | 5 | 5 | 0 | 2026-04-06 | [report](eval-reports/number-line-2026-04-06.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/fraction-circles-2026-03-17.md) |
 | number-bond | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/number-bond-2026-03-17.md) |
 | pattern-builder | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/pattern-builder-2026-03-17.md) |

@@ -1,7 +1,7 @@
 /**
  * Math Catalog - Component definitions for mathematics primitives
  *
- * Contains 24 math visualization components for teaching mathematical concepts
+ * Contains 25 math visualization components for teaching mathematical concepts
  * from elementary through advanced algebra.
  */
 
@@ -76,6 +76,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
     evalModes: [
+      {
+        evalMode: 'identify',
+        label: 'Identify (K)',
+        beta: 0.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['plot_point'],
+        description: 'Identify and place numbers on a fully labeled 0–10 number line.',
+      },
       {
         evalMode: 'plot',
         label: 'Plot (Tier 1)',
@@ -3091,5 +3099,95 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+  },
+  {
+    id: 'equation-builder',
+    description: 'Interactive equation-building manipulative where students construct, evaluate, and balance equations using draggable number and operator tiles. Teaches that the equal sign means "same amount on both sides," not "answer comes next." Supports build, missing-value, true-false, balance, and rewrite challenge types across scaffolding levels. ESSENTIAL for K-2 equation understanding.',
+    constraints: 'Requires grade band (K-2). Challenges array drives interactivity. Each challenge specifies a challengeType and target equation.',
+    tutoring: {
+      taskDescription: 'Build and reason about equations using draggable tiles. Challenge type: {{challengeType}}. Instruction: {{instruction}}. Equation: {{equation}}. Grade band: {{gradeBand}}.',
+      contextKeys: ['challengeType', 'instruction', 'equation', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Read the equation out loud. What does each part mean?"',
+        level2: '"The equal sign means both sides must show the same amount. What is on the left side? What needs to be on the right side?"',
+        level3: '"Let\'s work through it together: count the value on one side first, then think about what makes the other side match."',
+      },
+      commonStruggles: [
+        { pattern: 'Treats = as "answer comes next" — always puts result on right side', response: '"The equal sign doesn\'t mean \'the answer is.\' It means both sides are the SAME amount. Can you check: is the left side the same as the right side?"' },
+        { pattern: 'Drags tiles to wrong positions or places operator tiles in number slots', response: '"Look at the shape of each slot. Number tiles go where numbers belong, and the + or − tile goes between them."' },
+        { pattern: 'Cannot balance both sides — only changes one side', response: '"Both sides of the equal sign must show the same amount. If you change one side, check: does the other side still match?"' },
+        { pattern: 'Guesses randomly on true/false without computing', response: '"Before you pick true or false, figure out the value on each side. Are they the same number?"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'EQUAL SIGN CONCEPTUAL COACHING',
+          instruction:
+            'The equal sign is the most misunderstood symbol in elementary math. Students often think = means "the answer is" rather than "both sides are the same amount." '
+            + 'Consistently model relational language: "Is the left side the same as the right side?" '
+            + 'For balance and rewrite modes, emphasize that both sides must always show the same value. '
+            + 'Never say "the answer is" — always say "both sides equal" or "both sides are the same."',
+        },
+        {
+          title: 'CHALLENGE TYPE COACHING',
+          instruction:
+            'For BUILD: guide tile placement — "Which number tile goes first? What operation are we using?" '
+            + 'For MISSING-VALUE: direct attention to the known side — "What does the complete side equal? The other side must be the same." '
+            + 'For TRUE-FALSE: require computation before judgment — "Calculate each side, then compare." '
+            + 'For BALANCE: focus on the equal sign — "What is on the left? What do you need on the right to make them the same?" '
+            + 'For REWRITE: show equivalence — "Can you write this equation a different way that still means the same thing?"',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+    evalModes: [
+      {
+        evalMode: 'build-simple',
+        label: 'Build Simple',
+        beta: 1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['build'],
+        description: 'Build a given equation from tiles.',
+      },
+      {
+        evalMode: 'missing-result',
+        label: 'Missing Result',
+        beta: 1.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['missing-value'],
+        description: 'Find the result of an equation (? after =).',
+      },
+      {
+        evalMode: 'true-false',
+        label: 'True or False',
+        beta: 2.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['true-false'],
+        description: 'Determine if an equation is true or false.',
+      },
+      {
+        evalMode: 'missing-operand',
+        label: 'Missing Operand',
+        beta: 2.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['missing-value'],
+        description: 'Find a missing operand (? before =).',
+      },
+      {
+        evalMode: 'balance-both-sides',
+        label: 'Balance Both Sides',
+        beta: 3.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['balance'],
+        description: 'Make both sides of = equal.',
+      },
+      {
+        evalMode: 'rewrite',
+        label: 'Rewrite',
+        beta: 4.0,
+        scaffoldingMode: 6,
+        challengeTypes: ['rewrite'],
+        description: 'Express an equation in a different form.',
+      },
+    ],
   },
 ];

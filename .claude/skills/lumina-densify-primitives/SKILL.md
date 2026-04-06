@@ -221,9 +221,32 @@ These are simple find-and-replace edits. No subagent needed for small batches; u
 
 ### For DENSIFY fixes
 
-Launch **parallel subagents** grouped by file:
+**Follow the `/primitive` skill's established patterns** — especially Phase 4 (Generator Agent) for any generator work. The densify skill handles the registration (catalog + registry) directly, but generator changes should follow the same architecture.
 
-#### Subagent A: "Catalog entries"
+#### Step 1: Assess generator architecture
+
+Read the existing generator for the primitive:
+`my-tutoring-app/src/components/lumina/service/<domain>/gemini-<id>.ts`
+
+Determine which pattern it uses:
+- **Orchestrator pattern** (per-mode sub-generators with `Promise.all`): Adding a new mode means adding a new sub-generator function + wiring it into the orchestrator dispatch. This is the preferred pattern for 3+ challenge types.
+- **Single-schema pattern** (one Gemini call): If the primitive has 3+ challenge types and still uses a single monolithic schema, **refactor to the orchestrator pattern first** before adding the new mode. Monolithic schemas with 6+ types cause Gemini to produce malformed JSON.
+
+**When to refactor to orchestrator:**
+- The generator uses a single schema with 3+ challenge types
+- The schema has deeply nested arrays (especially operations-within-challenges)
+- Gemini is dropping fields or producing malformed output
+
+See the `/primitive` skill (Phase 4, Task 2) for the orchestrator pattern reference. Key examples:
+- `service/literacy/gemini-word-sorter.ts` — canonical orchestrator
+- `service/math/gemini-number-line.ts` — orchestrator with identify-mode differentiation
+- `service/calendar/gemini-timeline-builder.ts` — per-type schemas
+
+#### Step 2: Registration (parallel subagents)
+
+Launch **2 parallel subagents** for catalog + registry:
+
+**Subagent A: "Catalog entries"**
 
 ```
 Add eval mode(s) to existing primitive catalog entries.
@@ -249,7 +272,7 @@ Rules:
 3. Do NOT change any existing eval mode entries
 ```
 
-#### Subagent B: "Backend registry entries"
+**Subagent B: "Backend registry entries"**
 
 ```
 Add eval mode prior betas to the backend calibration registry.
@@ -269,15 +292,22 @@ Rules:
 4. Do NOT modify any existing entries
 ```
 
-#### Subagent C: "Generator differentiation" (one per primitive that needs it)
+#### Step 3: Generator work (focused agent)
 
-Only launch this for new modes that **share challengeTypes with an existing mode**.
+Only needed when the new mode **shares challengeTypes with an existing mode** or when the generator needs architectural changes (e.g., orchestrator refactor).
+
+**For orchestrator generators** — add a new sub-generator or modify an existing one:
 
 ```
-Add eval mode differentiation to a Lumina generator.
+Modify the generator for a Lumina primitive. Follow the `/primitive` skill's Phase 4 patterns.
 
 Primitive ID: `<id>`
 Generator file: `my-tutoring-app/src/components/lumina/service/<domain>/gemini-<id>.ts`
+
+Generator architecture: <orchestrator | single-schema>
+
+<if orchestrator>
+The generator already uses the orchestrator pattern with per-mode sub-generators.
 
 Modes requiring differentiation:
 <for each>
@@ -287,50 +317,40 @@ Strategy: <post-filter | prompt-constrain | config-param>
 Rule: <specific differentiation rule>
 </for each>
 
-## Tasks
+Tasks:
+1. Read the existing sub-generator for the shared challengeType
+2. Add differentiation logic:
+   - **Post-filter** (preferred): filter challenges AFTER generation based on data properties
+   - **Prompt-constrain** (backup): add mode-specific instructions to the sub-generator's prompt
+3. Wire the new mode into the orchestrator dispatch (if needed)
+4. Verify ≥3 challenges survive any post-filter
+</if>
 
-### Task 1: Read the generator
-Understand how it handles eval modes:
-- Look for `resolveEvalModeConstraint`, `constrainChallengeTypeEnum`
-- Find where post-validation happens
-- Note existing CHALLENGE_TYPE_DOCS entries
+<if single-schema AND needs refactor to orchestrator>
+The generator uses a single monolithic schema with 3+ types. Refactor to orchestrator pattern:
 
-### Task 2: Implement differentiation
-
-**For post-filter:**
-Add AFTER challenge generation, BEFORE return:
-```typescript
-// ── Semantic differentiation for <mode_key> ──
-if (config?.targetEvalMode === '<mode_key>') {
-  const before = challenges.length;
-  challenges = challenges.filter(ch => {
-    return <condition>;
-  });
-  if (challenges.length < before) {
-    console.log(`[<Name>] ${config.targetEvalMode}: filtered ${before - challenges.length} challenges`);
-  }
-  if (challenges.length < 3) {
-    console.warn(`[<Name>] ${config.targetEvalMode}: only ${challenges.length} after filter`);
-  }
-}
+1. Read the existing generator and ONE orchestrator reference (e.g., `gemini-word-sorter.ts`)
+2. Break the schema into per-type sub-schemas (flat fields, no deeply nested arrays)
+3. Create per-type sub-generator functions with focused prompts
+4. Write the orchestrator function that:
+   - Resolves eval mode constraints
+   - Dispatches relevant sub-generators in parallel via Promise.all
+   - Combines results with unique IDs
+   - Handles fallbacks
+5. Add differentiation for the new mode
+6. Preserve all existing validation/guardrail logic
+</if>
 ```
 
-**For prompt-constrain:**
-Add to the prompt construction:
-```typescript
-let modeConstraint = '';
-if (config?.targetEvalMode === '<mode_key>') {
-  modeConstraint = `\nIMPORTANT: <specific constraint>`;
-}
-```
-Inject `modeConstraint` into the Gemini prompt.
+**Differentiation strategies** (for modes sharing challengeTypes):
 
-### Task 3: Verify mentally
-Trace a generation call with `targetEvalMode='<mode_key>'`:
-1. Schema constrains to correct challengeTypes?
-2. Post-filter narrows output correctly?
-3. ≥3 challenges survive filtering?
-```
+| Strategy | When | Example | Reliability |
+|----------|------|---------|-------------|
+| **post-filter** | Constrain output by data properties | `identify`: all values ≤ 10 and integers | High (deterministic) |
+| **prompt-constrain** | Tell Gemini to generate differently | `identify`: "range 0-10, K-level language" | Medium (~70% compliance) |
+| **config-param** | Generator already has a narrowing config | `add_regroup_3digit`: set `digitCount: 3` | High (if config exists) |
+
+**Best practice: use BOTH prompt-constrain + post-filter together.** The prompt steers Gemini toward correct output, and the post-filter catches the ~30% that Gemini gets wrong. This is more reliable than either strategy alone.
 
 ---
 

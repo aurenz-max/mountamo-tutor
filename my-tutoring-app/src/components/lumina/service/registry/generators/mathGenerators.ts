@@ -55,6 +55,7 @@ import { generateTimeSequencer } from '../../math/gemini-time-sequencer';
 import { generateSpatialScene } from '../../math/gemini-spatial-scene';
 import { generateShapeComposer } from '../../math/gemini-shape-composer';
 import { generateNetFolder } from '../../math/gemini-net-folder';
+import { generateEquationBuilder } from '../../math/gemini-equation-builder';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -419,6 +420,13 @@ registerGenerator('net-folder', async (item, topic, gradeContext) => ({
   type: 'net-folder',
   instanceId: item.instanceId,
   data: await generateNetFolder(topic, gradeContext, item.config),
+}));
+
+// Equation Builder (K-2 equation understanding — build, evaluate, balance equations)
+registerGenerator('equation-builder', async (item, topic, gradeContext) => ({
+  type: 'equation-builder',
+  instanceId: item.instanceId,
+  data: await generateEquationBuilder(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

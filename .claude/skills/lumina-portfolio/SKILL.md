@@ -1,8 +1,30 @@
 # Lumina Portfolio — Primitive Product Portfolio Manager
 
-Product portfolio manager for Lumina primitives. Bird's-eye view of all PRDs, implementation status, pedagogical gaps, and strategic roadmap. This is the **precursor to `/primitive`** — use it to decide *what* to build next, then hand off to `/primitive` to build it.
+Product portfolio manager for Lumina primitives. Strategic layer for deciding *what* to build next, then handing off to `/primitive`, `/add-eval-modes`, or other skills to do the building.
 
 **Arguments:** `/lumina-portfolio [command] [options]`
+
+## When No Command Is Specified
+
+**DO NOT default to `dashboard`.** Instead, present the command menu and ask the user what they want to do:
+
+> **Lumina Portfolio** — What would you like to do?
+>
+> | Command | What it does |
+> |---------|-------------|
+> | `dashboard` | Full portfolio overview — all domains, all PRDs, implementation status matrix |
+> | `audit [domain]` | Deep audit of a specific domain — what's built, what's missing, pipeline status |
+> | `audit --all` | Cross-domain audit with summary |
+> | `gaps [grade-band?]` | Pedagogical gap analysis — standards holes, missing grade bands, eval gaps |
+> | `roadmap` | Prioritized build plan with waves and dependencies |
+> | `scope [name]` | Paste-ready scope of work for a specific primitive or action (for new chat handoff) |
+> | `prd [domain]` | Develop or enhance a PRD — guided authoring workflow |
+> | `health [domain]` | Technical health check — generators, registry, eval modes, type safety |
+> | `compare [A] [B]` | Side-by-side maturity comparison between two domains |
+>
+> What are you looking to do?
+
+Wait for the user's choice before scanning any files. This prevents wasted work on a broad dashboard when the user wants a focused deep-dive.
 
 ## Commands
 
@@ -17,6 +39,7 @@ Product portfolio manager for Lumina primitives. Bird's-eye view of all PRDs, im
 | `prd` | `/lumina-portfolio prd chemistry` | Develop or enhance a PRD — guided PRD authoring workflow |
 | `health` | `/lumina-portfolio health math` | Technical health check — generators, registry, eval modes, type safety |
 | `compare` | `/lumina-portfolio compare math literacy` | Side-by-side maturity comparison between two domains |
+| `scope` | `/lumina-portfolio scope push-pull-arena` | Generate a paste-ready scope of work for building a specific primitive or completing a specific action, designed to be handed off to a new chat window |
 
 ---
 
@@ -52,8 +75,8 @@ Generator registry: `my-tutoring-app/src/components/lumina/service/registry/gene
 |--------|-------------|--------------|
 | **math** | `math-primitives-prd.md`, `math-primitives-phase2-prd.md`, `PRD_KINDERGARTEN-MATH.md`, `PRD-KINDERGARTEN-GEOMETRY.md`, `PRD_K3_CONTENT_DENSITY.md` | `math.ts` |
 | **literacy** | `PRD_LANGUAGE_ARTS_SUITE.md`, `PRD_KINDERGARTEN_PHONICS_AND_ALPHABET.md` | `literacy.ts` |
-| **physics** | `physics-primitives-prd.md`, `k5-physics-primitives-prd.md` | `physics.ts` |
-| **chemistry** | `chemistry-primitives-prd.md`, `chemistry-k8-prd.md` | (in science.ts or missing) |
+| **physics** | `PRD_FUNDAMENTAL_PHYSICS.md` (unified K-AP, supersedes older PRDs), `physics-primitives-prd.md`, `k5-physics-primitives-prd.md` | `physics.ts` |
+| **chemistry** | `chemistry-primitives-prd.md`, `chemistry-k8-prd.md` | `chemistry.ts` (migrated from science.ts 2026-04-05) |
 | **biology** | `biology-primitives-prd.md` | `biology.ts` |
 | **astronomy** | `space-primitives-prd.md`, `CALENDAR_PRIMITIVES_PRD.md` | `astronomy.ts` |
 | **engineering** | `engineering-primitives-prd.md`, `vehicles-flight-machines-primitives-prd.md`, `living-engineering-primitives-prd.md` | `engineering.ts` |
@@ -486,6 +509,77 @@ Side-by-side maturity comparison.
 
 ---
 
+## Command: `scope [primitive-or-action]`
+
+Generate a **paste-ready scope of work** for a specific build task, designed to be handed off to a new chat window or another developer. This is the bridge between portfolio strategy and `/primitive` execution.
+
+### Input Types
+
+The `scope` command accepts either:
+1. **A primitive name** — e.g., `scope push-pull-arena` → produces a full build scope referencing the PRD spec
+2. **A pipeline action** — e.g., `scope "wire chemistry catalog"` → produces a scope for a non-primitive task (migration, wiring, registry work)
+
+### Phase 1: Gather Context
+
+1. **Find the PRD spec** — Search all PRD files for the primitive name. Extract: description, grade band, NGSS standards, interaction model, config options, eval modes (if specified).
+2. **Check current state** — Does a component, catalog entry, generator, or backend entry already exist? The scope must not duplicate existing work.
+3. **Identify the domain** — Which catalog file, generator registry, and component directory does this belong to?
+4. **Check related primitives** — Are there similar primitives in the same domain that establish patterns to follow? (e.g., sound-wave-explorer is the reference for physics primitives)
+5. **Check for living simulation requirement** — Physics, chemistry, and engineering primitives should use canvas-based physics. Reference the living simulation pattern.
+
+### Phase 2: Build the Scope
+
+The scope document must be **self-contained** — a new chat window with no conversation history must be able to execute it. Include:
+
+```markdown
+## Scope of Work: [Title]
+
+### Context
+- What exists today (current state)
+- What's missing (the gap this closes)
+- Why this task was prioritized (standards coverage, unblocking, etc.)
+
+### What to Build
+- Primitive name, domain, grade band
+- PRD spec summary (from the actual PRD — not invented)
+- NGSS/standards alignment
+
+### Eval Modes
+| Mode | Beta | Grade | Description |
+(from PRD if available, otherwise propose based on domain patterns)
+
+### Design Constraints
+- Living simulation pattern (if applicable)
+- Gemini schema simplicity (3-4 types max)
+- Multi-phase hooks (useChallengeProgress, usePhaseResults)
+- Any domain-specific requirements
+
+### Files to Create
+Numbered list of every file with path and brief description of contents.
+
+### Files to Modify
+Numbered list with what changes in each.
+
+### Prompt for New Chat
+A ready-to-paste prompt block that invokes the right skill (e.g., `/primitive push-pull-arena`) with all necessary context inline.
+
+### Verification
+Checklist of how to confirm the work is complete (tsc, eval-test, visual check, etc.)
+
+### What NOT to Do
+Guardrails to prevent common mistakes.
+```
+
+### Key Rules
+
+1. **Ground everything in actual file reads.** Never assume a file exists — glob/grep for it. Never assume a PRD says something — read it.
+2. **Reference existing patterns.** If biology has 17 shipped primitives, reference a biology primitive as the pattern to follow for a new biology primitive.
+3. **Include the `/primitive` prompt.** The scope should end with a copy-paste prompt that works in a fresh chat window.
+4. **For pipeline actions (not new primitives):** List every file to create/modify with exact changes needed. The new chat should not need to do any discovery — all file paths and change descriptions are in the scope.
+5. **Never scope more than one primitive at a time.** If the roadmap says "build 6 physics primitives," the scope command produces ONE scope for the NEXT primitive, not all 6.
+
+---
+
 ## Strategic Principles for Recommendations
 
 When prioritizing what to build, apply these in order:
@@ -523,6 +617,7 @@ This skill is the strategic layer. It identifies what to do. Other skills do the
 
 | Decision | Hand Off To |
 |----------|-------------|
+| Need a self-contained scope for a new chat | `/lumina-portfolio scope {name}` |
 | Need a new primitive | `/primitive {name}` |
 | Need eval modes on existing primitive | `/add-eval-modes {name}` |
 | Need to densify eval mode ladder | `/lumina-densify-primitives {name}` |
@@ -545,6 +640,7 @@ This skill is the strategic layer. It identifies what to do. Other skills do the
 - [ ] For `prd`: gathered user inputs, referenced template, validated against existing catalog, wrote/updated PRD
 - [ ] For `health`: ran all 7 technical checks, reported issues with specifics
 - [ ] For `compare`: built side-by-side matrix with actionable recommendations
+- [ ] For `scope`: read PRD spec, checked current state, produced self-contained scope with files list, prompt block, and verification checklist
 - [ ] All recommendations grounded in actual file reads (not assumptions)
 - [ ] Every gap has a proposed next action referencing a specific skill
 - [ ] No phantom primitives counted as "built"

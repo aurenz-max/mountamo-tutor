@@ -1004,6 +1004,19 @@ export interface StrategyPickerMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface EquationBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'equation-builder';
+  totalChallenges: number;
+  correctCount: number;
+  totalAttempts: number;
+  averageAttemptsPerChallenge: number;
+  challengeBreakdown: Array<{
+    challengeId: string;
+    correct: boolean;
+    attempts: number;
+  }>;
+}
+
 export interface FormulaCardMetrics extends BasePrimitiveMetrics {
   type: 'formula-card';
 
@@ -3215,6 +3228,7 @@ export type PrimitiveMetrics =
   | MathFactFluencyMetrics
   | FastFactMetrics
   | StrategyPickerMetrics
+  | EquationBuilderMetrics
   | HundredsChartMetrics
   | AnalogClockMetrics
   // Exploration

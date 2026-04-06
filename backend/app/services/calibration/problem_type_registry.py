@@ -45,6 +45,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "operate":   PriorConfig(4.5, "Symbolic: addition/subtraction with frame"),
     },
     "number-line": {
+        "identify":  PriorConfig(0.5, "Concrete: identify numbers on labeled 0-10 line"),
         "plot":      PriorConfig(1.5, "Concrete: place value on number line"),
         "jump":      PriorConfig(2.5, "Pictorial: show operation as movement"),
         "order":     PriorConfig(3.5, "Pictorial: sequence multiple values"),
@@ -321,6 +322,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "match_faces":                PriorConfig(0.2, "Match highlighted net faces to corresponding solid faces"),
         "valid_net":                  PriorConfig(0.7, "Determine whether a given 2D net folds into a valid solid"),
         "surface_area":               PriorConfig(1.2, "Calculate surface area by summing face areas from the net"),
+    },
+    "equation-builder": {
+        "build-simple":       PriorConfig(1.0, "Build a given equation from tiles"),
+        "missing-result":     PriorConfig(1.5, "Find the result of an equation"),
+        "true-false":         PriorConfig(2.0, "Determine if an equation is true or false"),
+        "missing-operand":    PriorConfig(2.5, "Find a missing operand in an equation"),
+        "balance-both-sides": PriorConfig(3.5, "Make both sides of = equal"),
+        "rewrite":            PriorConfig(4.0, "Express an equation in a different form"),
     },
     # -----------------------------------------------------------------
     # Assessment primitives
