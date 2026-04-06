@@ -78,8 +78,9 @@
 | context-clues-detective | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/context-clues-detective-2026-04-05.md) |
 | figurative-language-finder | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/figurative-language-finder-2026-04-05.md) |
 | word-sorter | 3 | 3 | 0 | 2026-04-05 | [report](eval-reports/word-sorter-2026-04-05.md) |
+| decodable-reader | 1 | 1 | 0 | 2026-04-05 | [report](eval-reports/decodable-reader-2026-04-05.md) |
 
-**Totals:** 261/268 modes passing (97.4%) | 15 open issues (1 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 262/269 modes passing (97.4%) | 15 open issues (1 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -237,6 +238,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | ~~PE-1~~ | ~~planetary-explorer~~ | ~~identify~~ | ~~CRITICAL~~ | ~~Trivial challenge~~ | ~~Questions always about the current planet — student sees planet name in header, trivially picks it. Fixed: post-journey quiz phase with cross-planet identification questions, planet names hidden during quiz.~~ | ~~GENERATOR + COMPONENT~~ |
 | ~~SS-1~~ | ~~spatial-scene~~ | ~~identify, describe~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Nullable sceneObj fields (SP-14) — Gemini skips them, grid empty, reference object invisible. Fixed: removed nullable, added required fields, post-process rejection~~ | ~~GENERATOR~~ |
 | ~~SS-2~~ | ~~spatial-scene~~ | ~~all~~ | ~~HIGH~~ | ~~Sparse grid~~ | ~~Only 2 scene object slots for 9-cell grid. Fixed: increased to 4 required slots with backdrop objects~~ | ~~GENERATOR~~ |
+| ~~DR-1~~ | ~~decodable-reader~~ | ~~default~~ | ~~CRITICAL~~ | ~~Impossible challenge~~ | ~~MC comprehension comparison lowercases `correctAnswer` but not `selectedAnswer`. Fixed: adopted knowledge-check MC pattern with `correctOptionId` — comparison on stable IDs, no case sensitivity~~ | ~~COMPONENT + GENERATOR~~ |
 | ~~SS-3~~ | ~~spatial-scene~~ | ~~identify, describe~~ | ~~HIGH~~ | ~~Missing data~~ | ~~targetObject not in sceneObjects. Fixed: post-process derivation ensures target + reference are in scene array~~ | ~~GENERATOR~~ |
 | ~~TS-3~~ | ~~time-sequencer~~ | ~~all~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Gemini omits type-specific fields (events, options, schedule) due to ~90 nullable fields in single multi-purpose schema (SP-3). Challenges render with instruction but no interactive content.~~ | ~~GENERATOR~~ |
 

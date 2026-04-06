@@ -140,6 +140,9 @@ export type {
   // Physics metrics
   MotionDiagramMetrics,
   SoundWaveExplorerMetrics,
+  PushPullArenaMetrics,
+  RaceTrackLabMetrics,
+  GravityDropTowerMetrics,
   // Chemistry metrics
   MatterExplorerMetrics,
   ReactionLabMetrics,

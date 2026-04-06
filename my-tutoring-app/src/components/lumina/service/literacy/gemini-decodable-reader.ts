@@ -93,20 +93,37 @@ const decodableReaderSchema: Schema = {
         },
         options: {
           type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: "Answer options for multiple-choice (3-4 options)"
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              id: {
+                type: Type.STRING,
+                description: "Option letter identifier (e.g., 'A', 'B', 'C', 'D')"
+              },
+              text: {
+                type: Type.STRING,
+                description: "Option text content"
+              }
+            },
+            required: ["id", "text"]
+          },
+          description: "Answer options for multiple-choice (3-4 options with stable IDs)"
+        },
+        correctOptionId: {
+          type: Type.STRING,
+          description: "The correct option ID letter (e.g., 'B') — must match one of the option ids"
         },
         correctAnswer: {
           type: Type.STRING,
-          description: "The correct answer text"
+          description: "The correct answer text (for short-answer type)"
         },
         acceptableAnswers: {
           type: Type.ARRAY,
           items: { type: Type.STRING },
-          description: "Alternative acceptable answers"
+          description: "Alternative acceptable answers (for short-answer type)"
         }
       },
-      required: ["question", "type", "correctAnswer"]
+      required: ["question", "type", "correctOptionId"]
     }
   },
   required: ["title", "gradeLevel", "passage", "phonicsPatternsInPassage", "comprehensionQuestion"]
@@ -210,9 +227,11 @@ REQUIRED INFORMATION:
 5. **Comprehension Question**: An object with:
    - question: Clear question about the passage content
    - type: "multiple-choice"
-   - options: 3-4 answer options
-   - correctAnswer: The correct answer (must match one of the options exactly)
-   - acceptableAnswers: Any other acceptable answers
+   - options: Array of 3-4 option objects, each with:
+     - id: Letter identifier ("A", "B", "C", "D")
+     - text: The option text
+   - correctOptionId: The letter ID of the correct option (e.g., "B")
+   - Mix up the position of the correct answer across generations
 
 EXAMPLE OUTPUT FOR KINDERGARTEN:
 {
@@ -247,9 +266,12 @@ EXAMPLE OUTPUT FOR KINDERGARTEN:
   "comprehensionQuestion": {
     "question": "What can the dog do?",
     "type": "multiple-choice",
-    "options": ["The dog can run.", "The dog can fly.", "The dog can swim."],
-    "correctAnswer": "The dog can run.",
-    "acceptableAnswers": ["run"]
+    "options": [
+      { "id": "A", "text": "The dog can run." },
+      { "id": "B", "text": "The dog can fly." },
+      { "id": "C", "text": "The dog can swim." }
+    ],
+    "correctOptionId": "A"
   }
 }
 
@@ -272,6 +294,16 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
     }
 
     const result = JSON.parse(text) as DecodableReaderData;
+
+    // Post-process: validate correctOptionId references a real option
+    const cq = result.comprehensionQuestion;
+    if (cq.type === 'multiple-choice' && cq.options && cq.options.length > 0) {
+      const optionIds = cq.options.map(o => o.id);
+      if (!cq.correctOptionId || !optionIds.includes(cq.correctOptionId)) {
+        console.warn(`[DecodableReader] correctOptionId "${cq.correctOptionId}" not in options [${optionIds}], defaulting to first option`);
+        cq.correctOptionId = cq.options[0].id;
+      }
+    }
 
     const finalData: DecodableReaderData = {
       ...result,

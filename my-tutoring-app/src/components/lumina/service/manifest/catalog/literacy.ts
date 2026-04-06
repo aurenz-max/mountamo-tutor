@@ -1122,6 +1122,35 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         description: 'Multi-clause sentence building.',
       },
     ],
+    tutoring: {
+      taskDescription:
+        'Student is building {{sentenceType}} sentences by arranging color-coded tiles into grammatical order. '
+        + 'Phase: {{currentPhase}} ({{phaseDescription}}). Challenge {{withinPhaseIndex}}/{{totalChallengesPerPhase}}. '
+        + 'Target meaning: "{{targetMeaning}}". Tiles placed: {{tilesPlaced}}/{{totalTiles}}. Attempt: {{attemptNumber}}.',
+      contextKeys: [
+        'sentenceType', 'currentPhase', 'phaseDescription', 'withinPhaseIndex',
+        'totalChallengesPerPhase', 'targetMeaning', 'tilesPlaced', 'totalTiles',
+        'attemptNumber', 'gradeLevel', 'placedWords', 'tileRoles',
+      ],
+      scaffoldingLevels: {
+        level1:
+          '"Read the target meaning aloud. Now look at your tiles — which one tells us WHO or WHAT the sentence is about?"',
+        level2:
+          '"The sentence should say: {{targetMeaning}}. Start with the {{subjectHint}} — that\'s the subject (blue tile). '
+          + 'Next, what does the subject DO? That\'s the predicate (red tile)."',
+        level3:
+          '"Let\'s build it together step by step: First, find the subject (blue) — who is the sentence about? '
+          + 'Then the predicate (red) — what do they do? Finally, the object (green) — what do they do it to? '
+          + 'Read it back: does it match the meaning?"',
+      },
+      commonStruggles: [
+        { pattern: 'Student places tiles in wrong order repeatedly', response: '"Let\'s slow down. Read the meaning again. Now point to WHO the sentence is about — that word goes first. Sentences usually follow: Who → Does what → To what."' },
+        { pattern: 'Student confuses subject and object', response: '"Both are things or people, but one DOES the action and the other RECEIVES it. In \'The cat chased the mouse\', who is doing the chasing? That\'s the subject!"' },
+        { pattern: 'Student forgets punctuation tile', response: '"Almost there! Every sentence needs something at the end. What mark tells the reader the sentence is finished?"' },
+        { pattern: 'Student hesitates and places no tiles', response: '"Start with any tile you\'re sure about! The blue tiles are subjects — pick the one that matches WHO the sentence is about."' },
+        { pattern: 'Student struggles with conjunctions in compound sentences', response: '"You have two ideas to connect. Words like \'and\', \'but\', and \'so\' are bridges between them. Which bridge word fits the meaning best?"' },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

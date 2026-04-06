@@ -1251,6 +1251,9 @@ export type ComponentId =
   // Physics Primitives (Middle School - High School)
   | 'motion-diagram'     // Strobe diagram visualization for teaching kinematics and motion concepts
   | 'sound-wave-explorer' // Interactive sound wave exploration for physics concepts
+  | 'gravity-drop-tower'  // Interactive gravity drop tower for physics experiments
+  | 'push-pull-arena'     // Interactive push and pull force exploration for physics concepts
+  | 'race-track-lab'      // Interactive race track laboratory for physics experiments
 
 /**
  * Tutoring scaffold metadata for AI-assisted learning.
@@ -1559,6 +1562,9 @@ export type { ConstellationBuilderData } from './primitives/visual-primitives/as
 export type { PlanetaryExplorerData } from './primitives/visual-primitives/astronomy/PlanetaryExplorer';
 export type { MotionDiagramData, PositionMarker, MotionType } from './primitives/visual-primitives/physics/MotionDiagram';
 export type { SoundWaveExplorerData } from './primitives/visual-primitives/physics/SoundWaveExplorer';
+export type { PushPullArenaData } from './primitives/visual-primitives/physics/PushPullArena';
+export type { RaceTrackLabData } from './primitives/visual-primitives/physics/RaceTrackLab';
+export type { GravityDropTowerData } from './primitives/visual-primitives/physics/GravityDropTower';
 export type { OrganismCardData, OrganismInfo, OrganismAttributes, OrganismClassification } from './primitives/visual-primitives/biology/OrganismCard';
 export type { ClassificationSorterData, ClassificationCategory, ClassificationItem } from './primitives/visual-primitives/biology/ClassificationSorter';
 export type { LifeCycleSequencerData, LifeCycleStage, MisconceptionTrap } from './primitives/visual-primitives/biology/LifeCycleSequencer';

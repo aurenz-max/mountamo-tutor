@@ -40,9 +40,10 @@ export interface DecodableReaderData {
   comprehensionQuestion: {
     question: string;
     type: 'multiple-choice' | 'short-answer';
-    options?: string[];                       // For multiple-choice
-    correctAnswer: string;                    // The correct answer text
-    acceptableAnswers?: string[];             // Alternative acceptable answers
+    options?: Array<{ id: string; text: string }>;  // MC options with stable IDs
+    correctOptionId?: string;                        // MC: matches one option.id
+    correctAnswer?: string;                          // Short-answer: the correct text
+    acceptableAnswers?: string[];                    // Short-answer: alternatives
   };
 
   // Evaluation props (optional, auto-injected)
@@ -245,14 +246,17 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
   const handleCheckComprehension = useCallback(() => {
     setComprehensionAttempts(prev => prev + 1);
 
-    const answer = comprehensionQuestion.type === 'multiple-choice'
-      ? selectedAnswer
-      : shortAnswer.trim().toLowerCase();
+    let isCorrect: boolean;
 
-    const correct = comprehensionQuestion.correctAnswer.toLowerCase();
-    const acceptable = comprehensionQuestion.acceptableAnswers?.map(a => a.toLowerCase()) || [];
-
-    const isCorrect = answer === correct || acceptable.includes(answer);
+    if (comprehensionQuestion.type === 'multiple-choice') {
+      // Compare stable option IDs — no case sensitivity issues
+      isCorrect = selectedAnswer === comprehensionQuestion.correctOptionId;
+    } else {
+      const answer = shortAnswer.trim().toLowerCase();
+      const correct = (comprehensionQuestion.correctAnswer ?? '').toLowerCase();
+      const acceptable = comprehensionQuestion.acceptableAnswers?.map(a => a.toLowerCase()) || [];
+      isCorrect = answer === correct || acceptable.includes(answer);
+    }
     setComprehensionCorrect(isCorrect);
 
     if (isCorrect) {
@@ -265,8 +269,11 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
       // Move to review after short delay
       setTimeout(() => setCurrentPhase('review'), 1200);
     } else {
+      const studentAnswer = comprehensionQuestion.type === 'multiple-choice'
+        ? comprehensionQuestion.options?.find(o => o.id === selectedAnswer)?.text ?? selectedAnswer
+        : shortAnswer.trim();
       sendText(
-        `[COMPREHENSION_INCORRECT] The student answered "${answer}" but that's not correct. `
+        `[COMPREHENSION_INCORRECT] The student answered "${studentAnswer}" but that's not correct. `
         + `The question was: "${comprehensionQuestion.question}". `
         + `This is attempt ${comprehensionAttempts + 1}. Give a brief hint without revealing the answer.`,
         { silent: true }
@@ -531,14 +538,14 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
 
         {comprehensionQuestion.type === 'multiple-choice' && comprehensionQuestion.options ? (
           <div className="space-y-2">
-            {comprehensionQuestion.options.map((option, i) => (
+            {comprehensionQuestion.options.map((option) => (
               <button
-                key={i}
-                onClick={() => setSelectedAnswer(option)}
+                key={option.id}
+                onClick={() => setSelectedAnswer(option.id)}
                 disabled={comprehensionCorrect === true}
                 className={`
                   w-full text-left px-4 py-3 rounded-lg border transition-all
-                  ${selectedAnswer === option
+                  ${selectedAnswer === option.id
                     ? comprehensionCorrect === true
                       ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                       : comprehensionCorrect === false && comprehensionAttempts > 0
@@ -548,7 +555,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
                   }
                 `}
               >
-                <span className="text-sm">{option}</span>
+                <span className="text-sm">{option.id}. {option.text}</span>
               </button>
             ))}
           </div>
@@ -674,7 +681,11 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
       }`}>
         <p className="text-xs text-slate-500 mb-1">Comprehension:</p>
         <p className={`text-sm ${comprehensionCorrect ? 'text-emerald-300' : 'text-amber-300'}`}>
-          {comprehensionCorrect ? 'Answered correctly' : `Answer: ${comprehensionQuestion.correctAnswer}`}
+          {comprehensionCorrect ? 'Answered correctly' : `Answer: ${
+            comprehensionQuestion.type === 'multiple-choice'
+              ? comprehensionQuestion.options?.find(o => o.id === comprehensionQuestion.correctOptionId)?.text ?? comprehensionQuestion.correctAnswer
+              : comprehensionQuestion.correctAnswer
+          }`}
           {comprehensionAttempts > 1 && ` (${comprehensionAttempts} attempts)`}
         </p>
       </div>

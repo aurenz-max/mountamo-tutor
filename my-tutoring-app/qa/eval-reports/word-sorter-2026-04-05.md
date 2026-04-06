@@ -4,22 +4,37 @@
 
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
-| binary_sort | PASS | 0 |
-| ternary_sort | PASS | 0 |
-| match_pairs | PASS | 0 |
+| binary_sort | PASS | — |
+| ternary_sort | PASS | — |
+| match_pairs | PASS | — |
 
-## Notes
+## Bug Fix Verification: Duplicate Challenge IDs
 
-### WS-1 — Fixed: Flat->nested reconstruction produces empty arrays (SP-14)
+**Status: FIXED**
 
-**Fix applied:** ORCHESTRATOR-REFACTOR. Replaced single mega-schema generator with 3 per-mode
-sub-generators (`generateBinarySortChallenges`, `generateTernarySortChallenges`,
-`generateMatchPairsChallenges`), each with a focused schema containing only the fields for
-that mode. Orchestrator dispatches via `Promise.all` and combines results.
+The duplicate ID bug (each sub-generator producing `ch1, ch2, ch3` independently) is resolved. The generator now reassigns IDs after combining:
 
-Post-reconstruction validation rejects challenges with insufficient words/pairs and validates
-that `correctBucket` matches actual bucket labels. Each mode's required fields are marked
-required in the schema so Gemini can't skip them.
+```typescript
+allChallenges.forEach((ch, i) => {
+  ch.id = `${ch.type}-${i}`;
+});
+```
 
-**Verification:** 3/3 modes pass, 9/9 stochastic runs pass. Binary sort produces 6 words
-with 2 buckets, ternary sort produces 8-10 words with 3 buckets, match pairs produces 5 pairs.
+### Stochastic Completion Trace (9 challenges, all modes)
+
+Generated IDs: `binary_sort-0..2`, `ternary_sort-3..5`, `match_pairs-6..8` — all unique.
+
+`useChallengeProgress.recordResult` uses `findIndex(r => r.challengeId === result.challengeId)`:
+- With unique IDs, `findIndex` returns `-1` for each new challenge → **appends** (correct)
+- `results.length` reaches 9 → `isComplete` (`results.length >= challenges.length`) becomes `true`
+- Auto-submit effect fires → `advanceToNextChallenge()` → hits "All complete" branch → `submitEvaluation()` called
+
+No path exists where completion fails with unique IDs.
+
+### G1-G5 Sync Checks
+
+- **G1 (Required fields):** binary/ternary challenges have `words`, `bucketLabels`, `instruction` — all present. match_pairs challenges have `pairs` — present. No missing fields.
+- **G2 (Flat-field reconstruction):** N/A — generator uses array schemas, not flat fields.
+- **G3 (Eval mode differentiation):** Each mode uses a distinct `challengeTypes` value. No overlap.
+- **G4 (Answer derivability):** `correctBucket` on each word matches one of the `bucketLabels`. Match pairs have `term`/`match` fields. Student can derive answers from visible data.
+- **G5 (Fallback quality):** Component guards with `?.words`, `?.bucketLabels`, `?.pairs` — returns null on missing data rather than silent fallback. No hardcoded defaults.

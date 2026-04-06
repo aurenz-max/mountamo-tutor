@@ -174,11 +174,22 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     return currentChallenge.pairs.filter(p => !matchedPairs.has(p.id));
   }, [currentChallenge, matchedPairs]);
 
+  // Stable shuffled order for the matches column — computed once per challenge
+  const matchDisplayOrderRef = useRef<{ challengeId: string; order: { id: string; text: string; emoji?: string }[] }>({ challengeId: '', order: [] });
+  if (currentChallenge?.type === 'match_pairs' && currentChallenge.pairs && matchDisplayOrderRef.current.challengeId !== currentChallenge.id) {
+    const items = currentChallenge.pairs.map(p => ({ id: p.id, text: p.match, emoji: p.matchEmoji }));
+    // Fisher-Yates shuffle
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+    matchDisplayOrderRef.current = { challengeId: currentChallenge.id, order: items };
+  }
+
   const unmatchedMatches = useMemo(() => {
     if (!currentChallenge?.pairs) return [];
     const matchedSet = new Set(matchedPairs.values());
-    return currentChallenge.pairs.map(p => ({ id: p.id, text: p.match, emoji: p.matchEmoji }))
-      .filter(m => !matchedSet.has(m.id));
+    return matchDisplayOrderRef.current.order.filter(m => !matchedSet.has(m.id));
   }, [currentChallenge, matchedPairs]);
 
   // ─── Evaluation ────────────────────────────────────────────────

@@ -168,6 +168,19 @@ function buildMatchPairsSchema(): Schema {
 }
 
 // ---------------------------------------------------------------------------
+// Shuffle utility — Fisher-Yates
+// ---------------------------------------------------------------------------
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// ---------------------------------------------------------------------------
 // Flat → structured reconstruction helpers
 // ---------------------------------------------------------------------------
 
@@ -227,7 +240,7 @@ function reconstructSortChallenge(
     type,
     instruction: flat.instruction as string,
     bucketLabels,
-    words,
+    words: shuffleArray(words),
   };
 }
 
@@ -258,7 +271,7 @@ function reconstructMatchPairsChallenge(flat: FlatChallenge): WordSorterChalleng
     id: flat.id as string,
     type: 'match_pairs',
     instruction: flat.instruction as string,
-    pairs,
+    pairs: shuffleArray(pairs),
   };
 }
 
@@ -484,6 +497,13 @@ export const generateWordSorter = async (
 
   // ── Combine results ─────────────────────────────────────────────────
   const allChallenges = subResults.flatMap((r) => r.challenges);
+
+  // De-duplicate IDs — each sub-generator independently produces ch1, ch2, …
+  // so IDs collide across types, causing recordResult to overwrite instead of
+  // append and allChallengesComplete to never become true.
+  allChallenges.forEach((ch, i) => {
+    ch.id = `${ch.type}-${i}`;
+  });
   const firstTitle = subResults.find((r) => r.title)?.title || `Word Sorting: ${topic}`;
   const firstTopic = subResults.find((r) => r.sortingTopic)?.sortingTopic || topic;
 

@@ -147,6 +147,9 @@ import PlanetaryExplorer from '../primitives/visual-primitives/astronomy/Planeta
 // Physics Primitives
 import MotionDiagram from '../primitives/visual-primitives/physics/MotionDiagram';
 import SoundWaveExplorer from '../primitives/visual-primitives/physics/SoundWaveExplorer';
+import PushPullArena from '../primitives/visual-primitives/physics/PushPullArena';
+import RaceTrackLab from '../primitives/visual-primitives/physics/RaceTrackLab';
+import GravityDropTower from '../primitives/visual-primitives/physics/GravityDropTower';
 // Literacy Primitives (Wave 1 - K-6 ELA)
 import ParagraphArchitect from '../primitives/visual-primitives/literacy/ParagraphArchitect';
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
@@ -1612,6 +1615,36 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'sound-wave-explorer': {
     component: SoundWaveExplorer,
     sectionTitle: 'Sound Wave Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'push-pull-arena': {
+    component: PushPullArena,
+    sectionTitle: 'Push & Pull Arena',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'race-track-lab': {
+    component: RaceTrackLab,
+    sectionTitle: 'Race Track Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'gravity-drop-tower': {
+    component: GravityDropTower,
+    sectionTitle: 'Gravity Drop Tower',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

@@ -1544,6 +1544,36 @@ export interface SoundWaveExplorerMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface PushPullArenaMetrics extends BasePrimitiveMetrics {
+  type: 'push-pull-arena';
+  evalMode?: string;
+  challengesCompleted: number;
+  challengesCorrect: number;
+  totalAttempts: number;
+  accuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
+export interface RaceTrackLabMetrics extends BasePrimitiveMetrics {
+  type: 'race-track-lab';
+  evalMode?: string;
+  challengesCompleted: number;
+  challengesCorrect: number;
+  totalAttempts: number;
+  accuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
+export interface GravityDropTowerMetrics extends BasePrimitiveMetrics {
+  type: 'gravity-drop-tower';
+  evalMode?: string;
+  challengesCompleted: number;
+  challengesCorrect: number;
+  totalAttempts: number;
+  accuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 // -----------------------------------------------------------------------------
 // Biology Primitives
 // -----------------------------------------------------------------------------
@@ -3221,6 +3251,9 @@ export type PrimitiveMetrics =
   // Physics
   | MotionDiagramMetrics
   | SoundWaveExplorerMetrics
+  | PushPullArenaMetrics
+  | RaceTrackLabMetrics
+  | GravityDropTowerMetrics
   // Chemistry
   | MatterExplorerMetrics
   | ReactionLabMetrics

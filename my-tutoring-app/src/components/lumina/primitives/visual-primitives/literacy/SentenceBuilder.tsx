@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import {
 import type { SentenceBuilderMetrics } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
@@ -200,6 +201,48 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
+  // ── AI Tutoring ──
+  const resolvedInstanceId = instanceId || `sentence-builder-${Date.now()}`;
+
+  const aiPrimitiveData = useMemo(() => ({
+    sentenceType,
+    currentPhase,
+    phaseDescription: PHASE_LABELS[currentPhase]?.description ?? '',
+    withinPhaseIndex: withinPhaseIndex + 1,
+    totalChallengesPerPhase: challenges.length,
+    targetMeaning: currentChallenge?.targetMeaning ?? '',
+    tilesPlaced: placedTileIds.length,
+    totalTiles: currentChallenge?.tiles.length ?? 0,
+    attemptNumber: currentAttempts + 1,
+    gradeLevel,
+    placedWords: placedTileIds.map(id => currentChallenge?.tiles.find(t => t.id === id)?.text ?? '').join(' '),
+    tileRoles: currentChallenge?.tiles.map(t => `${t.text}(${t.role})`).join(', ') ?? '',
+  }), [
+    sentenceType, currentPhase, withinPhaseIndex, challenges.length,
+    currentChallenge, placedTileIds, currentAttempts, gradeLevel,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'sentence-builder',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
+  // ─── Activity introduction ──
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Sentence Builder for grade ${gradeLevel}. Sentence type: ${sentenceType}. `
+      + `${challenges.length} challenges across 3 phases (explore → practice → apply). `
+      + `First challenge: "${currentChallenge?.targetMeaning}". `
+      + `Introduce warmly: "Let's build some sentences together!"`,
+      { silent: true },
+    );
+  }, [isConnected, challenges.length, currentChallenge, gradeLevel, sentenceType, sendText]);
+
   // ── Local overall score (fallback for PhaseSummaryPanel) ──
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || unifiedChallenges.length === 0) return 0;
@@ -302,6 +345,14 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
       setIsCelebrating(true);
       setTimeout(() => setIsCelebrating(false), 1500);
 
+      const placedWords = placedTileIds.map(id => currentChallenge.tiles.find(t => t.id === id)?.text ?? '').join(' ');
+      sendText(
+        `[ANSWER_CORRECT] Student built the sentence correctly in the ${currentPhase} phase! `
+        + `Sentence: "${placedWords}". Attempt ${currentAttempts + 1}. `
+        + `Target meaning: "${currentChallenge.targetMeaning}". Celebrate briefly and encourage.`,
+        { silent: true },
+      );
+
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
@@ -309,12 +360,22 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
         hintsUsed: hintsUsedPerChallenge[currentChallenge.id] || 0,
       });
     } else {
+      const placedWords = placedTileIds.map(id => currentChallenge.tiles.find(t => t.id === id)?.text ?? '').join(' ');
       setFeedback('Not quite right. Try rearranging the tiles!');
       setFeedbackType('error');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
+
+      sendText(
+        `[ANSWER_INCORRECT] Student arranged: "${placedWords}" but it doesn't match a valid arrangement. `
+        + `Phase: ${currentPhase}. Attempt ${currentAttempts + 1}. `
+        + `Target meaning: "${currentChallenge.targetMeaning}". `
+        + `Available roles: ${currentChallenge.tiles.map(t => `${t.text}(${t.role})`).join(', ')}. `
+        + `Give a hint about sentence structure without revealing the answer.`,
+        { silent: true },
+      );
     }
-  }, [currentChallenge, currentPhase, placedTileIds, exploreCorrectArrangement, exploreMissingIndex, incrementAttempts, recordResult, currentAttempts, hintsUsedPerChallenge]);
+  }, [currentChallenge, currentPhase, placedTileIds, exploreCorrectArrangement, exploreMissingIndex, incrementAttempts, recordResult, currentAttempts, hintsUsedPerChallenge, sendText]);
 
   const handleHint = useCallback(() => {
     if (!currentChallenge) return;
@@ -378,6 +439,8 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
 
   // Move to next challenge or finish
   const handleNext = useCallback(() => {
+    const prevPhase = currentPhase;
+
     setPlacedTileIds([]);
     setFeedback('');
     setFeedbackType('');
@@ -387,12 +450,43 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
 
     if (!advanceProgress()) {
       // All challenges done — submit evaluation
+      const correctCount = challengeResults.filter(r => r.correct).length;
+      const overallPct = unifiedChallenges.length > 0
+        ? Math.round((correctCount / unifiedChallenges.length) * 100)
+        : 0;
+
+      sendText(
+        `[ALL_COMPLETE] Student finished all ${unifiedChallenges.length} challenges across 3 phases! `
+        + `Overall accuracy: ${overallPct}%. Sentence type: ${sentenceType}. `
+        + `Celebrate the full session and comment on their sentence-building growth!`,
+        { silent: true },
+      );
+
       submitFinalEvaluation();
       return;
     }
-    // advanceProgress() already incremented index and reset attempts.
-    // Domain-specific state already cleared above.
-  }, [advanceProgress, submitFinalEvaluation]);
+
+    // Detect phase transition
+    const nextIndex = currentIndex + 1;
+    const nextChallenge = unifiedChallenges[nextIndex];
+    const nextPhase = nextChallenge?.phase;
+
+    if (nextPhase && nextPhase !== prevPhase) {
+      sendText(
+        `[PHASE_TRANSITION] Moving from ${PHASE_LABELS[prevPhase].label} to ${PHASE_LABELS[nextPhase as LearningPhase].label} phase. `
+        + `New task: ${PHASE_LABELS[nextPhase as LearningPhase].description}. `
+        + `Introduce the new phase and what the student should expect.`,
+        { silent: true },
+      );
+    } else if (nextChallenge) {
+      sendText(
+        `[NEXT_ITEM] Moving to challenge ${(withinPhaseIndex + 2)} of ${challenges.length} in ${prevPhase} phase. `
+        + `New target meaning: "${nextChallenge.targetMeaning}". Introduce it briefly.`,
+        { silent: true },
+      );
+    }
+  }, [advanceProgress, submitFinalEvaluation, currentPhase, currentIndex, unifiedChallenges,
+    challengeResults, sentenceType, withinPhaseIndex, challenges.length, sendText]);
 
   // ── Render helpers ──
 

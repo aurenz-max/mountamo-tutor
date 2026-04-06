@@ -616,6 +616,26 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "classify": PriorConfig(4.5, "Compare objects/materials, rank by pitch or sort by sound travel"),
         "apply":    PriorConfig(6.0, "Reverse reasoning — hear a sound, identify the force/speed/medium"),
     },
+    "push-pull-arena": {
+        "observe":  PriorConfig(1.5, "Push/pull an object, answer MC about what happened"),
+        "predict":  PriorConfig(3.0, "Predict movement given weight + push strength"),
+        "compare":  PriorConfig(4.5, "Compare two objects/surfaces by effort needed"),
+        "design":   PriorConfig(6.0, "Set up forces to achieve a goal"),
+    },
+    "race-track-lab": {
+        "observe":    PriorConfig(1.5, "Watch race, answer who won or who was fastest"),
+        "predict":    PriorConfig(3.0, "Set speeds, predict winner before race runs"),
+        "measure":    PriorConfig(4.5, "Count grid squares traveled, compare distances in same time"),
+        "calculate":  PriorConfig(6.0, "Given distance and time, compute speed"),
+        "graph":      PriorConfig(7.5, "Generate position-time graph, identify velocity from slope"),
+    },
+    "gravity-drop-tower": {
+        "observe":    PriorConfig(1.5, "Drop objects, answer what happened / direction"),
+        "predict":    PriorConfig(3.0, "Predict which lands first with/without air resistance"),
+        "compare":    PriorConfig(4.5, "Drop from different heights, rank landing order"),
+        "measure":    PriorConfig(6.0, "Time the fall, measure height, discover fall time relationship"),
+        "calculate":  PriorConfig(7.5, "Use h = ½gt² to predict fall time, compute impact velocity"),
+    },
     # -----------------------------------------------------------------
     # Core / general-content primitives
     # -----------------------------------------------------------------

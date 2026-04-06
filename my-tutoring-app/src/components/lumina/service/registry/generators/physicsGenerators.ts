@@ -12,6 +12,9 @@ import { registerGenerator } from '../contentRegistry';
 // Physics Generator Imports
 import { generateMotionDiagram } from '../../physics/gemini-motion-diagram';
 import { generateSoundWaveExplorer } from '../../physics/gemini-sound-wave-explorer';
+import { generatePushPullArena } from '../../physics/gemini-push-pull-arena';
+import { generateRaceTrackLab } from '../../physics/gemini-race-track-lab';
+import { generateGravityDropTower } from '../../physics/gemini-gravity-drop-tower';
 
 // ============================================================================
 // Physics Primitives Registration (Middle School - High School)
@@ -31,6 +34,27 @@ registerGenerator('sound-wave-explorer', async (item, topic, gradeContext) => ({
   data: await generateSoundWaveExplorer(topic, gradeContext, item.config),
 }));
 
+// Push & Pull Arena - Interactive force/friction arena (K-5)
+registerGenerator('push-pull-arena', async (item, topic, gradeContext) => ({
+  type: 'push-pull-arena',
+  instanceId: item.instanceId,
+  data: await generatePushPullArena(topic, gradeContext, item.config),
+}));
+
+// Race Track Lab - Speed/distance/time racing lab (K-5)
+registerGenerator('race-track-lab', async (item, topic, gradeContext) => ({
+  type: 'race-track-lab',
+  instanceId: item.instanceId,
+  data: await generateRaceTrackLab(topic, gradeContext, item.config),
+}));
+
+// Gravity Drop Tower - Free fall & air resistance lab (K-HS)
+registerGenerator('gravity-drop-tower', async (item, topic, gradeContext) => ({
+  type: 'gravity-drop-tower',
+  instanceId: item.instanceId,
+  data: await generateGravityDropTower(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 2/2 physics primitives registered
+// Migration status: 5/5 physics primitives registered
 // ============================================================================

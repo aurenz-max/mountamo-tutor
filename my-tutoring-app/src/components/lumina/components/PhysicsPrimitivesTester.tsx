@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import MotionDiagram from '../primitives/visual-primitives/physics/MotionDiagram';
 import SoundWaveExplorer from '../primitives/visual-primitives/physics/SoundWaveExplorer';
+import PushPullArena from '../primitives/visual-primitives/physics/PushPullArena';
+import RaceTrackLab from '../primitives/visual-primitives/physics/RaceTrackLab';
+import GravityDropTower from '../primitives/visual-primitives/physics/GravityDropTower';
 import type { EvalModeDefinition } from '../types';
 import {
   EvaluationProvider,
@@ -16,12 +19,15 @@ interface PhysicsPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'motion-diagram' | 'sound-wave-explorer';
+type PrimitiveType = 'motion-diagram' | 'sound-wave-explorer' | 'push-pull-arena' | 'race-track-lab' | 'gravity-drop-tower';
 type GradeLevel = '6' | '7' | '8' | '9' | '10' | '11' | '12';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
   { value: 'motion-diagram', label: 'Motion Diagram', icon: '📍', topic: 'Understanding motion through position markers' },
   { value: 'sound-wave-explorer', label: 'Sound Wave Explorer', icon: '🎵', topic: 'Sound and vibrations' },
+  { value: 'push-pull-arena', label: 'Push Pull Arena', icon: '🏋️', topic: 'Forces and motion' },
+  { value: 'race-track-lab', label: 'Race Track Lab', icon: '🏎️', topic: 'Speed, velocity, and acceleration on a race track' },
+  { value: 'gravity-drop-tower', label: 'Gravity Drop Tower', icon: '🗼', topic: 'Gravity and falling objects' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -66,6 +72,41 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'physics-waves',
             subskillId: 'sound-waves',
             objectiveId: 'understand-sound-vibrations',
+          }}
+        />
+      );
+    case 'push-pull-arena':
+      return (
+        <PushPullArena
+          data={{
+            ...(data as Parameters<typeof PushPullArena>[0]['data']),
+            instanceId: `push-pull-arena-${Date.now()}`,
+            skillId: 'physics-forces',
+            subskillId: 'push-pull-forces',
+            objectiveId: 'understand-forces-motion',
+          }}
+        />
+      );
+    case 'race-track-lab':
+      return (
+        <RaceTrackLab
+          data={{
+            ...(data as Parameters<typeof RaceTrackLab>[0]['data']),
+            instanceId: `race-track-lab-${Date.now()}`,
+            skillId: 'physics-kinematics',
+            subskillId: 'speed-velocity-acceleration',
+            objectiveId: 'understand-race-track-motion',
+          }}
+        />
+      );
+    case 'gravity-drop-tower':
+      return (
+        <GravityDropTower
+          data={{
+            ...(data as Parameters<typeof GravityDropTower>[0]['data']),
+            instanceId: `gravity-drop-tower-${Date.now()}`,
+            skillId: 'gravity-basics',
+            subskillId: 'free-fall',
           }}
         />
       );
