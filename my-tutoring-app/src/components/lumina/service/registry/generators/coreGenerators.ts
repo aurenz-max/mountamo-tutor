@@ -63,6 +63,7 @@ import { generateHowItWorks } from '../../core/gemini-how-it-works';
 import { generateTimelineExplorer } from '../../core/gemini-timeline-explorer';
 import { generateVocabularyExplorer } from '../../core/gemini-vocabulary-explorer';
 import { generateDigitalSkillsSim } from '../../core/gemini-digital-skills-sim';
+import { generateDeepDive } from '../../core/gemini-deep-dive';
 
 
 // ============================================================================
@@ -466,8 +467,15 @@ registerGenerator('digital-skills-sim', async (item, topic, gradeContext) => ({
   data: await generateDigitalSkillsSim(topic, gradeContext, item.config),
 }));
 
+// DeepDive (orchestrated multi-block learning experience)
+registerGenerator('deep-dive', async (item, topic, gradeContext) => ({
+  type: 'deep-dive',
+  instanceId: item.instanceId,
+  data: await generateDeepDive(topic, gradeContext, item.config),
+}));
+
 // ============================================================================
-// Migration status: 26 core components registered from dedicated service files
+// Migration status: 27 core components registered from dedicated service files
 // Math primitives (bar-model, number-line, etc.) moved to mathGenerators.ts
 // NO IMPORTS FROM geminiService.ts - all generators use dedicated files
 // ============================================================================

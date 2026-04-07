@@ -180,9 +180,11 @@ export type {
   SpatialSceneMetrics,
   ShapeComposerMetrics,
   NetFolderMetrics,
+  DeepDiveMetrics,
   // Calendar metrics
   CalendarExplorerMetrics,
   TimelineBuilderMetrics,
+  CompareObjectsMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

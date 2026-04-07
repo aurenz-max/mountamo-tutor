@@ -25,6 +25,7 @@ import { EngineeringPrimitivesTester } from './components/EngineeringPrimitivesT
 import AstronomyPrimitivesTester from './components/AstronomyPrimitivesTester';
 import { PhysicsPrimitivesTester } from './components/PhysicsPrimitivesTester';
 import { FeatureExhibitTester } from './components/FeatureExhibitTester';
+import DeepDiveTester from './components/DeepDiveTester';
 import BiologyPrimitivesTester from './components/BiologyPrimitivesTester';
 import ChemistryPrimitivesTester from './components/ChemistryPrimitivesTester';
 import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
@@ -563,6 +564,13 @@ export default function App() {
         {phase === GameState.IDLE && activePanel === 'feature-exhibit-tester' && (
           <div className="flex-1 animate-fade-in">
             <FeatureExhibitTester onBack={() => setActivePanel(null)} />
+          </div>
+        )}
+
+        {/* DEEP DIVE TESTER STATE */}
+        {phase === GameState.IDLE && activePanel === 'deep-dive-tester' && (
+          <div className="flex-1 animate-fade-in">
+            <DeepDiveTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 

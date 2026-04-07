@@ -52,6 +52,7 @@ import SpatialScene from '../primitives/visual-primitives/math/SpatialScene';
 import ShapeComposer from '../primitives/visual-primitives/math/ShapeComposer';
 import NetFolder from '../primitives/visual-primitives/math/NetFolder';
 import EquationBuilder from '../primitives/visual-primitives/math/EquationBuilder';
+import CompareObjects from '../primitives/visual-primitives/math/CompareObjects';
 
 import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData, MeasurementToolsData, EvalModeDefinition, NumberTracerData } from '../types';
 import {
@@ -67,7 +68,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -121,6 +122,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'shape-composer', label: 'Shape Composer', icon: '🧩', topic: 'composing and decomposing shapes' },
   { value: 'net-folder', label: 'Net Folder', icon: '📐', topic: '3D Shapes & Surface Area' },
   { value: 'equation-builder', label: 'Equation Builder', icon: '➕', topic: 'K-2 Equations' },
+  { value: 'compare-objects', label: 'Compare Objects', icon: '🔍', topic: 'Comparing attributes and properties of objects' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -623,6 +625,18 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'math-equations',
             subskillId: 'k2-equations',
             objectiveId: 'build-simple-equations',
+          }}
+        />
+      );
+    case 'compare-objects':
+      return (
+        <CompareObjects
+          data={{
+            ...(data as Parameters<typeof CompareObjects>[0]['data']),
+            instanceId: `compare-objects-${Date.now()}`,
+            skillId: 'math-comparison',
+            subskillId: 'compare-attributes',
+            objectiveId: 'compare-object-properties',
           }}
         />
       );

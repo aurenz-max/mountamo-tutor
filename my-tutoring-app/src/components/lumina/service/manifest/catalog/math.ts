@@ -3190,4 +3190,75 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
   },
+  {
+    id: 'compare-objects',
+    description: 'Interactive measurement comparison activity where students describe and compare measurable attributes (length, height, weight, capacity) of real-world objects. Supports identifying attributes, direct comparison of two objects, ordering three objects, and measuring with non-standard units (paperclips, blocks). Builds foundational measurement vocabulary and comparative reasoning. ESSENTIAL for K-1 measurement and data (K.MD.1-2).',
+    constraints: 'Best for grades K-1. Requires objects with measurable attributes. K: compare 2 objects directly. Grade 1: order 3 objects and use non-standard units.',
+    evalModes: [
+      {
+        evalMode: 'identify_attribute',
+        label: 'Identify Attribute (Tier 1)',
+        beta: 1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['identify_attribute'],
+        description: 'Identify measurable attributes of objects.',
+      },
+      {
+        evalMode: 'compare_two',
+        label: 'Compare Two (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['compare_two'],
+        description: 'Direct comparison of 2 objects on a named attribute.',
+      },
+      {
+        evalMode: 'order_three',
+        label: 'Order Three (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['order_three'],
+        description: 'Order 3 objects by a measurable attribute.',
+      },
+      {
+        evalMode: 'non_standard',
+        label: 'Non-Standard Measure (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['non_standard'],
+        description: 'Measure using non-standard units (paperclips, blocks).',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Student is comparing {{attribute}} of objects. They need to determine which object is {{comparisonWord}}.',
+      contextKeys: ['attribute', 'objects', 'comparisonWord', 'instruction', 'challengeType', 'currentChallengeIndex', 'attemptNumber', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Look at the two objects carefully. Which one looks {{comparisonWord}}? Point to it!"',
+        level2: '"Think about {{attribute}}. Put the objects side by side — which one is {{comparisonWord}}? How can you tell?"',
+        level3: '"Let\'s compare step by step: line up the objects at one end. Now look at the other end — which one goes further? That one is {{comparisonWord}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Confuses attributes (e.g., says taller when asked about heavier)', response: '"We are comparing {{attribute}} right now, not how they look. Think about {{attribute}} — which one has more {{attribute}}?"' },
+        { pattern: 'Compares using wrong direction (picks shorter when asked for taller)', response: '"{{comparisonWord}} means it has MORE {{attribute}}. Look again — which object has MORE {{attribute}}?"' },
+        { pattern: 'Cannot order three objects (only compares two at a time)', response: '"Start by finding the one with the MOST {{attribute}}. Now find the one with the LEAST. The last one goes in the middle!"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'MEASUREMENT VOCABULARY COACHING',
+          instruction:
+            'Model precise measurement comparison language: "longer/shorter," "taller/shorter," "heavier/lighter," "holds more/holds less." '
+            + 'For K students, use concrete comparisons: "Put them next to each other. Which one goes past the other?" '
+            + 'For Grade 1, introduce transitivity: "If A is longer than B, and B is longer than C, then A is the longest." '
+            + 'Never accept vague language like "bigger" — always redirect to the specific attribute being compared.',
+        },
+        {
+          title: 'NON-STANDARD UNITS COACHING',
+          instruction:
+            'For non-standard measurement challenges, emphasize consistent unit placement: "Line up the paperclips end to end with no gaps and no overlaps." '
+            + 'Help students understand why the same object can have different measurements with different units: "It took 5 paperclips but only 3 blocks — the blocks are bigger!" '
+            + 'Connect to the idea that measurement means covering the whole length.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

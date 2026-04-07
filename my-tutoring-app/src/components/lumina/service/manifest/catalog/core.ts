@@ -721,4 +721,66 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'deep-dive',
+    description:
+      'Orchestrated multi-block learning experience. Assembles hero images, key facts, data tables, and interactive questions '
+      + 'into a cohesive vertical scroll lesson on any topic. Perfect for introducing new subjects, building background knowledge, '
+      + 'or creating comprehensive topic overviews. ESSENTIAL for any topic requiring broad coverage with embedded comprehension checks.',
+    constraints:
+      'Requires orchestrator + parallel generation. Best for topics with enough depth for 5+ blocks.',
+    evalModes: [
+      {
+        evalMode: 'explore',
+        label: 'Explore (Tier 1)',
+        beta: -1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['explore'],
+        description: 'Mostly display blocks with 1-2 easy MC questions. Low retrieval demand.',
+      },
+      {
+        evalMode: 'recall',
+        label: 'Recall (Tier 2)',
+        beta: -0.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['recall'],
+        description: 'More MC questions testing direct recall from display blocks.',
+      },
+      {
+        evalMode: 'apply',
+        label: 'Apply (Tier 3)',
+        beta: 0.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['apply'],
+        description: 'Data tables + MC requiring cross-referencing and multi-step reasoning.',
+      },
+      {
+        evalMode: 'analyze',
+        label: 'Analyze (Tier 4)',
+        beta: 1.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['analyze'],
+        description: 'Hard MC + synthesis questions. Student must analyze, not just retrieve.',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Guide the student through an orchestrated DeepDive on "{{topic}}". The experience has {{blockCount}} blocks '
+        + 'including {{evaluableBlockCount}} interactive questions. Current block: {{currentBlockLabel}}.',
+      contextKeys: ['title', 'topic', 'blockCount', 'evaluableBlockCount', 'narrativeArc', 'blockLabels'],
+      scaffoldingLevels: {
+        level1:
+          '"Look at the information presented in this section. What stands out to you?"',
+        level2:
+          '"Re-read the {{currentBlockLabel}} section carefully. The answer connects to what you learned there."',
+        level3:
+          '"Let me walk you through this. The {{currentBlockLabel}} section shows us that... Now look at the question again with that in mind."',
+      },
+      commonStruggles: [
+        { pattern: 'Student skips display blocks and jumps straight to questions', response: 'Encourage the student to read through each section before answering questions — the answers are embedded in the content above.' },
+        { pattern: 'Student answers MC without reading the explanation', response: 'Ask the student to read the explanation after answering — it reinforces the concept and connects back to the content.' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

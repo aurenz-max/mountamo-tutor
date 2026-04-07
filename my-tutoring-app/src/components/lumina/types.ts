@@ -1051,6 +1051,7 @@ export type ComponentId =
   | 'how-it-works'       // Interactive how-it-works explainer
   | 'timeline-explorer'  // Interactive timeline explorer
   | 'vocabulary-explorer' // Interactive vocabulary exploration
+  | 'deep-dive'          // Orchestrated multi-block learning experience
 
   // Data & Analysis
   | 'comparison-panel'   // A vs B
@@ -1090,6 +1091,7 @@ export type ComponentId =
   | 'calendar-explorer'  // Interactive calendar exploration and date skills
   | 'timeline-builder'   // Interactive timeline building and sequencing
   | 'coin-counter'       // Interactive coin counting and money skills
+  | 'compare-objects'    // Interactive object comparison for math reasoning
   | 'comparison-builder' // Interactive comparison builder for comparing quantities and values
   | 'coordinate-graph'   // 2D Cartesian coordinate plane for plotting points, lines, curves, and regions
   | 'slope-triangle'     // Right triangle overlay showing rise/run for slope visualization
@@ -1552,6 +1554,7 @@ export type { FastFactData } from './primitives/visual-primitives/core/FastFact'
 export type { DecisionFlowchartData, DecisionNode } from './primitives/visual-primitives/core/DecisionFlowchart';
 export type { TimelineExplorerData } from './primitives/visual-primitives/core/TimelineExplorer';
 export type { VocabularyExplorerData } from './primitives/visual-primitives/core/VocabularyExplorer';
+export type { DeepDiveData } from './primitives/visual-primitives/core/deep-dive/types';
 export type { ScaleComparatorData, CelestialObject, ReferenceObject } from './primitives/visual-primitives/astronomy/ScaleComparator';
 export type { DayNightSeasonsData, LocationMarker } from './primitives/visual-primitives/astronomy/DayNightSeasons';
 export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './primitives/visual-primitives/astronomy/MoonPhasesLab';
@@ -1608,6 +1611,7 @@ export type { NumberLineData, NumberLineOperation, NumberLineChallenge } from '.
 export type { NumberSequencerData } from './primitives/visual-primitives/math/NumberSequencer';
 export type { BaseTenBlocksData, BaseTenBlocksChallenge } from './primitives/visual-primitives/math/BaseTenBlocks';
 export type { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from './primitives/visual-primitives/math/BalanceScale';
+export type { CompareObjectsData } from './primitives/visual-primitives/math/CompareObjects';
 export type { ComparisonBuilderData } from './primitives/visual-primitives/math/ComparisonBuilder';
 export type { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from './primitives/visual-primitives/math/FunctionMachine';
 export type { NumberBondData } from './primitives/visual-primitives/math/NumberBond';

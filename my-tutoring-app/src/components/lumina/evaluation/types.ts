@@ -3136,6 +3136,19 @@ export interface NetFolderMetrics extends BasePrimitiveMetrics {
   accuracy: number;
 }
 
+export interface DeepDiveMetrics extends BasePrimitiveMetrics {
+  type: 'deep-dive';
+  totalBlocks: number;
+  evaluableBlocks: number;
+  correctAnswers: number;
+  totalAttempts: number;
+  blockBreakdown: Array<{
+    blockId: string;
+    correct: boolean;
+    attempts: number;
+  }>;
+}
+
 // Calendar metrics
 export interface CalendarExplorerMetrics extends BasePrimitiveMetrics {
   type: 'calendar-explorer';
@@ -3152,6 +3165,15 @@ export interface TimelineBuilderMetrics extends BasePrimitiveMetrics {
   orderCorrect: boolean;
   positionAccuracy: number;
   attemptsCount: number;
+}
+
+export interface CompareObjectsMetrics extends BasePrimitiveMetrics {
+  type: 'compare-objects';
+  accuracy: number;
+  attributesTested: string[];
+  totalAttempts: number;
+  correctCount: number;
+  totalChallenges: number;
 }
 
 export type PrimitiveMetrics =
@@ -3322,9 +3344,11 @@ export type PrimitiveMetrics =
   | SpatialSceneMetrics
   | ShapeComposerMetrics
   | NetFolderMetrics
+  | DeepDiveMetrics
   // Calendar
   | CalendarExplorerMetrics
-  | TimelineBuilderMetrics;
+  | TimelineBuilderMetrics
+  | CompareObjectsMetrics;
 
 // =============================================================================
 // Session & Summary Types

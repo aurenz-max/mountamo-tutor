@@ -124,6 +124,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "order":          PriorConfig(3.5, "Arrange 3 objects shortest to longest"),
         "indirect":       PriorConfig(4.5, "Transitive comparison via reference object"),
     },
+    "compare-objects": {
+        "identify_attribute": PriorConfig(1.0, "Identify measurable attributes of objects"),
+        "compare_two":        PriorConfig(1.5, "Direct comparison of 2 objects on a named attribute"),
+        "order_three":        PriorConfig(2.5, "Order 3 objects by a measurable attribute"),
+        "non_standard":       PriorConfig(3.5, "Measure using non-standard units"),
+    },
     "array-grid": {
         "build_array":    PriorConfig(1.5, "Concrete: build array with given dimensions"),
         "count_array":    PriorConfig(2.5, "Pictorial: count total objects in array"),

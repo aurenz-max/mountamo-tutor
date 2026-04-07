@@ -56,6 +56,7 @@ import { generateSpatialScene } from '../../math/gemini-spatial-scene';
 import { generateShapeComposer } from '../../math/gemini-shape-composer';
 import { generateNetFolder } from '../../math/gemini-net-folder';
 import { generateEquationBuilder } from '../../math/gemini-equation-builder';
+import { generateCompareObjects } from '../../math/gemini-compare-objects';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -427,6 +428,13 @@ registerGenerator('equation-builder', async (item, topic, gradeContext) => ({
   type: 'equation-builder',
   instanceId: item.instanceId,
   data: await generateEquationBuilder(topic, gradeContext, item.config),
+}));
+
+// Compare Objects (K-1 measurable attribute comparison: length, height, weight, capacity)
+registerGenerator('compare-objects', async (item, topic, gradeContext) => ({
+  type: 'compare-objects',
+  instanceId: item.instanceId,
+  data: await generateCompareObjects(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

@@ -28,6 +28,7 @@ import RatioTable from '../primitives/visual-primitives/math/RatioTable';
 import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
+import CompareObjects from '../primitives/visual-primitives/math/CompareObjects';
 import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
 import NumberBond from '../primitives/visual-primitives/math/NumberBond';
 import NumberSequencer from '../primitives/visual-primitives/math/NumberSequencer';
@@ -69,6 +70,7 @@ import FastFact from '../primitives/visual-primitives/core/FastFact';
 import DigitalSkillsSim from '../primitives/visual-primitives/core/DigitalSkillsSim';
 import TimelineExplorer from '../primitives/visual-primitives/core/TimelineExplorer';
 import VocabularyExplorer from '../primitives/visual-primitives/core/VocabularyExplorer';
+import DeepDive from '../primitives/visual-primitives/core/deep-dive/DeepDive';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 import NestedHierarchy from '../primitives/NestedHierarchy';
@@ -615,6 +617,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'math-fact-fluency': {
     component: MathFactFluency,
     sectionTitle: 'Math Fact Fluency',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'compare-objects': {
+    component: CompareObjects,
+    sectionTitle: 'Compare Objects',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
@@ -1660,6 +1672,17 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  // DeepDive — Orchestrated multi-block learning experience
+  'deep-dive': {
+    component: DeepDive,
+    sectionTitle: 'Deep Dive',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-4xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 
