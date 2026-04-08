@@ -365,8 +365,8 @@ export interface BlueprintCanvasMetrics extends BasePrimitiveMetrics {
   gridSize: [number, number];
 
   // Goal achievement
-  roomsDrawn: number;
-  targetRoomCount: number;
+  elementsDrawn: number;
+  targetElementCount: number;
   targetMet: boolean;
 
   // Process metrics
@@ -1015,6 +1015,26 @@ export interface EquationBuilderMetrics extends BasePrimitiveMetrics {
     correct: boolean;
     attempts: number;
   }>;
+}
+
+export interface ParameterExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'parameter-explorer';
+  predictionsCorrect: number;
+  predictionsTotal: number;
+  parametersExplored: string[];
+  observationsTriggered: number;
+  usedHoldAndVary: boolean;
+  explorationTime: number;
+}
+
+export interface EquationWorkspaceMetrics extends BasePrimitiveMetrics {
+  type: 'equation-workspace';
+  stepsCompleted: number;
+  stepsRequired: number;
+  incorrectOperations: number;
+  hintsUsed: number;
+  solved: boolean;
+  solveTime: number;
 }
 
 export interface FormulaCardMetrics extends BasePrimitiveMetrics {
@@ -3251,6 +3271,8 @@ export type PrimitiveMetrics =
   | FastFactMetrics
   | StrategyPickerMetrics
   | EquationBuilderMetrics
+  | ParameterExplorerMetrics
+  | EquationWorkspaceMetrics
   | HundredsChartMetrics
   | AnalogClockMetrics
   // Exploration

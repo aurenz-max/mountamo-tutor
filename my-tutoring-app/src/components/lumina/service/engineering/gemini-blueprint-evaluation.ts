@@ -7,7 +7,7 @@ import { ai } from "../geminiClient";
 const blueprintEvaluationSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    roomsDetected: {
+    elementsDetected: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
@@ -18,15 +18,15 @@ const blueprintEvaluationSchema: Schema = {
         },
         required: ["name", "identified", "feedback"]
       },
-      description: "List of rooms/spaces detected in the blueprint"
+      description: "List of distinct elements/parts/rooms/zones detected in the blueprint"
     },
-    totalRoomsFound: {
+    totalElementsFound: {
       type: Type.NUMBER,
-      description: "Total number of distinct rooms/spaces identified"
+      description: "Total number of distinct elements identified"
     },
     targetMet: {
       type: Type.BOOLEAN,
-      description: "Whether the student met the target room count requirement"
+      description: "Whether the student met the target element count requirement"
     },
     overallFeedback: {
       type: Type.STRING,
@@ -34,27 +34,27 @@ const blueprintEvaluationSchema: Schema = {
     },
     technicalQuality: {
       type: Type.NUMBER,
-      description: "0-100 score for technical drawing quality (walls, alignment, clarity)"
+      description: "0-100 score for technical drawing quality (lines, alignment, clarity)"
     },
     spatialPlanning: {
       type: Type.NUMBER,
-      description: "0-100 score for spatial planning and room arrangement"
+      description: "0-100 score for spatial planning and element arrangement"
     },
     confidence: {
       type: Type.NUMBER,
       description: "0-100: AI's confidence in this evaluation"
     }
   },
-  required: ["roomsDetected", "totalRoomsFound", "targetMet", "overallFeedback", "technicalQuality", "spatialPlanning", "confidence"]
+  required: ["elementsDetected", "totalElementsFound", "targetMet", "overallFeedback", "technicalQuality", "spatialPlanning", "confidence"]
 };
 
 export interface BlueprintEvaluationResult {
-  roomsDetected: Array<{
+  elementsDetected: Array<{
     name: string;
     identified: boolean;
     feedback: string;
   }>;
-  totalRoomsFound: number;
+  totalElementsFound: number;
   targetMet: boolean;
   overallFeedback: string;
   technicalQuality: number;
@@ -71,7 +71,7 @@ export interface EvaluationProgressCallback {
  *
  * @param canvasImageBase64 - Base64 encoded canvas image (PNG/JPEG)
  * @param assignment - Description of what the student was asked to draw
- * @param targetRoomCount - Expected number of rooms/spaces
+ * @param targetElementCount - Expected number of elements
  * @param viewType - Type of view (plan, elevation, section)
  * @param gradeLevel - Student grade level for appropriate feedback
  * @param callbacks - Optional progress callbacks
@@ -79,7 +79,7 @@ export interface EvaluationProgressCallback {
 export async function evaluateBlueprintCanvas(
   canvasImageBase64: string,
   assignment: string,
-  targetRoomCount: number,
+  targetElementCount: number,
   viewType: 'plan' | 'elevation' | 'section',
   gradeLevel: string,
   callbacks?: EvaluationProgressCallback
@@ -94,47 +94,49 @@ ASSIGNMENT: ${assignment}
 
 STUDENT GRADE LEVEL: ${gradeLevel}
 
-VIEW TYPE: ${viewType} view (${viewType === 'plan' ? 'top-down floor plan' : viewType === 'elevation' ? 'side view' : 'cross-section view'})
+VIEW TYPE: ${viewType} view (${viewType === 'plan' ? 'top-down layout' : viewType === 'elevation' ? 'side view' : 'cross-section view'})
 
-TARGET REQUIREMENT: The student should have drawn at least ${targetRoomCount} distinct rooms/spaces.
+TARGET REQUIREMENT: The student should have drawn at least ${targetElementCount} distinct elements (these could be rooms, components, parts, zones, or sections depending on the assignment).
 
 Analyze the blueprint drawing and provide evaluation:
 
-1. **Room/Space Detection**: Identify all distinct rooms or spaces drawn in the blueprint
-   - Look for enclosed areas bounded by walls/lines
-   - Count each separate space (bedrooms, kitchens, bathrooms, hallways, etc.)
-   - For each room detected, provide:
-     * name: What type of room/space it appears to be (e.g., "bedroom", "kitchen", "living room")
+1. **Element Detection**: Identify all distinct elements drawn in the blueprint
+   - Look for enclosed areas, distinct components, labeled parts, or clearly separated sections
+   - For floor plans: look for rooms bounded by walls
+   - For machine diagrams: look for distinct mechanical components (boom, arm, bucket, joints, etc.)
+   - For maps/layouts: look for distinct zones or areas
+   - For each element detected, provide:
+     * name: What type of element it appears to be (e.g., "bedroom", "boom arm", "swing area")
      * identified: true if clearly identifiable, false if unclear/ambiguous
-     * feedback: Brief encouraging comment about this room (1 sentence)
+     * feedback: Brief encouraging comment about this element (1 sentence)
 
-2. **Target Achievement**: Determine if the student met the ${targetRoomCount} room requirement
-   - targetMet: true if totalRoomsFound >= ${targetRoomCount}, false otherwise
+2. **Target Achievement**: Determine if the student met the ${targetElementCount} element requirement
+   - targetMet: true if totalElementsFound >= ${targetElementCount}, false otherwise
 
 3. **Technical Quality** (0-100 score):
-   - Are walls/lines relatively straight and clear?
+   - Are lines relatively straight and clear?
    - Is the grid used for alignment?
-   - Are rooms enclosed properly (no missing walls)?
+   - Are elements properly defined (enclosed areas, clear boundaries)?
    - Are proportions reasonable?
-   - Grade-appropriate expectations: ${gradeLevel === 'Kindergarten' || gradeLevel === 'Grade 1' ? 'Simple shapes are fine, focus on whether spaces are enclosed' : gradeLevel === 'Grade 2' || gradeLevel === 'Grade 3' ? 'Expect clearer walls and better alignment' : 'Expect precise technical drawing with good use of grid'}
+   - Grade-appropriate expectations: ${gradeLevel === 'Kindergarten' || gradeLevel === 'Grade 1' ? 'Simple shapes are fine, focus on whether elements are distinguishable' : gradeLevel === 'Grade 2' || gradeLevel === 'Grade 3' ? 'Expect clearer lines and better alignment' : 'Expect precise technical drawing with good use of grid'}
 
 4. **Spatial Planning** (0-100 score):
-   - Are rooms arranged logically (e.g., bathroom near bedrooms, kitchen accessible)?
-   - Are room sizes reasonable relative to each other?
+   - Are elements arranged logically for the topic?
+   - Are sizes reasonable relative to each other?
    - Is space used efficiently?
-   - Does the layout make functional sense?
+   - Does the layout make functional sense for the subject?
 
 5. **Overall Feedback**:
    - Provide 2-3 sentences of encouraging, constructive feedback
    - Celebrate what they did well
-   - If target not met, gently encourage adding more rooms
+   - If target not met, gently encourage adding more elements
    - Use age-appropriate language for ${gradeLevel}
 
 EVALUATION GUIDELINES:
 - Be encouraging and positive - this is about learning spatial reasoning
 - Focus on effort and understanding, not perfection
-- For younger students (K-2), simple enclosed shapes count as rooms
-- For older students (3-5), expect more detailed/realistic room layouts
+- For younger students (K-2), simple enclosed shapes count as elements
+- For older students (3-5), expect more detailed/realistic layouts
 - Even rough sketches should be valued if they show understanding
 - Confidence score should reflect clarity of the drawing (blurry/faint = lower confidence)
 
@@ -176,8 +178,8 @@ Return a detailed evaluation following the schema.`;
     callbacks?.onProgress?.('complete', 'Evaluation complete!');
 
     return {
-      roomsDetected: parsed.roomsDetected || [],
-      totalRoomsFound: parsed.totalRoomsFound || 0,
+      elementsDetected: parsed.elementsDetected || [],
+      totalElementsFound: parsed.totalElementsFound || 0,
       targetMet: parsed.targetMet || false,
       overallFeedback: parsed.overallFeedback || "Great effort on your blueprint!",
       technicalQuality: parsed.technicalQuality || 50,

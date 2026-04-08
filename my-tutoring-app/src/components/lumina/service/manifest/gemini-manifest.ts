@@ -305,43 +305,19 @@ STRUCTURE:
 2. objectiveBlocks: Array where EACH objective has its own dedicated components
 3. finalAssessment: Optional quiz/flashcards covering ALL objectives (at the end)
 
-## COMPONENT SELECTION BY SUBJECT:
-- Elementary Math (Counting, Addition, Subtraction) → 'number-line', 'bar-model', 'tape-diagram'
-- Elementary Math (Place Value) → 'base-ten-blocks', 'place-value-chart'
-- Elementary Math (Fractions) → 'fraction-circles', 'fraction-bar'
-- Elementary Math (Multiplication) → 'array-grid', 'area-model', 'bar-model'
-- Elementary Math (Geometry) → 'shape-builder'
-- Elementary Math (Patterns, Input-Output) → 'function-machine'
-- Elementary Math (Data, Counting Frequency) → 'dot-plot'
-- Elementary/Middle School Math (Prime Factorization, GCF, LCM) → 'factor-tree'
-- Middle School Math (Ratios, Proportions, Unit Rates) → 'double-number-line', 'ratio-table'
-- Middle School Math (Percent, Conversions) → 'double-number-line', 'percent-bar'
-- Middle School Math (Statistics, Mean, Median, Mode, Data Distribution) → 'dot-plot'
-- Middle School Math (Comparing Data Sets) → 'dot-plot' (parallel mode)
-- Middle School Math (Multi-digit Multiplication, Distributive Property) → 'area-model'
-- Middle School Math (Functions, Function Notation) → 'function-machine', 'graph-board'
-- Middle School Math (Ordered Pairs, Coordinate Plane) → 'coordinate-graph'
-- Middle School Math (Slope, Rise Over Run) → 'slope-triangle', 'coordinate-graph'
-- Pre-Algebra/Algebra (Equations, Equality, Solving) → 'balance-scale', 'tape-diagram'
-- Algebra (Linear Equations, Slope, Intercepts, Systems of Equations) → 'slope-triangle', 'coordinate-graph', 'systems-equations-visualizer', 'graph-board'
-- Algebra (Systems of Equations, Substitution, Elimination) → 'systems-equations-visualizer', 'coordinate-graph'
-- Algebra (Linear Functions, Function Concepts) → 'function-machine', 'graph-board', 'coordinate-graph'
-- Geometry (Parallel/Perpendicular Lines, Angle of Inclination) → 'slope-triangle', 'coordinate-graph'
-- Algebra (Binomial/Polynomial Multiplication) → 'area-model' (algebraic mode)
-- Algebra 2 (Quadratic Functions, Parabolas, Vertex Form) → 'coordinate-graph'
-- Algebra 2 (Function Composition, Inverse Functions) → 'function-machine'
-- Algebra 2 (Matrices, Determinants, Matrix Operations, Solving Systems with Matrices) → 'matrix-display', 'systems-equations-visualizer'
-- Precalculus (Matrix Transformations, Inverse Matrices) → 'matrix-display'
-- Precalculus (Function Families, Transformations) → 'coordinate-graph'
-- Math Problem-Solving → 'annotated-example' for worked solutions, 'tape-diagram' for word problems
-- Science/Chemistry → 'molecule-viewer', 'periodic-table', 'formula-card', 'custom-visual'
-- Biology/Life Sciences (K-8) → 'species-profile' for dinosaurs, animals, plants, extinct/living species; perfect for paleontology, zoology, taxonomy, habitats, adaptations, ecosystems, food chains
-- Engineering/Simple Machines (K-5) → 'lever-lab' for levers, balance, mechanical advantage; 'pulley-system-builder' for pulleys, lifting, rope systems; 'ramp-lab' for inclined planes, ramps, friction, force trade-offs; 'wheel-axle-explorer' for wheel and axle, doorknobs, winches, steering wheels, gear ratios
-- Foundational Concepts (IDENTIFY objectives) → 'foundation-explorer' for introducing key vocabulary, parts, and components across all subjects
-- History/Social Studies → 'comparison-panel', 'generative-table', 'feature-exhibit'
-- Language Arts → 'sentence-analyzer', 'word-builder', 'concept-card-grid'
-- Any topic with visuals → 'image-panel', 'image-comparison', 'media-player'
-- Vocabulary/Memorization → 'flashcard-deck', 'concept-card-grid'
+## DEEP-DIVE: THE DEFAULT FOR BROAD COVERAGE
+
+'deep-dive' is a meta-primitive that orchestrates modular blocks (hero images, key facts, data tables, timelines, compare/contrast, MC questions, fill-in-the-blank, prose, pull quotes, mini-simulations) into a cohesive vertical scroll lesson. It adapts its block selection to the topic — a science topic gets diagrams + data tables, a history topic gets timelines + compare/contrast.
+
+USE 'deep-dive' when:
+- The objective needs broad topic coverage or background knowledge
+- No specialist interactive primitive exists for the topic (e.g., history, social studies, general science overviews)
+- The objective verb is EXPLAIN or IDENTIFY and the content is informational
+- You would otherwise reach for 'feature-exhibit', 'custom-visual', or 'generative-table' — 'deep-dive' does what they do but better
+
+DO NOT use 'deep-dive' when:
+- A specialist interactive primitive exists (e.g., use 'fraction-circles' for fractions, 'slope-triangle' for slope, 'lever-lab' for levers)
+- The objective is pure practice/drill (use 'knowledge-check' or the specialist primitive's eval modes)
 
 ## RULES FOR EACH OBJECTIVE BLOCK:
 1. Include 2-4 components per objective (not too few, not too many)
@@ -349,101 +325,10 @@ STRUCTURE:
    - Phase 1 (Introduce): Explain core vocabulary/concepts, including visual exhibits if relevant
    - Phase 2 (Visualize): Demonstrate with an interactive or visual tool
    - Phase 3 (Apply): Practice or applications
-   
-3. **CRITICAL: For each phase, consult the COMPONENT SELECTION BY SUBJECT section above 
-   to choose the MOST SPECIFIC component for the topic.** 
-   - If teaching fractions → use 'fraction-circles' or 'fraction-bar', NOT 'custom-visual'
-   - If teaching systems of equations → use 'systems-equations-visualizer', NOT 'coordinate-graph'
-   - If teaching slope → use 'slope-triangle', NOT 'annotated-example'
-   
+3. Always choose the MOST SPECIFIC component from the catalog for the topic.
+   Read each component's description carefully — prefer domain-specific interactive tools over generic display components.
 4. Each component's intent MUST directly address its parent objective
 5. Use instanceIds that reference the objective (e.g., 'obj1-number-line')
-## EXAMPLE MANIFEST (Addition for Kindergarten with 3 objectives):
-
-{
-  "topic": "Addition for Kindergarten",
-  "gradeLevel": "kindergarten",
-  "themeColor": "#3b82f6",
-  "curatorBrief": {
-    "instanceId": "curator-brief-1",
-    "title": "Welcome to Addition!",
-    "intent": "Create a warm, engaging introduction about adding numbers together. Preview all three learning objectives in kid-friendly language."
-  },
-  "objectiveBlocks": [
-    {
-      "objectiveId": "obj1",
-      "objectiveText": "Understand what addition means",
-      "objectiveVerb": "identify",
-      "components": [
-        {
-          "componentId": "concept-card-grid",
-          "instanceId": "obj1-concepts",
-          "title": "What is Addition?",
-          "intent": "Define addition in simple terms. Key concepts: 'putting together', 'more', 'total'. Use relatable examples like toys or snacks."
-        },
-        {
-          "componentId": "custom-visual",
-          "instanceId": "obj1-visual",
-          "title": "See Addition in Action",
-          "intent": "Create a simple animation showing two groups of objects coming together. Reinforce that addition means combining.",
-          "config": {"subject": "Mathematics", "keyTerms": ["addition", "combine", "together"]}
-        }
-      ]
-    },
-    {
-      "objectiveId": "obj2",
-      "objectiveText": "Count objects to add them",
-      "objectiveVerb": "apply",
-      "components": [
-        {
-          "componentId": "bar-model",
-          "instanceId": "obj2-bar-model",
-          "title": "Counting Objects",
-          "intent": "Show 3 apples + 2 apples = 5 apples using a bar model visualization. Emphasize counting each group then counting the total."
-        },
-        {
-          "componentId": "number-line",
-          "instanceId": "obj2-number-line",
-          "title": "Hop Along the Number Line",
-          "intent": "Demonstrate 3 + 2 = 5 by starting at 3 and hopping 2 spaces to land on 5. Range 0-10."
-        },
-        {
-          "componentId": "knowledge-check",
-          "instanceId": "obj2-practice",
-          "title": "Try Counting!",
-          "intent": "Simple counting-based addition: Show 2 balls and 3 balls, ask how many total?",
-          "config": {"problemType": "multiple_choice", "difficulty": "easy"}
-        }
-      ]
-    },
-    {
-      "objectiveId": "obj3",
-      "objectiveText": "Recognize the plus sign (+) and equals sign (=)",
-      "objectiveVerb": "identify",
-      "components": [
-        {
-          "componentId": "concept-card-grid",
-          "instanceId": "obj3-symbols",
-          "title": "Meet the Math Symbols",
-          "intent": "Introduce + and = signs. Explain + means 'add' or 'and', = means 'equals' or 'is the same as'. Use visual examples."
-        },
-        {
-          "componentId": "annotated-example",
-          "instanceId": "obj3-example",
-          "title": "Reading a Math Sentence",
-          "intent": "Walk through reading '2 + 3 = 5' step by step. Annotate each symbol's meaning."
-        }
-      ]
-    }
-  ],
-  "finalAssessment": {
-    "componentId": "knowledge-check",
-    "instanceId": "final-quiz",
-    "title": "Show What You Learned!",
-    "intent": "Create 2-3 questions that cover ALL objectives: one about what addition means, one counting problem, one symbol recognition.",
-    "config": {"problemType": "multiple_choice", "count": 3, "difficulty": "easy"}
-  }
-}
 
 Now generate the manifest for: "${topic}" (${gradeLevel})
 Return ONLY valid JSON matching the schema.`;

@@ -50,7 +50,9 @@ export interface BlueprintCanvasData {
   showGrid: boolean;                    // Display grid lines
   snapToGrid: boolean;                  // Constrain to intersections
   viewType: 'plan' | 'elevation' | 'section'; // View type
-  targetRoomCount?: number;             // Optional: Expected number of rooms
+  targetElementCount?: number;          // Optional: Expected number of elements to draw
+  elementLabel?: string;                // What to call the elements (e.g., "rooms", "components", "parts")
+  challengeText?: string;              // Gemini-generated challenge prompt for the student
   showMeasurements: boolean;            // Show dimension labels
   theme: 'blueprint' | 'technical' | 'sketch';
 
@@ -77,7 +79,9 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
     showGrid = true,
     snapToGrid = true,
     viewType = 'plan',
-    targetRoomCount,
+    targetElementCount,
+    elementLabel = 'elements',
+    challengeText,
     showMeasurements = true,
     theme = 'blueprint',
     instanceId,
@@ -262,7 +266,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
           params: {
             canvasImageBase64: canvasImage,
             assignment: description,
-            targetRoomCount: targetRoomCount || 0,
+            targetElementCount: targetElementCount || 0,
             viewType,
             gradeLevel: 'Grade 3', // TODO: Get actual grade level from context if available
           }
@@ -276,33 +280,33 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
       const evaluation = await response.json();
       setEvaluationProgress('Processing feedback...');
 
-      // Update detected rooms with AI results
-      const detectedRoomData: Room[] = evaluation.roomsDetected.map((room: { name: string }, idx: number) => ({
-        id: `room-${idx}`,
-        name: room.name,
+      // Update detected elements with AI results
+      const detectedElementData: Room[] = (evaluation.elementsDetected || evaluation.roomsDetected || []).map((el: { name: string }, idx: number) => ({
+        id: `element-${idx}`,
+        name: el.name,
         x: 0,
         y: 0,
         width: 0,
         height: 0,
       }));
-      setDetectedRooms(detectedRoomData);
+      setDetectedRooms(detectedElementData);
 
-      const roomsDrawn = evaluation.totalRoomsFound;
+      const elementsDrawn = evaluation.totalElementsFound ?? evaluation.totalRoomsFound ?? 0;
       const targetMet = evaluation.targetMet;
 
       // Calculate overall score based on AI evaluation
-      const roomScore = targetRoomCount
-        ? Math.min(100, (roomsDrawn / targetRoomCount) * 100)
+      const elementScore = targetElementCount
+        ? Math.min(100, (elementsDrawn / targetElementCount) * 100)
         : (hasDrawings ? 100 : 0);
       const qualityScore = (evaluation.technicalQuality + evaluation.spatialPlanning) / 2;
-      const score = (roomScore * 0.6) + (qualityScore * 0.4); // 60% completion, 40% quality
+      const score = (elementScore * 0.6) + (qualityScore * 0.4); // 60% completion, 40% quality
 
       const metrics: BlueprintCanvasMetrics = {
         type: 'blueprint-canvas',
         viewType,
         gridSize,
-        roomsDrawn,
-        targetRoomCount: targetRoomCount || 0,
+        elementsDrawn,
+        targetElementCount: targetElementCount || 0,
         targetMet,
         timeSpent,
         measurementsAdded: showMeasurements,
@@ -317,7 +321,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
         {
           studentWork: {
             canvasImage,
-            detectedRooms: detectedRoomData,
+            detectedRooms: detectedElementData,
             aiEvaluation: evaluation,
           },
         }
@@ -381,9 +385,9 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
             <p className="text-sm text-slate-400">{description}</p>
           </div>
         </div>
-        {targetRoomCount && (
+        {(challengeText || targetElementCount) && (
           <p className="text-sm text-slate-300 mt-2">
-            Challenge: Draw a floor plan with at least {targetRoomCount} rooms
+            {challengeText || `Challenge: Draw at least ${targetElementCount} ${elementLabel}`}
           </p>
         )}
       </div>
@@ -481,7 +485,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
           </div>
 
           {/* Progress */}
-          {targetRoomCount && (
+          {targetElementCount && (
             <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
               <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                 <Layers size={20} />
@@ -489,13 +493,13 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
               </h4>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-slate-300">
-                  <span>Rooms Detected:</span>
-                  <span className="font-bold text-blue-400">{detectedRooms.length} / {targetRoomCount}</span>
+                  <span>{elementLabel.charAt(0).toUpperCase() + elementLabel.slice(1)} Detected:</span>
+                  <span className="font-bold text-blue-400">{detectedRooms.length} / {targetElementCount}</span>
                 </div>
                 <div className="w-full bg-slate-700 rounded-full h-2">
                   <div
                     className="bg-blue-500 h-2 rounded-full transition-all"
-                    style={{ width: `${Math.min(100, (detectedRooms.length / targetRoomCount) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (detectedRooms.length / targetElementCount) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -603,17 +607,17 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
                 </div>
               )}
 
-              {/* Rooms Detected */}
-              {evalData.roomsDetected && evalData.roomsDetected.length > 0 && (
+              {/* Elements Detected */}
+              {evalData.elementsDetected && evalData.elementsDetected.length > 0 && (
                 <div className="group relative bg-gradient-to-br from-amber-500/10 to-orange-500/10 backdrop-blur-sm rounded-xl p-4 border border-amber-500/30 hover:border-amber-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/20">
                   <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-amber-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-xl"></div>
                   <div className="relative z-10">
                     <h4 className="text-sm font-bold text-amber-300 mb-3 flex items-center gap-2">
-                      <span className="text-lg">🏠</span>
-                      Rooms Detected ({evalData.totalRoomsFound})
+                      <span className="text-lg">🔍</span>
+                      {elementLabel.charAt(0).toUpperCase() + elementLabel.slice(1)} Detected ({evalData.totalElementsFound})
                     </h4>
                     <div className="space-y-2">
-                      {evalData.roomsDetected.map((room: any, idx: number) => (
+                      {evalData.elementsDetected.map((room: any, idx: number) => (
                         <div
                           key={idx}
                           className="group/room bg-slate-800/50 rounded-lg p-2 border border-slate-700 hover:border-amber-400/40 transition-all duration-200 hover:bg-slate-800/80"
@@ -633,7 +637,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
               )}
 
               {/* Target Achievement Badge */}
-              {targetRoomCount && (
+              {targetElementCount && (
                 <div className={`group relative backdrop-blur-sm rounded-xl p-3 border transition-all duration-300 ${
                   evalData.targetMet
                     ? 'bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 hover:border-green-400/50 hover:shadow-lg hover:shadow-green-500/20'
@@ -651,7 +655,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
                         {evalData.targetMet ? 'Target Achieved!' : 'Keep Going!'}
                       </p>
                       <p className="text-xs text-slate-400">
-                        {evalData.totalRoomsFound} of {targetRoomCount} rooms drawn
+                        {evalData.totalElementsFound} of {targetElementCount} {elementLabel} drawn
                       </p>
                     </div>
                   </div>
@@ -666,8 +670,8 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
             <h4 className="text-sm font-semibold text-blue-300 mb-2">Tips:</h4>
             <ul className="text-xs text-slate-300 space-y-1">
               <li>• Use the grid to keep your drawing aligned</li>
-              <li>• Draw walls as connected lines</li>
-              <li>• Label rooms and add measurements</li>
+              <li>• Draw lines to outline {elementLabel} and features</li>
+              <li>• Label key parts and add measurements</li>
               <li>• Use the eraser to refine your design</li>
             </ul>
           </div>

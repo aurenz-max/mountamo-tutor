@@ -45,13 +45,15 @@ export interface GeneratedComponent<TData = unknown> {
  *
  * @param item - The manifest item describing what to generate
  * @param topic - The learning topic (e.g., "fractions", "photosynthesis")
- * @param gradeContext - Grade-appropriate context string
+ * @param gradeContext - Grade-appropriate context string for Gemini prompts
+ * @param gradeLevel - Raw grade level key (e.g., 'undergraduate', 'elementary')
  * @returns Generated component data or null if generation fails
  */
 export type ContentGenerator<TConfig = ManifestItemConfig, TData = unknown> = (
   item: ManifestItem<TConfig>,
   topic: string,
-  gradeContext: string
+  gradeContext: string,
+  gradeLevel: string
 ) => Promise<GeneratedComponent<TData> | null>;
 
 // ============================================================================

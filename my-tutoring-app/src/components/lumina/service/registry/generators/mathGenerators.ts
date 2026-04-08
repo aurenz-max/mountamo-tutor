@@ -57,6 +57,8 @@ import { generateShapeComposer } from '../../math/gemini-shape-composer';
 import { generateNetFolder } from '../../math/gemini-net-folder';
 import { generateEquationBuilder } from '../../math/gemini-equation-builder';
 import { generateCompareObjects } from '../../math/gemini-compare-objects';
+import { generateParameterExplorer } from '../../math/gemini-parameter-explorer';
+import { generateEquationWorkspace } from '../../math/gemini-equation-workspace';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -435,6 +437,20 @@ registerGenerator('compare-objects', async (item, topic, gradeContext) => ({
   type: 'compare-objects',
   instanceId: item.instanceId,
   data: await generateCompareObjects(topic, gradeContext, item.config),
+}));
+
+// Parameter Explorer (6-12+ multi-variable formula exploration with sliders & predictions)
+registerGenerator('parameter-explorer', async (item, topic, gradeContext) => ({
+  type: 'parameter-explorer',
+  instanceId: item.instanceId,
+  data: await generateParameterExplorer(topic, gradeContext, item.config),
+}));
+
+// Equation Workspace (9-12+ algebraic manipulation)
+registerGenerator('equation-workspace', async (item, topic, gradeContext) => ({
+  type: 'equation-workspace',
+  instanceId: item.instanceId,
+  data: await generateEquationWorkspace(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

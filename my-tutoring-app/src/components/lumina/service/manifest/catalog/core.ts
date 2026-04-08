@@ -150,18 +150,13 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'feature-exhibit',
-    description: 'Deep-dive editorial section with multiple subsections. Use for comprehensive exploration of a topic.',
+    description: 'Static editorial section with subsections. Legacy — prefer deep-dive for comprehensive topic exploration.',
     supportsEvaluation: true,
   },
   {
     id: 'annotated-example',
     description: 'Step-by-step worked example with multi-layer annotations (procedural steps, strategic thinking, common errors, conceptual connections). Use for demonstrating problem-solving processes in math, science, or any domain requiring systematic reasoning.',
     constraints: 'Best for elementary and above. Requires a well-defined problem with clear solution steps.',
-  },
-  {
-    id: 'nested-hierarchy',
-    description: 'Interactive tree structure for exploring hierarchical systems (organizational charts, taxonomies, system architectures, anatomical structures). Users navigate through expandable nodes to see relationships and detailed information about each component.',
-    constraints: 'Best for topics with clear hierarchical organization (2-4 levels deep). Use for biology (body systems), government (branches), classification systems, or any nested organizational structure.',
   },
   {
     id: 'take-home-activity',

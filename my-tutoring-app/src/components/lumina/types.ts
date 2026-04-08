@@ -755,21 +755,6 @@ export interface AnnotatedExampleData {
   steps: ExampleStep[];
 }
 
-export interface HierarchyNode {
-  id: string;
-  label: string;
-  type?: string;
-  icon: string;
-  description: string;
-  children?: HierarchyNode[];
-}
-
-export interface NestedHierarchyData {
-  title: string;
-  description?: string;
-  root_node: HierarchyNode;
-  defaultExpanded?: string[];
-}
 
 // Re-export from component (single source of truth)
 export type { ImagePanelData, ImageAnnotation, StudentPlacement } from './primitives/ImagePanel';
@@ -992,7 +977,7 @@ export interface ExhibitData {
   graphBoards?: GraphBoardData[];
   scaleSpectrums?: ScaleSpectrumData[];
   annotatedExamples?: AnnotatedExampleData[];
-  nestedHierarchies?: NestedHierarchyData[];
+
   imagePanels?: ImagePanelData[];
   takeHomeActivities?: TakeHomeActivityData[];
   interactivePassages?: InteractivePassageData[];
@@ -1058,7 +1043,6 @@ export type ComponentId =
   | 'generative-table'   // Structured data
   | 'sentence-analyzer'  // Linguistic breakdown
   | 'graph-board'        // Interactive polynomial graphing tool
-  | 'nested-hierarchy'   // Hierarchical tree structure with detailed views
 
   // Math & Science Engines
   | 'formula-card'       // LaTeX/Math display
@@ -1081,6 +1065,7 @@ export type ComponentId =
   | 'array-grid'         // Array/grid for multiplication and combinatorics
   | 'double-number-line' // Two parallel number lines showing proportional relationships
   | 'equation-builder'   // Interactive equation building and solving
+  | 'equation-workspace' // Interactive equation workspace
   | 'tape-diagram'       // Tape diagram / bar model for part-whole and comparison word problems
   | 'factor-tree'        // Tree diagram showing prime factorization
   | 'function-machine'   // Visual machine with input hopper, rule display, and output chute for function concepts
@@ -1105,6 +1090,7 @@ export type ComponentId =
   | 'ten-frame'          // 2x5 grid manipulative for subitizing, composing/decomposing numbers, and making ten (K-2)
   | 'time-sequencer'     // Interactive time sequencing for building temporal reasoning
   | 'counting-board'     // Flexible counting workspace with draggable objects, subitizing, and counting strategies (K-1)
+  | 'parameter-explorer' // Interactive parameter exploration for function and equation understanding
   | 'pattern-builder'   // Pattern recognition, extension, creation for algebraic thinking (K-3)
   | 'skip-counting-runner' // Rhythmic skip counting with number line jumps, arrays, and multiplication connection (1-3)
   | 'sorting-station'     // Interactive sorting station for categorizing objects into groups
@@ -1618,6 +1604,7 @@ export type { NumberBondData } from './primitives/visual-primitives/math/NumberB
 export type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
 export type { RatioTableData, RatioTableChallenge } from './primitives/visual-primitives/math/RatioTable';
 export type { EquationBuilderData } from './primitives/visual-primitives/math/EquationBuilder';
+export type { EquationWorkspaceData } from './primitives/visual-primitives/math/EquationWorkspace';
 
 // Chemistry
 export type { MatterExplorerData } from './primitives/visual-primitives/chemistry/MatterExplorer';
@@ -1649,6 +1636,7 @@ export type { CalendarExplorerData } from './primitives/visual-primitives/calend
 export type { TimelineBuilderData } from './primitives/visual-primitives/calendar/TimelineBuilder';
 export type { TimeSequencerData } from './primitives/visual-primitives/math/TimeSequencer';
 export type { NetFolderData } from './primitives/visual-primitives/math/NetFolder';
+export type { ParameterExplorerData } from './primitives/visual-primitives/math/ParameterExplorer';
 
 // Literacy
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';

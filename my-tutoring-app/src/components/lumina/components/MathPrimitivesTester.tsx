@@ -53,6 +53,8 @@ import ShapeComposer from '../primitives/visual-primitives/math/ShapeComposer';
 import NetFolder from '../primitives/visual-primitives/math/NetFolder';
 import EquationBuilder from '../primitives/visual-primitives/math/EquationBuilder';
 import CompareObjects from '../primitives/visual-primitives/math/CompareObjects';
+import ParameterExplorer from '../primitives/visual-primitives/math/ParameterExplorer';
+import EquationWorkspace, { type EquationWorkspaceData } from '../primitives/visual-primitives/math/EquationWorkspace';
 
 import type { ShapeBuilderData, ComparisonBuilderData, NumberSequencerData, NumberBondData, MeasurementToolsData, EvalModeDefinition, NumberTracerData } from '../types';
 import {
@@ -68,7 +70,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -123,6 +125,8 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'net-folder', label: 'Net Folder', icon: '📐', topic: '3D Shapes & Surface Area' },
   { value: 'equation-builder', label: 'Equation Builder', icon: '➕', topic: 'K-2 Equations' },
   { value: 'compare-objects', label: 'Compare Objects', icon: '🔍', topic: 'Comparing attributes and properties of objects' },
+  { value: 'parameter-explorer', label: 'Parameter Explorer', icon: '🎛️', topic: 'Exploring how parameters affect functions and graphs' },
+  { value: 'equation-workspace', label: 'Equation Workspace', icon: '⚖️', topic: 'Equation Workspace' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -638,6 +642,28 @@ const PrimitiveRenderer: React.FC<{
             subskillId: 'compare-attributes',
             objectiveId: 'compare-object-properties',
           }}
+        />
+      );
+    case 'parameter-explorer':
+      return (
+        <ParameterExplorer
+          data={{
+            ...(data as Parameters<typeof ParameterExplorer>[0]['data']),
+            instanceId: `parameter-explorer-${Date.now()}`,
+            skillId: 'math-parameter-exploration',
+            subskillId: 'parameter-effects',
+            objectiveId: 'explore-parameter-impact',
+          }}
+        />
+      );
+    case 'equation-workspace':
+      return (
+        <EquationWorkspace
+          {...(data as EquationWorkspaceData)}
+          instanceId={`equation-workspace-${Date.now()}`}
+          skillId="math-equation-workspace"
+          subskillId="equation-solving"
+          objectiveId="solve-equations-step-by-step"
         />
       );
     default:

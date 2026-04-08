@@ -21,6 +21,20 @@ import "./registry/generators";
 /**
  * Convert grade level to descriptive educational context for prompts
  */
+/**
+ * Normalize grade level strings from Gemini (which may be title case like
+ * 'Undergraduate' or 'High School') to the canonical lowercase-kebab keys
+ * used internally (e.g. 'undergraduate', 'high-school').
+ */
+export const normalizeGradeLevel = (gradeLevel: string): string => {
+  const normalized = gradeLevel.toLowerCase().replace(/\s+/g, '-');
+  const VALID_GRADES = new Set([
+    'toddler', 'preschool', 'kindergarten', 'elementary',
+    'middle-school', 'high-school', 'undergraduate', 'graduate', 'phd'
+  ]);
+  return VALID_GRADES.has(normalized) ? normalized : 'elementary';
+};
+
 const getGradeLevelContext = (gradeLevel: string): string => {
   const contexts: Record<string, string> = {
     'toddler': 'toddlers (ages 1-3) - Use very simple language, basic concepts, concrete examples, and playful engagement. Focus on sensory experiences and foundational learning.',
@@ -127,7 +141,8 @@ export const generateComponentContent = async (
   topic: string,
   gradeLevel: string
 ): Promise<any> => {
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const normalizedGrade = normalizeGradeLevel(gradeLevel);
+  const gradeLevelContext = getGradeLevelContext(normalizedGrade);
 
   console.log(`🔧 [generateComponentContent] Processing: ${item.componentId} (${item.instanceId})`);
 
@@ -136,7 +151,7 @@ export const generateComponentContent = async (
     if (DEBUG_CONTENT_REGISTRY) {
       console.log(`  📦 [Registry] Using registered generator for '${item.componentId}'`);
     }
-    return await generator(item, topic, gradeLevelContext);
+    return await generator(item, topic, gradeLevelContext, normalizedGrade);
   }
 
   console.warn(`Unknown component type: ${item.componentId}`);

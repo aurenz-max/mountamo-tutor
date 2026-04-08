@@ -22,6 +22,7 @@ import AreaModel from '../primitives/visual-primitives/math/AreaModel';
 import ArrayGrid from '../primitives/visual-primitives/math/ArrayGrid';
 import DoubleNumberLine from '../primitives/visual-primitives/math/DoubleNumberLine';
 import EquationBuilder from '../primitives/visual-primitives/math/EquationBuilder';
+import EquationWorkspace from '../primitives/visual-primitives/math/EquationWorkspace';
 import PercentBar from '../primitives/visual-primitives/math/PercentBar';
 import FactorTree from '../primitives/visual-primitives/math/FactorTree';
 import RatioTable from '../primitives/visual-primitives/math/RatioTable';
@@ -44,6 +45,7 @@ import TwoWayTable from '../primitives/visual-primitives/math/TwoWayTable';
 import TenFrame from '../primitives/visual-primitives/math/TenFrame';
 import TimeSequencer from '../primitives/visual-primitives/math/TimeSequencer';
 import CountingBoard from '../primitives/visual-primitives/math/CountingBoard';
+import ParameterExplorer from '../primitives/visual-primitives/math/ParameterExplorer';
 import PatternBuilder from '../primitives/visual-primitives/math/PatternBuilder';
 import SkipCountingRunner from '../primitives/visual-primitives/math/SkipCountingRunner';
 import RegroupingWorkbench from '../primitives/visual-primitives/math/RegroupingWorkbench';
@@ -73,7 +75,7 @@ import VocabularyExplorer from '../primitives/visual-primitives/core/VocabularyE
 import DeepDive from '../primitives/visual-primitives/core/deep-dive/DeepDive';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
-import NestedHierarchy from '../primitives/NestedHierarchy';
+
 import ImagePanel from '../primitives/ImagePanel';
 import TakeHomeActivity from '../primitives/TakeHomeActivity';
 import InteractivePassage from '../primitives/InteractivePassage';
@@ -356,14 +358,6 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-4xl mx-auto mb-20',
   },
 
-  'nested-hierarchy': {
-    component: NestedHierarchy,
-    sectionTitle: 'System Structure',
-    showDivider: true,
-    dividerStyle: 'left',
-    allowMultiple: true,
-    containerClassName: 'max-w-6xl mx-auto mb-20',
-  },
 
   'image-panel': {
     component: ImagePanel,
@@ -547,6 +541,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'equation-builder': {
     component: EquationBuilder,
     sectionTitle: 'Equation Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'equation-workspace': {
+    component: EquationWorkspace,
+    sectionTitle: 'Equation Workspace',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
@@ -911,6 +915,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'net-folder': {
     component: NetFolder,
     sectionTitle: 'Net Folder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'parameter-explorer': {
+    component: ParameterExplorer,
+    sectionTitle: 'Parameter Explorer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

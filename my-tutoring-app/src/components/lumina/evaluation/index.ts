@@ -119,6 +119,8 @@ export type {
   FastFactMetrics,
   StrategyPickerMetrics,
   EquationBuilderMetrics,
+  ParameterExplorerMetrics,
+  EquationWorkspaceMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,

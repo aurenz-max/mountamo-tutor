@@ -90,7 +90,6 @@ export const ObjectiveComponentMap: React.FC<ObjectiveComponentMapProps> = ({
       'media-player': '🎬',
       'flashcard-deck': '🗂️',
       'scale-spectrum': '📏',
-      'nested-hierarchy': '🌳',
       'word-builder': '🔤',
       'molecule-viewer': '⚛️',
       'periodic-table': '🧪',

@@ -22,7 +22,7 @@ import { generateConceptCards } from '../../concept-cards/gemini-concept-cards';
 import { generateFeatureExhibit } from '../../feature-exhibit/gemini-feature-exhibit';
 import { generateComparisonPanel } from '../../comparison-panel/gemini-comparison-panel';
 import { generateGenerativeTable } from '../../generative-table/gemini-generative-table';
-import { generateNestedHierarchy } from '../../nested-hierarchy/gemini-nested-hierarchy';
+
 
 // ============================================================================
 // Interactive Component Imports (from dedicated service files)
@@ -194,15 +194,6 @@ registerGenerator('generative-table', async (item, topic, gradeContext) => {
   };
 });
 
-// Nested Hierarchy (hierarchical tree structure)
-registerGenerator('nested-hierarchy', async (item, topic, gradeContext) => {
-  const data = await generateNestedHierarchy(topic, gradeContext, item.intent);
-  return {
-    type: 'nested-hierarchy',
-    instanceId: item.instanceId,
-    data
-  };
-});
 
 // ============================================================================
 // Interactive Components Registration
@@ -381,7 +372,7 @@ registerGenerator('sentence-analyzer', async (item, topic, gradeContext) => {
 // ============================================================================
 
 // Knowledge Check (multiple problem types: MC, T/F, Fill-in, Matching, Sequencing, Categorization)
-registerGenerator('knowledge-check', async (item, topic, gradeContext) => {
+registerGenerator('knowledge-check', async (item, topic, gradeContext, gradeLevel) => {
   const config = getConfig(item);
 
   // When an eval mode is set but no explicit problemType, pick a random
@@ -400,7 +391,7 @@ registerGenerator('knowledge-check', async (item, topic, gradeContext) => {
     }
   }
 
-  const problems = await generateKnowledgeCheck(topic, gradeContext, {
+  const problems = await generateKnowledgeCheck(topic, gradeLevel, {
     problemType: problemType,
     count: config.count || config.problemCount || 1,
     difficulty: config.difficulty,

@@ -148,7 +148,7 @@ const dnaExplorerSchema: Schema = {
         properties: {
           givenStrand: {
             type: Type.STRING,
-            description: "Template strand with some bases replaced by '_' for blanks (e.g., 'A_CG_T')"
+            description: "The FULL template strand with NO blanks or placeholders — all bases visible (e.g., 'ATCGTA'). The student's challenge is writing the complementary strand, not guessing missing template bases."
           },
           task: {
             type: Type.STRING,

@@ -9,7 +9,7 @@
  */
 
 import { PracticeManifest, HydratedPracticeItem, ProblemType } from '../../types';
-import { generateComponentContent } from '../geminiService';
+import { generateComponentContent, normalizeGradeLevel } from '../geminiService';
 import { generateKnowledgeCheck, BloomsTier } from '../knowledge-check/gemini-knowledge-check';
 
 /**
@@ -77,7 +77,7 @@ export async function hydratePracticeManifest(
       try {
         const problems = await generateKnowledgeCheck(
           manifest.topic,
-          manifest.gradeLevel,
+          normalizeGradeLevel(manifest.gradeLevel),
           {
             problemType: item.standardProblem.problemType,
             count: 1,
@@ -115,7 +115,7 @@ async function hydrateAsFallbackProblem(
   try {
     const problems = await generateKnowledgeCheck(
       manifest.topic,
-      manifest.gradeLevel,
+      normalizeGradeLevel(manifest.gradeLevel),
       {
         problemType: 'multiple_choice' as ProblemType,
         count: 1,

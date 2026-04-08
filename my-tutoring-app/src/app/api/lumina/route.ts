@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
         const blueprintEvaluation = await evaluateBlueprintCanvas(
           params.canvasImageBase64,
           params.assignment,
-          params.targetRoomCount,
+          params.targetElementCount,
           params.viewType,
           params.gradeLevel
         );

@@ -337,6 +337,18 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "balance-both-sides": PriorConfig(3.5, "Make both sides of = equal"),
         "rewrite":            PriorConfig(4.0, "Express an equation in a different form"),
     },
+    "parameter-explorer": {
+        "explore":                PriorConfig(1.0, "Free exploration with guided observations"),
+        "predict-direction":      PriorConfig(2.0, "Predict output direction when parameter changes"),
+        "identify-relationship":  PriorConfig(3.0, "Identify which parameter has strongest effect"),
+        "predict-value":          PriorConfig(3.5, "Quantitative prediction of output value"),
+    },
+    "equation-workspace": {
+        "guided-solve":        PriorConfig(1.5, "Operations highlighted as hints, student clicks in order"),
+        "identify-operation":  PriorConfig(2.5, "Given partially-solved equation, identify the next valid step (MC)"),
+        "solve":               PriorConfig(3.0, "Student picks operations freely, single-path validation"),
+        "multi-step":          PriorConfig(4.0, "Longer equations requiring 4+ steps to solve"),
+    },
     # -----------------------------------------------------------------
     # Assessment primitives
     # -----------------------------------------------------------------
