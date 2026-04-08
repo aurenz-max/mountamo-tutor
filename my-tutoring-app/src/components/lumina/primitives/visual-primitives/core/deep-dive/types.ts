@@ -9,6 +9,12 @@
 import type { PrimitiveEvaluationResult } from '../../../../evaluation';
 import type { DeepDiveMetrics } from '../../../../evaluation/types';
 
+// ── Wrapper Layout Strategies ──────────────────────────────────────
+export type WrapperLayout = 'stack' | 'grid_2col' | 'reveal_progressive' | 'masonry';
+
+// ── Size Hints (derived from Pretext height measurement) ──────────
+export type SizeHint = 'compact' | 'standard' | 'wide' | 'full';
+
 // ── Block Type Discriminator ────────────────────────────────────────
 export type BlockType =
   | 'hero-image'
@@ -34,6 +40,8 @@ export interface BaseBlockData {
   tutoringBrief?: string;
   /** How this block connects to the next — narrative flow */
   transitionCue?: string;
+  /** Size hint derived from Pretext height measurement — controls visual weight in layout */
+  sizeHint?: SizeHint;
 }
 
 // ── Display Blocks ──────────────────────────────────────────────────
@@ -77,6 +85,11 @@ export interface ProseBlockData extends BaseBlockData {
     imageBase64: string;
     caption: string;
     altText: string;
+    placement: 'left' | 'right';
+  };
+  /** Optional inset key facts — rendered as a floating card with Pretext text reflow */
+  insetFacts?: {
+    facts: Array<{ icon: string; text: string }>;
     placement: 'left' | 'right';
   };
   /**
@@ -129,18 +142,57 @@ export interface CompareContrastBlockData extends BaseBlockData {
 
 export interface DiagramBlockData extends BaseBlockData {
   blockType: 'diagram';
-  imageBase64?: string;
-  labels: Array<{ text: string; description: string }>;
+  imageBase64: string;
+  caption: string;
+  altText: string;
+  /** 'explore' = AI places labels, student clicks to learn; 'label' = student drags labels, LLM evaluates */
+  interactionMode: 'explore' | 'label';
+  labels: Array<{
+    id: string;
+    text: string;
+    description: string;
+    /** Percentage-based position (0-100). Only present in 'explore' mode — AI-placed via vision model. */
+    position?: { x: number; y: number };
+  }>;
+  /** Context for LLM evaluation in 'label' mode */
+  learningObjective?: string;
 }
 
 export interface MiniSimBlockData extends BaseBlockData {
   blockType: 'mini-sim';
-  prompt: string;
-  sliderLabel: string;
-  sliderMin: number;
-  sliderMax: number;
-  sliderDefault: number;
-  outcomes: Array<{ range: [number, number]; text: string }>;
+  /** Setup context — describes the experiment/scenario */
+  scenario: string;
+  /** 'toggle' = on/off binary; 'slider' = continuous range */
+  controlType: 'toggle' | 'slider';
+  /** Label displayed above the control */
+  controlLabel: string;
+  /** Toggle-specific labels (e.g., "Detector OFF" / "Detector ON") */
+  toggleOffLabel?: string;
+  toggleOnLabel?: string;
+  /** Slider-specific config */
+  sliderMin?: number;
+  sliderMax?: number;
+  sliderStep?: number;
+  sliderUnit?: string;
+  sliderDefault?: number;
+  /** Each state maps a control value to an observable outcome.
+   *  For toggles: exactly 2 states with condition "off" and "on".
+   *  For sliders: 2-4 states with condition as "min-max" range strings (e.g., "0-33"). */
+  states: Array<{
+    condition: string;
+    title: string;
+    description: string;
+    /** The "aha" insight — what this state reveals about the concept */
+    keyObservation: string;
+  }>;
+  /** Optional prediction question asked BEFORE manipulation — makes the block evaluable.
+   *  "What do you think will happen when X?" */
+  prediction?: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  };
 }
 
 export interface ReflectionBlockData extends BaseBlockData {
@@ -166,8 +218,11 @@ export type DeepDiveBlock =
 
 // ── Evaluable block type guard ──────────────────────────────────────
 
-export function isEvaluableBlock(block: DeepDiveBlock): block is MultipleChoiceBlockData | FillInBlankBlockData {
-  return block.blockType === 'multiple-choice' || block.blockType === 'fill-in-blank';
+export function isEvaluableBlock(block: DeepDiveBlock): block is MultipleChoiceBlockData | FillInBlankBlockData | DiagramBlockData | MiniSimBlockData {
+  if (block.blockType === 'multiple-choice' || block.blockType === 'fill-in-blank') return true;
+  if (block.blockType === 'diagram') return (block as DiagramBlockData).interactionMode === 'label';
+  if (block.blockType === 'mini-sim') return !!(block as MiniSimBlockData).prediction;
+  return false;
 }
 
 // ── DeepDive Data (Top-Level) ───────────────────────────────────────
@@ -180,6 +235,8 @@ export interface DeepDiveData {
   blocks: DeepDiveBlock[];
   /** Narrative arc description for AI tutor context */
   narrativeArc?: string;
+  /** Wrapper layout strategy — controls how blocks are spatially arranged */
+  layout?: WrapperLayout;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;

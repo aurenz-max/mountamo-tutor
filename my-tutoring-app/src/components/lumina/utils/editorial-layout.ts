@@ -384,6 +384,105 @@ export function layoutMasonryCards(
   return { cards, numColumns, columnWidth, totalHeight };
 }
 
+// ── 5. Height breakpoints — auto size-hint assignment ────────────
+
+export type SizeHint = 'compact' | 'standard' | 'wide' | 'full';
+
+export interface HeightBreakpoints {
+  compactMaxLines: number;
+  standardMaxLines: number;
+}
+
+const DEFAULT_BREAKPOINTS: HeightBreakpoints = {
+  compactMaxLines: 6,
+  standardMaxLines: 15,
+};
+
+/**
+ * Compute a size hint for a text block based on Pretext height prediction.
+ *
+ * This is the bridge between the Pretext measurement engine and the wrapper
+ * layout system. The wrapper uses size hints to decide card spanning, column
+ * assignment in masonry, and visual weight.
+ *
+ * Rules:
+ *   ≤6 lines  → compact (small card, single masonry column)
+ *   7-15 lines → standard (normal card)
+ *   16+ lines → wide (spans multiple columns in grid/masonry)
+ */
+export function computeSizeHint(
+  text: string | string[],
+  maxWidth: number,
+  font: string = EDITORIAL_FONT,
+  lineHeight: number = EDITORIAL_LINE_HEIGHT,
+  breakpoints: HeightBreakpoints = DEFAULT_BREAKPOINTS,
+): SizeHint {
+  const paragraphs = Array.isArray(text) ? text : [text];
+  let totalLines = 0;
+
+  for (const para of paragraphs) {
+    if (!para || para.trim().length === 0) continue;
+    const { lineCount } = predictParagraphHeight(para, font, maxWidth, lineHeight);
+    totalLines += lineCount;
+  }
+
+  if (totalLines <= breakpoints.compactMaxLines) return 'compact';
+  if (totalLines <= breakpoints.standardMaxLines) return 'standard';
+  return 'wide';
+}
+
+/**
+ * Compute size hints for an array of blocks based on their text content.
+ * Non-text blocks get default hints based on their type.
+ */
+export function computeBlockSizeHints(
+  blocks: Array<{
+    blockType: string;
+    paragraphs?: string[];
+    text?: string;
+    facts?: Array<{ text: string }>;
+    question?: string;
+    rows?: string[][];
+  }>,
+  containerWidth: number,
+): SizeHint[] {
+  return blocks.map((block) => {
+    switch (block.blockType) {
+      case 'hero-image':
+        return 'full' as SizeHint;
+
+      case 'prose':
+        if (block.paragraphs && block.paragraphs.length > 0) {
+          return computeSizeHint(block.paragraphs, containerWidth);
+        }
+        return 'standard' as SizeHint;
+
+      case 'pull-quote':
+        return block.text
+          ? computeSizeHint(block.text, containerWidth)
+          : 'compact' as SizeHint;
+
+      case 'key-facts':
+        if (block.facts) {
+          const factTexts = block.facts.map((f) => f.text);
+          return computeSizeHint(factTexts, containerWidth);
+        }
+        return 'standard' as SizeHint;
+
+      case 'data-table':
+        // Tables are always at least standard; 5+ rows → wide
+        if (block.rows && block.rows.length >= 5) return 'wide' as SizeHint;
+        return 'standard' as SizeHint;
+
+      case 'multiple-choice':
+        return 'compact' as SizeHint;
+
+      default:
+        return 'standard' as SizeHint;
+    }
+  });
+}
+
 // ── Cache management ────────────────────────────────────────────────
 
 /** Clear all prepare caches. Call on unmount or large content changes. */

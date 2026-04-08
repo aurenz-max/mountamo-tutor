@@ -46,6 +46,14 @@ function useRevealAnimation(enabled: boolean) {
     (el: HTMLDivElement | null) => {
       observerRef.current?.disconnect();
       if (!enabled || !el) return;
+
+      // Check if already in view (handles race where element mounts already visible)
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0 && rect.height > 0) {
+        setVisible(true);
+        return;
+      }
+
       observerRef.current = new IntersectionObserver(
         ([entry]) => { if (entry?.isIntersecting) setVisible(true); },
         { threshold: 0.15 },
@@ -182,6 +190,98 @@ const FigureRenderer: React.FC<FigureRendererProps> = ({ paragraphs, figure, rev
             {figure.caption}
           </p>
         )}
+      </div>
+
+      <PositionedLines
+        lines={lines}
+        lineHeight={EDITORIAL_LINE_HEIGHT}
+        totalHeight={totalHeight}
+        accessibleText={paragraphs.join('\n\n')}
+        reveal={reveal}
+      />
+    </div>
+  );
+};
+
+// ── Inset Facts Renderer ────────────────────────────────────────────
+
+interface InsetFactsRendererProps {
+  paragraphs: string[];
+  insetFacts: NonNullable<ProseBlockData['insetFacts']>;
+  reveal: boolean;
+}
+
+const InsetFactsRenderer: React.FC<InsetFactsRendererProps> = ({ paragraphs, insetFacts, reveal }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const insetRef = useRef<HTMLDivElement | null>(null);
+  const [lines, setLines] = useState<LayoutLineWithPosition[]>([]);
+  const [insetReady, setInsetReady] = useState(false);
+
+  // Measure the inset card once it mounts, then reflow prose around it
+  const doLayout = useCallback(() => {
+    const container = containerRef.current;
+    const insetEl = insetRef.current;
+    if (!container || !insetEl) return;
+
+    const containerWidth = container.clientWidth;
+    const insetWidth = insetEl.offsetWidth + FIGURE_GAP;
+    const insetHeight = insetEl.offsetHeight + FIGURE_GAP;
+
+    if (insetWidth <= FIGURE_GAP || insetHeight <= FIGURE_GAP) return;
+
+    const rect: FigureRect = {
+      placement: insetFacts.placement,
+      width: insetWidth,
+      height: insetHeight,
+    };
+
+    const laid = layoutParagraphsAroundFigure(
+      paragraphs, EDITORIAL_FONT, containerWidth, rect, EDITORIAL_LINE_HEIGHT, PARAGRAPH_GAP,
+    );
+    setLines(laid);
+  }, [paragraphs, insetFacts.placement, insetReady]);
+
+  useEffect(() => {
+    doLayout();
+    const observer = new ResizeObserver(() => doLayout());
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [doLayout]);
+
+  // Signal readiness after first paint so layout recalculates with real dimensions
+  useEffect(() => {
+    if (insetRef.current) {
+      requestAnimationFrame(() => setInsetReady(true));
+    }
+  }, []);
+
+  const totalHeight = lines.length > 0
+    ? Math.max(
+        lines[lines.length - 1].y + EDITORIAL_LINE_HEIGHT,
+        (insetRef.current?.offsetHeight ?? 0),
+      )
+    : 0;
+
+  return (
+    <div ref={containerRef} className="relative" style={{ minHeight: totalHeight }}>
+      {/* Inset facts card — positioned like a figure but renders key facts */}
+      <div
+        ref={insetRef}
+        className={`absolute top-0 w-2/5 ${
+          insetFacts.placement === 'left' ? 'left-0' : 'right-0'
+        }`}
+      >
+        <div className="rounded-xl backdrop-blur-md bg-slate-800/60 border border-blue-400/20 p-4 space-y-3">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-blue-400/70 mb-2">
+            Key Concepts
+          </div>
+          {insetFacts.facts.map((fact, i) => (
+            <div key={i} className="flex items-start gap-2.5">
+              <span className="text-lg shrink-0 mt-0.5">{fact.icon}</span>
+              <p className="text-sm leading-relaxed text-slate-300">{fact.text}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <PositionedLines
@@ -355,8 +455,9 @@ const SimpleProse: React.FC<SimpleProseProps> = ({ paragraphs, showDropCap = tru
 // ── Main Component ───────────────────────────────────────────────────
 
 const ProseBlock: React.FC<ProseBlockProps> = ({ data, index }) => {
-  const { paragraphs, figure, label, layout: layoutMode, reveal = false } = data;
+  const { paragraphs, figure, insetFacts, label, layout: layoutMode, reveal = false } = data;
   const hasFigure = !!figure?.imageBase64;
+  const hasInsetFacts = !!insetFacts?.facts?.length;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -375,13 +476,18 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index }) => {
   const resolvedLayout = useMemo(() => {
     if (layoutMode === 'masonry' && paragraphs.length >= MASONRY_MIN_PARAGRAPHS) return 'masonry';
     if (layoutMode === 'columns') return 'columns';
+    if (hasInsetFacts) return 'inset-facts';
     if (hasFigure) return 'flow';
+    // Don't auto-switch to columns when reveal is enabled — the reveal animation
+    // is designed for paragraph-level fading (SimpleProse), not absolute-positioned
+    // Pretext lines which have timing issues with IntersectionObserver.
+    if (reveal) return 'flow';
     const totalChars = paragraphs.join('').length;
     if (containerWidth >= COLUMN_THRESHOLD && totalChars >= COLUMN_TEXT_THRESHOLD && paragraphs.length >= 2) {
       return 'columns';
     }
     return 'flow';
-  }, [layoutMode, paragraphs, hasFigure, containerWidth]);
+  }, [layoutMode, paragraphs, hasFigure, hasInsetFacts, containerWidth, reveal]);
 
   return (
     <Card
@@ -399,6 +505,8 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index }) => {
           <MasonryRenderer paragraphs={paragraphs} reveal={reveal} />
         ) : resolvedLayout === 'columns' ? (
           <ColumnRenderer paragraphs={paragraphs} reveal={reveal} />
+        ) : resolvedLayout === 'inset-facts' ? (
+          <InsetFactsRenderer paragraphs={paragraphs} insetFacts={insetFacts!} reveal={reveal} />
         ) : hasFigure ? (
           <FigureRenderer paragraphs={paragraphs} figure={figure!} reveal={reveal} />
         ) : (

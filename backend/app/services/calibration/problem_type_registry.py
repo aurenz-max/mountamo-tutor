@@ -695,6 +695,15 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "sequence-yearly":   PriorConfig(0.0, "Order events across months/seasons"),
         "place-historical":  PriorConfig(1.5, "Place events on decade/century timelines"),
     },
+    # -----------------------------------------------------------------
+    # Core / meta-primitives
+    # -----------------------------------------------------------------
+    "deep-dive": {
+        "explore":  PriorConfig(-1.5, "Mostly display blocks with 1-2 easy MC questions"),
+        "recall":   PriorConfig(-0.5, "More MC questions testing direct recall"),
+        "apply":    PriorConfig(0.5, "Data tables + MC requiring cross-referencing"),
+        "analyze":  PriorConfig(1.5, "Hard MC + synthesis questions across blocks"),
+    },
 }
 
 # Default prior for unregistered primitive_type/eval_mode combinations

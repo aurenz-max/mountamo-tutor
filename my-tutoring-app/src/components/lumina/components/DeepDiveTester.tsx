@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { getPrimitive } from '../config/primitiveRegistry';
 import {
   EvaluationProvider,
@@ -8,7 +8,8 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
-import type { DeepDiveData, DeepDiveBlock } from '../primitives/visual-primitives/core/deep-dive/types';
+import type { DeepDiveData, DeepDiveBlock, WrapperLayout } from '../primitives/visual-primitives/core/deep-dive/types';
+import { getTemplates } from '../primitives/visual-primitives/core/deep-dive/composition-templates';
 
 interface DeepDiveTesterProps {
   onBack: () => void;
@@ -16,6 +17,15 @@ interface DeepDiveTesterProps {
 
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 type EvalMode = 'default' | 'explore' | 'recall' | 'apply' | 'analyze';
+type LayoutChoice = 'auto' | WrapperLayout;
+
+const LAYOUT_OPTIONS: Array<{ value: LayoutChoice; label: string; description: string }> = [
+  { value: 'auto', label: 'Auto (LLM picks)', description: 'Orchestrator chooses based on topic & eval mode' },
+  { value: 'stack', label: 'Stack', description: 'Vertical single-column — narrative-heavy linear flow' },
+  { value: 'grid_2col', label: 'Grid 2-col', description: 'Two-column grid — comparison/analytical content' },
+  { value: 'reveal_progressive', label: 'Reveal', description: 'Cards appear one at a time — misconception repair, guided reasoning' },
+  { value: 'masonry', label: 'Masonry', description: 'Pinterest-style variable-height grid — broad overviews' },
+];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
   { value: 'toddler', label: 'Toddler' },
@@ -37,6 +47,125 @@ const EVAL_MODE_OPTIONS: Array<{ value: EvalMode; label: string; description: st
   { value: 'analyze', label: 'Analyze', description: 'Synthesis + analysis questions' },
 ];
 
+// ── Block type accent colors (matches block components) ─────────────
+
+const BLOCK_TYPE_COLORS: Record<string, string> = {
+  'hero-image': 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+  'key-facts': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  'data-table': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+  'multiple-choice': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+  'fill-in-blank': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+  'pull-quote': 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+  'prose': 'bg-slate-500/20 text-slate-300 border-slate-400/30',
+  'timeline': 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+  'compare-contrast': 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+};
+
+function blockTypeColor(blockType: string): string {
+  return BLOCK_TYPE_COLORS[blockType] || 'bg-slate-600/50 text-slate-400 border-slate-500/30';
+}
+
+// ── Template Picker ─────────────────────────────────────────────────
+
+const TemplatePicker: React.FC<{
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}> = ({ selectedId, onSelect }) => {
+  const templates = useMemo(() => getTemplates(), []);
+  const [expanded, setExpanded] = useState(false);
+
+  const selected = templates.find((t) => t.id === selectedId);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-medium text-slate-300">
+          Composition Template
+        </label>
+        {selectedId && (
+          <button
+            onClick={() => onSelect(null)}
+            className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* Selected template summary */}
+      {selected && !expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="w-full text-left p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/15 transition-all"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-indigo-300">{selected.id}</span>
+            <span className="text-[10px] text-slate-500">{selected.wrapperLayout}</span>
+          </div>
+          <p className="text-[10px] text-slate-400 leading-relaxed">{selected.description}</p>
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {selected.slots.map((slot, i) => (
+              <span
+                key={i}
+                className={`px-1.5 py-0.5 text-[9px] rounded border ${blockTypeColor(slot.primitive)}`}
+              >
+                {slot.primitive}
+              </span>
+            ))}
+          </div>
+        </button>
+      )}
+
+      {/* Template list */}
+      {(expanded || !selectedId) && (
+        <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+          {templates.map((template) => {
+            const isSelected = template.id === selectedId;
+            return (
+              <button
+                key={template.id}
+                onClick={() => {
+                  onSelect(isSelected ? null : template.id);
+                  setExpanded(false);
+                }}
+                className={`w-full text-left p-2.5 rounded-lg border transition-all ${
+                  isSelected
+                    ? 'bg-indigo-500/15 border-indigo-500/40'
+                    : 'bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 hover:border-slate-500/50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className={`text-xs font-medium ${isSelected ? 'text-indigo-300' : 'text-slate-200'}`}>
+                    {template.id}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] text-slate-600 font-mono">{template.wrapperLayout}</span>
+                    <span className="text-[9px] text-slate-600">{template.estimatedDurationMinutes}m</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed mb-1.5">{template.description}</p>
+                <div className="flex items-center gap-1">
+                  {template.slots.map((slot, i) => (
+                    <React.Fragment key={i}>
+                      {i > 0 && <span className="text-slate-700 text-[8px]">&rarr;</span>}
+                      <span
+                        className={`px-1 py-0.5 text-[8px] rounded border ${blockTypeColor(slot.primitive)}`}
+                        title={`${slot.primitive} (${slot.role})`}
+                      >
+                        {slot.primitive.replace('multiple-choice', 'MC').replace('fill-in-blank', 'FIB').replace('compare-contrast', 'C&C').replace('hero-image', 'hero').replace('key-facts', 'facts').replace('data-table', 'table').replace('pull-quote', 'quote')}
+                      </span>
+                    </React.Fragment>
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Block Inspector Panel ───────────────────────────────────────────
 
 const BlockInspector: React.FC<{ blocks: DeepDiveBlock[]; selectedIndex: number; onSelect: (i: number) => void }> = ({
@@ -57,7 +186,7 @@ const BlockInspector: React.FC<{ blocks: DeepDiveBlock[]; selectedIndex: number;
             onClick={() => onSelect(i)}
             className={`px-2 py-1 text-xs rounded border transition-all ${
               i === selectedIndex
-                ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+                ? blockTypeColor(block.blockType)
                 : 'bg-slate-700/50 border-slate-600 text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -69,7 +198,7 @@ const BlockInspector: React.FC<{ blocks: DeepDiveBlock[]; selectedIndex: number;
       {/* Selected block details */}
       <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600 space-y-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono bg-slate-600 px-2 py-0.5 rounded text-slate-300">
+          <span className={`text-xs font-mono px-2 py-0.5 rounded border ${blockTypeColor(selected.blockType)}`}>
             {selected.blockType}
           </span>
           <span className="text-sm text-slate-200">{selected.label}</span>
@@ -107,40 +236,56 @@ const BlockInspector: React.FC<{ blocks: DeepDiveBlock[]; selectedIndex: number;
 
 // ── Orchestrator Plan Display ───────────────────────────────────────
 
-const OrchestratorPlanDisplay: React.FC<{ data: DeepDiveData }> = ({ data }) => {
+const OrchestratorPlanDisplay: React.FC<{ data: DeepDiveData; templateId?: string | null }> = ({ data, templateId }) => {
   const evaluableCount = data.blocks.filter(
     (b) => b.blockType === 'multiple-choice' || b.blockType === 'fill-in-blank',
   ).length;
 
+  // Count unique block types
+  const blockTypes = new Set(data.blocks.map((b) => b.blockType));
+
   return (
     <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
       <h4 className="text-xs font-bold text-slate-300 mb-2">Orchestrator Plan</h4>
-      <div className="grid grid-cols-2 gap-2 mb-2">
+      <div className="grid grid-cols-3 gap-2 mb-2">
         <div className="text-center p-2 bg-slate-800/50 rounded">
           <div className="text-lg font-bold text-white">{data.blocks.length}</div>
-          <div className="text-[10px] text-slate-500">Total Blocks</div>
+          <div className="text-[10px] text-slate-500">Blocks</div>
         </div>
         <div className="text-center p-2 bg-slate-800/50 rounded">
           <div className="text-lg font-bold text-emerald-400">{evaluableCount}</div>
           <div className="text-[10px] text-slate-500">Interactive</div>
         </div>
+        <div className="text-center p-2 bg-slate-800/50 rounded">
+          <div className="text-lg font-bold text-blue-400">{blockTypes.size}</div>
+          <div className="text-[10px] text-slate-500">Types</div>
+        </div>
       </div>
-      <div className="flex flex-wrap gap-1">
-        {data.blocks.map((block, i) => {
-          const isEval = block.blockType === 'multiple-choice' || block.blockType === 'fill-in-blank';
-          return (
-            <span
-              key={i}
-              className={`px-2 py-0.5 text-[10px] rounded ${
-                isEval
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : 'bg-slate-600/50 text-slate-400 border border-slate-500/30'
-              }`}
-            >
-              {block.blockType}
+
+      {/* Layout badge */}
+      {data.layout && (
+        <div className="mb-2">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-600/50 text-slate-400 border border-slate-500/30">
+            layout: {data.layout}
+          </span>
+          {templateId && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 ml-1">
+              template: {templateId}
             </span>
-          );
-        })}
+          )}
+        </div>
+      )}
+
+      {/* Block flow */}
+      <div className="flex flex-wrap gap-1">
+        {data.blocks.map((block, i) => (
+          <span
+            key={i}
+            className={`px-2 py-0.5 text-[10px] rounded border ${blockTypeColor(block.blockType)}`}
+          >
+            {block.blockType}
+          </span>
+        ))}
       </div>
       {data.narrativeArc && (
         <p className="mt-2 text-[10px] text-slate-500 italic">{data.narrativeArc}</p>
@@ -212,6 +357,8 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
   const [topic, setTopic] = useState('');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
   const [evalMode, setEvalMode] = useState<EvalMode>('default');
+  const [layoutChoice, setLayoutChoice] = useState<LayoutChoice>('auto');
+  const [templateId, setTemplateId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<DeepDiveData | null>(null);
@@ -243,6 +390,8 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
             gradeLevel: gradeLevel,
             config: {
               targetEvalMode: evalMode === 'default' ? undefined : evalMode,
+              templateId: templateId || undefined,
+              layoutOverride: layoutChoice === 'auto' ? undefined : layoutChoice,
               intent: `Generate a DeepDive exploration on "${topic}"`,
             },
           },
@@ -343,6 +492,28 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
               </p>
             </div>
 
+            {/* Layout Override */}
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-300 mb-1">Layout</label>
+              <select
+                value={layoutChoice}
+                onChange={(e) => setLayoutChoice(e.target.value as LayoutChoice)}
+                className="w-full px-3 py-2 text-sm bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none"
+              >
+                {LAYOUT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-slate-500 mt-1">
+                {LAYOUT_OPTIONS.find((o) => o.value === layoutChoice)?.description}
+              </p>
+            </div>
+
+            {/* Template Picker */}
+            <div className="mb-4">
+              <TemplatePicker selectedId={templateId} onSelect={setTemplateId} />
+            </div>
+
             {/* Error */}
             {error && (
               <div className="mb-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
@@ -376,7 +547,7 @@ const DeepDiveTesterInner: React.FC<DeepDiveTesterProps> = ({ onBack }) => {
           {/* Orchestrator Plan */}
           {generatedData && (
             <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700">
-              <OrchestratorPlanDisplay data={generatedData} />
+              <OrchestratorPlanDisplay data={generatedData} templateId={templateId} />
             </div>
           )}
 

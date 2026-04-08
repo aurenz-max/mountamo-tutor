@@ -4,7 +4,7 @@
 |---------|--------------|
 | Version | 1.1          |
 | Date    | April 2026   |
-| Status  | **Phase 1.5 Complete** (6 blocks shipped, design system overhaul done) |
+| Status  | **Phase 2 Complete** (9 blocks shipped, wrapper layouts + composition templates + Pretext sizing done) |
 
 > **Implementation Status (2026-04-06):**
 >
@@ -23,12 +23,15 @@
 > | Prose Block | Done | Phase 1.5 — narrative text with CSS float figure layout |
 > | Catalog Entry | Done | 4 eval modes (explore/recall/apply/analyze), tutoring scaffold |
 > | Dedicated Tester | Done | Orchestrator plan view, block inspector, eval mode selector |
-> | Backend Registry | Not started | Need problem_type_registry.py entry |
-> | Timeline Block | Not started | Phase 2 |
-> | CompareContrast Block | Not started | Phase 2 |
-> | FillInBlank Block | Not started | Phase 2 |
-> | Diagram Block | Not started | Phase 3 |
-> | MiniSim Block | Not started | Phase 3 |
+> | Wrapper Layouts | Done | 4 strategies: stack, grid_2col, reveal_progressive, masonry |
+> | Composition Templates | Done | 8 templates matched by eval mode, injected as orchestrator hints |
+> | Pretext Size Hints | Done | Height breakpoints auto-assign compact/standard/wide/full per block |
+> | Backend Registry | Done | problem_type_registry.py: 4 eval modes (explore/recall/apply/analyze) |
+> | Timeline Block | Done | Phase 2 — rose accent, alternating left/right on desktop, left-aligned on mobile |
+> | CompareContrast Block | Done | Phase 2 — indigo/purple dual-card side-by-side layout |
+> | FillInBlank Block | Done | Phase 2 — evaluable, purple accent, word bank chips, 2-attempt logic |
+> | Diagram Block | Not started | Phase 3 — upgraded to HIGH priority, dual-mode (explore + label), 2-phase Gemini pipeline proven by ImagePanel |
+> | MiniSim Block | Done | Phase 3 — cyan accent, toggle/slider control, prediction question (evaluable), state-based outcomes |
 > | Reflection Block | Not started | Phase 3 |
 
 ---
@@ -168,15 +171,20 @@ User/Manifest provides: topic + grade level + (optional) eval mode
 | Prose figure | gemini-2.5-flash-image | image | ~3-5s |
 | HeroImage meta | gemini-2.5-flash | ~150 output | <1s |
 | HeroImage render | gemini-2.5-flash-image | image | ~3-5s |
+| Diagram meta | gemini-2.5-flash | ~300 output | <1s |
+| Diagram render | gemini-2.5-flash-image | image | ~3-5s |
+| Diagram label placement (explore only) | gemini-2.5-flash (vision) | ~200 output | ~1-2s |
+| Diagram evaluation (label only) | gemini-2.5-flash (vision) | ~300 output | ~1-2s |
 
-**Total:** 1 orchestrator + 5-8 Flash calls = roughly the same token budget as one current generator call, but with far more structured, diverse output. Wall-clock time dominated by image generation (~5s). PullQuote adds zero latency (orchestrator generates inline).
+**Total:** 1 orchestrator + 5-8 Flash calls = roughly the same token budget as one current generator call, but with far more structured, diverse output. Wall-clock time dominated by image generation (~5s). PullQuote adds zero latency (orchestrator generates inline). Diagram adds 2-3 calls (text + image + optional vision) but runs parallel with other blocks.
 
 ### 3.3 File Structure
 
 ```
 lumina/primitives/visual-primitives/core/deep-dive/
-  DeepDive.tsx              -- Main component (scroll layout, eval, AI tutoring, transition cues)
-  types.ts                  -- All block data interfaces + union type
+  DeepDive.tsx              -- Main component (4 layout renderers, eval, AI tutoring)
+  types.ts                  -- All block data interfaces + union type + WrapperLayout + SizeHint
+  composition-templates.ts  -- 8 composition templates + eval-mode matching
   blocks/
     index.ts                -- Re-exports all blocks
     BlockWrapper.tsx         -- Shared glass card with variant (compact/default/feature) + accent colors
@@ -190,8 +198,9 @@ lumina/primitives/visual-primitives/core/deep-dive/
     TimelineBlock.tsx        -- Chronological events
     FillInBlankBlock.tsx     -- Sentence completion + word bank
     CompareContrastBlock.tsx -- Side-by-side comparison cards
-    DiagramBlock.tsx         -- Labeled visual layout
-    MiniSimBlock.tsx         -- Slider/toggle interactive
+    [Phase 3]
+    DiagramBlock.tsx         -- Dual-mode: explore (AI-placed labels) + label (student drag-and-drop, LLM eval)
+    MiniSimBlock.tsx         -- Toggle/slider experiment with predict-first flow, cyan accent
     ReflectionBlock.tsx      -- Open-ended prompt + AI response
 
 lumina/utils/
@@ -342,20 +351,36 @@ Phase 1 DeepDive has a structural gap: KeyFacts gives you bullet points, DataTab
 
 Text flows around the optional figure using pretext's `layoutNextLine()` API with variable `maxWidth` per line. Without a figure, the block renders as clean serif-styled paragraphs with generous line height — editorial body text, not a web div.
 
-**Pretext integration:**
+**Pretext integration (4 use cases):**
 
-This is the block that justifies adding `@chenglou/pretext` as a dependency. The key capability: when a Prose block includes an inline figure, pretext calculates line breaks row-by-row with variable widths, so text wraps around the image naturally. CSS `float` cannot reliably achieve this with dynamic Gemini content because:
+Pretext (`@chenglou/pretext`) is a pure JS text measurement library that sidesteps DOM layout reflows. A one-time `prepare()` pass (text segmentation + canvas measurement) is followed by pure-arithmetic `layout()` calls (~0.09ms for 500 texts). Results are cached per session.
 
-1. Float interacts unpredictably with glass-card overflow and padding
-2. Content length is unknown at render time — text may be 1 paragraph or 4
-3. The figure placement (left/right) needs to respect the reading flow the orchestrator planned
+Pretext powers four capabilities within DeepDive, from block-level rendering to system-wide layout:
 
-Pretext's approach:
-1. `prepare(text, font)` — one-time measurement via offscreen canvas (~1ms)
-2. `layoutNextLine(prepared, cursor, maxWidth)` — iterates line-by-line, reducing `maxWidth` for lines adjacent to the figure
-3. Render lines as positioned `<span>` elements (DOM, not canvas — preserves screen reader access and text selection)
+**1. Text-around-figure (Prose block):**
+When a Prose block includes an inline figure, pretext calculates line breaks row-by-row with variable widths via `layoutNextLine()`, so text wraps around the image naturally. CSS `float` cannot reliably achieve this with dynamic Gemini content because float interacts unpredictably with glass-card overflow, content length is unknown, and figure placement needs to respect the orchestrator's reading flow.
 
-For Prose blocks **without** a figure, pretext is not needed — standard CSS renders clean paragraphs. The pretext path only activates when `figure` is present.
+**2. Balanced multi-column (Prose block):**
+When the Prose block auto-resolves to `columns` layout (wide container, long text, no `reveal` animation), pretext predicts paragraph heights via `predictParagraphHeight()` and distributes text across 2-3 balanced columns using binary-search height targeting. Each column's lines are positioned via `layoutWithLines()`.
+
+**3. Masonry card grid (Prose block):**
+When `layout: 'masonry'` is set, each paragraph becomes a card. Pretext predicts card content height at the card's width without DOM reads, then the shortest-column algorithm places cards into 1-3 balanced visual columns.
+
+**4. System-wide height breakpoints (all blocks):**
+`computeBlockSizeHints()` in `editorial-layout.ts` uses pretext to auto-assign a `SizeHint` (`compact` / `standard` / `wide` / `full`) to every block based on its text content. Text blocks (prose, pull-quote, key-facts) are measured via `predictParagraphHeight()`; non-text blocks get type-based defaults (hero-image -> `full`, MC -> `compact`, data-table -> row-count heuristic). The wrapper layouts `grid_2col` and `masonry` consume these hints to decide column spanning.
+
+| Size Hint | Rule | Grid Behavior | Masonry Behavior |
+|-----------|------|--------------|-----------------|
+| `compact` | <=6 lines | Single cell | Single column width |
+| `standard` | 7-15 lines | Single cell | Single column width |
+| `wide` | 16+ lines | Spans 2 columns | Spans all columns |
+| `full` | Hero-image, full-bleed | Spans 2 columns | Rendered above grid |
+
+All Pretext-laid-out text renders as positioned `<span>` elements in the DOM (not canvas), preserving screen reader access and text selection. An `sr-only` div provides the full accessible text.
+
+**Important constraint:** Pretext warns against `system-ui` / `ui-sans-serif` fonts because canvas resolves them to different optical variants than the DOM on macOS. Always use named fonts (`16px Inter, Helvetica, Arial, sans-serif`).
+
+**Reveal animation interaction:** When `reveal: true` is set on a Prose block, the auto-columns resolution is suppressed — the block stays in `flow` mode (SimpleProse) where paragraphs fade in one at a time. This avoids a timing issue where the IntersectionObserver doesn't fire reliably for absolutely-positioned Pretext lines. Explicit `layout: 'columns'` overrides this guard.
 
 **Typography:**
 
@@ -402,20 +427,275 @@ Prose blocks use editorial styling distinct from other blocks:
 #### Diagram
 | Field | Value |
 |-------|-------|
-| Type | Display |
-| Purpose | Spatial/structural understanding — how things connect |
-| Data | `imageBase64?`, `labels[]` with `{ text, description }` |
-| Priority | MEDIUM — requires image + label overlay, more complex rendering |
-| Design Notes | AI-generated image with clickable label hotspots. Click reveals description. |
+| Type | Display + Evaluable (dual-mode) |
+| Purpose | Spatial/structural understanding — how parts relate to a whole, where things are, what connects to what |
+| Data | `imageBase64`, `caption`, `altText`, `interactionMode: 'explore' \| 'label'`, `labels[]` with `{ id, text, description, position? }`, `learningObjective?` |
+| Priority | **HIGH** — fills the biggest gap in the current block roster: no block teaches spatial relationships |
+| Accent | Teal (`border-teal-500/30`, `bg-teal-500/10`) |
+
+**Why Diagram is high-value:**
+
+The current block roster is text-structured (KeyFacts, DataTable, Prose) or linear (Timeline). Nothing teaches **spatial relationships** — how parts relate to a whole, where things are, what connects to what. That's a huge slice of learning content that currently either gets flattened into KeyFacts bullets (losing the spatial insight) or gets skipped by the orchestrator entirely:
+
+- **Physics:** double-slit apparatus, circuit diagrams, force diagrams, wave interference patterns
+- **Biology:** cell organelles, organ systems, food webs, DNA replication
+- **Chemistry:** molecular structure, periodic table regions, electron orbitals
+- **Geography:** map features, tectonic plates, climate zones
+- **Astronomy:** solar system, star lifecycle, Hertzsprung-Russell diagram
+- **Engineering:** system architecture, circuit layouts, mechanical assemblies
+
+**Reference use case — The Double-Slit Experiment:**
+
+The double-slit experiment is the stress test for this block because it demonstrates why spatial understanding can't be reduced to text:
+
+1. **The interference pattern itself** — "bright and dark bands appear on the screen" is a sentence; the actual pattern with its intensity distribution is an image that builds intuition about superposition. You need to *see* it.
+2. **Spatial relationships ARE the concept** — slit separation, screen distance, wavelength → fringe spacing. Where things are relative to each other is what the student needs to internalize, not a formula.
+3. **Common misconceptions are spatial** — students think each slit produces its own spot (particle model). The diagram showing overlapping wave fronts producing interference is the aha moment that text alone cannot create.
+4. **Labels carry conceptual weight** — "constructive interference" on a bright fringe vs "destructive interference" on a dark fringe isn't vocabulary drill, it's spatial reasoning about phase alignment. Clicking a label and reading *why* those waves reinforce at that point teaches more than a paragraph.
+
+A DeepDive on double-slit with the current block set gives you: Prose explaining wave-particle duality → KeyFacts about the setup → MC about predictions → DataTable of fringe spacing formulas. That's *correct* but it misses the central insight, which is visual. With Diagram, the orchestrator places it right after the prose explanation — the AI-generated image of the apparatus with labeled wave fronts, slits, screen, and interference pattern becomes the central teaching artifact, not a decoration.
+
+This generalizes: any topic where the spatial arrangement is the insight (cell biology, circuit analysis, plate tectonics) benefits from Diagram in the same way. If a DeepDive can only describe structure in words, it's leaving its best teaching tool on the table.
+
+**Dual interaction modes:**
+
+| Mode | Trigger | Behavior |
+|------|---------|----------|
+| `explore` | Display block; eval modes `explore`/`recall` | AI places labeled hotspots on the image. Student clicks to reveal descriptions. Pure comprehension — the spatial layout teaches by showing. |
+| `label` | Evaluable block; eval modes `apply`/`analyze` | AI generates image + label list (no positions). Student drags labels onto the image. LLM evaluates via captured screenshot. Tests whether the student understands *where* things are and *why*. |
+
+**Data contract:**
+
+```typescript
+interface DiagramBlockData {
+  type: 'diagram';
+  imageBase64: string;
+  caption: string;
+  altText: string;
+  interactionMode: 'explore' | 'label';
+  labels: Array<{
+    id: string;
+    text: string;
+    description: string;
+    // Only present in 'explore' mode — AI-placed via vision model
+    position?: { x: number; y: number };  // Percentage-based (0-100)
+  }>;
+  learningObjective?: string;  // Context for LLM evaluation in 'label' mode
+}
+```
+
+**Generation pipeline (2-phase, proven by ImagePanel):**
+
+The existing `ImagePanel` primitive already validates this pipeline end-to-end. Diagram adapts it for the DeepDive block context:
+
+1. **Flash text call:** Orchestrator brief → image prompt + labels + descriptions. Flat schema: `imagePrompt`, `caption`, `altText`, `label0Text`/`label0Desc` through `label5Text`/`label5Desc`, `learningObjective`.
+2. **Flash image call:** Generate the diagram image from the prompt (parallel with step 1 response processing). Same pattern as HeroImage and Prose figure generation.
+3. **Vision label placement (explore mode only):** Flash vision call with the generated image: *"Given this image, where should each of these labels be placed? Return {x, y} as percentages."* This is the inverse of ImagePanel's evaluation — instead of the student telling the AI where things are, the AI tells the student. Same vision capability, inverted direction.
+
+For `label` mode, step 3 is skipped entirely. The student provides positions via drag-and-drop, and the same `html2canvas` → LLM evaluation pipeline from ImagePanel judges accuracy.
+
+```
+Orchestrator brief: "Double-slit experiment apparatus"
+        |
+    ┌───┴────────────────────┐
+    v                        v
+Flash text               Flash image
+  labels[]                 imageBase64
+  descriptions[]           (~3-5s)
+  imagePrompt
+    |                        |
+    └───────┬────────────────┘
+            v
+   (explore mode only)
+   Flash vision call:
+   "Place these labels on
+    this image: {x,y} %"
+            |
+            v
+   DiagramBlockData ready
+```
+
+**Explore mode layout:**
+
+```
+┌─────────────────────────────────────────────────┐
+│                                                  │
+│          [AI-generated diagram image]             │
+│                                                  │
+│     ●─── Constructive         ●─── Single slit  │
+│          interference              diffraction   │
+│                                                  │
+│     ●─── Path length          ●─── Detection    │
+│          difference                screen        │
+│                                                  │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│  ▾ Constructive Interference                     │
+│  Where the wave crests from both slits arrive    │
+│  in phase, they reinforce each other, creating   │
+│  a bright band on the detection screen. The path │
+│  length difference here is a whole number of     │
+│  wavelengths (nλ).                               │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+
+Hotspot markers (teal circles with pulsing ring) overlay the image at AI-determined positions. Click a marker → description panel expands below the image with a slide-down animation. Only one description open at a time. The image + labels together form the teaching artifact.
+
+**Label mode layout:**
+
+```
+┌──────────────────────────────────────────────────┐
+│                                                   │
+│  ┌────────────────────┐  ┌─────────────────────┐ │
+│  │                    │  │ Drag labels onto the │ │
+│  │  [AI-generated     │  │ diagram:             │ │
+│  │   diagram, no      │  │                      │ │
+│  │   labels shown]    │  │ ◻ Constructive       │ │
+│  │                    │  │   interference        │ │
+│  │       ① ●         │  │ ◻ Path length diff   │ │
+│  │                    │  │ ✓ Detection screen   │ │
+│  │            ② ●    │  │ ◻ Single slit        │ │
+│  │                    │  │   diffraction         │ │
+│  └────────────────────┘  └─────────────────────┘ │
+│                                                   │
+│  [ Submit for Evaluation ]                        │
+└──────────────────────────────────────────────────┘
+```
+
+Side-by-side layout (same as ImagePanel's interactive mode). Label chips are draggable. Placed labels show as numbered markers on the image. Submit triggers `html2canvas` capture → LLM proximity evaluation → per-label feedback with scores.
+
+**Scoring (label mode):**
+
+Reuses ImagePanel's proven evaluation approach:
+- `html2canvas` captures the image with student-placed markers rendered
+- LLM vision call evaluates proximity of each label to expected region
+- Per-label proximity score (0-100), threshold for "correct" = 70 (75 for key labels)
+- Safe harbor normalization: 80%+ avg proximity → 100 score (accounts for minor positional variance)
+- Maps to a single phase in PhaseSummaryPanel
+
+**Orchestrator guidance:**
+
+Use Diagram when the topic has inherent spatial structure that text blocks flatten or lose. Place after a Prose or KeyFacts block that introduces the vocabulary the labels will use — the student should know the *words* before they see the *positions*. In explore mode, Diagram replaces what would otherwise be a HeroImage + KeyFacts pair but teaches more because the labels are spatially grounded. In label mode, Diagram replaces a MultipleChoice block but tests deeper understanding because the student must demonstrate spatial reasoning, not just recognition.
+
+Good orchestrator pairings:
+- `Prose → Diagram(explore) → MC` — explain, show spatially, then quiz on details
+- `KeyFacts → Diagram(label) → PullQuote` — introduce terms, test spatial understanding, then synthesize
+- `HeroImage → Prose → Diagram(explore)` — hook attention, explain, then ground in labeled visual
+
+Never place Diagram adjacent to HeroImage (visual overload). Never use Diagram for topics without spatial structure (e.g., "causes of WWI" — use CompareContrast or Timeline instead).
 
 #### MiniSim
 | Field | Value |
 |-------|-------|
-| Type | Evaluable |
-| Purpose | Builds intuition through manipulation, not memorization |
-| Data | `prompt`, `sliderLabel`, `sliderMin/Max/Default`, `outcomes[]` with range mapping |
-| Priority | LOW — high design effort, niche use cases |
-| Design Notes | "What happens if you increase X?" with a slider and outcome text. |
+| Type | Evaluable (when prediction present) |
+| Purpose | Builds intuition through manipulation, not memorization — manipulate → predict → observe → reconcile |
+| Data | `scenario`, `controlType` (toggle\|slider), `controlLabel`, toggle/slider config, `states[]` with condition mapping, optional `prediction` (question + 4 options + explanation) |
+| Priority | **HIGH** — the double-slit experiment proved this is essential for any topic where manipulating a variable reveals counterintuitive behavior |
+| Accent | Cyan (`border-cyan-500/30`, `bg-cyan-500/10`) |
+
+**Why MiniSim is high-value:**
+
+The current block roster is passive: display blocks show information, MC blocks test recall. Nothing lets the student *experiment*. That's a huge slice of learning content where the insight comes from manipulation, not observation:
+
+- **Physics:** double-slit detector on/off, pendulum length → period, voltage → current
+- **Chemistry:** concentration → reaction rate, pH adjustment, temperature → equilibrium
+- **Biology:** population size → genetic drift, light intensity → photosynthesis rate
+- **Economics:** supply/demand shifts, interest rate → investment
+
+**Reference use case — The Double-Slit Experiment:**
+
+The double-slit experiment is the stress test because the learning moment is *counterintuitive*:
+
+1. **Prediction tests the mental model** — "What will happen to the pattern when you turn the detector on?" Most students predict no change. They're wrong. That surprise IS the learning.
+2. **Toggle reveals the paradox** — Detector OFF → interference pattern (wave behavior). Detector ON → two bands (particle behavior). The toggle makes the wave-particle duality *visceral*.
+3. **The reconciliation moment** — After getting the prediction wrong and seeing the actual result, the student reads the key observation explaining *why* observation collapses the wave function. This predict → surprise → explain loop is stronger than any amount of prose.
+
+**Dual control types:**
+
+| Control | Trigger | Use Case |
+|---------|---------|----------|
+| `toggle` | Binary on/off variable | Detector on/off, gravity on/off, catalyst present/absent — any binary condition |
+| `slider` | Continuous variable | Wavelength, temperature, concentration, population size — any continuous parameter |
+
+**Data contract:**
+
+```typescript
+interface MiniSimBlockData extends BaseBlockData {
+  blockType: 'mini-sim';
+  scenario: string;
+  controlType: 'toggle' | 'slider';
+  controlLabel: string;
+  toggleOffLabel?: string;
+  toggleOnLabel?: string;
+  sliderMin?: number;
+  sliderMax?: number;
+  sliderStep?: number;
+  sliderUnit?: string;
+  sliderDefault?: number;
+  states: Array<{
+    condition: string;       // "off"/"on" for toggle, "min-max" for slider
+    title: string;
+    description: string;
+    keyObservation: string;  // The "aha" insight
+  }>;
+  prediction?: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  };
+}
+```
+
+**Interaction flow:**
+
+```
+┌─────────────────────────────────────────────────────┐
+│  ● PREDICT FIRST                                     │
+│                                                      │
+│  What do you think will happen to the interference   │
+│  pattern when you turn the detector on?              │
+│                                                      │
+│  ┌─ A. The pattern stays the same                  ─┐│
+│  ├─ B. The pattern disappears entirely             ─┤│
+│  ├─ C. The pattern changes to two distinct bands   ─┤│
+│  └─ D. The pattern becomes more pronounced         ─┘│
+│                                                      │
+│  [ Lock In Prediction ]                              │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│  ● EXPERIMENT                    (unlocked after     │
+│                                   prediction)        │
+│  Detector at slits                                   │
+│  ○ OFF ──────●────── ON                              │
+│                                                      │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  Particle Behavior                            │    │
+│  │  Two distinct bands appear on the screen,     │    │
+│  │  one behind each slit...                      │    │
+│  │  ─────────────────────────────────────────── │    │
+│  │  KEY OBSERVATION                              │    │
+│  │  The act of measurement forces each quantum   │    │
+│  │  entity to "choose" one slit...               │    │
+│  └──────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────┘
+```
+
+**Scoring:**
+
+Same as MultipleChoice — scoring is on the prediction question:
+- Correct on 1st attempt = 100%. Correct on 2nd = 50%. Incorrect = 0%.
+- The simulation itself is always available after prediction (even if wrong) — the point is to reconcile the prediction with reality.
+
+**Orchestrator guidance:**
+
+Use MiniSim when manipulating a variable reveals something that text alone cannot convey — especially counterintuitive results. Place after Prose or KeyFacts that introduce the concept vocabulary. The student should understand the setup before experimenting. Never use MiniSim for topics where the outcome is obvious (e.g., "what happens when you add more water?"). The power is in the surprise.
+
+Good orchestrator pairings:
+- `Prose → MiniSim → PullQuote` — explain setup, experiment, then synthesize the insight
+- `KeyFacts → MiniSim → MC` — introduce terms, experiment, then quiz on the deeper implication
+- `Diagram(explore) → MiniSim → Prose` — show spatial structure, let them manipulate, then explain why
 
 #### Reflection
 | Field | Value |
@@ -502,9 +782,45 @@ The component uses IntersectionObserver to detect which block is in view and sen
 
 ## 7. UX Specification
 
-### 7.1 Layout
+### 7.1 Wrapper Layout Strategies
 
-Vertical scroll, single column with **varied visual weight**. Not every block is a glass card — the design system creates hierarchy through intentional variation:
+The orchestrator chooses a layout strategy for each deep dive. The layout controls how blocks are spatially arranged, independent of block-level visual treatment (accents, variants, etc.).
+
+| Layout | CSS Strategy | When to Use | Behavior |
+|--------|-------------|-------------|----------|
+| **stack** | `flex-column` | Default. Narrative-heavy lessons with linear flow. | Vertical single column. Transition cues between blocks. Compact blocks centered at 50% width, standard at 75%, wide/full at 100%. |
+| **grid_2col** | `css-grid 2-col` | Comparison/analytical content where blocks pair naturally. | Two-column grid. Blocks with `sizeHint` of `compact`/`standard` fill single cells; `wide`/`full` span both columns. |
+| **reveal_progressive** | `flex-column + gating` | Misconception repair, guided reasoning, dramatic reveals. | Cards appear one at a time. Display blocks unlock next after 2.5s dwell (IntersectionObserver). Evaluable blocks unlock next when answered. Dot progress indicator at bottom. |
+| **masonry** | `css-columns` | Broad overviews with many small, self-contained blocks. | Pinterest-style variable-height grid. Full-bleed blocks (hero-image) render above grid. Remaining blocks flow into balanced columns. Pretext height prediction feeds `sizeHint` for `wide` spanning. |
+
+**Size hints** are computed client-side using Pretext height prediction before render:
+- `compact`: ≤6 lines of text content
+- `standard`: 7-15 lines
+- `wide`: 16+ lines (spans multiple columns in grid/masonry)
+- `full`: always full-bleed (hero-image)
+
+Size hints only activate for `grid_2col` and `masonry` layouts. Stack and reveal_progressive ignore them.
+
+### 7.2 Composition Templates
+
+The orchestrator receives a **composition template hint** — a known-good block sequence selected by eval mode/intent mapping. Templates are suggestions, not constraints. The orchestrator can deviate, reorder, or substitute blocks.
+
+| Template | Intent | Layout | Slot Sequence |
+|----------|--------|--------|--------------|
+| `concept_introduction` | introduce | stack | hero-image → prose → key-facts → pull-quote → MC |
+| `concept_exploration` | explore | stack | key-facts → prose → pull-quote → MC |
+| `misconception_repair` | remediate | reveal_progressive | pull-quote → key-facts → MC → prose |
+| `compare_and_contrast` | analyze | grid_2col | prose → data-table → pull-quote → MC |
+| `data_deep_dive` | apply | stack | hero-image → prose → data-table → MC → pull-quote → MC |
+| `rapid_review` | reinforce | stack | key-facts → MC → data-table → MC |
+| `narrative_journey` | explore | stack | hero-image → prose → pull-quote → key-facts → prose → MC |
+| `mosaic_overview` | overview | masonry | hero-image → key-facts → key-facts → pull-quote → prose → MC |
+
+Templates live in `composition-templates.ts` and are matched via `matchTemplate(evalMode)`.
+
+### 7.3 Block Visual Treatment
+
+Each block type has its own visual treatment, independent of wrapper layout:
 
 - **Full-bleed blocks** (HeroImage) — edge-to-edge, no card wrapper, maximum visual impact
 - **Accented card blocks** (KeyFacts=blue, DataTable=emerald, MC=amber) — glass card with colored left border for instant type recognition
@@ -513,13 +829,13 @@ Vertical scroll, single column with **varied visual weight**. Not every block is
 - **Transition cues** — italicized narrative text between blocks with fading divider lines. Orchestrator-generated, not hardcoded.
 
 The header card shows:
-- "Deep Dive" badge with section and question counts
+- Layout-aware badge ("Deep Dive", "Deep Dive - Grid", "Deep Dive - Guided", "Deep Dive - Mosaic")
 - Title and subtitle from orchestrator
 - Segmented progress bar (one segment per block — display blocks filled, evaluable blocks glow amber until answered then turn emerald)
 
-### 7.2 Scroll Behavior
+### 7.4 Scroll Behavior
 
-Blocks render in orchestrator-planned order. No pagination, no tabs — continuous vertical scroll. The progress bar at the top updates via IntersectionObserver as blocks enter/exit the viewport center. Transition cues between blocks create narrative flow as the student scrolls.
+Blocks render in orchestrator-planned order. In **stack** and **masonry** layouts: continuous vertical scroll. In **reveal_progressive**: one card visible at a time with unlock gating. In **grid_2col**: scrollable grid. The progress bar at the top updates via IntersectionObserver as blocks enter/exit the viewport center. Transition cues between blocks create narrative flow (stack and reveal_progressive only).
 
 ### 7.3 Phase Summary
 
@@ -602,11 +918,12 @@ The dedicated tester (`DeepDiveTester`) provides developer tooling beyond the st
 - `PullQuoteBlock` — zero-generation-cost editorial rhythm block. Orchestrator generates inline.
 - `ProseBlock` — narrative explanatory text with optional text-around-figure layout via `@chenglou/pretext`. Fills the critical gap between bullet points and structured data.
 
-**Pretext integration:**
-- Install `@chenglou/pretext` for Prose block's text-around-figure capability
-- Shared utility at `lumina/utils/editorial-layout.ts`: font loading, cached `prepare()`, resize debounce
-- Pretext only activates when Prose block has an inline figure; plain paragraphs use standard CSS
-- This establishes the foundation for future editorial blocks (MagazineSpread, SourceAnalyzer)
+**Pretext integration (expanded beyond Prose):**
+- `@chenglou/pretext` installed — pure JS text measurement, no DOM reflows
+- Shared utility at `lumina/utils/editorial-layout.ts`: font loading, cached `prepare()` / `prepareLight()`, resize debounce
+- **Prose block:** 3 layout modes powered by Pretext — text-around-figure (`layoutNextLine`), balanced columns (`layoutBalancedColumns`), masonry cards (`layoutMasonryCards`)
+- **System-wide size hints:** `computeBlockSizeHints()` measures all text-bearing blocks via `predictParagraphHeight()` and assigns `compact` / `standard` / `wide` / `full` hints. Consumed by `grid_2col` and `masonry` wrapper layouts for column spanning decisions.
+- **Reveal guard:** Auto-columns suppressed when `reveal: true` — flow mode stays active to avoid IntersectionObserver timing issues with absolute-positioned lines
 
 **Key question to answer:** Does the visual variety + narrative prose transform the "generic AI" feel into something that reads as authored? Test with the same topics from Phase 1 and compare.
 

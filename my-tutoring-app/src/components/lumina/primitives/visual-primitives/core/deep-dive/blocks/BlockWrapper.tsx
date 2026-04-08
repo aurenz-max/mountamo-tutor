@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 
 export type BlockVariant = 'compact' | 'default' | 'feature';
-export type BlockAccent = 'blue' | 'emerald' | 'amber' | 'purple' | 'rose' | 'indigo' | 'none';
+export type BlockAccent = 'blue' | 'emerald' | 'amber' | 'purple' | 'rose' | 'indigo' | 'teal' | 'cyan' | 'none';
 
 interface BlockWrapperProps {
   children: React.ReactNode;
@@ -26,6 +26,8 @@ const ACCENT_STYLES: Record<BlockAccent, string> = {
   purple: 'border-l-2 border-l-purple-400/60',
   rose: 'border-l-2 border-l-rose-400/60',
   indigo: 'border-l-2 border-l-indigo-400/60',
+  teal: 'border-l-2 border-l-teal-400/60',
+  cyan: 'border-l-2 border-l-cyan-400/60',
   none: '',
 };
 
@@ -36,6 +38,8 @@ const ACCENT_LABEL_COLORS: Record<BlockAccent, string> = {
   purple: 'text-purple-400/70',
   rose: 'text-rose-400/70',
   indigo: 'text-indigo-400/70',
+  teal: 'text-teal-400/70',
+  cyan: 'text-cyan-400/70',
   none: 'text-slate-500',
 };
 

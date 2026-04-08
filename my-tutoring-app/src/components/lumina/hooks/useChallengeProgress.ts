@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -74,8 +74,13 @@ export function useChallengeProgress<TChallenge>(
     }
   }, [challenges]);
 
-  const isComplete =
-    challenges.length > 0 && results.length >= challenges.length;
+  // Verify every challenge has a matching result — not just a count check.
+  // This prevents untracked blocks from inflating results.length and triggering early completion.
+  const isComplete = useMemo(() => {
+    if (challenges.length === 0) return false;
+    const resultIds = new Set(results.map((r) => r.challengeId));
+    return challenges.every((ch) => resultIds.has(getChallengeId(ch)));
+  }, [challenges, results, getChallengeId]);
 
   const recordResult = useCallback(
     (result: ChallengeResult) => {

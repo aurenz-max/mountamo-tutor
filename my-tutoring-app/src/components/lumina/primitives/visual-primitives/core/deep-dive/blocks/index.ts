@@ -5,3 +5,8 @@ export { default as DataTableBlock } from './DataTableBlock';
 export { default as MultipleChoiceBlock } from './MultipleChoiceBlock';
 export { default as PullQuoteBlock } from './PullQuoteBlock';
 export { default as ProseBlock } from './ProseBlock';
+export { default as TimelineBlock } from './TimelineBlock';
+export { default as FillInBlankBlock } from './FillInBlankBlock';
+export { default as CompareContrastBlock } from './CompareContrastBlock';
+export { default as DiagramBlock } from './DiagramBlock';
+export { default as MiniSimBlock } from './MiniSimBlock';
