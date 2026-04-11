@@ -4,10 +4,12 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { KnowledgeCheckData, ProblemData } from '../types';
 import { ProblemRenderer } from '../config/problemTypeRegistry';
 import { useLuminaAI } from '../hooks/useLuminaAI';
+import { ScratchPadDrawer } from '../components/scratch-pad/ScratchPadDrawer';
+import type { AIAnalysisResult } from '../components/scratch-pad/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Lightbulb, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
+import { Lightbulb, ChevronDown, ChevronUp, Sparkles, Loader2, PenLine } from 'lucide-react';
 
 /**
  * KnowledgeCheck Component
@@ -211,6 +213,11 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
   const hasTriggeredProblemShownRef = useRef<Set<string>>(new Set());
   const hasTriggeredAllCompleteRef = useRef(false);
 
+  // ── Scratch Pad state ─────────────────────────────────────────────────────
+  const [isScratchPadOpen, setIsScratchPadOpen] = useState(false);
+  const [scratchPadProblemTopic, setScratchPadProblemTopic] = useState('');
+  const lastForwardedAnalysisRef = useRef<AIAnalysisResult | null>(null);
+
   // ── Normalize data to problems array ───────────────────────────────────────
   const problems: ProblemData[] = useMemo(() => {
     if (isLegacyKnowledgeCheck(data)) {
@@ -345,6 +352,23 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     }
   }, [problems, sendText, data]);
 
+  // ── Scratch Pad analysis → AI tutor context ────────────────────────────────
+  const handleScratchPadAnalysis = useCallback((result: AIAnalysisResult) => {
+    if (result === lastForwardedAnalysisRef.current) return;
+    lastForwardedAnalysisRef.current = result;
+
+    sendText(
+      `[SCRATCH_PAD_ANALYSIS] The student used the scratch pad to work through the problem. ` +
+      `AI vision analysis of their work: "${result.summary}". ` +
+      `Feedback: "${result.feedback}". ` +
+      (result.latex ? `Their work contains: ${result.latex}. ` : '') +
+      (result.nextSteps?.length ? `Suggested next steps: ${result.nextSteps.join('; ')}. ` : '') +
+      `Use this context to better guide them. Do NOT repeat the analysis verbatim — ` +
+      `instead, incorporate it naturally into your tutoring.`,
+      { silent: true }
+    );
+  }, [sendText]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (problems.length === 0) {
@@ -402,18 +426,32 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
                     }}
                   />
 
-                  {/* AI Helper Card - appears below each problem */}
-                  <div className="mt-6">
-                    <AIHelperCard
-                      sendText={sendText}
-                      requestHint={requestHint}
-                      isAIResponding={isAIResponding}
-                      conversation={conversation as Array<{ role: string; content: string }>}
-                      currentQuestion={getQuestionText(problem)}
-                      problemType={problem.type.replace(/_/g, ' ')}
-                      problemIndex={index}
-                      totalProblems={problemCount}
-                    />
+                  {/* AI Helper + Scratch Pad — appears below each problem */}
+                  <div className="mt-6 flex items-start gap-2">
+                    <div className="flex-1">
+                      <AIHelperCard
+                        sendText={sendText}
+                        requestHint={requestHint}
+                        isAIResponding={isAIResponding}
+                        conversation={conversation as Array<{ role: string; content: string }>}
+                        currentQuestion={getQuestionText(problem)}
+                        problemType={problem.type.replace(/_/g, ' ')}
+                        problemIndex={index}
+                        totalProblems={problemCount}
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setScratchPadProblemTopic(getQuestionText(problem));
+                        setIsScratchPadOpen(o => !o);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2.5 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 hover:border-purple-500/50 rounded-xl transition-all shrink-0"
+                      title="Open Scratch Pad"
+                    >
+                      <PenLine className="w-4 h-4 text-purple-400" />
+                      <span className="text-xs font-medium text-purple-300">Scratch Pad</span>
+                    </Button>
                   </div>
                 </div>
 
@@ -425,7 +463,20 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
             ))}
           </div>
         </div>
+
       </div>
+
+      {/* Scratch Pad Drawer — students can work through problems by hand */}
+      <ScratchPadDrawer
+        isOpen={isScratchPadOpen}
+        onToggle={() => setIsScratchPadOpen(o => !o)}
+        onAnalysisComplete={handleScratchPadAnalysis}
+        hideToggle
+        topic={scratchPadProblemTopic || getQuestionText(problems[0])}
+        gradeLevel={
+          'gradeLevel' in problems[0] ? (problems[0] as any).gradeLevel : undefined
+        }
+      />
     </div>
   );
 };

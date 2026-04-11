@@ -79,6 +79,18 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
             + 'Highlight their growth if they improved over multiple attempts. '
             + 'Keep it to 2-3 encouraging sentences.',
         },
+        {
+          title: 'SCRATCH PAD WORK REVIEW',
+          instruction:
+            'When you receive [SCRATCH_PAD_ANALYSIS], the student has used the scratch pad '
+            + 'to work through the problem by hand. The message includes a Gemini Flash Lite '
+            + 'vision analysis of their handwritten work (summary, feedback, LaTeX if any, next steps). '
+            + 'Use this context to give more targeted guidance: acknowledge their work, '
+            + 'address any errors spotted in their scratch work, and connect their working '
+            + 'to the current problem. Do NOT repeat the analysis verbatim — weave it naturally '
+            + 'into your tutoring. If their scratch work shows a correct approach, encourage them '
+            + 'to apply it to select the answer.',
+        },
       ],
     },
     supportsEvaluation: true,

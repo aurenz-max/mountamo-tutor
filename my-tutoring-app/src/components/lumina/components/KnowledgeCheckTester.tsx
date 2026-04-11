@@ -41,6 +41,7 @@ const INSET_TYPES: { value: InsetType | ''; label: string; desc: string }[] = [
   { value: 'definition-box', label: 'Definition', desc: 'Vocabulary' },
 ];
 
+
 interface KnowledgeCheckTesterProps {
   onBack: () => void;
 }
@@ -65,6 +66,7 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generationKey, setGenerationKey] = useState(0);
+
 
   const isOrchestrated = !selectedProblemType;
 
@@ -138,14 +140,14 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-8 max-w-7xl mx-auto">
         {/* Left Column: Generation Controls */}
-        <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
-          <h3 className="text-2xl font-bold text-white mb-6">AI Problem Generator</h3>
+        <div className="bg-slate-800/50 rounded-2xl p-5 border border-slate-700">
+          <h3 className="text-xl font-bold text-white mb-4">AI Problem Generator</h3>
 
           {/* Topic Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-300 mb-2">Topic</label>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">Topic</label>
             <input
               type="text"
               value={topic}
@@ -156,8 +158,8 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
           </div>
 
           {/* Context (Optional) */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-300 mb-2">Context (Optional)</label>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">Context (Optional)</label>
             <input
               type="text"
               value={context}
@@ -168,9 +170,9 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
           </div>
 
           {/* Common Fields Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-3 mb-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Grade Level</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">Grade Level</label>
               <select
                 value={gradeLevel}
                 onChange={(e) => setGradeLevel(e.target.value)}
@@ -188,7 +190,7 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Count</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">Count</label>
               <input
                 type="number"
                 min="1"
@@ -201,10 +203,10 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
           </div>
 
           {/* Bloom's Taxonomy Tier */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
               Bloom&apos;s Cognitive Tier
-              <span className="ml-2 text-xs text-slate-500 font-normal">(IRT adaptive difficulty)</span>
+              <span className="ml-1 text-[10px] text-slate-500 font-normal">(IRT adaptive difficulty)</span>
             </label>
             <div className="grid grid-cols-5 gap-1.5">
               {BLOOMS_TIERS.map((tier) => (
@@ -254,7 +256,7 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
           </div>
 
           {/* Optional Overrides Toggle */}
-          <div className="mb-6">
+          <div className="mb-4">
             <button
               onClick={() => setShowOverrides(!showOverrides)}
               className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-300 transition-colors"
@@ -313,21 +315,21 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
 
           {/* Error Display */}
           {error && (
-            <div className="mb-6 p-4 bg-red-900/20 border border-red-500/50 rounded-lg">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="mb-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
+              <p className="text-red-400 text-xs">{error}</p>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={() => handleGenerate(false)}
               disabled={isGenerating}
-              className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+              className="flex-1 px-3 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2"
             >
               {isGenerating ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   {isOrchestrated ? 'Orchestrating...' : 'Generating...'}
                 </>
               ) : (
@@ -337,7 +339,7 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
             <button
               onClick={() => handleGenerate(true)}
               disabled={isGenerating}
-              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all"
+              className="flex-1 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold text-sm transition-all"
             >
               Add to List
             </button>
@@ -345,7 +347,7 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
               <button
                 onClick={handleClearAll}
                 disabled={isGenerating}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all"
+                className="px-3 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg font-semibold text-sm transition-all"
               >
                 Clear
               </button>
@@ -353,7 +355,7 @@ export const KnowledgeCheckTester: React.FC<KnowledgeCheckTesterProps> = ({ onBa
           </div>
 
           {/* Quick Examples */}
-          <div className="mt-6 pt-6 border-t border-slate-700">
+          <div className="mt-4 pt-4 border-t border-slate-700">
             <p className="text-xs text-slate-500 mb-3 uppercase tracking-wider">Quick Topics</p>
             <div className="flex flex-wrap gap-2">
               {['Photosynthesis', 'Fractions', 'Solar System', 'Water Cycle', 'Grammar Rules', 'Cell Structure'].map(exampleTopic => (
