@@ -3,7 +3,8 @@
  *
  * Takes a PracticeManifest and hydrates each item with generated content:
  * - Visual items: uses generateComponentContent (existing generator registry)
- * - Standard items: uses generateKnowledgeCheck (existing problem generator)
+ * - Standard items: batched through the KC orchestrator for optimal problem type
+ *   mix, inset selection, and difficulty progression.
  *
  * This runs server-side and is called from route.ts.
  */
@@ -19,9 +20,11 @@ export type OnItemHydrated = (item: HydratedPracticeItem, index: number, total: 
 
 /**
  * Hydrate a practice manifest by generating content for each item.
- * Visual items get component data via the generator registry.
- * Standard items get problem data via knowledge-check generator.
- * All items are hydrated in parallel for performance.
+ *
+ * Visual items are hydrated individually via the generator registry.
+ * Standard items are BATCHED into a single orchestrated KC call so the
+ * orchestrator can plan the optimal problem type mix, insets, and progression
+ * across the full set.
  *
  * When onItemHydrated is provided, each item is reported as soon as it finishes,
  * enabling the caller to stream results to the client progressively.
@@ -33,75 +36,132 @@ export async function hydratePracticeManifest(
   const total = manifest.items.length;
   const results: HydratedPracticeItem[] = new Array(total);
 
-  const hydratePromises = manifest.items.map(async (item, index): Promise<void> => {
-    let hydrated: HydratedPracticeItem;
+  // Separate visual items (hydrated individually) from standard items (batched)
+  const visualItems: { item: PracticeManifest['items'][0]; index: number }[] = [];
+  const standardItems: { item: PracticeManifest['items'][0]; index: number }[] = [];
+  const emptyItems: { item: PracticeManifest['items'][0]; index: number }[] = [];
 
+  for (let i = 0; i < manifest.items.length; i++) {
+    const item = manifest.items[i];
     if (item.visualPrimitive) {
-      // Visual primitive path: use existing generator registry
-      try {
-        const nr = item.visualPrimitive.numberRange;
-        console.log(`[Hydrator] ${item.visualPrimitive.componentId} numberRange from manifest:`, nr ?? 'none');
+      visualItems.push({ item, index: i });
+    } else if (item.standardProblem) {
+      standardItems.push({ item, index: i });
+    } else {
+      emptyItems.push({ item, index: i });
+    }
+  }
 
-        const manifestItem = {
-          componentId: item.visualPrimitive.componentId,
-          instanceId: item.instanceId,
-          // Pass the visual intent combined with the problem text as generator context
-          intent: item.visualPrimitive.intent || item.problemText,
-          config: {
-            intent: item.visualPrimitive.intent || item.problemText,
-            // Pass structured number range from manifest so generators use grade-appropriate values
-            ...(nr && { numberRange: nr }),
-            difficulty: item.difficulty,
-          },
-        };
+  // Hydrate visual items in parallel (unchanged)
+  const visualPromises = visualItems.map(async ({ item, index }): Promise<void> => {
+    let hydrated: HydratedPracticeItem;
+    try {
+      const nr = item.visualPrimitive!.numberRange;
+      console.log(`[Hydrator] ${item.visualPrimitive!.componentId} numberRange from manifest:`, nr ?? 'none');
 
-        const visualData = await generateComponentContent(
-          manifestItem,
-          manifest.topic,
-          manifest.gradeLevel
-        );
+      const manifestItem = {
+        componentId: item.visualPrimitive!.componentId,
+        instanceId: item.instanceId,
+        intent: item.visualPrimitive!.intent || item.problemText,
+        config: {
+          intent: item.visualPrimitive!.intent || item.problemText,
+          ...(nr && { numberRange: nr }),
+          difficulty: item.difficulty,
+        },
+      };
 
-        if (visualData) {
-          hydrated = { manifestItem: item, visualData };
-        } else {
-          // Generator returned null — fall back to standard problem
-          console.warn(`Visual generator returned null for ${item.visualPrimitive.componentId}, falling back to standard`);
-          hydrated = await hydrateAsFallbackProblem(item, manifest);
-        }
-      } catch (err) {
-        console.warn(`Visual hydration failed for ${item.instanceId}:`, err);
+      const visualData = await generateComponentContent(
+        manifestItem,
+        manifest.topic,
+        manifest.gradeLevel
+      );
+
+      if (visualData) {
+        hydrated = { manifestItem: item, visualData };
+      } else {
+        console.warn(`Visual generator returned null for ${item.visualPrimitive!.componentId}, falling back to standard`);
         hydrated = await hydrateAsFallbackProblem(item, manifest);
       }
-    } else if (item.standardProblem) {
-      // Standard problem path: use knowledge-check generator
-      try {
-        const problems = await generateKnowledgeCheck(
-          manifest.topic,
-          normalizeGradeLevel(manifest.gradeLevel),
-          {
-            problemType: item.standardProblem.problemType,
-            count: 1,
-            bloomsTier: item.standardProblem.evalMode as BloomsTier | undefined,
-          }
-        );
-
-        const problemData = Array.isArray(problems) ? problems[0] : problems;
-        hydrated = { manifestItem: item, problemData };
-      } catch (err) {
-        console.warn(`Standard problem hydration failed for ${item.instanceId}:`, err);
-        hydrated = { manifestItem: item };
-      }
-    } else {
-      // Neither visual nor standard — shouldn't happen, but handle gracefully
-      console.warn(`Item ${item.instanceId} has neither visualPrimitive nor standardProblem`);
-      hydrated = { manifestItem: item };
+    } catch (err) {
+      console.warn(`Visual hydration failed for ${item.instanceId}:`, err);
+      hydrated = await hydrateAsFallbackProblem(item, manifest);
     }
 
     results[index] = hydrated;
     onItemHydrated?.(hydrated, index, total);
   });
 
-  await Promise.all(hydratePromises);
+  // Batch standard items through the KC orchestrator
+  const standardPromise = (async (): Promise<void> => {
+    if (standardItems.length === 0) return;
+
+    // Determine Bloom's tier — use the first item's evalMode (they're typically the same within a manifest)
+    const bloomsTier = standardItems[0].item.standardProblem?.evalMode as BloomsTier | undefined;
+
+    try {
+      console.log(`[Hydrator] Orchestrating ${standardItems.length} standard problems`);
+
+      const problems = await generateKnowledgeCheck(
+        manifest.topic,
+        normalizeGradeLevel(manifest.gradeLevel),
+        {
+          count: standardItems.length,
+          bloomsTier,
+          useOrchestrator: true,
+        }
+      );
+
+      // Distribute generated problems back to their manifest positions
+      for (let i = 0; i < standardItems.length; i++) {
+        const { item, index } = standardItems[i];
+        const problemData = problems[i] || undefined;
+
+        const hydrated: HydratedPracticeItem = problemData
+          ? { manifestItem: item, problemData }
+          : { manifestItem: item };
+
+        if (!problemData) {
+          console.warn(`[Hydrator] Orchestrator returned no problem for index ${i} (${item.instanceId})`);
+        }
+
+        results[index] = hydrated;
+        onItemHydrated?.(hydrated, index, total);
+      }
+    } catch (err) {
+      console.warn('[Hydrator] Orchestrated KC failed, falling back to per-item direct generation:', err);
+
+      // Fallback: generate each standard item individually with direct mode
+      await Promise.all(standardItems.map(async ({ item, index }) => {
+        let hydrated: HydratedPracticeItem;
+        try {
+          const problems = await generateKnowledgeCheck(
+            manifest.topic,
+            normalizeGradeLevel(manifest.gradeLevel),
+            {
+              problemType: item.standardProblem!.problemType,
+              count: 1,
+              bloomsTier: item.standardProblem!.evalMode as BloomsTier | undefined,
+            }
+          );
+          const problemData = Array.isArray(problems) ? problems[0] : problems;
+          hydrated = { manifestItem: item, problemData };
+        } catch {
+          hydrated = { manifestItem: item };
+        }
+        results[index] = hydrated;
+        onItemHydrated?.(hydrated, index, total);
+      }));
+    }
+  })();
+
+  // Handle orphan items
+  for (const { item, index } of emptyItems) {
+    console.warn(`Item ${item.instanceId} has neither visualPrimitive nor standardProblem`);
+    results[index] = { manifestItem: item };
+    onItemHydrated?.({ manifestItem: item }, index, total);
+  }
+
+  await Promise.all([...visualPromises, standardPromise]);
   return results;
 }
 
@@ -124,7 +184,6 @@ async function hydrateAsFallbackProblem(
 
     const problemData = Array.isArray(problems) ? problems[0] : problems;
 
-    // Rewrite the manifest item to standard mode
     return {
       manifestItem: {
         ...item,

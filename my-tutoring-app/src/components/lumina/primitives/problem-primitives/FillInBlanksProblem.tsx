@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { FillInBlanksProblemData } from '../../types';
+import { InsetRenderer } from './insets';
 import {
   usePrimitiveEvaluation,
   type FillInBlanksMetrics,
@@ -208,6 +209,9 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
 
   return (
     <div className="w-full space-y-8">
+      {/* Inset (rich inline content) */}
+      {data.inset && <InsetRenderer inset={data.inset} />}
+
       {/* Text with blanks */}
       <div className="text-xl md:text-2xl text-slate-200 leading-relaxed font-light">
         {renderTextWithBlanks()}

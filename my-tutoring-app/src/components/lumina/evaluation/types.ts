@@ -1037,6 +1037,17 @@ export interface EquationWorkspaceMetrics extends BasePrimitiveMetrics {
   solveTime: number;
 }
 
+export interface FunctionSketchMetrics extends BasePrimitiveMetrics {
+  type: 'function-sketch';
+  featuresCorrect: number;
+  featuresTotal: number;
+  sketchAccuracy: number;
+  classificationCorrect: boolean;
+  controlPointsPlaced: number;
+  completionTime: number;
+  totalAttempts: number;
+}
+
 export interface FormulaCardMetrics extends BasePrimitiveMetrics {
   type: 'formula-card';
 
@@ -3273,6 +3284,7 @@ export type PrimitiveMetrics =
   | EquationBuilderMetrics
   | ParameterExplorerMetrics
   | EquationWorkspaceMetrics
+  | FunctionSketchMetrics
   | HundredsChartMetrics
   | AnalogClockMetrics
   // Exploration

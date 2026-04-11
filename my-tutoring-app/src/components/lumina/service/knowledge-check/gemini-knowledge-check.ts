@@ -24,7 +24,11 @@ import {
   CategorizationActivityProblemData,
   MatchingActivityProblemData,
   SequencingActivityProblemData,
+  InsetType,
+  Inset,
+  KnowledgeCheckPlan,
 } from "../../types";
+import { runKnowledgeCheckOrchestrator } from './gemini-knowledge-check-orchestrator';
 
 // ============================================================================
 // BLOOM'S TAXONOMY TIERS (IRT §6.8)
@@ -133,6 +137,238 @@ function getMcOptionLabels(tier?: BloomsTier): string[] {
 }
 
 // ============================================================================
+// INSET SCHEMAS (Rich inline content generated atomically with problems)
+// ============================================================================
+
+/**
+ * Build the Gemini schema fragment for a specific inset type.
+ * Returns null when no inset is requested — backward compatible.
+ */
+function getInsetSchema(insetType?: InsetType): Schema | null {
+  if (!insetType) return null;
+
+  const baseProps: Record<string, Schema> = {
+    insetType: { type: Type.STRING, description: `Must be "${insetType}"` },
+    label: { type: Type.STRING, description: 'Display label, e.g. "Figure 1", "Table A", "Equation"' },
+  };
+
+  switch (insetType) {
+    case 'katex':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          ...baseProps,
+          expression: { type: Type.STRING, description: 'LaTeX expression string (e.g. "\\\\frac{d}{dx}[x^3]")' },
+          displayMode: { type: Type.STRING, enum: ['display', 'inline'], description: '"display" for centered block, "inline" for flow' },
+          caption: { type: Type.STRING, description: 'Optional description below the expression' },
+        },
+        required: ['insetType', 'expression', 'displayMode'],
+      };
+
+    case 'data-table':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          ...baseProps,
+          headers: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Column headers' },
+          rows: {
+            type: Type.ARRAY,
+            items: { type: Type.ARRAY, items: { type: Type.STRING } },
+            description: '2D array of cell values',
+          },
+          caption: { type: Type.STRING, description: 'Optional table caption' },
+        },
+        required: ['insetType', 'headers', 'rows'],
+      };
+
+    case 'passage':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          ...baseProps,
+          text: { type: Type.STRING, description: 'The passage text. Use \\n for line breaks in poetry.' },
+          format: { type: Type.STRING, enum: ['prose', 'poem', 'quote', 'letter', 'source'], description: 'Typography style' },
+          attribution: { type: Type.STRING, description: 'Author/source attribution' },
+        },
+        required: ['insetType', 'text', 'format'],
+      };
+
+    case 'chart':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          ...baseProps,
+          chartType: { type: Type.STRING, enum: ['bar', 'line', 'pie'], description: 'Chart visualization type' },
+          title: { type: Type.STRING, description: 'Chart title' },
+          xLabel: { type: Type.STRING, description: 'X-axis label' },
+          yLabel: { type: Type.STRING, description: 'Y-axis label' },
+          data: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                label: { type: Type.STRING },
+                value: { type: Type.NUMBER },
+              },
+              required: ['label', 'value'],
+            },
+            description: 'Data points (3-8 items)',
+          },
+        },
+        required: ['insetType', 'chartType', 'title', 'data'],
+      };
+
+    case 'code':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          ...baseProps,
+          code: { type: Type.STRING, description: 'Source code content' },
+          language: { type: Type.STRING, description: 'Programming language (e.g. python, javascript, java)' },
+        },
+        required: ['insetType', 'code', 'language'],
+      };
+
+    case 'number-line':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          ...baseProps,
+          min: { type: Type.NUMBER, description: 'Left end of number line' },
+          max: { type: Type.NUMBER, description: 'Right end of number line' },
+          ticks: { type: Type.ARRAY, items: { type: Type.NUMBER }, description: 'Tick mark positions' },
+          points: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                value: { type: Type.NUMBER },
+                label: { type: Type.STRING },
+              },
+              required: ['value', 'label'],
+            },
+            description: 'Named points on the line',
+          },
+        },
+        required: ['insetType', 'min', 'max', 'ticks'],
+      };
+
+    case 'definition-box':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          ...baseProps,
+          term: { type: Type.STRING, description: 'The vocabulary term' },
+          definition: { type: Type.STRING, description: 'The definition' },
+          partOfSpeech: { type: Type.STRING, description: 'e.g. noun, verb, adjective' },
+          exampleSentence: { type: Type.STRING, description: 'Example usage in a sentence' },
+        },
+        required: ['insetType', 'term', 'definition'],
+      };
+
+    case 'image':
+      // Image insets require base64 — not practical for Gemini text generation.
+      // Handled separately via image generation pipeline.
+      return null;
+
+    default:
+      return null;
+  }
+}
+
+/**
+ * Build prompt instructions for inset generation.
+ * Injected into any generator prompt when insetType is specified.
+ */
+function buildInsetPrompt(insetType?: InsetType): string {
+  if (!insetType) return '';
+
+  const guidance: Record<string, string> = {
+    'katex': `
+## INSET: Mathematical Expression (KaTeX)
+Generate a LaTeX mathematical expression that is CENTRAL to the question.
+The question MUST require reading/interpreting the expression to answer.
+Use proper LaTeX notation (\\frac, \\sqrt, ^, _, \\sum, \\int, Greek letters, etc.).
+The expression should be complex enough to be worth rendering — not just "x + 2".`,
+
+    'data-table': `
+## INSET: Data Table
+Generate a data table with 3-6 columns and 3-8 rows of realistic data.
+The question MUST require reading specific values from the table to answer.
+Distractors should be plausible misreadings (wrong row, adjacent column, etc.).
+Include meaningful headers and varied data that supports multiple question angles.`,
+
+    'passage': `
+## INSET: Text Passage
+Generate a passage (2-4 paragraphs for prose, 8-16 lines for poetry, 1-3 paragraphs for quotes/letters/sources).
+The question MUST require comprehending the passage to answer — not just surface recall.
+For poetry: use \\n for line breaks. For prose: write continuous paragraphs.
+Include an attribution if appropriate (author name, title, date).`,
+
+    'chart': `
+## INSET: Chart Data
+Generate realistic data points (3-8 items) for a chart visualization.
+The question MUST require interpreting the chart data to answer.
+Include a descriptive title and axis labels where appropriate.
+Make sure data values create clear patterns or comparisons the question can test.`,
+
+    'code': `
+## INSET: Code Block
+Generate a code snippet (5-20 lines) in the specified or appropriate language.
+The question MUST require reading/tracing the code to answer.
+Include realistic variable names, proper indentation, and clear logic.
+For "find the bug" questions: include exactly one subtle, realistic bug.`,
+
+    'number-line': `
+## INSET: Number Line
+Generate a number line with appropriate range, tick marks, and labeled points.
+The question MUST require interpreting positions or distances on the number line.
+Use grade-appropriate numbers (integers for elementary, fractions/decimals for middle school).`,
+
+    'definition-box': `
+## INSET: Definition Box
+Generate a vocabulary term with its definition, part of speech, and example sentence.
+The question MUST require understanding the definition to answer — not just recognizing the word.
+Choose terms with nuanced meanings that support analysis-level questions.`,
+  };
+
+  return (guidance[insetType] || '') + `
+
+CRITICAL: The inset content and question MUST be internally consistent.
+- The question is UNANSWERABLE without the inset.
+- Distractors are derived from plausible misinterpretations of the inset.
+- The inset and question are generated TOGETHER as one coherent unit.
+`;
+}
+
+/**
+ * Inject the inset schema property into a problem schema.
+ * Mutates the schema's properties and required arrays.
+ */
+function injectInsetIntoSchema(
+  problemSchema: Schema,
+  insetType?: InsetType
+): void {
+  const insetSchema = getInsetSchema(insetType);
+  if (!insetSchema || !problemSchema.properties) return;
+
+  (problemSchema.properties as Record<string, Schema>)['inset'] = insetSchema;
+  // Don't add to required — Gemini must produce it when instructed but schema flexibility helps
+}
+
+/**
+ * Extract and type the inset from a raw Gemini response problem object.
+ * Returns undefined if no inset data present.
+ */
+function extractInset(raw: any, insetType?: InsetType): Inset | undefined {
+  if (!insetType || !raw.inset) return undefined;
+  return {
+    ...raw.inset,
+    insetType: insetType, // Ensure type is set even if Gemini omits it
+  } as Inset;
+}
+
+// ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
@@ -168,7 +404,8 @@ export const generateMultipleChoiceProblems = async (
   gradeLevel: string,
   count: number = 1,
   context?: string,
-  bloomsTier?: BloomsTier
+  bloomsTier?: BloomsTier,
+  insetType?: InsetType
 ): Promise<MultipleChoiceProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const optionLabels = getMcOptionLabels(bloomsTier);
@@ -233,7 +470,21 @@ export const generateMultipleChoiceProblems = async (
     required: ["problems"]
   };
 
+  // Inject inset schema into each problem item when insetType is specified
+  const itemSchema = (multipleChoiceSchema.properties as any).problems.items;
+  injectInsetIntoSchema(itemSchema, insetType);
+
+  // Add optionFormat to schema when katex inset (options may also be LaTeX)
+  if (insetType === 'katex') {
+    (itemSchema.properties as Record<string, Schema>)['optionFormat'] = {
+      type: Type.STRING,
+      enum: ['text', 'katex'],
+      description: 'Set to "katex" if answer options contain LaTeX expressions, otherwise "text"',
+    };
+  }
+
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+  const insetPrompt = buildInsetPrompt(insetType);
 
   const prompt = `You are an expert educational assessment designer creating multiple choice questions for a knowledge check.
 
@@ -241,9 +492,9 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}
+${bloomsPrompt}${insetPrompt}
 ## Your Mission:
-Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".
+Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the question directly references.` : ''}
 
 ## Quality Standards:
 
@@ -255,7 +506,7 @@ Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} tha
 
 ### 2. ANSWER OPTIONS
 - Provide exactly ${optionCount} options labeled ${optionLabels.join(', ')}
-- Make all distractors (wrong answers) plausible but clearly incorrect
+- Make all distractors (wrong answers) plausible
 - Avoid "all of the above" or "none of the above" options
 - Ensure options are parallel in structure and length
 - Mix up the position of the correct answer (don't always make it B or C)
@@ -307,12 +558,15 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
       correctOptionId: problem.correctOptionId,
       rationale: problem.rationale,
       teachingNote: problem.teachingNote,
-      successCriteria: problem.successCriteria
+      successCriteria: problem.successCriteria,
+      ...(extractInset(problem, insetType) ? { inset: extractInset(problem, insetType) } : {}),
+      ...(problem.optionFormat === 'katex' ? { optionFormat: 'katex' as const } : {}),
     }));
 
     console.log('Multiple Choice Generated from dedicated service:', {
       topic,
-      count: problems.length
+      count: problems.length,
+      hasInsets: problems.some((p: any) => p.inset),
     });
 
     return problems;
@@ -334,7 +588,8 @@ export const generateTrueFalseProblems = async (
   gradeLevel: string,
   count: number = 1,
   context?: string,
-  bloomsTier?: BloomsTier
+  bloomsTier?: BloomsTier,
+  insetType?: InsetType
 ): Promise<TrueFalseProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -385,7 +640,12 @@ export const generateTrueFalseProblems = async (
     required: ["problems"]
   };
 
+  // Inject inset schema into each problem item
+  const tfItemSchema = (trueFalseSchema.properties as any).problems.items;
+  injectInsetIntoSchema(tfItemSchema, insetType);
+
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+  const insetPrompt = buildInsetPrompt(insetType);
 
   const prompt = `You are an expert educational assessment designer creating true/false questions for a knowledge check.
 
@@ -393,9 +653,9 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}
+${bloomsPrompt}${insetPrompt}
 ## Your Mission:
-Create ${count} high-quality true/false statement${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".
+Create ${count} high-quality true/false statement${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the statement directly references.` : ''}
 
 ## Quality Standards:
 
@@ -430,7 +690,7 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-lite-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -450,12 +710,14 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
       correct: problem.correct,
       rationale: problem.rationale,
       teachingNote: problem.teachingNote,
-      successCriteria: problem.successCriteria
+      successCriteria: problem.successCriteria,
+      ...(extractInset(problem, insetType) ? { inset: extractInset(problem, insetType) } : {}),
     }));
 
     console.log('True/False Generated from dedicated service:', {
       topic,
-      count: problems.length
+      count: problems.length,
+      hasInsets: problems.some((p: any) => p.inset),
     });
 
     return problems;
@@ -477,7 +739,8 @@ export const generateFillInBlanksProblems = async (
   gradeLevel: string,
   count: number = 1,
   context?: string,
-  bloomsTier?: BloomsTier
+  bloomsTier?: BloomsTier,
+  insetType?: InsetType
 ): Promise<FillInBlanksProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -551,7 +814,12 @@ export const generateFillInBlanksProblems = async (
     required: ["problems"]
   };
 
+  // Inject inset schema into each problem item when insetType is specified
+  const fibItemSchema = (fillInBlanksSchema.properties as any).problems.items;
+  injectInsetIntoSchema(fibItemSchema, insetType);
+
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+  const insetPrompt = buildInsetPrompt(insetType);
 
   const prompt = `You are an expert educational assessment designer creating fill-in-the-blank questions with drag-and-drop word banks.
 
@@ -559,9 +827,9 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}
+${bloomsPrompt}${insetPrompt}
 ## Your Mission:
-Create ${count} high-quality fill-in-the-blank problem${count > 1 ? 's' : ''} with word banks that effectively assess understanding of "${topic}".
+Create ${count} high-quality fill-in-the-blank problem${count > 1 ? 's' : ''} with word banks that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the question directly references.` : ''}
 
 ## Quality Standards:
 
@@ -600,7 +868,7 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-lite-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -621,12 +889,14 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
       wordBank: problem.wordBank,
       rationale: problem.rationale,
       teachingNote: problem.teachingNote,
-      successCriteria: problem.successCriteria
+      successCriteria: problem.successCriteria,
+      ...(extractInset(problem, insetType) ? { inset: extractInset(problem, insetType) } : {}),
     }));
 
     console.log('Fill in Blanks Generated from dedicated service:', {
       topic,
-      count: problems.length
+      count: problems.length,
+      hasInsets: problems.some((p: any) => p.inset),
     });
 
     return problems;
@@ -648,7 +918,8 @@ export const generateCategorizationProblems = async (
   gradeLevel: string,
   count: number = 1,
   context?: string,
-  bloomsTier?: BloomsTier
+  bloomsTier?: BloomsTier,
+  insetType?: InsetType
 ): Promise<CategorizationActivityProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -718,7 +989,12 @@ export const generateCategorizationProblems = async (
     required: ["problems"]
   };
 
+  // Inject inset schema into each problem item when insetType is specified
+  const catItemSchema = (categorizationSchema.properties as any).problems.items;
+  injectInsetIntoSchema(catItemSchema, insetType);
+
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+  const insetPrompt = buildInsetPrompt(insetType);
 
   const prompt = `You are an expert educational assessment designer creating categorization activities for a knowledge check.
 
@@ -726,9 +1002,9 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}
+${bloomsPrompt}${insetPrompt}
 ## Your Mission:
-Create ${count} high-quality categorization activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".
+Create ${count} high-quality categorization activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the activity directly references.` : ''}
 
 ## Quality Standards:
 
@@ -771,7 +1047,7 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-lite-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -792,12 +1068,14 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
       categorizationItems: problem.categorizationItems,
       rationale: problem.rationale,
       teachingNote: problem.teachingNote,
-      successCriteria: problem.successCriteria
+      successCriteria: problem.successCriteria,
+      ...(extractInset(problem, insetType) ? { inset: extractInset(problem, insetType) } : {}),
     }));
 
     console.log('Categorization Generated from dedicated service:', {
       topic,
-      count: problems.length
+      count: problems.length,
+      hasInsets: problems.some((p: any) => p.inset),
     });
 
     return problems;
@@ -819,7 +1097,8 @@ export const generateMatchingProblems = async (
   gradeLevel: string,
   count: number = 1,
   context?: string,
-  bloomsTier?: BloomsTier
+  bloomsTier?: BloomsTier,
+  insetType?: InsetType
 ): Promise<MatchingActivityProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -921,7 +1200,12 @@ export const generateMatchingProblems = async (
     required: ["problems"]
   };
 
+  // Inject inset schema into each problem item when insetType is specified
+  const matchItemSchema = (matchingSchema.properties as any).problems.items;
+  injectInsetIntoSchema(matchItemSchema, insetType);
+
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+  const insetPrompt = buildInsetPrompt(insetType);
 
   const prompt = `You are an expert educational assessment designer creating matching activities for knowledge checks.
 
@@ -929,9 +1213,9 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}
+${bloomsPrompt}${insetPrompt}
 ## Your Mission:
-Create ${count} high-quality matching activity problem${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".
+Create ${count} high-quality matching activity problem${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the activity directly references.` : ''}
 
 ## Quality Standards:
 
@@ -1002,12 +1286,14 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
       mappings: problem.mappings,
       rationale: problem.rationale,
       teachingNote: problem.teachingNote,
-      successCriteria: problem.successCriteria
+      successCriteria: problem.successCriteria,
+      ...(extractInset(problem, insetType) ? { inset: extractInset(problem, insetType) } : {}),
     }));
 
     console.log('Matching Generated from dedicated service:', {
       topic,
-      count: problems.length
+      count: problems.length,
+      hasInsets: problems.some((p: any) => p.inset),
     });
 
     return problems;
@@ -1029,7 +1315,8 @@ export const generateSequencingProblems = async (
   gradeLevel: string,
   count: number = 1,
   context?: string,
-  bloomsTier?: BloomsTier
+  bloomsTier?: BloomsTier,
+  insetType?: InsetType
 ): Promise<SequencingActivityProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
@@ -1081,7 +1368,12 @@ export const generateSequencingProblems = async (
     required: ["problems"]
   };
 
+  // Inject inset schema into each problem item when insetType is specified
+  const seqItemSchema = (sequencingSchema.properties as any).problems.items;
+  injectInsetIntoSchema(seqItemSchema, insetType);
+
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
+  const insetPrompt = buildInsetPrompt(insetType);
 
   const prompt = `You are an expert educational assessment designer creating sequencing activities for a knowledge check.
 
@@ -1089,9 +1381,9 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}
+${bloomsPrompt}${insetPrompt}
 ## Your Mission:
-Create ${count} high-quality sequencing activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".
+Create ${count} high-quality sequencing activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the activity directly references.` : ''}
 
 ## Quality Standards:
 
@@ -1156,12 +1448,14 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
       items: problem.items,
       rationale: problem.rationale,
       teachingNote: problem.teachingNote,
-      successCriteria: problem.successCriteria
+      successCriteria: problem.successCriteria,
+      ...(extractInset(problem, insetType) ? { inset: extractInset(problem, insetType) } : {}),
     }));
 
     console.log('Sequencing Generated from dedicated service:', {
       topic,
-      count: problems.length
+      count: problems.length,
+      hasInsets: problems.some((p: any) => p.inset),
     });
 
     return problems;
@@ -1175,14 +1469,60 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
 // MAIN DISPATCHER
 // ============================================================================
 
+type GenFn = (topic: string, gradeLevel: string, count: number, context?: string, bloomsTier?: BloomsTier, insetType?: InsetType) => Promise<ProblemData[]>;
+
+const GENERATOR_MAP: Record<string, GenFn> = {
+  'multiple_choice': generateMultipleChoiceProblems,
+  'true_false': generateTrueFalseProblems,
+  'fill_in_blanks': generateFillInBlanksProblems,
+  'matching_activity': generateMatchingProblems,
+  'sequencing_activity': generateSequencingProblems,
+  'categorization_activity': generateCategorizationProblems,
+};
+
+const VALID_GRADE_KEYS = new Set(['toddler', 'preschool', 'kindergarten', 'elementary', 'middle-school', 'high-school', 'undergraduate', 'graduate', 'phd']);
+
 /**
- * Generate knowledge check problems based on config
- * This is the main entry point for manifest-driven problem generation
+ * Generate a single problem from an orchestrator plan item.
+ * Each planned problem is dispatched to its per-type generator.
+ */
+async function generateFromPlan(
+  plan: KnowledgeCheckPlan['problems'][0],
+  topic: string,
+  gradeLevel: string,
+  bloomsTier?: BloomsTier,
+): Promise<ProblemData | null> {
+  const generator = GENERATOR_MAP[plan.problemType];
+  if (!generator) {
+    console.warn(`[KC Dispatch] No generator for type: ${plan.problemType}`);
+    return null;
+  }
+
+  try {
+    const results = await generator(
+      topic,
+      gradeLevel,
+      1,
+      plan.brief, // orchestrator brief becomes the context
+      bloomsTier,
+      plan.insetType || undefined,
+    );
+    return results[0] || null;
+  } catch (err) {
+    console.warn(`[KC Dispatch] Generator failed for ${plan.problemType}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Generate knowledge check problems — two modes:
  *
- * @param topic - The topic to generate problems about
- * @param gradeContext - Grade level context string (already converted)
- * @param config - Configuration specifying problemType, count, difficulty
- * @returns Array of problems matching the specified type
+ * 1. **Orchestrated** (default): Orchestrator plans optimal problem type mix,
+ *    insets, and difficulty progression. Parallel generators produce each problem.
+ *    Triggered when `problemType` is omitted or `useOrchestrator` is true.
+ *
+ * 2. **Direct**: Caller specifies exact problemType — bypasses orchestrator.
+ *    Used for backward compat (tester, legacy call sites).
  */
 export const generateKnowledgeCheck = async (
   topic: string,
@@ -1194,53 +1534,54 @@ export const generateKnowledgeCheck = async (
     context?: string;
     objectiveText?: string;
     bloomsTier?: BloomsTier;
+    insetType?: InsetType;
+    /** Force orchestrator even when problemType is set */
+    useOrchestrator?: boolean;
   }
 ): Promise<ProblemData[]> => {
-  const problemType = config?.problemType || 'multiple_choice';
   const count = config?.count || 1;
   const context = config?.context || config?.objectiveText;
   const bloomsTier = config?.bloomsTier;
-
-  // gradeContext is a grade-level key (e.g., "middle-school"). If it's a valid
-  // key in getGradeLevelContext, use it directly; otherwise default to elementary.
-  const VALID_GRADE_KEYS = new Set(['toddler', 'preschool', 'kindergarten', 'elementary', 'middle-school', 'high-school', 'undergraduate', 'graduate', 'phd']);
   const gradeLevel = VALID_GRADE_KEYS.has(gradeContext) ? gradeContext : 'elementary';
 
-  console.log('[Knowledge Check] Starting problem generation from dedicated service:');
-  console.log('  Topic:', topic);
-  console.log('  Grade Level:', gradeLevel);
-  console.log('  Problem Type:', problemType);
-  console.log('  Count:', count);
-  console.log('  Bloom\'s Tier:', bloomsTier || '(none — generic)');
-  console.log('  Context:', context || '(none)');
+  // Orchestrated path: no explicit problemType, or caller opted in
+  const useOrchestrator = config?.useOrchestrator || !config?.problemType;
 
-  // Map problem types to their generator functions (bloomsTier passed as 5th arg)
-  type GenFn = (topic: string, gradeLevel: string, count: number, context?: string, bloomsTier?: BloomsTier) => Promise<ProblemData[]>;
-  const generatorMap: Record<ProblemType, GenFn> = {
-    'multiple_choice': generateMultipleChoiceProblems,
-    'true_false': generateTrueFalseProblems,
-    'fill_in_blanks': generateFillInBlanksProblems,
-    'matching_activity': generateMatchingProblems,
-    'sequencing_activity': generateSequencingProblems,
-    'categorization_activity': generateCategorizationProblems,
-    'scenario_question': async () => { throw new Error('Scenario questions not yet implemented'); },
-    'short_answer': async () => { throw new Error('Short answer not yet implemented'); },
-  };
+  if (useOrchestrator) {
+    console.log('[Knowledge Check] Orchestrated mode:', { topic, gradeLevel, count, bloomsTier });
 
-  const generator = generatorMap[problemType];
+    const plan = await runKnowledgeCheckOrchestrator(topic, gradeLevel, count, bloomsTier, context);
+
+    // Stage 2: parallel generation from the plan
+    const results = await Promise.all(
+      plan.problems.map(p => generateFromPlan(p, topic, gradeLevel, bloomsTier))
+    );
+
+    const problems = results.filter((p): p is ProblemData => p !== null);
+
+    if (problems.length === 0) {
+      throw new Error('[Knowledge Check] All generators failed — no problems produced');
+    }
+
+    console.log(`[Knowledge Check] Orchestrated: ${problems.length}/${plan.problems.length} problems generated`);
+    console.log(`  Arc: ${plan.assessmentArc}`);
+    return problems;
+  }
+
+  // Direct path: caller specified exact problemType (backward compat)
+  const problemType = config!.problemType!;
+  const insetType = config?.insetType;
+
+  console.log('[Knowledge Check] Direct mode:', { topic, gradeLevel, problemType, count, bloomsTier, insetType });
+
+  const generator = GENERATOR_MAP[problemType];
   if (!generator) {
-    console.error(`Unknown problem type: ${problemType}`);
     throw new Error(`Unknown problem type: ${problemType}`);
   }
 
-  try {
-    const problems = await generator(topic, gradeLevel, count, context, bloomsTier);
-    console.log(`  Successfully generated ${problems.length} problem(s) of type: ${problemType}`);
-    return problems;
-  } catch (error) {
-    console.error(`Error generating ${problemType} problems:`, error);
-    throw error;
-  }
+  const problems = await generator(topic, gradeLevel, count, context, bloomsTier, insetType);
+  console.log(`[Knowledge Check] Direct: ${problems.length} ${problemType} problem(s) generated`);
+  return problems;
 };
 
 // Export for backward compatibility (geminiService.ts may still reference these)

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { TrueFalseProblemData, VisualObjectCollection, VisualComparisonData, LetterTracingData, LetterPictureData, AlphabetSequenceData, RhymingPairsData, SightWordCardData, SoundSortData } from '../../types';
 import { ObjectCollection, ComparisonPanel, LetterPicture, AlphabetSequence, RhymingPairs, SightWordCard, SoundSort } from '../visual-primitives';
 import { LetterTracing } from '../LetterTracing';
+import { InsetRenderer } from './insets';
 import {
   usePrimitiveEvaluation,
   type TrueFalseMetrics,
@@ -131,6 +132,9 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
           )}
         </div>
       )}
+
+      {/* Inset (rich inline content) */}
+      {data.inset && <InsetRenderer inset={data.inset} />}
 
       {/* True/False Buttons */}
       <div className="grid grid-cols-2 gap-4 mb-8 max-w-md mx-auto">

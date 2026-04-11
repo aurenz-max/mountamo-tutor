@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
             problemType: params.problemType,
             count: params.count,
             bloomsTier: params.bloomsTier,
+            insetType: params.insetType,
           }
         );
         return NextResponse.json(kcProblems);

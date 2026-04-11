@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { MatchingActivityProblemData } from '../../types';
+import { InsetRenderer } from './insets';
 import {
   usePrimitiveEvaluation,
   type MatchingActivityMetrics,
@@ -156,6 +157,9 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
       <h3 className="text-xl md:text-2xl font-bold text-white mb-6 leading-tight">
         {data.prompt}
       </h3>
+
+      {/* Inset (rich inline content) */}
+      {data.inset && <InsetRenderer inset={data.inset} />}
 
       <p className="text-slate-400 mb-6 text-sm">
         Click a term on the left, then click one or more matching items on the right.

@@ -121,6 +121,7 @@ export type {
   EquationBuilderMetrics,
   ParameterExplorerMetrics,
   EquationWorkspaceMetrics,
+  FunctionSketchMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,

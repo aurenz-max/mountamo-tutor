@@ -311,8 +311,8 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({
         const generated = await generateKnowledgeCheckProblems(
           topicContext,
           gradeLevel,
-          problemType,
-          perType
+          perType,
+          { problemType }
         );
         const typed = generated.map((p: any) => ({ ...p, type: problemType, gradeLevel }));
         allProblems.push(...typed);

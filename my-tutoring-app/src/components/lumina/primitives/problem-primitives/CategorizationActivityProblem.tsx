@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { CategorizationActivityProblemData } from '../../types';
+import { InsetRenderer } from './insets';
 import {
   usePrimitiveEvaluation,
   type CategorizationActivityMetrics,
@@ -150,6 +151,9 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
       <h3 className="text-xl md:text-2xl font-bold text-white mb-6 leading-tight">
         {data.instruction}
       </h3>
+
+      {/* Inset (rich inline content) */}
+      {data.inset && <InsetRenderer inset={data.inset} />}
 
       <p className="text-slate-400 mb-6 text-sm">
         Drag items into the correct category.

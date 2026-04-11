@@ -29,6 +29,7 @@ import RatioTable from '../primitives/visual-primitives/math/RatioTable';
 import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
+import FunctionSketch from '../primitives/visual-primitives/math/FunctionSketch';
 import CompareObjects from '../primitives/visual-primitives/math/CompareObjects';
 import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
 import NumberBond from '../primitives/visual-primitives/math/NumberBond';
@@ -611,6 +612,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'function-machine': {
     component: FunctionMachine,
     sectionTitle: 'Function Machine',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'function-sketch': {
+    component: FunctionSketch,
+    sectionTitle: 'Function Sketch',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

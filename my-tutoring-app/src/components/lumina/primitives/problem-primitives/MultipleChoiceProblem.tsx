@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Info } from 'lucide-react';
+import { InsetRenderer, renderKatexString } from './insets';
 
 /**
  * Multiple Choice Problem Component
@@ -142,6 +143,9 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
         </div>
       )}
 
+      {/* Inset (rich inline content — equation, table, passage, chart, etc.) */}
+      {data.inset && <InsetRenderer inset={data.inset} />}
+
       {/* Options Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {data.options.map((option) => {
@@ -185,9 +189,16 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
                   >
                     {option.id}
                   </Badge>
-                  <span className="text-lg text-slate-200 font-light group-hover:text-white transition-colors whitespace-normal break-words">
-                    {option.text}
-                  </span>
+                  {data.optionFormat === 'katex' ? (
+                    <span
+                      className="text-lg text-slate-200 font-light group-hover:text-white transition-colors whitespace-normal break-words"
+                      dangerouslySetInnerHTML={{ __html: renderKatexString(option.text) }}
+                    />
+                  ) : (
+                    <span className="text-lg text-slate-200 font-light group-hover:text-white transition-colors whitespace-normal break-words">
+                      {option.text}
+                    </span>
+                  )}
                 </div>
 
                 {isSubmitted && isCorrectOption && (

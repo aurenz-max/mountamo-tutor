@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { SequencingActivityProblemData } from '../../types';
+import { InsetRenderer } from './insets';
 import {
   usePrimitiveEvaluation,
   type SequencingActivityMetrics,
@@ -113,6 +114,9 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
       <h3 className="text-xl md:text-2xl font-bold text-white mb-6 leading-tight">
         {data.instruction}
       </h3>
+
+      {/* Inset (rich inline content) */}
+      {data.inset && <InsetRenderer inset={data.inset} />}
 
       <p className="text-slate-400 mb-6 text-sm">
         Drag and drop to arrange items in the correct order.

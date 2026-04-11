@@ -296,11 +296,21 @@ export const generateIntroBriefing = async (
 export const generateKnowledgeCheckProblems = async (
   topic: string,
   gradeLevel: string,
-  problemType: ProblemType,
   count: number,
-  bloomsTier?: string
+  options?: {
+    problemType?: ProblemType;
+    bloomsTier?: string;
+    insetType?: string;
+  }
 ): Promise<ProblemData[]> => {
-  return callAPI('generateKnowledgeCheckProblems', { topic, gradeLevel, problemType, count, bloomsTier });
+  return callAPI('generateKnowledgeCheckProblems', {
+    topic,
+    gradeLevel,
+    count,
+    problemType: options?.problemType,
+    bloomsTier: options?.bloomsTier,
+    insetType: options?.insetType,
+  });
 };
 
 export const generateProblemHint = async (

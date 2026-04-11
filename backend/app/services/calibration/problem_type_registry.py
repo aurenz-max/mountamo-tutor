@@ -716,6 +716,15 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "apply":    PriorConfig(0.5, "Data tables + MC requiring cross-referencing"),
         "analyze":  PriorConfig(1.5, "Hard MC + synthesis questions across blocks"),
     },
+    # -----------------------------------------------------------------
+    # Function Sketch primitives (per-mode β)
+    # -----------------------------------------------------------------
+    "function-sketch": {
+        "classify-shape":    PriorConfig(1.5, "Identify if a curve is linear, quadratic, exponential, or periodic"),
+        "identify-features": PriorConfig(2.0, "Mark roots, extrema, intercepts, asymptotes on a given curve"),
+        "compare-functions": PriorConfig(2.5, "Two curves shown — identify which matches a description"),
+        "sketch-match":      PriorConfig(3.5, "Place control points to sketch a described function"),
+    },
 }
 
 # Default prior for unregistered primitive_type/eval_mode combinations

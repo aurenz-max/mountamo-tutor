@@ -3369,4 +3369,58 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'function-sketch',
+    description: 'Qualitative function reasoning primitive for grades 9-12. Students analyze function behavior by shape, key features, and family — without computing exact values. Supports four challenge types: classify-shape (linear/quadratic/exponential/periodic), identify-features (roots, extrema, intercepts, asymptotes), compare-functions (two curves, match to description), and sketch-match (place control points to sketch a described function). Pedagogical moments: FEATURE_FOUND, ANSWER_CORRECT, ANSWER_INCORRECT, NEXT_ITEM, ALL_COMPLETE. ESSENTIAL for Algebra 2, Precalculus, and AP Calculus qualitative reasoning.',
+    constraints: 'Best for grades 9-12. Requires a title and context string. Each challenge specifies a type (classify-shape | identify-features | compare-functions | sketch-match) and an instruction. Sketch-match requires control-point placement UI; identify-features requires annotatable curve with clickable feature markers.',
+    evalModes: [
+      {
+        evalMode: 'classify-shape',
+        label: 'Classify Shape (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['classify-shape'],
+        description: 'Identify if a curve is linear, quadratic, exponential, or periodic',
+      },
+      {
+        evalMode: 'identify-features',
+        label: 'Identify Features (Tier 2)',
+        beta: 2.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['identify-features'],
+        description: 'Mark roots, extrema, intercepts, asymptotes on a given curve',
+      },
+      {
+        evalMode: 'compare-functions',
+        label: 'Compare Functions (Tier 3)',
+        beta: 2.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['compare-functions'],
+        description: 'Two curves shown — identify which matches a description',
+      },
+      {
+        evalMode: 'sketch-match',
+        label: 'Sketch Match (Tier 4)',
+        beta: 3.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['sketch-match'],
+        description: 'Place control points to sketch a described function',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Student is analyzing function behavior in "{{title}}" — {{context}}. Challenge type: {{type}}, instruction: "{{instruction}}".',
+      contextKeys: ['title', 'context', 'challenges'],
+      scaffoldingLevels: {
+        level1: '"What do you notice about the shape of this function? What familiar patterns do you see?"',
+        level2: '"Look at where the function crosses the x-axis — those are roots. Where does it reach its highest/lowest points? Use {{context}} to guide your thinking."',
+        level3: '"Let me walk through this step by step: First, identify the general family (linear, quadratic, trig, exponential). Then look for key features: intercepts, turning points, symmetry, and end behavior."',
+      },
+      commonStruggles: [
+        { pattern: 'Confuses roots with extrema', response: 'Roots are where the curve crosses the x-axis (y=0). Extrema are the peaks and valleys of the curve.' },
+        { pattern: 'Places control points too close together', response: 'Try spreading your points across the full x-range. Focus on getting the key features (peaks, zeros, intercepts) in roughly the right positions.' },
+        { pattern: 'Cannot distinguish function families', response: 'Linear = straight line. Quadratic = single U or arch. Exponential = starts slow then grows fast (or decays). Periodic = repeats.' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

@@ -59,6 +59,7 @@ import { generateEquationBuilder } from '../../math/gemini-equation-builder';
 import { generateCompareObjects } from '../../math/gemini-compare-objects';
 import { generateParameterExplorer } from '../../math/gemini-parameter-explorer';
 import { generateEquationWorkspace } from '../../math/gemini-equation-workspace';
+import { generateFunctionSketch } from '../../math/gemini-function-sketch';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -451,6 +452,13 @@ registerGenerator('equation-workspace', async (item, topic, gradeContext) => ({
   type: 'equation-workspace',
   instanceId: item.instanceId,
   data: await generateEquationWorkspace(topic, gradeContext, item.config),
+}));
+
+// Function Sketch (9-12+ qualitative function reasoning)
+registerGenerator('function-sketch', async (item, topic, gradeContext) => ({
+  type: 'function-sketch',
+  instanceId: item.instanceId,
+  data: await generateFunctionSketch(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

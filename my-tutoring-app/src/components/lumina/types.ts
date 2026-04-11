@@ -421,6 +421,101 @@ export type ProblemType =
 
 export type ProblemDifficulty = 'easy' | 'medium' | 'hard';
 
+// ============================================================================
+// INSET TYPES (Rich inline content for knowledge-check problems)
+// ============================================================================
+
+export type InsetType =
+  | 'katex'
+  | 'data-table'
+  | 'passage'
+  | 'chart'
+  | 'code'
+  | 'image'
+  | 'number-line'
+  | 'definition-box';
+
+export interface BaseInset {
+  insetType: InsetType;
+  /** Optional label: "Figure 1", "Equation", "Passage A", "Table 1" */
+  label?: string;
+}
+
+export interface KatexInset extends BaseInset {
+  insetType: 'katex';
+  expression: string;
+  displayMode: 'display' | 'inline';
+  caption?: string;
+}
+
+export interface DataTableInset extends BaseInset {
+  insetType: 'data-table';
+  headers: string[];
+  rows: string[][];
+  caption?: string;
+  highlightCells?: Array<{ row: number; col: number }>;
+}
+
+export interface PassageInset extends BaseInset {
+  insetType: 'passage';
+  text: string;
+  format: 'prose' | 'poem' | 'quote' | 'letter' | 'source';
+  attribution?: string;
+  showLineNumbers?: boolean;
+}
+
+export interface ChartInset extends BaseInset {
+  insetType: 'chart';
+  chartType: 'bar' | 'line' | 'pie';
+  title: string;
+  xLabel?: string;
+  yLabel?: string;
+  data: Array<{ label: string; value: number; group?: string }>;
+}
+
+export interface CodeInset extends BaseInset {
+  insetType: 'code';
+  code: string;
+  language: string;
+  showLineNumbers?: boolean;
+  highlightLines?: number[];
+}
+
+export interface ImageInset extends BaseInset {
+  insetType: 'image';
+  src: string;
+  altText: string;
+  caption?: string;
+  size?: 'small' | 'medium' | 'full';
+}
+
+export interface NumberLineInset extends BaseInset {
+  insetType: 'number-line';
+  min: number;
+  max: number;
+  ticks: number[];
+  points?: Array<{ value: number; label: string; color?: string }>;
+  region?: { from: number; to: number; label?: string };
+}
+
+export interface DefinitionBoxInset extends BaseInset {
+  insetType: 'definition-box';
+  term: string;
+  definition: string;
+  partOfSpeech?: string;
+  exampleSentence?: string;
+}
+
+export type Inset =
+  | KatexInset
+  | DataTableInset
+  | PassageInset
+  | ChartInset
+  | CodeInset
+  | ImageInset
+  | NumberLineInset
+  | DefinitionBoxInset;
+
 // Base interface for all problem types
 export interface BaseProblemData {
   id: string;
@@ -429,6 +524,8 @@ export interface BaseProblemData {
   rationale: string;
   teachingNote: string;
   successCriteria: string[];
+  /** Rich inline content (equation, table, passage, chart, etc.) generated with the problem */
+  inset?: Inset;
 }
 
 // Multiple Choice Problem
@@ -443,6 +540,8 @@ export interface MultipleChoiceProblemData extends BaseProblemData {
   visual?: VisualPrimitive;
   options: MultipleChoiceOption[];
   correctOptionId: string;
+  /** When 'katex', option text strings are rendered through KaTeX */
+  optionFormat?: 'text' | 'katex';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -1069,6 +1168,7 @@ export type ComponentId =
   | 'tape-diagram'       // Tape diagram / bar model for part-whole and comparison word problems
   | 'factor-tree'        // Tree diagram showing prime factorization
   | 'function-machine'   // Visual machine with input hopper, rule display, and output chute for function concepts
+  | 'function-sketch'    // Interactive canvas for sketching and analyzing function graphs
   | 'math-fact-fluency'  // Interactive math fact fluency practice
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
@@ -1437,6 +1537,34 @@ export interface VisualPrimitiveSpec {
   };
 }
 
+// ============================================================================
+// KNOWLEDGE CHECK ORCHESTRATOR TYPES
+// ============================================================================
+
+/**
+ * A single problem plan output by the KC orchestrator (Stage 1).
+ * Tells the parallel generators what to build.
+ */
+export interface KnowledgeCheckProblemPlan {
+  index: number;
+  problemType: ProblemType;
+  difficulty: ProblemDifficulty;
+  insetType: InsetType | null;
+  /** Detailed content brief — the generator uses this as context */
+  brief: string;
+  /** Why this problem is placed here in the sequence */
+  cognitiveNote: string;
+}
+
+/**
+ * Full orchestrator output — plans the entire knowledge check assessment.
+ */
+export interface KnowledgeCheckPlan {
+  /** 1-2 sentence narrative of the cognitive journey */
+  assessmentArc: string;
+  problems: KnowledgeCheckProblemPlan[];
+}
+
 /**
  * Specification for a standard text-based problem (fallback when no visual fits).
  */
@@ -1600,6 +1728,7 @@ export type { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from
 export type { CompareObjectsData } from './primitives/visual-primitives/math/CompareObjects';
 export type { ComparisonBuilderData } from './primitives/visual-primitives/math/ComparisonBuilder';
 export type { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from './primitives/visual-primitives/math/FunctionMachine';
+export type { FunctionSketchData } from './primitives/visual-primitives/math/FunctionSketch';
 export type { NumberBondData } from './primitives/visual-primitives/math/NumberBond';
 export type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';
 export type { RatioTableData, RatioTableChallenge } from './primitives/visual-primitives/math/RatioTable';

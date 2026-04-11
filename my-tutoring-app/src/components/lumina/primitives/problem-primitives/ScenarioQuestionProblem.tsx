@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ScenarioQuestionProblemData } from '../../types';
+import { InsetRenderer } from './insets';
 import {
   usePrimitiveEvaluation,
   type ShortAnswerMetrics,
@@ -90,6 +91,9 @@ export const ScenarioQuestionProblem: React.FC<ScenarioQuestionProblemProps> = (
       <h3 className="text-xl md:text-2xl font-bold text-white mb-6 leading-tight">
         {data.scenarioQuestion}
       </h3>
+
+      {/* Inset (rich inline content) */}
+      {data.inset && <InsetRenderer inset={data.inset} />}
 
       {/* Answer Input */}
       <div className="mb-8">
