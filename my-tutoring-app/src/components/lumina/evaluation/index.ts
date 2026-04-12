@@ -172,6 +172,7 @@ export type {
   CvcSpellerMetrics,
   WordWorkoutMetrics,
   WordSorterMetrics,
+  SentenceAnalyzerMetrics,
   // Core metrics
   FactFileMetrics,
   HowItWorksMetrics,

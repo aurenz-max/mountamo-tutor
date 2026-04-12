@@ -143,6 +143,9 @@ export interface SentenceSchemaData {
   parts: SentencePart[];
 }
 
+// Re-export rebuilt SentenceAnalyzer types
+export type { SentenceAnalyzerData, SentenceAnalyzerChallenge, SentenceWord } from './primitives/visual-primitives/literacy/SentenceAnalyzer';
+
 // Module C: Math Tool Visuals
 export type MathVisualType = 'bar-model' | 'number-line' | 'base-ten-blocks' | 'fraction-circles';
 
@@ -955,6 +958,8 @@ export interface InteractivePassageData {
 }
 
 // Word Builder Types (Language Arts Suite)
+export type WordBuilderComplexity = 'simple_affix' | 'compound_affix' | 'greek_latin' | 'multi_morpheme';
+
 export interface WordPart {
   id: string;
   text: string;
@@ -964,15 +969,17 @@ export interface WordPart {
 
 export interface TargetWord {
   word: string;
-  parts: string[]; // IDs of the correct parts
+  parts: string[]; // IDs of the correct parts, in order
+  hint: string; // Clue (definition-based) — never the answer itself
   definition: string;
   sentenceContext: string;
 }
 
 export interface WordBuilderData {
-  title: string; // e.g., "Constructing Scientific Terms"
+  title: string;
+  complexityLevel: WordBuilderComplexity;
   availableParts: WordPart[]; // Pool of parts to drag from
-  targets: TargetWord[]; // Words to build
+  targets: TargetWord[]; // Words to build (3-5 challenges)
 }
 
 // Periodic Table Types

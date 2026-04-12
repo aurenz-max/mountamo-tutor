@@ -2451,6 +2451,33 @@ export interface WordSorterMetrics extends BasePrimitiveMetrics {
   wordsProcessed: number;
 }
 
+export interface WordBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'word-builder';
+  complexityLevel: 'simple_affix' | 'compound_affix' | 'greek_latin' | 'multi_morpheme';
+  wordsCompleted: number;
+  wordsTotal: number;
+  accuracy: number;
+  attemptsCount: number;
+  firstTryCorrect: number;
+}
+
+export interface SentenceAnalyzerMetrics extends BasePrimitiveMetrics {
+  type: 'sentence-analyzer';
+
+  // Grade context
+  gradeLevel: string;
+
+  // Overall
+  totalChallenges: number;
+  challengesCorrect: number;
+
+  // Per challenge type accuracy
+  posIdentifyCorrect: number;
+  roleIdentifyCorrect: number;
+  labelAllAccuracy: number;       // 0-100 average accuracy across label_all challenges
+  parseStructureCorrect: number;
+}
+
 // -----------------------------------------------------------------------------
 // Literacy Primitives (Wave 1)
 // -----------------------------------------------------------------------------
@@ -3346,6 +3373,7 @@ export type PrimitiveMetrics =
   | DecodableReaderMetrics
   | EvidenceFinderMetrics
   | ContextCluesDetectiveMetrics
+  | SentenceAnalyzerMetrics
   // Literacy (Wave 3)
   | OpinionBuilderMetrics
   | TextStructureAnalyzerMetrics
@@ -3367,6 +3395,7 @@ export type PrimitiveMetrics =
   // Literacy (Wave 5)
   | WordWorkoutMetrics
   | WordSorterMetrics
+  | WordBuilderMetrics
   // Core
   | FactFileMetrics
   | HowItWorksMetrics

@@ -80,8 +80,9 @@
 | word-sorter | 3 | 3 | 0 | 2026-04-05 | [report](eval-reports/word-sorter-2026-04-05.md) |
 | decodable-reader | 1 | 1 | 0 | 2026-04-05 | [report](eval-reports/decodable-reader-2026-04-05.md) |
 | equation-builder | 6 | 6 | 0 | 2026-04-06 | [report](eval-reports/equation-builder-2026-04-06.md) |
+| word-builder | 4 | 4 | 0 | 2026-04-11 | [report](eval-reports/word-builder-2026-04-11.md) |
 
-**Totals:** 268/275 modes passing (97.5%) | 15 open issues (1 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 272/279 modes passing (97.5%) | 15 open issues (1 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 

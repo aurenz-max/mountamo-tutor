@@ -300,7 +300,8 @@ registerGenerator('interactive-passage', async (item, topic, gradeContext) => {
 // Word Builder (vocabulary & morphology)
 registerGenerator('word-builder', async (item, topic, gradeContext) => {
   const data = await generateWordBuilder(topic, gradeContext, {
-    intent: item.intent
+    ...item.config,
+    intent: item.intent || item.title,
   });
   return {
     type: 'word-builder',
@@ -355,9 +356,10 @@ registerGenerator('custom-visual', async (item, topic, gradeContext) => {
 
 // Sentence Analyzer (grammar/sentence structure analysis)
 registerGenerator('sentence-analyzer', async (item, topic, gradeContext) => {
+  const config = getConfig(item);
   const data = await generateSentenceAnalyzer(topic, gradeContext, {
-    intent: item.intent,
-    title: item.title
+    ...config,
+    intent: item.intent || item.title,
   });
   return {
     type: 'sentence-analyzer',

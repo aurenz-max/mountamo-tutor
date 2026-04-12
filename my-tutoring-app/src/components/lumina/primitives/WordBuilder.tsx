@@ -1,308 +1,529 @@
-import React, { useState, useEffect } from 'react';
-import { WordBuilderData, WordPart, TargetWord } from '../types';
+'use client';
+
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  usePrimitiveEvaluation,
+  type PrimitiveEvaluationResult,
+} from '../evaluation';
+import type { WordBuilderMetrics } from '../evaluation/types';
+import { useChallengeProgress } from '../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../components/PhaseSummaryPanel';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, X, Sparkles, Book, Lightbulb } from 'lucide-react';
+import {
+  CheckCircle,
+  X,
+  Sparkles,
+  Lightbulb,
+  ArrowRight,
+  RotateCcw,
+  Puzzle,
+} from 'lucide-react';
+import type {
+  WordBuilderData,
+  WordPart,
+  TargetWord,
+} from '../types';
+
+// ============================================================================
+// Props
+// ============================================================================
 
 interface WordBuilderProps {
   data: WordBuilderData;
   className?: string;
 }
 
-interface ConstructedWord {
-  targetId: string;
-  slots: (WordPart | null)[];
-  isComplete: boolean;
-  isCorrect: boolean;
+// ============================================================================
+// Phase Config (for PhaseSummaryPanel)
+// ============================================================================
+
+const COMPLEXITY_PHASE_CONFIG: Record<string, PhaseConfig> = {
+  simple_affix: { label: 'Simple Affixes', icon: '🟢', accentColor: 'emerald' },
+  compound_affix: { label: 'Compound Affixes', icon: '🟡', accentColor: 'amber' },
+  greek_latin: { label: 'Greek/Latin Roots', icon: '🟠', accentColor: 'orange' },
+  multi_morpheme: { label: 'Multi-Morpheme', icon: '🔴', accentColor: 'pink' },
+};
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+const PART_COLORS: Record<string, string> = {
+  prefix: 'bg-purple-500/20 border-purple-400/40 text-purple-200',
+  root: 'bg-blue-500/20 border-blue-400/40 text-blue-200',
+  suffix: 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200',
+};
+
+const SLOT_LABEL_COLORS: Record<string, string> = {
+  prefix: 'text-purple-400',
+  root: 'text-blue-400',
+  suffix: 'text-emerald-400',
+};
+
+function getRequiredSlots(target: TargetWord, allParts: WordPart[]): string[] {
+  // Determine which slot types are needed from the target's part IDs
+  const types: string[] = [];
+  for (const partId of target.parts) {
+    const part = allParts.find((p) => p.id === partId);
+    if (part && !types.includes(part.type)) {
+      types.push(part.type);
+    }
+  }
+  // Ensure canonical order: prefix → root → suffix
+  const order = ['prefix', 'root', 'suffix'];
+  return order.filter((t) => types.includes(t));
 }
 
+// ============================================================================
+// Component
+// ============================================================================
+
 const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
-  const [constructedWords, setConstructedWords] = useState<Record<string, ConstructedWord>>({});
-  const [showFeedback, setShowFeedback] = useState<Record<string, boolean>>({});
+  const targets = data.targets;
 
-  // Initialize constructed words for each target
+  // Challenge progression
+  const {
+    currentIndex,
+    currentAttempts,
+    results,
+    isComplete,
+    recordResult,
+    incrementAttempts,
+    advance,
+  } = useChallengeProgress<TargetWord>({
+    challenges: targets,
+    getChallengeId: (t) => t.word,
+  });
+
+  // Phase results for summary panel
+  const phaseResults = usePhaseResults<TargetWord>({
+    challenges: targets,
+    results,
+    isComplete,
+    getChallengeType: () => data.complexityLevel,
+    phaseConfig: COMPLEXITY_PHASE_CONFIG,
+  });
+
+  // Evaluation hook
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<WordBuilderMetrics>({
+    primitiveType: 'word-builder',
+    instanceId: data.title,
+  });
+
+  // Current challenge state
+  const currentTarget = targets[currentIndex];
+  const requiredSlots = useMemo(
+    () => (currentTarget ? getRequiredSlots(currentTarget, data.availableParts) : []),
+    [currentTarget, data.availableParts],
+  );
+
+  // Slots: map slot type → placed WordPart | null
+  const [slots, setSlots] = useState<Record<string, WordPart | null>>({});
+  const [showCorrect, setShowCorrect] = useState(false);
+  const [showIncorrect, setShowIncorrect] = useState(false);
+  const [revealedHint, setRevealedHint] = useState(false);
+  const startTimeRef = useRef(Date.now());
+
+  // Reset slots when challenge changes
   useEffect(() => {
-    const initial: Record<string, ConstructedWord> = {};
-    data.targets.forEach((target) => {
-      initial[target.word] = {
-        targetId: target.word,
-        slots: [null, null, null], // prefix, root, suffix
-        isComplete: false,
-        isCorrect: false,
-      };
-    });
-    setConstructedWords(initial);
-  }, [data.targets]);
-
-  // Get available parts for a specific target word
-  const getPartsForTarget = (target: TargetWord): WordPart[] => {
-    return data.availableParts.filter(part => target.parts.includes(part.id));
-  };
-
-  const handleDrop = (targetWord: string, slotIndex: number, part: WordPart) => {
-    setConstructedWords((prev) => {
-      const word = prev[targetWord];
-      const newSlots = [...word.slots];
-
-      // Determine the correct slot based on part type
-      const typeIndex = part.type === 'prefix' ? 0 : part.type === 'root' ? 1 : 2;
-
-      // Only allow placement in the correct type slot
-      if (slotIndex !== typeIndex) {
-        return prev;
-      }
-
-      newSlots[slotIndex] = part;
-
-      // Check if word is complete
-      const target = data.targets.find(t => t.word === targetWord);
-      const isComplete = newSlots.every(slot => slot !== null);
-      let isCorrect = false;
-
-      if (isComplete && target) {
-        const placedPartIds = newSlots.map(slot => slot!.id);
-        isCorrect = target.parts.every(partId => placedPartIds.includes(partId));
-
-        if (isCorrect) {
-          setShowFeedback(prev => ({ ...prev, [targetWord]: true }));
-          setTimeout(() => {
-            setShowFeedback(prev => ({ ...prev, [targetWord]: false }));
-          }, 3000);
-        }
-      }
-
-      return {
-        ...prev,
-        [targetWord]: {
-          ...word,
-          slots: newSlots,
-          isComplete,
-          isCorrect,
-        },
-      };
-    });
-  };
-
-  const handleRemovePart = (targetWord: string, slotIndex: number) => {
-    setConstructedWords((prev) => {
-      const word = prev[targetWord];
-      const partToRemove = word.slots[slotIndex];
-      if (!partToRemove) return prev;
-
-      const newSlots = [...word.slots];
-      newSlots[slotIndex] = null;
-
-      return {
-        ...prev,
-        [targetWord]: {
-          ...word,
-          slots: newSlots,
-          isComplete: false,
-          isCorrect: false,
-        },
-      };
-    });
-  };
-
-  const isPartUsedInWord = (partId: string, targetWord: string): boolean => {
-    const word = constructedWords[targetWord];
-    if (!word) return false;
-    return word.slots.some(slot => slot?.id === partId);
-  };
-
-  const getPartColor = (type: 'prefix' | 'root' | 'suffix') => {
-    switch (type) {
-      case 'prefix':
-        return 'bg-purple-500/20 border-purple-500/50 text-purple-300';
-      case 'root':
-        return 'bg-blue-500/20 border-blue-500/50 text-blue-300';
-      case 'suffix':
-        return 'bg-green-500/20 border-green-500/50 text-green-300';
+    const init: Record<string, WordPart | null> = {};
+    for (const slotType of requiredSlots) {
+      init[slotType] = null;
     }
-  };
+    setSlots(init);
+    setShowCorrect(false);
+    setShowIncorrect(false);
+    setRevealedHint(false);
+    startTimeRef.current = Date.now();
+  }, [currentIndex, requiredSlots]);
 
-  const getSlotLabel = (index: number) => {
-    switch (index) {
-      case 0:
-        return 'Prefix';
-      case 1:
-        return 'Root';
-      case 2:
-        return 'Suffix';
-      default:
-        return '';
+  // Which parts are placed in slots
+  const placedPartIds = useMemo(
+    () => new Set(Object.values(slots).filter(Boolean).map((p) => p!.id)),
+    [slots],
+  );
+
+  // Check answer
+  const allSlotsFilled = requiredSlots.every((t) => slots[t] !== null);
+
+  const handlePlacePart = useCallback(
+    (part: WordPart) => {
+      if (showCorrect) return;
+      const slotType = part.type;
+      if (!requiredSlots.includes(slotType)) return;
+
+      setSlots((prev) => ({ ...prev, [slotType]: part }));
+      setShowIncorrect(false);
+    },
+    [requiredSlots, showCorrect],
+  );
+
+  const handleRemovePart = useCallback(
+    (slotType: string) => {
+      if (showCorrect) return;
+      setSlots((prev) => ({ ...prev, [slotType]: null }));
+      setShowIncorrect(false);
+    },
+    [showCorrect],
+  );
+
+  const handleCheck = useCallback(() => {
+    if (!currentTarget || !allSlotsFilled) return;
+
+    incrementAttempts();
+
+    // Build placed IDs in slot order
+    const placedIds = requiredSlots.map((t) => slots[t]!.id);
+    const isCorrect = currentTarget.parts.length === placedIds.length &&
+      currentTarget.parts.every((id, i) => id === placedIds[i]);
+
+    if (isCorrect) {
+      setShowCorrect(true);
+      const timeMs = Date.now() - startTimeRef.current;
+      recordResult({
+        challengeId: currentTarget.word,
+        correct: true,
+        attempts: currentAttempts + 1,
+        timeMs,
+      });
+    } else {
+      setShowIncorrect(true);
     }
-  };
+  }, [currentTarget, allSlotsFilled, requiredSlots, slots, incrementAttempts, recordResult, currentAttempts]);
 
-  return (
-    <div className={`max-w-6xl mx-auto ${className}`}>
-      {/* Header */}
-      <div className="mb-6 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{data.title}</h2>
-        <p className="text-slate-400 text-sm md:text-base">Build words by dragging parts into the correct slots</p>
-      </div>
+  const handleNext = useCallback(() => {
+    advance();
+  }, [advance]);
 
-      {/* Target Words - Each as a Self-Contained Card */}
-      <div className="space-y-6">
-        {data.targets.map((target) => {
-          const constructed = constructedWords[target.word];
-          if (!constructed) return null;
+  const handleRetry = useCallback(() => {
+    const init: Record<string, WordPart | null> = {};
+    for (const slotType of requiredSlots) {
+      init[slotType] = null;
+    }
+    setSlots(init);
+    setShowIncorrect(false);
+  }, [requiredSlots]);
 
-          const partsForThisWord = getPartsForTarget(target);
+  // Submit evaluation when complete
+  useEffect(() => {
+    if (isComplete && !hasSubmitted && results.length > 0) {
+      const correct = results.filter((r) => r.correct).length;
+      const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
+      const firstTry = results.filter((r) => r.attempts === 1 && r.correct).length;
+      const accuracy = Math.round((correct / results.length) * 100);
 
-          return (
-            <motion.div
-              key={target.word}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-slate-800/50 rounded-xl border border-slate-700 p-4 md:p-6"
-            >
-              {/* Target Info */}
-              <div className="mb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-3">
-                    <Book className="w-4 h-4 md:w-5 md:h-5 text-blue-400" />
-                    <h3 className="text-lg md:text-xl font-bold text-white">Build: {target.word}</h3>
+      submitResult(accuracy >= 70, accuracy, {
+        type: 'word-builder',
+        complexityLevel: data.complexityLevel,
+        wordsCompleted: correct,
+        wordsTotal: results.length,
+        accuracy,
+        attemptsCount: totalAttempts,
+        firstTryCorrect: firstTry,
+      });
+    }
+  }, [isComplete, hasSubmitted, results, submitResult, data.complexityLevel]);
+
+  // ── Summary view ──
+  if (isComplete) {
+    const correct = results.filter((r) => r.correct).length;
+    const accuracy = Math.round((correct / results.length) * 100);
+
+    return (
+      <div className={`max-w-3xl mx-auto space-y-4 ${className ?? ''}`}>
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl text-slate-100 flex items-center gap-2">
+              <Puzzle className="w-5 h-5 text-purple-400" />
+              {data.title} — Complete!
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-4">
+              <Badge variant="outline" className="border-white/20 text-slate-300 text-sm">
+                {correct}/{results.length} words built
+              </Badge>
+              <Badge variant="outline" className="border-white/20 text-slate-300 text-sm">
+                {accuracy}% accuracy
+              </Badge>
+            </div>
+            {/* Word review */}
+            <div className="space-y-2 mt-3">
+              {targets.map((target) => {
+                const r = results.find((res) => res.challengeId === target.word);
+                return (
+                  <div
+                    key={target.word}
+                    className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5"
+                  >
+                    {r?.correct ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <X className="w-4 h-4 text-red-400 shrink-0" />
+                    )}
+                    <span className="font-semibold text-slate-100">{target.word}</span>
+                    <span className="text-slate-400 text-sm truncate">{target.definition}</span>
+                    {r && (
+                      <Badge variant="outline" className="ml-auto border-white/10 text-slate-400 text-xs shrink-0">
+                        {r.attempts === 1 ? '1st try' : `${r.attempts} tries`}
+                      </Badge>
+                    )}
                   </div>
-                  {constructed.isCorrect && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="flex items-center gap-2 text-emerald-400"
-                    >
-                      <CheckCircle className="w-5 h-5" />
-                      <span className="font-semibold">Complete!</span>
-                    </motion.div>
-                  )}
-                </div>
-                <p className="text-xs md:text-sm text-slate-400 sm:ml-8">{target.definition}</p>
-              </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-              {/* Construction Slots */}
-              <div className="mb-6">
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
-                  {constructed.slots.map((part, slotIndex) => (
-                    <div
-                      key={slotIndex}
-                      className={`relative w-full sm:w-36 md:w-40 h-24 sm:h-28 md:h-32 rounded-lg border-2 border-dashed transition-all ${
-                        part
-                          ? getPartColor(part.type)
-                          : 'border-slate-600 bg-slate-900/50'
-                      }`}
-                    >
-                      {/* Slot Label */}
-                      <div className="absolute -top-2.5 left-1/2 transform -translate-x-1/2 px-2 bg-slate-900 text-[10px] md:text-xs font-mono text-slate-400 uppercase tracking-wider">
-                        {getSlotLabel(slotIndex)}
-                      </div>
+        <PhaseSummaryPanel phases={phaseResults} />
+      </div>
+    );
+  }
 
-                      {part ? (
-                        <motion.div
-                          initial={{ scale: 0, rotate: -10 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          className="w-full h-full flex flex-col items-center justify-center p-3 relative group"
-                        >
+  if (!currentTarget) return null;
+
+  // ── Active challenge view ──
+  return (
+    <div className={`max-w-3xl mx-auto space-y-4 ${className ?? ''}`}>
+      {/* Header */}
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
+              <Puzzle className="w-5 h-5 text-purple-400" />
+              {data.title}
+            </CardTitle>
+            <Badge variant="outline" className="border-white/20 text-slate-400">
+              {currentIndex + 1} / {targets.length}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Progress dots */}
+          <div className="flex gap-1.5 mb-4">
+            {targets.map((t, i) => {
+              const r = results.find((res) => res.challengeId === t.word);
+              let dotClass = 'w-2 h-2 rounded-full ';
+              if (r?.correct) dotClass += 'bg-emerald-400';
+              else if (i === currentIndex) dotClass += 'bg-purple-400';
+              else dotClass += 'bg-white/15';
+              return <div key={i} className={dotClass} />;
+            })}
+          </div>
+
+          {/* Clue — definition-based hint, never the word itself */}
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-4">
+            <p className="text-sm text-slate-400 font-mono uppercase tracking-wider mb-1">
+              Build the word that means:
+            </p>
+            <p className="text-slate-100 text-lg font-medium">{currentTarget.hint}</p>
+          </div>
+
+          {/* Hint toggle */}
+          {!revealedHint && !showCorrect && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 mb-4"
+              onClick={() => setRevealedHint(true)}
+            >
+              <Lightbulb className="w-3.5 h-3.5 mr-1.5" />
+              Show context
+            </Button>
+          )}
+          <AnimatePresence>
+            {revealedHint && !showCorrect && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="text-sm text-slate-400 italic mb-4"
+              >
+                &ldquo;{currentTarget.sentenceContext}&rdquo;
+              </motion.p>
+            )}
+          </AnimatePresence>
+
+          {/* Construction slots */}
+          <div className="flex flex-wrap items-end justify-center gap-3 mb-6">
+            {requiredSlots.map((slotType) => {
+              const part = slots[slotType];
+              return (
+                <div key={slotType} className="flex flex-col items-center gap-1">
+                  <span
+                    className={`text-[10px] font-mono uppercase tracking-widest ${
+                      SLOT_LABEL_COLORS[slotType] ?? 'text-slate-500'
+                    }`}
+                  >
+                    {slotType}
+                  </span>
+                  <div
+                    className={`relative w-28 h-20 sm:w-32 sm:h-24 rounded-lg border-2 transition-all flex items-center justify-center ${
+                      part
+                        ? `${PART_COLORS[part.type]} border-solid`
+                        : 'border-dashed border-slate-600 bg-slate-900/50'
+                    } ${showCorrect ? 'ring-2 ring-emerald-400/50' : ''} ${
+                      showIncorrect && part ? 'ring-2 ring-red-400/50' : ''
+                    }`}
+                  >
+                    {part ? (
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="flex flex-col items-center p-2 relative group w-full h-full justify-center"
+                      >
+                        {!showCorrect && (
                           <button
-                            onClick={() => handleRemovePart(target.word, slotIndex)}
-                            className="absolute top-1 right-1 p-1 bg-slate-900/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleRemovePart(slotType)}
+                            className="absolute top-1 right-1 p-0.5 rounded-full bg-slate-900/80 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <X className="w-3 h-3 text-slate-400" />
                           </button>
-                          <div className="text-xl md:text-2xl font-bold text-center mb-1">{part.text}</div>
-                          <div className="text-[10px] md:text-xs text-center opacity-80 line-clamp-2">{part.meaning}</div>
-                        </motion.div>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-600">
-                          <Sparkles className="w-6 h-6" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Available Parts for THIS Word Only */}
-              <div className="bg-slate-900/50 rounded-lg border border-slate-700 p-4">
-                <div className="flex items-center gap-2 mb-3 text-slate-400 text-xs font-mono uppercase tracking-widest">
-                  <Sparkles className="w-3 h-3" />
-                  Word Parts
-                </div>
-                <div className="grid grid-cols-3 gap-2 md:gap-3">
-                  {partsForThisWord.map((part) => {
-                    const isUsed = isPartUsedInWord(part.id, target.word);
-
-                    return (
-                      <motion.button
-                        key={part.id}
-                        onClick={() => {
-                          if (!isUsed) {
-                            const typeIndex = part.type === 'prefix' ? 0 : part.type === 'root' ? 1 : 2;
-                            handleDrop(target.word, typeIndex, part);
-                          }
-                        }}
-                        whileHover={!isUsed ? { scale: 1.05 } : {}}
-                        whileTap={!isUsed ? { scale: 0.95 } : {}}
-                        disabled={isUsed}
-                        className={`relative rounded-lg border-2 p-3 transition-all ${
-                          isUsed
-                            ? 'opacity-30 cursor-not-allowed'
-                            : getPartColor(part.type) + ' hover:shadow-lg cursor-pointer'
-                        }`}
-                      >
-                        <div className="text-center">
-                          <div className="text-base md:text-lg font-bold mb-1">{part.text}</div>
-                          <div className="text-[10px] uppercase font-mono mb-1 opacity-60">{part.type}</div>
-                          <div className="text-xs opacity-80 line-clamp-2">{part.meaning}</div>
-                        </div>
-                        {isUsed && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-lg">
-                            <CheckCircle className="w-5 h-5 text-slate-500" />
-                          </div>
                         )}
-                      </motion.button>
-                    );
-                  })}
+                        <span className="text-lg font-bold">{part.text}</span>
+                        <span className="text-[10px] opacity-70">{part.meaning}</span>
+                      </motion.div>
+                    ) : (
+                      <Sparkles className="w-5 h-5 text-slate-600" />
+                    )}
+                  </div>
                 </div>
-              </div>
+              );
+            })}
+          </div>
 
-              {/* Feedback */}
-              <AnimatePresence>
-                {showFeedback[target.word] && constructed.isCorrect && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="bg-emerald-900/30 border border-emerald-500/50 rounded-lg p-4 mt-4"
-                  >
-                    <div className="flex items-start gap-3">
-                      <Lightbulb className="w-5 h-5 text-emerald-400 mt-0.5" />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-emerald-400 mb-1">Perfect!</h4>
-                        <p className="text-sm text-slate-300 mb-2">{target.definition}</p>
-                        <p className="text-sm text-slate-400 italic">"{target.sentenceContext}"</p>
-                      </div>
-                    </div>
-                  </motion.div>
+          {/* Correct feedback */}
+          <AnimatePresence>
+            {showCorrect && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="bg-emerald-900/30 border border-emerald-500/30 rounded-lg p-4 mb-4"
+              >
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-emerald-300 mb-1">
+                      Correct! The word is &ldquo;{currentTarget.word}&rdquo;
+                    </p>
+                    <p className="text-sm text-slate-300">{currentTarget.definition}</p>
+                    <p className="text-sm text-slate-400 italic mt-1">
+                      &ldquo;{currentTarget.sentenceContext}&rdquo;
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Incorrect feedback */}
+          <AnimatePresence>
+            {showIncorrect && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="bg-red-900/20 border border-red-500/20 rounded-lg p-3 mb-4"
+              >
+                <p className="text-sm text-red-300">
+                  Not quite — check the meaning of each part and try again.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            {showCorrect ? (
+              <Button
+                variant="ghost"
+                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+                onClick={handleNext}
+              >
+                {currentIndex + 1 < targets.length ? (
+                  <>
+                    Next Word <ArrowRight className="w-4 h-4 ml-1.5" />
+                  </>
+                ) : (
+                  'See Results'
                 )}
-              </AnimatePresence>
-            </motion.div>
-          );
-        })}
-      </div>
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100 disabled:opacity-40"
+                  disabled={!allSlotsFilled}
+                  onClick={handleCheck}
+                >
+                  Check
+                </Button>
+                {showIncorrect && (
+                  <Button
+                    variant="ghost"
+                    className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400"
+                    onClick={handleRetry}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                    Clear
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Legend */}
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-4 md:gap-6 text-xs md:text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-purple-500/20 border border-purple-500/50"></div>
-          <span className="text-slate-400">Prefix</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-blue-500/20 border border-blue-500/50"></div>
-          <span className="text-slate-400">Root</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-green-500/20 border border-green-500/50"></div>
-          <span className="text-slate-400">Suffix</span>
-        </div>
-      </div>
+      {/* Available parts palette */}
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-mono uppercase tracking-widest text-slate-400 flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            Word Parts
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {data.availableParts.map((part) => {
+              const isPlaced = placedPartIds.has(part.id);
+              const slotExists = requiredSlots.includes(part.type);
+
+              return (
+                <Button
+                  key={part.id}
+                  variant="ghost"
+                  disabled={isPlaced || !slotExists || showCorrect}
+                  onClick={() => handlePlacePart(part)}
+                  className={`h-auto py-3 px-3 flex flex-col items-center gap-1 transition-all ${
+                    isPlaced
+                      ? 'opacity-30 cursor-not-allowed'
+                      : `${PART_COLORS[part.type]} hover:brightness-125 cursor-pointer`
+                  } ${!slotExists && !isPlaced ? 'opacity-50' : ''}`}
+                >
+                  <span className="text-base font-bold">{part.text}</span>
+                  <span className="text-[10px] font-mono uppercase opacity-60">{part.type}</span>
+                  <span className="text-xs opacity-80">{part.meaning}</span>
+                </Button>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-4 pt-3 border-t border-white/5">
+            {['prefix', 'root', 'suffix'].map((type) => (
+              <div key={type} className="flex items-center gap-1.5">
+                <div className={`w-3 h-3 rounded ${PART_COLORS[type].split(' ')[0]}`} />
+                <span className="text-xs text-slate-500 capitalize">{type}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

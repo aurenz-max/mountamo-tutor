@@ -19,13 +19,97 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   // ===== EXISTING PRIMITIVES =====
   {
     id: 'sentence-analyzer',
-    description: 'Linguistic breakdown of sentence structure. Use for grammar, syntax, or language learning.',
-    constraints: 'Requires language/grammar content'
+    description: 'Interactive sentence grammar analysis. Students identify parts of speech, grammatical roles, label all words, and parse sentence structure. 4 progressive challenge types from concrete identification to full structural parsing. Perfect for grades 2-8 grammar and language arts.',
+    constraints: 'Requires language/grammar content. Best for grades 2-8.',
+    evalModes: [
+      {
+        evalMode: 'identify_pos',
+        label: 'Identify POS (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['identify_pos'],
+        description: 'Identify the part of speech of a highlighted word from multiple choice options.',
+      },
+      {
+        evalMode: 'identify_role',
+        label: 'Identify Role (Tier 3)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['identify_role'],
+        description: 'Identify the grammatical role of a highlighted word from multiple choice options.',
+      },
+      {
+        evalMode: 'label_all',
+        label: 'Label All (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['label_all'],
+        description: 'Label every word in a sentence with its part of speech.',
+      },
+      {
+        evalMode: 'parse_structure',
+        label: 'Parse Structure (Tier 5)',
+        beta: 6.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['parse_structure'],
+        description: 'Group words into subject/predicate and classify sentence type.',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Student is analyzing sentence grammar at the {{challengeType}} level. Current sentence: "{{sentence}}"',
+      contextKeys: ['challengeType', 'sentence', 'words', 'targetWord', 'gradeLevel'],
+      scaffoldingLevels: {
+        level1: '"What job does this word do in the sentence? Think about whether it names something, describes something, or shows action."',
+        level2: '"Let\'s break this down. Look at {{targetWord}} — does it answer WHO, WHAT, or WHAT ABOUT? That tells you its role."',
+        level3: '"In the sentence, the {{partOfSpeech}} \'{{targetWord}}\' acts as the {{grammaticalRole}} because it {{roleExplanation}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Student confuses nouns and verbs when word can be both (e.g., "run", "play")', response: 'Ask: "In THIS sentence, is the word naming a thing or showing an action? Context decides."' },
+        { pattern: 'Student labels adjectives as adverbs or vice versa', response: 'Ask: "Is this word describing a NOUN (adjective) or describing a VERB (adverb)?"' },
+        { pattern: 'Student cannot distinguish subject from predicate', response: 'Ask: "Who or what is the sentence about? That is the subject. What does it DO or what IS it? That is the predicate."' },
+      ],
+    },
+    supportsEvaluation: true,
   },
   {
     id: 'word-builder',
     description: 'Interactive morphology lab where students construct complex words from roots, prefixes, and suffixes to understand their meaning. Drag-and-drop construction with visual breakdown showing how word parts combine. Perfect for vocabulary development, etymology, and morphological analysis in language arts.',
-    constraints: 'Best for grades 3-8. Requires words that can be meaningfully broken into morphological components (prefixes, roots, suffixes).'
+    constraints: 'Best for grades 3-8. Requires words that can be meaningfully broken into morphological components (prefixes, roots, suffixes).',
+    evalModes: [
+      {
+        evalMode: 'simple_affix',
+        label: 'Simple Affixes (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['simple_affix'],
+        description: 'Single prefix or suffix with a common root (un+happy, play+ful).',
+      },
+      {
+        evalMode: 'compound_affix',
+        label: 'Compound Affixes (Tier 3)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['compound_affix'],
+        description: 'Prefix + root + suffix combinations (un+help+ful, re+play+able).',
+      },
+      {
+        evalMode: 'greek_latin',
+        label: 'Greek/Latin Roots (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['greek_latin'],
+        description: 'Academic words from Greek/Latin morphemes (bio+log+y, tele+scope).',
+      },
+      {
+        evalMode: 'multi_morpheme',
+        label: 'Multi-Morpheme (Tier 6)',
+        beta: 7.0,
+        scaffoldingMode: 6,
+        challengeTypes: ['multi_morpheme'],
+        description: 'Complex multi-morpheme words with abstract roots (pre+dict+able, anti+bio+tic).',
+      },
+    ],
+    supportsEvaluation: true,
   },
 
   // ===== READING: FOUNDATIONAL SKILLS (RF) =====
@@ -838,7 +922,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     description: 'Interactive node-and-edge graph for character analysis and relationship mapping. Students build character profiles with traits and text evidence citations, then map relationships between characters. Tracks character change over time. Perfect for literary analysis grades 2-6.',
     constraints: 'Requires narrative text with 2+ characters. Best for grades 2-6.',
     evalModes: [
+      { evalMode: 'simple_traits', label: 'Simple Traits (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['default'], description: '1-2 characters with simple adjective traits and 1 relationship.' },
+      { evalMode: 'trait_evidence', label: 'Trait Evidence (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['default'], description: '2 characters with traits supported by text evidence quotes.' },
       { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Character trait identification and relationship mapping.' },
+      { evalMode: 'complex_analysis', label: 'Complex Analysis (Tier 5)', beta: 4.5, scaffoldingMode: 5, challengeTypes: ['default'], description: '2-3 characters with foils, multi-layered motivations, and thematic relationships.' },
     ],
     supportsEvaluation: true,
   },

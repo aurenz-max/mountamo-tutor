@@ -389,6 +389,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "example":         PriorConfig(3.5, "Example: meaning from given examples"),
         "inference":       PriorConfig(5.5, "Inference: meaning from broader context"),
     },
+    "sentence-analyzer": {
+        "identify_pos":     PriorConfig(1.5, "Identify part of speech from multiple choice"),
+        "identify_role":    PriorConfig(3.0, "Identify grammatical role from multiple choice"),
+        "label_all":        PriorConfig(5.0, "Label all words with parts of speech"),
+        "parse_structure":  PriorConfig(6.5, "Parse subject/predicate groups and classify sentence type"),
+    },
     "sentence-builder": {
         "simple":           PriorConfig(1.5, "Simple: subject-verb-object sentence"),
         "compound":         PriorConfig(3.0, "Compound: two clauses with conjunction"),
@@ -473,13 +479,24 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "ternary_sort": PriorConfig(2.5, "Sort word cards into 3 labeled buckets"),
         "match_pairs":  PriorConfig(3.5, "Match word pairs (singular→plural, antonyms, etc.)"),
     },
+    "word-builder": {
+        "simple_affix":    PriorConfig(1.5, "Simple: single prefix or suffix + common root"),
+        "compound_affix":  PriorConfig(3.0, "Compound: prefix + root + suffix combinations"),
+        "greek_latin":     PriorConfig(5.0, "Academic: Greek/Latin morpheme construction"),
+        "multi_morpheme":  PriorConfig(7.0, "Advanced: complex multi-morpheme words"),
+    },
     "decodable-reader":             {"default": PriorConfig(2.5, "Controlled-vocabulary reading with comprehension")},
     "cvc-speller": {
         "fill_vowel": PriorConfig(1.5, "Recognition: pick missing vowel in C_C frame"),
         "spell_word": PriorConfig(2.5, "Guided: spell full CVC word in Elkonin boxes"),
         "word_sort":  PriorConfig(3.5, "Application: sort words into vowel-sound buckets"),
     },
-    "character-web":                {"default": PriorConfig(3.5, "Character traits and relationship mapping")},
+    "character-web": {
+        "simple_traits":    PriorConfig(1.5, "Simple trait identification for 1-2 characters"),
+        "trait_evidence":   PriorConfig(2.5, "Traits supported by text evidence quotes"),
+        "default":          PriorConfig(3.5, "Character traits and relationship mapping"),
+        "complex_analysis": PriorConfig(4.5, "Multi-layered character analysis with foils and themes"),
+    },
     "genre-explorer":               {"default": PriorConfig(3.0, "Classify text excerpts by genre features")},
     "evidence-finder":              {"default": PriorConfig(3.5, "Find and highlight text evidence for claims")},
     "story-planner":                {"default": PriorConfig(3.0, "Pre-writing narrative planning with story arc")},

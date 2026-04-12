@@ -7,7 +7,7 @@ import { FeatureExhibit } from '../primitives/FeatureExhibit';
 import { ComparisonPanel } from '../primitives/ComparisonPanel';
 import { FormulaCard } from '../primitives/FormulaCard';
 import { MathVisuals } from '../primitives/MathVisuals';
-import { SentenceAnalyzer } from '../primitives/SentenceAnalyzer';
+import SentenceAnalyzer from '../primitives/visual-primitives/literacy/SentenceAnalyzer';
 import { CustomVisual } from '../primitives/CustomVisual';
 import GraphBoard from '../primitives/GraphBoard';
 import ThreeDShapeExplorer from '../primitives/visual-primitives/math/ThreeDShapeExplorer';
@@ -329,7 +329,12 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
 
   'sentence-analyzer': {
     component: SentenceAnalyzer,
+    sectionTitle: 'Sentence Analyzer',
+    showDivider: true,
+    dividerStyle: 'left',
     allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'graph-board': {
