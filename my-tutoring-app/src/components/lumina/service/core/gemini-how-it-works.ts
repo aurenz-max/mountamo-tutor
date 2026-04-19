@@ -80,7 +80,7 @@ const stepSchema: Schema = {
     title: { type: Type.STRING, description: "Short title for this step (2-5 words)" },
     description: { type: Type.STRING, description: "2-3 sentence description of what happens in this step" },
     whatsHappening: { type: Type.STRING, description: "Optional deeper explanation of the underlying mechanism (1-2 sentences)" },
-    imagePrompt: { type: Type.STRING, description: "Detailed prompt for AI image generation depicting this step visually — describe the scene, colors, and key elements" },
+    imagePrompt: { type: Type.STRING, description: "Photorealistic image prompt — describe a real-world scene as a photographer would see it, with natural lighting, real materials, and a clear camera angle. No glowing effects, no cross-sections, no diagram overlays." },
     keyTermTerm: { type: Type.STRING, description: "Optional key vocabulary term introduced in this step" },
     keyTermDefinition: { type: Type.STRING, description: "Definition of the key term (required if keyTermTerm provided)" },
     funFact: { type: Type.STRING, description: "A surprising, fun fact related to this step — include a number or comparison" },
@@ -411,7 +411,7 @@ ${challengeTypeSection}
 - title: 2-5 word label for the step
 - description: 2-3 sentences explaining what happens — vivid, concrete language
 - whatsHappening: Deeper explanation of the underlying mechanism (1-2 sentences) — ALWAYS provide this
-- imagePrompt: DETAILED prompt for AI image generation — describe the visual scene, key objects, colors, perspective. Be specific enough that an AI could paint the scene (e.g. "Cross-section view of a human stomach showing food being broken down by acid, with labeled enzymes, pink tissue walls, and a greenish liquid pool — educational illustration style")
+- imagePrompt: Photorealistic image prompt describing a REAL-WORLD scene as a photographer would capture it. Describe the actual objects, materials, textures, natural lighting, and camera angle. NO glowing effects, NO cross-sections, NO cutaways, NO diagram overlays, NO magical/sci-fi styling. Think documentary photography, not textbook illustration. (e.g. "Close-up of a diesel engine compartment on a yellow Caterpillar excavator, showing the engine block, hydraulic hoses, and oil filter, photographed in natural daylight at a construction site")
 - keyTermTerm + keyTermDefinition: Important vocabulary — aim for at least 2-3 key terms across all steps
 - funFact: A SURPRISING, specific fact with a number or comparison — aim for at least 3 across all steps
 
@@ -478,7 +478,7 @@ For "explain" challenges:
 6. For sequence challenges, correctOrderCsv must contain all provided item IDs
 7. Mix challenge types for variety (unless constrained by eval mode)
 8. Each challenge should reference a specific relatedStep number
-9. EVERY step should have a vivid, detailed imagePrompt
+9. EVERY step should have a vivid, detailed imagePrompt — PHOTOREALISTIC style only. Describe real objects in real settings with natural light. Never use glowing, translucent, cutaway, cross-section, or fantasy/sci-fi styling.
 10. Include funFacts and keyTerms generously — these create the "magazine" feel
 
 Now generate the How It Works content.`;

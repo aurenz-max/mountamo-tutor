@@ -1,142 +1,140 @@
+'use client';
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Check, Layers, BookOpen, AlertTriangle, Lightbulb, GitMerge } from 'lucide-react';
-import { AnnotatedExampleData, ExampleStep } from '../types';
-import { clsx } from 'clsx';
+import { ChevronLeft, ChevronRight, Layers, BookOpen, AlertTriangle, Lightbulb, GitMerge } from 'lucide-react';
+import { Card } from '../../ui/card';
+import { Button } from '../../ui/button';
+import { Badge } from '../../ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
+import { StepContentRenderer, StepTypeIcon, KaTeX, MixedContent } from './annotated-example/StepContentRenderer';
+import type { RichAnnotatedExampleData, RichExampleStep, LayerId } from './annotated-example/types';
+import { ANNOTATION_LAYERS } from './annotated-example/types';
 
-// --- Utility Components ---
+// ═══════════════════════════════════════════════════════════════════════
+// Icon Map for annotation layers
+// ═══════════════════════════════════════════════════════════════════════
 
-// Math text renderer - checks for math-like symbols and applies proper styling
-const MathText = ({ text }: { text: string }) => {
-  const isMath = /[\^=+\-\\×÷√∫∑∏]/.test(text);
-
-  if (!isMath) {
-    return <span className="font-sans">{text}</span>;
-  }
-
-  // Split on superscript pattern and render with proper formatting
-  const parts = text.split(/(\^[\d]+|\^[{][\d]+[}])/g);
-
-  return (
-    <span className="font-serif text-lg tracking-wide">
-      {parts.map((part, i) => {
-        if (part.startsWith('^')) {
-          const supText = part.replace(/\^[{]?([^}]+)[}]?/, '$1');
-          return <sup key={i} className="text-xs">{supText}</sup>;
-        }
-        return <span key={i}>{part}</span>;
-      })}
-    </span>
-  );
-};
-
-// Map string icon names to Lucide React components
-const IconMap: Record<string, React.ReactNode> = {
+const LayerIconMap: Record<string, React.ReactNode> = {
   steps: <Layers size={14} />,
   strategy: <Lightbulb size={14} />,
-  warning: <AlertTriangle size={14} />,
+  misconceptions: <AlertTriangle size={14} />,
   connections: <GitMerge size={14} />,
-  explain: <BookOpen size={14} />
+  explain: <BookOpen size={14} />,
 };
 
+// ═══════════════════════════════════════════════════════════════════════
+// Main Component
+// ═══════════════════════════════════════════════════════════════════════
+
 interface AnnotatedExampleProps {
-  data: AnnotatedExampleData;
+  data: RichAnnotatedExampleData;
   className?: string;
 }
 
 export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, className }) => {
-  const [activeLayers, setActiveLayers] = useState<string[]>(["steps"]);
+  const [activeLayers, setActiveLayers] = useState<LayerId[]>(['steps']);
   const [currentStep, setCurrentStep] = useState(0);
-  const [viewMode, setViewMode] = useState<"step" | "full">("step");
+  const [viewMode, setViewMode] = useState<'step' | 'full'>('step');
 
-  const toggleLayer = (layerId: string) => {
-    setActiveLayers(prev =>
-      prev.includes(layerId) ? prev.filter(id => id !== layerId) : [...prev, layerId]
+  const toggleLayer = (layerId: LayerId) => {
+    setActiveLayers((prev) =>
+      prev.includes(layerId) ? prev.filter((id) => id !== layerId) : [...prev, layerId],
     );
   };
 
   return (
-    <div className={clsx("max-w-3xl mx-auto font-sans text-slate-200", className)}>
-      {/* --- Header Section --- */}
+    <div className={`max-w-3xl mx-auto font-sans text-slate-200 ${className || ''}`}>
+      {/* ── Header ─────────────────────────────────────────────── */}
       <div className="mb-6 space-y-4">
         <div className="flex justify-between items-start">
           <div>
-            <span className="inline-block px-2 py-1 mb-2 text-xs font-bold tracking-wider text-blue-400 uppercase bg-blue-900/30 rounded">
+            <Badge variant="outline" className="mb-2 text-blue-400 border-blue-500/30 bg-blue-500/10">
               {data.subject}
-            </span>
+            </Badge>
             <h1 className="text-2xl font-serif font-bold text-white tracking-tight">{data.title}</h1>
           </div>
+
           {/* View Toggle */}
-          <div className="bg-slate-800 p-1 rounded-lg flex text-xs font-medium">
-            {(['step', 'full'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={clsx(
-                  "px-3 py-1.5 rounded-md transition-all",
-                  viewMode === mode
-                    ? 'bg-slate-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                )}
-              >
-                {mode === 'step' ? 'Step-by-Step' : 'Full Solution'}
-              </button>
-            ))}
-          </div>
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'step' | 'full')}>
+            <TabsList className="bg-slate-800 border border-slate-700">
+              <TabsTrigger value="step" className="text-xs data-[state=active]:bg-slate-600">
+                Step-by-Step
+              </TabsTrigger>
+              <TabsTrigger value="full" className="text-xs data-[state=active]:bg-slate-600">
+                Full Solution
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {/* Problem Card */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 p-6 shadow-xl">
+        <Card className="relative overflow-hidden backdrop-blur-xl bg-gradient-to-br from-slate-900/60 to-slate-800/40 border-white/10 p-6 shadow-xl">
           <div className="relative z-10">
-            <p className="text-slate-400 text-sm mb-3 font-medium uppercase tracking-wide">Problem Statement</p>
+            <p className="text-slate-400 text-sm mb-3 font-medium uppercase tracking-wide">
+              Problem Statement
+            </p>
             {data.problem.equations && data.problem.equations.length > 0 && (
-              <div className="text-xl md:text-2xl font-mono text-white mb-2 space-y-1">
+              <div className="text-xl md:text-2xl text-white mb-2 space-y-1">
                 {data.problem.equations.map((eq, i) => (
-                  <div key={i}><MathText text={eq} /></div>
+                  <div key={i}>
+                    <KaTeX latex={eq} />
+                  </div>
                 ))}
               </div>
             )}
-            <p className="text-slate-300 leading-relaxed">{data.problem.statement}</p>
+            <p className="text-slate-300 leading-relaxed"><MixedContent text={data.problem.statement} /></p>
             {data.problem.context && (
-              <p className="text-slate-400 text-sm mt-2 leading-relaxed">{data.problem.context}</p>
+              <p className="text-slate-400 text-sm mt-2 leading-relaxed"><MixedContent text={data.problem.context} /></p>
             )}
           </div>
-          {/* Decorative background blob */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        </div>
+        </Card>
+
+        {/* Solution Strategy */}
+        {data.solutionStrategy && (
+          <Card className="backdrop-blur-xl bg-slate-900/30 border-white/5 px-5 py-3">
+            <p className="text-xs text-slate-500 uppercase tracking-wider font-medium mb-1">Strategy</p>
+            <p className="text-sm text-slate-400 leading-relaxed"><MixedContent text={data.solutionStrategy} /></p>
+          </Card>
+        )}
 
         {/* Layer Toggles */}
-        <div className="flex flex-wrap gap-2 py-2">
-          {data.layers.map(layer => {
+        <div className="flex flex-wrap gap-2 py-1">
+          {ANNOTATION_LAYERS.map((layer) => {
             const isActive = activeLayers.includes(layer.id);
             return (
-              <button
+              <Button
                 key={layer.id}
+                variant="ghost"
+                size="sm"
                 onClick={() => toggleLayer(layer.id)}
-                className={clsx(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-opacity-15 border-transparent shadow-sm'
-                    : 'bg-transparent border-slate-700 text-slate-500 hover:border-slate-600'
-                )}
-                style={isActive ? {
-                  backgroundColor: `${layer.color}25`,
-                  color: layer.color,
-                  boxShadow: `0 0 10px ${layer.color}15`
-                } : {}}
+                    ? 'border-transparent shadow-sm'
+                    : 'bg-transparent border border-slate-700 text-slate-500 hover:border-slate-600'
+                }`}
+                style={
+                  isActive
+                    ? {
+                        backgroundColor: `${layer.color}20`,
+                        color: layer.color,
+                        boxShadow: `0 0 10px ${layer.color}15`,
+                      }
+                    : {}
+                }
               >
-                {/* Dynamically render icon if mapped, otherwise use emoji */}
-                {IconMap[layer.id.toLowerCase()] || <span className="text-sm">{layer.icon}</span>}
+                {LayerIconMap[layer.id] || <span className="text-sm">{layer.icon}</span>}
                 {layer.label}
-              </button>
+              </Button>
             );
           })}
         </div>
       </div>
 
-      {/* --- Main Content Area --- */}
-      <AnimatePresence mode='wait'>
-        {viewMode === "step" ? (
+      {/* ── Step Content ───────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {viewMode === 'step' ? (
           <motion.div
             key="step-view"
             initial={{ opacity: 0, y: 10 }}
@@ -144,47 +142,47 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
-            {/* Step Navigation Bar */}
+            {/* Step Navigation */}
             <div className="flex items-center justify-between mb-4 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
                 disabled={currentStep === 0}
-                className="p-2 hover:bg-slate-700 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                aria-label="Previous step"
+                className="p-2 hover:bg-slate-700 disabled:opacity-30"
               >
                 <ChevronLeft size={20} />
-              </button>
+              </Button>
 
               <div className="flex gap-1.5">
                 {data.steps.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentStep(idx)}
-                    className={clsx(
-                      "h-1.5 rounded-full transition-all duration-300",
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
                       idx === currentStep ? 'w-8 bg-blue-500' : 'w-2 bg-slate-700 hover:bg-slate-600'
-                    )}
+                    }`}
                     aria-label={`Go to step ${idx + 1}`}
                   />
                 ))}
               </div>
 
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setCurrentStep(Math.min(data.steps.length - 1, currentStep + 1))}
                 disabled={currentStep === data.steps.length - 1}
-                className="p-2 hover:bg-slate-700 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                aria-label="Next step"
+                className="p-2 hover:bg-slate-700 disabled:opacity-30"
               >
                 <ChevronRight size={20} />
-              </button>
+              </Button>
             </div>
 
-            {/* Step Card */}
-            <StepCard
+            {/* Active Step Card */}
+            <RichStepCard
               step={data.steps[currentStep]}
               index={currentStep}
               activeLayers={activeLayers}
-              layers={data.layers}
             />
           </motion.div>
         ) : (
@@ -196,18 +194,12 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
             transition={{ duration: 0.2 }}
             className="space-y-0 relative"
           >
-             {/* Continuous vertical line for timeline effect */}
+            {/* Vertical timeline line */}
             <div className="absolute left-[1.15rem] top-4 bottom-4 w-0.5 bg-slate-800 z-0" />
 
             {data.steps.map((step, idx) => (
               <div key={step.id} className="relative z-10 pb-8 last:pb-0">
-                <StepCard
-                  step={step}
-                  index={idx}
-                  activeLayers={activeLayers}
-                  layers={data.layers}
-                  isCompact={true}
-                />
+                <RichStepCard step={step} index={idx} activeLayers={activeLayers} isCompact />
               </div>
             ))}
           </motion.div>
@@ -217,24 +209,22 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
   );
 };
 
-// --- Sub-Components ---
+// ═══════════════════════════════════════════════════════════════════════
+// Rich Step Card
+// ═══════════════════════════════════════════════════════════════════════
 
-const StepCard: React.FC<{
-  step: ExampleStep;
+const RichStepCard: React.FC<{
+  step: RichExampleStep;
   index: number;
-  activeLayers: string[];
-  layers: AnnotatedExampleData['layers'];
+  activeLayers: LayerId[];
   isCompact?: boolean;
-}> = ({ step, index, activeLayers, layers, isCompact }) => {
+}> = ({ step, index, activeLayers, isCompact }) => {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className={clsx(
-        "flex gap-4",
-        !isCompact && "bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg"
-      )}
+      className="flex gap-4"
     >
       {/* Step Number Bubble */}
       <div className="flex-shrink-0">
@@ -243,43 +233,37 @@ const StepCard: React.FC<{
         </div>
       </div>
 
-      <div className="flex-grow min-w-0">
-        <h3 className="text-lg font-serif font-semibold text-slate-100 mb-3 pt-1.5">{step.title}</h3>
+      <Card
+        className={`flex-grow min-w-0 backdrop-blur-xl ${
+          isCompact
+            ? 'bg-transparent border-0 shadow-none p-0'
+            : 'bg-slate-900/40 border-white/10 p-6 shadow-lg'
+        }`}
+      >
+        {/* Step Header */}
+        <div className="flex items-center gap-2 mb-3 pt-1.5">
+          <StepTypeIcon type={step.content.type} />
+          <h3 className="text-lg font-serif font-semibold text-slate-100">{step.title}</h3>
+          <Badge variant="outline" className="text-[10px] text-slate-500 border-slate-700 ml-auto">
+            {step.content.type}
+          </Badge>
+        </div>
 
-        {/* Math Work Area */}
-        <div className="bg-slate-950 rounded-lg border border-slate-800/50 p-4 mb-4 font-mono text-sm overflow-x-auto">
-          {step.work.map((line, i) => (
-            <div key={i} className="flex justify-between items-baseline py-1 group">
-              <span className="text-slate-200"><MathText text={line.text} /></span>
-              {line.annotation && (
-                <span className="text-slate-600 text-xs italic opacity-0 group-hover:opacity-100 transition-opacity ml-4">
-                  // {line.annotation}
-                </span>
-              )}
-            </div>
-          ))}
-
-          {step.result && step.result.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-slate-800/80">
-              {step.result.map((line, i) => (
-                <div key={i} className="flex items-center gap-2 text-emerald-400 font-bold">
-                  <Check size={14} />
-                  <MathText text={line.text} />
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Step Content — type-specific renderer */}
+        <div className="mb-4">
+          <StepContentRenderer content={step.content} />
         </div>
 
         {/* Annotation Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <AnimatePresence>
-            {activeLayers.map(layerId => {
+            {activeLayers.map((layerId) => {
               const content = step.annotations[layerId];
               if (!content) return null;
 
-              const layerDef = layers.find(l => l.id === layerId);
-              const color = layerDef?.color || '#ccc';
+              const layerDef = ANNOTATION_LAYERS.find((l) => l.id === layerId);
+              if (!layerDef) return null;
+              const color = layerDef.color;
 
               return (
                 <motion.div
@@ -295,19 +279,17 @@ const StepCard: React.FC<{
                     style={{ borderLeftColor: color }}
                   >
                     <div className="flex items-center gap-2 mb-1.5" style={{ color }}>
-                      {IconMap[layerId.toLowerCase()] || <div className="w-3 h-3 rounded-full bg-current"/>}
-                      <span className="font-bold text-xs uppercase tracking-wider">{layerDef?.label}</span>
+                      {LayerIconMap[layerId] || <div className="w-3 h-3 rounded-full bg-current" />}
+                      <span className="font-bold text-xs uppercase tracking-wider">{layerDef.label}</span>
                     </div>
-                    <p className="text-slate-400 leading-relaxed text-xs md:text-sm">
-                      {content}
-                    </p>
+                    <p className="text-slate-400 leading-relaxed text-xs md:text-sm"><MixedContent text={content} /></p>
                   </div>
                 </motion.div>
               );
             })}
           </AnimatePresence>
         </div>
-      </div>
+      </Card>
     </motion.div>
   );
 };

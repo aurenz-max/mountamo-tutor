@@ -13,6 +13,7 @@ import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
 import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGraph';
+import type { CoordinateGraphData } from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
 import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
@@ -88,7 +89,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'tape-diagram', label: 'Tape Diagram', icon: '📏', topic: 'Part-part-whole word problems' },
   { value: 'balance-scale', label: 'Balance / Scale Model', icon: '⚖️', topic: 'Solving equations' },
   { value: 'function-machine', label: 'Function Machine', icon: '⚙️', topic: 'Input-output patterns and functions' },
-  { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍', topic: 'Graphing linear equations' },
+  { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍', topic: 'Plotting ordered pairs' },
   { value: 'slope-triangle', label: 'Slope Triangle', icon: '📐', topic: 'Understanding slope with rise and run' },
   { value: 'systems-equations-visualizer', label: 'Systems of Equations', icon: '📊', topic: 'Solving systems of equations' },
   { value: 'matrix-display', label: 'Matrix Display', icon: '▦', topic: 'Matrix operations and transformations' },
@@ -256,7 +257,7 @@ const PrimitiveRenderer: React.FC<{
     case 'function-machine':
       return <FunctionMachine data={data as Parameters<typeof FunctionMachine>[0]['data']} />;
     case 'coordinate-graph':
-      return <CoordinateGraph data={data as Parameters<typeof CoordinateGraph>[0]['data']} />;
+      return <CoordinateGraph data={data as CoordinateGraphData} />;
     case 'slope-triangle':
       return <SlopeTriangle data={data as Parameters<typeof SlopeTriangle>[0]['data']} />;
     case 'systems-equations-visualizer':

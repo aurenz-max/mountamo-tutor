@@ -71,6 +71,8 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
   const [effortPosition, setEffortPosition] = useState(initialEffortPosition ?? 0);
   const [isDraggingFulcrum, setIsDraggingFulcrum] = useState(false);
   const [draggedLoadIndex, setDraggedLoadIndex] = useState<number | null>(null);
+  const [isPressing, setIsPressing] = useState(false);
+  const [pressAnchorBeamY, setPressAnchorBeamY] = useState(0);
   const [hint, setHint] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [hoveredLoadIndex, setHoveredLoadIndex] = useState<number | null>(null);
@@ -207,7 +209,21 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
     setHasUserInteracted(true);
   };
 
-  // Handle mouse move for dragging
+  // Handle pressing down on the beam — mouse becomes the weight
+  const handleBeamPress = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const svgCoords = screenToSVG(e.clientX, e.clientY);
+    const pos = pixelToUnit(svgCoords.x);
+    const clampedPos = Math.max(0, Math.min(beamLength, pos));
+    setEffortPosition(clampedPos);
+    setIsPressing(true);
+    setPressAnchorBeamY(getBeamYAtPosition(clampedPos));
+    setEffortForce(0);
+    setHasUserInteracted(true);
+  };
+
+  // Handle mouse move for dragging and pressing
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!svgRef.current) return;
@@ -226,18 +242,32 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
             : load
         ));
       }
+
+      if (isPressing) {
+        // Horizontal: update effort position along beam
+        const clampedPos = Math.max(0, Math.min(beamLength, newPosition));
+        setEffortPosition(clampedPos);
+        // Vertical: force = how far below the beam the cursor has gone
+        const pushDepth = svgCoords.y - pressAnchorBeamY;
+        const newForce = Math.max(0, Math.min(10, pushDepth / 12));
+        setEffortForce(Math.round(newForce * 2) / 2);
+      }
     };
 
     const handleMouseUp = () => {
       setIsDraggingFulcrum(false);
       setDraggedLoadIndex(null);
+      if (isPressing) {
+        setIsPressing(false);
+        setEffortForce(0); // lift off = no more weight
+      }
     };
 
-    // Always add listeners when dragging - use capture phase for better responsiveness
-    if (isDraggingFulcrum || draggedLoadIndex !== null) {
+    const isAnyDragging = isDraggingFulcrum || draggedLoadIndex !== null || isPressing;
+
+    if (isAnyDragging) {
       document.addEventListener('mousemove', handleMouseMove, { capture: true });
       document.addEventListener('mouseup', handleMouseUp, { capture: true });
-      // Prevent text selection while dragging
       document.body.style.userSelect = 'none';
     }
 
@@ -246,7 +276,7 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
       document.removeEventListener('mouseup', handleMouseUp, { capture: true });
       document.body.style.userSelect = '';
     };
-  }, [isDraggingFulcrum, draggedLoadIndex, beamLength, screenToSVG, pixelToUnit]);
+  }, [isDraggingFulcrum, draggedLoadIndex, isPressing, beamLength, screenToSVG, pixelToUnit, pressAnchorBeamY]);
 
   // Add a new load
   const handleAddLoad = () => {
@@ -680,6 +710,17 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
                   opacity={0.15}
                 />
 
+                {/* Invisible press zone — click here to push down on the beam */}
+                <rect
+                  x={-unitToPixelPos(fulcrumPosition) + beamStartX}
+                  y={-40}
+                  width={beamVisualLength}
+                  height={70}
+                  fill="transparent"
+                  style={{ cursor: isPressing ? 'grabbing' : 'pointer' }}
+                  onMouseDown={handleBeamPress}
+                />
+
                 {/* Beam markings */}
                 {Array.from({ length: beamLength + 1 }).map((_, i) => (
                   <g key={i} transform={`translate(${-unitToPixelPos(fulcrumPosition) + beamStartX + i * unitToPixel}, 0)`}>
@@ -708,39 +749,70 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
               {/* Loads - rendered without rotation transform, positioned individually */}
               {loads.map((load, index) => renderLoad(load, index))}
 
-              {/* Effort indicator */}
-              {effortForce > 0 && effortPosition !== undefined && (
-                <g transform={`translate(${unitToPixelPos(effortPosition)}, ${getBeamYAtPosition(effortPosition) - 50})`}>
-                  <line
-                    x1={0}
-                    y1={0}
-                    x2={0}
-                    y2={-30 - effortForce * 5}
-                    stroke="#10B981"
-                    strokeWidth={4}
-                    markerEnd="url(#arrowhead)"
-                    filter="url(#glow)"
-                  />
-                  <rect
-                    x={8}
-                    y={-25 - effortForce * 2.5}
-                    width={70}
-                    height={20}
-                    rx={4}
-                    fill="rgba(16,185,129,0.2)"
-                  />
-                  <text
-                    x={12}
-                    y={-12 - effortForce * 2.5}
-                    fontSize={11}
-                    fill="#10B981"
-                    fontFamily="monospace"
-                    fontWeight="bold"
-                  >
-                    Effort: {effortForce}
-                  </text>
-                </g>
-              )}
+              {/* Pressure visual — shown while pressing on the beam */}
+              {isPressing && effortPosition !== undefined && (() => {
+                const pressX = unitToPixelPos(effortPosition);
+                const pressBeamY = getBeamYAtPosition(effortPosition);
+                const intensity = Math.min(effortForce / 10, 1); // 0-1 normalized
+
+                return (
+                  <g style={{ pointerEvents: 'none' }}>
+                    {/* Pressure ripple rings */}
+                    {[1, 2, 3].map(ring => (
+                      <circle
+                        key={ring}
+                        cx={pressX}
+                        cy={pressBeamY}
+                        r={8 + ring * 10 + intensity * ring * 6}
+                        fill="none"
+                        stroke="#F97316"
+                        strokeWidth={Math.max(0.5, 2 - ring * 0.5)}
+                        opacity={Math.max(0, 0.5 - ring * 0.15) * intensity}
+                      />
+                    ))}
+
+                    {/* Pressure point glow */}
+                    <circle
+                      cx={pressX}
+                      cy={pressBeamY}
+                      r={6 + intensity * 8}
+                      fill="#F97316"
+                      opacity={0.3 + intensity * 0.4}
+                      filter="url(#glow)"
+                    />
+
+                    {/* Downward force arrow */}
+                    {effortForce > 0.5 && (
+                      <g>
+                        <line
+                          x1={pressX}
+                          y1={pressBeamY - 60 - intensity * 30}
+                          x2={pressX}
+                          y2={pressBeamY - 10}
+                          stroke="#F97316"
+                          strokeWidth={2 + intensity * 3}
+                          strokeLinecap="round"
+                          opacity={0.6 + intensity * 0.4}
+                        />
+                        {/* Arrow tip pointing down */}
+                        <polygon
+                          points={`${pressX},${pressBeamY - 4} ${pressX - 6 - intensity * 3},${pressBeamY - 14} ${pressX + 6 + intensity * 3},${pressBeamY - 14}`}
+                          fill="#F97316"
+                          opacity={0.6 + intensity * 0.4}
+                        />
+                      </g>
+                    )}
+
+                    {/* Force readout */}
+                    <g transform={`translate(${pressX + 20}, ${pressBeamY - 40 - intensity * 20})`}>
+                      <rect x={-4} y={-12} width={58} height={22} rx={6} fill="rgba(249,115,22,0.2)" stroke="rgba(249,115,22,0.4)" strokeWidth={1} />
+                      <text fontSize={12} fill="#FB923C" fontFamily="monospace" fontWeight="bold">
+                        {effortForce.toFixed(1)} N
+                      </text>
+                    </g>
+                  </g>
+                );
+              })()}
 
               {/* Torque display */}
               {showTorque && (
@@ -780,68 +852,14 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
               </div>
             )}
 
-            {/* Drag instruction overlay - only shown when not dragging */}
-            {!isDraggingFulcrum && draggedLoadIndex === null && loads.some(l => l.isDraggable) && (
+            {/* Instruction overlay */}
+            {!isDraggingFulcrum && draggedLoadIndex === null && !isPressing && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900/80 backdrop-blur-sm rounded-full border border-slate-700">
                 <p className="text-xs text-slate-400 font-mono">
-                  Drag objects to move them along the beam
+                  Click the beam and push down to apply your weight
                 </p>
               </div>
             )}
-          </div>
-
-          {/* Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {/* Effort Control */}
-            {effortInput === 'slider' && (
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
-                <label className="block text-sm font-mono text-slate-300 mb-3">
-                  Effort Force: <span className="text-orange-400 font-bold">{effortForce}</span> units
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={10}
-                  step={0.5}
-                  value={effortForce}
-                  onChange={(e) => setEffortForce(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                />
-              </div>
-            )}
-
-            {effortInput === 'numeric' && (
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
-                <label className="block text-sm font-mono text-slate-300 mb-3">
-                  Effort Force
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  max={20}
-                  step={0.5}
-                  value={effortForce}
-                  onChange={(e) => setEffortForce(parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-2 bg-slate-900/50 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none font-mono"
-                />
-              </div>
-            )}
-
-            {/* Effort Position */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
-              <label className="block text-sm font-mono text-slate-300 mb-3">
-                Effort Position: <span className="text-orange-400 font-bold">{effortPosition?.toFixed(1) ?? 0}</span>
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={beamLength}
-                step={0.1}
-                value={effortPosition ?? 0}
-                onChange={(e) => setEffortPosition(parseFloat(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
-              />
-            </div>
           </div>
 
           {/* Load List & Actions */}

@@ -852,19 +852,11 @@ export interface AreaModelMetrics extends BasePrimitiveMetrics {
 
 export interface CoordinateGraphMetrics extends BasePrimitiveMetrics {
   type: 'coordinate-graph';
-
-  taskType: 'plot-point' | 'draw-line' | 'identify-slope' | 'find-intercept';
-  isCorrect: boolean;
-
-  // Point plotting
-  targetPoints?: Array<{ x: number; y: number }>;
-  placedPoints?: Array<{ x: number; y: number }>;
-
-  // Line analysis
-  targetSlope?: number;
-  identifiedSlope?: number;
-  targetIntercept?: number;
-  identifiedIntercept?: number;
+  totalCorrect: number;
+  totalChallenges: number;
+  challengeTypes: string[];
+  averageAttempts: number;
+  durationMs: number;
 }
 
 // -----------------------------------------------------------------------------

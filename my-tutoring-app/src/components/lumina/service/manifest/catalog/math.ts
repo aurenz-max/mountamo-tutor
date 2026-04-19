@@ -969,38 +969,55 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'coordinate-graph',
-    description: 'Full-featured 2D Cartesian coordinate plane for plotting points, graphing lines, curves, and functions. Perfect for teaching ordered pairs, linear equations, slope, intercepts, systems of equations, quadratic functions, and function families. Students can click to plot points, view graphed equations, trace curves to read coordinates, and identify key features like intercepts. ESSENTIAL for grades 5-6 (ordered pairs), grades 7-8 (linear equations), Algebra 1-2 (function graphing), and Precalculus (function transformations).',
-    constraints: 'Requires axis ranges (xRange, yRange). Supports plotMode: "points" for plotting practice or "equation" for graphing functions. Equations must use y= format with * for multiplication and ** for exponents (e.g., "y = 2*x + 1", "y = x**2 - 4*x + 3").',
+    description: 'Interactive coordinate plane with structured challenges. Students plot points by clicking grid intersections, identify coordinates of displayed points, calculate slopes using rise/run triangles, and find y-intercepts of lines. SVG-based with snap-to-grid interaction. ESSENTIAL for Grades 5-8 algebra readiness and Algebra I.',
+    constraints: 'Requires gridMin/gridMax (integer bounds for both axes). Challenges must use integer coordinates within the grid range. For plot_point, target must be on a grid intersection. For find_slope, points must have integer coordinates producing clean slope fractions. For find_intercept, the line must cross the y-axis at an integer.',
+    evalModes: [
+      {
+        evalMode: 'plot_point',
+        label: 'Plot Point (Foundational)',
+        beta: -1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['plot_point'],
+        description: 'Student clicks the correct grid intersection for given coordinates. Tests ordered pair comprehension.',
+      },
+      {
+        evalMode: 'read_point',
+        label: 'Read Point (Developing)',
+        beta: -0.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['read_point'],
+        description: 'A point is displayed on the grid. Student identifies its coordinates from multiple choice options.',
+      },
+      {
+        evalMode: 'find_slope',
+        label: 'Find Slope (Proficient)',
+        beta: 0.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['find_slope'],
+        description: 'Two points and a rise/run triangle are shown. Student identifies the slope from multiple choice options.',
+      },
+      {
+        evalMode: 'find_intercept',
+        label: 'Find Y-Intercept (Advanced)',
+        beta: 1.0,
+        scaffoldingMode: 5,
+        challengeTypes: ['find_intercept'],
+        description: 'A line is drawn across the grid. Student identifies where it crosses the y-axis from multiple choice options.',
+      },
+    ],
     tutoring: {
-      taskDescription: 'Work with the coordinate plane. Mode: {{plotMode}}. Equations: {{equations}}.',
-      contextKeys: ['plotMode', 'equations', 'points', 'xRange', 'yRange'],
+      taskDescription: 'Student is working on a coordinate plane challenge: {{challenge.type}}. Current instruction: "{{challenge.instruction}}". Grid range: {{gridMin}} to {{gridMax}}.',
+      contextKeys: ['challenges', 'gridMin', 'gridMax', 'gradeBand'],
       scaffoldingLevels: {
-        level1: '"Where is the origin? Which direction is positive x? Positive y?"',
-        level2: '"To plot ({{x}}, {{y}}): start at the origin, go {{x}} units right, then {{y}} units up."',
-        level3: '"For the equation y = {{equation}}, pick an x value, calculate y, and plot the point. Repeat for 3-4 points, then connect them."',
+        level1: '"Can you think about what each number in the ordered pair tells you? Which one is horizontal and which is vertical?"',
+        level2: '"Let\'s break this down. Start at the origin (0,0). The x-coordinate tells you how far to go left or right. The y-coordinate tells you how far to go up or down. Try tracing with your finger."',
+        level3: '"Step by step: First, find {{challenge.x1}} on the x-axis (horizontal). Now from that spot, count {{challenge.y1}} units up (positive) or down (negative) on the y-axis. That\'s where the point goes."',
       },
       commonStruggles: [
-        { pattern: 'Swapping x and y coordinates', response: '"Remember: (x, y) means go RIGHT first, then UP. Alphabetical order: x before y."' },
-        { pattern: 'Negative coordinate confusion', response: '"Negative x means go LEFT. Negative y means go DOWN."' },
-        { pattern: 'Cannot identify intercepts', response: '"The y-intercept is where the line crosses the vertical axis (x=0). The x-intercept is where it crosses the horizontal axis (y=0)."' },
-      ],
-      aiDirectives: [
-        {
-          title: 'GRADE-BAND ADAPTATION',
-          instruction:
-            'For grades 5-6: focus on Quadrant I with positive coordinates. Use "go right, then up" language. '
-            + 'For grades 7-8: introduce all four quadrants. Teach the sign rules: '
-            + '"Quadrant I: both positive. Quadrant II: x negative, y positive." etc. '
-            + 'For Algebra 1+: focus on equation graphing. Guide table-of-values strategy: '
-            + '"Pick 3-4 x values, calculate y for each, plot the points, connect them."',
-        },
-        {
-          title: 'PLOTTING VS EQUATION MODE',
-          instruction:
-            'In POINTS mode: coach precise point placement — "Start at zero and count the grid lines." '
-            + 'In EQUATION mode: guide reading the graph — "Where does the line cross the y-axis? That is the y-intercept (b in y=mx+b)." '
-            + 'Always encourage tracing: "Hover over the line to read coordinates at any point."',
-        },
+        { pattern: 'Student swaps x and y coordinates when plotting', response: 'Remember: x comes first and goes left-right, y comes second and goes up-down. Think "x across, y up".' },
+        { pattern: 'Student confused by negative coordinates', response: 'Negative x means go LEFT from the origin. Negative y means go DOWN. The origin (0,0) is your starting point.' },
+        { pattern: 'Student cannot calculate slope from two points', response: 'Slope is rise over run. Rise = how much you go up or down (change in y). Run = how much you go left or right (change in x). Look at the dashed triangle on the graph.' },
+        { pattern: 'Student confuses slope and y-intercept', response: 'The y-intercept is WHERE the line crosses the y-axis (the vertical line). The slope is HOW STEEP the line is. They are different properties of the line.' },
       ],
     },
     supportsEvaluation: true,

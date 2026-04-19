@@ -815,47 +815,28 @@ export interface ScaleSpectrumData {
   mode?: string;
 }
 
-export interface AnnotationLayer {
-  id: string;
-  label: string;
-  color: string;
-  icon: string;
-}
+// Rich Annotated Example types — single source of truth in primitives/annotated-example/types.ts
+export type {
+  RichAnnotatedExampleData,
+  RichExampleStep,
+  StepContent,
+  StepAnnotations,
+  ProblemStatement,
+  KaTeXTransition,
+  KaTeXExpression,
+  AlgebraStepContent,
+  SubstitutionStepContent,
+  TableStepContent,
+  DiagramStepContent,
+  GraphSketchStepContent,
+  CaseSplitStepContent,
+  VerificationStepContent,
+  LayerId,
+} from './primitives/annotated-example/types';
 
-export interface WorkLine {
-  text: string;
-  annotation?: string;
-}
-
-export interface ResultLine {
-  text: string;
-}
-
-export interface StepAnnotations {
-  [layerId: string]: string;
-}
-
-export interface ExampleStep {
-  id: number;
-  title: string;
-  work: WorkLine[];
-  result?: ResultLine[];
-  annotations: StepAnnotations;
-}
-
-export interface ProblemStatement {
-  statement: string;
-  equations?: string[];
-  context?: string;
-}
-
-export interface AnnotatedExampleData {
-  title: string;
-  subject: string;
-  problem: ProblemStatement;
-  layers: AnnotationLayer[];
-  steps: ExampleStep[];
-}
+// Backward-compatible alias — manifest types reference this name
+import type { RichAnnotatedExampleData as _AnnotatedExampleData } from './primitives/annotated-example/types';
+export type AnnotatedExampleData = _AnnotatedExampleData;
 
 
 // Re-export from component (single source of truth)
@@ -1773,6 +1754,7 @@ export type { TimelineBuilderData } from './primitives/visual-primitives/calenda
 export type { TimeSequencerData } from './primitives/visual-primitives/math/TimeSequencer';
 export type { NetFolderData } from './primitives/visual-primitives/math/NetFolder';
 export type { ParameterExplorerData } from './primitives/visual-primitives/math/ParameterExplorer';
+export type { CoordinateGraphData, CoordinateGraphChallenge } from './primitives/visual-primitives/math/CoordinateGraph';
 
 // Literacy
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';

@@ -29,6 +29,7 @@ import DeepDiveTester from './components/DeepDiveTester';
 import BiologyPrimitivesTester from './components/BiologyPrimitivesTester';
 import ChemistryPrimitivesTester from './components/ChemistryPrimitivesTester';
 import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
+import AnnotatedExampleTester from './components/AnnotatedExampleTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
 import CalibrationSimulator from './components/CalibrationSimulator';
 import { PulseAdaptiveSession } from './pulse/PulseAdaptiveSession';
@@ -592,6 +593,13 @@ export default function App() {
         {phase === GameState.IDLE && activePanel === 'language-arts-tester' && (
           <div className="flex-1 animate-fade-in">
             <LanguageArtsPrimitivesTester onBack={() => setActivePanel(null)} />
+          </div>
+        )}
+
+        {/* ANNOTATED EXAMPLE TESTER STATE */}
+        {phase === GameState.IDLE && activePanel === 'annotated-example-tester' && (
+          <div className="flex-1 animate-fade-in">
+            <AnnotatedExampleTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 

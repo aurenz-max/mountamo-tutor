@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Wind, ArrowUp, ArrowRight, AlertTriangle, Eye, Target, Trophy, BarChart3 } from 'lucide-react';
+import { Wind, AlertTriangle, Target, Trophy, BarChart3 } from 'lucide-react';
 import { SpotlightCard } from '../../../components/SpotlightCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
-// ─── Data Interfaces ─────────────────────────────────────────────
+// ============================================================================
+// Data Types (Single Source of Truth)
+// ============================================================================
 
 export interface AirfoilShape {
   shape: 'flat' | 'symmetric' | 'cambered' | 'thick' | 'supercritical' | 'bird_wing' | 'custom';
@@ -68,26 +70,36 @@ export interface AirfoilLabData {
   onEvaluationSubmit?: (result: any) => void;
 }
 
-// ─── Props ───────────────────────────────────────────────────────
-
 interface AirfoilLabProps {
   data: AirfoilLabData;
   className?: string;
 }
 
-// ─── Shape-specific constants ────────────────────────────────────
+// ============================================================================
+// Physics Constants — Component owns all geometry & physics
+// ============================================================================
 
-const SHAPE_CL_BASE: Record<string, number> = {
-  flat: 0.0,
-  symmetric: 0.0,
-  cambered: 0.5,
-  thick: 0.6,
-  supercritical: 0.7,
-  bird_wing: 0.8,
-  custom: 0.4,
-};
+const CW = 800;
+const CH = 400;
+const CX = CW * 0.45;
+const CY = CH / 2;
+const CHORD = 200;
 
-const SHAPE_LABELS: Record<string, string> = {
+const MIN_AOA = -5;
+const MAX_AOA = 25;
+const DRAG_SENSITIVITY = 0.22; // degrees per pixel of vertical drag
+
+const PARTICLE_COUNT = 140;
+
+type ShapeId = AirfoilShape['shape'];
+
+interface ShapePeaks { topPeak: number; botPeak: number }
+
+const ALL_SHAPES: ShapeId[] = [
+  'flat', 'symmetric', 'cambered', 'thick', 'supercritical', 'bird_wing', 'custom',
+];
+
+const SHAPE_LABELS: Record<ShapeId, string> = {
   flat: 'Flat Plate',
   symmetric: 'Symmetric',
   cambered: 'Cambered',
@@ -97,69 +109,510 @@ const SHAPE_LABELS: Record<string, string> = {
   custom: 'Custom',
 };
 
-const ALL_SHAPES: AirfoilShape['shape'][] = [
-  'flat', 'symmetric', 'cambered', 'thick', 'supercritical', 'bird_wing', 'custom',
-];
-
-// ─── Airfoil Path Generation ─────────────────────────────────────
-
-function getAirfoilPath(shape: string, camber: number, cx: number, cy: number, chord: number): string {
-  const halfChord = chord / 2;
-  const leading = cx - halfChord;
-  const trailing = cx + halfChord;
-
+// Peak half-thickness in pixels for chord=200. Controls both the drawn silhouette
+// and the deflection strength experienced by particles above/below.
+function getShapePeaks(shape: ShapeId, camber: number): ShapePeaks {
   switch (shape) {
-    case 'flat':
-      return `M ${leading},${cy}
-              C ${leading + halfChord * 0.3},${cy - 4} ${trailing - halfChord * 0.3},${cy - 4} ${trailing},${cy}
-              C ${trailing - halfChord * 0.3},${cy + 4} ${leading + halfChord * 0.3},${cy + 4} ${leading},${cy} Z`;
-
-    case 'symmetric':
-      return `M ${leading},${cy}
-              C ${leading + halfChord * 0.25},${cy - chord * 0.08} ${trailing - halfChord * 0.3},${cy - chord * 0.06} ${trailing},${cy}
-              C ${trailing - halfChord * 0.3},${cy + chord * 0.06} ${leading + halfChord * 0.25},${cy + chord * 0.08} ${leading},${cy} Z`;
-
-    case 'cambered':
-      return `M ${leading},${cy}
-              C ${leading + halfChord * 0.25},${cy - chord * 0.14} ${trailing - halfChord * 0.3},${cy - chord * 0.10} ${trailing},${cy}
-              C ${trailing - halfChord * 0.3},${cy + chord * 0.03} ${leading + halfChord * 0.25},${cy + chord * 0.04} ${leading},${cy} Z`;
-
-    case 'thick':
-      return `M ${leading},${cy}
-              C ${leading + halfChord * 0.2},${cy - chord * 0.16} ${trailing - halfChord * 0.25},${cy - chord * 0.14} ${trailing},${cy}
-              C ${trailing - halfChord * 0.25},${cy + chord * 0.10} ${leading + halfChord * 0.2},${cy + chord * 0.12} ${leading},${cy} Z`;
-
-    case 'supercritical':
-      return `M ${leading},${cy}
-              C ${leading + halfChord * 0.3},${cy - chord * 0.06} ${trailing - halfChord * 0.4},${cy - chord * 0.05} ${trailing},${cy}
-              C ${trailing - halfChord * 0.3},${cy + chord * 0.12} ${leading + halfChord * 0.25},${cy + chord * 0.10} ${leading},${cy} Z`;
-
-    case 'bird_wing':
-      return `M ${leading},${cy}
-              C ${leading + halfChord * 0.15},${cy - chord * 0.18} ${trailing - halfChord * 0.5},${cy - chord * 0.12} ${trailing},${cy + chord * 0.02}
-              C ${trailing - halfChord * 0.4},${cy + chord * 0.04} ${leading + halfChord * 0.2},${cy + chord * 0.03} ${leading},${cy} Z`;
-
-    case 'custom': {
-      const topCamberOffset = camber * chord * 0.18;
-      const bottomCamberOffset = camber * chord * 0.04;
-      return `M ${leading},${cy}
-              C ${leading + halfChord * 0.25},${cy - topCamberOffset} ${trailing - halfChord * 0.3},${cy - topCamberOffset * 0.7} ${trailing},${cy}
-              C ${trailing - halfChord * 0.3},${cy + bottomCamberOffset} ${leading + halfChord * 0.25},${cy + bottomCamberOffset * 1.2} ${leading},${cy} Z`;
-    }
-
-    default:
-      return `M ${leading},${cy} L ${trailing},${cy} Z`;
+    case 'flat':          return { topPeak: 4,  botPeak: 4  };
+    case 'symmetric':     return { topPeak: 18, botPeak: 18 };
+    case 'cambered':      return { topPeak: 28, botPeak: 8  };
+    case 'thick':         return { topPeak: 32, botPeak: 24 };
+    case 'supercritical': return { topPeak: 12, botPeak: 22 };
+    case 'bird_wing':     return { topPeak: 34, botPeak: 6  };
+    case 'custom':        return { topPeak: 8 + camber * 30, botPeak: 4 + camber * 12 };
   }
 }
 
-// ─── Component ───────────────────────────────────────────────────
+// Baseline lift coefficient per shape — used only for the physics-formula
+// readout/challenge scoring. The visible lift arrow is driven by the particle
+// density differential, not this value.
+const SHAPE_CL_BASE: Record<ShapeId, number> = {
+  flat: 0.0,
+  symmetric: 0.0,
+  cambered: 0.5,
+  thick: 0.6,
+  supercritical: 0.7,
+  bird_wing: 0.8,
+  custom: 0.4,
+};
+
+// ============================================================================
+// Airfoil geometry helpers
+// ============================================================================
+
+// Airfoil path in local frame (centered on origin, chord along x-axis).
+// Uses a parabolic thickness envelope — simple, visually correct, collision-friendly.
+function drawAirfoilBody(ctx: CanvasRenderingContext2D, peaks: ShapePeaks) {
+  const half = CHORD / 2;
+  const { topPeak, botPeak } = peaks;
+  ctx.beginPath();
+  ctx.moveTo(-half, 0);
+  // Top curve: leading -> peak (~0.35 chord) -> trailing
+  ctx.bezierCurveTo(-half * 0.55, -topPeak * 0.9, half * 0.15, -topPeak * 0.85, half, 0);
+  // Bottom curve: trailing -> peak (~0.35 chord) -> leading
+  ctx.bezierCurveTo(half * 0.15, botPeak * 0.85, -half * 0.55, botPeak * 0.9, -half, 0);
+  ctx.closePath();
+}
+
+// Half-thickness at a given normalized x along the chord (xNorm in [0, 1]).
+// Matches the parabolic envelope used by drawAirfoilBody for collision checks.
+function thicknessAt(peaks: ShapePeaks, xNorm: number): { top: number; bot: number } {
+  const t = Math.max(0, 4 * xNorm * (1 - xNorm));
+  return { top: peaks.topPeak * t, bot: peaks.botPeak * t };
+}
+
+// ============================================================================
+// Particle type
+// ============================================================================
+
+interface AirParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  turbulent: boolean;
+  baseSpeed: number;
+}
+
+// ============================================================================
+// Canvas Sub-component: WindTunnelSimulation
+// ============================================================================
+
+interface TunnelCallbacks {
+  onStall: (isStalling: boolean) => void;
+  onLiftSignal: (signal: number) => void; // -1..1, observed pressure differential
+  onAoaChange: (aoa: number) => void;
+  onGrab: () => void;
+}
+
+const WindTunnelSimulation: React.FC<{
+  shape: ShapeId;
+  camber: number;
+  aoa: number;
+  windSpeed: number;
+  stallAngle: number;
+  callbacks: TunnelCallbacks;
+}> = ({ shape, camber, aoa, windSpeed, stallAngle, callbacks }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<AirParticle[]>([]);
+  const animRef = useRef<number>(0);
+
+  const shapeRef = useRef(shape);
+  const camberRef = useRef(camber);
+  const aoaRef = useRef(aoa);
+  const windRef = useRef(windSpeed);
+  const stallRef = useRef(stallAngle);
+  const cbRef = useRef(callbacks);
+  useEffect(() => { shapeRef.current = shape; }, [shape]);
+  useEffect(() => { camberRef.current = camber; }, [camber]);
+  useEffect(() => { aoaRef.current = aoa; }, [aoa]);
+  useEffect(() => { windRef.current = windSpeed; }, [windSpeed]);
+  useEffect(() => { stallRef.current = stallAngle; }, [stallAngle]);
+  useEffect(() => { cbRef.current = callbacks; }, [callbacks]);
+
+  const dragRef = useRef({
+    dragging: false,
+    hovering: false,
+    hasGrabbed: false,
+    startPointerY: 0,
+    startAoa: 0,
+  });
+  const wasStallingRef = useRef(false);
+  const [cursor, setCursor] = useState<'default' | 'grab' | 'grabbing'>('default');
+
+  // ======== Animation loop ========
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const animate = () => {
+      const particles = particlesRef.current;
+      const curShape = shapeRef.current;
+      const curCamber = camberRef.current;
+      const curAoa = aoaRef.current;
+      const curWind = windRef.current;
+      const curStall = stallRef.current;
+      const cbs = cbRef.current;
+
+      const isStalling = curAoa > curStall;
+      const peaks = getShapePeaks(curShape, curCamber);
+      const aoaRad = (curAoa * Math.PI) / 180;
+      const cos = Math.cos(aoaRad);
+      const sin = Math.sin(aoaRad);
+
+      // ======== Spawn particles ========
+      const baseSpeed = 1.5 + curWind * 0.12; // pixels/frame
+      while (particles.length < PARTICLE_COUNT) {
+        particles.push({
+          x: -10 - Math.random() * 40,
+          y: 30 + Math.random() * (CH - 60),
+          vx: baseSpeed * (0.9 + Math.random() * 0.2),
+          vy: (Math.random() - 0.5) * 0.2,
+          life: 1,
+          turbulent: false,
+          baseSpeed,
+        });
+      }
+
+      // ======== Update particles ========
+      let aboveCount = 0;
+      let belowCount = 0;
+      const upperSampleY = [CY - 55, CY - 8];
+      const lowerSampleY = [CY + 8, CY + 55];
+      const sampleX = [CX - 90, CX + 90];
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+
+        // Transform particle position to airfoil-local frame
+        const dx = p.x - CX;
+        const dy = p.y - CY;
+        const lx = dx * cos + dy * sin;
+        const ly = -dx * sin + dy * cos;
+
+        const half = CHORD / 2;
+        const inXRange = lx >= -half - 25 && lx <= half + 30;
+
+        if (inXRange) {
+          const xNorm = Math.max(0, Math.min(1, (lx + half) / CHORD));
+          const { top, bot } = thicknessAt(peaks, xNorm);
+
+          if (isStalling && ly < 0 && xNorm > 0.18 && xNorm < 0.95) {
+            // Stall: upper flow detaches and swirls turbulently
+            p.turbulent = true;
+            p.vx += (Math.random() - 0.5) * 1.6;
+            p.vy += (Math.random() - 0.5) * 2.2;
+            p.life -= 0.014;
+          } else if (ly < 0 && -ly < top + 45) {
+            // Above wing: accelerate, deflect upward (low pressure)
+            const proximity = Math.max(0, 1 - Math.abs(ly + (top + 8)) / (top + 45));
+            p.vx *= 1 + 0.25 * proximity * (1 + Math.max(0, curAoa) * 0.05);
+            // Bend particle trajectory to follow the upper surface
+            p.vy += (-0.6 - curAoa * 0.02) * proximity;
+            if (-ly < top + 3) {
+              p.vy -= 1.2; // push out of body
+            }
+            p.turbulent = false;
+          } else if (ly > 0 && ly < bot + 35) {
+            // Below wing: decelerate, slight downward deflection (high pressure = pile-up)
+            const proximity = Math.max(0, 1 - Math.abs(ly - (bot + 6)) / (bot + 35));
+            p.vx *= 1 - 0.10 * proximity;
+            p.vy += (0.35 + Math.max(0, curAoa) * 0.012) * proximity;
+            if (ly < bot + 3) {
+              p.vy += 1.0; // push out of body
+            }
+            p.turbulent = false;
+          } else {
+            p.turbulent = false;
+          }
+        } else {
+          p.turbulent = false;
+        }
+
+        // Integrate
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy *= 0.93;
+        // Return to baseline horizontal speed (so effects are local to the wing)
+        p.vx += (p.baseSpeed - p.vx) * 0.03;
+        p.life -= 0.003;
+
+        // Sample pressure zones (world-frame rectangles near the airfoil)
+        if (p.x >= sampleX[0] && p.x <= sampleX[1]) {
+          if (p.y >= upperSampleY[0] && p.y <= upperSampleY[1]) aboveCount++;
+          else if (p.y >= lowerSampleY[0] && p.y <= lowerSampleY[1]) belowCount++;
+        }
+
+        if (p.life <= 0 || p.x > CW + 30 || p.y < -30 || p.y > CH + 30) {
+          particles.splice(i, 1);
+        }
+      }
+
+      // ======== Pressure differential → observed lift signal ========
+      const totalSampled = aboveCount + belowCount;
+      // When upper is starved (fewer particles = lower pressure), signal is positive
+      const liftSignal = totalSampled > 5
+        ? (belowCount - aboveCount) / Math.max(20, totalSampled)
+        : 0;
+      const clampedSignal = Math.max(-1, Math.min(1, liftSignal * 2.2));
+      cbs.onLiftSignal(clampedSignal);
+
+      if (isStalling !== wasStallingRef.current) {
+        wasStallingRef.current = isStalling;
+        cbs.onStall(isStalling);
+      }
+
+      // ======== Draw ========
+      ctx.clearRect(0, 0, CW, CH);
+
+      // Sky gradient
+      const bg = ctx.createLinearGradient(0, 0, 0, CH);
+      bg.addColorStop(0, '#0c1629');
+      bg.addColorStop(1, '#1a2744');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, CW, CH);
+
+      // Faint grid
+      ctx.strokeStyle = 'rgba(148,163,184,0.06)';
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x < CW; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke();
+      }
+      for (let y = 0; y < CH; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+      }
+
+      // Pressure zone labels (shown once student has seen particles settle)
+      if (totalSampled > 20) {
+        const upperDensity = aboveCount / 40; // rough normalization
+        const lowerDensity = belowCount / 40;
+
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = `rgba(96,165,250,${0.35 + Math.min(0.4, Math.max(0, 0.5 - upperDensity) * 0.8)})`;
+        ctx.fillText('LOW PRESSURE (fast, spread out)', sampleX[1] + 8, upperSampleY[0] + 20);
+        ctx.fillStyle = `rgba(248,113,113,${0.35 + Math.min(0.4, lowerDensity * 0.6)})`;
+        ctx.fillText('HIGH PRESSURE (slow, bunched)', sampleX[1] + 8, lowerSampleY[1] - 6);
+      }
+
+      // Draw particles
+      for (const p of particles) {
+        const alpha = p.life * 0.75;
+        const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        const size = p.turbulent ? 3 + Math.random() * 2 : 2.6;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+        if (p.turbulent) {
+          ctx.fillStyle = `rgba(239,68,68,${alpha})`;
+        } else {
+          // Color by speed: faster = brighter cyan
+          const tNorm = Math.min(1, Math.max(0, (spd - baseSpeed * 0.7) / (baseSpeed * 0.6)));
+          const r = Math.round(96 + tNorm * 70);
+          const g = Math.round(165 + tNorm * 60);
+          const b = Math.round(250);
+          ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+        }
+        ctx.fill();
+      }
+
+      // Draw airfoil (rotated around CX, CY)
+      ctx.save();
+      ctx.translate(CX, CY);
+      ctx.rotate(-aoaRad);
+
+      // Grab affordance ring
+      if (dragRef.current.dragging || dragRef.current.hovering) {
+        const ringR = CHORD * 0.55;
+        const pulse = dragRef.current.dragging ? 1 : 0.6 + Math.sin(Date.now() * 0.006) * 0.2;
+        ctx.strokeStyle = dragRef.current.dragging
+          ? `rgba(96,165,250,${0.85 * pulse})`
+          : `rgba(148,197,255,${0.55 * pulse})`;
+        ctx.lineWidth = dragRef.current.dragging ? 2.5 : 1.5;
+        ctx.setLineDash(dragRef.current.dragging ? [] : [4, 4]);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, ringR, peaks.topPeak * 0.7 + 28, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Airfoil body
+      drawAirfoilBody(ctx, peaks);
+      ctx.fillStyle = isStalling ? '#64748b' : '#94a3b8';
+      ctx.strokeStyle = isStalling ? '#ef4444' : '#e2e8f0';
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+
+      // Chord line (reference)
+      ctx.strokeStyle = 'rgba(71,85,105,0.55)';
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(-CHORD / 2, 0);
+      ctx.lineTo(CHORD / 2, 0);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.restore();
+
+      // Lift arrow — length proportional to observed particle density delta
+      const liftLen = Math.abs(clampedSignal) * 90;
+      if (liftLen > 4) {
+        const dir = clampedSignal >= 0 ? -1 : 1;
+        ctx.strokeStyle = '#3b82f6';
+        ctx.fillStyle = '#3b82f6';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(CX, CY);
+        ctx.lineTo(CX, CY + dir * liftLen);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(CX, CY + dir * (liftLen + 10));
+        ctx.lineTo(CX - 7, CY + dir * (liftLen - 2));
+        ctx.lineTo(CX + 7, CY + dir * (liftLen - 2));
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#60a5fa';
+        ctx.fillText('LIFT', CX + 14, CY + dir * liftLen / 2);
+        ctx.lineCap = 'butt';
+      }
+
+      // Wind direction indicator
+      ctx.font = '12px monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Wind: ${curWind.toFixed(0)} m/s`, 18, 28);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(18, 40); ctx.lineTo(80, 40);
+      ctx.stroke();
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.moveTo(86, 40); ctx.lineTo(78, 36); ctx.lineTo(78, 44); ctx.closePath();
+      ctx.fill();
+
+      // AoA readout
+      ctx.textAlign = 'right';
+      ctx.fillStyle = isStalling ? '#f87171' : '#a78bfa';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(`AoA: ${curAoa.toFixed(1)}\u00B0${isStalling ? ' STALL!' : ''}`, CW - 18, 28);
+
+      // Grab hint (before first grab)
+      if (!dragRef.current.hasGrabbed && !dragRef.current.dragging) {
+        const pulse = 0.55 + Math.sin(Date.now() * 0.004) * 0.25;
+        ctx.fillStyle = `rgba(148,197,255,${pulse})`;
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('\u2195 Grab the airfoil and drag up or down to rotate', CX, CY + 90);
+      }
+
+      ctx.textAlign = 'start';
+      animRef.current = requestAnimationFrame(animate);
+    };
+
+    animRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animRef.current);
+  }, []);
+
+  // Reset particle pool when shape changes drastically (keeps flow coherent)
+  useEffect(() => {
+    particlesRef.current = [];
+  }, [shape]);
+
+  // ======== Pointer handlers: direct manipulation of the airfoil ========
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const toCanvas = (clientX: number, clientY: number) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (clientX - rect.left) * (CW / rect.width),
+        y: (clientY - rect.top) * (CH / rect.height),
+      };
+    };
+
+    const hitTestAirfoil = (cx: number, cy: number) => {
+      // Generous AABB in world frame — easy to grab even on steep AoA
+      const halfW = CHORD / 2 + 20;
+      const halfH = 45;
+      return Math.abs(cx - CX) <= halfW && Math.abs(cy - CY) <= halfH;
+    };
+
+    const clampAoa = (v: number) => Math.max(MIN_AOA, Math.min(MAX_AOA, v));
+
+    const onPointerDown = (e: PointerEvent) => {
+      const { x, y } = toCanvas(e.clientX, e.clientY);
+      if (!hitTestAirfoil(x, y)) return;
+      e.preventDefault();
+      canvas.setPointerCapture?.(e.pointerId);
+      dragRef.current.dragging = true;
+      dragRef.current.startPointerY = y;
+      dragRef.current.startAoa = aoaRef.current;
+      if (!dragRef.current.hasGrabbed) {
+        dragRef.current.hasGrabbed = true;
+        cbRef.current.onGrab();
+      }
+      setCursor('grabbing');
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      const { x, y } = toCanvas(e.clientX, e.clientY);
+      const drag = dragRef.current;
+
+      if (drag.dragging) {
+        // Dragging up (smaller y) tilts the leading edge UP (higher AoA)
+        const delta = (drag.startPointerY - y) * DRAG_SENSITIVITY;
+        const next = clampAoa(drag.startAoa + delta);
+        aoaRef.current = next;
+        cbRef.current.onAoaChange(next);
+        return;
+      }
+
+      const over = hitTestAirfoil(x, y);
+      if (over !== drag.hovering) {
+        drag.hovering = over;
+        setCursor(over ? 'grab' : 'default');
+      }
+    };
+
+    const endDrag = (e: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag.dragging) return;
+      drag.dragging = false;
+      canvas.releasePointerCapture?.(e.pointerId);
+      setCursor(drag.hovering ? 'grab' : 'default');
+    };
+
+    const onPointerLeave = () => {
+      if (!dragRef.current.dragging) {
+        dragRef.current.hovering = false;
+        setCursor('default');
+      }
+    };
+
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+    canvas.addEventListener('pointerleave', onPointerLeave);
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', endDrag);
+      canvas.removeEventListener('pointercancel', endDrag);
+      canvas.removeEventListener('pointerleave', onPointerLeave);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={CW}
+      height={CH}
+      className="rounded-xl w-full"
+      style={{ maxWidth: CW, imageRendering: 'auto', cursor, touchAction: 'none' }}
+    />
+  );
+};
+
+// ============================================================================
+// Main Component: AirfoilLab ("Living Wind Tunnel")
+// ============================================================================
 
 const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
-  // ── State ──────────────────────────────────────────────────────
-
+  // ---- State ----
   const [angleOfAttack, setAngleOfAttack] = useState(data.initialConditions.angleOfAttack);
   const [windSpeed, setWindSpeed] = useState(data.initialConditions.windSpeed);
-  const [selectedShape, setSelectedShape] = useState<AirfoilShape['shape']>(data.airfoil.shape);
+  const [selectedShape, setSelectedShape] = useState<ShapeId>(data.airfoil.shape);
   const [camber, setCamber] = useState(0.5);
   const [shapesExplored, setShapesExplored] = useState<Set<string>>(new Set([data.airfoil.shape]));
   const [variablesManipulated, setVariablesManipulated] = useState<Set<string>>(new Set());
@@ -169,35 +622,13 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
   const [activeChallenge, setActiveChallenge] = useState<AirfoilChallenge | null>(null);
   const [challengeOptimality, setChallengeOptimality] = useState(0);
   const [attemptsCount, setAttemptsCount] = useState(0);
+  const [compareShape, setCompareShape] = useState<ShapeId>('symmetric');
+  const [hasGrabbedAirfoil, setHasGrabbedAirfoil] = useState(false);
+  const [observedLiftSignal, setObservedLiftSignal] = useState(0);
 
-  // Compare-mode second airfoil state
-  const [compareShape, setCompareShape] = useState<AirfoilShape['shape']>('symmetric');
-
-  // Visualization toggles
-  const [showStreamlines, setShowStreamlines] = useState(data.visualizationOptions.streamlines);
-  const [showPressureMap, setShowPressureMap] = useState(data.visualizationOptions.pressureMap);
-  const [showForceGauges, setShowForceGauges] = useState(data.visualizationOptions.forceGauges);
-
-  // Animation
-  const [animationTick, setAnimationTick] = useState(0);
-  const animRef = useRef<number>(0);
-
-  // Prev angle ref for detecting big changes
-  const prevAngleRef = useRef(angleOfAttack);
-
-  // ── Evaluation ─────────────────────────────────────────────────
-
-  const { submitResult, hasSubmitted } = usePrimitiveEvaluation({
-    primitiveType: 'airfoil-lab' as any,
-    instanceId: data.instanceId || 'airfoil-lab-default',
-    skillId: data.skillId,
-    subskillId: data.subskillId,
-    objectiveId: data.objectiveId,
-    onSubmit: data.onEvaluationSubmit,
-  });
-
-  // ── AI Tutoring ────────────────────────────────────────────────
-
+  // ---- Physics-formula computation (used for Results card & challenge scoring).
+  // The visible LIFT arrow in the Canvas is driven by the observed particle
+  // density delta — this formula provides a stable numeric readout.
   const computedResults = useMemo(() => {
     const clBase = selectedShape === 'custom'
       ? camber * 0.8
@@ -211,12 +642,26 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
     const cd = cd0 + cdInduced + (isStalled ? 0.1 : 0);
 
     const q = 0.5 * data.initialConditions.airDensity * windSpeed ** 2;
-    const liftForce = q * effectiveCl;
-    const dragForce = q * cd;
-
-    return { effectiveCl, cd, liftForce, dragForce, isStalled, q };
+    return {
+      effectiveCl,
+      cd,
+      liftForce: q * effectiveCl,
+      dragForce: q * cd,
+      isStalled,
+    };
   }, [selectedShape, camber, angleOfAttack, windSpeed, data.initialConditions.airDensity, data.results.stallAngle]);
 
+  // ---- Evaluation ----
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation({
+    primitiveType: 'airfoil-lab' as any,
+    instanceId: data.instanceId || 'airfoil-lab-default',
+    skillId: data.skillId,
+    subskillId: data.subskillId,
+    objectiveId: data.objectiveId,
+    onSubmit: data.onEvaluationSubmit,
+  });
+
+  // ---- AI Tutoring ----
   const { sendText } = useLuminaAI({
     primitiveType: 'airfoil-lab' as any,
     instanceId: data.instanceId || `al-${Date.now()}`,
@@ -228,70 +673,88 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
       liftForce: computedResults.liftForce,
       dragForce: computedResults.dragForce,
       stallAngle: data.results.stallAngle,
+      hasGrabbedAirfoil,
+      observedLiftSignal,
       compareModeActive,
     },
     gradeLevel: data.gradeBand === '1-2' ? 'kindergarten' : 'elementary',
   });
 
-  // ── Animation loop ─────────────────────────────────────────────
-
+  // ---- Intro message ----
+  const introducedRef = useRef(false);
   useEffect(() => {
-    let frame: number;
-    const tick = () => {
-      setAnimationTick(t => t + 1);
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, []);
+    if (introducedRef.current) return;
+    introducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Student is exploring a living wind tunnel for the ${data.airfoil.name} airfoil. `
+      + `Air particles flow left-to-right and split above/below the wing. Above = faster and spread out (low pressure). `
+      + `Below = slower and bunched up (high pressure). The student rotates the airfoil directly by grabbing and dragging it. `
+      + `Encourage them to grab the airfoil and tilt it up gently, then watch the particles above speed up.`,
+      { silent: true },
+    );
+  }, [sendText, data.airfoil.name]);
 
-  // ── Pedagogical triggers ───────────────────────────────────────
-
-  // Shape change trigger
-  const handleShapeChange = useCallback((shape: AirfoilShape['shape']) => {
+  // ---- Handlers ----
+  const handleShapeChange = useCallback((shape: ShapeId) => {
     setSelectedShape(shape);
     setShapesExplored(prev => new Set(prev).add(shape));
     setVariablesManipulated(prev => new Set(prev).add('shape'));
     setAttemptsCount(c => c + 1);
-    sendText(`[SHAPE_CHANGED] Student selected airfoil shape: ${SHAPE_LABELS[shape]}`, { silent: true });
+    sendText(`[SHAPE_CHANGED] Student selected airfoil shape: ${SHAPE_LABELS[shape]}. Ask what they expect to see in the particle flow.`, { silent: true });
   }, [sendText]);
 
-  // Angle change trigger
+  const aoaNarrationRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastNarratedAoaRef = useRef(angleOfAttack);
   const handleAngleChange = useCallback((newAngle: number) => {
-    setAngleOfAttack(newAngle);
+    const rounded = Math.round(newAngle * 2) / 2;
+    setAngleOfAttack(rounded);
     setVariablesManipulated(prev => new Set(prev).add('angle'));
 
-    if (Math.abs(newAngle - prevAngleRef.current) >= 5) {
-      sendText(`[ANGLE_CHANGED] Angle of attack changed to ${newAngle.toFixed(1)} degrees`, { silent: true });
-      prevAngleRef.current = newAngle;
-    }
-  }, [sendText]);
+    if (aoaNarrationRef.current) clearTimeout(aoaNarrationRef.current);
+    aoaNarrationRef.current = setTimeout(() => {
+      if (Math.abs(rounded - lastNarratedAoaRef.current) < 2) return;
+      lastNarratedAoaRef.current = rounded;
+      const msg = rounded > data.results.stallAngle
+        ? `[AOA_STALL_ZONE] Student tilted the airfoil to ${rounded.toFixed(1)} degrees — past stall angle ${data.results.stallAngle}. Ask what happened to the particles above the wing.`
+        : `[AOA_DRAGGED] Student rotated the airfoil to ${rounded.toFixed(1)} degrees. Ask what they notice about particle spacing above vs below.`;
+      sendText(msg, { silent: true });
+    }, 900);
+  }, [sendText, data.results.stallAngle]);
 
-  // Wind speed change trigger
   const handleWindSpeedChange = useCallback((speed: number) => {
     setWindSpeed(speed);
     setVariablesManipulated(prev => new Set(prev).add('windSpeed'));
   }, []);
 
-  // Stall detection
-  useEffect(() => {
-    if (computedResults.isStalled && !stallDiscovered) {
-      setStallDiscovered(true);
-      sendText(`[STALL_REACHED] Wing has stalled at angle ${angleOfAttack.toFixed(1)} degrees! Lift dropped dramatically.`, { silent: true });
-    }
-  }, [computedResults.isStalled, stallDiscovered, angleOfAttack, sendText]);
-
-  // ── Compare mode ───────────────────────────────────────────────
-
   const handleToggleCompare = useCallback(() => {
     const next = !compareModeActive;
     setCompareModeActive(next);
-    if (next) {
-      sendText(`[COMPARISON_STARTED] Compare mode activated`, { silent: true });
-    }
+    if (next) sendText(`[COMPARISON_STARTED] Compare mode activated`, { silent: true });
   }, [compareModeActive, sendText]);
 
-  // Compare-mode results for the second shape
+  // ---- Sim callbacks ----
+  const tunnelCallbacks = useMemo<TunnelCallbacks>(() => ({
+    onStall: (isStalling) => {
+      if (isStalling && !stallDiscovered) {
+        setStallDiscovered(true);
+        sendText(
+          `[STALL_REACHED] Student tilted past stall — particles just detached from the upper surface and started swirling. Ask: "What happened to the particles above the wing?"`,
+          { silent: true },
+        );
+      }
+    },
+    onLiftSignal: setObservedLiftSignal,
+    onAoaChange: handleAngleChange,
+    onGrab: () => {
+      setHasGrabbedAirfoil(true);
+      sendText(
+        `[AIRFOIL_GRABBED] Student just grabbed the airfoil for the first time. Encourage them to pull the leading edge up gently and watch the particles above spread apart and speed up.`,
+        { silent: true },
+      );
+    },
+  }), [handleAngleChange, sendText, stallDiscovered]);
+
+  // ---- Compare mode: second shape's physics (stat card only — main tunnel stays live) ----
   const compareResults = useMemo(() => {
     if (!compareModeActive) return null;
     const clBase = SHAPE_CL_BASE[compareShape] ?? 0.3;
@@ -305,8 +768,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
     return { liftForce: q * effectiveCl, dragForce: q * cd, effectiveCl, cd, isStalled };
   }, [compareModeActive, compareShape, angleOfAttack, windSpeed, data.initialConditions.airDensity, data.results.stallAngle]);
 
-  // ── Challenge evaluation ───────────────────────────────────────
-
+  // ---- Challenge evaluation ----
   const evaluateChallenge = useCallback(() => {
     if (!activeChallenge) return;
     const liftLevel = computedResults.liftForce > 500 ? 'high' : computedResults.liftForce > 100 ? 'medium' : 'low';
@@ -318,8 +780,8 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
     setChallengeOptimality(score);
 
     sendText(
-      `[CHALLENGE_RESULT] Challenge "${activeChallenge.scenario}" - Lift target: ${activeChallenge.targetLift} (got ${liftLevel}), Drag target: ${activeChallenge.targetDrag} (got ${dragLevel}). Score: ${score}/100`,
-      { silent: true }
+      `[CHALLENGE_RESULT] Challenge "${activeChallenge.scenario}" — Lift target ${activeChallenge.targetLift} (got ${liftLevel}), Drag target ${activeChallenge.targetDrag} (got ${dragLevel}). Score ${score}/100.`,
+      { silent: true },
     );
 
     if (!hasSubmitted) {
@@ -341,7 +803,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
           windSpeed,
           liftForce: computedResults.liftForce,
           dragForce: computedResults.dragForce,
-        }
+        },
       );
     }
   }, [
@@ -350,49 +812,11 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
     submitResult, sendText, selectedShape, angleOfAttack, windSpeed,
   ]);
 
-  // ── SVG constants ──────────────────────────────────────────────
-
-  const svgWidth = 800;
-  const svgHeight = 400;
-  const airfoilCx = svgWidth / 2;
-  const airfoilCy = svgHeight / 2;
-  const chordLength = 200;
-
-  // ── Streamline generation ──────────────────────────────────────
-
-  const streamlines = useMemo(() => {
-    const lines: { y: number; offsetY: number; speed: number; side: 'upper' | 'lower' }[] = [];
-    const numLines = 10;
-    const halfSpread = 120;
-
-    for (let i = 0; i < numLines; i++) {
-      const frac = i / (numLines - 1);
-      const baseY = airfoilCy - halfSpread + frac * halfSpread * 2;
-      const isUpper = baseY < airfoilCy;
-
-      // Upper streamlines compress (deflect upward), lower spread
-      const deflection = isUpper
-        ? -(1 - frac / 0.5) * 25 * (computedResults.effectiveCl > 0 ? 1 : 0.3)
-        : (frac - 0.5) / 0.5 * 15 * (computedResults.effectiveCl > 0 ? 1 : 0.3);
-
-      const speed = isUpper ? 1.2 + computedResults.effectiveCl * 0.15 : 0.9 - computedResults.effectiveCl * 0.05;
-
-      lines.push({
-        y: baseY,
-        offsetY: deflection,
-        speed: Math.max(0.3, speed),
-        side: isUpper ? 'upper' : 'lower',
-      });
-    }
-    return lines;
-  }, [airfoilCy, computedResults.effectiveCl]);
-
-  // ── Render ─────────────────────────────────────────────────────
-
   const ldRatio = computedResults.dragForce > 0.001
     ? (computedResults.liftForce / computedResults.dragForce)
     : Infinity;
 
+  // ---- Render ----
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -405,7 +829,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
             <p className="text-xs text-cyan-400 font-mono uppercase tracking-wider">
-              Airfoil Lab
+              Living Wind Tunnel
             </p>
           </div>
         </div>
@@ -420,7 +844,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
       </div>
 
       <div className="glass-panel p-6 md:p-8 rounded-3xl border border-cyan-500/20 relative overflow-hidden">
-        {/* Background Texture */}
+        {/* Background texture */}
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(#06b6d4 1px, transparent 1px)', backgroundSize: '20px 20px' }}
@@ -432,288 +856,69 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
             <p className="text-slate-300 font-light">{data.airfoil.description}</p>
           </div>
 
-          {/* Stall Warning */}
+          {/* Stall warning */}
           {computedResults.isStalled && (
             <div className="mb-4 flex justify-center">
               <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-red-500/20 border border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
                 <span className="font-mono text-sm font-bold text-red-300">
-                  STALL! Angle exceeds {data.results.stallAngle}deg - lift has dropped
+                  STALL! Particles detached from the wing — lift collapsed
                 </span>
               </div>
             </div>
           )}
 
-          {/* Main 2-column layout */}
+          {/* Main layout: Canvas + controls */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
-            {/* Left: SVG Wind Tunnel (3 cols) */}
-            <div className="lg:col-span-3">
+            {/* Canvas wind tunnel (3 cols) */}
+            <div className="lg:col-span-3 space-y-3">
               <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-                <CardContent className="p-0">
-                  <svg
-                    viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                    className="w-full h-auto select-none"
-                    style={{ maxHeight: '440px' }}
-                  >
-                    <defs>
-                      {/* Sky gradient */}
-                      <linearGradient id="al-sky" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#0c1629" />
-                        <stop offset="100%" stopColor="#1a2744" />
-                      </linearGradient>
-                      {/* Pressure gradient: blue (low) to red (high) */}
-                      <linearGradient id="al-pressure-top" x1="0%" y1="100%" x2="0%" y2="0%">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.0" />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.35" />
-                      </linearGradient>
-                      <linearGradient id="al-pressure-bottom" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#ef4444" stopOpacity="0.0" />
-                        <stop offset="100%" stopColor="#ef4444" stopOpacity="0.25" />
-                      </linearGradient>
-                      <filter id="al-glow">
-                        <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feMerge>
-                          <feMergeNode in="blur" />
-                          <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                      </filter>
-                    </defs>
-
-                    {/* Background */}
-                    <rect x={0} y={0} width={svgWidth} height={svgHeight} fill="url(#al-sky)" />
-
-                    {/* Grid */}
-                    <g opacity="0.06">
-                      {Array.from({ length: 21 }).map((_, i) => (
-                        <line key={`gv${i}`} x1={i * 40} y1={0} x2={i * 40} y2={svgHeight} stroke="#94A3B8" strokeWidth="0.5" />
-                      ))}
-                      {Array.from({ length: 11 }).map((_, i) => (
-                        <line key={`gh${i}`} x1={0} y1={i * 40} x2={svgWidth} y2={i * 40} stroke="#94A3B8" strokeWidth="0.5" />
-                      ))}
-                    </g>
-
-                    {/* Pressure map (optional) */}
-                    {showPressureMap && !computedResults.isStalled && (
-                      <g>
-                        <rect
-                          x={airfoilCx - chordLength / 2 - 30}
-                          y={airfoilCy - 100}
-                          width={chordLength + 60}
-                          height={100}
-                          fill="url(#al-pressure-top)"
-                          rx={8}
-                        />
-                        <rect
-                          x={airfoilCx - chordLength / 2 - 30}
-                          y={airfoilCy}
-                          width={chordLength + 60}
-                          height={80}
-                          fill="url(#al-pressure-bottom)"
-                          rx={8}
-                        />
-                        {/* Labels */}
-                        <text x={airfoilCx + chordLength / 2 + 40} y={airfoilCy - 50} fontSize={10} fill="#60a5fa" fontFamily="monospace" textAnchor="start" opacity={0.7}>
-                          LOW P
-                        </text>
-                        <text x={airfoilCx + chordLength / 2 + 40} y={airfoilCy + 40} fontSize={10} fill="#f87171" fontFamily="monospace" textAnchor="start" opacity={0.7}>
-                          HIGH P
-                        </text>
-                      </g>
-                    )}
-
-                    {/* Streamlines */}
-                    {showStreamlines && (
-                      <g>
-                        {streamlines.map((sl, idx) => {
-                          // Animate flow via horizontal offset tied to animationTick
-                          const phase = (animationTick * sl.speed * 1.5) % svgWidth;
-                          const isTurbulent = computedResults.isStalled && sl.side === 'upper';
-
-                          // Two repeated passes for seamless loop
-                          return [0, 1].map(rep => {
-                            const xStart = -svgWidth + phase + rep * svgWidth;
-                            const midX1 = xStart + svgWidth * 0.35;
-                            const midX2 = xStart + svgWidth * 0.65;
-                            const xEnd = xStart + svgWidth;
-
-                            // Deflection occurs around the airfoil center region
-                            const nearAirfoil = true; // simplified: the path bends around center
-                            const yMid = sl.y + (nearAirfoil ? sl.offsetY : 0);
-
-                            // Turbulent offsets at stall
-                            const turbY1 = isTurbulent ? Math.sin(animationTick * 0.3 + idx * 1.7) * 12 : 0;
-                            const turbY2 = isTurbulent ? Math.cos(animationTick * 0.25 + idx * 2.1) * 15 : 0;
-
-                            const pathD = `M ${xStart},${sl.y} C ${midX1},${sl.y} ${midX1},${yMid + turbY1} ${(xStart + xEnd) / 2},${yMid + turbY1} S ${midX2},${sl.y + turbY2} ${xEnd},${sl.y}`;
-
-                            return (
-                              <path
-                                key={`sl-${idx}-${rep}`}
-                                d={pathD}
-                                fill="none"
-                                stroke={isTurbulent ? '#ef4444' : sl.side === 'upper' ? '#60a5fa' : '#f87171'}
-                                strokeWidth={isTurbulent ? 1.5 : 1}
-                                opacity={isTurbulent ? 0.5 : 0.3}
-                                strokeDasharray={isTurbulent ? '4,6' : undefined}
-                              />
-                            );
-                          });
-                        })}
-                      </g>
-                    )}
-
-                    {/* Airfoil body - rotated by angle of attack */}
-                    <g transform={`rotate(${-angleOfAttack}, ${airfoilCx}, ${airfoilCy})`}>
-                      <path
-                        d={getAirfoilPath(selectedShape, camber, airfoilCx, airfoilCy, chordLength)}
-                        fill={computedResults.isStalled ? '#64748b' : '#94a3b8'}
-                        stroke={computedResults.isStalled ? '#ef4444' : '#e2e8f0'}
-                        strokeWidth={2}
-                        opacity={0.9}
-                      />
-                      {/* Chord line */}
-                      <line
-                        x1={airfoilCx - chordLength / 2}
-                        y1={airfoilCy}
-                        x2={airfoilCx + chordLength / 2}
-                        y2={airfoilCy}
-                        stroke="#475569"
-                        strokeWidth={0.5}
-                        strokeDasharray="4,4"
-                        opacity={0.4}
-                      />
-                    </g>
-
-                    {/* Force gauges */}
-                    {showForceGauges && (
-                      <g>
-                        {/* Lift arrow (up, blue) */}
-                        {(() => {
-                          const liftLen = Math.min(Math.abs(computedResults.liftForce) * 0.15, 120);
-                          const liftDir = computedResults.liftForce >= 0 ? -1 : 1;
-                          return (
-                            <g>
-                              <line
-                                x1={airfoilCx}
-                                y1={airfoilCy}
-                                x2={airfoilCx}
-                                y2={airfoilCy + liftDir * liftLen}
-                                stroke="#3b82f6"
-                                strokeWidth={4}
-                                strokeLinecap="round"
-                                filter="url(#al-glow)"
-                              />
-                              {/* Arrowhead */}
-                              <polygon
-                                points={`${airfoilCx},${airfoilCy + liftDir * liftLen} ${airfoilCx - 6},${airfoilCy + liftDir * (liftLen - 12)} ${airfoilCx + 6},${airfoilCy + liftDir * (liftLen - 12)}`}
-                                fill="#3b82f6"
-                              />
-                              <text
-                                x={airfoilCx + 12}
-                                y={airfoilCy + liftDir * liftLen / 2}
-                                fontSize={11}
-                                fill="#60a5fa"
-                                fontFamily="monospace"
-                                fontWeight="bold"
-                              >
-                                L = {computedResults.liftForce.toFixed(1)} N
-                              </text>
-                            </g>
-                          );
-                        })()}
-
-                        {/* Drag arrow (right, orange) */}
-                        {(() => {
-                          const dragLen = Math.min(computedResults.dragForce * 0.8, 100);
-                          return (
-                            <g>
-                              <line
-                                x1={airfoilCx}
-                                y1={airfoilCy}
-                                x2={airfoilCx + dragLen}
-                                y2={airfoilCy}
-                                stroke="#f97316"
-                                strokeWidth={4}
-                                strokeLinecap="round"
-                                filter="url(#al-glow)"
-                              />
-                              <polygon
-                                points={`${airfoilCx + dragLen},${airfoilCy} ${airfoilCx + dragLen - 12},${airfoilCy - 6} ${airfoilCx + dragLen - 12},${airfoilCy + 6}`}
-                                fill="#f97316"
-                              />
-                              <text
-                                x={airfoilCx + dragLen + 8}
-                                y={airfoilCy - 8}
-                                fontSize={11}
-                                fill="#fb923c"
-                                fontFamily="monospace"
-                                fontWeight="bold"
-                              >
-                                D = {computedResults.dragForce.toFixed(1)} N
-                              </text>
-                            </g>
-                          );
-                        })()}
-                      </g>
-                    )}
-
-                    {/* Wind direction indicator */}
-                    <g>
-                      <text x={20} y={30} fontSize={12} fill="#94a3b8" fontFamily="monospace">
-                        Wind: {windSpeed.toFixed(0)} m/s
-                      </text>
-                      <line x1={20} y1={40} x2={80} y2={40} stroke="#94a3b8" strokeWidth={2} markerEnd="url(#al-wind-arrow)" />
-                      <defs>
-                        <marker id="al-wind-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-                          <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
-                        </marker>
-                      </defs>
-                    </g>
-
-                    {/* Angle indicator arc */}
-                    <g>
-                      <text x={svgWidth - 140} y={30} fontSize={11} fill="#a78bfa" fontFamily="monospace">
-                        AoA: {angleOfAttack.toFixed(1)}deg
-                      </text>
-                      {angleOfAttack !== 0 && (
-                        <path
-                          d={`M ${airfoilCx + 60},${airfoilCy} A 60 60 0 0 ${angleOfAttack > 0 ? 0 : 1} ${airfoilCx + 60 * Math.cos(angleOfAttack * Math.PI / 180)},${airfoilCy - 60 * Math.sin(angleOfAttack * Math.PI / 180)}`}
-                          fill="none"
-                          stroke="#a78bfa"
-                          strokeWidth={1.5}
-                          opacity={0.6}
-                        />
-                      )}
-                    </g>
-
-                    {/* Stall turbulence indicator */}
-                    {computedResults.isStalled && data.visualizationOptions.stallVisualization && (
-                      <g>
-                        {Array.from({ length: 8 }).map((_, i) => {
-                          const cx = airfoilCx - 40 + Math.random() * 80;
-                          const cy = airfoilCy - 30 - Math.random() * 40;
-                          const r = 3 + Math.random() * 6;
-                          return (
-                            <circle
-                              key={`turb-${i}`}
-                              cx={cx + Math.sin(animationTick * 0.1 + i * 0.8) * 8}
-                              cy={cy + Math.cos(animationTick * 0.15 + i * 1.2) * 5}
-                              r={r}
-                              fill="none"
-                              stroke="#ef4444"
-                              strokeWidth={1}
-                              opacity={0.4}
-                            />
-                          );
-                        })}
-                      </g>
-                    )}
-                  </svg>
+                <CardContent className="p-0 relative">
+                  <WindTunnelSimulation
+                    shape={selectedShape}
+                    camber={camber}
+                    aoa={angleOfAttack}
+                    windSpeed={windSpeed}
+                    stallAngle={data.results.stallAngle}
+                    callbacks={tunnelCallbacks}
+                  />
+                  {!hasGrabbedAirfoil && (
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/85 px-4 py-1.5 rounded-full border border-cyan-400/30 shadow-lg shadow-cyan-500/10">
+                      <p className="text-cyan-200 text-xs font-medium">
+                        <span className="mr-1">{'\u270B'}</span>
+                        Grab the airfoil and drag up or down to rotate it
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              {/* Observed lift indicator (particle-driven) */}
+              <div className="flex items-center gap-3 px-4 py-2 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-mono">Observed Lift</span>
+                <div className="flex-1 h-2 bg-slate-900/60 rounded-full overflow-hidden relative">
+                  <div
+                    className="absolute top-0 h-full transition-all duration-200"
+                    style={{
+                      left: observedLiftSignal >= 0 ? '50%' : `${50 + observedLiftSignal * 50}%`,
+                      width: `${Math.abs(observedLiftSignal) * 50}%`,
+                      background: observedLiftSignal >= 0
+                        ? 'linear-gradient(to right, #3b82f6, #60a5fa)'
+                        : 'linear-gradient(to left, #f87171, #ef4444)',
+                    }}
+                  />
+                  <div className="absolute top-0 bottom-0 left-1/2 w-px bg-slate-600" />
+                </div>
+                <span className={`text-xs font-mono font-bold ${observedLiftSignal >= 0 ? 'text-sky-300' : 'text-red-300'}`}>
+                  {observedLiftSignal >= 0 ? '\u2191' : '\u2193'} {(observedLiftSignal * 100).toFixed(0)}
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-500 text-center font-mono">
+                Driven by particle density differential (fewer above = lower pressure = lift)
+              </p>
             </div>
 
-            {/* Right: Controls panel (2 cols) */}
+            {/* Controls (2 cols) */}
             <div className="lg:col-span-2 space-y-4">
               {/* Shape selector */}
               <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
@@ -739,7 +944,6 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                     ))}
                   </div>
 
-                  {/* Camber slider for custom shape */}
                   {selectedShape === 'custom' && (
                     <div className="mt-3">
                       <label className="block text-xs font-mono text-slate-400 mb-1">
@@ -759,30 +963,26 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                 </CardContent>
               </Card>
 
-              {/* Angle of Attack slider */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              {/* Angle of Attack readout (hand-driven, no slider) */}
+              <Card className={`backdrop-blur-xl border ${computedResults.isStalled ? 'bg-red-500/10 border-red-500/40' : 'bg-slate-900/40 border-white/10'}`}>
                 <CardContent className="pt-4">
-                  <label className="block text-sm font-mono text-slate-300 mb-2">
-                    Angle of Attack: <span className={`font-bold ${computedResults.isStalled ? 'text-red-400' : 'text-purple-400'}`}>{angleOfAttack.toFixed(1)}deg</span>
+                  <label className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                    <span>Angle of Attack</span>
+                    <span className="text-[10px] text-cyan-400 normal-case tracking-normal">{'\u270B'} hand-driven</span>
                   </label>
-                  <input
-                    type="range"
-                    min={-5}
-                    max={25}
-                    step={0.5}
-                    value={angleOfAttack}
-                    onChange={e => handleAngleChange(parseFloat(e.target.value))}
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
-                    <span>-5deg</span>
-                    <span className="text-red-400">Stall: {data.results.stallAngle}deg</span>
-                    <span>25deg</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-2xl font-mono font-bold ${computedResults.isStalled ? 'text-red-300 animate-pulse' : 'text-purple-400'}`}>
+                      {angleOfAttack.toFixed(1)}&deg;
+                    </span>
+                    {computedResults.isStalled && <span className="text-red-300 text-xs font-bold">STALL!</span>}
                   </div>
+                  <p className="text-slate-500 text-[10px] mt-1">
+                    Stall angle: {data.results.stallAngle}&deg; {'\u00B7'} Drag the airfoil to rotate
+                  </p>
                 </CardContent>
               </Card>
 
-              {/* Wind Speed slider */}
+              {/* Wind speed slider */}
               <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
                 <CardContent className="pt-4">
                   <label className="block text-sm font-mono text-slate-300 mb-2">
@@ -804,7 +1004,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                 </CardContent>
               </Card>
 
-              {/* Results display */}
+              {/* Results readout */}
               <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-mono text-slate-300 flex items-center gap-2">
@@ -829,45 +1029,16 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                   {stallDiscovered && (
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-slate-400 font-mono">Stall Angle</span>
-                      <span className="text-sm text-red-400 font-bold font-mono">{data.results.stallAngle}deg</span>
+                      <span className="text-sm text-red-400 font-bold font-mono">{data.results.stallAngle}&deg;</span>
                     </div>
                   )}
                 </CardContent>
               </Card>
-
-              {/* Visualization toggles */}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`text-xs ${showStreamlines ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300' : 'bg-white/5 border-white/10 text-slate-500'} border`}
-                  onClick={() => setShowStreamlines(!showStreamlines)}
-                >
-                  <Eye className="w-3 h-3 mr-1" /> Streamlines
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`text-xs ${showPressureMap ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300' : 'bg-white/5 border-white/10 text-slate-500'} border`}
-                  onClick={() => setShowPressureMap(!showPressureMap)}
-                >
-                  <Eye className="w-3 h-3 mr-1" /> Pressure
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`text-xs ${showForceGauges ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300' : 'bg-white/5 border-white/10 text-slate-500'} border`}
-                  onClick={() => setShowForceGauges(!showForceGauges)}
-                >
-                  <ArrowUp className="w-3 h-3 mr-1" /> Forces
-                </Button>
-              </div>
             </div>
           </div>
 
-          {/* Bottom Area: Comparison and Challenges */}
+          {/* Compare + Challenges */}
           <div className="space-y-6">
-            {/* Comparison Panel */}
             {data.presetComparisons.length > 0 && (
               <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
                 <CardHeader className="pb-2">
@@ -888,9 +1059,8 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                 {compareModeActive && (
                   <CardContent className="pt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Shape A: the currently selected shape */}
                       <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
-                        <div className="text-xs text-slate-400 font-mono mb-2">Shape A (current)</div>
+                        <div className="text-xs text-slate-400 font-mono mb-2">Shape A (in wind tunnel)</div>
                         <div className="text-sm text-cyan-300 font-bold">{SHAPE_LABELS[selectedShape]}</div>
                         <div className="mt-2 space-y-1 text-xs font-mono text-slate-400">
                           <div>Lift: <span className="text-blue-400">{computedResults.liftForce.toFixed(1)} N</span></div>
@@ -899,13 +1069,12 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                         </div>
                       </div>
 
-                      {/* Shape B: compare shape */}
                       <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
                         <div className="text-xs text-slate-400 font-mono mb-2">Shape B</div>
                         <select
                           value={compareShape}
                           onChange={e => {
-                            setCompareShape(e.target.value as AirfoilShape['shape']);
+                            setCompareShape(e.target.value as ShapeId);
                             setComparisonCompleted(true);
                           }}
                           className="w-full px-2 py-1 bg-slate-900/60 text-cyan-300 text-sm rounded border border-slate-600 focus:border-cyan-500 focus:outline-none font-mono mb-2"
@@ -921,10 +1090,12 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                             <div>L/D: <span className="text-green-400">{compareResults.dragForce > 0.001 ? (compareResults.liftForce / compareResults.dragForce).toFixed(1) : '--'}</span></div>
                           </div>
                         )}
+                        <p className="text-[10px] text-slate-500 mt-2">
+                          Tip: swap Shape A in the tunnel to see B&apos;s particles live.
+                        </p>
                       </div>
                     </div>
 
-                    {/* Preset comparison questions */}
                     {data.presetComparisons.length > 0 && (
                       <div className="mt-4 space-y-3">
                         {data.presetComparisons.map((comp, idx) => (
@@ -946,7 +1117,6 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
               </Card>
             )}
 
-            {/* Challenges */}
             {data.challenges.length > 0 && (
               <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
                 <CardHeader className="pb-2">
@@ -1010,7 +1180,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
             )}
           </div>
 
-          {/* Educational Info */}
+          {/* Educational context */}
           <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <Wind className="w-5 h-5 text-cyan-400" />
@@ -1022,23 +1192,24 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                 Its curved shape makes air flow faster over the top and slower underneath.
               </p>
               <p className="text-slate-300 text-sm">
-                <span className="text-blue-400 font-semibold">Bernoulli&apos;s Principle:</span> Faster air = lower pressure above the wing.
-                The pressure difference pushes the wing upward - that&apos;s <span className="text-blue-400 font-semibold">lift</span>!
+                <span className="text-blue-400 font-semibold">Bernoulli&apos;s Principle:</span> Faster air = lower pressure.
+                Watch the particles: above the wing they spread apart and speed up (fewer per area = low pressure), below they bunch up and slow down (more per area = high pressure).
+                The pressure difference pushes the wing upward &mdash; that&apos;s <span className="text-blue-400 font-semibold">lift</span>.
               </p>
               <p className="text-slate-300 text-sm">
-                <span className="text-red-400 font-semibold">Stall Warning:</span> If the angle of attack gets too steep,
-                air can&apos;t follow the wing surface smoothly. It separates and becomes turbulent, causing lift to drop suddenly.
+                <span className="text-red-400 font-semibold">Stall:</span> Tilt the airfoil too steeply and the upper particles can&apos;t hold onto the surface.
+                They <span className="text-red-400 font-semibold">detach and swirl</span>, pressure equalizes, and lift collapses suddenly.
               </p>
               {data.gradeBand === '3-5' && (
                 <p className="text-slate-300 text-sm">
                   <span className="text-green-400 font-semibold">L/D Ratio:</span> The lift-to-drag ratio measures aerodynamic efficiency.
-                  Higher L/D means the wing generates more lift for less drag - great for gliders and fuel efficiency!
+                  Higher L/D means more lift for less drag &mdash; great for gliders and fuel efficiency.
                 </p>
               )}
             </div>
           </div>
 
-          {/* Exploration progress (subtle) */}
+          {/* Exploration progress */}
           <div className="mt-4 flex flex-wrap gap-3 justify-center">
             <div className="text-xs text-slate-500 font-mono flex items-center gap-1">
               Shapes explored: <span className="text-cyan-400">{shapesExplored.size}/{ALL_SHAPES.length}</span>

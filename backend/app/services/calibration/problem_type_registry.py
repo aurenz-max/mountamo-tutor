@@ -71,6 +71,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "discover_rule": PriorConfig(3.5, "Strategy: identify hidden function rule"),
         "create_rule":   PriorConfig(4.5, "Transitional: write rule for given I/O pairs"),
     },
+    "coordinate-graph": {
+        "plot_point":     PriorConfig(-1.0, "Student clicks correct grid intersection for given coordinates"),
+        "read_point":     PriorConfig(-0.5, "Student identifies coordinates of displayed point from MC options"),
+        "find_slope":     PriorConfig(0.5, "Student identifies slope from rise/run triangle and MC options"),
+        "find_intercept": PriorConfig(1.0, "Student identifies y-intercept of drawn line from MC options"),
+    },
     # -----------------------------------------------------------------
     # Single-mode math primitives (default β)
     # -----------------------------------------------------------------

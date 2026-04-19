@@ -18,6 +18,11 @@ import {
  *
  * Real-world connections: excavators, construction equipment, hydraulics, robotics
  *
+ * MOUSE INTERACTION:
+ * - Click & drag joints (boom elbow, stick elbow, bucket wrist) to rotate arm segments
+ * - Click & drag excavator body to move it left/right
+ * - Click bucket tip near ground to dig, click when full near target to dump
+ *
  * EVALUATION INTEGRATION:
  * - Tracks material excavated, operations completed, efficiency
  * - Submits evaluation metrics on challenge completion
@@ -119,6 +124,11 @@ interface MaterialParticle {
   materialType: string;
 }
 
+// Draggable joint identifiers
+type DragTarget = 'boom' | 'stick' | 'bucket' | 'body' | null;
+
+const JOINT_HIT_RADIUS = 20; // px — how close you need to click to grab a joint
+
 // Helper: darken a hex color
 function darkenColor(hex: string, factor: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -142,6 +152,11 @@ function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.closePath();
 }
 
+// Distance between two points
+function dist(x1: number, y1: number, x2: number, y2: number): number {
+  return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+}
+
 const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, className }) => {
   const {
     title,
@@ -149,7 +164,6 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
     boomLength = 100,
     stickLength = 80,
     bucketSize = 10,
-    jointControl = 'sliders',
     showAngles = true,
     showReach = false,
     terrainProfile = [],
@@ -162,7 +176,6 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
     maxStickAngle = 30,
     minBucketAngle = -90,
     maxBucketAngle = 90,
-    theme = 'realistic',
     excavatorColor = '#F59E0B',
     instanceId,
     skillId,
@@ -187,6 +200,12 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
   // Excavator base position — state for UI, ref for animation loop
   const [excavatorX, setExcavatorX] = useState(100);
   const excavatorXRef = useRef(100);
+
+  // Mouse interaction state
+  const draggingRef = useRef<DragTarget>(null);
+  const hoveredJointRef = useRef<DragTarget>(null);
+  const dragStartXRef = useRef(0);
+  const dragStartExcavatorXRef = useRef(0);
 
   // Verlet nodes for realistic physics — ref only (never shown in JSX)
   const nodesRef = useRef<VerletNode[]>([]);
@@ -238,6 +257,169 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
     ];
   }, [boomLength, stickLength, canvasSize.height]);
 
+  // Compute joint positions from angles (used by both rendering and mouse interaction)
+  const getJointPositions = useCallback(() => {
+    const exX = excavatorXRef.current;
+    const baseY = canvasSize.height - 150;
+    const armPivotX = exX + 5;
+    const armPivotY = baseY + 2;
+
+    const ba = boomAngleRef.current;
+    const sa = stickAngleRef.current;
+    const bka = bucketAngleRef.current;
+
+    const boomRad = (ba * Math.PI) / 180;
+    const stickRad = ((ba + sa) * Math.PI) / 180;
+    const bucketRad = ((ba + sa + bka) * Math.PI) / 180;
+
+    const boomEndX = armPivotX + Math.cos(boomRad) * boomLength;
+    const boomEndY = armPivotY - Math.sin(boomRad) * boomLength;
+
+    const stickEndX = boomEndX + Math.cos(stickRad) * stickLength;
+    const stickEndY = boomEndY - Math.sin(stickRad) * stickLength;
+
+    const bucketTipX = stickEndX + Math.cos(bucketRad) * 30;
+    const bucketTipY = stickEndY - Math.sin(bucketRad) * 30;
+
+    return {
+      pivot: { x: armPivotX, y: armPivotY },
+      boomEnd: { x: boomEndX, y: boomEndY },
+      stickEnd: { x: stickEndX, y: stickEndY },
+      bucketTip: { x: bucketTipX, y: bucketTipY },
+      bodyCenter: { x: exX, y: baseY + 15 },
+    };
+  }, [boomLength, stickLength, canvasSize.height]);
+
+  // Convert canvas mouse event to canvas-space coordinates
+  const getCanvasCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement> | MouseEvent): { x: number; y: number } => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvasSize.width / rect.width;
+    const scaleY = canvasSize.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  }, [canvasSize]);
+
+  // Detect which joint the mouse is near
+  const hitTest = useCallback((mx: number, my: number): DragTarget => {
+    const pos = getJointPositions();
+
+    // Check bucket wrist first (smallest, hardest to grab)
+    if (dist(mx, my, pos.stickEnd.x, pos.stickEnd.y) < JOINT_HIT_RADIUS) return 'bucket';
+    // Boom-stick elbow
+    if (dist(mx, my, pos.boomEnd.x, pos.boomEnd.y) < JOINT_HIT_RADIUS) return 'stick';
+    // Boom pivot
+    if (dist(mx, my, pos.pivot.x, pos.pivot.y) < JOINT_HIT_RADIUS) return 'boom';
+    // Excavator body
+    const bx = pos.bodyCenter.x;
+    const by = pos.bodyCenter.y;
+    if (mx > bx - 40 && mx < bx + 40 && my > by - 30 && my < by + 40) return 'body';
+
+    return null;
+  }, [getJointPositions]);
+
+  // Handle angle changes with constraints — update both state and ref
+  const handleBoomAngleChange = useCallback((value: number) => {
+    const clamped = Math.max(minBoomAngle, Math.min(maxBoomAngle, value));
+    setBoomAngle(clamped);
+    boomAngleRef.current = clamped;
+  }, [minBoomAngle, maxBoomAngle]);
+
+  const handleStickAngleChange = useCallback((value: number) => {
+    const clamped = Math.max(minStickAngle, Math.min(maxStickAngle, value));
+    setStickAngle(clamped);
+    stickAngleRef.current = clamped;
+  }, [minStickAngle, maxStickAngle]);
+
+  const handleBucketAngleChange = useCallback((value: number) => {
+    const clamped = Math.max(minBucketAngle, Math.min(maxBucketAngle, value));
+    setBucketAngle(clamped);
+    bucketAngleRef.current = clamped;
+  }, [minBucketAngle, maxBucketAngle]);
+
+  const handleExcavatorMove = useCallback((newX: number) => {
+    const clamped = Math.max(80, Math.min(canvasSize.width - 80, newX));
+    setExcavatorX(clamped);
+    excavatorXRef.current = clamped;
+  }, [canvasSize.width]);
+
+  // --- Mouse event handlers for canvas ---
+  const handleCanvasMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const { x, y } = getCanvasCoords(e);
+    const target = hitTest(x, y);
+    if (target) {
+      draggingRef.current = target;
+      dragStartXRef.current = x;
+      dragStartExcavatorXRef.current = excavatorXRef.current;
+      e.preventDefault();
+    }
+  }, [getCanvasCoords, hitTest]);
+
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const { x, y } = getCanvasCoords(e);
+    const target = draggingRef.current;
+
+    if (!target) {
+      // Just update hover state for visual feedback
+      hoveredJointRef.current = hitTest(x, y);
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = hoveredJointRef.current ? 'grab' : 'default';
+      }
+      return;
+    }
+
+    // Active drag
+    const canvas = canvasRef.current;
+    if (canvas) canvas.style.cursor = 'grabbing';
+
+    if (target === 'body') {
+      const dx = x - dragStartXRef.current;
+      handleExcavatorMove(dragStartExcavatorXRef.current + dx);
+      return;
+    }
+
+    const pos = getJointPositions();
+
+    if (target === 'boom') {
+      // Angle from pivot to mouse
+      const dx = x - pos.pivot.x;
+      const dy = -(y - pos.pivot.y); // flip y for standard math coords
+      const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      handleBoomAngleChange(angle);
+    } else if (target === 'stick') {
+      // Angle from boom end to mouse, relative to boom angle
+      const dx = x - pos.boomEnd.x;
+      const dy = -(y - pos.boomEnd.y);
+      const absAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      const relAngle = absAngle - boomAngleRef.current;
+      handleStickAngleChange(relAngle);
+    } else if (target === 'bucket') {
+      // Angle from stick end to mouse, relative to boom+stick
+      const dx = x - pos.stickEnd.x;
+      const dy = -(y - pos.stickEnd.y);
+      const absAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      const relAngle = absAngle - boomAngleRef.current - stickAngleRef.current;
+      handleBucketAngleChange(relAngle);
+    }
+  }, [getCanvasCoords, hitTest, getJointPositions, handleBoomAngleChange, handleStickAngleChange, handleBucketAngleChange, handleExcavatorMove]);
+
+  const handleCanvasMouseUp = useCallback(() => {
+    draggingRef.current = null;
+    const canvas = canvasRef.current;
+    if (canvas) canvas.style.cursor = hoveredJointRef.current ? 'grab' : 'default';
+  }, []);
+
+  const handleCanvasMouseLeave = useCallback(() => {
+    draggingRef.current = null;
+    hoveredJointRef.current = null;
+    const canvas = canvasRef.current;
+    if (canvas) canvas.style.cursor = 'default';
+  }, []);
+
   // Animation loop — reads from refs, never triggers React re-renders
   useEffect(() => {
     const updateNodePositions = () => {
@@ -254,8 +436,11 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       const stickRad = ((ba + sa) * Math.PI) / 180;
       const bucketRad = ((ba + sa + bka) * Math.PI) / 180;
 
-      const boomEndX = exX + Math.cos(boomRad) * boomLength;
-      const boomEndY = baseY - Math.sin(boomRad) * boomLength;
+      const armPivotX = exX + 5;
+      const armPivotY = baseY + 2;
+
+      const boomEndX = armPivotX + Math.cos(boomRad) * boomLength;
+      const boomEndY = armPivotY - Math.sin(boomRad) * boomLength;
 
       const stickEndX = boomEndX + Math.cos(stickRad) * stickLength;
       const stickEndY = boomEndY - Math.sin(stickRad) * stickLength;
@@ -266,8 +451,10 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       const damping = 0.95;
 
       // Mutate nodes directly — no setState
-      nodes[0].x = exX;
-      nodes[0].oldX = exX;
+      nodes[0].x = armPivotX;
+      nodes[0].y = armPivotY;
+      nodes[0].oldX = armPivotX;
+      nodes[0].oldY = armPivotY;
 
       if (!nodes[1].pinned) {
         const vx = (nodes[1].x - nodes[1].oldX) * damping;
@@ -310,6 +497,8 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       const bka = bucketAngleRef.current;
       const terrain = currentTerrainRef.current;
       const contents = bucketContentsRef.current;
+      const hovered = hoveredJointRef.current;
+      const dragging = draggingRef.current;
 
       const W = canvasSize.width;
       const H = canvasSize.height;
@@ -442,7 +631,15 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         // --- Tracks ---
         const trackW = 70;
         const trackH = 20;
-        const trackY = baseNodeY + 30;
+        const trackY = baseNodeY + 28;
+
+        // Body highlight when hovered/dragged
+        const bodyActive = hovered === 'body' || dragging === 'body';
+        if (bodyActive) {
+          ctx.save();
+          ctx.shadowColor = 'rgba(245, 158, 11, 0.5)';
+          ctx.shadowBlur = 18;
+        }
 
         ctx.fillStyle = '#1a1a1a';
         drawRoundedRect(ctx, baseNodeX - trackW / 2, trackY, trackW, trackH, 8);
@@ -471,28 +668,28 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         // --- Main body ---
         const bodyW = 55;
         const bodyH = 30;
-        const bodyY = baseNodeY;
+        const bodyDrawY = baseNodeY;
 
-        const bodyGrad = ctx.createLinearGradient(0, bodyY, 0, bodyY + bodyH);
+        const bodyGrad = ctx.createLinearGradient(0, bodyDrawY, 0, bodyDrawY + bodyH);
         bodyGrad.addColorStop(0, excavatorColor);
         bodyGrad.addColorStop(1, darkenColor(excavatorColor, 0.7));
         ctx.fillStyle = bodyGrad;
-        drawRoundedRect(ctx, baseNodeX - bodyW / 2, bodyY, bodyW, bodyH, 5);
+        drawRoundedRect(ctx, baseNodeX - bodyW / 2, bodyDrawY, bodyW, bodyH, 5);
         ctx.fill();
 
         ctx.strokeStyle = darkenColor(excavatorColor, 0.5);
         ctx.lineWidth = 1.5;
-        drawRoundedRect(ctx, baseNodeX - bodyW / 2, bodyY, bodyW, bodyH, 5);
+        drawRoundedRect(ctx, baseNodeX - bodyW / 2, bodyDrawY, bodyW, bodyH, 5);
         ctx.stroke();
 
         ctx.fillStyle = darkenColor(excavatorColor, 0.6);
-        ctx.fillRect(baseNodeX - bodyW / 2 + 4, bodyY + 6, 12, bodyH - 12);
+        ctx.fillRect(baseNodeX - bodyW / 2 + 4, bodyDrawY + 6, 12, bodyH - 12);
 
         // --- Cab ---
         const cabW = 32;
         const cabH = 28;
         const cabX = baseNodeX - cabW / 2 + 5;
-        const cabY = bodyY - cabH;
+        const cabY = bodyDrawY - cabH;
 
         const cabGrad = ctx.createLinearGradient(0, cabY, 0, cabY + cabH);
         cabGrad.addColorStop(0, excavatorColor);
@@ -516,8 +713,10 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         ctx.fillStyle = 'rgba(255,255,255,0.3)';
         ctx.fillRect(cabX + 6, cabY + 4, 4, cabH * 0.4);
 
+        if (bodyActive) ctx.restore();
+
         // --- ARM SEGMENTS ---
-        const armPivotX = baseNodeX + 5;
+        const armPivotX = baseNodeX;
         const armPivotY = baseNodeY + 2;
 
         // Boom segment
@@ -675,26 +874,47 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
           ctx.fill();
         }
 
-        // --- Joints ---
-        [
-          { node: { x: armPivotX, y: armPivotY }, r: 8 },
-          { node: nodes[1], r: 7 },
-          { node: nodes[2], r: 6 },
-        ].forEach(({ node, r }) => {
+        // --- Interactive Joint indicators ---
+        // Draw joints with hover/drag glow
+        const jointDefs: { target: DragTarget; pos: { x: number; y: number }; r: number }[] = [
+          { target: 'boom', pos: { x: armPivotX, y: armPivotY }, r: 8 },
+          { target: 'stick', pos: nodes[1], r: 7 },
+          { target: 'bucket', pos: nodes[2], r: 6 },
+        ];
+
+        jointDefs.forEach(({ target, pos, r }) => {
+          const isActive = dragging === target;
+          const isHovered = hovered === target && !dragging;
+          const glowRadius = isActive ? r + 8 : isHovered ? r + 5 : 0;
+
+          // Glow ring
+          if (glowRadius > 0) {
+            ctx.save();
+            ctx.shadowColor = 'rgba(245, 158, 11, 0.8)';
+            ctx.shadowBlur = isActive ? 20 : 12;
+            ctx.strokeStyle = isActive ? '#F59E0B' : 'rgba(245, 158, 11, 0.6)';
+            ctx.lineWidth = isActive ? 3 : 2;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, glowRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // Joint pin
           ctx.fillStyle = '#555';
           ctx.beginPath();
-          ctx.arc(node.x, node.y, r + 2, 0, Math.PI * 2);
+          ctx.arc(pos.x, pos.y, r + 2, 0, Math.PI * 2);
           ctx.fill();
-          const pinGrad = ctx.createRadialGradient(node.x - 1, node.y - 1, 0, node.x, node.y, r);
-          pinGrad.addColorStop(0, '#888');
-          pinGrad.addColorStop(1, '#444');
+          const pinGrad = ctx.createRadialGradient(pos.x - 1, pos.y - 1, 0, pos.x, pos.y, r);
+          pinGrad.addColorStop(0, isActive ? '#FFD700' : isHovered ? '#BBA030' : '#888');
+          pinGrad.addColorStop(1, isActive ? '#B8860B' : isHovered ? '#665520' : '#444');
           ctx.fillStyle = pinGrad;
           ctx.beginPath();
-          ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+          ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = 'rgba(255,255,255,0.3)';
           ctx.beginPath();
-          ctx.arc(node.x - r * 0.3, node.y - r * 0.3, r * 0.3, 0, Math.PI * 2);
+          ctx.arc(pos.x - r * 0.3, pos.y - r * 0.3, r * 0.3, 0, Math.PI * 2);
           ctx.fill();
         });
 
@@ -723,6 +943,18 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         ctx.fillStyle = '#FBBF24';
         ctx.fillText(`Bucket: ${Math.round(bka)}°`, 16, 64);
       }
+
+      // Interaction hint (show briefly or when no drag has happened yet)
+      if (!dragging && nodes.length >= 4) {
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        drawRoundedRect(ctx, W - 220, 8, 212, 28, 6);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('Drag joints to move arm, drag body to slide', W - 16, 27);
+        ctx.textAlign = 'start';
+      }
     };
 
     const animate = () => {
@@ -739,33 +971,6 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       }
     };
   }, [canvasSize, excavatorColor, showAngles, showReach, boomLength, stickLength, materialLayers, targetZone]);
-
-  // Handle angle changes with constraints — update both state and ref
-  const handleBoomAngleChange = useCallback((value: number) => {
-    const clamped = Math.max(minBoomAngle, Math.min(maxBoomAngle, value));
-    setBoomAngle(clamped);
-    boomAngleRef.current = clamped;
-  }, [minBoomAngle, maxBoomAngle]);
-
-  const handleStickAngleChange = useCallback((value: number) => {
-    const clamped = Math.max(minStickAngle, Math.min(maxStickAngle, value));
-    setStickAngle(clamped);
-    stickAngleRef.current = clamped;
-  }, [minStickAngle, maxStickAngle]);
-
-  const handleBucketAngleChange = useCallback((value: number) => {
-    const clamped = Math.max(minBucketAngle, Math.min(maxBucketAngle, value));
-    setBucketAngle(clamped);
-    bucketAngleRef.current = clamped;
-  }, [minBucketAngle, maxBucketAngle]);
-
-  const handleExcavatorMove = useCallback((deltaX: number) => {
-    setExcavatorX(prev => {
-      const next = Math.max(80, Math.min(canvasSize.width - 80, prev + deltaX));
-      excavatorXRef.current = next;
-      return next;
-    });
-  }, [canvasSize.width]);
 
   // Dig operation
   const handleDig = useCallback(() => {
@@ -929,143 +1134,18 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         )}
       </div>
 
-      {/* Canvas */}
+      {/* Interactive Canvas — primary control surface */}
       <div className="mb-6 rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl bg-slate-800/40 backdrop-blur-sm">
         <canvas
           ref={canvasRef}
           width={canvasSize.width}
           height={canvasSize.height}
-          className="w-full"
+          className="w-full touch-none"
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={handleCanvasMouseUp}
+          onMouseLeave={handleCanvasMouseLeave}
         />
-      </div>
-
-      {/* Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        {/* Boom Control */}
-        <div className="p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Boom Angle: {Math.round(boomAngle)}°
-          </label>
-          {jointControl === 'sliders' && (
-            <input
-              type="range"
-              min={minBoomAngle}
-              max={maxBoomAngle}
-              step="1"
-              value={boomAngle}
-              onChange={(e) => handleBoomAngleChange(Number(e.target.value))}
-              className="w-full accent-amber-500"
-            />
-          )}
-          {jointControl === 'buttons' && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleBoomAngleChange(boomAngle - 5)}
-                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
-              >
-                -5°
-              </button>
-              <button
-                onClick={() => handleBoomAngleChange(boomAngle + 5)}
-                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
-              >
-                +5°
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Stick Control */}
-        <div className="p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Stick Angle: {Math.round(stickAngle)}°
-          </label>
-          {jointControl === 'sliders' && (
-            <input
-              type="range"
-              min={minStickAngle}
-              max={maxStickAngle}
-              step="1"
-              value={stickAngle}
-              onChange={(e) => handleStickAngleChange(Number(e.target.value))}
-              className="w-full accent-amber-500"
-            />
-          )}
-          {jointControl === 'buttons' && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleStickAngleChange(stickAngle - 5)}
-                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
-              >
-                -5°
-              </button>
-              <button
-                onClick={() => handleStickAngleChange(stickAngle + 5)}
-                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
-              >
-                +5°
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Bucket Control */}
-        <div className="p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Bucket Angle: {Math.round(bucketAngle)}°
-          </label>
-          {jointControl === 'sliders' && (
-            <input
-              type="range"
-              min={minBucketAngle}
-              max={maxBucketAngle}
-              step="1"
-              value={bucketAngle}
-              onChange={(e) => handleBucketAngleChange(Number(e.target.value))}
-              className="w-full accent-amber-500"
-            />
-          )}
-          {jointControl === 'buttons' && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleBucketAngleChange(bucketAngle - 5)}
-                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
-              >
-                -5°
-              </button>
-              <button
-                onClick={() => handleBucketAngleChange(bucketAngle + 5)}
-                className="px-3 py-1 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg transition-all"
-              >
-                +5°
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Movement Controls */}
-      <div className="mb-4 p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
-        <label className="block text-sm font-medium text-slate-300 mb-2">
-          Excavator Position
-        </label>
-        <div className="flex gap-2 items-center">
-          <button
-            onClick={() => handleExcavatorMove(-20)}
-            className="px-4 py-2 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg font-semibold transition-all"
-          >
-            ← Move Left
-          </button>
-          <div className="flex-1 text-center text-slate-400 text-sm">
-            X: {Math.round(excavatorX)}
-          </div>
-          <button
-            onClick={() => handleExcavatorMove(20)}
-            className="px-4 py-2 bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-lg font-semibold transition-all"
-          >
-            Move Right →
-          </button>
-        </div>
       </div>
 
       {/* Action Buttons */}
@@ -1075,14 +1155,14 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
           disabled={bucketContents.length >= bucketSize}
           className="flex-1 px-4 py-3 bg-amber-500/20 hover:bg-amber-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-amber-500/50 text-amber-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] disabled:shadow-none"
         >
-          ⛏️ Dig ({bucketContents.length}/{bucketSize})
+          Dig ({bucketContents.length}/{bucketSize})
         </button>
         <button
           onClick={handleDump}
           disabled={bucketContents.length === 0}
           className="flex-1 px-4 py-3 bg-green-500/20 hover:bg-green-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-green-500/50 text-green-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:shadow-none"
         >
-          🚛 Dump
+          Dump
         </button>
       </div>
 
@@ -1110,7 +1190,7 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
             disabled={hasSubmitted}
             className="flex-1 px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-blue-500/50 text-blue-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] disabled:shadow-none"
           >
-            {hasSubmitted ? '✓ Submitted' : 'Submit Work'}
+            {hasSubmitted ? 'Submitted' : 'Submit Work'}
           </button>
           {hasSubmitted && (
             <button

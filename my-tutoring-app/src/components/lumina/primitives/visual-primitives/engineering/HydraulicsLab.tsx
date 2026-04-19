@@ -233,8 +233,9 @@ const HydraulicsSimulation: React.FC<{
   loadWeight: number;
   selectedZone: string | null;
   onZoneClick: (zoneId: string) => void;
+  onInputForceChange: (force: number) => void;
   callbacks: SimCallbacks;
-}> = ({ inputForce, smallDiameter, largeDiameter, loadWeight, selectedZone, onZoneClick, callbacks }) => {
+}> = ({ inputForce, smallDiameter, largeDiameter, loadWeight, selectedZone, onZoneClick, onInputForceChange, callbacks }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<FluidParticle[]>([]);
   const simRef = useRef<SimState>({
@@ -242,6 +243,11 @@ const HydraulicsSimulation: React.FC<{
     forceMultDiscovered: false, workConservationSeen: false,
   });
   const animRef = useRef<number>(0);
+
+  // Drag state for interactive piston control
+  const isDraggingRef = useRef(false);
+  const dragCallbackRef = useRef(onInputForceChange);
+  useEffect(() => { dragCallbackRef.current = onInputForceChange; }, [onInputForceChange]);
 
   // Refs for dynamic values to avoid restarting animation
   const inputForceRef = useRef(inputForce);
@@ -562,11 +568,28 @@ const HydraulicsSimulation: React.FC<{
         ctx.lineWidth = 0.5;
         ctx.strokeRect(cx - 3, pistonYPos - 30, 6, 30);
 
-        // Handle/push plate
-        ctx.fillStyle = '#475569';
-        ctx.fillRect(cx - 12, pistonYPos - 34, 24, 6);
-        ctx.strokeStyle = '#94a3b8';
-        ctx.strokeRect(cx - 12, pistonYPos - 34, 24, 6);
+        // Handle/push plate — highlighted on small piston to hint draggability
+        if (isSmall) {
+          ctx.fillStyle = isDraggingRef.current ? '#22d3ee' : '#0e7490';
+          ctx.fillRect(cx - 14, pistonYPos - 36, 28, 8);
+          ctx.strokeStyle = '#22d3ee';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(cx - 14, pistonYPos - 36, 28, 8);
+          // Grip lines
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+          ctx.lineWidth = 0.5;
+          for (let gx = cx - 8; gx <= cx + 8; gx += 4) {
+            ctx.beginPath();
+            ctx.moveTo(gx, pistonYPos - 34);
+            ctx.lineTo(gx, pistonYPos - 30);
+            ctx.stroke();
+          }
+        } else {
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(cx - 12, pistonYPos - 34, 24, 6);
+          ctx.strokeStyle = '#94a3b8';
+          ctx.strokeRect(cx - 12, pistonYPos - 34, 24, 6);
+        }
 
         // Diameter label
         ctx.fillStyle = '#94a3b8';
@@ -797,15 +820,89 @@ const HydraulicsSimulation: React.FC<{
     return () => cancelAnimationFrame(animRef.current);
   }, [l]);
 
-  // Canvas click handler
+  // Helper: convert client coords to canvas coords
+  const toCanvasCoords = useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (CW / rect.width),
+      y: (clientY - rect.top) * (CH / rect.height),
+    };
+  }, []);
+
+  // Check if a point is near the small piston (generous hit area around piston head + rod)
+  const isNearSmallPiston = useCallback((cx: number, cy: number) => {
+    const smallR = Math.min(80, smallDiamRef.current * 3);
+    const sim = simRef.current;
+    const pistonYPos = l.smallCyl.baseY - l.smallCyl.maxH + 20 + sim.smallPistonY;
+    // Hit area: piston head region (from handle to piston face, wider than visual)
+    const hitLeft = l.smallCyl.cx - smallR - 15;
+    const hitRight = l.smallCyl.cx + smallR + 15;
+    const hitTop = pistonYPos - 50;
+    const hitBottom = pistonYPos + 20;
+    return cx >= hitLeft && cx <= hitRight && cy >= hitTop && cy <= hitBottom;
+  }, [l]);
+
+  // Map canvas Y position to force (0-500N)
+  const yToForce = useCallback((cy: number) => {
+    const restY = l.smallCyl.baseY - l.smallCyl.maxH + 20;
+    const maxTravel = l.smallCyl.maxH * 0.55;
+    const maxY = restY + maxTravel;
+    // Map: restY → 0N, maxY → 500N
+    const t = Math.max(0, Math.min(1, (cy - restY) / (maxY - restY)));
+    // Round to nearest 5 to match slider step
+    return Math.round((t * 500) / 5) * 5;
+  }, [l]);
+
+  // Mouse drag handlers for small piston
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const { x, y } = toCanvasCoords(e.clientX, e.clientY);
+    if (isNearSmallPiston(x, y)) {
+      isDraggingRef.current = true;
+      e.preventDefault();
+      // Immediately update force to match where they clicked
+      const force = yToForce(y);
+      dragCallbackRef.current(force);
+    }
+  }, [toCanvasCoords, isNearSmallPiston, yToForce]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const { x, y } = toCanvasCoords(e.clientX, e.clientY);
+
+    if (isDraggingRef.current) {
+      e.preventDefault();
+      const force = yToForce(y);
+      dragCallbackRef.current(force);
+    } else {
+      // Show grab cursor when hovering over piston
+      canvas.style.cursor = isNearSmallPiston(x, y) ? 'grab' : 'pointer';
+    }
+  }, [toCanvasCoords, isNearSmallPiston, yToForce]);
+
+  const handleMouseUp = useCallback(() => {
+    isDraggingRef.current = false;
+    const canvas = canvasRef.current;
+    if (canvas) canvas.style.cursor = 'pointer';
+  }, []);
+
+  // Stop dragging if mouse leaves canvas
+  const handleMouseLeave = useCallback(() => {
+    isDraggingRef.current = false;
+  }, []);
+
+  // Canvas click handler (only fires zone clicks if not dragging)
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = CW / rect.width;
-    const scaleY = CH / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    // Don't trigger zone click if we were just dragging
+    if (isDraggingRef.current) return;
+
+    const { x, y } = toCanvasCoords(e.clientX, e.clientY);
+
+    // Skip zone click if clicking on the piston drag area
+    if (isNearSmallPiston(x, y)) return;
 
     const smallR = Math.min(80, smallDiamRef.current * 3);
     const largeR = Math.min(130, largeDiamRef.current * 3);
@@ -819,18 +916,22 @@ const HydraulicsSimulation: React.FC<{
       }
     }
     onZoneClick('');
-  }, [onZoneClick]);
+  }, [toCanvasCoords, isNearSmallPiston, onZoneClick]);
 
-  const handleTouch = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+  // Touch drag handlers for mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
     if (e.touches.length === 0) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = CW / rect.width;
-    const scaleY = CH / rect.height;
-    const x = (e.touches[0].clientX - rect.left) * scaleX;
-    const y = (e.touches[0].clientY - rect.top) * scaleY;
+    const { x, y } = toCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
 
+    if (isNearSmallPiston(x, y)) {
+      isDraggingRef.current = true;
+      e.preventDefault();
+      const force = yToForce(y);
+      dragCallbackRef.current(force);
+      return;
+    }
+
+    // Zone click for non-piston touches
     const smallR = Math.min(80, smallDiamRef.current * 3);
     const largeR = Math.min(130, largeDiamRef.current * 3);
     const zones = computeZones(smallR, largeR);
@@ -843,7 +944,19 @@ const HydraulicsSimulation: React.FC<{
       }
     }
     onZoneClick('');
-  }, [onZoneClick]);
+  }, [toCanvasCoords, isNearSmallPiston, yToForce, onZoneClick]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDraggingRef.current || e.touches.length === 0) return;
+    e.preventDefault();
+    const { y } = toCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+    const force = yToForce(y);
+    dragCallbackRef.current(force);
+  }, [toCanvasCoords, yToForce]);
+
+  const handleTouchEnd = useCallback(() => {
+    isDraggingRef.current = false;
+  }, []);
 
   return (
     <canvas
@@ -851,9 +964,15 @@ const HydraulicsSimulation: React.FC<{
       width={CW}
       height={CH}
       onClick={handleClick}
-      onTouchStart={handleTouch}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       className="rounded-xl cursor-pointer w-full"
-      style={{ maxWidth: CW, imageRendering: 'auto' }}
+      style={{ maxWidth: CW, imageRendering: 'auto', touchAction: 'none' }}
     />
   );
 };
@@ -1218,6 +1337,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
               loadWeight={loadWeight}
               selectedZone={selectedZone}
               onZoneClick={handleZoneClick}
+              onInputForceChange={handleForceChange}
               callbacks={simCallbacks}
             />
             {/* Tap hint overlay */}

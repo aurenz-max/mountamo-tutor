@@ -149,13 +149,7 @@ const objectiveComponentSchema: Schema = {
         difficulty: { type: Type.STRING, description: "Difficulty level" },
         subject: { type: Type.STRING, description: "Subject area (e.g., 'Mathematics', 'Science', 'Language Arts')" },
         unitTitle: { type: Type.STRING, description: "Broader unit context" },
-        problemType: {
-          type: Type.STRING,
-          enum: ["multiple_choice", "true_false", "fill_in_blanks", "matching_activity", "sequencing_activity", "categorization_activity", "scenario_question", "short_answer"],
-          description: "For knowledge-check components: Type of problem to generate"
-        },
-        count: { type: Type.NUMBER, description: "For knowledge-check components: Number of problems to generate" },
-        gradeLevel: { type: Type.STRING, description: "For knowledge-check components: Override grade level for this specific check" },
+        count: { type: Type.NUMBER, description: "Number of items to generate" },
         keyTerms: {
           type: Type.ARRAY,
           items: { type: Type.STRING },
@@ -243,9 +237,7 @@ const manifestSchema: Schema = {
         config: {
           type: Type.OBJECT,
           properties: {
-            problemType: { type: Type.STRING },
-            count: { type: Type.NUMBER },
-            difficulty: { type: Type.STRING }
+            count: { type: Type.NUMBER, description: "Number of problems to generate" }
           }
         }
       },

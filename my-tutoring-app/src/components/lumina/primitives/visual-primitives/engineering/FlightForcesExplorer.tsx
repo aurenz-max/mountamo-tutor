@@ -166,7 +166,13 @@ interface SimCallbacks {
   onStall: () => void;
   onAltitude: (alt: number) => void;
   onSpeed: (spd: number) => void;
+  onAoaChange: (aoa: number) => void;
+  onGrab: () => void;
 }
+
+const MIN_AOA = -5;
+const MAX_AOA = 25;
+const DRAG_SENSITIVITY = 0.18; // degrees per pixel of vertical drag
 
 const FlightSimulation: React.FC<{
   aircraft: AircraftDef;
@@ -186,6 +192,14 @@ const FlightSimulation: React.FC<{
     cloudOffsetX: 0,
   });
   const animRef = useRef<number>(0);
+  const dragRef = useRef({
+    dragging: false,
+    startPointerY: 0,
+    startAoa: 0,
+    hovering: false,
+    hasGrabbed: false,
+  });
+  const [cursor, setCursor] = useState<'default' | 'grab' | 'grabbing'>('default');
 
   const thrustRef = useRef(thrustPct);
   const aoaRef = useRef(aoa);
@@ -415,6 +429,22 @@ const FlightSimulation: React.FC<{
       ctx.translate(PLANE_X, sim.planeY);
       ctx.rotate(-aoaRad);
 
+      // Grab affordance: pulsing ring around the plane when hoverable/grabbed
+      const drag = dragRef.current;
+      if (drag.dragging || drag.hovering) {
+        const ringR = Math.max(ac.wingSpan, ac.bodyW) * 0.55;
+        const pulse = drag.dragging ? 1 : 0.6 + Math.sin(Date.now() * 0.006) * 0.2;
+        ctx.strokeStyle = drag.dragging
+          ? `rgba(96,165,250,${0.85 * pulse})`
+          : `rgba(148,197,255,${0.55 * pulse})`;
+        ctx.lineWidth = drag.dragging ? 2.5 : 1.5;
+        ctx.setLineDash(drag.dragging ? [] : [4, 4]);
+        ctx.beginPath();
+        ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
       // Fuselage
       const bw = ac.bodyW;
       const bh = ac.bodyH;
@@ -605,6 +635,15 @@ const FlightSimulation: React.FC<{
       ctx.font = '10px monospace';
       ctx.fillText(`ALT ${Math.round(sim.altitude)}m`, CW - 18, 50);
 
+      // "Grab the plane to tilt it" hint — only before the student has grabbed once
+      if (!dragRef.current.hasGrabbed && !dragRef.current.dragging) {
+        const hintPulse = 0.55 + Math.sin(Date.now() * 0.004) * 0.25;
+        ctx.fillStyle = `rgba(148,197,255,${hintPulse})`;
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('\u2195 Grab the plane and tilt the nose', PLANE_X, sim.planeY + 70);
+      }
+
       ctx.textAlign = 'start';
       animRef.current = requestAnimationFrame(animate);
     };
@@ -614,13 +653,102 @@ const FlightSimulation: React.FC<{
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aircraft]);
 
+  // ======== Pointer handlers: direct manipulation of the plane ========
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const PLANE_X = CW * 0.4;
+
+    const toCanvas = (clientX: number, clientY: number) => {
+      const rect = canvas.getBoundingClientRect();
+      const sx = CW / rect.width;
+      const sy = CH / rect.height;
+      return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
+    };
+
+    const hitTestPlane = (cx: number, cy: number) => {
+      const ac = acRef.current;
+      const py = simRef.current.planeY;
+      // Generous bounding box around the rotated plane — includes wingspan
+      const halfW = Math.max(ac.bodyW, ac.wingSpan * 0.5) * 0.6;
+      const halfH = Math.max(ac.bodyH * 1.5, ac.wingSpan * 0.3) * 0.9;
+      return Math.abs(cx - PLANE_X) <= halfW && Math.abs(cy - py) <= halfH;
+    };
+
+    const clampAoa = (v: number) => Math.max(MIN_AOA, Math.min(MAX_AOA, v));
+
+    const onPointerDown = (e: PointerEvent) => {
+      const { x, y } = toCanvas(e.clientX, e.clientY);
+      if (!hitTestPlane(x, y)) return;
+      e.preventDefault();
+      canvas.setPointerCapture?.(e.pointerId);
+      dragRef.current.dragging = true;
+      dragRef.current.startPointerY = y;
+      dragRef.current.startAoa = aoaRef.current;
+      if (!dragRef.current.hasGrabbed) {
+        dragRef.current.hasGrabbed = true;
+        cbRef.current.onGrab();
+      }
+      setCursor('grabbing');
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      const { x, y } = toCanvas(e.clientX, e.clientY);
+      const drag = dragRef.current;
+
+      if (drag.dragging) {
+        // Dragging UP on the canvas (smaller y) tilts the nose UP (larger AoA)
+        const delta = (drag.startPointerY - y) * DRAG_SENSITIVITY;
+        const next = clampAoa(drag.startAoa + delta);
+        aoaRef.current = next;
+        cbRef.current.onAoaChange(next);
+        return;
+      }
+
+      const over = hitTestPlane(x, y);
+      if (over !== drag.hovering) {
+        drag.hovering = over;
+        setCursor(over ? 'grab' : 'default');
+      }
+    };
+
+    const endDrag = (e: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag.dragging) return;
+      drag.dragging = false;
+      canvas.releasePointerCapture?.(e.pointerId);
+      setCursor(drag.hovering ? 'grab' : 'default');
+    };
+
+    const onPointerLeave = () => {
+      if (!dragRef.current.dragging) {
+        dragRef.current.hovering = false;
+        setCursor('default');
+      }
+    };
+
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+    canvas.addEventListener('pointerleave', onPointerLeave);
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', endDrag);
+      canvas.removeEventListener('pointercancel', endDrag);
+      canvas.removeEventListener('pointerleave', onPointerLeave);
+    };
+  }, []);
+
   return (
     <canvas
       ref={canvasRef}
       width={CW}
       height={CH}
       className="rounded-xl w-full"
-      style={{ maxWidth: CW, imageRendering: 'auto' }}
+      style={{ maxWidth: CW, imageRendering: 'auto', cursor, touchAction: 'none' }}
     />
   );
 };
@@ -631,9 +759,9 @@ const FlightSimulation: React.FC<{
 
 const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className?: string }> = ({ data, className }) => {
   const {
-    title, description, overview, aircraftType = 'cessna', aircraftName,
+    title, overview, aircraftType = 'cessna', aircraftName,
     gradeBand = '1-2',
-    challenges: dataChallenges, forceDescriptions, flightStateDescriptions,
+    challenges: dataChallenges,
     instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
 
@@ -643,7 +771,7 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
   // ---- State ----
   const [selectedAircraft, setSelectedAircraft] = useState<AircraftId>(resolvedAircraftId);
   const [thrustPct, setThrustPct] = useState(50);
-  const [aoa, setAoa] = useState(5);
+  const [aoa, setAoa] = useState(2);
   const [cargoWeight, setCargoWeight] = useState(0);
   const [flightState, setFlightState] = useState('cruising');
   const [forces, setForces] = useState({ lift: 0, weight: 0, thrust: 0, drag: 0 });
@@ -652,6 +780,7 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
   const [stallCount, setStallCount] = useState(0);
   const [statesExplored, setStatesExplored] = useState<Set<string>>(new Set());
   const [aircraftExplored, setAircraftExplored] = useState<Set<AircraftId>>(new Set([resolvedAircraftId]));
+  const [hasGrabbedPlane, setHasGrabbedPlane] = useState(false);
 
   // Challenge state
   const [showChallenges, setShowChallenges] = useState(false);
@@ -693,8 +822,9 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
   const aiPrimitiveData = useMemo(() => ({
     aircraft: acDef.label, flightState, thrustPct, aoa, speed, altitude,
     stallCount, statesExplored: statesExplored.size,
+    hasGrabbedPlane,
     challengeProgress: `${challengeResults.length}/${challenges.length}`,
-  }), [acDef.label, flightState, thrustPct, aoa, speed, altitude, stallCount, statesExplored.size, challengeResults.length, challenges.length]);
+  }), [acDef.label, flightState, thrustPct, aoa, speed, altitude, stallCount, statesExplored.size, hasGrabbedPlane, challengeResults.length, challenges.length]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'flight-forces-explorer' as any,
@@ -710,7 +840,8 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
     sendText(
       `[ACTIVITY_START] Student is exploring a living flight simulation with particle airflow. `
       + `Aircraft: ${acDef.label}. ${overview}. `
-      + `Ask them to watch the air particles flowing around the wing and try changing the angle of attack.`,
+      + `The student flies the plane directly — they grab the plane on the canvas and drag up/down to tilt the nose. `
+      + `Encourage them to grab the plane and pull the nose up gently, then watch what happens to the particles above the wing.`,
       { silent: true },
     );
   }, [isConnected, acDef.label, overview, sendText]);
@@ -736,18 +867,23 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
     }, 800);
   }, [isConnected, sendText]);
 
+  // AoA is now driven by direct drag on the plane — not a slider.
+  // We still debounce AI narration so rapid drag doesn't spam the tutor.
   const aoaTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastNarratedAoaRef = useRef<number>(2);
   const handleAoaChange = useCallback((val: number) => {
-    setAoa(val);
+    const rounded = Math.round(val * 2) / 2;
+    setAoa(rounded);
     if (aoaTimeoutRef.current) clearTimeout(aoaTimeoutRef.current);
     aoaTimeoutRef.current = setTimeout(() => {
-      if (isConnected) {
-        const msg = val > acDef.stallAngle
-          ? `[AOA_STALL_ZONE] Angle of attack ${val} exceeds stall angle ${acDef.stallAngle}! Ask what they see happening to the particles.`
-          : `[AOA_CHANGED] Angle of attack set to ${val}. Watch the particles above and below the wing.`;
-        sendText(msg, { silent: true });
-      }
-    }, 600);
+      if (!isConnected) return;
+      if (Math.abs(rounded - lastNarratedAoaRef.current) < 2) return;
+      lastNarratedAoaRef.current = rounded;
+      const msg = rounded > acDef.stallAngle
+        ? `[AOA_STALL_ZONE] Student tilted the plane to ${rounded} — past stall angle ${acDef.stallAngle}! Ask what they see happening to the particles above the wing.`
+        : `[AOA_DRAGGED] Student tilted the plane to ${rounded}. Watch the particles above and below the wing.`;
+      sendText(msg, { silent: true });
+    }, 900);
   }, [isConnected, sendText, acDef.stallAngle]);
 
   const cargoTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -766,14 +902,24 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
       setStallCount(c => c + 1);
       if (isConnected) {
         sendText(
-          `[STALL] The plane stalled! Air particles detached from the wing. Ask: "What happened to the particles above the wing?"`,
+          `[STALL] The student tilted the plane past stall — air particles detached from the wing. Ask: "What happened to the particles above the wing?"`,
           { silent: true },
         );
       }
     },
     onAltitude: setAltitude,
     onSpeed: setSpeed,
-  }), [isConnected, sendText]);
+    onAoaChange: handleAoaChange,
+    onGrab: () => {
+      setHasGrabbedPlane(true);
+      if (isConnected) {
+        sendText(
+          `[PLANE_GRABBED] Student just grabbed the plane for the first time. Encourage them to pull the nose up and watch what happens to the particles and the force arrows.`,
+          { silent: true },
+        );
+      }
+    },
+  }), [isConnected, sendText, handleAoaChange]);
 
   // Challenge handler
   const handleAnswer = useCallback((optionId: string) => {
@@ -881,9 +1027,17 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
               cargoWeight={cargoWeight}
               callbacks={simCallbacks}
             />
-            {statesExplored.size <= 1 && (
+            {!hasGrabbedPlane && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/85 px-4 py-1.5 rounded-full border border-sky-400/30 shadow-lg shadow-sky-500/10">
+                <p className="text-sky-200 text-xs font-medium">
+                  <span className="mr-1">{'\u270B'}</span>
+                  Grab the plane and drag up or down to tilt the nose
+                </p>
+              </div>
+            )}
+            {hasGrabbedPlane && statesExplored.size <= 1 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/80 px-4 py-1.5 rounded-full border border-white/10">
-                <p className="text-slate-400 text-xs">Adjust the sliders to see how forces change!</p>
+                <p className="text-slate-400 text-xs">Try pulling the nose up gently, then watch what happens when you tilt too far.</p>
               </div>
             )}
           </div>
@@ -909,8 +1063,25 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
             </div>
           </div>
 
-          {/* Controls */}
+          {/* Controls — the plane's tilt is hand-driven; these set flight conditions */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Angle of Attack — readout only (controlled by dragging the plane) */}
+            <div className={`p-4 rounded-xl border ${aoa > acDef.stallAngle ? 'bg-red-500/10 border-red-500/40' : 'bg-slate-800/30 border-slate-700/50'}`}>
+              <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 flex items-center justify-between">
+                <span>Angle of Attack</span>
+                <span className="text-[10px] text-sky-400 normal-case tracking-normal">{'\u270B'} hand-driven</span>
+              </label>
+              <div className="flex items-baseline gap-2">
+                <span className={`text-2xl font-mono font-bold ${aoa > acDef.stallAngle ? 'text-red-300 animate-pulse' : 'text-sky-300'}`}>
+                  {aoa.toFixed(1)}&deg;
+                </span>
+                {aoa > acDef.stallAngle && <span className="text-red-300 text-xs font-bold">STALL!</span>}
+              </div>
+              <p className="text-slate-500 text-[10px] mt-1">
+                Stall angle: {acDef.stallAngle}&deg; {'\u00B7'} Drag the plane to change
+              </p>
+            </div>
+
             {/* Thrust */}
             <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
               <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
@@ -927,24 +1098,6 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
                   {acDef.maxThrust === 0 ? 'No engine' : `${thrustPct}%`}
                 </span>
                 <span className="text-slate-500 text-xs">100%</span>
-              </div>
-            </div>
-
-            {/* Angle of Attack */}
-            <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
-              <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
-                Angle of Attack
-              </label>
-              <input type="range" min={-5} max={25} step={0.5} value={aoa}
-                onChange={e => handleAoaChange(Number(e.target.value))}
-                className="w-full accent-sky-500"
-              />
-              <div className="flex justify-between mt-1">
-                <span className="text-slate-500 text-xs">-5&deg;</span>
-                <span className={`text-sm font-mono font-bold ${aoa > acDef.stallAngle ? 'text-red-400 animate-pulse' : 'text-sky-300'}`}>
-                  {aoa}&deg; {aoa > acDef.stallAngle ? 'STALL!' : ''}
-                </span>
-                <span className="text-slate-500 text-xs">25&deg;</span>
               </div>
             </div>
 

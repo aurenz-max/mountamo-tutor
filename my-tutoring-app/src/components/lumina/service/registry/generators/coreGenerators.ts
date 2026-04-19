@@ -373,17 +373,14 @@ registerGenerator('sentence-analyzer', async (item, topic, gradeContext) => {
 // ============================================================================
 
 // Knowledge Check (multiple problem types: MC, T/F, Fill-in, Matching, Sequencing, Categorization)
-// Uses the KC orchestrator by default — it plans optimal problem type mix, insets,
-// and difficulty progression. Falls back to direct mode when explicit problemType is set.
+// Always uses the KC orchestrator — it plans optimal problem type mix, insets,
+// and difficulty progression autonomously.
 registerGenerator('knowledge-check', async (item, topic, gradeContext, gradeLevel) => {
   const config = getConfig(item);
 
   const problems = await generateKnowledgeCheck(topic, gradeLevel, {
-    // When problemType is set explicitly, direct mode is used (backward compat).
-    // When omitted, the orchestrator decides the mix.
-    problemType: config.problemType,
+    useOrchestrator: true,
     count: config.count || config.problemCount || 1,
-    difficulty: config.difficulty,
     context: config.context,
     objectiveText: config.objectiveText,
     bloomsTier: config.targetEvalMode as BloomsTier | undefined,
@@ -393,7 +390,7 @@ registerGenerator('knowledge-check', async (item, topic, gradeContext, gradeLeve
     instanceId: item.instanceId,
     data: {
       problems,
-      problemType: config.problemType || 'orchestrated',
+      problemType: 'orchestrated',
       topic,
       gradeContext
     }
