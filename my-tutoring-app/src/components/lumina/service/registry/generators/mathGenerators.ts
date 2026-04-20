@@ -465,12 +465,13 @@ registerGenerator('function-sketch', async (item, topic, gradeContext) => ({
 // Legacy Math Primitives (now have dedicated service files)
 // ============================================================================
 
-// Bar Model (comparative bar visualization)
+// Bar Model (K-5 comparison bars, scaled bar graphs, picture graphs)
 registerGenerator('bar-model', async (item, topic, gradeContext) => ({
   type: 'bar-model',
   instanceId: item.instanceId,
   data: await generateBarModel(topic, gradeContext, {
-    intent: item.intent || item.title
+    ...item.config,
+    intent: item.intent || item.title,
   }),
 }));
 

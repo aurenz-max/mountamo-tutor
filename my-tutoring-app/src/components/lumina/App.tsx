@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { GenerativeBackground } from './primitives/GenerativeBackground';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { LiveAssistant } from './service/LiveAssistant';
-import { GameState, ExhibitData, ExhibitManifest } from './types';
+import { GameState, ExhibitManifest } from './types';
 import { useExhibitSession } from './hooks/useExhibitSession';
 import type { GradeLevel } from './components/GradeLevelSelector';
 import { ManifestViewer } from './components/ManifestViewer';
@@ -17,7 +17,6 @@ import { RhymingPairs } from './primitives/visual-primitives/RhymingPairs';
 import { SightWordCard } from './primitives/visual-primitives/SightWordCard';
 import { SoundSort } from './primitives/visual-primitives/SoundSort';
 import { LetterPicture } from './primitives/visual-primitives/LetterPicture';
-import { ManifestOrderRenderer } from './components/ManifestOrderRenderer';
 import { KnowledgeCheckTester } from './components/KnowledgeCheckTester';
 import { MediaPlayerTester } from './components/MediaPlayerTester';
 import { MathPrimitivesTester } from './components/MathPrimitivesTester';
@@ -33,66 +32,17 @@ import AnnotatedExampleTester from './components/AnnotatedExampleTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
 import CalibrationSimulator from './components/CalibrationSimulator';
 import { PulseAdaptiveSession } from './pulse/PulseAdaptiveSession';
-import { ExhibitProvider } from './contexts/ExhibitContext';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { EvaluationProvider } from './evaluation';
-import { EvaluationResultsIndicator } from './components/EvaluationResultsIndicator';
-import { CelebrationLayer } from './components/CelebrationLayer';
-import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 import type { CurriculumContext } from './components/CurriculumBrowser';
 import { IdleScreen } from './components/IdleScreen';
+import { LessonScreen } from './components/LessonScreen';
 import { DailyLessonPlan } from './DailyLessonPlan';
 import { DailySessionView } from './components/PlannerDashboard/DailySessionView';
 import type { DailySessionPlan, LessonBlock } from '@/lib/sessionPlanAPI';
-import ExhibitCompleteFooter from './components/ExhibitCompleteFooter';
 import SessionBreakScreen from './components/SessionBreakScreen';
 
-
-// Bootstraps the lesson-mode AI session when the exhibit mounts.
-// Must be rendered inside LuminaAIProvider + ExhibitProvider.
-const LessonAIBootstrap: React.FC<{
-  exhibit: ExhibitData;
-  gradeLevel: string;
-}> = ({ exhibit, gradeLevel }) => {
-  const aiContext = useLuminaAIContext();
-  const hasBootstrappedRef = React.useRef(false);
-
-  React.useEffect(() => {
-    if (hasBootstrappedRef.current) return;
-
-    const orderedComponents = exhibit.orderedComponents || [];
-    if (orderedComponents.length === 0) return;
-
-    const first = orderedComponents[0];
-    const info: LessonConnectionInfo = {
-      exhibit_id: exhibit.topic || 'unknown',
-      topic: exhibit.topic || 'Learning Activity',
-      grade_level: gradeLevel,
-      firstPrimitive: {
-        primitive_type: first.componentId,
-        instance_id: first.instanceId,
-        primitive_data: first.data || {},
-        exhibit_id: exhibit.topic || 'unknown',
-        topic: exhibit.topic,
-        grade_level: gradeLevel,
-      },
-    };
-
-    hasBootstrappedRef.current = true;
-    aiContext.connectLesson(info);
-
-    return () => {
-      aiContext.disconnect();
-      hasBootstrappedRef.current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return null;
-};
 
 export default function App() {
   // Core lesson pipeline (brief → manifest → exhibit)
@@ -825,114 +775,38 @@ export default function App() {
 
         {/* EXHIBIT STATE */}
         {phase === GameState.PLAYING && exhibit && (
-            <EvaluationProvider
-                sessionId={`exhibit-${Date.now()}`}
-                exhibitId={exhibit.topic || 'unknown'}
-                topic={exhibit.topic}
-                gradeLevel={gradeLevel}
-                curriculumSubject={curriculumContext?.subject}
-                curriculumSkillId={curriculumContext?.skillId}
-                curriculumSubskillId={curriculumContext?.subskillId}
-                localOnly={false}
-                onCompetencyUpdate={(updates) => {
-                    console.log('Competency updates:', updates);
-                    if (sessionReturn) {
-                      // Increment eval count for header tracker
-                      setSessionEvalCount(prev => prev + 1);
-                      // Accumulate score for block results display
-                      if (sessionCurrentBlock && updates.length > 0) {
-                        const avgScore = updates.reduce((sum, u) => sum + u.averageScore, 0) / updates.length;
-                        setSessionBlockResults(prev => {
-                          const blockId = sessionCurrentBlock!.block_id;
-                          const existing = prev[blockId] ?? { evalCount: 0, scoreSum: 0 };
-                          return {
-                            ...prev,
-                            [blockId]: {
-                              evalCount: existing.evalCount + 1,
-                              scoreSum: existing.scoreSum + avgScore,
-                            },
-                          };
-                        });
-                      }
-                    }
-                }}
-            >
-                <ExhibitProvider
-                    objectives={exhibit.introBriefing?.objectives || []}
-                    manifestItems={exhibit.manifest?.layout || []}
-                >
-                <LuminaAIProvider>
-                    <LessonAIBootstrap exhibit={exhibit} gradeLevel={gradeLevel} />
-                    <div className="w-full animate-fade-in-up">
-                    {/* Title Section */}
-                    <div className="mb-8 text-center">
-                        <h2 className="text-5xl font-bold text-white tracking-tight">{exhibit.topic}</h2>
-                    </div>
-
-                {/* Manifest-Ordered Components - Renders all components in the order defined by the manifest */}
-                <ManifestOrderRenderer
-                    orderedComponents={exhibit.orderedComponents || []}
-                    onDetailItemClick={handleDetailItemClick}
-                    onTermClick={handleDetailItemClick}
-                />
-
-                {/* Evaluation Results Indicator */}
-                <EvaluationResultsIndicator />
-                <CelebrationLayer />
-
-                {/* Exhibit Complete Footer — shown during daily session mode */}
-                {sessionReturn === 'daily-session' && sessionCurrentBlock && (
-                  <ExhibitCompleteFooter
-                    block={sessionCurrentBlock}
-                    evalCount={sessionEvalCount}
-                    onContinue={handleExhibitComplete}
-                  />
-                )}
-
-                {/* Related Topics — hidden during daily session mode (footer replaces it) */}
-                {!sessionReturn && exhibit.relatedTopics && exhibit.relatedTopics.length > 0 && (
-                    <div className="mt-24 mb-12 max-w-5xl mx-auto">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>
-                            <span className="text-slate-400 text-sm font-mono uppercase tracking-widest">Related Exhibits</span>
-                            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {exhibit.relatedTopics.map((item, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => generate({ topic: item.topic, gradeLevel })}
-                                    className="group relative p-6 flex flex-col h-full rounded-2xl bg-gradient-to-b from-slate-800/50 to-slate-900/50 border border-white/5 hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2 overflow-hidden text-left"
-                                >
-                                    <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/5 transition-colors duration-500"></div>
-                                    <div className="relative z-10 flex-1">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-white/5 text-slate-400 group-hover:text-white group-hover:bg-white/10 transition-colors">
-                                                {item.category}
-                                            </span>
-                                            <span className="text-xs text-slate-600 font-mono group-hover:text-blue-400 transition-colors">0{i + 1}</span>
-                                        </div>
-                                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-200 transition-colors">
-                                            {item.title}
-                                        </h3>
-                                        <p className="text-sm text-slate-400 leading-relaxed">
-                                            {item.teaser}
-                                        </p>
-                                    </div>
-                                    <div className="relative z-10 mt-4 flex items-center text-xs font-bold text-blue-500/70 uppercase tracking-wider group-hover:text-blue-400 transition-colors">
-                                        <span>Enter Portal</span>
-                                        <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-            </LuminaAIProvider>
-            </ExhibitProvider>
-            </EvaluationProvider>
+          <LessonScreen
+            exhibit={exhibit}
+            gradeLevel={gradeLevel}
+            curriculumContext={curriculumContext}
+            sessionReturn={sessionReturn}
+            sessionCurrentBlock={sessionCurrentBlock}
+            sessionEvalCount={sessionEvalCount}
+            onCompetencyUpdate={(updates) => {
+              console.log('Competency updates:', updates);
+              if (sessionReturn) {
+                setSessionEvalCount(prev => prev + 1);
+                if (sessionCurrentBlock && updates.length > 0) {
+                  const avgScore = updates.reduce((sum, u) => sum + u.averageScore, 0) / updates.length;
+                  setSessionBlockResults(prev => {
+                    const blockId = sessionCurrentBlock!.block_id;
+                    const existing = prev[blockId] ?? { evalCount: 0, scoreSum: 0 };
+                    return {
+                      ...prev,
+                      [blockId]: {
+                        evalCount: existing.evalCount + 1,
+                        scoreSum: existing.scoreSum + avgScore,
+                      },
+                    };
+                  });
+                }
+              }
+            }}
+            onDetailItemClick={handleDetailItemClick}
+            onExhibitComplete={handleExhibitComplete}
+            onGenerateRelated={generate}
+            onExitLesson={reset}
+          />
         )}
 
       </main>

@@ -154,6 +154,8 @@ export type {
   AtomBuilderMetrics,
   MoleculeConstructorMetrics,
   EquationBalancerMetrics,
+  StoichiometryLabMetrics,
+  GasLawsSimulatorMetrics,
   EnergyOfReactionsMetrics,
   MixingAndDissolvingMetrics,
   PhExplorerMetrics,

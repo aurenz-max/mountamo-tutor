@@ -327,13 +327,15 @@ Return ONLY valid JSON matching the schema.`;
 
     callbacks?.onProgress?.('🧠 Starting manifest generation with AI thinking...');
 
-    // Use streaming API
+    // Use streaming API — includeThoughts surfaces the model's thought summaries
+    // as separate parts with part.thought === true
     const responseStream = await ai.models.generateContentStream({
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         thinkingConfig: {
           thinkingLevel: ThinkingLevel.LOW,
+          includeThoughts: true,
         },
         responseMimeType: "application/json",
         responseSchema: manifestSchema,
@@ -341,43 +343,75 @@ Return ONLY valid JSON matching the schema.`;
     });
 
     let accumulatedText = '';
+    let thoughtBuffer = '';
     let chunkCount = 0;
     let lastProgressUpdate = Date.now();
+    let sawAnswerPart = false;
 
     callbacks?.onProgress?.('📡 Receiving AI response stream...');
 
-    // Stream and accumulate chunks
+    // Flush thought buffer at sentence/paragraph boundaries so the UI gets
+    // coherent fragments rather than mid-word updates.
+    const flushThoughts = (force = false) => {
+      if (!thoughtBuffer) return;
+      const boundary = Math.max(
+        thoughtBuffer.lastIndexOf('\n\n'),
+        thoughtBuffer.lastIndexOf('. '),
+        thoughtBuffer.lastIndexOf('? '),
+        thoughtBuffer.lastIndexOf('! '),
+      );
+      if (force || boundary >= 40) {
+        const cut = force ? thoughtBuffer.length : boundary + 1;
+        const fragment = thoughtBuffer.slice(0, cut).trim();
+        thoughtBuffer = thoughtBuffer.slice(cut);
+        if (fragment) callbacks?.onThinking?.(fragment);
+      }
+    };
+
+    // Stream parts — route thought summaries to onThinking, accumulate answer
+    // parts into the JSON buffer
     for await (const chunk of responseStream) {
       chunkCount++;
 
-      if (chunk.text) {
-        accumulatedText += chunk.text;
-
-        // Throttle progress updates to every 500ms
-        const now = Date.now();
-        if (now - lastProgressUpdate > 500) {
-          callbacks?.onProgress?.(`📝 Processing chunk ${chunkCount}... (${accumulatedText.length} chars)`);
-          lastProgressUpdate = now;
-
-          // Try to parse partial JSON to show progress
-          try {
-            const partial = JSON.parse(accumulatedText);
-            if (partial.topic || partial.objectiveBlocks) {
-              callbacks?.onPartialManifest?.(partial);
-              if (partial.objectiveBlocks?.length) {
-                const totalComponents = partial.objectiveBlocks.reduce(
-                  (sum: number, block: any) => sum + (block.components?.length || 0), 0
-                );
-                callbacks?.onProgress?.(`🎯 Discovered ${partial.objectiveBlocks.length} objectives with ${totalComponents} components...`);
-              }
-            }
-          } catch {
-            // Not yet valid JSON, continue accumulating
+      const parts = chunk.candidates?.[0]?.content?.parts ?? [];
+      for (const part of parts) {
+        if (!part.text) continue;
+        if (part.thought) {
+          thoughtBuffer += part.text;
+          flushThoughts(false);
+        } else {
+          if (!sawAnswerPart) {
+            sawAnswerPart = true;
+            flushThoughts(true);
+            callbacks?.onProgress?.('📝 Drafting manifest structure...');
           }
+          accumulatedText += part.text;
         }
       }
 
+      // Throttle partial-manifest parsing to every 500ms
+      const now = Date.now();
+      if (sawAnswerPart && now - lastProgressUpdate > 500) {
+        lastProgressUpdate = now;
+        try {
+          const partial = JSON.parse(accumulatedText);
+          if (partial.topic || partial.objectiveBlocks) {
+            callbacks?.onPartialManifest?.(partial);
+            if (partial.objectiveBlocks?.length) {
+              const totalComponents = partial.objectiveBlocks.reduce(
+                (sum: number, block: any) => sum + (block.components?.length || 0), 0
+              );
+              callbacks?.onProgress?.(`🎯 Discovered ${partial.objectiveBlocks.length} objectives with ${totalComponents} components...`);
+            }
+          }
+        } catch {
+          // Not yet valid JSON, continue accumulating
+        }
+      }
     }
+
+    // Flush any trailing thought fragment that didn't hit a boundary
+    flushThoughts(true);
 
     callbacks?.onProgress?.('✅ Stream complete, parsing final manifest...');
 

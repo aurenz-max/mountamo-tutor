@@ -28,6 +28,8 @@ import { generateEnergyOfReactions } from '../../chemistry/gemini-energy-of-reac
 import { generateMixingAndDissolving } from '../../chemistry/gemini-mixing-and-dissolving';
 import { generatePhExplorer } from '../../chemistry/gemini-ph-explorer';
 import { generateSafetyLab } from '../../chemistry/gemini-safety-lab';
+import { generateStoichiometryLab } from '../../chemistry/gemini-stoichiometry-lab';
+import { generateGasLawsSimulator } from '../../chemistry/gemini-gas-laws-simulator';
 
 // ============================================================================
 // Helper Types
@@ -186,4 +188,18 @@ registerGenerator('safety-lab', async (item, topic, gradeContext) => ({
   type: 'safety-lab',
   instanceId: item.instanceId,
   data: await generateSafetyLab(topic, gradeContext, item.config),
+}));
+
+// Stoichiometry Lab (mole conversions, limiting reagent, theoretical yield)
+registerGenerator('stoichiometry-lab', async (item, topic, gradeContext) => ({
+  type: 'stoichiometry-lab',
+  instanceId: item.instanceId,
+  data: await generateStoichiometryLab(topic, gradeContext, item.config),
+}));
+
+// Gas Laws Simulator (KMT + Boyle/Charles/Gay-Lussac/Combined/Ideal gas law)
+registerGenerator('gas-laws-simulator', async (item, topic, gradeContext) => ({
+  type: 'gas-laws-simulator',
+  instanceId: item.instanceId,
+  data: await generateGasLawsSimulator(topic, gradeContext, item.config),
 }));

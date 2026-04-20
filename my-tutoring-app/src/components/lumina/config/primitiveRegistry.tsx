@@ -91,6 +91,8 @@ import MixingAndDissolving from '../primitives/visual-primitives/chemistry/Mixin
 import MoleculeConstructor from '../primitives/visual-primitives/chemistry/MoleculeConstructor';
 import EnergyOfReactions from '../primitives/visual-primitives/chemistry/EnergyOfReactions';
 import EquationBalancer from '../primitives/visual-primitives/chemistry/EquationBalancer';
+import StoichiometryLab from '../primitives/visual-primitives/chemistry/StoichiometryLab';
+import GasLawsSimulator from '../primitives/visual-primitives/chemistry/GasLawsSimulator';
 import PhExplorer from '../primitives/visual-primitives/chemistry/PhExplorer';
 import SafetyLab from '../primitives/visual-primitives/chemistry/SafetyLab';
 import SpeciesProfile from '../primitives/biology-primitives/SpeciesProfile';
@@ -1087,6 +1089,26 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'equation-balancer': {
     component: EquationBalancer,
     sectionTitle: 'Equation Balancer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'stoichiometry-lab': {
+    component: StoichiometryLab,
+    sectionTitle: 'Stoichiometry Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'gas-laws-simulator': {
+    component: GasLawsSimulator,
+    sectionTitle: 'Gas Laws Simulator',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

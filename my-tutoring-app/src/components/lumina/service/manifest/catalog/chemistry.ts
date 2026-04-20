@@ -345,4 +345,67 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     ],
     supportsEvaluation: true,
   },
+  {
+    id: 'stoichiometry-lab',
+    description: 'Interactive mole-conversion workshop for stoichiometry. Students stage reactant amounts (in grams), watch a balanced equation consume reactants in correct mole ratios, and see products form alongside any leftover (excess) reactant. Mole ladder converts grams ↔ moles via molar mass; mole-ratio strip exposes the coefficients as a conversion factor. Three eval modes ladder from single conversions to limiting-reagent identification to theoretical/percent yield. ESSENTIAL for HS chemistry — closes the largest K-8 → HS gap (the mole concept).',
+    constraints: 'Best for grades 8-12. Requires a fully balanced reaction with molar masses for every reactant and product. Each challenge specifies given masses (one for convert, two for limiting/yield) and a numeric or formula target answer. Not a particle simulation — workspace-style.',
+    tutoring: {
+      taskDescription: 'Student is doing stoichiometry on the reaction {{equation}}. They are on challenge {{challengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Given: {{givenMassA}} g of {{givenFormulaA}}{{givenFormulaB ? ", " + givenMassB + " g of " + givenFormulaB : ""}}. They must find: {{askFor}}. Computed limiting reagent: {{limitingReagent}}. Phase: {{phase}}. Attempt {{attemptNumber}}.',
+      contextKeys: ['gradeBand', 'title', 'equation', 'challengeType', 'challengeIndex', 'totalChallenges', 'instruction', 'askFor', 'givenFormulaA', 'givenMassA', 'givenFormulaB', 'givenMassB', 'answerFormula', 'answerUnit', 'targetAnswer', 'targetAnswerFormula', 'limitingReagent', 'productYieldGrams', 'leftoversGrams', 'studentAnswer', 'studentLimitingChoice', 'phase', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"Look at the mole ladder for {{givenFormulaA}}. How many moles is {{givenMassA}} g? That\'s your starting point — the rest is just multiplying by ratios."',
+        level2: '"Three steps. (1) {{givenMassA}} g of {{givenFormulaA}} ÷ molar mass = moles. (2) Multiply by the coefficient ratio in the equation to get moles of the target. (3) Multiply by the target\'s molar mass to get grams. Try step 1 first."',
+        level3: '"Walk it slowly. {{givenFormulaA}} weighs about its molar mass per mole, so {{givenMassA}} g is roughly {{givenMassA}} ÷ molar mass moles. The balanced equation says the ratio of {{givenFormulaA}} to the target is the ratio of their coefficients. Multiply moles by that ratio. Then convert moles back to grams using the target\'s molar mass."',
+      },
+      commonStruggles: [
+        { pattern: 'Student multiplies grams by coefficients directly without converting to moles first', response: 'Stop them at the start: "Coefficients are mole ratios, not gram ratios. You can\'t multiply grams by 2 because the equation says 2 — you must convert grams to moles first using the molar mass."' },
+        { pattern: 'Student picks the reactant with the smaller MASS as limiting (not smaller moles ÷ coefficient)', response: 'Reframe: "Limiting isn\'t about which one weighs less — it\'s about which one runs out first when you account for the recipe. Convert each reactant to moles, divide by its coefficient, and the smallest result is the limiting reagent."' },
+        { pattern: 'Student forgets to apply the mole ratio and converts moles of reactant directly to grams of product using the product\'s molar mass', response: 'Remind them of the middle step: "You did grams → moles, but you skipped the mole-ratio step. The reaction tells you how many moles of product form per mole of reactant — apply that ratio before converting back to grams."' },
+        { pattern: 'Student computes theoretical yield correctly but reports percent yield as actual ÷ theoretical (not × 100)', response: 'Catch the unit: "Percent yield is actual ÷ theoretical times 100. You got the ratio right — just multiply by 100 to express it as a percent."' },
+        { pattern: 'Student treats both reactants as having unlimited supply and ignores the limiting reagent', response: 'Direct attention: "You used reactant A\'s amount, but check reactant B too. Whichever reactant runs out first determines how much product forms — even if the other one is in excess. Compute moles ÷ coefficient for both."' },
+      ],
+    },
+    evalModes: [
+      { evalMode: 'convert', label: 'Mole Conversion (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['convert'], description: 'Single-step gram ↔ mole conversion using molar mass and a 1:1 mole ratio' },
+      { evalMode: 'limiting', label: 'Limiting Reagent (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['limiting'], description: 'Identify the limiting reagent from two given reactant masses' },
+      { evalMode: 'yield', label: 'Theoretical & Percent Yield (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['yield'], description: 'Compute theoretical yield in grams (and percent yield when actual is given)' },
+    ],
+    supportsEvaluation: true,
+  },
+  {
+    id: 'gas-laws-simulator',
+    description: 'Living-simulation gas laws workbench with canvas-driven particle physics in a cylinder with a movable piston. Students watch particles speed up with temperature, slam the piston when compressed, and see pressure / volume / temperature / amount relationships read off one simulation. Live P-V, V-T, and P-T plots track state changes in real time. Three eval modes ladder from KMT observation → directional prediction → PV=nRT calculation. ESSENTIAL for HS chemistry — closes the Gas Behavior unit entirely missing from the K-8 catalog.',
+    constraints: 'Best for grades 8-12. Grade 8 uses KMT-only mode (qualitative). Grades 9-10 use Boyle, Charles, or Gay-Lussac (one variable locked). Grades 11-12 unlock the combined and ideal gas laws including full PV=nRT calculations. Not suitable for real-gas deviations (ideal gas only).',
+    tutoring: {
+      taskDescription: 'Student is using a gas-laws simulator focused on {{lawFocus}} for grades {{gradeBand}}. Initial state: P={{initialP}} atm, V={{initialV}} L, T={{initialT}} K, n={{initialN}} mol. Locked variables: {{lockedVariables}}. Current sim state: P={{currentP}} atm, V={{currentV}} L, T={{currentT}} K, n={{currentN}} mol. They are on challenge {{challengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). The perturbation applies {{changeVariable}} → {{changeNewValue}}. Student must determine: {{askFor}}. Phase: {{phase}}. Attempt {{attemptNumber}}.',
+      contextKeys: ['gradeBand', 'title', 'lawFocus', 'lockedVariables', 'initialP', 'initialV', 'initialT', 'initialN', 'currentP', 'currentV', 'currentT', 'currentN', 'challengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'askFor', 'changeVariable', 'changeNewValue', 'askedVariable', 'directionAnswer', 'targetAnswer', 'studentNumber', 'studentDirection', 'phase', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"Watch the particles. What happens to how often they hit the piston when you change {{changeVariable}}? That collision frequency IS pressure."',
+        level2: '"Anchor in KMT. Hotter = faster particles = harder and more frequent collisions. Squeezing the volume = less room = more collisions per second. How does {{changeVariable}} going to {{changeNewValue}} ripple through PV=nRT to change {{askedVariable}}?"',
+        level3: '"Walk it in steps. Start from the initial state: P={{initialP}}, V={{initialV}}, T={{initialT}}, n={{initialN}}. The perturbation is {{changeVariable}} → {{changeNewValue}}. Locked: {{lockedVariables}}. Solve PV=nRT for {{askedVariable}}. Plug in the new values of the other variables, and isolate {{askedVariable}}."',
+      },
+      commonStruggles: [
+        { pattern: 'Student confuses what holds constant when reading a gas law', response: 'Clarify the locked set: "For this scenario, {{lockedVariables}} are held fixed. Only {{askedVariable}} is free to change in response. Check which law that matches — Boyle (T, n fixed), Charles (P, n fixed), or Gay-Lussac (V, n fixed)."' },
+        { pattern: 'Student predicts the wrong direction for pressure when compressing volume', response: 'Anchor in collisions: "When you compress the cylinder, particles have less room so they hit the piston more often per second. More collisions per unit area = higher pressure. Pressure and volume move in OPPOSITE directions at constant T — that\'s Boyle\'s law."' },
+        { pattern: 'Student uses Celsius instead of Kelvin in gas-law calculations', response: 'Catch the unit: "Every gas law uses ABSOLUTE temperature in Kelvin. Celsius won\'t work because ratios break at 0°C. Convert by adding 273: 25°C = 298 K."' },
+        { pattern: 'Student forgets R is 0.0821 L·atm/(mol·K) and uses a wrong constant', response: 'Tie to units: "R depends on the units you pick. With P in atm, V in L, and T in K, R = 0.0821 L·atm/(mol·K). Keep units consistent across the equation."' },
+        { pattern: 'Student says more moles = higher temperature', response: 'Decouple n and T: "Temperature is about AVERAGE kinetic energy per particle, not total. Adding more particles adds collisions (raising P or V), but doesn\'t directly change how fast any one particle moves — T is independent of n."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'KMT NARRATION',
+          instruction:
+            'Every explanation must ground the gas law in particle behavior visible on the canvas. '
+            + 'Pressure = collisions per area per time. Temperature = average kinetic energy. Volume = space the particles have. '
+            + 'Reference what the student is seeing (particles slowing, piston moving, collision flashes) before naming the law.',
+        },
+      ],
+    },
+    evalModes: [
+      { evalMode: 'observe', label: 'KMT Observe (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['observe'], description: 'Identify directional change of a variable when one input is altered (KMT-grounded)' },
+      { evalMode: 'predict', label: 'Directional Predict (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['predict'], description: 'Predict numeric end-state value before applying a perturbation' },
+      { evalMode: 'calculate', label: 'Gas Law Calculate (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['calculate'], description: 'Solve for an unknown using PV=nRT or the combined gas law' },
+    ],
+    supportsEvaluation: true,
+  },
 ];

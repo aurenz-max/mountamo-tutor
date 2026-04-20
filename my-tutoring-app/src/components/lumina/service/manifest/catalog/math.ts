@@ -10,31 +10,95 @@ import { ComponentDefinition } from '../../../types';
 export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'bar-model',
-    description: 'Comparative bar visualization showing relative values. Perfect for comparing quantities, showing differences, or teaching basic arithmetic comparisons. ESSENTIAL for elementary math.',
-    constraints: 'Requires numeric values to compare',
+    description: 'K-5 categorical-data graph: simple comparison bars (K-1), scaled bar graphs with step-2/5/10 axes (3.MD.B.3), and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction; not for histograms or numeric distributions.',
+    constraints: 'Requires bar values + labels. Scaled and picture modes need a scale ({step, max, iconEmoji?, iconValue?}). build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
     tutoring: {
-      taskDescription: 'Compare quantities using proportional bars. Values: {{values}}.',
-      contextKeys: ['values'],
+      taskDescription: 'Work with a {{graphStyle}} graph. Mode: {{evalMode}}. Values: {{values}}.',
+      contextKeys: ['values', 'value1', 'value2', 'barCount', 'title', 'graphStyle', 'evalMode', 'scaleStep', 'iconEmoji', 'iconValue', 'currentPrompt', 'attemptNumber'],
       scaffoldingLevels: {
         level1: '"Which bar is taller? What does that tell us?"',
         level2: '"Look at the difference between the bars. How much more is the larger one?"',
         level3: '"The first bar shows {{value1}} and the second shows {{value2}}. Subtract to find the difference."',
       },
       commonStruggles: [
-        { pattern: 'Ignoring scale', response: 'Look at the numbers on each bar, not just the height' },
+        { pattern: 'Ignoring scale', response: '"Look at the numbers on the axis, not just the bar height. Each tick mark is {{scaleStep}}."' },
         { pattern: 'Confusing more/less', response: '"Taller bar = bigger number. Which bar is taller?"' },
+        { pattern: 'Reading picture graph as 1:1', response: '"Each icon stands for {{iconValue}}, not 1. Count the icons, then multiply."' },
+        { pattern: 'Pre-picking scale in build_graph', response: '"Look at your largest value. Which step lets the bars fit without leaving lots of empty space?"' },
       ],
       aiDirectives: [
         {
-          title: 'COMPARISON LANGUAGE COACHING',
+          title: 'COMPARISON & SCALE LANGUAGE COACHING',
           instruction:
             'Model precise comparison language: "more than," "less than," "the difference is." '
-            + 'For K-2 students, use concrete language: "This bar is taller, so there are MORE." '
-            + 'For grades 3-5, guide toward subtraction: "How many more? Subtract to find out." '
-            + 'Never just say "bigger" — always tie bar height to the actual quantity it represents.',
+            + 'For K-1 (compare_bars): use concrete language — "This bar is taller, so there are MORE." '
+            + 'For grades 2-3 (read_scale, picture_graph): tie bar height/icon count to the axis — '
+            + '"Each tick is {{scaleStep}}, so this bar reaches {{value}}." For picture graphs, '
+            + 'always say "{{iconValue}} per icon" before reading. For grades 3-5 (scaled_bar_graph, '
+            + 'graph_word_problem, build_graph): guide toward arithmetic — "How many more? Subtract." '
+            + 'Never just say "bigger" — always tie bar size to the actual quantity it represents.',
+        },
+        {
+          title: 'BUILD_GRAPH SCALE-CHOICE COACHING',
+          instruction:
+            'When the student is constructing a graph, the scale choice IS the learning goal '
+            + '(3.MD.B.3). Never tell them what step to use. Instead, ask: "Look at your biggest value. '
+            + 'If you used a step of 1, how many tick marks would you need? If you used a step of 10, '
+            + 'how many?" Let them discover that bigger data needs bigger steps.',
         },
       ],
     },
+    supportsEvaluation: true,
+    evalModes: [
+      {
+        evalMode: 'compare_bars',
+        label: 'Compare Bars (K-1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['compare_bars'],
+        description: 'Identify which of two bars is taller. K.MD.A.2.',
+      },
+      {
+        evalMode: 'read_scale',
+        label: 'Read Scale (2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['read_scale'],
+        description: 'Read the value of a named bar from a scaled axis. 2.MD.D.10.',
+      },
+      {
+        evalMode: 'picture_graph',
+        label: 'Picture Graph (2-3)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['picture_graph'],
+        description: 'Read an icon-based graph where each icon represents N items. 2.MD.D.10, 3.MD.B.3.',
+      },
+      {
+        evalMode: 'scaled_bar_graph',
+        label: 'Scaled Bar Graph (3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['scaled_bar_graph'],
+        description: 'Read a bar graph with step 2, 5, or 10 — including values mid-bar. 3.MD.B.3.',
+      },
+      {
+        evalMode: 'graph_word_problem',
+        label: 'Graph Word Problem (2-3)',
+        beta: 4.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['graph_word_problem'],
+        description: '"How many more X than Y?" or total questions answered from a scaled graph.',
+      },
+      {
+        evalMode: 'build_graph',
+        label: 'Build Graph (3-5)',
+        beta: 5.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['build_graph'],
+        description: 'Construct a graph from a given dataset; student selects their own scale. 3.MD.B.3.',
+      },
+    ],
   },
   {
     id: 'number-line',
@@ -1168,6 +1232,56 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'dot-plot',
     description: 'Interactive dot plot (also called line plot) with stacked dots representing data values on a number line. Perfect for teaching data representation, frequency concepts, mean, median, mode, data distribution shape, and comparing datasets. Students click to add/remove data points, view frequency at each value, and calculate statistical measures. Supports parallel dot plots for comparing two datasets (e.g., morning vs afternoon temperatures). Stack styles include dots, X marks, or custom icons. ESSENTIAL for grades 2-3 (counting and data representation), grades 3-4 (frequency concepts), grades 5-6 (mean, median, mode), and grades 6-7 (data distribution, comparing datasets).',
     constraints: 'Requires number line range [min, max] and data points array. Data values should be within the range. For younger grades (2-3), use small whole numbers (0-10) and disable statistics. For grades 5+, enable showStatistics for mean/median/mode. For comparison activities, enable parallel mode with labeled datasets. Keep data size manageable: 8-20 values per dataset.',
+    evalModes: [
+      {
+        evalMode: 'whole_number_plot',
+        label: 'Whole Number Plot (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['whole_number_plot'],
+        description: 'Plot a given whole-number dataset on a labeled line. CCSS 3.MD.B.4. Grades 2-3.',
+      },
+      {
+        evalMode: 'measure_and_plot',
+        label: 'Measure & Plot (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['measure_and_plot'],
+        description: 'Measure objects with visual rulers, then plot the measurements. CCSS 3.MD.B.4. Grade 3.',
+      },
+      {
+        evalMode: 'read_frequency',
+        label: 'Read Frequency (Tier 2+)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['read_frequency'],
+        description: 'Identify most / least frequent value from an existing dot plot. CCSS 3.MD.B.3. Grades 3-4.',
+      },
+      {
+        evalMode: 'fractional_units',
+        label: 'Fractional Units (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['fractional_units'],
+        description: 'Plot data with halves / quarters / eighths on a fractional number line. CCSS 3.MD.B.4, 5.MD.B.2. Grades 3-5.',
+      },
+      {
+        evalMode: 'compute_stats',
+        label: 'Compute Stats (Tier 3+)',
+        beta: 4.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['compute_stats'],
+        description: 'Compute median / mode / range from a displayed dot plot. CCSS 6.SP.B. Grades 5-6.',
+      },
+      {
+        evalMode: 'compare_datasets',
+        label: 'Compare Datasets (Tier 4)',
+        beta: 5.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['compare_datasets'],
+        description: 'Compare centers / spreads across two parallel dot plots. CCSS 7.SP.B. Grades 6-7.',
+      },
+    ],
     tutoring: {
       taskDescription: 'Explore data using a dot plot. Data points: {{dataCount}}. Statistics: {{showStatistics}}.',
       contextKeys: ['dataPoints', 'showStatistics', 'parallel', 'mean', 'median', 'mode'],
@@ -1194,6 +1308,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'histogram',

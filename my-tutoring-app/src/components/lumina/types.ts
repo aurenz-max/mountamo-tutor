@@ -1250,6 +1250,8 @@ export type ComponentId =
   | 'atom-builder'       // Interactive atom construction with Bohr model, shells, ions, isotopes
   | 'energy-of-reactions'  // Interactive energy of reactions explorer
   | 'equation-balancer'    // Interactive chemical equation balancing
+  | 'stoichiometry-lab'    // Interactive stoichiometry / mole-conversion workspace
+  | 'gas-laws-simulator'    // Interactive gas laws / KMT particle simulation
   | 'mixing-and-dissolving' // Interactive mixing and dissolving explorer
   | 'molecule-constructor' // Interactive molecule building with atom snapping and bonding
   | 'ph-explorer'           // Interactive pH scale explorer
@@ -1732,6 +1734,8 @@ export type { MixingAndDissolvingData } from './primitives/visual-primitives/che
 export type { MoleculeConstructorData } from './primitives/visual-primitives/chemistry/MoleculeConstructor';
 export type { EnergyOfReactionsData } from './primitives/visual-primitives/chemistry/EnergyOfReactions';
 export type { EquationBalancerData } from './primitives/visual-primitives/chemistry/EquationBalancer';
+export type { StoichiometryLabData } from './primitives/visual-primitives/chemistry/StoichiometryLab';
+export type { GasLawsSimulatorData } from './primitives/visual-primitives/chemistry/GasLawsSimulator';
 export type { EngineExplorerData } from './primitives/visual-primitives/engineering/EngineExplorer';
 export type { HydraulicsLabData } from './primitives/visual-primitives/engineering/HydraulicsLab';
 export type { PhExplorerData } from './primitives/visual-primitives/chemistry/PhExplorer';

@@ -15,6 +15,8 @@ import MoleculeConstructor from '../primitives/visual-primitives/chemistry/Molec
 // CR: Chemistry - Reactions & Energy
 import ReactionLab from '../primitives/visual-primitives/chemistry/ReactionLab';
 import EquationBalancer from '../primitives/visual-primitives/chemistry/EquationBalancer';
+import StoichiometryLab from '../primitives/visual-primitives/chemistry/StoichiometryLab';
+import GasLawsSimulator from '../primitives/visual-primitives/chemistry/GasLawsSimulator';
 import EnergyOfReactions from '../primitives/visual-primitives/chemistry/EnergyOfReactions';
 // CS: Chemistry - Solutions & Safety
 import MixingAndDissolving from '../primitives/visual-primitives/chemistry/MixingAndDissolving';
@@ -39,7 +41,7 @@ interface ChemistryPrimitivesTesterProps {
 type PrimitiveType =
   | 'molecule-viewer' | 'periodic-table'
   | 'matter-explorer' | 'states-of-matter' | 'atom-builder' | 'molecule-constructor'
-  | 'reaction-lab' | 'equation-balancer' | 'energy-of-reactions'
+  | 'reaction-lab' | 'equation-balancer' | 'stoichiometry-lab' | 'gas-laws-simulator' | 'energy-of-reactions'
   | 'mixing-and-dissolving' | 'ph-explorer' | 'safety-lab';
 
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
@@ -64,6 +66,8 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   // ===== CR: Reactions & Energy =====
   { value: 'reaction-lab', label: 'Reaction Lab', icon: '🧪', topic: 'Conducting chemical reactions', strand: 'CR' },
   { value: 'equation-balancer', label: 'Equation Balancer', icon: '⚖️', topic: 'Balancing chemical equations', strand: 'CR' },
+  { value: 'stoichiometry-lab', label: 'Stoichiometry Lab', icon: '⚗️', topic: 'Mole conversions, limiting reagent, theoretical yield', strand: 'CR' },
+  { value: 'gas-laws-simulator', label: 'Gas Laws Simulator', icon: '🎈', topic: 'Gas laws, KMT, and PV=nRT', strand: 'CR' },
   { value: 'energy-of-reactions', label: 'Energy of Reactions', icon: '🔥', topic: 'Exothermic and endothermic reactions', strand: 'CR' },
   // ===== CS: Solutions & Safety =====
   { value: 'mixing-and-dissolving', label: 'Mixing & Dissolving', icon: '💧', topic: 'Solutions, mixtures, and dissolving', strand: 'CS' },
@@ -192,6 +196,31 @@ const PrimitiveRenderer: React.FC<{
             subskillId: 'equation-balancing',
             objectiveId: 'balance-chemical-equations',
             onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'stoichiometry-lab':
+      return (
+        <StoichiometryLab
+          data={{
+            ...(data as Parameters<typeof StoichiometryLab>[0]['data']),
+            instanceId: `stoichiometry-lab-${Date.now()}`,
+            skillId: 'chemistry-reactions',
+            subskillId: 'stoichiometry',
+            objectiveId: 'mole-conversions-limiting-reagent',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'gas-laws-simulator':
+      return (
+        <GasLawsSimulator
+          data={{
+            ...(data as Parameters<typeof GasLawsSimulator>[0]['data']),
+            instanceId: `gas-laws-simulator-${Date.now()}`,
+            skillId: 'chemistry-gas-behavior',
+            subskillId: 'gas-laws',
+            objectiveId: 'kmt-pv-nrt',
           }}
         />
       );

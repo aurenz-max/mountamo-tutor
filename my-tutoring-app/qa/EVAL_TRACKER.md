@@ -81,8 +81,10 @@
 | decodable-reader | 1 | 1 | 0 | 2026-04-05 | [report](eval-reports/decodable-reader-2026-04-05.md) |
 | equation-builder | 6 | 6 | 0 | 2026-04-06 | [report](eval-reports/equation-builder-2026-04-06.md) |
 | word-builder | 4 | 4 | 0 | 2026-04-11 | [report](eval-reports/word-builder-2026-04-11.md) |
+| dot-plot | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/dot-plot-2026-04-19.md) |
+| bar-model | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/bar-model-2026-04-19.md) |
 
-**Totals:** 272/279 modes passing (97.5%) | 15 open issues (1 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 284/291 modes passing (97.6%) | 15 open issues (1 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
 
 ---
 
@@ -180,11 +182,11 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-14: Gemini Flash Lite silently drops nullable flat-indexed fields — generator produces structurally broken challenges
 
-**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04), spatial-scene (identify, describe, place — SS-1), word-sorter (all modes — WS-1)
-**Risk:** Any primitive using the flattened-index pattern (e.g., `coin0Type`, `displayedCoin0Type`, `groupACoin0Type`, `option0..option3`) with nullable fields. Gemini Flash Lite frequently omits entire groups of these fields, producing challenges with missing visual data (no coins to count, no groups to compare). The generator's `collectCoinDefs`/`collectStrings` reconstruction returns empty arrays, and the challenge is accepted with wrong fallback values.
+**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04), spatial-scene (identify, describe, place — SS-1), word-sorter (all modes — WS-1), dot-plot (all 6 modes — DP-1; fixed 2026-04-19 via orchestrator refactor), ~~bar-model (read_scale, scaled_bar_graph — BM-1, BM-3; fixed 2026-04-19 via orchestrator refactor)~~
+**Risk:** Any primitive using the flattened-index pattern (e.g., `coin0Type`, `displayedCoin0Type`, `groupACoin0Type`, `option0..option3`) with nullable fields **OR** any generator where a challenge-carrying array is omitted from the schema's `required` list. Gemini Flash Lite frequently omits entire groups of these fields, producing challenges with missing visual data (no coins to count, no groups to compare). The generator's `collectCoinDefs`/`collectStrings` reconstruction returns empty arrays, and the challenge is accepted with wrong fallback values.
 **Root cause:** Flat-indexed fields are all `nullable: true` in the schema so Gemini can skip them without schema violation. Flash Lite takes the path of least resistance and omits fields it considers optional, especially when the prompt describes multiple challenge types. The generator's post-reconstruction validation was too permissive — it accepted challenges missing critical fields.
 **Fix pattern:** After flat→structured reconstruction, validate each challenge has all REQUIRED fields for its type. Reject (return null + filter) any challenge missing critical visual/interaction data. Never silently fall back to wrong values. For identify-type challenges, derive missing options from the answer field + grade-appropriate pool. Log all rejections for debugging.
-**Status:** Structurally eliminated for coin-counter and word-sorter via orchestrator refactor (per-type sub-generators with required fields). Open for spatial-scene.
+**Status:** Structurally eliminated for coin-counter, word-sorter, and dot-plot via orchestrator refactor (per-mode sub-generators with required fields). Open for spatial-scene and bar-model.
 
 ### SP-15: Eval modes sharing the same challengeType have no semantic differentiation in generator
 
@@ -237,6 +239,11 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | ~~EB-2~~ | ~~equation-builder~~ | ~~build~~ | ~~HIGH~~ | ~~Duplicate tiles~~ | ~~`availableTiles` had duplicates. Fixed: derive tiles deterministically from target tokens + deduplicated distractors~~ | ~~GENERATOR~~ |
 | GT-3 | gear-train-builder | — | HIGH | Generator prompt | ~275-line prompt increases malformed JSON risk from Gemini; should be trimmed to essential constraints | GENERATOR |
 | RA-1 | read-aloud-studio | — | HIGH | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — can't participate in eval-test or adaptive sessions (SP-13) | CATALOG |
+| ~~DP-1~~ | ~~dot-plot~~ | ~~whole_number_plot, measure_and_plot, read_frequency, compare_datasets~~ | ~~HIGH~~ | ~~Missing data~~ | ~~`challenges` omitted from schema `required` — Gemini skips it 4/6 modes, generator fallback fires (SP-14 variant). Fixed: orchestrator refactor, 6 per-mode sub-generators with focused schemas (all fields required)~~ | ~~GENERATOR~~ |
+| ~~DP-2~~ | ~~dot-plot~~ | ~~compare_datasets~~ | ~~HIGH~~ | ~~Rendered pollution~~ | ~~Gemini writes scratchpad narration into `secondaryLabel`. Fixed: only compare_datasets sub-gen owns the field, schema caps at 25 chars, sanitizeLabel post-process strips trailing garbage~~ | ~~GENERATOR~~ |
+| ~~BM-1~~ | ~~bar-model~~ | ~~read_scale~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~`options` omitted. Fixed 2026-04-19: orchestrator refactor (6 per-mode sub-generators), options derived deterministically from expectedValue + scale.step~~ | ~~GENERATOR~~ |
+| ~~BM-2~~ | ~~bar-model~~ | ~~read_scale~~ | ~~CRITICAL~~ | ~~Answer leak~~ | ~~`graphStyle: 'bar'` + null targetBarIndex leaked values inline. Fixed 2026-04-19: graphStyle hardcoded per sub-generator, targetBarIndex derived from targetBarLabel via findBarIndex~~ | ~~GENERATOR~~ |
+| ~~BM-3~~ | ~~bar-model~~ | ~~scaled_bar_graph~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Same as BM-1 — fixed 2026-04-19 by orchestrator refactor~~ | ~~GENERATOR~~ |
 | ~~FL-1~~ | ~~figurative-language-finder~~ | ~~all modes~~ | ~~CRITICAL~~ | ~~Wrong indices~~ | ~~`startIndex`/`endIndex` 100% wrong — fixed: removed offsets from schema (LLM can't compute them), added `recomputeOffsets()` post-process deriving via `passage.indexOf()` (SP-8)~~ | ~~GENERATOR~~ |
 | ~~WS-1~~ | ~~word-sorter~~ | ~~all modes~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Flat→nested reconstruction produces empty `words[]`/`pairs[]` — Gemini skips flat fields (SP-14). Fixed: orchestrator refactor with 3 per-mode sub-generators, focused schemas, post-reconstruction validation.~~ | ~~GENERATOR~~ |
 | ~~PE-1~~ | ~~planetary-explorer~~ | ~~identify~~ | ~~CRITICAL~~ | ~~Trivial challenge~~ | ~~Questions always about the current planet — student sees planet name in header, trivially picks it. Fixed: post-journey quiz phase with cross-planet identification questions, planet names hidden during quiz.~~ | ~~GENERATOR + COMPONENT~~ |
@@ -252,6 +259,12 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| BM-1 | bar-model | 2026-04-19 | ORCHESTRATOR-REFACTOR (SP-14): Split generator into 6 per-mode sub-generators with focused flat-slot schemas (all rendered fields required). `options` now derived deterministically in post-process via `deriveOptions(expectedValue, scale.step)` — 4 distinct non-negative integers spaced by step, always includes expectedValue. Gemini never supplies options. Structurally eliminates missing-options class of bugs. |
+| BM-2 | bar-model | 2026-04-19 | ORCHESTRATOR-REFACTOR: Each sub-generator hardcodes `graphStyle` per mode (read_scale→`scaled_bar`, picture_graph→`picture`, etc.) — Gemini never picks it. `targetBarIndex` derived via `findBarIndex(bars, targetBarLabel, expectedValue)` — Gemini supplies a label string, generator resolves to index (LLMs unreliable at array indexing but reliable at echoing a label). `scale` synthesized from max bar value + step. Eliminates inline-value answer leak. |
+| BM-3 | bar-model | 2026-04-19 | Same fix as BM-1 — scaled_bar_graph sub-generator uses required `targetBarLabel`/`expectedValue` and derived options. |
+| DP-1 | dot-plot | 2026-04-19 | ORCHESTRATOR-REFACTOR (SP-14): Replaced single mega-schema generator with 6 per-mode sub-generators (whole_number_plot, measure_and_plot, read_frequency, fractional_units, compute_stats, compare_datasets). Each has a focused schema with all fields required — no nullable, no multi-purpose. Flash-lite can't drop `challenges` because scalar challenge fields are required per-mode. `range` split into `rangeMin`/`rangeMax` scalars. 6/6 modes produce real Gemini-driven content, no fallback boilerplate. |
+| DP-2 | dot-plot | 2026-04-19 | SCHEMA-CHANGE + POST-PROCESS-VALIDATE: Only `compare_datasets` sub-generator emits secondary labels; its schema caps them at 25 chars with explicit "no numbers, no narration" description. `sanitizeLabel()` trims, strips trailing non-alphanumeric garbage, collapses whitespace, truncates at 40. Other 5 modes structurally cannot emit a secondary label. |
+| DP-3 | dot-plot | 2026-04-19 | POST-PROCESS-DERIVE: `targetAnswer` for read_frequency derived from `computeMode`/`computeLeastFrequent`. `targetAnswer` for compute_stats derived from `computeMedian`/`computeMode`/`computeNumericRange` keyed on `targetStat`. `comparisonAnswer` for compare_datasets derived via `deriveComparisonAnswer` picking the label matching the `comparisonDimension`. Answer fields always populated and correct by construction. |
 | EB-1 | equation-builder | 2026-04-06 | PROMPT-CHANGE + POST-PROCESS-VALIDATE: Updated build prompt doc to forbid revealing target equation in instruction. Added post-process in validateBuild/validateRewrite that detects leaked equations and replaces with conceptual hints. Fixed hardcoded fallback. |
 | EB-2 | equation-builder | 2026-04-06 | POST-PROCESS-DERIVE: Rewrote tile reconstruction to derive deterministically — start from target tokens, add only unique distractors via Set. Eliminates duplicates while preserving legitimate repeats (e.g., two 5s for "5 + 5 = 10"). |
 | WS-1 | word-sorter | 2026-04-05 | ORCHESTRATOR-REFACTOR (SP-14): Replaced single mega-schema generator with 3 per-mode sub-generators (binary_sort, ternary_sort, match_pairs). Each has focused schema with only its fields and required markers. Post-reconstruction validation rejects challenges with insufficient words/pairs. 9/9 stochastic runs pass. |

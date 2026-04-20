@@ -51,6 +51,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "order":     PriorConfig(3.5, "Pictorial: sequence multiple values"),
         "between":   PriorConfig(4.5, "Transitional: estimate between marks"),
     },
+    "dot-plot": {
+        "whole_number_plot": PriorConfig(1.5, "Concrete: plot given whole-number dataset on labeled line (CCSS 3.MD.B.4)"),
+        "measure_and_plot":  PriorConfig(2.5, "Pictorial: measure visual rulers, then plot (CCSS 3.MD.B.4)"),
+        "read_frequency":    PriorConfig(3.0, "Pictorial: identify most/least frequent value (CCSS 3.MD.B.3)"),
+        "fractional_units":  PriorConfig(3.5, "Strategy: plot data with halves/quarters (CCSS 3.MD.B.4, 5.MD.B.2)"),
+        "compute_stats":     PriorConfig(4.5, "Transitional: compute median/mode/range from a dot plot (CCSS 6.SP.B)"),
+        "compare_datasets":  PriorConfig(5.5, "Transitional: compare two parallel dot plots (CCSS 7.SP.B)"),
+    },
     "counting-board": {
         "count":     PriorConfig(1.0, "Count objects on board"),
         "group":     PriorConfig(2.0, "Group objects by attribute"),
@@ -278,7 +286,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "assessment_intro":  PriorConfig(5.5, "Transitional: medium-large composites (40-80), no hints, no reset"),
         "assessment":        PriorConfig(6.5, "Symbolic: large composites (40-100), no hints, no reset"),
     },
-    "bar-model":                  {"default": PriorConfig(3.0, "Bar model comparison")},
+    "bar-model": {
+        "compare_bars":       PriorConfig(1.5, "Concrete: which bar is taller (K-1, K.MD.A.2)"),
+        "read_scale":         PriorConfig(2.5, "Pictorial: read value of named bar from scaled axis (2.MD.D.10)"),
+        "picture_graph":      PriorConfig(3.0, "Pictorial: icon-based graph, 1 icon = N items (2.MD.D.10, 3.MD.B.3)"),
+        "scaled_bar_graph":   PriorConfig(3.5, "Strategy: read step-2/5/10 bar graph including mid-bar values (3.MD.B.3)"),
+        "graph_word_problem": PriorConfig(4.5, "Transitional: 'how many more' / totals from a graph"),
+        "build_graph":        PriorConfig(5.5, "Transitional: construct graph from dataset, choose own scale (3.MD.B.3)"),
+    },
     "hundreds-chart": {
         "highlight_sequence": PriorConfig(1.5, "Highlight all cells in a skip-count pattern"),
         "complete_sequence":  PriorConfig(2.5, "Complete a partially highlighted skip-count sequence"),
@@ -603,6 +618,16 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "classify":    PriorConfig(-0.5, "Classify reactions as exothermic or endothermic from diagrams"),
         "diagram":     PriorConfig(1.0, "Read activation energy and deltaH from enthalpy diagrams"),
         "bond_energy": PriorConfig(2.5, "Calculate deltaH from bond energies"),
+    },
+    "stoichiometry-lab": {
+        "convert":  PriorConfig(-0.5, "Single-step gram <-> mole conversion using molar mass and a 1:1 mole ratio"),
+        "limiting": PriorConfig(1.0, "Identify the limiting reagent from two given reactant masses"),
+        "yield":    PriorConfig(2.5, "Compute theoretical yield in grams (and percent yield when actual is given)"),
+    },
+    "gas-laws-simulator": {
+        "observe":   PriorConfig(-1.0, "Identify directional change of a variable when one input is altered (KMT-grounded)"),
+        "predict":   PriorConfig(0.5,  "Predict numeric end-state value before applying a perturbation"),
+        "calculate": PriorConfig(2.5,  "Solve for an unknown using PV=nRT or the combined gas law"),
     },
     "states-of-matter": {
         "observe":  PriorConfig(-1.0, "Observe particle behavior and name the state of matter"),

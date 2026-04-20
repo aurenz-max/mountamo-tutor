@@ -1,6 +1,37 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+
+export type DotPlotEvalMode =
+  | 'whole_number_plot'
+  | 'measure_and_plot'
+  | 'read_frequency'
+  | 'fractional_units'
+  | 'compute_stats'
+  | 'compare_datasets';
+
+export interface DotPlotChallenge {
+  id: string;
+  evalMode: DotPlotEvalMode;
+  instruction: string;
+  hint?: string;
+  narration?: string;
+  targetStat?: 'median' | 'mode' | 'range';
+  targetAnswer?: number;
+  comparisonAnswer?: string;
+}
+
+/**
+ * Eval modes where β < 4.5 — showStatistics is force-hidden regardless of the prop.
+ * Pedagogy guardrail: mean/median/mode is premature before kids master frequency reading.
+ */
+const STATS_HIDDEN_MODES: ReadonlySet<DotPlotEvalMode> = new Set<DotPlotEvalMode>([
+  'whole_number_plot',
+  'measure_and_plot',
+  'read_frequency',
+  'fractional_units',
+]);
 
 export interface DotPlotData {
   title: string;
@@ -15,6 +46,8 @@ export interface DotPlotData {
   primaryLabel?: string;
   stackStyle: 'dots' | 'x' | 'icons';
   iconEmoji?: string;
+  /** IRT-aligned task. When present, drives the instruction banner and gates the stats panel. */
+  challenges?: DotPlotChallenge[];
 }
 
 interface DotPlotProps {
@@ -87,6 +120,7 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
     primaryLabel = 'Dataset A',
     stackStyle = 'dots',
     iconEmoji = '●',
+    challenges,
   } = data;
 
   const [dataPoints, setDataPoints] = useState<number[]>(data.dataPoints || []);
@@ -94,6 +128,30 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
   const [hoveredValue, setHoveredValue] = useState<number | null>(null);
   const [activeDataset, setActiveDataset] = useState<'primary' | 'secondary'>('primary');
   const [hoveredStat, setHoveredStat] = useState<StatType>(null);
+
+  // ── Challenge progress (1 challenge per eval mode activity) ──
+  const activeChallenges = useMemo<DotPlotChallenge[]>(
+    () => (Array.isArray(challenges) ? challenges : []),
+    [challenges],
+  );
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    isComplete: challengesComplete,
+    recordResult,
+    incrementAttempts,
+  } = useChallengeProgress<DotPlotChallenge>({
+    challenges: activeChallenges,
+    getChallengeId: (c) => c.id,
+  });
+  const currentChallenge = activeChallenges[currentChallengeIndex] ?? null;
+
+  // Pedagogy guardrail: force-hide statistics for β < 4.5 modes (grades 2-5 frequency work).
+  const effectiveShowStatistics = useMemo(() => {
+    if (!showStatistics) return false;
+    if (currentChallenge && STATS_HIDDEN_MODES.has(currentChallenge.evalMode)) return false;
+    return true;
+  }, [showStatistics, currentChallenge]);
 
   const totalRange = max - min;
   const tickCount = Math.min(totalRange + 1, 21); // Limit ticks for large ranges
@@ -245,6 +303,44 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
             <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
             <p className="text-slate-300 font-light">{description}</p>
           </div>
+
+          {/* Challenge Instruction Banner (present only when IRT challenge is set) */}
+          {currentChallenge && (
+            <div className="mb-6 mx-auto max-w-3xl rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-[10px] uppercase tracking-wider text-cyan-400 font-mono">
+                  Challenge {currentChallengeIndex + 1} of {activeChallenges.length}
+                </span>
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                  · mode: {currentChallenge.evalMode}
+                </span>
+              </div>
+              <p className="text-base font-medium text-white">{currentChallenge.instruction}</p>
+              {currentAttempts > 0 && currentChallenge.hint && (
+                <p className="mt-2 text-xs text-amber-300/90 italic">💡 {currentChallenge.hint}</p>
+              )}
+              {!challengesComplete && (
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => {
+                      incrementAttempts();
+                      recordResult({
+                        challengeId: currentChallenge.id,
+                        correct: true,
+                        attempts: currentAttempts + 1,
+                      });
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-medium hover:bg-emerald-500/30 transition-all"
+                  >
+                    Mark Complete
+                  </button>
+                </div>
+              )}
+              {challengesComplete && (
+                <p className="mt-2 text-xs font-medium text-emerald-300">✓ Challenge complete</p>
+              )}
+            </div>
+          )}
 
           {/* Dataset Toggle (if parallel mode) */}
           {parallel && editable && (
@@ -514,8 +610,8 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
             )}
           </div>
 
-          {/* Statistics Panel */}
-          {showStatistics && (
+          {/* Statistics Panel — gated by effectiveShowStatistics (pedagogy guardrail) */}
+          {effectiveShowStatistics && (
             <div className="mt-8">
               {/* Primary Dataset Stats Label (parallel mode only) */}
               {parallel && (

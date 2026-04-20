@@ -2067,6 +2067,30 @@ export interface EquationBalancerMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface StoichiometryLabMetrics extends BasePrimitiveMetrics {
+  type: 'stoichiometry-lab';
+  challengesCorrect: number;
+  challengesTotal: number;
+  convertCorrect: number;
+  convertTotal: number;
+  limitingReagentCorrect: number;
+  limitingReagentTotal: number;
+  yieldWithinTolerance: number;
+  yieldTotal: number;
+  attemptsCount: number;
+}
+
+export interface GasLawsSimulatorMetrics extends BasePrimitiveMetrics {
+  type: 'gas-laws-simulator';
+  challengesCorrect: number;
+  challengesTotal: number;
+  directionalPredictionCorrect: number;
+  directionalPredictionTotal: number;
+  calculationWithinTolerance: number;
+  calculationTotal: number;
+  attemptsCount: number;
+}
+
 export interface EnergyOfReactionsMetrics extends BasePrimitiveMetrics {
   type: 'energy-of-reactions';
   classificationCorrect: number;
@@ -3350,6 +3374,8 @@ export type PrimitiveMetrics =
   | AtomBuilderMetrics
   | MoleculeConstructorMetrics
   | EquationBalancerMetrics
+  | StoichiometryLabMetrics
+  | GasLawsSimulatorMetrics
   | EnergyOfReactionsMetrics
   | MixingAndDissolvingMetrics
   | PhExplorerMetrics
