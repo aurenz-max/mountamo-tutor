@@ -25,7 +25,7 @@ interface Point {
 
 export interface ShapeBuilderChallenge {
   id: string;
-  type: 'build' | 'measure' | 'classify' | 'compose' | 'find_symmetry' | 'coordinate_shape';
+  type: 'build' | 'measure' | 'classify' | 'classify_by_lines' | 'compose' | 'find_symmetry' | 'coordinate_shape';
   instruction: string;
   targetProperties?: {
     sides?: number;
@@ -101,12 +101,13 @@ const VERTEX_RADIUS = 8;
 const SNAP_DISTANCE = 15;
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  build:            { label: 'Build',       icon: '🔨', accentColor: 'purple' },
-  measure:          { label: 'Measure',     icon: '📏', accentColor: 'blue' },
-  classify:         { label: 'Classify',    icon: '📋', accentColor: 'emerald' },
-  compose:          { label: 'Compose',     icon: '🧩', accentColor: 'cyan' },
-  find_symmetry:    { label: 'Symmetry',    icon: '🪞', accentColor: 'pink' },
-  coordinate_shape: { label: 'Coordinates', icon: '📐', accentColor: 'amber' },
+  build:             { label: 'Build',        icon: '🔨', accentColor: 'purple' },
+  measure:           { label: 'Measure',      icon: '📏', accentColor: 'blue' },
+  classify:          { label: 'Classify',     icon: '📋', accentColor: 'emerald' },
+  classify_by_lines: { label: 'Lines',        icon: '📐', accentColor: 'orange' },
+  compose:           { label: 'Compose',      icon: '🧩', accentColor: 'cyan' },
+  find_symmetry:     { label: 'Symmetry',     icon: '🪞', accentColor: 'pink' },
+  coordinate_shape:  { label: 'Coordinates',  icon: '📐', accentColor: 'amber' },
 };
 
 // ============================================================================
@@ -355,11 +356,12 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
   const currentChallenge = challenges[currentChallengeIndex] || null;
   const activeMode = currentChallenge?.type || mode;
+  const isClassifyChallenge = activeMode === 'classify' || activeMode === 'classify_by_lines';
 
   const activeShape = useMemo(() => {
-    if (activeMode === 'classify') return null;
+    if (isClassifyChallenge) return null;
     return preloadedShapes[0] || null;
-  }, [activeMode, preloadedShapes]);
+  }, [isClassifyChallenge, preloadedShapes]);
 
   // Computed shape properties
   const currentShapeProps = useMemo(() => {
@@ -383,9 +385,9 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
   const displayVertices = useMemo((): Point[] => {
     if (activeMode === 'build' || activeMode === 'coordinate_shape') return placedVertices;
-    if (activeMode === 'classify') return [];
+    if (isClassifyChallenge) return [];
     return activeShape?.vertices || [];
-  }, [activeMode, placedVertices, activeShape]);
+  }, [activeMode, isClassifyChallenge, placedVertices, activeShape]);
 
   // Phase results (for PhaseSummaryPanel)
   const phaseResults = usePhaseResults({
@@ -555,7 +557,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       };
       // CLASSIFY mode — select shapes by clicking near their center (pixel-based,
       // no grid snap needed since shape centers often fall between grid points)
-      if (activeMode === 'classify') {
+      if (isClassifyChallenge) {
         const clickedShape = preloadedShapes.find((shape) => {
           const cx = shape.vertices.reduce((s, v) => s + v.x, 0) / shape.vertices.length;
           const cy = shape.vertices.reduce((s, v) => s + v.y, 0) / shape.vertices.length;
@@ -866,7 +868,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       return;
     }
 
-    if (activeMode === 'classify') {
+    if (isClassifyChallenge) {
       const totalShapes = preloadedShapes.length;
       const classified = Object.keys(classifications).length;
       if (classified >= totalShapes) {
@@ -1448,7 +1450,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
             {renderGrid()}
 
             {/* Classify mode: all preloaded shapes */}
-            {activeMode === 'classify' &&
+            {isClassifyChallenge &&
               preloadedShapes.map((shape) => {
                 const classified = classifications[shape.id];
                 const isSelected = selectedShapeId === shape.id;
@@ -1608,7 +1610,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         )}
 
         {/* Classify Categories */}
-        {activeMode === 'classify' && classificationCategories.length > 0 && !allChallengesComplete && (
+        {isClassifyChallenge && classificationCategories.length > 0 && !allChallengesComplete && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-slate-500 text-xs">Categories:</span>
             {classificationCategories.map((cat) => (

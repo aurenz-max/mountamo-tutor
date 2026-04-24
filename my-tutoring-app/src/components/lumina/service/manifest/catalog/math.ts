@@ -480,6 +480,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Calculate partial products and total area from shown model. Grades 3-4.',
       },
       {
+        evalMode: 'perimeter',
+        label: 'Perimeter (Pictorial)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['perimeter'],
+        description: 'Find the perimeter of a rectangle with labeled side lengths (CCSS 4.MD.3). Grades 3-4.',
+      },
+      {
         evalMode: 'multiply',
         label: 'Multiply (Pictorial)',
         beta: 3.5,
@@ -2015,6 +2023,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['measure'],
         description: 'Find side lengths and angles of a given shape.',
+      },
+      {
+        evalMode: 'classify_by_lines',
+        label: 'Classify by Lines (Tier 2.5)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['classify_by_lines'],
+        description: 'Classify shapes by parallel and perpendicular line relationships (CCSS 4.G.1, 4.G.2).',
       },
       {
         evalMode: 'classify',

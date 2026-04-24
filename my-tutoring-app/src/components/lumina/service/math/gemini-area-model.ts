@@ -34,6 +34,18 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Grades 3-4. Pictorial with prompts.`,
     schemaDescription: "'find_area' (calculate partial products and total)",
   },
+  perimeter: {
+    promptDoc:
+      `"perimeter": A rectangle is shown with side lengths labeled — student computes the perimeter (CCSS 4.MD.3). `
+      + `CRITICAL: factor1Parts and factor2Parts MUST EACH be a SINGLE-ELEMENT array (one number per side). `
+      + `Example: a 12 by 8 rectangle → factor1Parts=[12], factor2Parts=[8]. Perimeter = 2×(12+8) = 40. `
+      + `DO NOT decompose the factors — perimeter is about adding side lengths, not multiplying parts. `
+      + `Use whole-number side lengths 3-30 (Grade 3) or 10-99 (Grade 4). `
+      + `showDimensions = true (student MUST see the numbers). showPartialProducts = false. algebraicMode = false. `
+      + `The title should ask about perimeter (e.g., "Find the Perimeter of This Rectangle"), not area or multiplication. `
+      + `Grades 3-4. Pictorial with reduced prompts.`,
+    schemaDescription: "'perimeter' (find the perimeter of a rectangle)",
+  },
   multiply: {
     promptDoc:
       `"multiply": Multi-digit × multi-digit multiplication using area model decomposition. `
@@ -71,8 +83,8 @@ const areaModelSchema: Schema = {
   properties: {
     challengeType: {
       type: Type.STRING,
-      description: "Challenge type: 'build_model' (construct area model from factors), 'find_area' (calculate partial products and total), 'multiply' (multi-digit multiplication via model), 'factor' (find factors from given area)",
-      enum: ["build_model", "find_area", "multiply", "factor"],
+      description: "Challenge type: 'build_model' (construct area model from factors), 'find_area' (calculate partial products and total), 'perimeter' (find perimeter of a rectangle — 4.MD.3), 'multiply' (multi-digit multiplication via model), 'factor' (find factors from given area)",
+      enum: ["build_model", "find_area", "perimeter", "multiply", "factor"],
     },
     title: {
       type: Type.STRING,
@@ -356,7 +368,7 @@ Return the complete area model configuration.
   }
 
   // Validation: ensure challengeType is valid
-  const validChallengeTypes = ['build_model', 'find_area', 'multiply', 'factor'];
+  const validChallengeTypes = ['build_model', 'find_area', 'perimeter', 'multiply', 'factor'];
   if (!data.challengeType || !validChallengeTypes.includes(data.challengeType)) {
     data.challengeType = evalConstraint?.allowedTypes[0] ?? 'find_area';
   }
@@ -420,6 +432,44 @@ Return the complete area model configuration.
   if (data.challengeType === 'find_area') {
     data.showPartialProducts = false; // student calculates these
     data.showDimensions = true;
+  }
+
+  // perimeter: force 1×1 rectangle (no decomposition), correct display settings, and perimeter-oriented title
+  if (data.challengeType === 'perimeter') {
+    data.showDimensions = true;      // must see side lengths
+    data.showPartialProducts = false; // perimeter isn't about products
+    data.algebraicMode = false;
+    delete data.labels;
+
+    // Collapse any LLM-provided decomposition back to a single side length
+    if (data.factor1Parts.length > 1) {
+      const total = data.factor1Parts.reduce((s: number, v: number) => s + v, 0);
+      data.factor1Parts = [total];
+    }
+    if (data.factor2Parts.length > 1) {
+      const total = data.factor2Parts.reduce((s: number, v: number) => s + v, 0);
+      data.factor2Parts = [total];
+    }
+
+    const length = data.factor1Parts[0];
+    const width = data.factor2Parts[0];
+    const perimeter = 2 * (length + width);
+
+    // Rewrite title if it mentions "product", "multiply", or the area value instead of perimeter
+    const area = length * width;
+    const titleLower = (data.title ?? '').toLowerCase();
+    const mentionsPerimeter = titleLower.includes('perimeter');
+    const titleNums = (data.title?.match(/\d+/g) ?? []).map(Number);
+    const titleHasArea = titleNums.includes(area) && !titleNums.includes(perimeter);
+    if (!mentionsPerimeter || /multiply|product|area model/i.test(data.title ?? '') || titleHasArea) {
+      data.title = `Find the Perimeter of This ${length} × ${width} Rectangle`;
+      console.warn(`perimeter: rewrote title to focus on perimeter (P=${perimeter})`);
+    }
+
+    // Fix description if it talks about multiplication/area
+    if (/multipl|partial product|area/i.test(data.description ?? '')) {
+      data.description = `Find the perimeter of this rectangle by adding the lengths of all four sides. The rectangle is ${length} units long and ${width} units wide.`;
+    }
   }
 
   // multiply: ensure harder than find_area (3-digit×2-digit or 3-part decomposition)

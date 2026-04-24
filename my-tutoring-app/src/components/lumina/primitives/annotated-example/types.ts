@@ -181,6 +181,8 @@ export interface RichAnnotatedExampleData {
   /** The solution strategy narrative */
   solutionStrategy: string;
   steps: RichExampleStep[];
+  /** If false, render all steps in display-only mode (no commit-gated reveals). Defaults to true. */
+  interactive?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════

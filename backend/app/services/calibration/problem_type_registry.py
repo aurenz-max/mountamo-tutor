@@ -152,6 +152,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "area-model": {
         "build_model": PriorConfig(1.5, "Concrete: construct area model from factors"),
         "find_area":   PriorConfig(2.5, "Pictorial: calculate partial products and total"),
+        "perimeter":   PriorConfig(3.0, "Pictorial: find rectangle perimeter (CCSS 4.MD.3)"),
         "multiply":    PriorConfig(3.5, "Pictorial: multi-digit multiplication via model"),
         "factor":      PriorConfig(4.5, "Transitional: find factors from given area"),
     },
@@ -223,6 +224,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "shape-builder": {
         "build":              PriorConfig(1.5, "Concrete: construct given shape"),
         "measure":            PriorConfig(2.5, "Pictorial: find side lengths/angles"),
+        "classify_by_lines":  PriorConfig(3.0, "Pictorial: classify by parallel/perpendicular lines (CCSS 4.G.1-2)"),
         "classify":           PriorConfig(3.5, "Pictorial: identify shape properties"),
         "compose":            PriorConfig(4.5, "Transitional: combine shapes"),
         "find_symmetry":      PriorConfig(5.5, "Symbolic: analyze symmetry lines"),

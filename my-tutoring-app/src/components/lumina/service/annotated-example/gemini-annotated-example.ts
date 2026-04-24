@@ -15,6 +15,11 @@
 
 import { Type, Schema, ThinkingLevel } from '@google/genai';
 import { ai } from '../geminiClient';
+import {
+  tryEvaluateKatex,
+  tryEvaluateSubstitution,
+  patchResultString,
+} from './mathEvaluator';
 import type {
   SolutionPlan,
   StepPlan,
@@ -40,6 +45,31 @@ const VALID_STEP_TYPES: StepType[] = [
   'algebra', 'substitution', 'table', 'diagram', 'graph-sketch', 'case-split', 'verification',
 ];
 
+const STEP_PLAN_ITEM_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    stepType: {
+      type: Type.STRING,
+      description: 'One of: algebra, substitution, table, diagram, graph-sketch, case-split, verification',
+    },
+    title: { type: Type.STRING, description: 'Short title for this step' },
+    brief: {
+      type: Type.STRING,
+      description: 'Detailed brief: what math to show, what expressions to manipulate. Include actual KaTeX expressions.',
+    },
+    dependsOn: {
+      type: Type.ARRAY,
+      items: { type: Type.NUMBER },
+      description: 'Indices of prior steps this step consumes. Empty array if independent. Indices must be lower than this step\'s position.',
+    },
+    annotationFocus: {
+      type: Type.STRING,
+      description: 'What annotations should emphasize for this step',
+    },
+  },
+  required: ['stepType', 'title', 'brief', 'dependsOn', 'annotationFocus'],
+};
+
 const ORCHESTRATOR_SCHEMA: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -50,66 +80,23 @@ const ORCHESTRATOR_SCHEMA: Schema = {
       description: '2-3 sentences: what approach we take and why. This is shown to the student before the steps.',
     },
     problemStatement: { type: Type.STRING, description: 'The problem prompt' },
-    problemEquations: { type: Type.STRING, description: 'Semicolon-separated KaTeX equations given in the problem. Empty string if none.', nullable: true },
+    problemEquations: {
+      type: Type.STRING,
+      description: 'Semicolon-separated KaTeX equations given in the problem. Empty string if none.',
+      nullable: true,
+    },
     problemContext: { type: Type.STRING, description: 'Additional context or given information', nullable: true },
-    finalAnswer: { type: Type.STRING, description: 'The CONCRETE final answer this solution reaches (a number, simplified expression, or proven statement). This is used to validate the plan is complete.' },
-    // Flat step array — up to 8 steps
-    step0Type: { type: Type.STRING, description: 'Step type: algebra, substitution, table, diagram, graph-sketch, case-split, verification' },
-    step0Title: { type: Type.STRING, description: 'Short title for this step' },
-    step0Brief: { type: Type.STRING, description: 'Detailed brief: what math to show, what expressions to manipulate. Include actual KaTeX expressions.' },
-    step0DependsOn: { type: Type.STRING, description: 'Comma-separated step indices this step depends on (e.g. "0,1"). Empty string if independent.' },
-    step0AnnotationFocus: { type: Type.STRING, description: 'What annotations should emphasize for this step' },
-
-    step1Type: { type: Type.STRING, description: 'Step type' },
-    step1Title: { type: Type.STRING },
-    step1Brief: { type: Type.STRING },
-    step1DependsOn: { type: Type.STRING },
-    step1AnnotationFocus: { type: Type.STRING },
-
-    step2Type: { type: Type.STRING, description: 'Step type' },
-    step2Title: { type: Type.STRING },
-    step2Brief: { type: Type.STRING },
-    step2DependsOn: { type: Type.STRING },
-    step2AnnotationFocus: { type: Type.STRING },
-
-    step3Type: { type: Type.STRING, description: 'Step type (REQUIRED — solutions need at least 5 steps)' },
-    step3Title: { type: Type.STRING },
-    step3Brief: { type: Type.STRING },
-    step3DependsOn: { type: Type.STRING },
-    step3AnnotationFocus: { type: Type.STRING },
-
-    step4Type: { type: Type.STRING, description: 'Step type — this should usually be verification' },
-    step4Title: { type: Type.STRING },
-    step4Brief: { type: Type.STRING },
-    step4DependsOn: { type: Type.STRING },
-    step4AnnotationFocus: { type: Type.STRING },
-
-    step5Type: { type: Type.STRING, nullable: true },
-    step5Title: { type: Type.STRING, nullable: true },
-    step5Brief: { type: Type.STRING, nullable: true },
-    step5DependsOn: { type: Type.STRING, nullable: true },
-    step5AnnotationFocus: { type: Type.STRING, nullable: true },
-
-    step6Type: { type: Type.STRING, nullable: true },
-    step6Title: { type: Type.STRING, nullable: true },
-    step6Brief: { type: Type.STRING, nullable: true },
-    step6DependsOn: { type: Type.STRING, nullable: true },
-    step6AnnotationFocus: { type: Type.STRING, nullable: true },
-
-    step7Type: { type: Type.STRING, nullable: true },
-    step7Title: { type: Type.STRING, nullable: true },
-    step7Brief: { type: Type.STRING, nullable: true },
-    step7DependsOn: { type: Type.STRING, nullable: true },
-    step7AnnotationFocus: { type: Type.STRING, nullable: true },
+    finalAnswer: {
+      type: Type.STRING,
+      description: 'The CONCRETE final answer this solution reaches (a number, simplified expression, or proven statement). This is used to validate the plan is complete.',
+    },
+    steps: {
+      type: Type.ARRAY,
+      items: STEP_PLAN_ITEM_SCHEMA,
+      description: 'Ordered list of steps. Plan as many steps as the solution needs — do not pad, do not truncate. The final step must be verification.',
+    },
   },
-  required: [
-    'title', 'subject', 'solutionStrategy', 'problemStatement', 'finalAnswer',
-    'step0Type', 'step0Title', 'step0Brief', 'step0DependsOn', 'step0AnnotationFocus',
-    'step1Type', 'step1Title', 'step1Brief', 'step1DependsOn', 'step1AnnotationFocus',
-    'step2Type', 'step2Title', 'step2Brief', 'step2DependsOn', 'step2AnnotationFocus',
-    'step3Type', 'step3Title', 'step3Brief', 'step3DependsOn', 'step3AnnotationFocus',
-    'step4Type', 'step4Title', 'step4Brief', 'step4DependsOn', 'step4AnnotationFocus',
-  ],
+  required: ['title', 'subject', 'solutionStrategy', 'problemStatement', 'finalAnswer', 'steps'],
 };
 
 function buildOrchestratorPrompt(
@@ -140,18 +127,18 @@ Your job: plan HOW to solve a representative problem step-by-step, choosing the 
 
 Each step can depend on 0 or more prior steps. The executor runs independent steps in parallel and sequential steps in order.
 
-- Steps that manipulate independent sub-expressions can be parallel (dependsOn = "")
-- Steps that need a prior step's result must declare the dependency (dependsOn = "0" or "0,1")
+- Steps that manipulate independent sub-expressions can be parallel (dependsOn: [])
+- Steps that need a prior step's result must declare the dependency (dependsOn: [0] or [0, 1])
 - The verification step always depends on the step that produces the final answer
-- IMPORTANT: A step can ONLY depend on steps with LOWER indices. No forward or circular dependencies.
+- IMPORTANT: A step can ONLY depend on steps with LOWER indices (positions) in the array. No forward or circular dependencies.
 
 ## Planning Principles
 
 1. **One logical move per step.** If you're tempted to write "and then", split it.
 2. **Use the right step type.** Don't force everything into algebra — if there's a table, use table. If there's a diagram, use diagram.
 3. **Include actual KaTeX in briefs.** The step generators need concrete expressions, not vague descriptions.
-4. **5-8 steps total, including verification as the final step.** You MUST fill steps 0 through 4 at minimum.
-5. **Make dependencies explicit.** If step 3 combines results from steps 1 and 2, say dependsOn="1,2".
+4. **Plan as many steps as the solution actually needs.** Typical range is 4-8. Do not pad with filler, do not cut short. The LAST step must be verification.
+5. **Make dependencies explicit.** If step 3 combines results from steps 1 and 2, set dependsOn: [1, 2].
 6. **Annotation focus hints.** Tell each step generator what pedagogical angle to emphasize.
 
 ## CRITICAL: Complete the Entire Solution — CARRY THROUGH ALL COMPUTATION
@@ -179,39 +166,47 @@ The second-to-last step must produce this concrete final answer. The last step m
 ## Intent
 ${config?.intent || 'Demonstrate problem-solving process with rich interactive steps'}
 
-Generate a complete solution plan with 5-8 steps now. The solution must reach a final answer.`;
+Generate a complete solution plan now. Use as many steps as the solution needs (typical: 4-8). The solution must reach a final answer.`;
 }
 
-function parseDependsOn(raw: string): number[] {
-  if (!raw || raw.trim() === '') return [];
-  return raw
-    .split(',')
-    .map((s) => parseInt(s.trim(), 10))
-    .filter((n) => !isNaN(n));
+interface RawStepItem {
+  stepType?: unknown;
+  title?: unknown;
+  brief?: unknown;
+  dependsOn?: unknown;
+  annotationFocus?: unknown;
 }
 
 /** Parse the orchestrator response into a SolutionPlan. */
 function parseOrchestratorResponse(data: Record<string, unknown>): { plan: SolutionPlan; finalAnswer: string } {
+  const rawSteps = Array.isArray(data.steps) ? (data.steps as RawStepItem[]) : [];
   const steps: StepPlan[] = [];
-  for (let i = 0; i < 8; i++) {
-    const stepType = data[`step${i}Type`] as string | undefined;
-    const title = data[`step${i}Title`] as string | undefined;
-    const brief = data[`step${i}Brief`] as string | undefined;
-    if (!stepType || !title || !brief) break;
+
+  rawSteps.forEach((raw, i) => {
+    const stepType = typeof raw.stepType === 'string' ? raw.stepType : '';
+    const title = typeof raw.title === 'string' ? raw.title : '';
+    const brief = typeof raw.brief === 'string' ? raw.brief : '';
+    if (!stepType || !title || !brief) return;
 
     const validType = VALID_STEP_TYPES.includes(stepType as StepType)
       ? (stepType as StepType)
       : 'algebra';
+
+    const dependsOn = Array.isArray(raw.dependsOn)
+      ? raw.dependsOn
+          .map((n) => (typeof n === 'number' ? n : parseInt(String(n), 10)))
+          .filter((n) => Number.isFinite(n))
+      : [];
 
     steps.push({
       stepIndex: i,
       stepType: validType,
       title,
       brief,
-      dependsOn: parseDependsOn(data[`step${i}DependsOn`] as string || ''),
-      annotationFocus: (data[`step${i}AnnotationFocus`] as string) || '',
+      dependsOn,
+      annotationFocus: typeof raw.annotationFocus === 'string' ? raw.annotationFocus : '',
     });
-  }
+  });
 
   const eqRaw = data.problemEquations as string | undefined;
   const equations = eqRaw ? eqRaw.split(';').map((s: string) => s.trim()).filter(Boolean) : undefined;
@@ -240,35 +235,27 @@ function parseOrchestratorResponse(data: Record<string, unknown>): { plan: Solut
 function repairPlan(plan: SolutionPlan, finalAnswer: string): SolutionPlan {
   const steps = [...plan.steps];
 
-  // Fix: ensure last step is verification. If not, append one (or replace last if at 8 steps).
+  // Fix: ensure last step is verification. If not, append one.
   const lastStep = steps[steps.length - 1];
-  if (lastStep.stepType !== 'verification') {
-    const verificationStep: StepPlan = {
+  if (!lastStep || lastStep.stepType !== 'verification') {
+    console.log(`[AnnotatedExample] Plan repair: appending verification step at index ${steps.length}`);
+    steps.push({
       stepIndex: steps.length,
       stepType: 'verification',
       title: 'Verify the answer',
       brief: `Substitute the final answer ${finalAnswer || '(from the previous step)'} back into the original problem and confirm it is correct.`,
-      dependsOn: [steps.length - 1],
+      dependsOn: steps.length > 0 ? [steps.length - 1] : [],
       annotationFocus: 'Why verification matters and how to check your work',
-    };
-
-    if (steps.length >= 8) {
-      // At max steps — replace last with verification if it's not critical
-      console.warn('[AnnotatedExample] Plan repair: replacing step 7 with verification (at 8-step limit)');
-      verificationStep.stepIndex = 7;
-      verificationStep.dependsOn = [6];
-      steps[7] = verificationStep;
-    } else {
-      console.log(`[AnnotatedExample] Plan repair: appending verification step at index ${steps.length}`);
-      steps.push(verificationStep);
-    }
+    });
   }
 
-  // Fix: re-index steps to ensure stepIndex matches array position
+  // Fix: re-index steps to ensure stepIndex matches array position, and clamp dependencies.
   for (let i = 0; i < steps.length; i++) {
-    steps[i] = { ...steps[i], stepIndex: i };
-    // Clamp dependencies to valid range
-    steps[i].dependsOn = steps[i].dependsOn.filter((d) => d < i);
+    steps[i] = {
+      ...steps[i],
+      stepIndex: i,
+      dependsOn: steps[i].dependsOn.filter((d) => d < i),
+    };
   }
 
   return { ...plan, steps };
@@ -300,7 +287,7 @@ async function runOrchestrator(
   topic: string,
   gradeContext: string,
   config?: { intent?: string; objectiveText?: string },
-): Promise<SolutionPlan> {
+): Promise<{ plan: SolutionPlan; finalAnswer: string }> {
   const prompt = buildOrchestratorPrompt(topic, gradeContext, config);
 
   console.log('[AnnotatedExample] Orchestrator: single call with thinking...');
@@ -333,7 +320,43 @@ async function runOrchestrator(
 
   console.log(`[AnnotatedExample] Final plan: ${repairedPlan.steps.length} steps, types: ${repairedPlan.steps.map((s) => s.stepType).join(', ')}`);
 
-  return repairedPlan;
+  return { plan: repairedPlan, finalAnswer };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Pinned-answer check — non-blocking telemetry for penultimate-step drift
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Verify the penultimate step produced the architect's pinned `finalAnswer`.
+ * Non-blocking: logs a warning on mismatch so we can measure real failure rate
+ * before deciding whether to add a revision loop.
+ */
+function checkPinnedAnswer(
+  finalAnswer: string,
+  penultimateResult: string | undefined,
+): { ok: boolean; reason: string } {
+  if (!finalAnswer || finalAnswer.trim().length < 2) {
+    return { ok: true, reason: 'no pinned answer declared' };
+  }
+  if (!penultimateResult) {
+    return { ok: false, reason: 'penultimate step produced no result expression' };
+  }
+
+  const pinned = tryEvaluateKatex(finalAnswer);
+  const produced = tryEvaluateKatex(penultimateResult);
+  if (pinned != null && produced != null) {
+    const delta = Math.abs(pinned - produced);
+    const rel = Math.abs(pinned) > 1e-9 ? delta / Math.abs(pinned) : delta;
+    return delta < 0.01 || rel < 0.005
+      ? { ok: true, reason: '' }
+      : { ok: false, reason: `pinned=${finalAnswer} (≈${pinned}), produced=${penultimateResult} (≈${produced})` };
+  }
+
+  const norm = (s: string) => s.replace(/\s+/g, '').replace(/\\,/g, '').replace(/\$/g, '');
+  return norm(finalAnswer) === norm(penultimateResult)
+    ? { ok: true, reason: '' }
+    : { ok: false, reason: `pinned="${finalAnswer}" vs produced="${penultimateResult}" (symbolic, not numerically comparable)` };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -457,12 +480,49 @@ IMPORTANT: Actually carry out the computation described in the brief. Do NOT lea
     const to = data[`trans${i}To`];
     const op = data[`trans${i}Op`];
     if (from && to && op) {
-      transitions.push({ from: { latex: from }, to: { latex: to }, operation: op });
+      // Numerical correction — if both sides evaluate to pure numbers and the
+      // LLM's answer disagrees with the computed value, patch the `to` side.
+      const fromVal = tryEvaluateKatex(from);
+      const toVal = tryEvaluateKatex(to);
+      let correctedTo = to;
+      if (fromVal != null && toVal != null) {
+        const delta = Math.abs(fromVal - toVal);
+        const rel = Math.abs(fromVal) > 1e-9 ? delta / Math.abs(fromVal) : delta;
+        // Same op applied — "evaluate" / "compute" style ops should preserve value.
+        // We only patch when from === to semantically (pure numerical simplification).
+        if (delta > 0.01 && rel > 0.005 && /\b(evaluate|compute|calculate|simplify)\b/i.test(op)) {
+          const patched = patchResultString(to, fromVal);
+          if (patched && patched !== to) {
+            console.log(`[AnnotatedExample] Algebra transition ${i} corrected: "${to}" → "${patched}"`);
+            correctedTo = patched;
+          }
+        }
+      }
+      transitions.push({ from: { latex: from }, to: { latex: correctedTo }, operation: op });
+    }
+  }
+
+  // Patch the final result if it's purely numerical and disagrees with the last transition.
+  let result: string = data.result;
+  if (transitions.length > 0) {
+    const lastTo = transitions[transitions.length - 1].to.latex;
+    const lastVal = tryEvaluateKatex(lastTo);
+    const resultVal = tryEvaluateKatex(result);
+    if (lastVal != null && resultVal != null) {
+      const delta = Math.abs(lastVal - resultVal);
+      const rel = Math.abs(lastVal) > 1e-9 ? delta / Math.abs(lastVal) : delta;
+      if (delta > 0.01 && rel > 0.005) {
+        const patched = patchResultString(result, lastVal);
+        if (patched && patched !== result) {
+          console.log(`[AnnotatedExample] Algebra result corrected: "${result}" → "${patched}"`);
+          result = patched;
+        }
+      }
     }
   }
 
   return {
-    content: { type: 'algebra', transitions, result: data.result },
+    content: { type: 'algebra', transitions, result },
     annotations: extractAnnotations(data),
   };
 }
@@ -519,8 +579,19 @@ Use proper KaTeX syntax. Actually compute the result — do not leave it as an u
     if (variable && value) substitutions.push({ variable, value });
   }
 
+  // Deterministic arithmetic check — flash-lite hallucinates numerical answers.
+  let result: string = data.result;
+  const computed = tryEvaluateSubstitution(data.template, substitutions);
+  if (computed != null) {
+    const patched = patchResultString(result, computed);
+    if (patched && patched !== result) {
+      console.log(`[AnnotatedExample] Substitution corrected: "${result}" → "${patched}" (computed=${computed})`);
+      result = patched;
+    }
+  }
+
   return {
-    content: { type: 'substitution', template: data.template, substitutions, result: data.result },
+    content: { type: 'substitution', template: data.template, substitutions, result },
     annotations: extractAnnotations(data),
   };
 }
@@ -866,7 +937,22 @@ Provide 1-2 check transitions (from→to with operation label).${annotationPromp
     const to = data[`check${i}To`];
     const op = data[`check${i}Op`];
     if (from && to && op) {
-      checkTransitions.push({ from: { latex: from }, to: { latex: to }, operation: op });
+      // Same arithmetic correction as algebra — numerical simplification checks.
+      const fromVal = tryEvaluateKatex(from);
+      const toVal = tryEvaluateKatex(to);
+      let correctedTo = to;
+      if (fromVal != null && toVal != null) {
+        const delta = Math.abs(fromVal - toVal);
+        const rel = Math.abs(fromVal) > 1e-9 ? delta / Math.abs(fromVal) : delta;
+        if (delta > 0.01 && rel > 0.005) {
+          const patched = patchResultString(to, fromVal);
+          if (patched && patched !== to) {
+            console.log(`[AnnotatedExample] Verification check ${i} corrected: "${to}" → "${patched}"`);
+            correctedTo = patched;
+          }
+        }
+      }
+      checkTransitions.push({ from: { latex: from }, to: { latex: correctedTo }, operation: op });
     }
   }
 
@@ -877,48 +963,72 @@ Provide 1-2 check transitions (from→to with operation label).${annotationPromp
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Step Router — dispatches to the right generator by type
+// Step Generator Registry — add a new primitive by adding one entry
 // ═══════════════════════════════════════════════════════════════════════
+
+interface GeneratedStep {
+  content: StepContent;
+  annotations: StepAnnotations;
+  /** Optional explicit result expression (for types where it's not on the content itself). */
+  result?: string;
+}
+
+interface StepGeneratorDef {
+  generate: (ctx: StepGeneratorContext) => Promise<GeneratedStep>;
+  /** Extract the result expression from generated content (for dependency passing). */
+  extractResult: (content: StepContent, explicitResult?: string) => string;
+}
+
+const STEP_GENERATORS: Record<StepType, StepGeneratorDef> = {
+  algebra: {
+    generate: generateAlgebraStep,
+    extractResult: (c) => (c.type === 'algebra' ? c.result : ''),
+  },
+  substitution: {
+    generate: generateSubstitutionStep,
+    extractResult: (c) => (c.type === 'substitution' ? c.result : ''),
+  },
+  table: {
+    generate: generateTableStep,
+    extractResult: (_c, explicit) => explicit ?? '',
+  },
+  diagram: {
+    generate: generateDiagramStep,
+    extractResult: (_c, explicit) => explicit ?? '',
+  },
+  'graph-sketch': {
+    generate: generateGraphSketchStep,
+    extractResult: (_c, explicit) => explicit ?? '',
+  },
+  'case-split': {
+    generate: generateCaseSplitStep,
+    extractResult: (_c, explicit) => explicit ?? '',
+  },
+  verification: {
+    generate: generateVerificationStep,
+    extractResult: (c) => (c.type === 'verification' ? c.claim : ''),
+  },
+};
 
 async function generateStep(
   plan: StepPlan,
   ctx: StepGeneratorContext,
-): Promise<{ content: StepContent; annotations: StepAnnotations; result?: string } | null> {
+): Promise<GeneratedStep | null> {
+  const def = STEP_GENERATORS[plan.stepType] ?? STEP_GENERATORS.algebra;
+  if (!STEP_GENERATORS[plan.stepType]) {
+    console.warn(`[AnnotatedExample] Unknown step type: ${plan.stepType}, falling back to algebra`);
+  }
   try {
-    switch (plan.stepType) {
-      case 'algebra':
-        return await generateAlgebraStep(ctx);
-      case 'substitution':
-        return await generateSubstitutionStep(ctx);
-      case 'table':
-        return await generateTableStep(ctx);
-      case 'diagram':
-        return await generateDiagramStep(ctx);
-      case 'graph-sketch':
-        return await generateGraphSketchStep(ctx);
-      case 'case-split':
-        return await generateCaseSplitStep(ctx);
-      case 'verification':
-        return await generateVerificationStep(ctx);
-      default:
-        console.warn(`[AnnotatedExample] Unknown step type: ${plan.stepType}, falling back to algebra`);
-        return await generateAlgebraStep(ctx);
-    }
+    return await def.generate(ctx);
   } catch (error) {
     console.error(`[AnnotatedExample] Failed to generate step ${plan.stepIndex} (${plan.stepType}):`, error);
     return null;
   }
 }
 
-/** Extract the result expression from a generated step (for dependency passing). */
-function getStepResult(content: StepContent, explicitResult?: string): string {
-  if (explicitResult) return explicitResult;
-  switch (content.type) {
-    case 'algebra': return content.result;
-    case 'substitution': return content.result;
-    case 'verification': return content.claim;
-    default: return '';
-  }
+function getStepResult(stepType: StepType, content: StepContent, explicitResult?: string): string {
+  const def = STEP_GENERATORS[stepType] ?? STEP_GENERATORS.algebra;
+  return def.extractResult(content, explicitResult);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -965,7 +1075,7 @@ async function executeWaves(
   plan: SolutionPlan,
   topic: string,
   gradeContext: string,
-): Promise<RichExampleStep[]> {
+): Promise<{ steps: RichExampleStep[]; results: Map<number, string> }> {
   const waves = buildWaves(plan.steps);
   /** Map from stepIndex → result expression (for dependency passing) */
   const results = new Map<number, string>();
@@ -1004,7 +1114,7 @@ async function executeWaves(
       const generated = await generateStep(stepPlan, ctx);
       if (!generated) return;
 
-      const resultExpr = getStepResult(generated.content, 'result' in generated ? (generated as { result?: string }).result : undefined);
+      const resultExpr = getStepResult(stepPlan.stepType, generated.content, generated.result);
       results.set(stepPlan.stepIndex, resultExpr);
 
       // Build a summary for downstream steps
@@ -1025,9 +1135,10 @@ async function executeWaves(
   }
 
   // Return in original order
-  return plan.steps
+  const orderedSteps = plan.steps
     .map((s) => generatedSteps.get(s.stepIndex))
     .filter((s): s is RichExampleStep => s != null);
+  return { steps: orderedSteps, results };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1053,15 +1164,28 @@ export async function generateAnnotatedExample(
   },
 ): Promise<RichAnnotatedExampleData> {
   console.log('[AnnotatedExample] Stage 1: Running Solution Architect (gemini-3-flash-preview + thinking)...');
-  const plan = await runOrchestrator(topic, gradeContext, config);
+  const { plan, finalAnswer } = await runOrchestrator(topic, gradeContext, config);
 
   console.log(`[AnnotatedExample] Plan: "${plan.title}" — ${plan.steps.length} steps`);
   console.log(`[AnnotatedExample] Step types: ${plan.steps.map((s) => s.stepType).join(', ')}`);
+  if (finalAnswer) console.log(`[AnnotatedExample] Pinned final answer: ${finalAnswer}`);
 
   console.log('[AnnotatedExample] Stage 2: Executing step generators with rich context...');
-  const steps = await executeWaves(plan, topic, gradeContext);
+  const { steps, results } = await executeWaves(plan, topic, gradeContext);
 
   console.log(`[AnnotatedExample] Complete: ${steps.length} steps generated`);
+
+  // Pinned-answer gate — non-blocking telemetry. The penultimate step is the
+  // one that should produce the architect's pinned final answer (last step is
+  // always verification, per repairPlan).
+  const penultimateIdx = plan.steps.length - 2;
+  const penultimateResult = penultimateIdx >= 0 ? results.get(penultimateIdx) : undefined;
+  const answerCheck = checkPinnedAnswer(finalAnswer, penultimateResult);
+  if (!answerCheck.ok) {
+    console.warn(`[AnnotatedExample] Pinned-answer mismatch: ${answerCheck.reason}`);
+  } else if (finalAnswer) {
+    console.log('[AnnotatedExample] Pinned-answer check: OK');
+  }
 
   return {
     title: plan.title,

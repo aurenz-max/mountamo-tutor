@@ -183,6 +183,7 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
               step={data.steps[currentStep]}
               index={currentStep}
               activeLayers={activeLayers}
+              interactive={data.interactive !== false}
             />
           </motion.div>
         ) : (
@@ -199,7 +200,7 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
 
             {data.steps.map((step, idx) => (
               <div key={step.id} className="relative z-10 pb-8 last:pb-0">
-                <RichStepCard step={step} index={idx} activeLayers={activeLayers} isCompact />
+                <RichStepCard step={step} index={idx} activeLayers={activeLayers} isCompact interactive={data.interactive !== false} />
               </div>
             ))}
           </motion.div>
@@ -218,7 +219,8 @@ const RichStepCard: React.FC<{
   index: number;
   activeLayers: LayerId[];
   isCompact?: boolean;
-}> = ({ step, index, activeLayers, isCompact }) => {
+  interactive?: boolean;
+}> = ({ step, index, activeLayers, isCompact, interactive = true }) => {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
@@ -251,7 +253,7 @@ const RichStepCard: React.FC<{
 
         {/* Step Content — type-specific renderer */}
         <div className="mb-4">
-          <StepContentRenderer content={step.content} />
+          <StepContentRenderer content={step.content} interactive={interactive} />
         </div>
 
         {/* Annotation Grid */}

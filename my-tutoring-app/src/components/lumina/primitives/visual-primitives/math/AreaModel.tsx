@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 export interface AreaModelData {
   title: string;
   description: string;
-  challengeType?: 'build_model' | 'find_area' | 'multiply' | 'factor';
+  challengeType?: 'build_model' | 'find_area' | 'perimeter' | 'multiply' | 'factor';
   factor1Parts: number[]; // Decomposition of first factor (e.g., [20, 3] for 23)
   factor2Parts: number[]; // Decomposition of second factor (e.g., [10, 5] for 15)
   showPartialProducts?: boolean; // Display products in cells
@@ -66,12 +66,14 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
   } = data;
 
   const isFactorMode = challengeType === 'factor';
+  const isPerimeterMode = challengeType === 'perimeter';
 
   // Calculate totals
   const factor1Total = factor1Parts.reduce((sum, val) => sum + val, 0);
   const factor2Total = factor2Parts.reduce((sum, val) => sum + val, 0);
   const totalProduct = factor1Total * factor2Total;
   const totalCells = factor1Parts.length * factor2Parts.length;
+  const totalPerimeter = 2 * (factor1Total + factor2Total);
 
   // Precompute partial products for factor mode
   const partialProducts = useMemo(() => {
@@ -109,6 +111,11 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
   );
   const [factorAttempts, setFactorAttempts] = useState(0);
 
+  // === Perimeter mode state ===
+  const [perimeterInput, setPerimeterInput] = useState('');
+  const [perimeterAttempts, setPerimeterAttempts] = useState(0);
+  const [perimeterCorrect, setPerimeterCorrect] = useState<boolean | null>(null);
+
   // === Shared state ===
   const [animationComplete, setAnimationComplete] = useState(!showAnimation);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -143,9 +150,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     return cellStates.get(getCellKey(row, col));
   };
 
-  // Handle cell selection (forward mode only)
+  // Handle cell selection (forward mode only — factor & perimeter skip this)
   const handleCellClick = (row: number, col: number) => {
-    if (hasSubmitted || isFactorMode) return;
+    if (hasSubmitted || isFactorMode || isPerimeterMode) return;
 
     const cellState = getCellState(row, col);
     if (cellState?.isCorrect) return;
@@ -268,6 +275,48 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     });
   };
 
+  // === Perimeter mode handlers ===
+
+  const handlePerimeterSubmit = () => {
+    if (hasSubmitted || isSubmitting) return;
+    if (!perimeterInput) return;
+
+    setIsSubmitting(true);
+    const studentPerimeter = parseInt(perimeterInput, 10);
+    const isCorrect = studentPerimeter === totalPerimeter;
+
+    setPerimeterCorrect(isCorrect);
+    setPerimeterAttempts((a) => a + 1);
+
+    const metrics: AreaModelMetrics = {
+      type: 'area-model',
+      evalMode: 'perimeter',
+      targetProduct: totalPerimeter,
+      studentProduct: studentPerimeter,
+      correctFinalAnswer: isCorrect,
+      totalPartialProducts: 0,
+      correctPartialProducts: 0,
+      incorrectPartialProducts: 0,
+      skippedPartialProducts: 0,
+      attemptedSum: true,
+      correctSum: isCorrect,
+      partialProductAccuracy: isCorrect ? 100 : 0,
+      overallAccuracy: isCorrect ? 100 : 0,
+      completedInOrder: true,
+      attemptsPerCell: perimeterAttempts + 1,
+      totalAttempts: perimeterAttempts + 1,
+      isAlgebraic: false,
+      usedDistributiveProperty: false,
+    };
+
+    submitResult(isCorrect, isCorrect ? 100 : 0, metrics, {
+      perimeterInput,
+      perimeterAttempts: perimeterAttempts + 1,
+    });
+
+    setTimeout(() => setIsSubmitting(false), 1000);
+  };
+
   // === Factor mode handlers ===
 
   const handleFactorTopChange = (index: number, value: string) => {
@@ -388,6 +437,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     setFactorTopCorrect(factor1Parts.map(() => null));
     setFactorLeftCorrect(factor2Parts.map(() => null));
     setFactorAttempts(0);
+    setPerimeterInput('');
+    setPerimeterAttempts(0);
+    setPerimeterCorrect(null);
     resetAttempt();
   };
 
@@ -499,9 +551,11 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
             <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 text-xs font-mono uppercase tracking-wider">
               {isFactorMode
                 ? 'Factor Discovery'
-                : algebraicMode
-                  ? 'Algebraic Multiplication'
-                  : 'Interactive Multiplication'}
+                : isPerimeterMode
+                  ? 'Perimeter Practice'
+                  : algebraicMode
+                    ? 'Algebraic Multiplication'
+                    : 'Interactive Multiplication'}
             </Badge>
           </div>
         </div>
@@ -520,8 +574,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
         </CardHeader>
 
         <CardContent className="relative z-10">
-          {/* Progress Indicator — forward mode only */}
-          {!isFactorMode && !hasSubmitted && (
+          {/* Progress Indicator — forward mode (multiplication) only */}
+          {!isFactorMode && !isPerimeterMode && !hasSubmitted && (
             <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-300">Progress</span>
@@ -535,6 +589,25 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                   style={{ width: `${(correctCells / totalCells) * 100}%` }}
                 ></div>
               </div>
+            </div>
+          )}
+
+          {/* Perimeter mode progress */}
+          {isPerimeterMode && !hasSubmitted && (
+            <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-slate-300">
+                  Find the perimeter of this rectangle
+                </span>
+                <span className="text-sm font-mono text-emerald-400">
+                  {factor1Total} × {factor2Total}
+                </span>
+              </div>
+              {perimeterAttempts > 0 && (
+                <div className="text-xs text-slate-500 mt-1">
+                  Attempts: {perimeterAttempts}
+                </div>
+              )}
             </div>
           )}
 
@@ -567,6 +640,16 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                   <span className="text-purple-300">?</span>
                   <span className="text-slate-500">=</span>
                   <span className="text-pink-300">{totalProduct}</span>
+                </>
+              ) : isPerimeterMode ? (
+                <>
+                  <span className="text-slate-400 text-lg">Perimeter =</span>
+                  <span className="text-slate-500">2 &times; (</span>
+                  <span className="text-blue-300">{factor1Total}</span>
+                  <span className="text-slate-500">+</span>
+                  <span className="text-purple-300">{factor2Total}</span>
+                  <span className="text-slate-500">) =</span>
+                  <span className="text-pink-300">?</span>
                 </>
               ) : (
                 <>
@@ -696,9 +779,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                           className={`
                             border-2 rounded-lg flex flex-col items-center justify-center p-4
                             transition-all duration-300
-                            ${isFactorMode ? '' : 'cursor-pointer'}
+                            ${isFactorMode || isPerimeterMode ? '' : 'cursor-pointer'}
                             ${getCellColor(rowIndex, colIndex)}
-                            ${!isFactorMode && !cellState?.isCorrect && !hasSubmitted ? 'hover:scale-105' : ''}
+                            ${!isFactorMode && !isPerimeterMode && !cellState?.isCorrect && !hasSubmitted ? 'hover:scale-105' : ''}
                           `}
                           style={{
                             minHeight: `${Math.max(80, factor2Parts[rowIndex] * 6)}px`,
@@ -706,7 +789,10 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                           }}
                           onClick={() => handleCellClick(rowIndex, colIndex)}
                         >
-                          {isFactorMode ? (
+                          {isPerimeterMode ? (
+                            /* Perimeter mode: empty rectangle interior — dimensions are on the outside */
+                            null
+                          ) : isFactorMode ? (
                             /* Factor mode: show the partial product */
                             <div className="text-center">
                               <div className="text-white font-mono font-bold text-lg">
@@ -753,8 +839,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
             </div>
           </div>
 
-          {/* Input Section for Selected Cell — forward mode */}
-          {!isFactorMode && selectedCell && !hasSubmitted && (
+          {/* Input Section for Selected Cell — forward mode (multiplication) */}
+          {!isFactorMode && !isPerimeterMode && selectedCell && !hasSubmitted && (
             <Card className="mt-8 bg-blue-900/20 border-blue-500/30">
               <CardHeader>
                 <CardTitle className="text-sm font-mono uppercase tracking-wider text-blue-400">
@@ -795,8 +881,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
             </Card>
           )}
 
-          {/* Sum Section — forward mode */}
-          {!isFactorMode && showSumSection && !hasSubmitted && (
+          {/* Sum Section — forward mode (multiplication) */}
+          {!isFactorMode && !isPerimeterMode && showSumSection && !hasSubmitted && (
             <Card className="mt-8 bg-purple-900/20 border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-sm font-mono uppercase tracking-wider text-purple-400">
@@ -841,6 +927,66 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
             </Card>
           )}
 
+          {/* Perimeter mode: single input for the perimeter answer */}
+          {isPerimeterMode && !hasSubmitted && (
+            <Card className="mt-8 bg-emerald-900/20 border-emerald-500/30">
+              <CardHeader>
+                <CardTitle className="text-sm font-mono uppercase tracking-wider text-emerald-400">
+                  Find the Perimeter
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center font-mono text-slate-300">
+                  The rectangle has sides of {factor1Total} and {factor2Total}.
+                  <br />
+                  Perimeter = {factor1Total} + {factor2Total} + {factor1Total} + {factor2Total}
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-300 mb-2">
+                    What is the perimeter of this rectangle?
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={perimeterInput}
+                      onChange={(e) => {
+                        setPerimeterInput(e.target.value);
+                        if (perimeterCorrect !== null) setPerimeterCorrect(null);
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handlePerimeterSubmit();
+                        }
+                      }}
+                      className={`flex-1 px-4 py-2 bg-slate-700 border rounded-lg text-white font-mono ${
+                        perimeterCorrect === true
+                          ? 'border-green-400'
+                          : perimeterCorrect === false
+                            ? 'border-red-400'
+                            : 'border-slate-600'
+                      }`}
+                      placeholder="Enter perimeter"
+                      disabled={hasSubmitted}
+                    />
+                    <Button
+                      onClick={handlePerimeterSubmit}
+                      disabled={!perimeterInput || isSubmitting || hasSubmitted}
+                      variant="ghost"
+                      className="bg-emerald-500/80 text-white border border-emerald-400/30 hover:bg-emerald-500"
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </Button>
+                  </div>
+                  {perimeterCorrect === false && !hasSubmitted && (
+                    <div className="mt-2 text-sm text-red-400">
+                      Not quite. Remember: the perimeter is the total distance around the rectangle. Try adding all four sides.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Factor mode: Check Factors button */}
           {isFactorMode && !hasSubmitted && !factorAllCorrect && (
             <div className="mt-8 flex justify-center">
@@ -868,8 +1014,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
             </Card>
           )}
 
-          {/* Feedback Section — forward mode */}
-          {!isFactorMode && (hasSubmitted || sumAttempted) && (
+          {/* Feedback Section — forward mode (multiplication) */}
+          {!isFactorMode && !isPerimeterMode && (hasSubmitted || sumAttempted) && (
             <Card className={`mt-8 ${
               sumCorrect
                 ? 'bg-green-900/20 border-green-500/30'
@@ -895,6 +1041,46 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                     <p>Your final answer of <span className="font-bold text-white">{sumInput}</span> is correct!</p>
                   ) : (
                     <p>The correct answer is: <span className="font-bold text-white">{totalProduct}</span></p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Feedback Section — perimeter mode */}
+          {isPerimeterMode && hasSubmitted && (
+            <Card className={`mt-8 ${
+              perimeterCorrect
+                ? 'bg-green-900/20 border-green-500/30'
+                : 'bg-yellow-900/20 border-yellow-500/30'
+            }`}>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className={`text-lg font-bold ${perimeterCorrect ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {perimeterCorrect ? '✓ Correct!' : 'Good effort!'}
+                  </h4>
+                  <Button
+                    onClick={handleReset}
+                    variant="ghost"
+                    className="bg-slate-600/80 text-white border border-slate-500/30 hover:bg-slate-500"
+                  >
+                    Try Another Problem
+                  </Button>
+                </div>
+
+                <div className="text-sm text-slate-300 space-y-2">
+                  <p>
+                    Perimeter = 2 &times; ({factor1Total} + {factor2Total})
+                    = 2 &times; {factor1Total + factor2Total}
+                    = <span className="font-bold text-white">{totalPerimeter}</span>
+                  </p>
+                  {!perimeterCorrect && (
+                    <p>You entered <span className="font-bold text-white">{perimeterInput}</span>.</p>
+                  )}
+                  {perimeterAttempts > 1 && (
+                    <p className="text-slate-400">
+                      Solved in {perimeterAttempts} {perimeterAttempts === 1 ? 'attempt' : 'attempts'}.
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -959,6 +1145,25 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                     <li className="flex items-start gap-2">
                       <Badge className="bg-purple-500/20 border-purple-500/30 text-purple-400 mt-0.5">4</Badge>
                       <span>Type your answers into the input fields and click &quot;Check My Factors&quot;</span>
+                    </li>
+                  </ul>
+                ) : isPerimeterMode ? (
+                  <ul className="text-sm text-slate-300 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-400 mt-0.5">1</Badge>
+                      <span>Look at the two side lengths labeled on the rectangle</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-400 mt-0.5">2</Badge>
+                      <span>Perimeter is the total distance around the outside of a shape</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-400 mt-0.5">3</Badge>
+                      <span>Rectangle shortcut: Perimeter = 2 &times; (length + width)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-400 mt-0.5">4</Badge>
+                      <span>Type your answer and press Submit</span>
                     </li>
                   </ul>
                 ) : (

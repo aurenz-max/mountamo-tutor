@@ -83,8 +83,11 @@
 | word-builder | 4 | 4 | 0 | 2026-04-11 | [report](eval-reports/word-builder-2026-04-11.md) |
 | dot-plot | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/dot-plot-2026-04-19.md) |
 | bar-model | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/bar-model-2026-04-19.md) |
+| annotated-example | 1 | 1 | 0 | 2026-04-24 | [report](eval-reports/annotated-example-2026-04-24.md) |
 
-**Totals:** 284/291 modes passing (97.6%) | 15 open issues (1 CRITICAL, 14 HIGH, 0 MEDIUM, 0 LOW)
+**Totals:** 285/292 modes passing (97.6%) | 19 open issues (1 CRITICAL, 17 HIGH, 1 MEDIUM, 0 LOW)
+
+Note: annotated-example passes structurally (final answers correct, schema refactor successful) but has 3 HIGH content-quality issues around redundant step planning — see AE-1..AE-4 and SP-16.
 
 ---
 
@@ -196,6 +199,13 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 **Fix pattern:** Generator must check `config?.targetEvalMode` (not just challengeType) and apply mode-specific post-filters. For coin-counter count-like: filter to challenges with exactly 1 unique coin type in displayedCoins.
 **Status:** Structurally eliminated for coin-counter via orchestrator — count-like and count-mixed have separate sub-generator prompts.
 
+### SP-16: Architect over-decomposes OR downstream steps redundantly re-solve what earlier steps already completed
+
+**Affected:** annotated-example (AE-1 over-decomposition — 3 identical "divide by 2" steps; AE-2 over-performance — integral step runs all downstream work; AE-4 case-split already solves cases, algebra steps re-solve them)
+**Risk:** Any multi-step orchestrated generator where a Stage 1 planner writes step briefs and a Stage 2 executor generates step content independently. Without cross-step redundancy checks, (a) the planner can split one logical move across multiple step titles, and (b) an executor handling an ambitious brief can complete the entire solution in one step, leaving downstream steps to repeat finished work.
+**Root cause:** Two-stage orchestrator has no redundancy contract. Architect prompt rewards detailed decomposition; executor prompt rewards showing complete work ("actually carry out the computation described in the brief"). No mechanism tells the architect "two steps that perform the same move are wrong" or tells the executor "stop at the brief's scope — don't finish what downstream steps will finish."
+**Fix pattern:** Three options, probably layered: (1) Architect prompt: add "no two steps may perform the same mathematical move; merge them" as a hard rule. (2) Executor prompt: "match your output depth to the brief's scope — if brief says 'set up the integral', stop at the integral setup, do not evaluate." (3) Post-generation audit: detect identical `from→to` pairs across adjacent algebra steps and collapse them in repairPlan.
+
 ### SP-4: Render path and validation path use different data sources
 
 **Affected:** number-sequencer (decade_fill — renderer uses `correctAnswers` to determine blanks, but check logic uses `blankIndices` from sequence nulls)
@@ -252,6 +262,10 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | ~~DR-1~~ | ~~decodable-reader~~ | ~~default~~ | ~~CRITICAL~~ | ~~Impossible challenge~~ | ~~MC comprehension comparison lowercases `correctAnswer` but not `selectedAnswer`. Fixed: adopted knowledge-check MC pattern with `correctOptionId` — comparison on stable IDs, no case sensitivity~~ | ~~COMPONENT + GENERATOR~~ |
 | ~~SS-3~~ | ~~spatial-scene~~ | ~~identify, describe~~ | ~~HIGH~~ | ~~Missing data~~ | ~~targetObject not in sceneObjects. Fixed: post-process derivation ensures target + reference are in scene array~~ | ~~GENERATOR~~ |
 | ~~TS-3~~ | ~~time-sequencer~~ | ~~all~~ | ~~CRITICAL~~ | ~~Missing data~~ | ~~Gemini omits type-specific fields (events, options, schedule) due to ~90 nullable fields in single multi-purpose schema (SP-3). Challenges render with instruction but no interactive content.~~ | ~~GENERATOR~~ |
+| AE-1 | annotated-example | — | HIGH | Redundant steps | Architect over-decomposes simple moves into multiple steps — 7th-grade `2x+3=11` had 3 sequential "divide by 2" steps (steps 2,3,4), all producing identical `2x=8 → x=4` work (SP-16) | GENERATOR |
+| AE-2 | annotated-example | — | HIGH | Redundant steps | Step 2 ("Set Up the Area Integral") runs full computation through `A=1/6`; downstream steps 3,4,5 redundantly repeat antiderivative, substitution, and simplification that step 2 already finished. Executor ignored brief scope (SP-16) | GENERATOR |
+| AE-3 | annotated-example | — | MEDIUM | Weak verification | For Calculus integral answer, verification only converts `1/6` to `0.1667` and bounds-checks. No actual re-derivation or alternative check. Verification prompt needs richer strategy per step type | GENERATOR |
+| AE-4 | annotated-example | — | HIGH | Redundant steps | Case-split step solves both branches producing `x<5` and `x>-1`; steps 2 and 3 redundantly re-solve the same two cases. Architect doesn't recognize case-split implies per-case work is complete (SP-16) | GENERATOR |
 
 ---
 

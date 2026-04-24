@@ -39,6 +39,20 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Pictorial with reduced prompts — identify shape properties to sort.`,
     schemaDescription: "'classify' (identify shape properties)",
   },
+  classify_by_lines: {
+    promptDoc:
+      `"classify_by_lines": Sort preloaded shapes by parallel/perpendicular line relationships (CCSS 4.G.1, 4.G.2 — Grade 4). `
+      + `Set classificationCategories to EXACTLY ["Has Parallel Sides", "Has Perpendicular Sides", "Has Both", "Has Neither"]. `
+      + `Include 4-6 preloaded shapes spread across the grid that cover ALL four categories: `
+      + `trapezoid / parallelogram (parallel only, no right angles), right triangle (perpendicular only, no parallel sides), `
+      + `rectangle / square (both parallel and perpendicular), scalene triangle or irregular quadrilateral (neither). `
+      + `CRITICAL: Each preloadedShape MUST have a "correctCategory" field set to one of the four categories above — `
+      + `base the category on the actual line geometry of the vertices you provide. `
+      + `Enable parallelMarker: true so students can mark parallel sides. Enable ruler: true. `
+      + `Shape vertices must use integer grid coordinates so parallel/perpendicular relationships are visually exact. `
+      + `Pictorial with reduced prompts — reason about line properties, not just vertex counts.`,
+    schemaDescription: "'classify_by_lines' (sort by parallel/perpendicular lines)",
+  },
   compose: {
     promptDoc:
       `"compose": Combine pattern blocks (tangram-style pieces) to form a target shape. `
@@ -190,8 +204,7 @@ const shapeBuilderSchema: Schema = {
           },
           correctCategory: {
             type: Type.STRING,
-            enum: ["Triangles", "Quadrilaterals", "Pentagons & More"],
-            description: "For classify mode: 'Triangles' (3 sides), 'Quadrilaterals' (4 sides), or 'Pentagons & More' (5+ sides). MUST match one of classificationCategories."
+            description: "For classify modes: the category this shape belongs to. For 'classify' (by vertex count): 'Triangles' (3 sides), 'Quadrilaterals' (4 sides), or 'Pentagons & More' (5+ sides). For 'classify_by_lines' (by line geometry): 'Has Parallel Sides', 'Has Perpendicular Sides', 'Has Both', or 'Has Neither'. MUST match one of classificationCategories."
           }
         },
         required: ["id", "vertices", "name", "locked"]
@@ -209,8 +222,8 @@ const shapeBuilderSchema: Schema = {
           },
           type: {
             type: Type.STRING,
-            enum: ["build", "measure", "classify", "compose", "find_symmetry", "coordinate_shape"],
-            description: "Challenge type: build (construct a shape), measure (use tools to discover properties), classify (sort shapes into categories), compose (combine shapes), find_symmetry (draw lines of symmetry), coordinate_shape (build on coordinate grid)"
+            enum: ["build", "measure", "classify", "classify_by_lines", "compose", "find_symmetry", "coordinate_shape"],
+            description: "Challenge type: build (construct a shape), measure (use tools to discover properties), classify (sort by vertex count), classify_by_lines (sort by parallel/perpendicular line relationships — 4.G), compose (combine shapes), find_symmetry (draw lines of symmetry), coordinate_shape (build on coordinate grid)"
           },
           instruction: {
             type: Type.STRING,
@@ -282,9 +295,8 @@ const shapeBuilderSchema: Schema = {
       type: Type.ARRAY,
       items: {
         type: Type.STRING,
-        enum: ["Triangles", "Quadrilaterals", "Pentagons & More"],
       },
-      description: "Categories for classify mode. Use exactly: ['Triangles', 'Quadrilaterals', 'Pentagons & More']"
+      description: "Categories for classify modes. For 'classify' (by vertex count): EXACTLY ['Triangles', 'Quadrilaterals', 'Pentagons & More']. For 'classify_by_lines' (by line geometry): EXACTLY ['Has Parallel Sides', 'Has Perpendicular Sides', 'Has Both', 'Has Neither']."
     },
     patternBlocks: {
       type: Type.OBJECT,
@@ -475,7 +487,7 @@ Return the complete shape builder configuration.
   }
 
   // Ensure challenges have valid types (safety net — schema enum handles the eval mode case)
-  const validChallengeTypes = ['build', 'measure', 'classify', 'compose', 'find_symmetry', 'coordinate_shape'];
+  const validChallengeTypes = ['build', 'measure', 'classify', 'classify_by_lines', 'compose', 'find_symmetry', 'coordinate_shape'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
@@ -503,6 +515,12 @@ Return the complete shape builder configuration.
         instruction: 'Sort these shapes into groups: triangles and quadrilaterals.',
         hint: 'Count the sides — 3 sides = triangle, 4 sides = quadrilateral.',
         narration: "Let's sort these shapes by counting their sides!",
+      },
+      classify_by_lines: {
+        type: 'classify_by_lines',
+        instruction: 'Sort these shapes by whether they have parallel sides, perpendicular sides, both, or neither.',
+        hint: 'Parallel sides never meet and stay the same distance apart. Perpendicular sides meet at a right angle (like the corner of a book).',
+        narration: "Let's sort these shapes by their line relationships!",
       },
       compose: {
         type: 'compose',
@@ -541,26 +559,45 @@ Return the complete shape builder configuration.
     (s: { vertices?: unknown[] }) => Array.isArray(s.vertices) && s.vertices.length >= 3
   );
 
-  // Canonical classify categories — schema enum forces these, but ensure consistency
-  const CANONICAL_CATEGORIES = ['Triangles', 'Quadrilaterals', 'Pentagons & More'];
+  // Canonical classify categories per classify variant
+  const CANONICAL_CATEGORIES_BY_SIDES = ['Triangles', 'Quadrilaterals', 'Pentagons & More'];
+  const CANONICAL_CATEGORIES_BY_LINES = ['Has Parallel Sides', 'Has Perpendicular Sides', 'Has Both', 'Has Neither'];
 
   // Ensure classificationCategories is an array
   if (!Array.isArray(data.classificationCategories)) {
     data.classificationCategories = [];
   }
 
-  // For classify mode: force canonical categories and derive correctCategory from vertex count
   const hasClassifyChallenge = (data.challenges as Array<{ type: string }>).some(
     (c: { type: string }) => c.type === 'classify'
   );
+  const hasClassifyByLinesChallenge = (data.challenges as Array<{ type: string }>).some(
+    (c: { type: string }) => c.type === 'classify_by_lines'
+  );
+
+  // For classify mode: force canonical side-count categories and derive correctCategory from vertex count
   if (hasClassifyChallenge) {
-    data.classificationCategories = CANONICAL_CATEGORIES;
+    data.classificationCategories = CANONICAL_CATEGORIES_BY_SIDES;
     for (const shape of data.preloadedShapes as Array<{ correctCategory?: string; vertices: Array<{ x: number; y: number }>; name: string }>) {
-      if (!shape.correctCategory || !CANONICAL_CATEGORIES.includes(shape.correctCategory)) {
+      if (!shape.correctCategory || !CANONICAL_CATEGORIES_BY_SIDES.includes(shape.correctCategory)) {
         const sides = shape.vertices.length;
         shape.correctCategory = sides === 3 ? 'Triangles' : sides === 4 ? 'Quadrilaterals' : 'Pentagons & More';
         console.warn(`[ShapeBuilder] Derived correctCategory "${shape.correctCategory}" for "${shape.name}" (${sides} vertices)`);
       }
+    }
+  } else if (hasClassifyByLinesChallenge) {
+    // For classify_by_lines: enforce canonical line-relationship categories. Trust the LLM's correctCategory
+    // assignment (deriving parallel/perpendicular from vertices server-side is non-trivial).
+    data.classificationCategories = CANONICAL_CATEGORIES_BY_LINES;
+    for (const shape of data.preloadedShapes as Array<{ correctCategory?: string; name: string }>) {
+      if (!shape.correctCategory || !CANONICAL_CATEGORIES_BY_LINES.includes(shape.correctCategory)) {
+        console.warn(`[ShapeBuilder] classify_by_lines: "${shape.name}" has invalid correctCategory "${shape.correctCategory ?? '(none)'}" — defaulting to "Has Neither"`);
+        shape.correctCategory = 'Has Neither';
+      }
+    }
+    // classify_by_lines relies on the parallel marker tool
+    if (data.tools) {
+      data.tools.parallelMarker = true;
     }
   }
 
