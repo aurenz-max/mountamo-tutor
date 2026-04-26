@@ -2,7 +2,7 @@
  * Rich Annotated Example Types
  *
  * Orchestrator + parallel step generator architecture.
- * Each step is a typed block (algebra, substitution, table, diagram, etc.)
+ * Each step is a typed block (algebra, table, diagram, etc.)
  * with KaTeX expressions and animated transitions.
  */
 
@@ -38,16 +38,6 @@ export interface AlgebraStepContent {
   result: string;
 }
 
-export interface SubstitutionStepContent {
-  type: 'substitution';
-  /** The template expression with placeholders */
-  template: string;
-  /** Values being substituted in (variable → value) */
-  substitutions: Array<{ variable: string; value: string }>;
-  /** Expression after substitution */
-  result: string;
-}
-
 export interface TableStepContent {
   type: 'table';
   /** Table caption */
@@ -72,18 +62,56 @@ export interface DiagramStepContent {
   altText: string;
 }
 
+/**
+ * `graph-sketch` is the catalog id for what the math-primitive PRD calls
+ * `canvas-2d`: a 2D plane with one or more curves, optional shaded regions,
+ * labeled points, vectors, and feature badges. The legacy single-curve fields
+ * (`expression`, `keyPoints`, `features`) are still honored — when `curves`
+ * is empty the renderer falls back to plotting `expression` alone.
+ */
 export interface GraphSketchStepContent {
   type: 'graph-sketch';
-  /** Function expression in KaTeX */
+  /** Legacy: KaTeX of the primary curve. When `curves` is set, treated as a label only. */
   expression: string;
-  /** Key points to plot: [x, y, label] */
+  /** Key points to plot on the canvas: (x, y) with a label. */
   keyPoints: Array<{ x: number; y: number; label: string }>;
-  /** Domain range */
+  /** Domain (x-axis range) */
   domain: [number, number];
-  /** Range */
+  /** Range (y-axis range) */
   range: [number, number];
-  /** Asymptotes, intercepts, etc. */
+  /** Feature badges shown under the canvas — descriptive metadata, not on-canvas markers. */
   features: Array<{ kind: 'asymptote' | 'intercept' | 'maximum' | 'minimum' | 'inflection'; label: string; value: string }>;
+
+  // ── canvas-2d extensions (PRD Phase 2) ───────────────────────────
+  /** Axis labels. Default 'x' / 'y' when omitted. */
+  xLabel?: string;
+  yLabel?: string;
+  /**
+   * Curves to plot. Each `expression` is a KaTeX RHS in terms of `x` (the
+   * renderer samples it client-side). When this array is non-empty it
+   * supersedes the legacy `expression` field.
+   */
+  curves?: Array<{
+    expression: string;
+    color?: 'primary' | 'secondary' | 'tertiary';
+    style?: 'solid' | 'dashed';
+    label?: string;
+  }>;
+  /**
+   * Regions between two curves over an x-interval — area-between-curves,
+   * Riemann strips, between-the-axis-and-the-graph shading.
+   */
+  shadedRegions?: Array<{
+    upper: string;
+    lower: string;
+    from: number;
+    to: number;
+    label?: string;
+  }>;
+  /** Free vectors drawn on the canvas (vector setups, gradient arrows, etc.). */
+  vectors?: Array<{ from: [number, number]; to: [number, number]; label?: string }>;
+  /** Optional caption rendered above the canvas. */
+  caption?: string;
 }
 
 export interface CaseSplitStepContent {
@@ -100,25 +128,13 @@ export interface CaseSplitStepContent {
   }>;
 }
 
-export interface VerificationStepContent {
-  type: 'verification';
-  /** The answer being verified */
-  claim: string;
-  /** Substitution back into original */
-  checkTransitions: KaTeXTransition[];
-  /** Does it check out? Always true for well-formed examples */
-  verified: boolean;
-}
-
 /** Union of all step content types */
 export type StepContent =
   | AlgebraStepContent
-  | SubstitutionStepContent
   | TableStepContent
   | DiagramStepContent
   | GraphSketchStepContent
-  | CaseSplitStepContent
-  | VerificationStepContent;
+  | CaseSplitStepContent;
 
 export type StepType = StepContent['type'];
 
@@ -183,6 +199,52 @@ export interface RichAnnotatedExampleData {
   steps: RichExampleStep[];
   /** If false, render all steps in display-only mode (no commit-gated reveals). Defaults to true. */
   interactive?: boolean;
+  /**
+   * Optional debug payload from the generation pipeline. When present, the UI
+   * renders a collapsible card showing solver blocks + the planner's spec list
+   * with grounding edges so dropped/injected/merged steps are visible.
+   */
+  solverDebug?: SolverDebugPayload;
+}
+
+export interface SolverDebugPayload {
+  /** Raw solver prose with `---` separators. */
+  body: string;
+  /** Number of `---` markers in the body. `separatorCount + 1` = block count. */
+  separatorCount: number;
+  /** One entry per solver block, in order. */
+  blocks: Array<{ index: number; prose: string }>;
+  /** The planner's plan that drove the render. */
+  planner: PlannerDebugPayload;
+}
+
+/**
+ * One step the planner thinks should be rendered. May merge multiple blocks
+ * (`groundingBlockIndices.length > 1`), may be injected with no grounding
+ * (`groundingBlockIndices.length === 0`), or may map 1:1 with a block.
+ */
+export interface StepSpec {
+  stepType: StepType;
+  title: string;
+  /** Short sentence — what this step teaches, not what it computes. */
+  pedagogicalGoal: string;
+  /** Solver block indices that ground this step. Empty = planner-injected. */
+  groundingBlockIndices: number[];
+  /** Free-text guidance to the per-type generator for what to pull from the prose. */
+  seedNotes: string;
+}
+
+export interface PlannerDebugPayload {
+  /** The planner's plan — drives the render. */
+  specs: StepSpec[];
+  /** Block indices NOT covered by any spec — planner dropped them (a bug signal). */
+  unusedBlockIndices: number[];
+  /** Number of specs that have zero grounding blocks (planner-injected). */
+  injectedCount: number;
+  /** Number of specs that merge 2+ blocks (planner consolidated). */
+  mergedCount: number;
+  /** True when the planner failed and we fell back to a 1:1 algebra plan. */
+  fallback: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════

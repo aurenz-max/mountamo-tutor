@@ -16,23 +16,31 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  PADDING,
+  graphToCanvas,
+  canvasToGraph,
+  type CanvasConfig,
+} from './canvas-2d/coords';
+import {
+  catmullRomSpline,
+  featureDistance,
+  drawAxes,
+  drawCurve,
+  drawControlPoints,
+  drawFeatureMarkers,
+} from './canvas-2d/shapes';
+import type { CurvePoint, FeatureMarker } from './canvas-2d/types';
+
+// Re-export shared types so existing call sites (manifest schemas, etc.)
+// keep importing from FunctionSketch.
+export type { CurvePoint, FeatureMarker };
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
-
-export interface CurvePoint {
-  x: number;
-  y: number;
-}
-
-export interface FeatureMarker {
-  type: 'root' | 'maximum' | 'minimum' | 'y-intercept' | 'asymptote';
-  x: number;
-  y: number;
-  label: string;
-  tolerance: number;
-}
 
 export interface SketchKeyFeature {
   type: 'peak' | 'zero' | 'intercept' | 'trend';
@@ -110,18 +118,6 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'compare-functions': { label: 'Compare Functions',  icon: '⚖️', accentColor: 'amber' },
 };
 
-const CANVAS_WIDTH = 700;
-const CANVAS_HEIGHT = 450;
-const PADDING = 55;
-
-const FEATURE_COLORS: Record<string, string> = {
-  root: '#ef4444',
-  maximum: '#f59e0b',
-  minimum: '#3b82f6',
-  'y-intercept': '#8b5cf6',
-  asymptote: '#ec4899',
-};
-
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -131,180 +127,6 @@ function renderLatex(latex: string): string {
     return katex.renderToString(latex, { throwOnError: false, displayMode: false });
   } catch {
     return latex;
-  }
-}
-
-/** Catmull-Rom spline interpolation through control points */
-function catmullRomSpline(points: CurvePoint[], numSegments = 20): CurvePoint[] {
-  if (points.length < 2) return points;
-  const sorted = [...points].sort((a, b) => a.x - b.x);
-  const result: CurvePoint[] = [];
-
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const p0 = sorted[Math.max(0, i - 1)];
-    const p1 = sorted[i];
-    const p2 = sorted[i + 1];
-    const p3 = sorted[Math.min(sorted.length - 1, i + 2)];
-
-    for (let t = 0; t <= 1; t += 1 / numSegments) {
-      const t2 = t * t;
-      const t3 = t2 * t;
-      const x = 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
-      const y = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
-      result.push({ x, y });
-    }
-  }
-  return result;
-}
-
-/** Distance between a click point and a feature marker in graph coords */
-function featureDistance(click: CurvePoint, feature: FeatureMarker, xRange: number, yRange: number): number {
-  const nx = (click.x - feature.x) / xRange;
-  const ny = (click.y - feature.y) / yRange;
-  return Math.sqrt(nx * nx + ny * ny);
-}
-
-// ============================================================================
-// Canvas Rendering
-// ============================================================================
-
-interface CanvasConfig {
-  xMin: number; xMax: number; yMin: number; yMax: number;
-  xLabel: string; yLabel: string;
-}
-
-function graphToCanvas(gx: number, gy: number, cfg: CanvasConfig): { x: number; y: number } {
-  const w = CANVAS_WIDTH - 2 * PADDING;
-  const h = CANVAS_HEIGHT - 2 * PADDING;
-  const x = PADDING + ((gx - cfg.xMin) / (cfg.xMax - cfg.xMin)) * w;
-  const y = PADDING + ((cfg.yMax - gy) / (cfg.yMax - cfg.yMin)) * h;
-  return { x, y };
-}
-
-function canvasToGraph(cx: number, cy: number, cfg: CanvasConfig): CurvePoint {
-  const w = CANVAS_WIDTH - 2 * PADDING;
-  const h = CANVAS_HEIGHT - 2 * PADDING;
-  const gx = cfg.xMin + ((cx - PADDING) / w) * (cfg.xMax - cfg.xMin);
-  const gy = cfg.yMax - ((cy - PADDING) / h) * (cfg.yMax - cfg.yMin);
-  return { x: gx, y: gy };
-}
-
-function drawAxes(ctx: CanvasRenderingContext2D, cfg: CanvasConfig) {
-  const w = CANVAS_WIDTH - 2 * PADDING;
-  const h = CANVAS_HEIGHT - 2 * PADDING;
-
-  // Grid
-  ctx.strokeStyle = 'rgba(100,116,139,0.2)';
-  ctx.lineWidth = 0.5;
-  const xStep = Math.max(1, Math.round((cfg.xMax - cfg.xMin) / 10));
-  const yStep = Math.max(1, Math.round((cfg.yMax - cfg.yMin) / 8));
-
-  for (let x = Math.ceil(cfg.xMin / xStep) * xStep; x <= cfg.xMax; x += xStep) {
-    const { x: cx } = graphToCanvas(x, 0, cfg);
-    ctx.beginPath(); ctx.moveTo(cx, PADDING); ctx.lineTo(cx, PADDING + h); ctx.stroke();
-  }
-  for (let y = Math.ceil(cfg.yMin / yStep) * yStep; y <= cfg.yMax; y += yStep) {
-    const { y: cy } = graphToCanvas(0, y, cfg);
-    ctx.beginPath(); ctx.moveTo(PADDING, cy); ctx.lineTo(PADDING + w, cy); ctx.stroke();
-  }
-
-  // Axes
-  ctx.strokeStyle = 'rgba(226,232,240,0.6)';
-  ctx.lineWidth = 1.5;
-
-  // X-axis (at y=0 if visible, else at bottom)
-  const yZero = Math.max(cfg.yMin, Math.min(cfg.yMax, 0));
-  const { y: xAxisY } = graphToCanvas(0, yZero, cfg);
-  ctx.beginPath(); ctx.moveTo(PADDING, xAxisY); ctx.lineTo(PADDING + w, xAxisY); ctx.stroke();
-
-  // Y-axis (at x=0 if visible, else at left)
-  const xZero = Math.max(cfg.xMin, Math.min(cfg.xMax, 0));
-  const { x: yAxisX } = graphToCanvas(xZero, 0, cfg);
-  ctx.beginPath(); ctx.moveTo(yAxisX, PADDING); ctx.lineTo(yAxisX, PADDING + h); ctx.stroke();
-
-  // Tick labels
-  ctx.fillStyle = 'rgba(203,213,225,0.7)';
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  for (let x = Math.ceil(cfg.xMin / xStep) * xStep; x <= cfg.xMax; x += xStep) {
-    if (x === 0) continue;
-    const { x: cx } = graphToCanvas(x, yZero, cfg);
-    ctx.fillText(String(x), cx, xAxisY + 4);
-  }
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  for (let y = Math.ceil(cfg.yMin / yStep) * yStep; y <= cfg.yMax; y += yStep) {
-    if (y === 0) continue;
-    const { y: cy } = graphToCanvas(xZero, y, cfg);
-    ctx.fillText(String(y), yAxisX - 6, cy);
-  }
-
-  // Axis labels
-  ctx.fillStyle = 'rgba(226,232,240,0.9)';
-  ctx.font = '13px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(cfg.xLabel, PADDING + w / 2, CANVAS_HEIGHT - 16);
-  ctx.save();
-  ctx.translate(14, PADDING + h / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText(cfg.yLabel, 0, 0);
-  ctx.restore();
-}
-
-function drawCurve(ctx: CanvasRenderingContext2D, points: CurvePoint[], cfg: CanvasConfig, color: string, lineWidth = 2.5) {
-  if (points.length < 2) return;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = lineWidth;
-  ctx.beginPath();
-  let started = false;
-  for (const pt of points) {
-    const { x, y } = graphToCanvas(pt.x, pt.y, cfg);
-    if (x < PADDING || x > CANVAS_WIDTH - PADDING || y < PADDING || y > CANVAS_HEIGHT - PADDING) {
-      started = false;
-      continue;
-    }
-    if (!started) { ctx.moveTo(x, y); started = true; } else { ctx.lineTo(x, y); }
-  }
-  ctx.stroke();
-}
-
-function drawControlPoints(ctx: CanvasRenderingContext2D, points: CurvePoint[], cfg: CanvasConfig) {
-  for (const pt of points) {
-    const { x, y } = graphToCanvas(pt.x, pt.y, cfg);
-    ctx.beginPath();
-    ctx.arc(x, y, 6, 0, 2 * Math.PI);
-    ctx.fillStyle = '#38bdf8';
-    ctx.fill();
-    ctx.strokeStyle = '#0ea5e9';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-}
-
-function drawFeatureMarkers(
-  ctx: CanvasRenderingContext2D,
-  markers: Array<{ x: number; y: number; type: string; label: string; hit?: boolean }>,
-  cfg: CanvasConfig,
-) {
-  for (const m of markers) {
-    const { x, y } = graphToCanvas(m.x, m.y, cfg);
-    const color = m.hit ? '#22c55e' : (FEATURE_COLORS[m.type] ?? '#94a3b8');
-    ctx.beginPath();
-    ctx.arc(x, y, 8, 0, 2 * Math.PI);
-    ctx.fillStyle = m.hit ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)';
-    ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-
-    // Label
-    ctx.fillStyle = color;
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(m.label, x, y - 12);
   }
 }
 

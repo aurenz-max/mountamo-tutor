@@ -35,12 +35,10 @@ const EXAMPLE_TOPICS = [
 
 const STEP_TYPE_COLORS: Record<StepType, string> = {
   algebra: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  substitution: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
   table: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
   diagram: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
   'graph-sketch': 'bg-teal-500/20 text-teal-300 border-teal-500/30',
   'case-split': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-  verification: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
 };
 
 // ── Evaluation Results Panel ─────────────────────────────────────────

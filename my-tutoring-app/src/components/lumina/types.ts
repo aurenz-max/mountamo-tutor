@@ -825,12 +825,10 @@ export type {
   KaTeXTransition,
   KaTeXExpression,
   AlgebraStepContent,
-  SubstitutionStepContent,
   TableStepContent,
   DiagramStepContent,
   GraphSketchStepContent,
   CaseSplitStepContent,
-  VerificationStepContent,
   LayerId,
 } from './primitives/annotated-example/types';
 

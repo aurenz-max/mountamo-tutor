@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Layers, BookOpen, AlertTriangle, Lightbulb, GitMerge } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Layers, BookOpen, AlertTriangle, Lightbulb, GitMerge, Bug, ChevronDown } from 'lucide-react';
 import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
 import { StepContentRenderer, StepTypeIcon, KaTeX, MixedContent } from './annotated-example/StepContentRenderer';
-import type { RichAnnotatedExampleData, RichExampleStep, LayerId } from './annotated-example/types';
+import type { RichAnnotatedExampleData, RichExampleStep, LayerId, SolverDebugPayload, StepSpec } from './annotated-example/types';
 import { ANNOTATION_LAYERS } from './annotated-example/types';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -98,6 +98,9 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
             <p className="text-sm text-slate-400 leading-relaxed"><MixedContent text={data.solutionStrategy} /></p>
           </Card>
         )}
+
+        {/* Pipeline Debug — solver blocks → planner specs → rendered steps */}
+        {data.solverDebug && <PipelineDebugCard debug={data.solverDebug} renderedStepCount={data.steps.length} />}
 
         {/* Layer Toggles */}
         <div className="flex flex-wrap gap-2 py-1">
@@ -293,6 +296,160 @@ const RichStepCard: React.FC<{
         </div>
       </Card>
     </motion.div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// Pipeline Debug Card — solver blocks vs planner specs vs rendered steps.
+// Coverage check replaces the old 1:1 block→step invariant: every block
+// should appear in some spec's groundingBlockIndices, and any injected step
+// (no grounding) is flagged so the planner can't sneak in a phantom primitive.
+// ═══════════════════════════════════════════════════════════════════════
+
+const PipelineDebugCard: React.FC<{
+  debug: SolverDebugPayload;
+  renderedStepCount: number;
+}> = ({ debug, renderedStepCount }) => {
+  const [open, setOpen] = useState(false);
+  const blockCount = debug.blocks.length;
+  const specCount = debug.planner.specs.length;
+  const renderFailures = specCount - renderedStepCount;
+
+  const summaryColor = renderFailures > 0 || debug.planner.unusedBlockIndices.length > 0
+    ? 'text-red-400'
+    : 'text-slate-300';
+
+  return (
+    <Card className="backdrop-blur-xl bg-slate-900/40 border-amber-500/20 overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full px-5 py-3 flex items-center gap-3 text-left hover:bg-amber-500/5 transition-colors"
+      >
+        <Bug size={14} className="text-amber-400 flex-shrink-0" />
+        <div className="flex-grow min-w-0">
+          <p className="text-xs text-amber-400 uppercase tracking-wider font-medium">Pipeline Debug</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Solver <span className="text-slate-300 font-medium">{blockCount}</span> blocks ·
+            Planner <span className="text-slate-300 font-medium">{specCount}</span> specs
+            {debug.planner.mergedCount > 0 && <span className="text-cyan-400"> ({debug.planner.mergedCount} merged)</span>}
+            {debug.planner.injectedCount > 0 && <span className="text-violet-400"> ({debug.planner.injectedCount} injected)</span>}
+            {' · '}
+            Rendered <span className={summaryColor + ' font-medium'}>{renderedStepCount}</span>
+            {renderFailures > 0 && <span className="ml-2 text-red-400">⚠ {renderFailures} failed</span>}
+            {debug.planner.unusedBlockIndices.length > 0 && (
+              <span className="ml-2 text-red-400">⚠ {debug.planner.unusedBlockIndices.length} unused block(s)</span>
+            )}
+            {debug.planner.fallback && <span className="ml-2 text-amber-400">⚠ planner fallback</span>}
+          </p>
+        </div>
+        <ChevronDown
+          size={14}
+          className={`text-slate-500 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-t border-amber-500/10"
+          >
+            <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left: planner specs (drives the render) */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-medium mb-2">
+                  Planner Specs ({specCount}) — each becomes one rendered step
+                </p>
+                {debug.planner.specs.map((spec, i) => (
+                  <PlannerSpecRow key={i} spec={spec} index={i} />
+                ))}
+                {debug.planner.unusedBlockIndices.length > 0 && (
+                  <div className="text-sm leading-relaxed rounded p-3 border-l-2 bg-red-500/5 border-red-500/40">
+                    <p className="text-[10px] uppercase tracking-wider font-medium text-red-400 mb-1">
+                      Unused solver blocks
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Block(s) [{debug.planner.unusedBlockIndices.join(', ')}] were dropped by the planner.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: solver blocks (raw input) */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-medium mb-2">
+                  Solver Blocks ({blockCount}) — raw strategic moves
+                </p>
+                {debug.blocks.map((block) => (
+                  <div
+                    key={block.index}
+                    className="text-sm leading-relaxed rounded p-3 border-l-2 bg-slate-800/30 border-emerald-500/40"
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[10px] uppercase tracking-wider font-medium text-slate-500">
+                        Block {block.index}
+                      </span>
+                    </div>
+                    <div className="text-slate-300 text-xs">
+                      <MixedContent text={block.prose} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Card>
+  );
+};
+
+const PlannerSpecRow: React.FC<{ spec: StepSpec; index: number }> = ({ spec, index }) => {
+  const isInjected = spec.groundingBlockIndices.length === 0;
+  const isMerged = spec.groundingBlockIndices.length > 1;
+
+  let groundingLabel: React.ReactNode;
+  let borderColor = 'border-emerald-500/40';
+  if (isInjected) {
+    groundingLabel = <span className="text-violet-400">INJECTED · no block</span>;
+    borderColor = 'border-violet-500/40';
+  } else if (isMerged) {
+    groundingLabel = (
+      <span className="text-cyan-400">
+        MERGED · blocks [{spec.groundingBlockIndices.join(', ')}]
+      </span>
+    );
+    borderColor = 'border-cyan-500/40';
+  } else {
+    groundingLabel = (
+      <span className="text-emerald-400">block {spec.groundingBlockIndices[0]}</span>
+    );
+  }
+
+  return (
+    <div className={`text-sm leading-relaxed rounded p-3 border-l-2 bg-slate-800/30 ${borderColor}`}>
+      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+        <span className="text-[10px] uppercase tracking-wider font-medium text-slate-500">
+          Spec {index}
+        </span>
+        <span className="text-[10px] uppercase tracking-wider font-medium text-amber-400/80 bg-amber-500/10 px-1.5 py-0.5 rounded">
+          {spec.stepType}
+        </span>
+        <span className="text-xs text-slate-300 font-medium">{spec.title}</span>
+        <span className="text-[10px] uppercase tracking-wider font-medium ml-auto">
+          {groundingLabel}
+        </span>
+      </div>
+      {spec.pedagogicalGoal && (
+        <p className="text-xs text-slate-400 italic mb-1">Goal: {spec.pedagogicalGoal}</p>
+      )}
+      {spec.seedNotes && (
+        <p className="text-xs text-slate-500"><span className="font-medium">Seed:</span> <MixedContent text={spec.seedNotes} /></p>
+      )}
+    </div>
   );
 };
 

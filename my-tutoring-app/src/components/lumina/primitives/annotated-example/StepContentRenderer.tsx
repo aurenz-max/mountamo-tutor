@@ -1,29 +1,31 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import { ArrowRight, Check, GitBranch, Table2, Image, TrendingUp, X, Eye } from 'lucide-react';
+import { ArrowRight, Check, GitBranch, Table2, Image, TrendingUp } from 'lucide-react';
 import type {
   StepContent,
   AlgebraStepContent,
-  SubstitutionStepContent,
   TableStepContent,
   DiagramStepContent,
   GraphSketchStepContent,
   CaseSplitStepContent,
-  VerificationStepContent,
-  KaTeXTransition,
 } from './types';
 import {
-  tryEvaluateKatex,
-  tryEvaluateSubstitution,
-} from '../../service/annotated-example/mathEvaluator';
-
-const MAX_ATTEMPTS_BEFORE_REVEAL = 3;
-const ANSWER_TOLERANCE_REL = 0.005;
-const ANSWER_TOLERANCE_ABS = 0.01;
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  type CanvasConfig,
+} from '../visual-primitives/math/canvas-2d/coords';
+import {
+  drawAxes,
+  drawCurve,
+  drawShadedRegion,
+  drawVector,
+  drawLabeledPoint,
+} from '../visual-primitives/math/canvas-2d/shapes';
+import { sampleCurve } from './canvas-2d-sample';
 
 // ═══════════════════════════════════════════════════════════════════════
 // KaTeX Rendering Utilities
@@ -77,48 +79,6 @@ const MixedContent: React.FC<{ text: string; className?: string }> = ({ text, cl
       className={`text-slate-300 ${className}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════
-// Animated KaTeX Transition
-// ═══════════════════════════════════════════════════════════════════════
-
-const KaTeXTransitionView: React.FC<{
-  transition: KaTeXTransition;
-  index: number;
-  isActive: boolean;
-}> = ({ transition, index, isActive }) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: isActive ? 1 : 0.4, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.15 }}
-      className="flex flex-col gap-2"
-    >
-      {/* From expression */}
-      <div className="flex items-center gap-3">
-        <div className="flex-grow bg-slate-950/50 rounded-lg px-4 py-3 border border-slate-800/50">
-          <KaTeX latex={transition.from.latex} />
-        </div>
-      </div>
-
-      {/* Operation label + arrow */}
-      <div className="flex items-center gap-2 pl-2">
-        <ArrowRight size={14} className="text-blue-400 flex-shrink-0" />
-        <span className="text-xs text-blue-400 font-medium italic">{transition.operation}</span>
-      </div>
-
-      {/* To expression */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: isActive ? 1 : 0.4, scale: 1 }}
-        transition={{ duration: 0.3, delay: index * 0.15 + 0.2 }}
-        className="flex-grow bg-slate-950/50 rounded-lg px-4 py-3 border border-blue-500/20"
-      >
-        <KaTeX latex={transition.to.latex} />
-      </motion.div>
-    </motion.div>
   );
 };
 
@@ -225,171 +185,6 @@ const AlgebraStepView: React.FC<{ content: AlgebraStepContent }> = ({ content })
   );
 };
 
-// ── Parse student numeric input: strip $, commas, whitespace ──────────
-function parseStudentNumber(raw: string): number | null {
-  const cleaned = raw.replace(/[$,\s]/g, '');
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : null;
-}
-
-function numbersMatch(student: number, target: number): boolean {
-  const delta = Math.abs(student - target);
-  const rel = Math.abs(target) > 1e-9 ? delta / Math.abs(target) : delta;
-  return delta < ANSWER_TOLERANCE_ABS || rel < ANSWER_TOLERANCE_REL;
-}
-
-const SubstitutionStepView: React.FC<{
-  content: SubstitutionStepContent;
-  interactive?: boolean;
-}> = ({ content, interactive = true }) => {
-  // Compute the target answer once. If the template is symbolic (returns null),
-  // fall back to display-only — can't grade what we can't verify.
-  const computedAnswer = React.useMemo(
-    () => tryEvaluateSubstitution(content.template, content.substitutions),
-    [content.template, content.substitutions],
-  );
-  const isGradable = interactive && computedAnswer != null;
-
-  const [input, setInput] = useState('');
-  const [attempts, setAttempts] = useState(0);
-  const [status, setStatus] = useState<'idle' | 'wrong' | 'revealed'>('idle');
-  const [lastGuess, setLastGuess] = useState<number | null>(null);
-
-  const handleCheck = useCallback(() => {
-    if (computedAnswer == null) return;
-    const n = parseStudentNumber(input);
-    if (n == null) {
-      setStatus('wrong');
-      setLastGuess(null);
-      return;
-    }
-    setLastGuess(n);
-    if (numbersMatch(n, computedAnswer)) {
-      setStatus('revealed');
-    } else {
-      setAttempts((a) => a + 1);
-      setStatus('wrong');
-    }
-  }, [computedAnswer, input]);
-
-  const handleReveal = useCallback(() => setStatus('revealed'), []);
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') handleCheck();
-    },
-    [handleCheck],
-  );
-
-  return (
-    <div className="space-y-4">
-      {/* Template expression */}
-      <div className="bg-slate-950/50 rounded-lg px-4 py-3 border border-slate-800/50">
-        <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-medium">Template</p>
-        <KaTeX latex={content.template} />
-      </div>
-
-      {/* Substitution pills */}
-      <div className="flex flex-wrap gap-2">
-        {content.substitutions.map((sub, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.1 }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20"
-          >
-            <KaTeX latex={sub.variable} display={false} className="text-purple-300 text-sm" />
-            <ArrowRight size={12} className="text-purple-400" />
-            <KaTeX latex={sub.value} display={false} className="text-purple-200 text-sm" />
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Commit gate (interactive) or legacy reveal button (non-interactive/symbolic) */}
-      {isGradable && status !== 'revealed' ? (
-        <div className="space-y-2 pt-1">
-          <p className="text-xs text-slate-400 font-medium">
-            Compute the result and enter it below.
-          </p>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Your answer"
-              className={`flex-grow bg-slate-950/60 border rounded-lg px-3 py-2 text-sm text-slate-100 outline-none transition-colors placeholder-slate-600 ${
-                status === 'wrong'
-                  ? 'border-red-500/40 focus:border-red-500/60'
-                  : 'border-slate-700 focus:border-purple-500/60'
-              }`}
-              aria-label="Enter the computed result"
-            />
-            <button
-              onClick={handleCheck}
-              disabled={!input.trim()}
-              className="text-xs text-purple-300 font-medium px-3 py-2 rounded-lg bg-purple-500/15 border border-purple-500/30 hover:bg-purple-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Check
-            </button>
-          </div>
-
-          <AnimatePresence>
-            {status === 'wrong' && (
-              <motion.div
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: [0, -4, 4, -4, 4, 0] }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="text-xs text-red-400 flex items-center gap-1.5"
-              >
-                <X size={12} />
-                {lastGuess == null
-                  ? 'Enter a number to check.'
-                  : `Not quite. Attempt ${attempts} of ${MAX_ATTEMPTS_BEFORE_REVEAL}.`}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {attempts >= MAX_ATTEMPTS_BEFORE_REVEAL && (
-            <button
-              onClick={handleReveal}
-              className="text-xs text-slate-400 hover:text-slate-200 font-medium px-2 py-1 rounded inline-flex items-center gap-1.5 transition-colors"
-            >
-              <Eye size={12} />
-              Show me the answer
-            </button>
-          )}
-        </div>
-      ) : null}
-
-      {/* Non-interactive fallback for symbolic templates */}
-      {!isGradable && status !== 'revealed' ? (
-        <button
-          onClick={handleReveal}
-          className="text-xs text-purple-400 hover:text-purple-300 font-medium px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
-        >
-          Apply substitution
-        </button>
-      ) : null}
-
-      {/* Revealed result */}
-      {status === 'revealed' && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 pt-2 border-t border-slate-800/50"
-        >
-          <Check size={14} className="text-emerald-400 flex-shrink-0" />
-          <KaTeX latex={content.result} className="text-emerald-300" />
-        </motion.div>
-      )}
-    </div>
-  );
-};
-
 const TableStepView: React.FC<{ content: TableStepContent }> = ({ content }) => {
   return (
     <div className="space-y-3">
@@ -467,28 +262,188 @@ const DiagramStepView: React.FC<{ content: DiagramStepContent }> = ({ content })
   );
 };
 
+// Semantic curve colors → on-canvas hex. Kept narrow so the planner can
+// reason about which curve is the "main" vs "supporting" without picking pixels.
+const CURVE_COLORS = {
+  primary: '#38bdf8',   // cyan
+  secondary: '#f59e0b', // amber
+  tertiary: '#22c55e',  // emerald
+} as const;
+
+const SHADE_FILLS = [
+  'rgba(56, 189, 248, 0.18)',
+  'rgba(245, 158, 11, 0.18)',
+];
+
+const VECTOR_COLOR = '#a78bfa'; // violet
+
 const GraphSketchStepView: React.FC<{ content: GraphSketchStepContent }> = ({ content }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Resolve effective curve list. A non-empty `curves` array supersedes the
+  // legacy single `expression` field; otherwise fall back to a single primary
+  // curve so existing callers keep rendering.
+  const curves = useMemo(() => {
+    if (content.curves && content.curves.length > 0) return content.curves;
+    if (content.expression) {
+      return [{ expression: content.expression, color: 'primary' as const, style: 'solid' as const }];
+    }
+    return [];
+  }, [content.curves, content.expression]);
+
+  const cfg: CanvasConfig = useMemo(
+    () => ({
+      xMin: content.domain[0],
+      xMax: content.domain[1],
+      yMin: content.range[0],
+      yMax: content.range[1],
+      xLabel: content.xLabel ?? 'x',
+      yLabel: content.yLabel ?? 'y',
+    }),
+    [content.domain, content.range, content.xLabel, content.yLabel],
+  );
+
+  // Sample each curve over the visible x-range. mathEvaluator returns null
+  // outside the domain — drawCurve handles the resulting gaps.
+  const sampledCurves = useMemo(
+    () =>
+      curves.map((c) => ({
+        ...c,
+        points: sampleCurve(c.expression, cfg.xMin, cfg.xMax, 240),
+      })),
+    [curves, cfg.xMin, cfg.xMax],
+  );
+
+  // Sample shaded regions only over [from, to]; the polygon is bounded by
+  // upper / lower expressions sampled at matching x values.
+  const sampledShades = useMemo(
+    () =>
+      (content.shadedRegions ?? []).map((r) => ({
+        label: r.label,
+        upper: sampleCurve(r.upper, r.from, r.to, 80),
+        lower: sampleCurve(r.lower, r.from, r.to, 80),
+      })),
+    [content.shadedRegions],
+  );
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    drawAxes(ctx, cfg);
+
+    // 1. Shaded regions (under everything else).
+    sampledShades.forEach((shade, i) => {
+      drawShadedRegion(ctx, shade.upper, shade.lower, cfg, SHADE_FILLS[i % SHADE_FILLS.length]);
+    });
+
+    // 2. Curves.
+    for (const c of sampledCurves) {
+      const color = CURVE_COLORS[c.color ?? 'primary'] ?? CURVE_COLORS.primary;
+      if (c.style === 'dashed') {
+        ctx.save();
+        ctx.setLineDash([6, 5]);
+        drawCurve(ctx, c.points, cfg, color, 2.5);
+        ctx.restore();
+      } else {
+        drawCurve(ctx, c.points, cfg, color, 2.5);
+      }
+    }
+
+    // 3. Vectors.
+    for (const v of content.vectors ?? []) {
+      drawVector(
+        ctx,
+        { x: v.from[0], y: v.from[1] },
+        { x: v.to[0], y: v.to[1] },
+        cfg,
+        VECTOR_COLOR,
+        v.label,
+      );
+    }
+
+    // 4. Labeled points (drawn last so they sit above curves).
+    for (const pt of content.keyPoints) {
+      drawLabeledPoint(ctx, { x: pt.x, y: pt.y }, cfg, '#22c55e', pt.label, true);
+    }
+  }, [cfg, sampledCurves, sampledShades, content.vectors, content.keyPoints]);
+
   return (
     <div className="space-y-3">
-      {/* Expression */}
-      <div className="bg-slate-950/50 rounded-lg px-4 py-3 border border-slate-800/50">
-        <KaTeX latex={content.expression} />
+      {/* Caption */}
+      {content.caption && (
+        <p className="text-xs text-slate-500 font-medium">{content.caption}</p>
+      )}
+
+      {/* Curve legend — only when we have multiple curves or labels worth showing. */}
+      {curves.length > 0 && (curves.length > 1 || curves[0].label) && (
+        <div className="flex flex-wrap gap-3">
+          {curves.map((c, i) => {
+            const color = CURVE_COLORS[c.color ?? 'primary'] ?? CURVE_COLORS.primary;
+            return (
+              <div key={i} className="flex items-center gap-2 text-xs text-slate-300">
+                <span
+                  className="inline-block w-4 h-0.5 rounded"
+                  style={{ backgroundColor: color }}
+                />
+                {c.label ? (
+                  <KaTeX latex={c.label} display={false} className="text-slate-200" />
+                ) : (
+                  <KaTeX latex={c.expression} display={false} className="text-slate-200" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Canvas */}
+      <div className="flex justify-center">
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_WIDTH}
+          height={CANVAS_HEIGHT}
+          className="rounded-lg border border-slate-800/50 bg-slate-950/60 max-w-full"
+          style={{ maxWidth: '100%', height: 'auto' }}
+        />
       </div>
 
-      {/* Key Points */}
-      <div className="grid grid-cols-2 gap-2">
-        {content.keyPoints.map((pt, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
-            <TrendingUp size={12} className="text-cyan-400 flex-shrink-0" />
-            <span className="text-slate-400">
-              ({pt.x}, {pt.y})
-            </span>
-            <span className="text-slate-500 text-xs">{pt.label}</span>
-          </div>
-        ))}
-      </div>
+      {/* Shaded-region labels (rendered as KaTeX-friendly badges so labels like "A = 4/3" parse). */}
+      {sampledShades.length > 0 && sampledShades.some((s) => s.label) && (
+        <div className="flex flex-wrap gap-2">
+          {sampledShades.map(
+            (s, i) =>
+              s.label && (
+                <span
+                  key={i}
+                  className="text-xs px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-200"
+                >
+                  <MixedContent text={`$${s.label}$`} />
+                </span>
+              ),
+          )}
+        </div>
+      )}
 
-      {/* Features */}
+      {/* Key points list (in addition to on-canvas markers — useful in compact mode). */}
+      {content.keyPoints.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          {content.keyPoints.map((pt, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm">
+              <TrendingUp size={12} className="text-emerald-400 flex-shrink-0" />
+              <span className="text-slate-400">
+                ({pt.x}, {pt.y})
+              </span>
+              <span className="text-slate-500 text-xs">{pt.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Feature badges — descriptive metadata, not on-canvas. */}
       {content.features.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {content.features.map((feat, i) => (
@@ -563,117 +518,27 @@ const CaseSplitStepView: React.FC<{ content: CaseSplitStepContent }> = ({ conten
   );
 };
 
-const VerificationStepView: React.FC<{
-  content: VerificationStepContent;
-  interactive?: boolean;
-}> = ({ content, interactive = true }) => {
-  const [prediction, setPrediction] = useState<'yes' | 'no' | null>(null);
-  const isGradable = interactive;
-  const revealed = !isGradable || prediction != null;
-
-  // Touch the evaluator import so downstream static checks see it used when
-  // callers pass mostly-symbolic checks. Real grading is the boolean match below.
-  const claimVal = React.useMemo(() => tryEvaluateKatex(content.claim), [content.claim]);
-  const studentWasCorrect =
-    prediction != null && ((prediction === 'yes') === content.verified);
-
-  return (
-    <div className="space-y-4">
-      {/* Claim */}
-      <div className="bg-emerald-500/5 rounded-lg px-4 py-3 border border-emerald-500/20">
-        <p className="text-xs text-emerald-400 mb-1 uppercase tracking-wider font-medium">Verifying</p>
-        <KaTeX latex={content.claim} />
-        {claimVal != null && <span className="sr-only">numerical claim</span>}
-      </div>
-
-      {/* Pre-commit prompt (interactive only) */}
-      {isGradable && !revealed && (
-        <div className="space-y-2">
-          <p className="text-xs text-slate-400 font-medium">
-            Before we check — do you think this claim will verify?
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPrediction('yes')}
-              className="flex-1 text-sm font-medium px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 transition-colors"
-            >
-              Yes, it checks out
-            </button>
-            <button
-              onClick={() => setPrediction('no')}
-              className="flex-1 text-sm font-medium px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 transition-colors"
-            >
-              No, it fails
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Post-commit feedback */}
-      {isGradable && prediction != null && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`flex items-center gap-2 text-xs font-medium ${
-            studentWasCorrect ? 'text-emerald-400' : 'text-amber-400'
-          }`}
-        >
-          {studentWasCorrect ? <Check size={12} /> : <X size={12} />}
-          {studentWasCorrect
-            ? 'Nice — let\'s walk through why.'
-            : 'Let\'s look at the check together.'}
-        </motion.div>
-      )}
-
-      {/* Check transitions — revealed after commit (or immediately if non-interactive) */}
-      {revealed && (
-        <div className="space-y-3">
-          {content.checkTransitions.map((t, i) => (
-            <KaTeXTransitionView key={i} transition={t} index={i} isActive={true} />
-          ))}
-        </div>
-      )}
-
-      {/* Verified badge */}
-      {revealed && content.verified && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
-        >
-          <Check size={16} className="text-emerald-400" />
-          <span className="text-emerald-300 font-semibold text-sm">Verified</span>
-        </motion.div>
-      )}
-    </div>
-  );
-};
-
 // ═══════════════════════════════════════════════════════════════════════
 // Main Router
 // ═══════════════════════════════════════════════════════════════════════
 
 const STEP_TYPE_ICONS: Record<string, React.ReactNode> = {
   algebra: <span className="text-blue-400 text-xs font-bold font-mono">f(x)</span>,
-  substitution: <ArrowRight size={12} className="text-purple-400" />,
   table: <Table2 size={12} className="text-amber-400" />,
   diagram: <Image size={12} className="text-cyan-400" />,
   'graph-sketch': <TrendingUp size={12} className="text-cyan-400" />,
   'case-split': <GitBranch size={12} className="text-amber-400" />,
-  verification: <Check size={12} className="text-emerald-400" />,
 };
 
 export const StepContentRenderer: React.FC<{
   content: StepContent;
-  /** When true (default), step types that support interactivity gate reveal behind a student commit. */
+  /** Reserved — currently no step type consumes this. Kept on the contract so the
+   *  data-level `interactive` flag still flows through to future interactive primitives. */
   interactive?: boolean;
-}> = ({ content, interactive = true }) => {
+}> = ({ content }) => {
   switch (content.type) {
     case 'algebra':
       return <AlgebraStepView content={content} />;
-    case 'substitution':
-      return <SubstitutionStepView content={content} interactive={interactive} />;
     case 'table':
       return <TableStepView content={content} />;
     case 'diagram':
@@ -682,8 +547,6 @@ export const StepContentRenderer: React.FC<{
       return <GraphSketchStepView content={content} />;
     case 'case-split':
       return <CaseSplitStepView content={content} />;
-    case 'verification':
-      return <VerificationStepView content={content} interactive={interactive} />;
   }
 };
 

@@ -132,23 +132,6 @@ export function tryEvaluateKatex(katex: string, scope: Record<string, number> = 
   }
 }
 
-/** Evaluate a template expression with numerical variable bindings. */
-export function tryEvaluateSubstitution(
-  template: string,
-  substitutions: Array<{ variable: string; value: string }>,
-): number | null {
-  const scope: Record<string, number> = {};
-  for (const sub of substitutions) {
-    const v = tryEvaluateKatex(sub.value);
-    if (v == null) return null; // need all subs numerical
-    // Variable name: strip any subscripts/function-call syntax from KaTeX
-    const rawName = katexToMath(sub.variable).replace(/\([^)]*\)/g, '').trim();
-    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(rawName)) continue;
-    scope[rawName] = v;
-  }
-  return tryEvaluateKatex(template, scope);
-}
-
 // ═════════════════════════════════════════════════════════════════════
 // Result string patching — preserve format, swap the number
 // ═════════════════════════════════════════════════════════════════════
