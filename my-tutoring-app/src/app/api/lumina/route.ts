@@ -182,6 +182,58 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(scratchPadProblem);
 
       // ============================================
+      // ANNOTATED EXAMPLE — TWO-ACT JUDGE
+      // ============================================
+
+      case 'transcribeWork': {
+        const { transcribeWork } = await import(
+          '@/components/lumina/service/annotated-example/judge'
+        );
+        const transcribeResult = await transcribeWork({
+          imageBase64: params.imageBase64,
+          problemStatement: params.problemStatement,
+        });
+        return NextResponse.json(transcribeResult);
+      }
+
+      case 'compareWork': {
+        const { compareWork } = await import(
+          '@/components/lumina/service/annotated-example/judge'
+        );
+        const compareResult = await compareWork({
+          problemStatement: params.problemStatement,
+          canonicalSteps: params.canonicalSteps,
+          transcribedLines: params.transcribedLines,
+        });
+        return NextResponse.json(compareResult);
+      }
+
+      case 'reviewProgress': {
+        const { reviewProgress } = await import(
+          '@/components/lumina/service/annotated-example/judge'
+        );
+        const reviewResult = await reviewProgress({
+          problemStatement: params.problemStatement,
+          canonicalSteps: params.canonicalSteps,
+          transcribedLines: params.transcribedLines,
+        });
+        return NextResponse.json(reviewResult);
+      }
+
+      case 'generateSiblingExample': {
+        const { generateSiblingExample } = await import(
+          '@/components/lumina/service/annotated-example/sibling'
+        );
+        const siblingResult = await generateSiblingExample({
+          originalProblem: params.originalProblem,
+          originalStrategy: params.originalStrategy,
+          subject: params.subject,
+          gradeContext: params.gradeContext,
+        });
+        return NextResponse.json(siblingResult);
+      }
+
+      // ============================================
       // IMAGE PANEL EVALUATION
       // ============================================
 

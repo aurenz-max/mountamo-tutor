@@ -1,27 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Layers, BookOpen, AlertTriangle, Lightbulb, GitMerge, Bug, ChevronDown } from 'lucide-react';
+import { Bug, ChevronDown, Lock, Pencil, ArrowRight } from 'lucide-react';
 import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
-import { StepContentRenderer, StepTypeIcon, KaTeX, MixedContent } from './annotated-example/StepContentRenderer';
-import type { RichAnnotatedExampleData, RichExampleStep, LayerId, SolverDebugPayload, StepSpec } from './annotated-example/types';
+import { KaTeX, MixedContent } from './annotated-example/StepContentRenderer';
+import { RichStepCard, LayerIconMap } from './annotated-example/RichStepCard';
+import { TryItYourself } from './annotated-example/TryItYourself';
+import type { ChallengeAssignment, RichAnnotatedExampleData, LayerId, SolverDebugPayload, StepSpec } from './annotated-example/types';
 import { ANNOTATION_LAYERS } from './annotated-example/types';
-
-// ═══════════════════════════════════════════════════════════════════════
-// Icon Map for annotation layers
-// ═══════════════════════════════════════════════════════════════════════
-
-const LayerIconMap: Record<string, React.ReactNode> = {
-  steps: <Layers size={14} />,
-  strategy: <Lightbulb size={14} />,
-  misconceptions: <AlertTriangle size={14} />,
-  connections: <GitMerge size={14} />,
-  explain: <BookOpen size={14} />,
-};
 
 // ═══════════════════════════════════════════════════════════════════════
 // Main Component
@@ -29,13 +18,60 @@ const LayerIconMap: Record<string, React.ReactNode> = {
 
 interface AnnotatedExampleProps {
   data: RichAnnotatedExampleData;
+  /**
+   * Grade context forwarded to the sibling-problem generator in Try mode.
+   * Optional — defaults to 'general' inside `TryItYourself` when missing.
+   * Plumb through from the manifest pipeline when available so sibling
+   * difficulty matches the original.
+   */
+  gradeLevel?: string;
   className?: string;
 }
 
-export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, className }) => {
+export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, gradeLevel, className }) => {
   const [activeLayers, setActiveLayers] = useState<LayerId[]>(['steps']);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [viewMode, setViewMode] = useState<'step' | 'full'>('step');
+  /**
+   * Two-act mode. `watch` renders the worked example with annotation layers
+   * and challenger gates; `try` mounts the full-screen `TryItYourself` surface
+   * on top with a generated isomorphic problem. Watch stays mounted under
+   * Try so progress and completion state survive a quick "Show me again".
+   */
+  const [mode, setMode] = useState<'watch' | 'try'>('watch');
+  /**
+   * Per-step challenge-completion state. Default is "complete" — a step
+   * reports `false` only while it has an uncommitted challenge. Steps
+   * unlock sequentially in the full-solution view so the next step's
+   * `from` (which is the current step's `to`) doesn't reveal the answer
+   * to a pending prompt.
+   */
+  const [stepCompletions, setStepCompletions] = useState<Record<number, boolean>>({});
+
+  const reportCompletion = useCallback((idx: number, complete: boolean) => {
+    setStepCompletions((prev) => (prev[idx] === complete ? prev : { ...prev, [idx]: complete }));
+  }, []);
+
+  const isStepComplete = useCallback(
+    (idx: number) => stepCompletions[idx] !== false,
+    [stepCompletions],
+  );
+
+  const isStepUnlocked = useCallback(
+    (idx: number) => {
+      for (let i = 0; i < idx; i++) {
+        if (!isStepComplete(i)) return false;
+      }
+      return true;
+    },
+    [isStepComplete],
+  );
+
+  // True once every step is unlocked AND complete — i.e. the worked example
+  // has been fully revealed and all challenger gates committed. Drives the
+  // "Next problem" CTA at the bottom of the example.
+  const allStepsResolved =
+    data.steps.length > 0 &&
+    isStepUnlocked(data.steps.length - 1) &&
+    isStepComplete(data.steps.length - 1);
 
   const toggleLayer = (layerId: LayerId) => {
     setActiveLayers((prev) =>
@@ -55,17 +91,16 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
             <h1 className="text-2xl font-serif font-bold text-white tracking-tight">{data.title}</h1>
           </div>
 
-          {/* View Toggle */}
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'step' | 'full')}>
-            <TabsList className="bg-slate-800 border border-slate-700">
-              <TabsTrigger value="step" className="text-xs data-[state=active]:bg-slate-600">
-                Step-by-Step
-              </TabsTrigger>
-              <TabsTrigger value="full" className="text-xs data-[state=active]:bg-slate-600">
-                Full Solution
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {/* Act 2 entry — opens the full-screen Try-It surface. */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMode('try')}
+            className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-200 gap-2"
+          >
+            <Pencil size={14} />
+            Now you try
+          </Button>
         </div>
 
         {/* Problem Card */}
@@ -135,78 +170,81 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
         </div>
       </div>
 
-      {/* ── Step Content ───────────────────────────────────────── */}
-      <AnimatePresence mode="wait">
-        {viewMode === 'step' ? (
-          <motion.div
-            key="step-view"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            {/* Step Navigation */}
-            <div className="flex items-center justify-between mb-4 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                disabled={currentStep === 0}
-                className="p-2 hover:bg-slate-700 disabled:opacity-30"
-              >
-                <ChevronLeft size={20} />
-              </Button>
+      {/* ── Step Content (full-solution view) ───────────────────────── */}
+      <div className="space-y-0 relative">
+        {/* Vertical timeline line */}
+        <div className="absolute left-[1.15rem] top-4 bottom-4 w-0.5 bg-slate-800 z-0" />
 
-              <div className="flex gap-1.5">
-                {data.steps.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentStep(idx)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      idx === currentStep ? 'w-8 bg-blue-500' : 'w-2 bg-slate-700 hover:bg-slate-600'
-                    }`}
-                    aria-label={`Go to step ${idx + 1}`}
-                  />
-                ))}
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentStep(Math.min(data.steps.length - 1, currentStep + 1))}
-                disabled={currentStep === data.steps.length - 1}
-                className="p-2 hover:bg-slate-700 disabled:opacity-30"
-              >
-                <ChevronRight size={20} />
-              </Button>
-            </div>
-
-            {/* Active Step Card */}
-            <RichStepCard
-              step={data.steps[currentStep]}
-              index={currentStep}
-              activeLayers={activeLayers}
-              interactive={data.interactive !== false}
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="full-view"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-0 relative"
-          >
-            {/* Vertical timeline line */}
-            <div className="absolute left-[1.15rem] top-4 bottom-4 w-0.5 bg-slate-800 z-0" />
-
-            {data.steps.map((step, idx) => (
+        {(() => {
+          // Render every unlocked step, then ONE locked placeholder for
+          // the next step (if any). Steps beyond that aren't rendered at
+          // all — a placeholder for each one would just be noise.
+          const rendered: React.ReactNode[] = [];
+          for (let idx = 0; idx < data.steps.length; idx++) {
+            if (!isStepUnlocked(idx)) {
+              rendered.push(
+                <LockedStepPlaceholder
+                  key={`locked-${idx}`}
+                  index={idx}
+                  total={data.steps.length}
+                />,
+              );
+              break;
+            }
+            const step = data.steps[idx];
+            rendered.push(
               <div key={step.id} className="relative z-10 pb-8 last:pb-0">
-                <RichStepCard step={step} index={idx} activeLayers={activeLayers} isCompact interactive={data.interactive !== false} />
-              </div>
-            ))}
-          </motion.div>
+                <RichStepCard
+                  step={step}
+                  index={idx}
+                  activeLayers={activeLayers}
+                  isCompact
+                  interactive={data.interactive !== false}
+                  onCompletionChange={(complete) => reportCompletion(idx, complete)}
+                />
+              </div>,
+            );
+          }
+          return rendered;
+        })()}
+      </div>
+
+      {/* End-of-example CTA — once every step is revealed and committed, the
+          natural progression is into Act 2 (Try). This is the primary entry
+          point; the top-bar "Now you try" is a backup for early jumpers. */}
+      {allStepsResolved && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="mt-6 rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 p-5 flex items-center gap-4"
+        >
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-emerald-200">Ready to try one yourself?</p>
+            <p className="text-xs text-slate-400 mt-1">
+              We&apos;ll generate a similar problem for you to solve on the canvas.
+            </p>
+          </div>
+          <Button
+            onClick={() => setMode('try')}
+            className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-100 font-semibold gap-2"
+          >
+            Next problem
+            <ArrowRight size={16} />
+          </Button>
+        </motion.div>
+      )}
+
+      {/* Act 2 — full-screen takeover. Mounted alongside Watch so canvas
+          state persists across "Show me again" round trips. */}
+      <AnimatePresence>
+        {mode === 'try' && (
+          <TryItYourself
+            data={data}
+            gradeLevel={gradeLevel}
+            onClose={() => setMode('watch')}
+            onReturnToWatch={() => setMode('watch')}
+          />
         )}
       </AnimatePresence>
     </div>
@@ -214,88 +252,32 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
 };
 
 // ═══════════════════════════════════════════════════════════════════════
-// Rich Step Card
+// Locked Step Placeholder — full view only
 // ═══════════════════════════════════════════════════════════════════════
+//
+// Renders in place of a step that is not yet unlocked. The bubble keeps
+// the timeline numbered correctly; the body explains why the card is
+// blank without revealing any of the step's content.
 
-const RichStepCard: React.FC<{
-  step: RichExampleStep;
-  index: number;
-  activeLayers: LayerId[];
-  isCompact?: boolean;
-  interactive?: boolean;
-}> = ({ step, index, activeLayers, isCompact, interactive = true }) => {
+const LockedStepPlaceholder: React.FC<{ index: number; total: number }> = ({ index, total }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-      className="flex gap-4"
-    >
-      {/* Step Number Bubble */}
-      <div className="flex-shrink-0">
-        <div className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-bold text-slate-300 shadow-sm">
-          {index + 1}
+    <div className="relative z-10 pb-8 last:pb-0">
+      <div className="flex gap-4">
+        <div className="flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-slate-900 border-2 border-slate-800 flex items-center justify-center font-bold text-slate-600 shadow-sm">
+            {index + 1}
+          </div>
         </div>
+        <Card className="flex-grow min-w-0 bg-slate-900/20 border border-dashed border-slate-700/50 p-5">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Lock size={14} className="text-amber-400/70" />
+            <p className="text-sm">
+              Step {index + 1} of {total} is locked. Answer the prompt above to unlock it.
+            </p>
+          </div>
+        </Card>
       </div>
-
-      <Card
-        className={`flex-grow min-w-0 backdrop-blur-xl ${
-          isCompact
-            ? 'bg-transparent border-0 shadow-none p-0'
-            : 'bg-slate-900/40 border-white/10 p-6 shadow-lg'
-        }`}
-      >
-        {/* Step Header */}
-        <div className="flex items-center gap-2 mb-3 pt-1.5">
-          <StepTypeIcon type={step.content.type} />
-          <h3 className="text-lg font-serif font-semibold text-slate-100">{step.title}</h3>
-          <Badge variant="outline" className="text-[10px] text-slate-500 border-slate-700 ml-auto">
-            {step.content.type}
-          </Badge>
-        </div>
-
-        {/* Step Content — type-specific renderer */}
-        <div className="mb-4">
-          <StepContentRenderer content={step.content} interactive={interactive} />
-        </div>
-
-        {/* Annotation Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <AnimatePresence>
-            {activeLayers.map((layerId) => {
-              const content = step.annotations[layerId];
-              if (!content) return null;
-
-              const layerDef = ANNOTATION_LAYERS.find((l) => l.id === layerId);
-              if (!layerDef) return null;
-              const color = layerDef.color;
-
-              return (
-                <motion.div
-                  key={layerId}
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div
-                    className="rounded-lg p-3 text-sm border-l-4 h-full bg-slate-800/30"
-                    style={{ borderLeftColor: color }}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5" style={{ color }}>
-                      {LayerIconMap[layerId] || <div className="w-3 h-3 rounded-full bg-current" />}
-                      <span className="font-bold text-xs uppercase tracking-wider">{layerDef.label}</span>
-                    </div>
-                    <p className="text-slate-400 leading-relaxed text-xs md:text-sm"><MixedContent text={content} /></p>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-      </Card>
-    </motion.div>
+    </div>
   );
 };
 
@@ -314,6 +296,9 @@ const PipelineDebugCard: React.FC<{
   const blockCount = debug.blocks.length;
   const specCount = debug.planner.specs.length;
   const renderFailures = specCount - renderedStepCount;
+  const challengeCount = debug.challenger?.assignments.length ?? 0;
+  const challengeDropped = debug.challenger?.dropped.length ?? 0;
+  const challengerFailed = debug.challenger?.failed ?? false;
 
   const summaryColor = renderFailures > 0 || debug.planner.unusedBlockIndices.length > 0
     ? 'text-red-400'
@@ -340,6 +325,14 @@ const PipelineDebugCard: React.FC<{
               <span className="ml-2 text-red-400">⚠ {debug.planner.unusedBlockIndices.length} unused block(s)</span>
             )}
             {debug.planner.fallback && <span className="ml-2 text-amber-400">⚠ planner fallback</span>}
+            {debug.challenger && (
+              <>
+                {' · '}
+                Challenges <span className="text-fuchsia-400 font-medium">{challengeCount}</span>
+                {challengeDropped > 0 && <span className="ml-2 text-red-400">⚠ {challengeDropped} dropped</span>}
+                {challengerFailed && <span className="ml-2 text-amber-400">⚠ challenger failed</span>}
+              </>
+            )}
           </p>
         </div>
         <ChevronDown
@@ -400,10 +393,85 @@ const PipelineDebugCard: React.FC<{
                 ))}
               </div>
             </div>
+
+            {/* Challenge layer — full-width row below the two columns. Shown
+                whenever stage 4 ran (failed or not), so the absence of
+                assignments is visible too. */}
+            {debug.challenger && (
+              <div className="px-5 py-4 border-t border-amber-500/10 space-y-2">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">
+                  Challenge Layer ({challengeCount} attached
+                  {challengeDropped > 0 && `, ${challengeDropped} dropped`}
+                  {challengerFailed && ', LLM failed'})
+                </p>
+                {challengeCount === 0 && !challengerFailed && (
+                  <p className="text-xs text-slate-500 italic">No challenges proposed for this example.</p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {debug.challenger.assignments.map((a, i) => (
+                    <ChallengeAssignmentRow key={i} assignment={a} />
+                  ))}
+                </div>
+                {debug.challenger.dropped.length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    <p className="text-[10px] text-red-400 uppercase tracking-wider font-medium">
+                      Dropped by merge
+                    </p>
+                    {debug.challenger.dropped.map(({ assignment, reason }, i) => {
+                      const locator =
+                        assignment.kind === 'step'
+                          ? `step ${assignment.stepIndex} · step-level gate`
+                          : `step ${assignment.stepIndex} · transition ${assignment.transitionIndex} · hide ${assignment.hide}`;
+                      return (
+                        <div
+                          key={i}
+                          className="text-xs rounded p-2 border-l-2 bg-red-500/5 border-red-500/40"
+                        >
+                          <span className="text-slate-500 mr-2">{locator}</span>
+                          <span className="text-red-300">{reason}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
     </Card>
+  );
+};
+
+const ChallengeAssignmentRow: React.FC<{ assignment: ChallengeAssignment }> = ({ assignment }) => {
+  const isMcq = assignment.distractors.length > 0;
+  const isStep = assignment.kind === 'step';
+  const locator = isStep
+    ? `step ${assignment.stepIndex} · step-level`
+    : `step ${assignment.stepIndex} · t${assignment.transitionIndex}`;
+  const tag = isStep ? 'gate content' : `hide ${assignment.hide}`;
+  return (
+    <div className="text-xs leading-relaxed rounded p-3 border-l-2 bg-slate-800/30 border-fuchsia-500/40">
+      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+        <span className="text-[10px] uppercase tracking-wider font-medium text-slate-500">
+          {locator}
+        </span>
+        <span className="text-[10px] uppercase tracking-wider font-medium text-fuchsia-300/80 bg-fuchsia-500/10 px-1.5 py-0.5 rounded">
+          {tag}
+        </span>
+        <span className="text-[10px] uppercase tracking-wider font-medium text-slate-400 ml-auto">
+          {isMcq ? `MCQ · ${assignment.distractors.length}` : 'free response'}
+        </span>
+      </div>
+      <p className="text-slate-300 mb-1">{assignment.prompt}</p>
+      <p className="text-slate-500">
+        <span className="font-medium">Answer:</span>{' '}
+        <span className="font-mono text-emerald-300">{assignment.acceptableAnswers[0]}</span>
+      </p>
+      {assignment.rationale && (
+        <p className="text-slate-500 italic mt-1">{assignment.rationale}</p>
+      )}
+    </div>
   );
 };
 

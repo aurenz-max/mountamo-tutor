@@ -17,6 +17,7 @@
 import { solveProblem } from './solver';
 import { splitSolverBlocks, type SolverBlock } from './blocks';
 import { planSteps, buildFallbackPlan } from './planner';
+import { assignChallenges } from './challenger';
 import { generateStep } from './registry';
 import type { StepGeneratorContext } from './generators/_shared';
 import type {
@@ -37,6 +38,19 @@ function joinGroundingProse(spec: StepSpec, blocks: SolverBlock[]): string {
       const block = blocks[idx];
       return block ? `[Block ${idx}]\n${block.prose}` : '';
     })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+/**
+ * User-facing variant of {@link joinGroundingProse}: same source data, but
+ * stripped of the `[Block N]` debug prefixes so the prose reads as a natural
+ * paragraph in the Narrative annotation layer.
+ */
+function joinNarrativeProse(spec: StepSpec, blocks: SolverBlock[]): string {
+  if (spec.groundingBlockIndices.length === 0) return '';
+  return spec.groundingBlockIndices
+    .map((idx) => blocks[idx]?.prose ?? '')
     .filter(Boolean)
     .join('\n\n');
 }
@@ -89,11 +103,15 @@ async function generateAllSteps(
         console.warn(`[AnnotatedExample] Spec ${i} (${spec.stepType}) "${spec.title}" failed to generate`);
         return null;
       }
+      const narrative = joinNarrativeProse(spec, blocks);
       return {
         id: i + 1,
         title: spec.title,
         content: generated.content,
-        annotations: generated.annotations,
+        annotations: {
+          ...generated.annotations,
+          ...(narrative ? { narrative } : {}),
+        },
       } as RichExampleStep;
     }),
   );
@@ -105,14 +123,30 @@ async function generateAllSteps(
 // Main Export
 // ═══════════════════════════════════════════════════════════════════════
 
+export interface GenerateExampleOptions {
+  intent?: string;
+  objectiveText?: string;
+  objectiveVerb?: string;
+  /**
+   * When set, the solver echoes this problem statement instead of picking
+   * its own. Used by the sibling-problem pipeline so the pre-authored
+   * isomorphic problem flows through the same scaffolding (planner →
+   * per-step generators) as the original worked example.
+   */
+  pinnedProblem?: string;
+  /**
+   * When true, skip the challenger stage 4 pass — no prediction gates are
+   * attached. Used for sibling problems where the student is doing the
+   * solve themselves on the canvas; gates layered on top of that would be
+   * redundant.
+   */
+  skipChallenger?: boolean;
+}
+
 export async function generateAnnotatedExample(
   topic: string,
   gradeContext: string,
-  config?: {
-    intent?: string;
-    objectiveText?: string;
-    objectiveVerb?: string;
-  },
+  config?: GenerateExampleOptions,
 ): Promise<RichAnnotatedExampleData> {
   console.log('[AnnotatedExample] Stage 1: solver (prose with code execution)...');
   const solved = await solveProblem(topic, gradeContext, config);
@@ -133,9 +167,34 @@ export async function generateAnnotatedExample(
     solved.strategy,
   );
 
-  console.log(`[AnnotatedExample] Complete: ${steps.length}/${planner.specs.length} step(s) rendered from ${blocks.length} block(s)`);
+  console.log(`[AnnotatedExample] Step generation complete: ${steps.length}/${planner.specs.length} step(s) rendered from ${blocks.length} block(s)`);
   if (steps.length !== planner.specs.length) {
     console.warn(`[AnnotatedExample] ${planner.specs.length - steps.length} spec(s) failed to render — see per-generator logs`);
+  }
+
+  // Stage 4: challenge layer. Skipped when the caller is generating a
+  // sibling problem — the student does the solve themselves on the canvas
+  // in Try mode, so layered prediction gates are redundant.
+  let challenger;
+  if (config?.skipChallenger) {
+    console.log('[AnnotatedExample] Stage 4: challenger SKIPPED (sibling problem).');
+    challenger = { assignments: [], dropped: [], failed: false };
+  } else {
+    console.log('[AnnotatedExample] Stage 4: challenge layer (global gating decisions)...');
+    challenger = await assignChallenges({
+      topic,
+      gradeContext,
+      problemStatement: solved.problemStatement,
+      solutionStrategy: solved.strategy,
+      steps,
+    });
+    if (challenger.failed) {
+      console.warn('[AnnotatedExample] Challenger failed — example renders without prediction gates.');
+    } else {
+      console.log(
+        `[AnnotatedExample] Challenges merged: ${challenger.assignments.length} attached, ${challenger.dropped.length} dropped`,
+      );
+    }
   }
 
   const separatorCount = (solved.body.match(/^\s*---\s*$/gm) || []).length;
@@ -151,6 +210,7 @@ export async function generateAnnotatedExample(
       separatorCount,
       blocks: blocks.map((b) => ({ index: b.index, prose: b.prose })),
       planner,
+      challenger,
     },
   };
 }

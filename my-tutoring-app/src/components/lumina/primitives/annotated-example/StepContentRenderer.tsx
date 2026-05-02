@@ -4,10 +4,13 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import { ArrowRight, Check, GitBranch, Table2, Image, TrendingUp } from 'lucide-react';
+import { ArrowRight, Check, GitBranch, Table2, Image, TrendingUp, X } from 'lucide-react';
 import type {
   StepContent,
   AlgebraStepContent,
+  KaTeXTransition,
+  KaTeXTransitionChallenge,
+  StepChallenge,
   TableStepContent,
   DiagramStepContent,
   GraphSketchStepContent,
@@ -44,6 +47,7 @@ function renderKatex(latex: string, displayMode = true): string {
 }
 
 /** Render KaTeX inline — for mixed text/math content. Wraps $...$ segments. */
+
 function renderMixedContent(text: string): string {
   // Split on $...$ delimiters
   const parts = text.split(/(\$[^$]+\$)/g);
@@ -83,16 +87,471 @@ const MixedContent: React.FC<{ text: string; className?: string }> = ({ text, cl
 };
 
 // ═══════════════════════════════════════════════════════════════════════
+// Sub-move ↔ parent-expression hover linking (algebra view)
+// ═══════════════════════════════════════════════════════════════════════
+//
+// The algebra generator emits `\htmlClass{lumina-tok lumina-tok-N}{…}` directly
+// inside each transition's `from.latex` / `to.latex` (one wrapper per sub-move,
+// indexed 0..2). KaTeX renders those as DOM classes; the CSS rule below
+// highlights `.lumina-tok-N` whenever its container has `.lumina-active-N`.
+// Hovering a sub-move row sets the active class; hovering a token in the
+// rendered KaTeX sets `hoveredSub` via event delegation.
+
+const ALGEBRA_HOVER_STYLE_ID = 'lumina-algebra-hover-styles';
+const ALGEBRA_HOVER_CSS = `
+.lumina-tok {
+  padding: 0 2px;
+  margin: 0 -1px;
+  border-radius: 3px;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+.lumina-active-0 .lumina-tok-0,
+.lumina-active-1 .lumina-tok-1,
+.lumina-active-2 .lumina-tok-2 {
+  background-color: rgba(56, 189, 248, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.55);
+}
+`.trim();
+
+/** Inject the hover CSS once into <head>. Idempotent across renders/components. */
+function useAlgebraHoverStyles() {
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById(ALGEBRA_HOVER_STYLE_ID)) return;
+    const styleEl = document.createElement('style');
+    styleEl.id = ALGEBRA_HOVER_STYLE_ID;
+    styleEl.textContent = ALGEBRA_HOVER_CSS;
+    document.head.appendChild(styleEl);
+  }, []);
+}
+
+/** KaTeX renderer that allows the `\htmlClass` macro. */
+function renderKatexTrusted(latex: string, displayMode = true): string {
+  try {
+    return katex.renderToString(latex, {
+      displayMode,
+      throwOnError: false,
+      strict: false,
+      trust: ({ command }: { command: string }) => command === '\\htmlClass',
+    });
+  } catch {
+    return `<span class="text-red-400 font-mono text-sm">${latex}</span>`;
+  }
+}
+
+const KaTeXTrusted: React.FC<{ latex: string; display?: boolean; className?: string }> = ({
+  latex,
+  display = true,
+  className = '',
+}) => {
+  const html = React.useMemo(() => renderKatexTrusted(latex, display), [latex, display]);
+  return (
+    <span
+      className={`text-slate-100 ${className}`}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════
 // Step Type Renderers
 // ═══════════════════════════════════════════════════════════════════════
 
-const AlgebraStepView: React.FC<{ content: AlgebraStepContent }> = ({ content }) => {
+// ── Challenge helpers ──────────────────────────────────────────────────
+//
+// Validation strategy: lexical normalization first (lowercase, strip
+// whitespace and trailing punctuation), then a numeric fallback when the
+// hidden slot is `to` and both sides parse as plain decimals. The
+// generator is responsible for listing reasonable synonyms in
+// `acceptableAnswers` (e.g. "add 3 to both sides", "+3", "add 3").
+
+const normalizeAnswer = (s: string): string =>
+  s
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[.,;!?]+$/g, '')
+    .replace(/[{}\\]/g, '')
+    .trim();
+
+const isAnswerCorrect = (
+  typed: string,
+  challenge: KaTeXTransitionChallenge,
+  canonical: string,
+): boolean => {
+  const normTyped = normalizeAnswer(typed);
+  if (!normTyped) return false;
+  const normCanonical = normalizeAnswer(canonical);
+  if (normTyped === normCanonical) return true;
+  for (const acc of challenge.acceptableAnswers) {
+    if (normalizeAnswer(acc) === normTyped) return true;
+  }
+  // Numeric fallback for `to` predictions where both sides parse as decimals.
+  if (challenge.hide === 'to') {
+    const a = parseFloat(typed);
+    const b = parseFloat(canonical);
+    if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.005) return true;
+  }
+  return false;
+};
+
+/**
+ * Step-level validator. No backing slot — the canonical answer comes from
+ * `acceptableAnswers[0]` directly. Numeric fallback is unconditional because
+ * the LLM may emit "(2, 3)" / "2.0" / etc.
+ */
+const isStepAnswerCorrect = (typed: string, challenge: StepChallenge): boolean => {
+  const normTyped = normalizeAnswer(typed);
+  if (!normTyped) return false;
+  for (const acc of challenge.acceptableAnswers) {
+    if (normalizeAnswer(acc) === normTyped) return true;
+  }
+  const canonical = challenge.acceptableAnswers[0] ?? '';
+  const a = parseFloat(typed);
+  const b = parseFloat(canonical);
+  if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.005) return true;
+  return false;
+};
+
+interface ChallengeAttempt {
+  answer: string;
+  correct: boolean;
+}
+
+interface ChallengeRowProps {
+  challenge: KaTeXTransitionChallenge;
+  transition: KaTeXTransition;
+  attempt: ChallengeAttempt | null;
+  onCommit: (answer: string, correct: boolean) => void;
+}
+
+const ChallengeRow: React.FC<ChallengeRowProps> = ({
+  challenge,
+  transition,
+  attempt,
+  onCommit,
+}) => {
+  const [typed, setTyped] = useState('');
+
+  const canonical = challenge.hide === 'operation' ? transition.operation : transition.to.latex;
+
+  // Stable shuffled MCQ choices (correct + distractors) — re-shuffled per
+  // mount so the position doesn't always leak the answer, but stable across
+  // re-renders within this challenge.
+  const choices = useMemo(() => {
+    if (!challenge.distractors || challenge.distractors.length === 0) return null;
+    const arr = [canonical, ...challenge.distractors];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const submit = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      const correct = isAnswerCorrect(trimmed, challenge, canonical);
+      onCommit(trimmed, correct);
+    },
+    [challenge, canonical, onCommit],
+  );
+
+  if (attempt) {
+    return (
+      <div
+        className={`ml-6 rounded-lg border px-3 py-2 text-xs space-y-1 ${
+          attempt.correct
+            ? 'bg-emerald-500/5 border-emerald-500/30'
+            : 'bg-red-500/5 border-red-500/30'
+        }`}
+      >
+        <div
+          className={`flex items-center gap-2 font-medium ${
+            attempt.correct ? 'text-emerald-300' : 'text-red-300'
+          }`}
+        >
+          {attempt.correct ? <Check size={12} /> : <X size={12} />}
+          <span>
+            {attempt.correct ? 'Nice — that matches.' : 'Not quite. The expert move is shown below.'}
+          </span>
+        </div>
+        {!attempt.correct && (
+          <div className="text-slate-400">
+            You answered: <span className="text-slate-200 font-mono">{attempt.answer}</span>
+          </div>
+        )}
+        {challenge.rationale && (
+          <div className="text-slate-400 italic">{challenge.rationale}</div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="ml-6 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 space-y-2">
+      <div className="text-xs text-amber-300 font-medium">{challenge.prompt}</div>
+      {choices ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          {choices.map((choice, i) => (
+            <button
+              key={i}
+              onClick={() => submit(choice)}
+              className="text-left text-xs px-3 py-2 rounded-md bg-slate-800/40 border border-slate-700/50 hover:border-amber-400/50 hover:bg-amber-500/10 transition-colors text-slate-200"
+            >
+              {challenge.hide === 'to' ? <KaTeX latex={choice} display={false} /> : choice}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submit(typed)}
+            placeholder={
+              challenge.hide === 'operation'
+                ? 'e.g. subtract 3 from both sides'
+                : 'e.g. 2x = 4'
+            }
+            className="flex-1 px-3 py-1.5 text-xs bg-slate-900/60 text-white rounded-md border border-amber-400/30 focus:border-amber-400 focus:outline-none font-mono"
+          />
+          <button
+            onClick={() => submit(typed)}
+            disabled={!typed.trim()}
+            className="text-xs font-medium px-3 py-1.5 rounded-md bg-amber-500/15 border border-amber-400/40 hover:bg-amber-500/25 text-amber-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Check
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Step-level challenge gate ─────────────────────────────────────────
+//
+// Wraps a non-algebra step's content. While uncommitted, only the prompt
+// renders — the content underneath is hidden so the student can't trivially
+// read the answer. On commit, the result banner replaces the prompt and the
+// real content reveals beneath. Algebra steps gate per-transition instead
+// (richer interaction loop) and ignore this wrapper.
+
+interface StepChallengeGateProps {
+  challenge: StepChallenge;
+  children: React.ReactNode;
+  onCompletionChange?: (complete: boolean) => void;
+}
+
+const StepChallengeGate: React.FC<StepChallengeGateProps> = ({
+  challenge,
+  children,
+  onCompletionChange,
+}) => {
+  const [attempt, setAttempt] = useState<ChallengeAttempt | null>(null);
+  const [typed, setTyped] = useState('');
+
+  const canonical = challenge.acceptableAnswers[0] ?? '';
+  const useKatex = challenge.answerFormat === 'katex';
+
+  // Stable shuffle — re-shuffles per mount only.
+  const choices = useMemo(() => {
+    if (!challenge.distractors || challenge.distractors.length === 0) return null;
+    const arr = [canonical, ...challenge.distractors];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const submit = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      const correct = isStepAnswerCorrect(trimmed, challenge);
+      setAttempt({ answer: trimmed, correct });
+    },
+    [challenge],
+  );
+
+  // Step counts as complete once an attempt has been committed (correct or
+  // not). Matches the algebra view's contract so AnnotatedExample's locking
+  // logic works uniformly.
+  useEffect(() => {
+    onCompletionChange?.(attempt != null);
+  }, [attempt, onCompletionChange]);
+
+  if (!attempt) {
+    return (
+      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3.5 space-y-3">
+        <p className="text-[10px] uppercase tracking-wider text-amber-400/80 font-semibold">
+          Predict before reveal
+        </p>
+        <div className="text-sm text-amber-200 font-medium leading-relaxed">
+          {challenge.prompt}
+        </div>
+        {choices ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {choices.map((choice, i) => (
+              <button
+                key={i}
+                onClick={() => submit(choice)}
+                className="text-left text-sm px-3 py-2 rounded-md bg-slate-800/40 border border-slate-700/50 hover:border-amber-400/50 hover:bg-amber-500/10 transition-colors text-slate-200"
+              >
+                {useKatex ? <KaTeX latex={choice} display={false} /> : choice}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && submit(typed)}
+              placeholder="Type your prediction"
+              className="flex-1 px-3 py-1.5 text-sm bg-slate-900/60 text-white rounded-md border border-amber-400/30 focus:border-amber-400 focus:outline-none"
+            />
+            <button
+              onClick={() => submit(typed)}
+              disabled={!typed.trim()}
+              className="text-sm font-medium px-3 py-1.5 rounded-md bg-amber-500/15 border border-amber-400/40 hover:bg-amber-500/25 text-amber-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Check
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div
+        className={`rounded-lg border px-3 py-2 text-xs space-y-1 ${
+          attempt.correct
+            ? 'bg-emerald-500/5 border-emerald-500/30'
+            : 'bg-red-500/5 border-red-500/30'
+        }`}
+      >
+        <div
+          className={`flex items-center gap-2 font-medium ${
+            attempt.correct ? 'text-emerald-300' : 'text-red-300'
+          }`}
+        >
+          {attempt.correct ? <Check size={12} /> : <X size={12} />}
+          <span>
+            {attempt.correct
+              ? 'Nice — that matches.'
+              : 'Not quite. Walk through the worked answer below.'}
+          </span>
+        </div>
+        {!attempt.correct && (
+          <div className="text-slate-400">
+            You answered:{' '}
+            <span className="text-slate-200 font-mono">{attempt.answer}</span>
+            <span className="text-slate-500"> · canonical: </span>
+            {useKatex ? (
+              <KaTeX latex={canonical} display={false} className="text-emerald-300" />
+            ) : (
+              <span className="text-emerald-300">{canonical}</span>
+            )}
+          </div>
+        )}
+        {challenge.rationale && (
+          <div className="text-slate-400 italic">{challenge.rationale}</div>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+};
+
+const AlgebraStepView: React.FC<{
+  content: AlgebraStepContent;
+  /** Called whenever the step's challenge-completion status changes — true
+   *  when every challenge in this step has been committed (or there are
+   *  none). The parent uses this to gate access to subsequent steps so
+   *  the answer to a current prompt isn't visible in the next card. */
+  onCompletionChange?: (complete: boolean) => void;
+}> = ({ content, onCompletionChange }) => {
+  useAlgebraHoverStyles();
+
   const [activeTransition, setActiveTransition] = useState(0);
+  // Which sub-move (if any) is currently being hovered — set by either the
+  // sub-move row's onMouseEnter or by event delegation from a parent KaTeX
+  // expression when the cursor is over a `lumina-tok-N` token.
+  const [hoveredSub, setHoveredSub] = useState<{ transition: number; sub: number } | null>(null);
+  /**
+   * Per-transition committed challenge attempts. A transition with a
+   * `challenge` field is "gated" until its index appears here. Once
+   * committed, the canonical reveal proceeds even if the answer was wrong
+   * — the mistake is its own teaching moment via the rationale.
+   */
+  const [attempts, setAttempts] = useState<Record<number, ChallengeAttempt>>({});
   const totalTransitions = content.transitions.length;
 
+  const isGated = useCallback(
+    (i: number) => Boolean(content.transitions[i]?.challenge) && !attempts[i],
+    [content.transitions, attempts],
+  );
+
+  // Emit completion: this step is "complete" once every transition with a
+  // challenge has a committed attempt (correct or not — committing reveals
+  // the canonical answer either way). Steps with no challenges report
+  // complete on mount so non-algebra and unchallenged algebra steps don't
+  // block downstream rendering.
+  useEffect(() => {
+    if (!onCompletionChange) return;
+    const challengeCount = content.transitions.filter((t) => Boolean(t.challenge)).length;
+    const committedCount = Object.keys(attempts).length;
+    onCompletionChange(challengeCount === 0 || committedCount >= challengeCount);
+  }, [content.transitions, attempts, onCompletionChange]);
+
+  const commitAttempt = useCallback(
+    (i: number, answer: string, correct: boolean) => {
+      setAttempts((prev) => ({ ...prev, [i]: { answer, correct } }));
+      // Auto-advance reveal so the canonical step shows beneath the result.
+      setActiveTransition((cur) => Math.max(cur, i));
+    },
+    [],
+  );
+
   const advance = useCallback(() => {
+    if (isGated(activeTransition)) return; // wait for commit
     setActiveTransition((prev) => Math.min(prev + 1, totalTransitions - 1));
-  }, [totalTransitions]);
+  }, [activeTransition, isGated, totalTransitions]);
+
+  // Walk up from the event target until we find a `lumina-tok-N` class — that
+  // tells us which sub-move the user is hovering inside the rendered KaTeX.
+  const handleExpressionMouseOver = useCallback(
+    (e: React.MouseEvent<HTMLElement>, transitionIdx: number) => {
+      let el: HTMLElement | null = e.target as HTMLElement;
+      const stop = e.currentTarget as HTMLElement;
+      while (el && el !== stop) {
+        if (el.classList) {
+          for (const cls of Array.from(el.classList)) {
+            const m = cls.match(/^lumina-tok-(\d+)$/);
+            if (m) {
+              setHoveredSub({ transition: transitionIdx, sub: parseInt(m[1], 10) });
+              return;
+            }
+          }
+        }
+        el = el.parentElement;
+      }
+    },
+    [],
+  );
+
+  const clearHover = useCallback(() => setHoveredSub(null), []);
+
+  const transitionActiveClass = (i: number) =>
+    hoveredSub?.transition === i ? `lumina-active-${hoveredSub.sub}` : '';
 
   if (totalTransitions === 0) {
     return (
@@ -115,15 +574,28 @@ const AlgebraStepView: React.FC<{ content: AlgebraStepContent }> = ({ content })
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-slate-950/50 rounded-lg px-4 py-3 border border-slate-800/50"
+          className={`bg-slate-950/50 rounded-lg px-4 py-3 border border-slate-800/50 ${transitionActiveClass(0)}`}
+          onMouseOver={(e) => handleExpressionMouseOver(e, 0)}
+          onMouseOut={clearHover}
         >
-          <KaTeX latex={content.transitions[0].from.latex} />
+          <KaTeXTrusted latex={content.transitions[0].from.latex} />
         </motion.div>
 
         {content.transitions.map((t, i) => {
           const isActive = i <= activeTransition;
           const prev = i > 0 ? content.transitions[i - 1] : null;
           const chainsFromPrior = prev && normalize(prev.to.latex) === normalize(t.from.latex);
+          const isHoverActive = hoveredSub?.transition === i;
+          const challenge = t.challenge;
+          const attempt = attempts[i] ?? null;
+          // While a challenge is pending we hide BOTH the operation and the
+          // `to` expression. Showing one while gating the other lets the
+          // student work backwards — e.g. seeing `2x = 8` makes
+          // "subtract 5" obvious even when the operation is the slot being
+          // asked about. Both reveal together once the attempt commits.
+          const transitionRevealed = !challenge || attempt != null;
+          const operationRevealed = transitionRevealed;
+          const toRevealed = transitionRevealed;
 
           return (
             <motion.div
@@ -131,44 +603,103 @@ const AlgebraStepView: React.FC<{ content: AlgebraStepContent }> = ({ content })
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: isActive ? 1 : 0.4, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.15 }}
-              className="flex flex-col gap-2"
+              className={`flex flex-col gap-2 ${transitionActiveClass(i)}`}
             >
               {/* Discontinuity guard: render `from` when this transition does not chain */}
               {!chainsFromPrior && i > 0 && (
-                <div className="bg-slate-950/50 rounded-lg px-4 py-3 border border-slate-800/50">
-                  <KaTeX latex={t.from.latex} />
+                <div
+                  className="bg-slate-950/50 rounded-lg px-4 py-3 border border-slate-800/50"
+                  onMouseOver={(e) => handleExpressionMouseOver(e, i)}
+                  onMouseOut={clearHover}
+                >
+                  <KaTeXTrusted latex={t.from.latex} />
                 </div>
               )}
 
+              {/* Per-step challenge — student supplies operation OR to */}
+              {challenge && isActive && (
+                <ChallengeRow
+                  challenge={challenge}
+                  transition={t}
+                  attempt={attempt}
+                  onCommit={(answer, correct) => commitAttempt(i, answer, correct)}
+                />
+              )}
+
               {/* Operation label + arrow */}
-              <div className="flex items-center gap-2 pl-2">
-                <ArrowRight size={14} className="text-blue-400 flex-shrink-0" />
-                <span className="text-xs text-blue-400 font-medium italic">{t.operation}</span>
-              </div>
+              {operationRevealed && (
+                <div className="flex items-center gap-2 pl-2">
+                  <ArrowRight size={14} className="text-blue-400 flex-shrink-0" />
+                  <span className="text-xs text-blue-400 font-medium italic">{t.operation}</span>
+                </div>
+              )}
+
+              {/* Per-term sub-moves — make the mechanism visible */}
+              {operationRevealed && toRevealed && t.subMoves && t.subMoves.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: isActive ? 1 : 0.4, y: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.15 + 0.1 }}
+                  className="ml-6 rounded-lg border border-blue-500/15 bg-blue-500/5 px-3 py-2 space-y-1.5"
+                >
+                  {t.subMoves.map((sm, j) => {
+                    const isThisSubActive = isHoverActive && hoveredSub.sub === j;
+                    return (
+                      <div
+                        key={j}
+                        className={`flex items-center gap-3 text-xs flex-wrap rounded-md px-2 py-1 transition-colors cursor-default ${
+                          isThisSubActive ? 'bg-blue-500/15 ring-1 ring-blue-400/40' : ''
+                        }`}
+                        onMouseEnter={() => setHoveredSub({ transition: i, sub: j })}
+                        onMouseLeave={clearHover}
+                      >
+                        <span className="text-slate-400">
+                          <KaTeX latex={sm.from} display={false} />
+                        </span>
+                        <ArrowRight size={11} className="text-blue-400/60 flex-shrink-0" />
+                        <span className="text-slate-200">
+                          <KaTeX latex={sm.to} display={false} />
+                        </span>
+                        <span className="text-blue-400/70 italic ml-auto text-[11px]">
+                          {sm.rule}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              )}
 
               {/* Resulting expression */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: isActive ? 1 : 0.4, scale: 1 }}
-                transition={{ duration: 0.3, delay: i * 0.15 + 0.2 }}
-                className="bg-slate-950/50 rounded-lg px-4 py-3 border border-blue-500/20"
-              >
-                <KaTeX latex={t.to.latex} />
-              </motion.div>
+              {toRevealed && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: isActive ? 1 : 0.4, scale: 1 }}
+                  transition={{ duration: 0.3, delay: i * 0.15 + 0.2 }}
+                  className="bg-slate-950/50 rounded-lg px-4 py-3 border border-blue-500/20"
+                  onMouseOver={(e) => handleExpressionMouseOver(e, i)}
+                  onMouseOut={clearHover}
+                >
+                  <KaTeXTrusted latex={t.to.latex} />
+                </motion.div>
+              )}
             </motion.div>
           );
         })}
       </div>
 
-      {/* Play / Next button */}
+      {/* Play / Next button — disabled while the active transition's challenge
+          is still pending, so the student can't skip past their own prediction. */}
       {activeTransition < totalTransitions - 1 && (
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={advance}
-          className="text-xs text-blue-400 hover:text-blue-300 font-medium px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+          disabled={isGated(activeTransition)}
+          className="text-xs text-blue-400 hover:text-blue-300 font-medium px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-500/10"
         >
-          Next transformation ({activeTransition + 1}/{totalTransitions})
+          {isGated(activeTransition)
+            ? 'Answer the prompt to continue'
+            : `Next transformation (${activeTransition + 1}/${totalTransitions})`}
         </motion.button>
       )}
 
@@ -530,15 +1061,19 @@ const STEP_TYPE_ICONS: Record<string, React.ReactNode> = {
   'case-split': <GitBranch size={12} className="text-amber-400" />,
 };
 
-export const StepContentRenderer: React.FC<{
-  content: StepContent;
-  /** Reserved — currently no step type consumes this. Kept on the contract so the
-   *  data-level `interactive` flag still flows through to future interactive primitives. */
-  interactive?: boolean;
-}> = ({ content }) => {
+/**
+ * Render the body of a step (no challenge wrapping). Algebra owns its own
+ * gating via per-transition challenges and is the only consumer of
+ * `onCompletionChange` here; other types report completion via the
+ * step-level gate when one is attached.
+ */
+function renderContentBody(
+  content: StepContent,
+  onCompletionChange?: (complete: boolean) => void,
+): React.ReactNode {
   switch (content.type) {
     case 'algebra':
-      return <AlgebraStepView content={content} />;
+      return <AlgebraStepView content={content} onCompletionChange={onCompletionChange} />;
     case 'table':
       return <TableStepView content={content} />;
     case 'diagram':
@@ -548,6 +1083,36 @@ export const StepContentRenderer: React.FC<{
     case 'case-split':
       return <CaseSplitStepView content={content} />;
   }
+}
+
+export const StepContentRenderer: React.FC<{
+  content: StepContent;
+  /**
+   * Optional step-level challenge gate. Only honored for non-algebra step
+   * types; algebra steps gate at the transition level instead. The merge
+   * step in challenger.ts enforces this so we never see both at once.
+   */
+  challenge?: StepChallenge;
+  /** Reserved — currently no step type consumes this. Kept on the contract so the
+   *  data-level `interactive` flag still flows through to future interactive primitives. */
+  interactive?: boolean;
+  /**
+   * Forwarded to whichever component owns this step's gating: the algebra
+   * view for transition-level challenges, or the StepChallengeGate wrapper
+   * for step-level challenges. Steps with no gating concept (no challenge
+   * field, non-algebra) never call this — AnnotatedExample defaults
+   * unreported steps to "complete" so navigation isn't blocked.
+   */
+  onCompletionChange?: (complete: boolean) => void;
+}> = ({ content, challenge, onCompletionChange }) => {
+  if (challenge && content.type !== 'algebra') {
+    return (
+      <StepChallengeGate challenge={challenge} onCompletionChange={onCompletionChange}>
+        {renderContentBody(content)}
+      </StepChallengeGate>
+    );
+  }
+  return <>{renderContentBody(content, onCompletionChange)}</>;
 };
 
 export const StepTypeIcon: React.FC<{ type: string }> = ({ type }) => {

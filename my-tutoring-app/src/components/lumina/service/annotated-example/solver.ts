@@ -46,6 +46,14 @@ export interface SolverConfig {
   intent?: string;
   objectiveText?: string;
   objectiveVerb?: string;
+  /**
+   * When set, the solver MUST solve this exact problem statement instead of
+   * picking its own. Used by the sibling-problem pipeline to hydrate a
+   * pre-authored isomorphic problem through the same scaffolding the original
+   * worked example used. The PROBLEM line in the solver output echoes this
+   * statement back verbatim.
+   */
+  pinnedProblem?: string;
 }
 
 function buildSolverPrompt(topic: string, gradeContext: string, config?: SolverConfig): string {
@@ -53,8 +61,12 @@ function buildSolverPrompt(topic: string, gradeContext: string, config?: SolverC
     ? `\n\nLEARNING OBJECTIVE: "${config.objectiveText}"\nThe worked example must directly support this objective.`
     : '';
 
+  const pinnedClause = config?.pinnedProblem
+    ? `\n\nPINNED PROBLEM: You MUST solve this exact problem — do not pick your own. Echo it verbatim on the PROBLEM line.\n"${config.pinnedProblem}"`
+    : '';
+
   return `You are solving a representative problem on "${topic}" for a ${gradeContext} student, to be used as a worked example.
-${objectiveClause}
+${objectiveClause}${pinnedClause}
 
 Your job is to TEACH — show a clean, complete solution that a student can follow.
 
@@ -64,7 +76,7 @@ Produce your solution as plain text with this exact structure:
 
 TITLE: <short descriptive title of the problem>
 SUBJECT: <subject area, e.g. Algebra, Calculus, Physics>
-PROBLEM: <the problem prompt you chose to solve, stated clearly>
+PROBLEM: <the problem prompt${config?.pinnedProblem ? ' (echo the PINNED PROBLEM verbatim)' : ' you chose to solve, stated clearly'}>
 
 STRATEGY: <2-3 sentences describing the overall approach and WHY it works>
 
