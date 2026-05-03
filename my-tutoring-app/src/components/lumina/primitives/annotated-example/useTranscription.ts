@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LiveReviewState } from '../../service/annotated-example/judge-types';
-import type { RichExampleStep } from './types';
+import type { Inset, RichExampleStep } from './types';
 
 export interface TranscribedLine {
   latex: string;
@@ -25,6 +25,12 @@ interface UseTranscriptionOptions {
    * vision call knows what context to interpret the handwriting in.
    */
   problemStatement: string;
+  /**
+   * Optional structured visual data the problem references (table, chart,
+   * number line, etc.). Forwarded to transcribeWork + reviewProgress so
+   * those calls see the same data the student is reading from.
+   */
+  inset?: Inset;
   /**
    * When false, the hook does nothing. Lets the consumer pause snapshots
    * (e.g. while the Reveal view is open) without unmounting.
@@ -81,7 +87,7 @@ export interface UseTranscriptionResult {
  * snapshot must never block Done.
  */
 export function useTranscription(opts: UseTranscriptionOptions): UseTranscriptionResult {
-  const { exportImage, strokeCount, problemStatement, enabled, canonicalSteps } = opts;
+  const { exportImage, strokeCount, problemStatement, enabled, canonicalSteps, inset } = opts;
   const debounceMs = opts.debounceMs ?? 1500;
 
   const [lines, setLines] = useState<TranscribedLine[]>([]);
@@ -126,6 +132,7 @@ export function useTranscription(opts: UseTranscriptionOptions): UseTranscriptio
               problemStatement,
               canonicalSteps,
               transcribedLines: currentLines,
+              inset,
             }
           }),
         });
@@ -141,7 +148,7 @@ export function useTranscription(opts: UseTranscriptionOptions): UseTranscriptio
         if (generation === reviewGenRef.current) setIsReviewing(false);
       }
     },
-    [canonicalSteps, problemStatement, reviewKey],
+    [canonicalSteps, problemStatement, reviewKey, inset],
   );
 
   const runSnapshot = useCallback(async () => {
@@ -161,7 +168,7 @@ export function useTranscription(opts: UseTranscriptionOptions): UseTranscriptio
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'transcribeWork',
-          params: { imageBase64, problemStatement },
+          params: { imageBase64, problemStatement, inset },
         }),
       });
 
@@ -190,7 +197,7 @@ export function useTranscription(opts: UseTranscriptionOptions): UseTranscriptio
       inFlightRef.current = Math.max(0, inFlightRef.current - 1);
       if (inFlightRef.current === 0) setIsTranscribing(false);
     }
-  }, [enabled, exportImage, problemStatement, runReview]);
+  }, [enabled, exportImage, problemStatement, runReview, inset]);
 
   // Debounce on stroke-count changes. First stroke starts the timer; every
   // additional stroke before the timer fires resets it. No snapshot when

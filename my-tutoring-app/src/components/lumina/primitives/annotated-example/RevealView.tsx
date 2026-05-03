@@ -2,14 +2,19 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, AlertCircle, XCircle, ArrowRight, Eye, X, Sparkles } from 'lucide-react';
-import { Card } from '../../../ui/card';
+import { ArrowRight, ChevronDown, Eye, X } from 'lucide-react';
 import { Button } from '../../../ui/button';
-import { Badge } from '../../../ui/badge';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '../../../ui/accordion';
 import { KaTeX, MixedContent } from './StepContentRenderer';
 import { RichStepCard } from './RichStepCard';
 import type {
   CompareLineAnalysis,
+  CompareLineStatus,
   CompareVerdict,
   JudgeVerdict,
 } from '../../service/annotated-example/judge-types';
@@ -22,8 +27,14 @@ interface RevealViewProps {
   studentLines: Array<{ latex: string; confidence: number }>;
   /** The judge's verdict + per-line analysis. */
   verdict: JudgeVerdict;
-  /** Phase D — start a fresh attempt with a new sibling. */
-  onTryNewProblem: () => void;
+  /**
+   * Phase D — advance to the next problem in the orchestrated plan. The
+   * parent (tester / lesson runner) owns advancement and re-mounts the
+   * AnnotatedExample with the next slot's data, so this surface tears
+   * down and the next problem opens on its watch view. Optional: hidden
+   * on the final slot where there is no next problem to advance to.
+   */
+  onTryNewProblem?: () => void;
   /** Phase D — return to Watch mode (canvas state preserved). */
   onShowMeAgain: () => void;
   /** Phase D — close the Try-It surface entirely. */
@@ -31,78 +42,80 @@ interface RevealViewProps {
 }
 
 const VERDICT_TONE: Record<CompareVerdict, {
-  icon: React.ReactNode;
   label: string;
-  cardClass: string;
-  iconClass: string;
-  badgeClass: string;
+  textClass: string;
+  glowClass: string;
 }> = {
   correct: {
-    icon: <CheckCircle2 size={28} />,
     label: 'Correct',
-    cardClass: 'bg-emerald-500/10 border-emerald-400/40',
-    iconClass: 'text-emerald-300',
-    badgeClass: 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200',
+    textClass: 'text-emerald-200',
+    glowClass: 'drop-shadow-[0_0_24px_rgba(52,211,153,0.45)]',
   },
   partial: {
-    icon: <AlertCircle size={28} />,
-    label: 'Almost there',
-    cardClass: 'bg-amber-500/10 border-amber-400/40',
-    iconClass: 'text-amber-300',
-    badgeClass: 'bg-amber-500/20 border-amber-400/40 text-amber-200',
+    label: 'Almost',
+    textClass: 'text-amber-200',
+    glowClass: 'drop-shadow-[0_0_24px_rgba(251,191,36,0.45)]',
   },
   incorrect: {
-    icon: <XCircle size={28} />,
-    label: 'Not quite',
-    cardClass: 'bg-rose-500/10 border-rose-400/40',
-    iconClass: 'text-rose-300',
-    badgeClass: 'bg-rose-500/20 border-rose-400/40 text-rose-200',
+    label: 'Not yet',
+    textClass: 'text-rose-200',
+    glowClass: 'drop-shadow-[0_0_24px_rgba(251,113,133,0.45)]',
   },
 };
 
-const LINE_STATUS_TONE: Record<CompareLineAnalysis['status'], {
-  symbol: string;
-  pillClass: string;
-  label: string;
-  rowClass: string;
+/** Per-line visual treatment for the hero. Status is a property of the line
+ *  itself — no pills, no badges, no row cards. */
+const LINE_VISUAL: Record<CompareLineStatus, {
+  kxClass: string;
+  containerClass: string;
 }> = {
   aligned: {
-    symbol: '✓',
-    pillClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
-    label: 'aligned',
-    rowClass: 'bg-emerald-500/5 border-emerald-400/20',
+    kxClass: 'text-slate-50 drop-shadow-[0_0_12px_rgba(52,211,153,0.35)]',
+    containerClass: '',
   },
   shortcut: {
-    symbol: '↗',
-    pillClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-400/30',
-    label: 'shortcut',
-    rowClass: 'bg-cyan-500/5 border-cyan-400/20',
+    kxClass: 'text-slate-50',
+    containerClass: 'border-l-2 border-cyan-400/70 pl-5',
   },
   error: {
-    symbol: '⚠',
-    pillClass: 'bg-rose-500/15 text-rose-300 border-rose-400/30',
-    label: 'error',
-    rowClass: 'bg-rose-500/5 border-rose-400/20',
+    kxClass: 'text-rose-300/90',
+    containerClass: '',
   },
   extra: {
-    symbol: '+',
-    pillClass: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
-    label: 'extra',
-    rowClass: 'bg-slate-500/5 border-slate-500/20',
+    kxClass: 'text-slate-500',
+    containerClass: 'opacity-60',
   },
 };
 
-/** All annotation layers default-on so misconception/strategy notes render
- *  next to each canonical step in the right column. The student is studying
- *  the rubric, not navigating it — there's no need to hide layers here. */
 const REVEAL_ACTIVE_LAYERS: LayerId[] = ['steps', 'strategy', 'misconceptions', 'connections', 'narrative'];
+
+/** Letter-by-letter cascade for the verdict word. ~1s total. */
+const VerdictWord: React.FC<{ label: string; className: string }> = ({ label, className }) => (
+  <span aria-label={label} className={`inline-block ${className}`}>
+    {Array.from(label).map((ch, i) => (
+      <motion.span
+        key={i}
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: 0.45,
+          delay: 0.1 + i * 0.06,
+          ease: [0.16, 1, 0.3, 1],
+        }}
+        className="inline-block"
+        aria-hidden="true"
+      >
+        {ch === ' ' ? ' ' : ch}
+      </motion.span>
+    ))}
+  </span>
+);
 
 /**
  * Phase C — full-screen reveal that replaces the canvas surface once the
- * judge resolves. Verdict banner at top, then a two-column comparison:
- * the student's transcribed work on the left (per-line tags + notes), the
- * canonical steps with annotation layers on the right. Footer hosts the
- * three Phase D CTAs.
+ * judge resolves. Hero treatment: large serif verdict word, the student's
+ * solve as the protagonist (status as visual property of each line), inline
+ * rubric whispers, and a collapsed worked-solution as secondary read.
  */
 export const RevealView: React.FC<RevealViewProps> = ({
   sibling,
@@ -114,188 +127,156 @@ export const RevealView: React.FC<RevealViewProps> = ({
 }) => {
   const tone = VERDICT_TONE[verdict.verdict];
 
-  // Build a quick alignment map: which canonical steps did the student touch?
-  // Drives a subtle highlight on the right column so coverage is visible.
-  const matchedCanonicalSteps = React.useMemo(() => {
-    const set = new Set<number>();
-    for (const a of verdict.stepAnalysis) {
-      if (a.matchedCanonicalStep !== null) set.add(a.matchedCanonicalStep);
-    }
-    return set;
-  }, [verdict.stepAnalysis]);
+  const hasAnalysis = verdict.stepAnalysis.length > 0;
+  const heroLines: Array<{ latex: string; status: CompareLineStatus; note?: string }> =
+    hasAnalysis
+      ? verdict.stepAnalysis.map((a) => ({
+          latex: a.studentLine,
+          status: a.status,
+          note: a.note,
+        }))
+      : studentLines.map((l) => ({ latex: l.latex, status: 'extra' as CompareLineStatus }));
 
   return (
     <div className="absolute inset-0 flex flex-col bg-slate-950 overflow-hidden">
-      {/* ── Verdict banner ──────────────────────────────────────────── */}
-      <div className="px-5 pt-5 pb-4 border-b border-white/5 flex-shrink-0">
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card className={`relative overflow-hidden border p-5 shadow-xl ${tone.cardClass}`}>
-            <div className="relative z-10 flex items-start gap-4">
-              <div className={`flex-shrink-0 ${tone.iconClass}`}>{tone.icon}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <Badge variant="outline" className={`${tone.badgeClass} gap-1.5`}>
-                    <Sparkles size={11} />
-                    {tone.label}
-                  </Badge>
-                  <Badge variant="outline" className="text-slate-300 border-white/15 bg-white/5">
-                    {sibling.subject}
-                  </Badge>
-                </div>
-                <p className="text-base text-slate-100 leading-relaxed">{verdict.summary}</p>
-                {(verdict.finalAnswer || verdict.canonicalAnswer) && (
-                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-md bg-slate-900/40 border border-white/5 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1">
-                        Your answer
-                      </p>
-                      {verdict.finalAnswer ? (
-                        <KaTeX latex={verdict.finalAnswer} display={false} className="text-slate-100" />
-                      ) : (
-                        <p className="text-slate-500 italic text-xs">Not identified</p>
-                      )}
-                    </div>
-                    <div className="rounded-md bg-slate-900/40 border border-white/5 px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mb-1">
-                        Expected
-                      </p>
-                      {verdict.canonicalAnswer ? (
-                        <KaTeX latex={verdict.canonicalAnswer} display={false} className="text-slate-100" />
-                      ) : (
-                        <p className="text-slate-500 italic text-xs">—</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+      {/* Close button — top-right corner, unobtrusive */}
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close reveal"
+        className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-slate-200 flex items-center justify-center transition-colors"
+      >
+        <X size={16} />
+      </button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 gap-2 flex-shrink-0"
-                aria-label="Close reveal"
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-6 pt-16 pb-10">
+          {/* ── Verdict moment — typography is the verdict ─────────────── */}
+          <div className="text-center mb-12">
+            <h1
+              className={`font-serif text-6xl md:text-7xl leading-none tracking-tight ${tone.textClass} ${tone.glowClass}`}
+              style={{ fontFamily: '"Times New Roman", Georgia, serif', fontWeight: 500 }}
+            >
+              <VerdictWord label={tone.label} className="" />
+            </h1>
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 + tone.label.length * 0.06 + 0.1 }}
+              className="mt-5 text-base md:text-lg text-slate-300 leading-relaxed max-w-xl mx-auto"
+            >
+              {verdict.summary}
+            </motion.p>
+
+            {(verdict.finalAnswer || verdict.canonicalAnswer) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.1 + tone.label.length * 0.06 + 0.25 }}
+                className="mt-6 inline-flex items-center gap-3 text-sm"
               >
-                <X size={14} />
-                Close
-              </Button>
-            </div>
-
-            <div className="pointer-events-none absolute top-0 right-0 w-48 h-48 bg-current opacity-10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3" />
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* ── Two-column comparison ───────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Left — student's work, per-line tagged */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Your work</p>
-              <span className="text-xs text-slate-600">— transcribed from your canvas</span>
-            </div>
-
-            {studentLines.length === 0 ? (
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-5">
-                <p className="text-sm text-slate-400 italic">
-                  No work was captured. The canonical solution is on the right — give it another try when you&apos;re ready.
-                </p>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {verdict.stepAnalysis.length === 0
-                  ? studentLines.map((line, i) => (
-                      <Card
-                        key={i}
-                        className="backdrop-blur-xl bg-slate-900/40 border-white/10 px-4 py-3"
-                      >
-                        <div className="flex items-baseline gap-3">
-                          <span className="text-[10px] font-mono text-slate-600 flex-shrink-0">{i + 1}</span>
-                          <KaTeX latex={line.latex} display={false} className="text-slate-200" />
-                        </div>
-                      </Card>
-                    ))
-                  : verdict.stepAnalysis.map((analysis, i) => {
-                      const lineTone = LINE_STATUS_TONE[analysis.status];
-                      return (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.2, delay: i * 0.04 }}
-                          className={`rounded-lg border px-4 py-3 ${lineTone.rowClass}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <span className="text-[10px] font-mono text-slate-600 flex-shrink-0 pt-1">
-                              {i + 1}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                                <span
-                                  className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider rounded-full border px-2 py-0.5 ${lineTone.pillClass}`}
-                                >
-                                  <span className="text-sm leading-none">{lineTone.symbol}</span>
-                                  {lineTone.label}
-                                </span>
-                                {analysis.matchedCanonicalStep !== null && (
-                                  <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                                    → step {analysis.matchedCanonicalStep + 1}
-                                  </span>
-                                )}
-                              </div>
-                              <KaTeX
-                                latex={analysis.studentLine}
-                                display={false}
-                                className="text-slate-100"
-                              />
-                              {analysis.note && (
-                                <p className="text-xs text-slate-400 italic mt-2 leading-relaxed">
-                                  <MixedContent text={analysis.note} />
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-              </div>
+                <div className="px-3 py-1.5 rounded-md bg-white/5 border border-white/10">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mr-2">
+                    You
+                  </span>
+                  {verdict.finalAnswer ? (
+                    <KaTeX latex={verdict.finalAnswer} display={false} className="text-slate-100" />
+                  ) : (
+                    <span className="text-slate-500 italic text-xs">—</span>
+                  )}
+                </div>
+                <ArrowRight size={14} className="text-slate-600" />
+                <div className="px-3 py-1.5 rounded-md bg-white/5 border border-white/10">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mr-2">
+                    Expected
+                  </span>
+                  {verdict.canonicalAnswer ? (
+                    <KaTeX latex={verdict.canonicalAnswer} display={false} className="text-slate-100" />
+                  ) : (
+                    <span className="text-slate-500 italic text-xs">—</span>
+                  )}
+                </div>
+              </motion.div>
             )}
           </div>
 
-          {/* Right — canonical solution with all annotation layers on */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Worked solution</p>
-              <span className="text-xs text-slate-600">— the rubric the judge used</span>
+          {/* ── Hero — student's solve as the protagonist ──────────────── */}
+          {heroLines.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
+              className="text-center py-12"
+            >
+              <p className="text-base text-slate-400 italic max-w-md mx-auto leading-relaxed">
+                No work was captured this time. The worked solution is below — give it another try
+                when you&apos;re ready.
+              </p>
+            </motion.div>
+          ) : (
+            <div className="space-y-6">
+              {heroLines.map((line, i) => {
+                const visual = LINE_VISUAL[line.status];
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.4,
+                      delay: 0.6 + i * 0.1,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                    className={visual.containerClass}
+                  >
+                    <div className="text-2xl md:text-3xl leading-tight">
+                      <KaTeX latex={line.latex} display={false} className={visual.kxClass} />
+                    </div>
+                    {line.note && (
+                      <p className="mt-2 text-sm text-slate-400 italic leading-relaxed">
+                        <MixedContent text={line.note} />
+                      </p>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
+          )}
 
-            <div className="space-y-0 relative">
-              <div className="absolute left-[1.15rem] top-4 bottom-4 w-0.5 bg-slate-800 z-0" />
-              {sibling.steps.map((step, idx) => (
-                <div
-                  key={step.id}
-                  className={`relative z-10 pb-6 last:pb-0 transition-opacity ${
-                    matchedCanonicalSteps.size > 0 && !matchedCanonicalSteps.has(idx)
-                      ? 'opacity-60'
-                      : ''
-                  }`}
-                >
-                  <RichStepCard
-                    step={step}
-                    index={idx}
-                    activeLayers={REVEAL_ACTIVE_LAYERS}
-                    isCompact
-                    interactive={false}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* ── Worked solution — collapsed by default ─────────────────── */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 1.0 }}
+            className="mt-16"
+          >
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="worked-solution" className="border-white/10">
+                <AccordionTrigger className="text-sm text-slate-400 hover:text-slate-200 hover:no-underline gap-2 py-3">
+                  <span className="flex items-center gap-2">
+                    <ChevronDown size={14} className="opacity-60" />
+                    Show the worked solution
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="pt-4 space-y-0 relative">
+                    <div className="absolute left-[1.15rem] top-4 bottom-4 w-0.5 bg-slate-800 z-0" />
+                    {sibling.steps.map((step, idx) => (
+                      <div key={step.id} className="relative z-10 pb-6 last:pb-0">
+                        <RichStepCard
+                          step={step}
+                          index={idx}
+                          activeLayers={REVEAL_ACTIVE_LAYERS}
+                          isCompact
+                          interactive={false}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </motion.div>
         </div>
       </div>
 
@@ -319,14 +300,16 @@ export const RevealView: React.FC<RevealViewProps> = ({
             <Eye size={14} />
             Show me again
           </Button>
-          <Button
-            size="sm"
-            onClick={onTryNewProblem}
-            className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-100 font-semibold gap-2"
-          >
-            Try a new problem
-            <ArrowRight size={14} />
-          </Button>
+          {onTryNewProblem && (
+            <Button
+              size="sm"
+              onClick={onTryNewProblem}
+              className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-100 font-semibold gap-2"
+            >
+              Next problem
+              <ArrowRight size={14} />
+            </Button>
+          )}
         </div>
       </div>
     </div>

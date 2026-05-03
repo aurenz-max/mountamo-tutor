@@ -26,6 +26,8 @@
 
 import { ThinkingLevel } from '@google/genai';
 import { ai } from '../geminiClient';
+import { serializeInsetForPrompt } from './inset-helpers';
+import type { Inset } from '../../types';
 
 export interface SolvedProblem {
   /** Short title (derived after parsing; filled by caller). */
@@ -54,6 +56,14 @@ export interface SolverConfig {
    * statement back verbatim.
    */
   pinnedProblem?: string;
+  /**
+   * Optional structured visual data the problem references (table, chart,
+   * number line, etc.). When set, the solver reads it as part of the problem
+   * context — it doesn't echo the inset back, but its solution prose can
+   * reference cells/values from the inset. Pinned upstream by the
+   * annotated-problem author; not chosen by the solver itself.
+   */
+  pinnedInset?: Inset;
 }
 
 function buildSolverPrompt(topic: string, gradeContext: string, config?: SolverConfig): string {
@@ -65,8 +75,14 @@ function buildSolverPrompt(topic: string, gradeContext: string, config?: SolverC
     ? `\n\nPINNED PROBLEM: You MUST solve this exact problem — do not pick your own. Echo it verbatim on the PROBLEM line.\n"${config.pinnedProblem}"`
     : '';
 
+  const insetClause = config?.pinnedInset
+    ? `\n\nPROBLEM CONTEXT (visual data the student is reading from):\n${serializeInsetForPrompt(
+        config.pinnedInset,
+      )}\n\nThe problem statement references this data. Your solution prose MUST cite specific cells / values / positions from it (e.g. "from row 3 of the table, the value is 42"). Do not re-author the inset — it is already shown to the student.`
+    : '';
+
   return `You are solving a representative problem on "${topic}" for a ${gradeContext} student, to be used as a worked example.
-${objectiveClause}${pinnedClause}
+${objectiveClause}${pinnedClause}${insetClause}
 
 Your job is to TEACH — show a clean, complete solution that a student can follow.
 

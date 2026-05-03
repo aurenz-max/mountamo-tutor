@@ -14,11 +14,26 @@
 
 import { Type, Schema, ThinkingLevel } from '@google/genai';
 import { ai } from '../geminiClient';
+import { serializeInsetForPrompt } from './inset-helpers';
 import type {
   AlgebraStepContent,
   RichExampleStep,
   StepContent,
 } from '../../primitives/annotated-example/types';
+import type { Inset } from '../../types';
+
+/**
+ * Build a "## Visual data" prompt block from an optional inset. Empty string
+ * when no inset, so callers can interpolate unconditionally without leaking
+ * an empty header.
+ */
+function insetPromptBlock(inset: Inset | undefined): string {
+  if (!inset) return '';
+  return `
+
+## Visual data the problem references
+${serializeInsetForPrompt(inset)}`;
+}
 
 // ── transcribeWork ───────────────────────────────────────────────────
 
@@ -58,6 +73,12 @@ export interface TranscribedLine {
 export interface TranscribeWorkInput {
   imageBase64: string;
   problemStatement: string;
+  /**
+   * Optional structured visual context the problem references (table, chart,
+   * number line, etc.). Serialized into the vision prompt so the OCR pass
+   * can disambiguate handwriting that references inset values.
+   */
+  inset?: Inset;
 }
 
 export interface TranscribeWorkResult {
@@ -79,7 +100,7 @@ export async function transcribeWork(
 
   const prompt = `You are transcribing a student's handwritten math work into formal notation. The student is solving:
 
-"${input.problemStatement}"
+"${input.problemStatement}"${insetPromptBlock(input.inset)}
 
 Read every visually distinct line of mathematical work in the image, top to bottom, and return each as a KaTeX expression.
 
@@ -232,6 +253,12 @@ export interface CompareWorkInput {
   canonicalSteps: RichExampleStep[];
   /** The student's transcribed lines from the rail. */
   transcribedLines: TranscribedLine[];
+  /**
+   * Optional structured visual data the problem references. Serialized into
+   * the prompt so the judge sees the same data the student is reading from
+   * (e.g. the table values for a "find the row where X" problem).
+   */
+  inset?: Inset;
 }
 
 /**
@@ -362,7 +389,7 @@ export async function compareWork(input: CompareWorkInput): Promise<JudgeVerdict
   const prompt = `You are evaluating a student's solution to a math problem. They watched a worked example, then attempted an isomorphic problem on their own. Your job: judge their work for **correctness**, not similarity to the canonical.
 
 ## Problem
-${input.problemStatement}
+${input.problemStatement}${insetPromptBlock(input.inset)}
 
 ## Canonical solution (the gold-standard rubric)
 ${canonicalSummary}
@@ -485,6 +512,12 @@ export interface ReviewProgressInput {
   problemStatement: string;
   canonicalSteps: RichExampleStep[];
   transcribedLines: TranscribedLine[];
+  /**
+   * Optional structured visual data the problem references. Without it, the
+   * coach cannot tell whether a student's line correctly reads off the inset
+   * (e.g. picked the right row of a table).
+   */
+  inset?: Inset;
 }
 
 export interface LiveLineReview {
@@ -534,7 +567,7 @@ export async function reviewProgress(
   const prompt = `You are a live coach watching a student solve a problem step-by-step. They saw a worked example, now they're attempting an isomorphic problem. Your job: keep them oriented while they work. You are NOT grading — a separate judge runs at the end.
 
 ## Problem
-${input.problemStatement}
+${input.problemStatement}${insetPromptBlock(input.inset)}
 
 ## Canonical solution (${totalSteps} steps total)
 ${canonicalSummary}

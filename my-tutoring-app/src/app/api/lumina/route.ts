@@ -192,6 +192,7 @@ export async function POST(request: NextRequest) {
         const transcribeResult = await transcribeWork({
           imageBase64: params.imageBase64,
           problemStatement: params.problemStatement,
+          inset: params.inset,
         });
         return NextResponse.json(transcribeResult);
       }
@@ -204,6 +205,7 @@ export async function POST(request: NextRequest) {
           problemStatement: params.problemStatement,
           canonicalSteps: params.canonicalSteps,
           transcribedLines: params.transcribedLines,
+          inset: params.inset,
         });
         return NextResponse.json(compareResult);
       }
@@ -216,6 +218,7 @@ export async function POST(request: NextRequest) {
           problemStatement: params.problemStatement,
           canonicalSteps: params.canonicalSteps,
           transcribedLines: params.transcribedLines,
+          inset: params.inset,
         });
         return NextResponse.json(reviewResult);
       }
@@ -229,8 +232,40 @@ export async function POST(request: NextRequest) {
           originalStrategy: params.originalStrategy,
           subject: params.subject,
           gradeContext: params.gradeContext,
+          originalInset: params.originalInset,
         });
         return NextResponse.json(siblingResult);
+      }
+
+      // Orchestrator + per-slot generation. Mirrors the knowledge-check
+      // pattern: one upstream LLM call plans the cognitive arc (difficulty
+      // + insetType + brief per slot); callers iterate slots one at a
+      // time and request `generateAnnotatedExampleFromPlan` per slot as
+      // the student progresses. The per-example surface is too large to
+      // batch in parallel the way KC does.
+      case 'planAnnotatedExampleSet': {
+        const { runAnnotatedExampleOrchestrator } = await import(
+          '@/components/lumina/service/annotated-example/orchestrator'
+        );
+        const planResult = await runAnnotatedExampleOrchestrator({
+          topic: params.topic,
+          gradeLevel: params.gradeLevel,
+          count: params.count ?? 5,
+          context: params.context,
+        });
+        return NextResponse.json(planResult);
+      }
+
+      case 'generateAnnotatedExampleFromPlan': {
+        const { generateAnnotatedExampleFromPlan } = await import(
+          '@/components/lumina/service/annotated-example/gemini-annotated-example'
+        );
+        const exampleResult = await generateAnnotatedExampleFromPlan(
+          params.plan,
+          params.topic,
+          params.gradeContext,
+        );
+        return NextResponse.json(exampleResult);
       }
 
       // ============================================

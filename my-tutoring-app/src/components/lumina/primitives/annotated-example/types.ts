@@ -6,6 +6,10 @@
  * with KaTeX expressions and animated transitions.
  */
 
+import type { Inset } from '../../types';
+
+export type { Inset };
+
 // ═══════════════════════════════════════════════════════════════════════
 // KaTeX Transition — the core animation primitive
 // ═══════════════════════════════════════════════════════════════════════
@@ -292,6 +296,14 @@ export interface ProblemStatement {
   equations?: string[];
   /** Additional context */
   context?: string;
+  /**
+   * Optional structured visual context — table, chart, number line, code
+   * block, definition box, etc. Reuses the knowledge-check `Inset` union so
+   * authoring + rendering infrastructure is shared. When set, the student
+   * sees the inset alongside the statement and the judge / transcription
+   * receive a serialized form of it as part of the problem context.
+   */
+  inset?: Inset;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -313,6 +325,19 @@ export interface RichAnnotatedExampleData {
    * with grounding edges so dropped/injected/merged steps are visible.
    */
   solverDebug?: SolverDebugPayload;
+  /**
+   * Pre-hydrated isomorphic practice problem for the Try-It act. Multi-phase
+   * pattern: the orchestrator (or other upstream caller) loads BOTH phases
+   * up front and passes them in together — the primitive never authors
+   * problems mid-flight. The contained `steps` are the canonical solution
+   * the judge / transcription compares the student's work against.
+   *
+   * When undefined, the primitive renders Watch only (Try button disabled).
+   * The nested object should NOT itself carry a `tryProblem` — recursion
+   * is structurally allowed by the self-referential type but never used
+   * in practice.
+   */
+  tryProblem?: RichAnnotatedExampleData;
 }
 
 export interface SolverDebugPayload {
@@ -448,4 +473,59 @@ export interface SolutionPlan {
   solutionStrategy: string;
   problem: ProblemStatement;
   steps: StepPlan[];
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Annotated-Example Set Plan — orchestrator output
+//
+// One Gemini call decides the cognitive arc for N worked examples on a
+// topic: per-slot difficulty, inset type, and content brief. Each slot is
+// then hydrated through `generateAnnotatedExample` ONE AT A TIME (not
+// batched) — the surface area per example is too big to parallelize the
+// way knowledge-check does.
+//
+// Mirrors `KnowledgeCheckPlan` so callers feel symmetric; sibling problems
+// for each slot are generated on demand inside Try mode as today.
+// ═══════════════════════════════════════════════════════════════════════
+
+export type AnnotatedExampleDifficulty = 'easy' | 'medium' | 'hard';
+
+/**
+ * Inset variants the orchestrator may pick. Matches the authorable subset
+ * (no `image` — Gemini text gen can't produce base64). `null` = plain text
+ * problem with no inset. Keep this in sync with `AuthorableInsetType` in
+ * `service/annotated-example/inset-helpers.ts`.
+ */
+export type AnnotatedPlannedInsetType =
+  | 'katex'
+  | 'data-table'
+  | 'passage'
+  | 'chart'
+  | 'code'
+  | 'number-line'
+  | 'definition-box'
+  | null;
+
+export interface AnnotatedExampleProblemPlan {
+  /** Ordinal position in the set, 0-based. */
+  index: number;
+  /** Targeted difficulty band — passed downstream to author + solver. */
+  difficulty: AnnotatedExampleDifficulty;
+  /** Inset to attach. `null` means plain text — no visual context. */
+  insetType: AnnotatedPlannedInsetType;
+  /**
+   * Detailed content brief for the author + solver. Self-contained — the
+   * downstream pipeline sees only the brief, not the rest of the plan, so
+   * each slot must specify the concept, angle, and (if any) inset content
+   * shape on its own.
+   */
+  brief: string;
+  /** Why this difficulty / inset / angle was chosen for this slot. */
+  cognitiveNote: string;
+}
+
+export interface AnnotatedExampleSetPlan {
+  /** 1-2 sentence narrative of the cognitive journey across the set. */
+  lessonArc: string;
+  problems: AnnotatedExampleProblemPlan[];
 }
