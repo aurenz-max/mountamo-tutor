@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bug, ChevronDown, Loader2, Lock, Pencil } from 'lucide-react';
+import { Bug, ChevronDown, Lock, Pencil } from 'lucide-react';
 import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
@@ -11,8 +11,6 @@ import { RichStepCard, LayerIconMap } from './annotated-example/RichStepCard';
 import { TryItYourself } from './annotated-example/TryItYourself';
 import { InsetRenderer } from './problem-primitives/insets/InsetRenderer';
 import type {
-  AnnotatedExampleProblemPlan,
-  AnnotatedExampleSetPlan,
   ChallengeAssignment,
   RichAnnotatedExampleData,
   LayerId,
@@ -22,149 +20,22 @@ import type {
 import { ANNOTATION_LAYERS } from './annotated-example/types';
 
 // ═══════════════════════════════════════════════════════════════════════
-// Public component — discriminates single vs orchestrated set
-// ═══════════════════════════════════════════════════════════════════════
+// AnnotatedExample — pre-hydrated worked example + bundled try problems.
 //
-// Production registry mounts this with `data` only (single problem). The
-// orchestrator-aware path passes a `plan` + `hydratedSlots` + a hydrate
-// callback, and this primitive owns activeIndex / advancement internally
-// — callers never wire "Next problem" themselves. Linear flow reads as
-// problem 1 → 2 → 3, each slot a full watch → try → reveal cycle.
+// All problems are authored upstream by the orchestrator and hydrated in
+// parallel before mount. The primitive renders the watched example with
+// annotation layers and challenger gates; "Now you try" opens the full-
+// screen practice surface with one of `data.tryProblems`. The primitive
+// owns a `tryIndex` cursor so reveal → "Try another" advances through
+// the bundled try problems without going back to the parent.
+// ═══════════════════════════════════════════════════════════════════════
 
-interface AnnotatedExampleSingleProps {
+interface AnnotatedExampleProps {
   data: RichAnnotatedExampleData;
   className?: string;
-  /**
-   * Internal use: provided by `AnnotatedExampleSet` so the per-slot
-   * Try-It reveal can advance to the next plan slot. External callers in
-   * single-problem mode should leave this undefined — there's nothing to
-   * advance to.
-   */
-  onTryAnother?: () => void;
 }
 
-interface AnnotatedExampleSetProps {
-  plan: AnnotatedExampleSetPlan;
-  /**
-   * Map of slot index → hydrated data. Slots not yet present (or
-   * undefined) are treated as needing hydration; the primitive will fire
-   * `onHydrateSlot` for the active slot and render a loading state until
-   * the parent stores the result here.
-   */
-  hydratedSlots: Record<number, RichAnnotatedExampleData | undefined>;
-  /** Fired when the active slot has no hydrated data yet. Idempotent — the
-   *  parent should debounce concurrent calls per slot index. */
-  onHydrateSlot: (slot: AnnotatedExampleProblemPlan) => void;
-  /** Optional controlled mode. When omitted, the primitive owns
-   *  activeIndex internally (production / linear flow). The dev tester
-   *  passes both to keep its slot-picker in sync. */
-  activeIndex?: number;
-  onActiveIndexChange?: (index: number) => void;
-  /** Initial slot when uncontrolled. Defaults to 0. */
-  initialIndex?: number;
-  className?: string;
-}
-
-type AnnotatedExampleProps = AnnotatedExampleSingleProps | AnnotatedExampleSetProps;
-
-function isSetMode(props: AnnotatedExampleProps): props is AnnotatedExampleSetProps {
-  return 'plan' in props;
-}
-
-export const AnnotatedExample: React.FC<AnnotatedExampleProps> = (props) => {
-  if (isSetMode(props)) return <AnnotatedExampleSet {...props} />;
-  return <AnnotatedExampleSingle {...props} />;
-};
-
-// ═══════════════════════════════════════════════════════════════════════
-// Set mode — owns activeIndex, triggers hydration, advances on next
-// ═══════════════════════════════════════════════════════════════════════
-
-const AnnotatedExampleSet: React.FC<AnnotatedExampleSetProps> = ({
-  plan,
-  hydratedSlots,
-  onHydrateSlot,
-  activeIndex: controlledIndex,
-  onActiveIndexChange,
-  initialIndex = 0,
-  className,
-}) => {
-  // Uncontrolled internal state. When `controlledIndex` is provided
-  // (tester case), the parent's value wins; otherwise we own it and
-  // advance on "Next problem" without touching the parent.
-  const [internalIndex, setInternalIndex] = useState(initialIndex);
-  const activeIndex = controlledIndex ?? internalIndex;
-
-  const activeSlot = plan.problems.find((p) => p.index === activeIndex) ?? plan.problems[0];
-  const activeData = hydratedSlots[activeIndex];
-  const hasNextSlot = plan.problems.some((p) => p.index === activeIndex + 1);
-
-  // In-flight guard. Without this, a hydration request fires for the
-  // active slot, the parent re-renders during the in-flight window
-  // (state flip to "loading", new prop identities for hydratedSlots /
-  // onHydrateSlot), and our effect re-fires because the slot is still
-  // undefined — kicking off a *second* pipeline run, then a third, etc.
-  // We track which slot indices we've already requested and only fire
-  // once per (slot, currently-undefined) pair. The set is cleared for a
-  // slot the moment its data lands, so a future re-mount or re-roll can
-  // request again.
-  const requestedRef = useRef<Set<number>>(new Set());
-  useEffect(() => {
-    if (!activeSlot) return;
-    const idx = activeSlot.index;
-    if (hydratedSlots[idx] !== undefined) {
-      requestedRef.current.delete(idx);
-      return;
-    }
-    if (requestedRef.current.has(idx)) return;
-    requestedRef.current.add(idx);
-    onHydrateSlot(activeSlot);
-  }, [activeSlot, hydratedSlots, onHydrateSlot]);
-
-  const advanceToNext = useCallback(() => {
-    const next = plan.problems.find((p) => p.index === activeIndex + 1);
-    if (!next) return;
-    if (onActiveIndexChange) onActiveIndexChange(next.index);
-    if (controlledIndex === undefined) setInternalIndex(next.index);
-  }, [plan, activeIndex, controlledIndex, onActiveIndexChange]);
-
-  if (!activeData) {
-    return (
-      <div className={`max-w-3xl mx-auto font-sans text-slate-200 ${className || ''}`}>
-        <div className="flex items-center justify-center py-24">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <Loader2 size={28} className="text-indigo-400 animate-spin" />
-            <p className="text-slate-300 font-medium text-sm">
-              Loading problem {activeIndex + 1} of {plan.problems.length}…
-            </p>
-            <p className="text-slate-500 text-xs max-w-sm">
-              Hydrating the worked example and its sibling practice problem.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    // Key on activeIndex so the inner Single fully remounts between slots
-    // — watch/try mode and step completion reset to the new problem's
-    // defaults. Without this the second problem would inherit completion
-    // state from the first and skip directly into try mode.
-    <AnnotatedExampleSingle
-      key={activeIndex}
-      data={activeData}
-      className={className}
-      onTryAnother={hasNextSlot ? advanceToNext : undefined}
-    />
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════
-// Single mode — one fully-hydrated problem, watch → try → reveal
-// ═══════════════════════════════════════════════════════════════════════
-
-const AnnotatedExampleSingle: React.FC<AnnotatedExampleSingleProps> = ({ data, className, onTryAnother }) => {
+export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, className }) => {
   const [activeLayers, setActiveLayers] = useState<LayerId[]>(['steps']);
   /**
    * Two-act mode. `watch` renders the worked example with annotation layers
@@ -174,6 +45,13 @@ const AnnotatedExampleSingle: React.FC<AnnotatedExampleSingleProps> = ({ data, c
    */
   const [mode, setMode] = useState<'watch' | 'try'>('watch');
   /**
+   * Cursor into `data.tryProblems`. Advances through bundled try problems
+   * as the student finishes each one. The TryItYourself surface keys off
+   * the active try problem's identity, so swapping resets canvas state
+   * automatically.
+   */
+  const [tryIndex, setTryIndex] = useState(0);
+  /**
    * Per-step challenge-completion state. Default is "complete" — a step
    * reports `false` only while it has an uncommitted challenge. Steps
    * unlock sequentially in the full-solution view so the next step's
@@ -181,6 +59,13 @@ const AnnotatedExampleSingle: React.FC<AnnotatedExampleSingleProps> = ({ data, c
    * to a pending prompt.
    */
   const [stepCompletions, setStepCompletions] = useState<Record<number, boolean>>({});
+
+  const tryProblems = data.tryProblems ?? [];
+  const activeTryProblem = tryProblems[tryIndex];
+  const hasNextTry = tryIndex + 1 < tryProblems.length;
+  const advanceToNextTry = useCallback(() => {
+    setTryIndex((i) => Math.min(i + 1, Math.max(tryProblems.length - 1, 0)));
+  }, [tryProblems.length]);
 
   const reportCompletion = useCallback((idx: number, complete: boolean) => {
     setStepCompletions((prev) => (prev[idx] === complete ? prev : { ...prev, [idx]: complete }));
@@ -228,14 +113,13 @@ const AnnotatedExampleSingle: React.FC<AnnotatedExampleSingleProps> = ({ data, c
           </div>
 
           {/* Act 2 entry — opens the full-screen Try-It surface. Disabled
-              when no `tryProblem` was bundled by the parent (e.g. legacy
-              non-orchestrated generation). */}
+              when no `tryProblems` were bundled (count=1 watch-only mode). */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setMode('try')}
-            disabled={!data.tryProblem}
-            title={data.tryProblem ? undefined : 'No practice problem bundled with this example.'}
+            disabled={!activeTryProblem}
+            title={activeTryProblem ? undefined : 'No practice problem bundled with this example.'}
             className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-200 gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Pencil size={14} />
@@ -353,7 +237,7 @@ const AnnotatedExampleSingle: React.FC<AnnotatedExampleSingleProps> = ({ data, c
       {/* End-of-example CTA — once every step is revealed and committed, the
           natural progression is into Act 2 (Try). Only shown when a Try
           problem was bundled. */}
-      {allStepsResolved && data.tryProblem && (
+      {allStepsResolved && activeTryProblem && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -377,14 +261,17 @@ const AnnotatedExampleSingle: React.FC<AnnotatedExampleSingleProps> = ({ data, c
       )}
 
       {/* Act 2 — full-screen takeover. Mounted alongside Watch so canvas
-          state persists across "Show me again" round trips. */}
+          state persists across "Show me again" round trips. The reveal
+          view's "Try another" advances `tryIndex` through the bundled
+          problems; once exhausted the button is hidden. */}
       <AnimatePresence>
-        {mode === 'try' && data.tryProblem && (
+        {mode === 'try' && activeTryProblem && (
           <TryItYourself
-            tryData={data.tryProblem}
+            key={tryIndex}
+            tryData={activeTryProblem}
             onClose={() => setMode('watch')}
             onReturnToWatch={() => setMode('watch')}
-            onTryAnother={onTryAnother}
+            onTryAnother={hasNextTry ? advanceToNextTry : undefined}
           />
         )}
       </AnimatePresence>

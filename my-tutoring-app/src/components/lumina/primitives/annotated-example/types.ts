@@ -326,18 +326,17 @@ export interface RichAnnotatedExampleData {
    */
   solverDebug?: SolverDebugPayload;
   /**
-   * Pre-hydrated isomorphic practice problem for the Try-It act. Multi-phase
-   * pattern: the orchestrator (or other upstream caller) loads BOTH phases
+   * Pre-hydrated isomorphic practice problems for the Try-It act. Multi-phase
+   * pattern: the orchestrator (or other upstream caller) loads ALL phases
    * up front and passes them in together — the primitive never authors
-   * problems mid-flight. The contained `steps` are the canonical solution
+   * problems mid-flight. Each entry's `steps` are the canonical solution
    * the judge / transcription compares the student's work against.
    *
-   * When undefined, the primitive renders Watch only (Try button disabled).
-   * The nested object should NOT itself carry a `tryProblem` — recursion
-   * is structurally allowed by the self-referential type but never used
-   * in practice.
+   * The primitive cycles through this array as the student finishes each
+   * try problem. Empty / undefined means Watch-only (Try button disabled).
+   * Nested entries should NOT themselves carry `tryProblems`.
    */
-  tryProblem?: RichAnnotatedExampleData;
+  tryProblems?: RichAnnotatedExampleData[];
 }
 
 export interface SolverDebugPayload {
@@ -476,16 +475,15 @@ export interface SolutionPlan {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Annotated-Example Set Plan — orchestrator output
+// Annotated-Example Orchestrator Output
 //
-// One Gemini call decides the cognitive arc for N worked examples on a
-// topic: per-slot difficulty, inset type, and content brief. Each slot is
-// then hydrated through `generateAnnotatedExample` ONE AT A TIME (not
-// batched) — the surface area per example is too big to parallelize the
-// way knowledge-check does.
-//
-// Mirrors `KnowledgeCheckPlan` so callers feel symmetric; sibling problems
-// for each slot are generated on demand inside Try mode as today.
+// One Gemini Lite call authors the watched worked example (slot 0) plus
+// any sibling practice problems (slots 1+) the student will solve on the
+// Try-It canvas. The orchestrator is the SOLE problem author — it produces
+// the actual problem statement and structured inset payload for every slot
+// in one shot. Downstream `generateAnnotatedExample` pins the orchestrator's
+// problem and runs the solver / planner / step-generator pipeline against
+// it — it never authors.
 // ═══════════════════════════════════════════════════════════════════════
 
 export type AnnotatedExampleDifficulty = 'easy' | 'medium' | 'hard';
@@ -507,25 +505,20 @@ export type AnnotatedPlannedInsetType =
   | null;
 
 export interface AnnotatedExampleProblemPlan {
-  /** Ordinal position in the set, 0-based. */
+  /** Ordinal position in the set, 0-based. 0 = watched example, 1+ = student-solved siblings. */
   index: number;
-  /** Targeted difficulty band — passed downstream to author + solver. */
+  /** Targeted difficulty band. */
   difficulty: AnnotatedExampleDifficulty;
-  /** Inset to attach. `null` means plain text — no visual context. */
+  /** Inset attached to this problem. `null` means plain text. */
   insetType: AnnotatedPlannedInsetType;
-  /**
-   * Detailed content brief for the author + solver. Self-contained — the
-   * downstream pipeline sees only the brief, not the rest of the plan, so
-   * each slot must specify the concept, angle, and (if any) inset content
-   * shape on its own.
-   */
-  brief: string;
-  /** Why this difficulty / inset / angle was chosen for this slot. */
-  cognitiveNote: string;
+  /** The actual problem statement, authored by the orchestrator. */
+  problemStatement: string;
+  /** Structured inset payload. Set when `insetType` is non-null. */
+  inset?: Inset;
+  /** One sentence on what skill the problem exercises (slot 0) or what was preserved/changed from slot 0 (siblings). */
+  rationale: string;
 }
 
 export interface AnnotatedExampleSetPlan {
-  /** 1-2 sentence narrative of the cognitive journey across the set. */
-  lessonArc: string;
   problems: AnnotatedExampleProblemPlan[];
 }

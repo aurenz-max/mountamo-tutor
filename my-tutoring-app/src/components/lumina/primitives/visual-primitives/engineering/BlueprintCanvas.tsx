@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Layout, Layers, Download, Pen, Eraser, Trash2 } from 'lucide-react';
+import { Compass, Layout, Layers, Download, Pen, Eraser, Trash2, Ruler, Brush } from 'lucide-react';
 import {
   usePrimitiveEvaluation,
   type BlueprintCanvasMetrics,
@@ -95,6 +95,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<'pen' | 'eraser'>('pen');
+  const [drawMode, setDrawMode] = useState<'line' | 'freeform'>('line');
   const [hasDrawings, setHasDrawings] = useState(false);
   const [detectedRooms, setDetectedRooms] = useState<Room[]>([]);
   const [drawingStartTime] = useState(Date.now());
@@ -181,8 +182,8 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
     let offsetX = (clientX - rect.left) * scaleX;
     let offsetY = (clientY - rect.top) * scaleY;
 
-    // Snap to grid if enabled
-    if (snapToGrid && showGrid) {
+    // Snap to grid if enabled and in line mode (freeform mode bypasses snap for organic drawing)
+    if (snapToGrid && showGrid && drawMode === 'line') {
       const step = Math.min(canvas.width, canvas.height) / Math.max(gridSize[0], gridSize[1]);
       offsetX = Math.round(offsetX / step) * step;
       offsetY = Math.round(offsetY / step) * step;
@@ -404,6 +405,25 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
             </div>
             <div className="flex gap-2">
               <button
+                onClick={() => setDrawMode('line')}
+                className={`p-2 rounded-lg transition-colors ${
+                  drawMode === 'line' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+                title="Line Mode (snap to grid)"
+              >
+                <Ruler size={18} />
+              </button>
+              <button
+                onClick={() => setDrawMode('freeform')}
+                className={`p-2 rounded-lg transition-colors ${
+                  drawMode === 'freeform' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+                title="Free-form Mode (smooth drawing)"
+              >
+                <Brush size={18} />
+              </button>
+              <div className="w-px bg-slate-700 mx-1" />
+              <button
                 onClick={() => setTool('pen')}
                 className={`p-2 rounded-lg transition-colors ${
                   tool === 'pen' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
@@ -479,7 +499,11 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
               </div>
               <div className="flex justify-between">
                 <span>Snap to Grid:</span>
-                <span className="font-mono text-blue-400">{snapToGrid ? 'ON' : 'OFF'}</span>
+                <span className="font-mono text-blue-400">{snapToGrid && drawMode === 'line' ? 'ON' : 'OFF'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Draw Mode:</span>
+                <span className="font-mono text-blue-400">{drawMode === 'line' ? 'LINE' : 'FREE-FORM'}</span>
               </div>
             </div>
           </div>

@@ -58,7 +58,7 @@
 | place-value-chart | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/place-value-chart-2026-03-17.md) |
 | function-machine | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/function-machine-2026-03-17.md) |
 | knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
-| how-it-works | 3 | 3 | 0 | 2026-03-22 | [report](eval-reports/how-it-works-2026-03-22.md) |
+| how-it-works | 3 | 1 | 2 | 2026-05-03 | [report](eval-reports/how-it-works-2026-05-03.md) |
 | light-shadow-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/light-shadow-lab-2026-03-29.md) |
 | constellation-builder | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/constellation-builder-2026-03-29.md) |
 | sound-wave-explorer | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/sound-wave-explorer-2026-03-29.md) |
@@ -85,7 +85,7 @@
 | bar-model | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/bar-model-2026-04-19.md) |
 | annotated-example | 1 | 1 | 0 | 2026-04-24 | [report](eval-reports/annotated-example-2026-04-24.md) |
 
-**Totals:** 285/292 modes passing (97.6%) | 19 open issues (1 CRITICAL, 17 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 283/292 modes passing (96.9%) | 22 open issues (2 CRITICAL, 19 HIGH, 1 MEDIUM, 0 LOW)
 
 Note: annotated-example passes structurally (final answers correct, schema refactor successful) but has 3 HIGH content-quality issues around redundant step planning — see AE-1..AE-4 and SP-16.
 
@@ -185,7 +185,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-14: Gemini Flash Lite silently drops nullable flat-indexed fields — generator produces structurally broken challenges
 
-**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04), spatial-scene (identify, describe, place — SS-1), word-sorter (all modes — WS-1), dot-plot (all 6 modes — DP-1; fixed 2026-04-19 via orchestrator refactor), ~~bar-model (read_scale, scaled_bar_graph — BM-1, BM-3; fixed 2026-04-19 via orchestrator refactor)~~
+**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04), spatial-scene (identify, describe, place — SS-1), word-sorter (all modes — WS-1), dot-plot (all 6 modes — DP-1; fixed 2026-04-19 via orchestrator refactor), ~~bar-model (read_scale, scaled_bar_graph — BM-1, BM-3; fixed 2026-04-19 via orchestrator refactor)~~, how-it-works (sequence — HW-3, sequenceItem* fields dropped)
 **Risk:** Any primitive using the flattened-index pattern (e.g., `coin0Type`, `displayedCoin0Type`, `groupACoin0Type`, `option0..option3`) with nullable fields **OR** any generator where a challenge-carrying array is omitted from the schema's `required` list. Gemini Flash Lite frequently omits entire groups of these fields, producing challenges with missing visual data (no coins to count, no groups to compare). The generator's `collectCoinDefs`/`collectStrings` reconstruction returns empty arrays, and the challenge is accepted with wrong fallback values.
 **Root cause:** Flat-indexed fields are all `nullable: true` in the schema so Gemini can skip them without schema violation. Flash Lite takes the path of least resistance and omits fields it considers optional, especially when the prompt describes multiple challenge types. The generator's post-reconstruction validation was too permissive — it accepted challenges missing critical fields.
 **Fix pattern:** After flat→structured reconstruction, validate each challenge has all REQUIRED fields for its type. Reject (return null + filter) any challenge missing critical visual/interaction data. Never silently fall back to wrong values. For identify-type challenges, derive missing options from the answer field + grade-appropriate pool. Log all rejections for debugging.
@@ -266,6 +266,9 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | AE-2 | annotated-example | — | HIGH | Redundant steps | Step 2 ("Set Up the Area Integral") runs full computation through `A=1/6`; downstream steps 3,4,5 redundantly repeat antiderivative, substitution, and simplification that step 2 already finished. Executor ignored brief scope (SP-16) | GENERATOR |
 | AE-3 | annotated-example | — | MEDIUM | Weak verification | For Calculus integral answer, verification only converts `1/6` to `0.1667` and bounds-checks. No actual re-derivation or alternative check. Verification prompt needs richer strategy per step type | GENERATOR |
 | AE-4 | annotated-example | — | HIGH | Redundant steps | Case-split step solves both branches producing `x<5` and `x>-1`; steps 2 and 3 redundantly re-solve the same two cases. Architect doesn't recognize case-split implies per-case work is complete (SP-16) | GENERATOR |
+| HW-1 | how-it-works | predict | CRITICAL | Broken interaction | `handleMCAnswer` early-returns for `'explain'` type at HowItWorks.tsx:386 but the render block includes explain in the option-button condition — clicking any option on an explain challenge does nothing (no selection, no feedback, no advance). User-reported: stuck on "Why are nitrogen shocks important..." Challenge 3 of 3. | COMPONENT |
+| HW-2 | how-it-works | predict | HIGH | Eval mode bleed | `validateHowItWorksData` pads challenges to min 3 with hardcoded `type: 'identify'`, ignoring the eval mode's allowed types. Predict mode (allowed: predict, explain) returned a boilerplate identify challenge — eval-test API explicitly flagged disallowed type. | GENERATOR |
+| HW-3 | how-it-works | sequence | HIGH | Missing data | Flash Lite drops nullable `sequenceItem*` flat fields (SP-14) — observed sequence challenge with only 2 items + empty `correctOrder` array. Challenge unsolvable; component renders 2 reorder rows that can never match the empty target. | GENERATOR |
 
 ---
 

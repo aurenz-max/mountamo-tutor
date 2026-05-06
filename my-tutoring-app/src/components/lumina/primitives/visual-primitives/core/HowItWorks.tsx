@@ -383,7 +383,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
 
   const handleMCAnswer = useCallback((optionIndex: number) => {
     if (!currentChallenge || showChallengeFeedback) return;
-    if (currentChallenge.type !== 'identify' && currentChallenge.type !== 'predict') return;
+    if (currentChallenge.type !== 'identify' && currentChallenge.type !== 'predict' && currentChallenge.type !== 'explain') return;
 
     setSelectedOption(optionIndex);
     setShowChallengeFeedback(true);
