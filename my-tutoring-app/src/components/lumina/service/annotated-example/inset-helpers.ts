@@ -36,7 +36,8 @@ export function isAuthorableInsetType(t: string | undefined): t is AuthorableIns
     t === 'chart' ||
     t === 'code' ||
     t === 'number-line' ||
-    t === 'definition-box'
+    t === 'definition-box' ||
+    t === 'equation-setup'
   );
 }
 
@@ -180,6 +181,57 @@ export function getInsetGeminiSchema(insetType: AuthorableInsetType): Schema {
         },
         required: ['insetType', 'term', 'definition'],
       };
+
+    case 'equation-setup':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          ...baseProps,
+          scenario: { type: Type.STRING, description: 'One-sentence plain-English re-statement of what is being modeled.' },
+          quantities: {
+            type: Type.ARRAY,
+            description: '2-5 labeled quantities the equation involves. Include the unknown plus at least one given.',
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                symbol: { type: Type.STRING, description: 'KaTeX symbol (e.g. "C", "t").' },
+                meaning: { type: Type.STRING, description: 'Plain-language meaning (e.g. "total cost in dollars").' },
+                knownValue: { type: Type.STRING, description: 'KaTeX known value if given. Omit for unknowns.' },
+              },
+              required: ['symbol', 'meaning'],
+            },
+          },
+          target: {
+            type: Type.OBJECT,
+            description: 'The unknown the student is solving for.',
+            properties: {
+              symbol: { type: Type.STRING },
+              meaning: { type: Type.STRING },
+            },
+            required: ['symbol', 'meaning'],
+          },
+          canonicalEquation: { type: Type.STRING, description: 'KaTeX of the equation/inequality/system that captures the relationship. The student must produce this (or an equivalent form).' },
+          acceptableForms: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: 'Algebraically equivalent rearrangements that should also count as correct. May be empty.',
+          },
+          distractorEquations: {
+            type: Type.ARRAY,
+            description: '2-3 misconception-driven wrong equations. Each models a REAL student error.',
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                equation: { type: Type.STRING, description: 'KaTeX of the wrong equation.' },
+                misconception: { type: Type.STRING, description: 'One-sentence description of the error this distractor models.' },
+              },
+              required: ['equation', 'misconception'],
+            },
+          },
+          rationale: { type: Type.STRING, description: 'One sentence explaining WHY the canonical equation is the right model. Reference the relationship, not the algebra.' },
+        },
+        required: ['insetType', 'scenario', 'quantities', 'target', 'canonicalEquation', 'distractorEquations', 'rationale'],
+      };
   }
 }
 
@@ -213,6 +265,28 @@ Author a number line with grade-appropriate range, tick marks, and labeled point
   'definition-box': `
 ## INSET: Definition Box
 Author one vocabulary term with definition, part of speech, and example sentence. The question MUST require understanding the definition — not just recognizing the word.`,
+
+  'equation-setup': `
+## INSET: Equation Setup (interactive modeling gate)
+Use ONLY for word problems where the lesson is **translating prose into an equation**. The inset asks the student to commit to the equation BEFORE the algebra reveals.
+
+Author:
+- **scenario**: a one-sentence plain-English re-statement of what's being modeled (anchors the student in the relationship).
+- **quantities**: 2-5 labeled quantities. Each has a KaTeX symbol, plain-language meaning, and a known value if the problem supplies one. Include at minimum the unknown plus one given.
+- **target**: the unknown the student is solving for (symbol + meaning).
+- **canonicalEquation**: the equation/inequality/system the student must produce (KaTeX).
+- **acceptableForms**: 0-3 algebraically equivalent rearrangements ("100 = 5t + 20" ≡ "5t + 20 = 100"). Skip if the canonical form is the only natural way to write it.
+- **distractorEquations**: 2-3 misconception-driven wrong equations. Each pairs a wrong equation with a one-sentence description of the error. Use real student errors:
+  - swapped operands ("5t = 100 + 20")
+  - sign flip on the constant ("100 = 5t - 20")
+  - dropped coefficient ("100 = t + 20")
+  - swapped target with given ("t = 5·100 + 20")
+  - off-by-one constant ("100 = 5t + 25")
+  Random or implausible alternatives are useless.
+- **rationale**: one sentence on why the canonical equation is the right model. Reference the relationship between quantities, NOT the algebra.
+
+NEVER use this inset when the problem statement already contains the equation ("Solve $2x + 3 = 7$") — the modeling work is already done. Reserve for genuine word problems.
+NEVER attach a katex inset alongside this — equation-setup IS the modeling display.`,
 };
 
 export function buildInsetPromptGuidance(insetType: AuthorableInsetType): string {
@@ -299,5 +373,13 @@ ${inset.code}
       }: ${inset.definition}${
         inset.exampleSentence ? `  Example: "${inset.exampleSentence}"` : ''
       }`;
+
+    case 'equation-setup': {
+      const givens = inset.quantities
+        .filter((q) => q.knownValue !== undefined)
+        .map((q) => `${q.symbol}=${q.knownValue}`)
+        .join(', ');
+      return `${labelPrefix}Modeling: "${inset.scenario}"; given ${givens || '(none)'}; find ${inset.target.symbol} (${inset.target.meaning}); canonical equation ${inset.canonicalEquation}`;
+    }
   }
 }

@@ -2,14 +2,13 @@
 
 import React, { useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bug, ChevronDown, Lock, Pencil } from 'lucide-react';
+import { Bug, ChevronDown, Lock } from 'lucide-react';
 import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { KaTeX, MixedContent } from './annotated-example/StepContentRenderer';
 import { RichStepCard, LayerIconMap } from './annotated-example/RichStepCard';
-import { TryItYourself } from './annotated-example/TryItYourself';
-import { InsetRenderer } from './problem-primitives/insets/InsetRenderer';
+import { InsetRenderer, isGateableInset } from './problem-primitives/insets/InsetRenderer';
 import type {
   ChallengeAssignment,
   RichAnnotatedExampleData,
@@ -20,14 +19,13 @@ import type {
 import { ANNOTATION_LAYERS } from './annotated-example/types';
 
 // ═══════════════════════════════════════════════════════════════════════
-// AnnotatedExample — pre-hydrated worked example + bundled try problems.
+// AnnotatedExample — pre-hydrated worked example.
 //
-// All problems are authored upstream by the orchestrator and hydrated in
-// parallel before mount. The primitive renders the watched example with
-// annotation layers and challenger gates; "Now you try" opens the full-
-// screen practice surface with one of `data.tryProblems`. The primitive
-// owns a `tryIndex` cursor so reveal → "Try another" advances through
-// the bundled try problems without going back to the parent.
+// The orchestrator authors the problem upstream and the pipeline hydrates
+// the worked solution before mount. The primitive renders the example with
+// annotation layers and challenger gates. Practice on a sibling problem
+// lives in the standalone `PracticeProblem` primitive — this component is
+// pure Watch.
 // ═══════════════════════════════════════════════════════════════════════
 
 interface AnnotatedExampleProps {
@@ -38,20 +36,6 @@ interface AnnotatedExampleProps {
 export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, className }) => {
   const [activeLayers, setActiveLayers] = useState<LayerId[]>(['steps']);
   /**
-   * Two-act mode. `watch` renders the worked example with annotation layers
-   * and challenger gates; `try` mounts the full-screen `TryItYourself` surface
-   * on top with a generated isomorphic problem. Watch stays mounted under
-   * Try so progress and completion state survive a quick "Show me again".
-   */
-  const [mode, setMode] = useState<'watch' | 'try'>('watch');
-  /**
-   * Cursor into `data.tryProblems`. Advances through bundled try problems
-   * as the student finishes each one. The TryItYourself surface keys off
-   * the active try problem's identity, so swapping resets canvas state
-   * automatically.
-   */
-  const [tryIndex, setTryIndex] = useState(0);
-  /**
    * Per-step challenge-completion state. Default is "complete" — a step
    * reports `false` only while it has an uncommitted challenge. Steps
    * unlock sequentially in the full-solution view so the next step's
@@ -59,13 +43,15 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
    * to a pending prompt.
    */
   const [stepCompletions, setStepCompletions] = useState<Record<number, boolean>>({});
-
-  const tryProblems = data.tryProblems ?? [];
-  const activeTryProblem = tryProblems[tryIndex];
-  const hasNextTry = tryIndex + 1 < tryProblems.length;
-  const advanceToNextTry = useCallback(() => {
-    setTryIndex((i) => Math.min(i + 1, Math.max(tryProblems.length - 1, 0)));
-  }, [tryProblems.length]);
+  /**
+   * Whether the problem-statement inset is committed. Only meaningful when
+   * the inset is gateable (currently `equation-setup`); for static insets
+   * or no inset the value stays `true` and never blocks step rendering.
+   * The inset reports its commit through `InsetRenderer`'s
+   * `onCompletionChange` prop, which we wire up below.
+   */
+  const insetGateable = isGateableInset(data.problem.inset);
+  const [insetComplete, setInsetComplete] = useState(!insetGateable);
 
   const reportCompletion = useCallback((idx: number, complete: boolean) => {
     setStepCompletions((prev) => (prev[idx] === complete ? prev : { ...prev, [idx]: complete }));
@@ -78,21 +64,17 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
 
   const isStepUnlocked = useCallback(
     (idx: number) => {
+      // A gateable inset (currently the modeling MCQ) blocks every step
+      // until the student commits — otherwise the algebra would reveal
+      // the equation the inset is asking them to derive.
+      if (!insetComplete) return false;
       for (let i = 0; i < idx; i++) {
         if (!isStepComplete(i)) return false;
       }
       return true;
     },
-    [isStepComplete],
+    [insetComplete, isStepComplete],
   );
-
-  // True once every step is unlocked AND complete — i.e. the worked example
-  // has been fully revealed and all challenger gates committed. Drives the
-  // "Next problem" CTA at the bottom of the example.
-  const allStepsResolved =
-    data.steps.length > 0 &&
-    isStepUnlocked(data.steps.length - 1) &&
-    isStepComplete(data.steps.length - 1);
 
   const toggleLayer = (layerId: LayerId) => {
     setActiveLayers((prev) =>
@@ -104,27 +86,11 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
     <div className={`max-w-3xl mx-auto font-sans text-slate-200 ${className || ''}`}>
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="mb-6 space-y-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <Badge variant="outline" className="mb-2 text-blue-400 border-blue-500/30 bg-blue-500/10">
-              {data.subject}
-            </Badge>
-            <h1 className="text-2xl font-serif font-bold text-white tracking-tight">{data.title}</h1>
-          </div>
-
-          {/* Act 2 entry — opens the full-screen Try-It surface. Disabled
-              when no `tryProblems` were bundled (count=1 watch-only mode). */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMode('try')}
-            disabled={!activeTryProblem}
-            title={activeTryProblem ? undefined : 'No practice problem bundled with this example.'}
-            className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-200 gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Pencil size={14} />
-            Now you try
-          </Button>
+        <div>
+          <Badge variant="outline" className="mb-2 text-blue-400 border-blue-500/30 bg-blue-500/10">
+            {data.subject}
+          </Badge>
+          <h1 className="text-2xl font-serif font-bold text-white tracking-tight">{data.title}</h1>
         </div>
 
         {/* Problem Card */}
@@ -143,7 +109,12 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
               </div>
             )}
             <p className="text-slate-300 leading-relaxed"><MixedContent text={data.problem.statement} /></p>
-            {data.problem.inset && <InsetRenderer inset={data.problem.inset} />}
+            {data.problem.inset && (
+              <InsetRenderer
+                inset={data.problem.inset}
+                onCompletionChange={insetGateable ? setInsetComplete : undefined}
+              />
+            )}
             {data.problem.context && (
               <p className="text-slate-400 text-sm mt-2 leading-relaxed"><MixedContent text={data.problem.context} /></p>
             )}
@@ -234,47 +205,6 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
         })()}
       </div>
 
-      {/* End-of-example CTA — once every step is revealed and committed, the
-          natural progression is into Act 2 (Try). Only shown when a Try
-          problem was bundled. */}
-      {allStepsResolved && activeTryProblem && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="mt-6 rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 p-5 flex items-center gap-4"
-        >
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-emerald-200">Ready to try one yourself?</p>
-            <p className="text-xs text-slate-400 mt-1">
-              A similar practice problem is ready on the canvas.
-            </p>
-          </div>
-          <Button
-            onClick={() => setMode('try')}
-            className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-100 font-semibold gap-2"
-          >
-            <Pencil size={16} />
-            Now you try
-          </Button>
-        </motion.div>
-      )}
-
-      {/* Act 2 — full-screen takeover. Mounted alongside Watch so canvas
-          state persists across "Show me again" round trips. The reveal
-          view's "Try another" advances `tryIndex` through the bundled
-          problems; once exhausted the button is hidden. */}
-      <AnimatePresence>
-        {mode === 'try' && activeTryProblem && (
-          <TryItYourself
-            key={tryIndex}
-            tryData={activeTryProblem}
-            onClose={() => setMode('watch')}
-            onReturnToWatch={() => setMode('watch')}
-            onTryAnother={hasNextTry ? advanceToNextTry : undefined}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };

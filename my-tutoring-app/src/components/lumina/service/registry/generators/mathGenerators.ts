@@ -60,6 +60,8 @@ import { generateCompareObjects } from '../../math/gemini-compare-objects';
 import { generateParameterExplorer } from '../../math/gemini-parameter-explorer';
 import { generateEquationWorkspace } from '../../math/gemini-equation-workspace';
 import { generateFunctionSketch } from '../../math/gemini-function-sketch';
+import { generateDistributionExplorer } from '../../distribution-explorer/gemini-distribution-explorer';
+import { generatePracticeProblem } from '../../math/gemini-practice-problem';
 
 // Legacy Math Primitives (now have dedicated service files)
 import { generateBarModel } from '../../math/gemini-bar-model';
@@ -459,6 +461,30 @@ registerGenerator('function-sketch', async (item, topic, gradeContext) => ({
   type: 'function-sketch',
   instanceId: item.instanceId,
   data: await generateFunctionSketch(topic, gradeContext, item.config),
+}));
+
+// Distribution Explorer (probability distributions: explore → identify → compute)
+// `targetEvalMode` from item.config drives both the catalog eval mode resolution
+// (schema enum constraint + logging) and the orchestrator's per-mode prompt.
+registerGenerator('distribution-explorer', async (item, topic, gradeContext) => ({
+  type: 'distribution-explorer',
+  instanceId: item.instanceId,
+  data: await generateDistributionExplorer({
+    topic,
+    gradeContext,
+    ...item.config,
+    intent: item.intent || item.title,
+  }),
+}));
+
+// Practice Problem (6-12 standalone canvas-based math derivation surface)
+// Reuses the annotated-example pipeline under the hood; `targetEvalMode` from
+// item.config (derive_easy | derive_medium | derive_hard) drives the per-difficulty
+// intent string passed to the orchestrator.
+registerGenerator('practice-problem', async (item, topic, gradeContext) => ({
+  type: 'practice-problem',
+  instanceId: item.instanceId,
+  data: await generatePracticeProblem(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

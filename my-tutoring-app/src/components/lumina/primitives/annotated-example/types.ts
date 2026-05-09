@@ -325,18 +325,6 @@ export interface RichAnnotatedExampleData {
    * with grounding edges so dropped/injected/merged steps are visible.
    */
   solverDebug?: SolverDebugPayload;
-  /**
-   * Pre-hydrated isomorphic practice problems for the Try-It act. Multi-phase
-   * pattern: the orchestrator (or other upstream caller) loads ALL phases
-   * up front and passes them in together — the primitive never authors
-   * problems mid-flight. Each entry's `steps` are the canonical solution
-   * the judge / transcription compares the student's work against.
-   *
-   * The primitive cycles through this array as the student finishes each
-   * try problem. Empty / undefined means Watch-only (Try button disabled).
-   * Nested entries should NOT themselves carry `tryProblems`.
-   */
-  tryProblems?: RichAnnotatedExampleData[];
 }
 
 export interface SolverDebugPayload {
@@ -477,13 +465,11 @@ export interface SolutionPlan {
 // ═══════════════════════════════════════════════════════════════════════
 // Annotated-Example Orchestrator Output
 //
-// One Gemini Lite call authors the watched worked example (slot 0) plus
-// any sibling practice problems (slots 1+) the student will solve on the
-// Try-It canvas. The orchestrator is the SOLE problem author — it produces
-// the actual problem statement and structured inset payload for every slot
-// in one shot. Downstream `generateAnnotatedExample` pins the orchestrator's
-// problem and runs the solver / planner / step-generator pipeline against
-// it — it never authors.
+// One Gemini Lite call authors a single worked-example problem. The
+// orchestrator is the SOLE problem author — it produces the actual problem
+// statement and structured inset payload. Downstream `generateAnnotatedExample`
+// pins the orchestrator's problem and runs the solver / planner /
+// step-generator pipeline against it — it never authors.
 // ═══════════════════════════════════════════════════════════════════════
 
 export type AnnotatedExampleDifficulty = 'easy' | 'medium' | 'hard';
@@ -502,11 +488,10 @@ export type AnnotatedPlannedInsetType =
   | 'code'
   | 'number-line'
   | 'definition-box'
+  | 'equation-setup'
   | null;
 
 export interface AnnotatedExampleProblemPlan {
-  /** Ordinal position in the set, 0-based. 0 = watched example, 1+ = student-solved siblings. */
-  index: number;
   /** Targeted difficulty band. */
   difficulty: AnnotatedExampleDifficulty;
   /** Inset attached to this problem. `null` means plain text. */
@@ -515,10 +500,6 @@ export interface AnnotatedExampleProblemPlan {
   problemStatement: string;
   /** Structured inset payload. Set when `insetType` is non-null. */
   inset?: Inset;
-  /** One sentence on what skill the problem exercises (slot 0) or what was preserved/changed from slot 0 (siblings). */
+  /** One sentence on what skill the problem exercises. */
   rationale: string;
-}
-
-export interface AnnotatedExampleSetPlan {
-  problems: AnnotatedExampleProblemPlan[];
 }

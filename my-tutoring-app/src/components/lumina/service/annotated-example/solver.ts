@@ -133,6 +133,7 @@ You have Python code execution available. USE IT for every numerical computation
 
 - Show ONE worked example, end to end, addressing EVERY part of the problem statement.
 - Use KaTeX for ALL math (\\frac, \\sqrt, ^{}, \\ln, \\pi, etc.). Wrap inline math in $...$.
+- For currency, prices, or any literal dollar sign in prose, write \`\\$\` (backslash-dollar) — e.g. \`\\$15\`, \`a profit of \\$45\`. Reserve \`$...$\` for math only. Bare \`$\` next to a number (e.g. \`$15\`) will be paired with the next \`$\` and italicize whole sentences.
 - Include a verification or check move when the problem asks for one, OR when sanity-checking the final answer aids understanding.
 - Keep individual moves focused — no filler, no "as you can see," no recap at the end.
 - A typical worked example has 3-6 moves. If you produced only 2, you almost certainly skipped a part of the problem — re-read it.

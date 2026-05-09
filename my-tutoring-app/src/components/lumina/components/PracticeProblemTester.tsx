@@ -1,15 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AnnotatedExample } from '../primitives/AnnotatedExample';
+import PracticeProblem from '../primitives/visual-primitives/math/PracticeProblem';
 import { EvaluationProvider, useEvaluationContext } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
+import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 import type {
-  RichAnnotatedExampleData,
-  StepType,
-} from '../primitives/annotated-example/types';
+  PracticeEvalMode,
+  PracticeProblemSolution,
+  PracticeStep,
+} from '../primitives/visual-primitives/math/practice-problem-types';
+import type { StepType } from '../primitives/annotated-example/types';
 
-interface AnnotatedExampleTesterProps {
+interface PracticeProblemTesterProps {
   onBack: () => void;
 }
 
@@ -31,14 +34,33 @@ const EXAMPLE_TOPICS = [
   { label: 'Integration by parts', subject: 'Calculus' },
   { label: 'Area between curves', subject: 'Calculus' },
   { label: 'Related rates problems', subject: 'Calculus' },
-  { label: 'Eigenvalues and eigenvectors', subject: 'Linear Algebra' },
   { label: "Newton's Second Law on inclined planes", subject: 'Physics' },
   { label: 'Conservation of momentum in collisions', subject: 'Physics' },
   { label: "Conditional probability and Bayes' theorem", subject: 'Probability' },
   { label: 'Expected value of discrete random variables', subject: 'Probability' },
   { label: 'Pythagorean theorem applications', subject: 'Geometry' },
-  { label: 'Properties of similar triangles', subject: 'Geometry' },
-  { label: 'Compound interest and exponential growth', subject: 'Finance' },
+];
+
+const EVAL_MODE_OPTIONS: Array<{
+  value: PracticeEvalMode;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'derive_easy',
+    label: 'Easy (Tier 1)',
+    description: '2-3 step derivation, single rule, warm-up.',
+  },
+  {
+    value: 'derive_medium',
+    label: 'Medium (Tier 2)',
+    description: '3-5 steps, multiple rules, standard practice.',
+  },
+  {
+    value: 'derive_hard',
+    label: 'Hard (Tier 3)',
+    description: '4-6 steps with strategy choice, stretch problem.',
+  },
 ];
 
 const STEP_TYPE_COLORS: Record<StepType, string> = {
@@ -91,12 +113,24 @@ const EvaluationResultsPanel: React.FC = () => {
 
 // ── Step Manifest Panel ──────────────────────────────────────────────
 
-const StepManifestPanel: React.FC<{ data: RichAnnotatedExampleData }> = ({ data }) => {
+const StepManifestPanel: React.FC<{ data: PracticeProblemSolution }> = ({ data }) => {
   return (
     <div className="space-y-3">
-      <h4 className="text-sm font-semibold text-white">Step Manifest</h4>
+      <h4 className="text-sm font-semibold text-white">Canonical Steps</h4>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="p-2 bg-slate-700/30 rounded-lg">
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider">Difficulty</p>
+          <p className="text-sm text-slate-200 capitalize">{data.difficulty}</p>
+        </div>
+        <div className="p-2 bg-slate-700/30 rounded-lg">
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider">Steps</p>
+          <p className="text-sm text-slate-200">{data.steps.length}</p>
+        </div>
+      </div>
+
       <div className="space-y-1.5">
-        {data.steps.map((step, i) => (
+        {data.steps.map((step: PracticeStep, i) => (
           <div
             key={step.id}
             className="flex items-center gap-2 p-2 bg-slate-800/50 rounded-lg border border-slate-700/50"
@@ -107,10 +141,12 @@ const StepManifestPanel: React.FC<{ data: RichAnnotatedExampleData }> = ({ data 
             <div className="flex-1 min-w-0">
               <p className="text-xs text-slate-200 truncate">{step.title}</p>
             </div>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full border flex-shrink-0 ${
-              STEP_TYPE_COLORS[step.content.type] || 'bg-slate-600/50 text-slate-400 border-slate-500/30'
-            }`}>
-              {step.content.type}
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full border flex-shrink-0 ${
+                STEP_TYPE_COLORS[step.type] || 'bg-slate-600/50 text-slate-400 border-slate-500/30'
+              }`}
+            >
+              {step.type}
             </span>
           </div>
         ))}
@@ -121,6 +157,21 @@ const StepManifestPanel: React.FC<{ data: RichAnnotatedExampleData }> = ({ data 
         <p className="text-xs text-slate-400 leading-relaxed">{data.solutionStrategy}</p>
       </div>
 
+      <div className="pt-2 border-t border-slate-700/50">
+        <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">Canonical Answer</p>
+        <p className="text-xs text-emerald-300 font-mono leading-relaxed">{data.canonicalAnswer}</p>
+      </div>
+
+      {data.problem.inset && (
+        <div className="pt-2 border-t border-slate-700/50">
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">
+            Inset
+          </p>
+          <p className="text-xs text-slate-400 italic">
+            type: {(data.problem.inset as { insetType?: string }).insetType ?? 'unknown'}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
@@ -149,14 +200,15 @@ const JsonInspector: React.FC<{ data: unknown; label?: string }> = ({ data, labe
 
 // ── Main Content ─────────────────────────────────────────────────────
 
-const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ onBack }) => {
+const PracticeProblemTesterContent: React.FC<PracticeProblemTesterProps> = ({ onBack }) => {
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('high-school');
   const [topic, setTopic] = useState('');
   const [intent, setIntent] = useState('');
+  const [evalMode, setEvalMode] = useState<PracticeEvalMode>('derive_medium');
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<RichAnnotatedExampleData | null>(null);
+  const [data, setData] = useState<PracticeProblemSolution | null>(null);
   const [generationTime, setGenerationTime] = useState<number | null>(null);
 
   const handleGenerate = async () => {
@@ -173,10 +225,11 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'generateAnnotatedExample',
+          action: 'generatePracticeProblem',
           params: {
             topic: currentTopic,
-            gradeContext: selectedGrade,
+            gradeLevel: selectedGrade,
+            targetEvalMode: evalMode,
             ...(intent ? { intent } : {}),
           },
         }),
@@ -184,10 +237,10 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate annotated example');
+        throw new Error(errorData.error || 'Failed to generate practice problem');
       }
 
-      const result = (await response.json()) as RichAnnotatedExampleData;
+      const result = (await response.json()) as PracticeProblemSolution;
       setData(result);
       setGenerationTime(Date.now() - startTime);
     } catch (err) {
@@ -199,7 +252,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950">
       {/* Header */}
       <div className="border-b border-slate-800 bg-slate-900/50 backdrop-blur">
         <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center justify-between">
@@ -212,11 +265,11 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
             </button>
             <div className="h-6 w-px bg-slate-700" />
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <span>📝</span>
-              <span>Annotated Example</span>
+              <span>✏️</span>
+              <span>Practice Problem</span>
             </h1>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-              Orchestrator → Hydrate
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              Orchestrator → Canonical Solution
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs text-slate-500">
@@ -240,7 +293,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value as GradeLevel)}
-                className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {GRADE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -248,6 +301,32 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Eval Mode (Difficulty) */}
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                Difficulty Tier
+              </label>
+              <div className="space-y-1.5">
+                {EVAL_MODE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setEvalMode(option.value)}
+                    disabled={isGenerating}
+                    className={`w-full text-left px-3 py-2 rounded-lg border transition-colors ${
+                      evalMode === option.value
+                        ? 'bg-emerald-600/30 border-emerald-500/60 text-emerald-100'
+                        : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <div className="text-xs font-semibold">{option.label}</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                      {option.description}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Topic Input */}
@@ -260,7 +339,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="Solve 2x + 5 = 13"
-                className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
@@ -279,7 +358,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
                       disabled={isGenerating}
                       className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
                         isSelected
-                          ? 'bg-indigo-600 text-white border-indigo-500'
+                          ? 'bg-emerald-600 text-white border-emerald-500'
                           : 'bg-slate-800/50 text-slate-400 border-slate-700 hover:bg-slate-800 hover:text-white'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                       title={ex.subject}
@@ -294,14 +373,14 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
             {/* Intent / Context */}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
-                Intent <span className="text-slate-600 font-normal">(optional)</span>
+                Intent <span className="text-slate-600 font-normal">(overrides difficulty default)</span>
               </label>
               <input
                 type="text"
                 value={intent}
                 onChange={(e) => setIntent(e.target.value)}
                 placeholder="Steering text for the orchestrator"
-                className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
@@ -309,15 +388,19 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
             <button
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-700 disabled:to-slate-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg disabled:shadow-none disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-slate-700 disabled:to-slate-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg disabled:shadow-none disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
-                      cx="12" cy="12" r="10"
-                      stroke="currentColor" strokeWidth="4" fill="none"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
                     />
                     <path
                       className="opacity-75"
@@ -328,7 +411,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
                   Generating…
                 </span>
               ) : (
-                'Generate Example'
+                'Generate Problem'
               )}
             </button>
 
@@ -347,7 +430,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
             {/* JSON Inspector */}
             {data && (
               <div className="pt-4 border-t border-slate-700">
-                <JsonInspector data={data} label="example JSON" />
+                <JsonInspector data={data} label="solution JSON" />
               </div>
             )}
           </div>
@@ -359,22 +442,21 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
             {!data && !isGenerating && !error && (
               <div className="flex items-center justify-center h-[calc(100vh-200px)]">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">📝</div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Annotated Example
-                  </h3>
+                  <div className="text-6xl mb-4">✏️</div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Practice Problem</h3>
                   <p className="text-slate-400 max-w-lg mb-6">
-                    One orchestrator call authors the watched worked example plus any
-                    sibling try problems; the pipeline hydrates each through solver →
-                    planner → step generators in parallel. Pick a topic and click Generate.
+                    Two Gemini calls: orchestrator authors the problem statement (and inset
+                    when warranted), then a single canonical-solution call produces the lean
+                    PracticeStep[] the canvas + judge consume. No solver, no planner, no
+                    challenger.
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
-                    {(['algebra', 'table', 'diagram', 'graph-sketch', 'case-split'] as StepType[]).map((type) => (
+                    {EVAL_MODE_OPTIONS.map((mode) => (
                       <span
-                        key={type}
-                        className={`text-[10px] px-2 py-1 rounded-full border ${STEP_TYPE_COLORS[type]}`}
+                        key={mode.value}
+                        className="text-[10px] px-2 py-1 rounded-full border bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
                       >
-                        {type}
+                        {mode.label}
                       </span>
                     ))}
                   </div>
@@ -385,11 +467,11 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
             {isGenerating && (
               <div className="flex items-center justify-center h-[calc(100vh-200px)]">
                 <div className="text-center space-y-4">
-                  <div className="w-16 h-16 rounded-full border-4 border-slate-700 border-t-indigo-500 animate-spin mx-auto" />
+                  <div className="w-16 h-16 rounded-full border-4 border-slate-700 border-t-emerald-500 animate-spin mx-auto" />
                   <div>
-                    <p className="text-slate-300 font-medium">Authoring + hydrating…</p>
+                    <p className="text-slate-300 font-medium">Authoring problem + canonical solution…</p>
                     <p className="text-slate-500 text-sm mt-1">
-                      Orchestrator → solver → planner → step generators.
+                      Orchestrator → canonical-solution generator.
                     </p>
                   </div>
                 </div>
@@ -398,9 +480,7 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
 
             {error && (
               <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg max-w-2xl mx-auto">
-                <p className="text-red-400 text-sm font-medium mb-2">
-                  Generation failed
-                </p>
+                <p className="text-red-400 text-sm font-medium mb-2">Generation failed</p>
                 <p className="text-red-400/80 text-xs mb-3">{error}</p>
                 <button
                   onClick={handleGenerate}
@@ -411,7 +491,17 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
               </div>
             )}
 
-            {data && <AnnotatedExample data={data} />}
+            {data && (
+              <PracticeProblem
+                data={{
+                  ...data,
+                  instanceId: `practice-problem-tester-${Date.now()}`,
+                  skillId: 'tester',
+                  subskillId: 'tester',
+                  objectiveId: 'tester',
+                }}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -421,14 +511,16 @@ const AnnotatedExampleTesterContent: React.FC<AnnotatedExampleTesterProps> = ({ 
 
 // ── Wrapper with providers ───────────────────────────────────────────
 
-const AnnotatedExampleTester: React.FC<AnnotatedExampleTesterProps> = (props) => {
+const PracticeProblemTester: React.FC<PracticeProblemTesterProps> = (props) => {
   return (
     <EvaluationProvider>
       <ExhibitProvider objectives={[]} manifestItems={[]}>
-        <AnnotatedExampleTesterContent {...props} />
+        <LuminaAIProvider>
+          <PracticeProblemTesterContent {...props} />
+        </LuminaAIProvider>
       </ExhibitProvider>
     </EvaluationProvider>
   );
 };
 
-export default AnnotatedExampleTester;
+export default PracticeProblemTester;

@@ -30,6 +30,7 @@ import TapeDiagram from '../primitives/visual-primitives/math/TapeDiagram';
 import BalanceScale from '../primitives/visual-primitives/math/BalanceScale';
 import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachine';
 import FunctionSketch from '../primitives/visual-primitives/math/FunctionSketch';
+import { DistributionExplorer } from '../primitives/DistributionExplorer';
 import CompareObjects from '../primitives/visual-primitives/math/CompareObjects';
 import ComparisonBuilder from '../primitives/visual-primitives/math/ComparisonBuilder';
 import NumberBond from '../primitives/visual-primitives/math/NumberBond';
@@ -48,6 +49,7 @@ import TimeSequencer from '../primitives/visual-primitives/math/TimeSequencer';
 import CountingBoard from '../primitives/visual-primitives/math/CountingBoard';
 import ParameterExplorer from '../primitives/visual-primitives/math/ParameterExplorer';
 import PatternBuilder from '../primitives/visual-primitives/math/PatternBuilder';
+import PracticeProblem from '../primitives/visual-primitives/math/PracticeProblem';
 import SkipCountingRunner from '../primitives/visual-primitives/math/SkipCountingRunner';
 import RegroupingWorkbench from '../primitives/visual-primitives/math/RegroupingWorkbench';
 import MultiplicationExplorer from '../primitives/visual-primitives/math/MultiplicationExplorer';
@@ -636,6 +638,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: true,
   },
 
+  'distribution-explorer': {
+    component: DistributionExplorer,
+    sectionTitle: 'Distribution Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   'math-fact-fluency': {
     component: MathFactFluency,
     sectionTitle: 'Math Fact Fluency',
@@ -818,6 +830,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-5xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'practice-problem': {
+    component: PracticeProblem,
+    sectionTitle: 'Practice Problem',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 

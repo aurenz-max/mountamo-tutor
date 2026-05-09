@@ -433,6 +433,42 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
   },
   {
+    id: 'practice-problem',
+    description: 'Standalone canvas-based math derivation surface. Student writes their multi-step solution by hand on a whiteboard; live transcription + step-aware coaching keep them oriented as they solve; pressing Done dispatches a judge that compares their derivation to the canonical solution and reveals a verdict (correct / partial / incorrect) with side-by-side analysis. Perfect for algebra, pre-calculus, and calculus problems where showing work matters more than the final answer. ESSENTIAL for grades 6-12 procedural fluency, multi-step problem solving, and strategy selection.',
+    constraints: 'Requires a problem with a canonical multi-step solution (2+ steps). Best for derivation-style math problems (solve equations, simplify expressions, evaluate integrals, prove identities). Not suitable for one-shot computation, multiple choice, or visual-spatial problems where the answer is non-symbolic.',
+    evalModes: [
+      { evalMode: 'derive_easy', label: 'Derive — Easy (Tier 1)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['derive'], description: 'Short 2-3 step derivation. Single rule application, simple algebra or arithmetic. Aimed at warm-up / fluency.' },
+      { evalMode: 'derive_medium', label: 'Derive — Medium (Tier 2)', beta: 0.0, scaffoldingMode: 3, challengeTypes: ['derive'], description: '3-5 step derivation requiring multiple rule applications. Standard practice difficulty.' },
+      { evalMode: 'derive_hard', label: 'Derive — Hard (Tier 3)', beta: 0.7, scaffoldingMode: 4, challengeTypes: ['derive'], description: '4-6 step derivation requiring strategy choice (substitution, case split, identity selection). Stretch problems.' },
+    ],
+    tutoring: {
+      taskDescription: 'Student is solving a {{difficulty}} math derivation by hand on a whiteboard: "{{problem}}". They are currently in the {{currentPhase}} phase with {{strokeCount}} strokes drawn so far. The canonical solution has {{stepCount}} steps.',
+      contextKeys: ['title', 'problem', 'equations', 'difficulty', 'stepCount', 'currentPhase', 'strokeCount'],
+      scaffoldingLevels: {
+        level1: '"Take a moment to look at the problem. What do you see, and what do you think the first move should be?"',
+        level2: '"Try writing the first transformation on the canvas. What rule applies to the left-hand side of {{equations}}? Don\'t worry about getting all {{stepCount}} steps at once."',
+        level3: '"Start by isolating one term. For "{{problem}}", the first canonical step is usually a structural simplification — try rewriting the expression so the variables you care about are on one side."',
+      },
+      commonStruggles: [
+        { pattern: 'Empty canvas after extended time', response: '"You don\'t have to solve it all at once. Just write the first thing that comes to mind, even if you\'re not sure. We can build from there."' },
+        { pattern: 'Off-track derivation (live reviewer flagged)', response: '"Pause for a second. Look at the line you just wrote — does the operation you applied actually preserve equality? Re-check the rule."' },
+        { pattern: 'Skipped steps (shortcut detected)', response: '"That\'s a valid shortcut, but make sure you can justify each move. Want to write out the intermediate step so the chain is explicit?"' },
+        { pattern: 'Got the right answer but messy work', response: '"You landed on it! Looking back at your derivation — which line was the key move that made the rest fall into place?"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'COACH PROCESS, NOT ANSWERS',
+          instruction:
+            'Never reveal the canonical step or final answer at any scaffolding level. The point of this primitive is for the student to derive the solution themselves. '
+            + 'Use the live reviewer\'s status (on-track / shortcut / off-track) when the student asks for help — if they\'re on-track, encourage continuation; if off-track, ask them to re-examine the latest line; if shortcut, ask them to articulate the rule they applied. '
+            + 'After the verdict returns, focus on metacognition: which step was hardest, what would they try differently next time, what rule did they use. '
+            + 'For hard difficulty problems, lean into strategy talk — substitution choice, case-split decisions, identity selection — rather than mechanical hints.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
     id: 'area-model',
     description: 'Visual area model for multiplication using rectangles divided by factor decomposition. Perfect for teaching multi-digit multiplication, distributive property, partial products, binomial multiplication (FOIL), and polynomial expansion. Shows how (a+b)×(c+d) breaks into partial products. ESSENTIAL for grades 3-8 math and algebra.',
     constraints: 'Requires two factors that can be decomposed (e.g., 23×15 or (x+3)(x+5)). Supports both numeric and algebraic modes.',
@@ -3567,6 +3603,86 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Confuses roots with extrema', response: 'Roots are where the curve crosses the x-axis (y=0). Extrema are the peaks and valleys of the curve.' },
         { pattern: 'Places control points too close together', response: 'Try spreading your points across the full x-range. Focus on getting the key features (peaks, zeros, intercepts) in roughly the right positions.' },
         { pattern: 'Cannot distinguish function families', response: 'Linear = straight line. Quadratic = single U or arch. Exponential = starts slow then grows fast (or decays). Periodic = repeats.' },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'distribution-explorer',
+    description: 'Live workbench for probability distributions (binomial, Poisson, exponential). Students manipulate parameter sliders and watch the PMF/PDF, CDF, and moments update in real time. Supports four phase-gated challenge modes: free guided exploration, family identification from shape/moments, basic single-distribution probability computation, and advanced conditional/tail/percentile reasoning. ESSENTIAL for probability, statistics, and actuarial topics.',
+    constraints: 'Requires a topic with a probabilistic structure. Each eval mode produces phase-appropriate challenges: explore (no graded answer), identify (family MCQ), compute (numeric input with tolerance), predict_shape (free-text or MCQ description). Math is computed client-side from the chosen family — Gemini authors framing + challenges only.',
+    evalModes: [
+      {
+        evalMode: 'explore',
+        label: 'Explore (Tier 1)',
+        beta: 1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['guided_exploration'],
+        description: 'Free parameter manipulation with guided prompts; no graded answer.',
+      },
+      {
+        evalMode: 'identify',
+        label: 'Identify (Tier 2)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['identify'],
+        description: 'Identify the distribution family from shape, moments, or a real-world scenario.',
+      },
+      {
+        evalMode: 'compute_basic',
+        label: 'Compute Basic (Tier 3)',
+        beta: 4.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['compute'],
+        description: 'Single-distribution probability and moment calculations from a given (family, params) scenario.',
+      },
+      {
+        evalMode: 'compute_advanced',
+        label: 'Compute Advanced (Tier 4)',
+        beta: 6.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['compute', 'predict_shape'],
+        description: 'Conditional probabilities, tail probabilities, percentile lookups, and shape prediction.',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Student is exploring the {{family}} distribution in eval mode "{{evalMode}}" with parameters {{parameters}}. Current challenge: {{currentPrompt}}.',
+      contextKeys: ['family', 'evalMode', 'parameters', 'currentPrompt', 'currentChallengeType', 'attemptNumber', 'lastAnswer', 'momentSnapshot'],
+      scaffoldingLevels: {
+        level1: '"What does the chart tell you about how likely each outcome is? Try changing one parameter and watch what shifts."',
+        level2: '"Look at the moments panel — the mean tells you the average, variance tells you the spread. How does that match the {{family}} formulas?"',
+        level3: '"For {{family}}, the mean and variance follow specific formulas. For Binomial(n,p): E[X]=np, Var[X]=np(1-p). For Poisson(λ): both equal λ. For Exponential(rate): E[X]=1/rate, Var=1/rate²."',
+      },
+      commonStruggles: [
+        { pattern: 'Confusing rate vs mean for exponential', response: '"For Exponential(rate=λ), the MEAN is 1/λ, not λ. A higher rate means events happen MORE often, so the mean wait time is SHORTER."' },
+        { pattern: 'Treating Poisson as continuous', response: '"Poisson is DISCRETE — it counts events. The PMF gives P(X=k) for integer k. There is no probability at non-integer values."' },
+        { pattern: 'Ignoring memorylessness on exponential conditionals', response: '"Exponential is memoryless: P(T > s+t | T > s) = P(T > t). The past does not matter — only how much more time you ask about."' },
+        { pattern: 'Forgetting Binomial parameter constraints', response: '"Binomial needs an integer n and 0 < p < 1. The mean np must be between 0 and n."' },
+        { pattern: 'Reading PMF probabilities as densities', response: '"For discrete families (binomial, Poisson), each bar is the actual probability P(X=k). For continuous (exponential), the curve is a density — you need to integrate to get a probability."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PARAMETER-DRIVEN COACHING',
+          instruction:
+            'When the student manipulates the sliders, narrate the visible change in pedagogical terms. '
+            + '"You raised λ from 2 to 5 — notice how the Poisson distribution shifted right and the variance grew (because mean = variance = λ)." '
+            + 'Always tie a parameter change to one of: mean, variance, support, shape (skewness), or tail behavior. '
+            + 'Never reveal the answer to a pending challenge through a parameter observation.',
+        },
+        {
+          title: 'EVAL-MODE-AWARE GUIDANCE',
+          instruction:
+            'For EXPLORE: validate the student\'s observation, do not push to a specific answer. The phase has no graded outcome. '
+            + 'For IDENTIFY: contrast distractor families — "Why not Poisson here? Look at the support." Use shape, support, and the mean/variance relationship. '
+            + 'For COMPUTE BASIC: walk through the formula, then plug values. Make sure the student understands WHICH probability is being asked (P(X=k), P(X≤k), P(X>k)). '
+            + 'For COMPUTE ADVANCED: emphasize the conditional structure. "Given X has already happened, what is the new sample space?" For exponential conditionals, invoke memorylessness explicitly.',
+        },
+        {
+          title: 'NO ANSWER LEAKAGE',
+          instruction:
+            'Never name the correct family before an identify challenge is committed. '
+            + 'Never compute the answer to a compute challenge before the student attempts it — even if asked directly. Instead, restate the problem and offer a structural hint.',
+        },
       ],
     },
     supportsEvaluation: true,

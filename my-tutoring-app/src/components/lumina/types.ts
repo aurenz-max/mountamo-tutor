@@ -436,7 +436,8 @@ export type InsetType =
   | 'code'
   | 'image'
   | 'number-line'
-  | 'definition-box';
+  | 'definition-box'
+  | 'equation-setup';
 
 export interface BaseInset {
   insetType: InsetType;
@@ -509,6 +510,42 @@ export interface DefinitionBoxInset extends BaseInset {
   exampleSentence?: string;
 }
 
+/**
+ * Interactive modeling inset — translate a word problem into the governing
+ * equation. The student commits an MCQ answer before the canonical equation
+ * reveals. Used at the top of word-problem worked examples to gate the
+ * "translate prose → equation" move that algebra steps would otherwise skip.
+ *
+ * Unlike other insets (which are pure presentation), this one carries a
+ * gating contract: downstream content (e.g. solution steps) should remain
+ * locked until the student commits. The renderer surfaces a completion
+ * callback so containers can wire that locking themselves.
+ */
+export interface EquationSetupInset extends BaseInset {
+  insetType: 'equation-setup';
+  /** Plain-English re-statement of what's being modeled. */
+  scenario: string;
+  /** Labeled givens — variables with their meaning, optionally with known values. */
+  quantities: Array<{
+    /** KaTeX symbol (e.g. "C", "t"). */
+    symbol: string;
+    /** Plain-language meaning (e.g. "total cost", "time in hours"). */
+    meaning: string;
+    /** KaTeX value when given in the problem (e.g. "100"). Omitted for unknowns. */
+    knownValue?: string;
+  }>;
+  /** What we want to find. */
+  target: { symbol: string; meaning: string };
+  /** Canonical equation the student must produce (KaTeX). */
+  canonicalEquation: string;
+  /** Equivalent rearrangements that count as correct (KaTeX). First entry duplicates `canonicalEquation`. */
+  acceptableForms: string[];
+  /** Misconception-driven wrong equations. Each entry models a real student error. */
+  distractorEquations: Array<{ equation: string; misconception: string }>;
+  /** One-sentence explanation revealed after commit. */
+  rationale: string;
+}
+
 export type Inset =
   | KatexInset
   | DataTableInset
@@ -517,7 +554,8 @@ export type Inset =
   | CodeInset
   | ImageInset
   | NumberLineInset
-  | DefinitionBoxInset;
+  | DefinitionBoxInset
+  | EquationSetupInset;
 
 // Base interface for all problem types
 export interface BaseProblemData {
@@ -1155,6 +1193,7 @@ export type ComponentId =
   | 'factor-tree'        // Tree diagram showing prime factorization
   | 'function-machine'   // Visual machine with input hopper, rule display, and output chute for function concepts
   | 'function-sketch'    // Interactive canvas for sketching and analyzing function graphs
+  | 'distribution-explorer' // Live workbench for probability distributions: explore parameters, identify family, compute probabilities
   | 'math-fact-fluency'  // Interactive math fact fluency practice
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
@@ -1178,6 +1217,7 @@ export type ComponentId =
   | 'counting-board'     // Flexible counting workspace with draggable objects, subitizing, and counting strategies (K-1)
   | 'parameter-explorer' // Interactive parameter exploration for function and equation understanding
   | 'pattern-builder'   // Pattern recognition, extension, creation for algebraic thinking (K-3)
+  | 'practice-problem'   // Interactive math practice problem
   | 'skip-counting-runner' // Rhythmic skip counting with number line jumps, arrays, and multiplication connection (1-3)
   | 'sorting-station'     // Interactive sorting station for categorizing objects into groups
   | 'spatial-scene'        // Interactive spatial scene for math visualization
@@ -1756,6 +1796,7 @@ export type { TimelineBuilderData } from './primitives/visual-primitives/calenda
 export type { TimeSequencerData } from './primitives/visual-primitives/math/TimeSequencer';
 export type { NetFolderData } from './primitives/visual-primitives/math/NetFolder';
 export type { ParameterExplorerData } from './primitives/visual-primitives/math/ParameterExplorer';
+export type { PracticeProblemData } from './primitives/visual-primitives/math/PracticeProblem';
 export type { CoordinateGraphData, CoordinateGraphChallenge } from './primitives/visual-primitives/math/CoordinateGraph';
 
 // Literacy

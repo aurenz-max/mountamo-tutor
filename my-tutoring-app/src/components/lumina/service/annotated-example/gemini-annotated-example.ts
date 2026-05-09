@@ -9,13 +9,11 @@
  *          produces an ordered StepSpec[]. Per-spec generators run in
  *          parallel via the registry.
  * Stage 4: CHALLENGER — global gating decisions for prediction prompts.
- *          Skipped for student-solved practice slots.
  *
  * Problem authoring (statement + inset) lives in `orchestrator.ts` — this
  * pipeline expects every call to provide a `pinnedProblem` and (optionally)
- * a `pinnedInset`. The orchestrator runs once upstream and produces all
- * slots (watch + sibling tries) in a single Gemini call; this pipeline
- * then hydrates each slot's worked solution.
+ * a `pinnedInset`. The orchestrator runs once upstream; this pipeline then
+ * hydrates the worked solution.
  */
 
 import { solveProblem } from './solver';
@@ -26,7 +24,6 @@ import { generateStep } from './registry';
 import { runAnnotatedExampleOrchestrator } from './orchestrator';
 import type { StepGeneratorContext } from './generators/_shared';
 import type {
-  AnnotatedExampleProblemPlan,
   PlannerDebugPayload,
   RichAnnotatedExampleData,
   RichExampleStep,
@@ -140,12 +137,6 @@ export interface HydratePinnedProblemOptions {
   pinnedInset?: Inset;
   /** Forwarded to the solver via `intent` so a "hard" slot doesn't get a trivial walkthrough. */
   difficulty?: 'easy' | 'medium' | 'hard';
-  /**
-   * When true, skip the challenger pass — no prediction gates are attached.
-   * Used for try problems where the student is doing the solve themselves
-   * on the canvas; gates layered on top would be redundant.
-   */
-  skipChallenger?: boolean;
 }
 
 async function hydratePinnedProblem(
@@ -189,26 +180,20 @@ async function hydratePinnedProblem(
     console.warn(`[AnnotatedExample] ${planner.specs.length - steps.length} spec(s) failed to render — see per-generator logs`);
   }
 
-  let challenger;
-  if (options.skipChallenger) {
-    console.log('[AnnotatedExample] Stage 4: challenger SKIPPED (student-solve slot).');
-    challenger = { assignments: [], dropped: [], failed: false };
+  console.log('[AnnotatedExample] Stage 4: challenge layer (global gating decisions)...');
+  const challenger = await assignChallenges({
+    topic,
+    gradeContext,
+    problemStatement: solved.problemStatement,
+    solutionStrategy: solved.strategy,
+    steps,
+  });
+  if (challenger.failed) {
+    console.warn('[AnnotatedExample] Challenger failed — example renders without prediction gates.');
   } else {
-    console.log('[AnnotatedExample] Stage 4: challenge layer (global gating decisions)...');
-    challenger = await assignChallenges({
-      topic,
-      gradeContext,
-      problemStatement: solved.problemStatement,
-      solutionStrategy: solved.strategy,
-      steps,
-    });
-    if (challenger.failed) {
-      console.warn('[AnnotatedExample] Challenger failed — example renders without prediction gates.');
-    } else {
-      console.log(
-        `[AnnotatedExample] Challenges merged: ${challenger.assignments.length} attached, ${challenger.dropped.length} dropped`,
-      );
-    }
+    console.log(
+      `[AnnotatedExample] Challenges merged: ${challenger.assignments.length} attached, ${challenger.dropped.length} dropped`,
+    );
   }
 
   const separatorCount = (solved.body.match(/^\s*---\s*$/gm) || []).length;
@@ -233,19 +218,13 @@ async function hydratePinnedProblem(
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Production entry — orchestrator + parallel slot hydration.
-//
-// One orchestrator call authors the watch problem (slot 0) plus N-1
-// isomorphic try problems. Slot 0 hydrates with the full pipeline incl.
-// challenger. Slots 1+ hydrate in parallel with skipChallenger=true and
-// get bundled as `tryProblems` on the watch result.
+// Production entry — orchestrator authors a single problem; the pipeline
+// hydrates its worked solution.
 // ═══════════════════════════════════════════════════════════════════════
 
 export interface GenerateAnnotatedExampleInput {
   topic: string;
   gradeContext: string;
-  /** Total problems the orchestrator authors. 1 = watch only. 2+ = watch + N-1 try problems. */
-  count?: number;
   /** Optional steering text forwarded to the orchestrator. */
   intent?: string;
 }
@@ -254,52 +233,22 @@ export async function generateAnnotatedExample(
   input: GenerateAnnotatedExampleInput,
 ): Promise<RichAnnotatedExampleData> {
   const { topic, gradeContext, intent } = input;
-  const count = Math.max(1, input.count ?? 1);
 
   const plan = await runAnnotatedExampleOrchestrator({
     topic,
     gradeLevel: gradeContext,
-    count,
     context: intent,
   });
 
-  if (plan.problems.length === 0) {
-    throw new Error('[AnnotatedExample] Orchestrator returned no problems');
-  }
-
-  const watchSlot = plan.problems[0];
-  const trySlots = plan.problems.slice(1);
-
-  const [watch, ...tryResults] = await Promise.all([
-    hydrateSlot(topic, gradeContext, watchSlot, false),
-    ...trySlots.map((slot) => hydrateSlot(topic, gradeContext, slot, true)),
-  ]);
-
-  const tryProblems = tryResults.filter((d): d is RichAnnotatedExampleData => d !== null);
-
-  return {
-    ...watch,
-    ...(tryProblems.length > 0 ? { tryProblems } : {}),
-  };
-}
-
-async function hydrateSlot(
-  topic: string,
-  gradeContext: string,
-  slot: AnnotatedExampleProblemPlan,
-  skipChallenger: boolean,
-): Promise<RichAnnotatedExampleData> {
-  console.log('[AnnotatedExample] Hydrating slot:', {
-    index: slot.index,
-    role: slot.index === 0 ? 'watch' : 'try',
-    difficulty: slot.difficulty,
-    insetType: slot.insetType ?? 'none',
+  console.log('[AnnotatedExample] Hydrating problem:', {
+    difficulty: plan.difficulty,
+    insetType: plan.insetType ?? 'none',
   });
+
   return hydratePinnedProblem(topic, gradeContext, {
-    pinnedProblem: slot.problemStatement,
-    pinnedInset: slot.inset,
-    difficulty: slot.difficulty,
-    skipChallenger,
+    pinnedProblem: plan.problemStatement,
+    pinnedInset: plan.inset,
+    difficulty: plan.difficulty,
   });
 }
 

@@ -23,6 +23,7 @@ import TwoWayTable from '../primitives/visual-primitives/math/TwoWayTable';
 import TenFrame from '../primitives/visual-primitives/math/TenFrame';
 import CountingBoard from '../primitives/visual-primitives/math/CountingBoard';
 import PatternBuilder from '../primitives/visual-primitives/math/PatternBuilder';
+import PracticeProblem from '../primitives/visual-primitives/math/PracticeProblem';
 import SkipCountingRunner from '../primitives/visual-primitives/math/SkipCountingRunner';
 import RegroupingWorkbench from '../primitives/visual-primitives/math/RegroupingWorkbench';
 import MultiplicationExplorer from '../primitives/visual-primitives/math/MultiplicationExplorer';
@@ -73,7 +74,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -99,6 +100,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'ten-frame', label: 'Ten Frame', icon: '🔟', topic: 'Building numbers, subitizing, and making ten' },
   { value: 'counting-board', label: 'Counting Board', icon: '🧸', topic: 'Counting objects, subitizing, and one-to-one correspondence' },
   { value: 'pattern-builder', label: 'Pattern Builder', icon: '🔁', topic: 'Pattern recognition, extension, and algebraic thinking' },
+  { value: 'practice-problem', label: 'Practice Problem', icon: '✏️', topic: 'Solve a multi-step linear equation' },
   { value: 'skip-counting-runner', label: 'Skip Counting Runner', icon: '🐸', topic: 'Skip counting, multiplication foundations, and number patterns' },
   { value: 'regrouping-workbench', label: 'Regrouping Workbench', icon: '🧮', topic: 'Addition and subtraction with carrying and borrowing' },
   { value: 'multiplication-explorer', label: 'Multiplication Explorer', icon: '✖️', topic: 'Multiplication through multiple representations' },
@@ -306,6 +308,20 @@ const PrimitiveRenderer: React.FC<{
             subskillId: 'pattern-recognition',
             objectiveId: 'recognize-extend-create-patterns',
             onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'practice-problem':
+      // PracticeProblem handles its own evaluation via usePrimitiveEvaluation hook
+      // — do NOT pass onEvaluationSubmit to avoid double submission.
+      return (
+        <PracticeProblem
+          data={{
+            ...(data as Parameters<typeof PracticeProblem>[0]['data']),
+            instanceId: `practice-problem-${Date.now()}`,
+            skillId: 'math-equations',
+            subskillId: 'multi-step-linear-equations',
+            objectiveId: 'solve-multi-step-linear-equations',
           }}
         />
       );

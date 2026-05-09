@@ -1040,6 +1040,36 @@ export interface FunctionSketchMetrics extends BasePrimitiveMetrics {
   totalAttempts: number;
 }
 
+export interface PracticeProblemMetrics extends BasePrimitiveMetrics {
+  type: 'practice-problem';
+  /** Final judge verdict — drives success / score. */
+  verdict: 'correct' | 'partial' | 'incorrect';
+  /** Difficulty band of the problem (mirrors evalMode tier). */
+  difficulty?: 'easy' | 'medium' | 'hard';
+  /** Number of canvas strokes the student drew before pressing Done. */
+  strokeCount: number;
+  /** Number of transcribed lines the judge saw. */
+  transcribedLineCount: number;
+  /** Total canonical steps in the worked solution. */
+  canonicalStepCount: number;
+  /** Lines the judge classified as 'aligned' with a canonical step. */
+  alignedSteps: number;
+  /** Lines the judge classified as 'shortcut' (collapsed multiple canonical steps). */
+  shortcutSteps: number;
+  /** Lines flagged as outright errors. */
+  errorSteps: number;
+  /** Lines unmatched to any canonical step (extra / digressions). */
+  extraSteps: number;
+  /** Final answer extracted by the judge from the student's work. */
+  finalAnswer: string;
+  /** Canonical answer per the worked solution. */
+  canonicalAnswer: string;
+  /** Number of attempts on this problem (currently always 1). */
+  attempts: number;
+  /** Wall-clock time from primitive mount to Done. */
+  timeOnTaskMs: number;
+}
+
 export interface FormulaCardMetrics extends BasePrimitiveMetrics {
   type: 'formula-card';
 
@@ -3328,6 +3358,7 @@ export type PrimitiveMetrics =
   | ParameterExplorerMetrics
   | EquationWorkspaceMetrics
   | FunctionSketchMetrics
+  | PracticeProblemMetrics
   | HundredsChartMetrics
   | AnalogClockMetrics
   // Exploration

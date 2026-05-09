@@ -223,16 +223,13 @@ registerGenerator('scale-spectrum', async (item, topic, gradeContext) => {
   };
 });
 
-// Annotated Example (worked examples with annotations). Production default
-// is count=1 — watch-only. Catalog items can override via `count` config to
-// bundle sibling try problems alongside the watched example.
+// Annotated Example (worked examples with annotations). Watch-only —
+// practice on a sibling problem is handled by the standalone
+// `practice-problem` primitive.
 registerGenerator('annotated-example', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const rawCount = typeof config.count === 'number' ? config.count : 1;
   const data = await generateAnnotatedExample({
     topic,
     gradeContext,
-    count: Math.max(1, rawCount),
     intent: item.intent,
   });
   return {

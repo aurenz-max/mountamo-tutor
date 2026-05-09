@@ -223,10 +223,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(reviewResult);
       }
 
-      // Orchestrator + parallel slot hydration. One Gemini call authors the
-      // watched example (slot 0) and any sibling try problems (slots 1+) in
-      // a single shot; the pipeline then hydrates each slot's worked
-      // solution in parallel. Default `count: 1` = watch-only.
+      // Orchestrator + hydration. One Gemini call authors the worked
+      // example; the pipeline then hydrates the canonical solution.
       case 'generateAnnotatedExample': {
         const { generateAnnotatedExample } = await import(
           '@/components/lumina/service/annotated-example/gemini-annotated-example'
@@ -234,10 +232,45 @@ export async function POST(request: NextRequest) {
         const exampleResult = await generateAnnotatedExample({
           topic: params.topic,
           gradeContext: params.gradeContext,
-          count: params.count ?? 1,
           intent: params.intent,
         });
         return NextResponse.json(exampleResult);
+      }
+
+      // Practice Problem — lean two-stage pipeline (orchestrator + single
+      // canonical-solution call). Replaces the AnnotatedExample pipeline for
+      // canvas-only practice mode. Used by the tester and as the entry point
+      // when the manifest selects `practice-problem`.
+      case 'generatePracticeProblem': {
+        const { generatePracticeProblem: generateMathPracticeProblem } = await import(
+          '@/components/lumina/service/math/gemini-practice-problem'
+        );
+        const practiceResult = await generateMathPracticeProblem(
+          params.topic,
+          params.gradeLevel,
+          {
+            targetEvalMode: params.targetEvalMode,
+            intent: params.intent,
+          },
+        );
+        return NextResponse.json(practiceResult);
+      }
+
+      // Distribution Explorer — Wave 1 of the advanced-probability PRD.
+      // Single-stage orchestrator picks family + initial params + phase
+      // challenges; the math engine evaluates client-side.
+      case 'generateDistributionExplorer': {
+        const { generateDistributionExplorer } = await import(
+          '@/components/lumina/service/distribution-explorer/gemini-distribution-explorer'
+        );
+        const distributionResult = await generateDistributionExplorer({
+          topic: params.topic,
+          gradeContext: params.gradeContext,
+          evalMode: params.evalMode,
+          family: params.family,
+          intent: params.intent,
+        });
+        return NextResponse.json(distributionResult);
       }
 
       // ============================================

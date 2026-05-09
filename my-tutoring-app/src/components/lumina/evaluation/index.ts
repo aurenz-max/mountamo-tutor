@@ -122,6 +122,7 @@ export type {
   ParameterExplorerMetrics,
   EquationWorkspaceMetrics,
   FunctionSketchMetrics,
+  PracticeProblemMetrics,
   // Astronomy metrics
   ScaleComparatorMetrics,
   DayNightSeasonsMetrics,

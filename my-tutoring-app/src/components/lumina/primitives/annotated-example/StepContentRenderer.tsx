@@ -46,20 +46,38 @@ function renderKatex(latex: string, displayMode = true): string {
   }
 }
 
-/** Render KaTeX inline — for mixed text/math content. Wraps $...$ segments. */
+/**
+ * Render KaTeX inline — for mixed text/math content. Wraps unescaped `$...$`
+ * segments as inline math.
+ *
+ * Conventions (LaTeX-standard):
+ *   - `$...$`     → inline math
+ *   - `\$`        → literal dollar (currency, prices) — rendered as plain `$`
+ *
+ * Safety net: if a captured `$...$` segment is implausibly long (>100 chars)
+ * we treat it as text, not math. That guards against an upstream lapse where
+ * unescaped currency dollars get paired across a sentence (e.g. `$15 ... $2`
+ * would otherwise italicize the whole span between them).
+ */
+const ESCAPED_DOLLAR_PLACEHOLDER = '';
+const MAX_INLINE_MATH_LEN = 100;
 
 function renderMixedContent(text: string): string {
-  // Split on $...$ delimiters
-  const parts = text.split(/(\$[^$]+\$)/g);
+  // Protect literal `\$` so the math regex doesn't pair it with a real `$`.
+  const protectedText = text.replace(/\\\$/g, ESCAPED_DOLLAR_PLACEHOLDER);
+
+  const parts = protectedText.split(/(\$[^$]+\$)/g);
   return parts
     .map((part) => {
       if (part.startsWith('$') && part.endsWith('$')) {
+        if (part.length > MAX_INLINE_MATH_LEN) return part;
         const inner = part.slice(1, -1);
         return renderKatex(inner, false);
       }
       return part;
     })
-    .join('');
+    .join('')
+    .replace(new RegExp(ESCAPED_DOLLAR_PLACEHOLDER, 'g'), '$');
 }
 
 const KaTeX: React.FC<{ latex: string; display?: boolean; className?: string }> = ({

@@ -29,6 +29,8 @@ import BiologyPrimitivesTester from './components/BiologyPrimitivesTester';
 import ChemistryPrimitivesTester from './components/ChemistryPrimitivesTester';
 import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
 import AnnotatedExampleTester from './components/AnnotatedExampleTester';
+import PracticeProblemTester from './components/PracticeProblemTester';
+import DistributionExplorerTester from './components/DistributionExplorerTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
 import CalibrationSimulator from './components/CalibrationSimulator';
 import { PulseAdaptiveSession } from './pulse/PulseAdaptiveSession';
@@ -550,6 +552,20 @@ export default function App() {
         {phase === GameState.IDLE && activePanel === 'annotated-example-tester' && (
           <div className="flex-1 animate-fade-in">
             <AnnotatedExampleTester onBack={() => setActivePanel(null)} />
+          </div>
+        )}
+
+        {/* PRACTICE PROBLEM TESTER STATE */}
+        {phase === GameState.IDLE && activePanel === 'practice-problem-tester' && (
+          <div className="flex-1 animate-fade-in">
+            <PracticeProblemTester onBack={() => setActivePanel(null)} />
+          </div>
+        )}
+
+        {/* DISTRIBUTION EXPLORER TESTER STATE */}
+        {phase === GameState.IDLE && activePanel === 'distribution-explorer-tester' && (
+          <div className="flex-1 animate-fade-in">
+            <DistributionExplorerTester onBack={() => setActivePanel(null)} />
           </div>
         )}
 

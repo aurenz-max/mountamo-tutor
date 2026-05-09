@@ -775,6 +775,23 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "compare-functions": PriorConfig(2.5, "Two curves shown — identify which matches a description"),
         "sketch-match":      PriorConfig(3.5, "Place control points to sketch a described function"),
     },
+    # -----------------------------------------------------------------
+    # Distribution Explorer (probability workbench: explore → identify → compute)
+    # -----------------------------------------------------------------
+    "distribution-explorer": {
+        "explore":          PriorConfig(1.0, "Concrete: free parameter manipulation with guided prompts (no graded answer)"),
+        "identify":         PriorConfig(3.0, "Pictorial: identify distribution family from shape, moments, or scenario"),
+        "compute_basic":    PriorConfig(4.5, "Transitional: single-distribution probability or moment calculation"),
+        "compute_advanced": PriorConfig(6.5, "Symbolic: conditional/tail probabilities, percentile lookups, shape prediction"),
+    },
+    # -----------------------------------------------------------------
+    # Math / derivation primitives
+    # -----------------------------------------------------------------
+    "practice-problem": {
+        "derive_easy":   PriorConfig(-0.5, "Short 2-3 step derivation. Single rule application, simple algebra or arithmetic."),
+        "derive_medium": PriorConfig(0.0,  "3-5 step derivation requiring multiple rule applications. Standard practice difficulty."),
+        "derive_hard":   PriorConfig(0.7,  "4-6 step derivation requiring strategy choice (substitution, case split, identity selection)."),
+    },
 }
 
 # Default prior for unregistered primitive_type/eval_mode combinations
