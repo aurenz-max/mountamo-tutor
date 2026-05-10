@@ -778,4 +778,136 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
+  {
+    id: 'passage-studio',
+    description:
+      'Multi-block close-reading experience anchored to a single text stimulus (prose excerpt, poem, dialogue, or sentence set). '
+      + 'Walks the student from reading → comprehension → analysis → synthesis using anchored MCQ, evidence-highlight, vocab-in-context, '
+      + 'inference-builder, and rubric-judged theme-statement blocks. ESSENTIAL for any language-arts topic that benefits from grounded '
+      + 'textual analysis. Distinct from deep-dive: PassageStudio orbits a fixed text, not a topic abstraction.',
+    constraints:
+      'Best for grade-appropriate literature, poetry, opinion writing, dialogue analysis, and grammar/syntax work. Requires a passage worth '
+      + 'reading carefully; not appropriate for purely factual recall topics (use deep-dive instead).',
+    evalModes: [
+      {
+        evalMode: 'explore',
+        label: 'Explore (Tier 1)',
+        beta: -1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['explore'],
+        description: 'Mostly display blocks (passage + author context) with 1–2 easy comprehension MCQs. No theme-statement.',
+      },
+      {
+        evalMode: 'recall',
+        label: 'Recall (Tier 2)',
+        beta: -0.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['recall'],
+        description: '2–3 comprehension-mcq + 1 vocab-in-context. Direct retrieval from the passage.',
+      },
+      {
+        evalMode: 'apply',
+        label: 'Apply (Tier 3)',
+        beta: 0.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['apply'],
+        description: 'Comprehension + evidence-highlight + vocab-in-context. Student must support claims with textual evidence.',
+      },
+      {
+        evalMode: 'analyze',
+        label: 'Analyze (Tier 4)',
+        beta: 1.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['analyze'],
+        description: 'Comprehension + evidence + inference-builder + theme-statement (rubric judge). Use reveal_beat or annotated_passage layout.',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Guide the student through a PassageStudio close-reading lesson titled "{{title}}". '
+        + 'The full {{stimulusKind}} stimulus is provided below as STIMULUS — read it carefully, since every '
+        + 'response should ground itself in specific phrases from this text. '
+        + '{{stimulusTitle}}{{stimulusAuthor}} '
+        + 'Lesson layout: {{layout}}. The lesson has {{blockCount}} blocks ({{evaluableBlockCount}} interactive); '
+        + 'student has answered {{answeredCount}} so far. '
+        + 'Currently focused block: "{{currentBlockLabel}}" ({{currentBlockType}}). '
+        + 'Block-specific tutoring brief: {{currentBlockBrief}}\n\n'
+        + 'STIMULUS:\n{{stimulusFullText}}',
+      contextKeys: [
+        'title',
+        'stimulusKind',
+        'stimulusTitle',
+        'stimulusAuthor',
+        'stimulusFullText',
+        'layout',
+        'blockCount',
+        'evaluableBlockCount',
+        'answeredCount',
+        'narrativeArc',
+        'blockLabels',
+        'currentBlockId',
+        'currentBlockLabel',
+        'currentBlockType',
+        'currentBlockBrief',
+      ],
+      scaffoldingLevels: {
+        level1:
+          '"Look back at the passage. What lines stand out for this question?"',
+        level2:
+          '"Re-read the part of the passage that connects to {{currentBlockLabel}}. The evidence is in the text — point to a specific phrase."',
+        level3:
+          '"Let me point you to the evidence. Quote a specific phrase from the passage that grounds the answer, then ask the student how that phrase connects to the question. Do not reveal the answer."',
+      },
+      commonStruggles: [
+        { pattern: 'Student answers without referring back to the passage', response: 'Encourage rereading. Ask: "Which line in the passage tells you that?" — every answer must be grounded in textual evidence.' },
+        { pattern: 'Student picks a literal answer when an inference is needed', response: 'Ask: "Does the passage say this directly, or are we putting clues together?" — distinguish stated from implied.' },
+        { pattern: 'Student writes a generic theme-statement', response: 'Push for specificity: "What in THIS passage tells you that?" — themes must be rooted in the specific text, not generic life lessons.' },
+        { pattern: 'Student rushes past poetry without hearing the rhythm', response: 'Offer to read the poem aloud. Pause at line breaks and let the imagery land before discussing.' },
+        { pattern: 'Student gives the same wrong answer repeatedly', response: 'Switch to level-3 scaffolding: name the specific phrase in the passage that grounds the correct answer. Still do not state the answer itself.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PASSAGE READING',
+          instruction:
+            'When you receive [READ_ALOUD], the student tapped the Listen button — begin reading the '
+            + 'stimulus from your context IMMEDIATELY with no preamble, no introduction, no commentary '
+            + 'before or after. Read straight through. '
+            + 'When the student asks you to read the passage in chat, or when a [PASSAGE_STUDIO_START] '
+            + 'arrives for a poem or dialogue, you may offer a one-sentence introduction first.\n'
+            + 'Cadence rules apply in both cases:\n'
+            + '- Poems: pause at line breaks; let imagery land.\n'
+            + '- Dialogue: voice each speaker distinctly.\n'
+            + '- Prose: natural reading rhythm with emphasis on key phrases.\n'
+            + '- Sentence sets: brief pauses between sentences.',
+        },
+        {
+          title: 'BLOCK FOCUS UPDATES',
+          instruction:
+            'The currentBlockLabel, currentBlockType, and currentBlockBrief fields update silently as the '
+            + 'student scrolls between blocks. Note these changes but do NOT speak unless the student is '
+            + 'clearly struggling, asks a question, or a [TAG] message arrives. The currentBlockBrief is '
+            + 'the orchestrator\'s pedagogical intent for this block — let it shape your tone and focus.',
+        },
+        {
+          title: 'ANSWER FEEDBACK',
+          instruction:
+            'When you receive [ANSWER_CORRECT], briefly congratulate. If the block has an evidenceAnchor, '
+            + 'quote the specific passage phrase that grounds the correct answer to reinforce textual evidence.\n'
+            + 'When you receive [ANSWER_INCORRECT] with attempt < 3, give one short hint that points the '
+            + 'student back to a specific section of the passage WITHOUT revealing the answer.\n'
+            + 'When you receive [ANSWER_INCORRECT] with attempt >= 3, switch to level-3 scaffolding: '
+            + 'quote a specific phrase from the passage that grounds the correct answer, then ask the '
+            + 'student to connect that phrase to the question. Still do not state the answer itself.',
+        },
+        {
+          title: 'COMPLETION',
+          instruction:
+            'When you receive [ALL_COMPLETE], celebrate the close-reading work and reflect on one '
+            + 'specific insight from the passage that the lesson illuminated. Reference a phrase from the '
+            + 'stimulus by name. Keep it to 2-3 sentences.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
 ];

@@ -63,6 +63,7 @@ import { generateTimelineExplorer } from '../../core/gemini-timeline-explorer';
 import { generateVocabularyExplorer } from '../../core/gemini-vocabulary-explorer';
 import { generateDigitalSkillsSim } from '../../core/gemini-digital-skills-sim';
 import { generateDeepDive } from '../../core/gemini-deep-dive';
+import { generatePassageStudio } from '../../core/gemini-passage-studio';
 
 
 // ============================================================================
@@ -450,6 +451,13 @@ registerGenerator('deep-dive', async (item, topic, gradeContext) => ({
   type: 'deep-dive',
   instanceId: item.instanceId,
   data: await generateDeepDive(topic, gradeContext, item.config),
+}));
+
+// PassageStudio (multi-block close-reading experience anchored to a stimulus)
+registerGenerator('passage-studio', async (item, topic, gradeContext) => ({
+  type: 'passage-studio',
+  instanceId: item.instanceId,
+  data: await generatePassageStudio(topic, gradeContext, item.config),
 }));
 
 // ============================================================================

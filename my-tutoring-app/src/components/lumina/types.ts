@@ -1160,6 +1160,7 @@ export type ComponentId =
   | 'timeline-explorer'  // Interactive timeline explorer
   | 'vocabulary-explorer' // Interactive vocabulary exploration
   | 'deep-dive'          // Orchestrated multi-block learning experience
+  | 'passage-studio'     // Multi-block orchestrator anchored to a text stimulus
 
   // Data & Analysis
   | 'comparison-panel'   // A vs B

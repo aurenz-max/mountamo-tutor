@@ -76,6 +76,7 @@ import DigitalSkillsSim from '../primitives/visual-primitives/core/DigitalSkills
 import TimelineExplorer from '../primitives/visual-primitives/core/TimelineExplorer';
 import VocabularyExplorer from '../primitives/visual-primitives/core/VocabularyExplorer';
 import DeepDive from '../primitives/visual-primitives/core/deep-dive/DeepDive';
+import PassageStudio from '../primitives/visual-primitives/core/passage-studio/PassageStudio';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
 
@@ -1753,6 +1754,17 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'deep-dive': {
     component: DeepDive,
     sectionTitle: 'Deep Dive',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-4xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  // PassageStudio — Multi-block orchestrator anchored to a text stimulus
+  'passage-studio': {
+    component: PassageStudio,
+    sectionTitle: 'Passage Studio',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

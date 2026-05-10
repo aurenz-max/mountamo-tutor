@@ -256,6 +256,24 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(practiceResult);
       }
 
+      // PassageStudio — rubric judge for theme-statement (and any future
+      // free-response language-arts blocks). The judge grades the student's
+      // response against the rubric authored at hydration time.
+      case 'judgePassageRubric': {
+        const { judgePassageRubric } = await import(
+          '@/components/lumina/service/passage-studio/judge'
+        );
+        const rubricVerdict = await judgePassageRubric({
+          stimulusText: params.stimulusText,
+          stimulusKind: params.stimulusKind,
+          prompt: params.prompt,
+          rubric: params.rubric,
+          exemplar: params.exemplar,
+          studentResponse: params.studentResponse,
+        });
+        return NextResponse.json(rubricVerdict);
+      }
+
       // Distribution Explorer — Wave 1 of the advanced-probability PRD.
       // Single-stage orchestrator picks family + initial params + phase
       // challenges; the math engine evaluates client-side.

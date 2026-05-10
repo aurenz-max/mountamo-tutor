@@ -3253,6 +3253,22 @@ export interface DeepDiveMetrics extends BasePrimitiveMetrics {
   }>;
 }
 
+export interface PassageStudioMetrics extends BasePrimitiveMetrics {
+  type: 'passage-studio';
+  totalBlocks: number;
+  evaluableBlocks: number;
+  correctAnswers: number;
+  totalAttempts: number;
+  layout: 'stack' | 'split_passage' | 'reveal_beat' | 'annotated_passage';
+  stimulusKind: 'prose' | 'poem' | 'dialogue' | 'sentence-set';
+  blockBreakdown: Array<{
+    blockId: string;
+    blockType: string;
+    correct: boolean;
+    attempts: number;
+  }>;
+}
+
 // Calendar metrics
 export interface CalendarExplorerMetrics extends BasePrimitiveMetrics {
   type: 'calendar-explorer';
@@ -3457,6 +3473,7 @@ export type PrimitiveMetrics =
   | ShapeComposerMetrics
   | NetFolderMetrics
   | DeepDiveMetrics
+  | PassageStudioMetrics
   // Calendar
   | CalendarExplorerMetrics
   | TimelineBuilderMetrics
