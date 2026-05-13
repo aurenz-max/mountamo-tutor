@@ -10,3 +10,5 @@ export { default as FillInBlankBlock } from './FillInBlankBlock';
 export { default as CompareContrastBlock } from './CompareContrastBlock';
 export { default as DiagramBlock } from './DiagramBlock';
 export { default as MiniSimBlock } from './MiniSimBlock';
+export { default as PerspectivesBlock } from './PerspectivesBlock';
+export { default as HypothesisLabBlock } from './HypothesisLabBlock';

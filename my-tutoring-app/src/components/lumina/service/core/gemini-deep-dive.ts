@@ -26,6 +26,9 @@ import type {
   CompareContrastBlockData,
   DiagramBlockData,
   MiniSimBlockData,
+  PerspectivesBlockData,
+  HypothesisLabBlockData,
+  HypothesisVariableRole,
   BlockType,
   WrapperLayout,
 } from '../../primitives/visual-primitives/core/deep-dive/types';
@@ -68,7 +71,7 @@ const ORCHESTRATOR_SCHEMA: Schema = {
         properties: {
           blockType: {
             type: Type.STRING,
-            description: 'One of: hero-image, key-facts, data-table, multiple-choice, pull-quote, prose, timeline, fill-in-blank, compare-contrast, diagram, mini-sim',
+            description: 'One of: hero-image, key-facts, data-table, multiple-choice, pull-quote, prose, timeline, fill-in-blank, compare-contrast, diagram, mini-sim, perspectives, hypothesis-lab',
           },
           label: { type: Type.STRING, description: 'Short display label for this block (e.g. "Key Facts", "Quick Quiz")' },
           brief: { type: Type.STRING, description: 'Detailed content brief for the block generator. Be specific about what to include.' },
@@ -107,6 +110,8 @@ A DeepDive is a vertical scroll experience assembled from modular blocks. Your j
 - **compare-contrast**: Side-by-side comparison of two items, concepts, or perspectives with 3-4 points each. Brief should specify what two things to compare and what dimensions to highlight. Great for science (plant vs animal cell), history (opposing viewpoints), geography (regions), etc.
 - **diagram**: AI-generated labeled diagram for spatial/structural understanding — how parts relate to a whole. Brief should describe the visual scene to generate and list 3-6 key features to label with their descriptions. Perfect for physics (double-slit apparatus, force diagrams), biology (cell organelles, organ systems), chemistry (molecular structure), geography (map features). In explore/recall modes, labels are pre-placed and clickable (display). In apply/analyze modes, students drag labels onto the image (evaluable). Use when spatial relationships ARE the concept — don't flatten spatial insights into bullet points.
 - **mini-sim**: An interactive "what if?" experiment — the student manipulates ONE variable (toggle or slider) and observes what changes. Includes a prediction question asked BEFORE manipulation ("What do you think will happen?") that makes it evaluable. Brief should describe the experiment scenario, what variable the student controls (toggle for on/off, slider for continuous), and what observable outcomes change. Perfect for physics (double-slit detector on/off, temperature change), chemistry (concentration effects), biology (variable isolation), and any topic where manipulating a variable reveals counterintuitive behavior. Place after Prose or KeyFacts that introduce the concept — the student should understand the setup before experimenting.
+- **perspectives**: 2-4 first-person accounts of the SAME event from different stakeholders (e.g. colonist vs. British soldier vs. Indigenous person; factory owner vs. worker vs. consumer; scientist vs. policymaker vs. citizen). Each perspective is a tabbed narrative. Includes a comprehension question that requires comparing perspectives ("Which perspective would most likely argue X?", "Why do these accounts differ?") — NOT single-perspective recall. Use for history, civics, current-events ethics, and any topic where the SAME facts produce different narratives depending on who is telling them. Brief should name the historical event and suggest 2-4 stakeholder roles whose viewpoints genuinely diverge. Don't use compare-contrast as a substitute — perspectives is for first-person voices, not bullet-point comparisons.
+- **hypothesis-lab**: Scientific-method scaffold. Presents an experimental scenario and asks the student to classify factors as Independent Variable (one factor the experimenter changes), Dependent Variable (one factor that gets measured), or Held Constant (controls). Should include 1-2 distractor factors that don't belong to the experiment so students must reject them, not just place every chip. Use for science topics where experimental design IS the learning objective (NGSS science practices), or where students confuse what's being tested vs. what's being controlled. The scenario brief must describe the experiment in plain prose WITHOUT labeling which factor is which — that's the puzzle. Don't use mini-sim as a substitute — mini-sim manipulates one variable to observe outcomes; hypothesis-lab tests whether the student can read a scenario and identify the experimental structure.
 
 ## Wrapper Layout Strategies
 Choose a layout for the entire deep dive. This controls how blocks are spatially arranged:
@@ -217,7 +222,7 @@ async function runOrchestrator(
   }
 
   // Validate: filter to only known block types
-  const validTypes = new Set<string>(['hero-image', 'key-facts', 'data-table', 'multiple-choice', 'pull-quote', 'prose', 'timeline', 'fill-in-blank', 'compare-contrast', 'diagram', 'mini-sim']);
+  const validTypes = new Set<string>(['hero-image', 'key-facts', 'data-table', 'multiple-choice', 'pull-quote', 'prose', 'timeline', 'fill-in-blank', 'compare-contrast', 'diagram', 'mini-sim', 'perspectives', 'hypothesis-lab']);
   plan.blocks = plan.blocks.filter((b) => validTypes.has(b.blockType));
 
   if (plan.blocks.length === 0) {
@@ -1141,6 +1146,247 @@ Use age-appropriate language for ${gradeLevel}.`,
   };
 }
 
+// ── Perspectives generator ──────────────────────────────────────────
+
+const PERSPECTIVES_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    eventDescription: { type: Type.STRING, description: 'The shared event/situation that all perspectives describe — 1-2 sentences, neutral framing' },
+
+    p0Name: { type: Type.STRING, description: 'Perspective 1 speaker name (historical figure or representative individual)' },
+    p0Role: { type: Type.STRING, description: 'Perspective 1 identity label — role, group, era, location (e.g. "Colonist farmer, Massachusetts, 1775")' },
+    p0Para0: { type: Type.STRING, description: 'Perspective 1 first-person narrative paragraph (2-4 sentences)' },
+    p0Para1: { type: Type.STRING, description: 'Perspective 1 second narrative paragraph (optional)', nullable: true },
+
+    p1Name: { type: Type.STRING, description: 'Perspective 2 speaker name' },
+    p1Role: { type: Type.STRING, description: 'Perspective 2 identity label' },
+    p1Para0: { type: Type.STRING, description: 'Perspective 2 first-person narrative paragraph' },
+    p1Para1: { type: Type.STRING, description: 'Perspective 2 second narrative paragraph (optional)', nullable: true },
+
+    p2Name: { type: Type.STRING, description: 'Perspective 3 speaker name (optional — include only if a third perspective adds genuine new viewpoint)', nullable: true },
+    p2Role: { type: Type.STRING, description: 'Perspective 3 identity label', nullable: true },
+    p2Para0: { type: Type.STRING, description: 'Perspective 3 first-person narrative paragraph', nullable: true },
+    p2Para1: { type: Type.STRING, description: 'Perspective 3 second narrative paragraph', nullable: true },
+
+    p3Name: { type: Type.STRING, description: 'Perspective 4 speaker name (optional — only for events with 4 distinct stakeholder groups)', nullable: true },
+    p3Role: { type: Type.STRING, description: 'Perspective 4 identity label', nullable: true },
+    p3Para0: { type: Type.STRING, description: 'Perspective 4 first-person narrative paragraph', nullable: true },
+    p3Para1: { type: Type.STRING, description: 'Perspective 4 second narrative paragraph', nullable: true },
+
+    compQuestion: { type: Type.STRING, description: 'Comprehension question — should test analysis across perspectives, not single-perspective recall (e.g. "Which perspective would most likely argue X?", "Why do these accounts differ?")' },
+    compOption0: { type: Type.STRING, description: 'Option A' },
+    compOption1: { type: Type.STRING, description: 'Option B' },
+    compOption2: { type: Type.STRING, description: 'Option C' },
+    compOption3: { type: Type.STRING, description: 'Option D' },
+    compCorrectIndex: { type: Type.NUMBER, description: 'Index of the correct option (0-3)' },
+    compExplanation: { type: Type.STRING, description: 'Explanation of why the correct answer is right and what it reveals about how perspectives shape historical narrative' },
+  },
+  required: [
+    'eventDescription',
+    'p0Name', 'p0Role', 'p0Para0',
+    'p1Name', 'p1Role', 'p1Para0',
+    'compQuestion', 'compOption0', 'compOption1', 'compOption2', 'compOption3',
+    'compCorrectIndex', 'compExplanation',
+  ],
+};
+
+async function generatePerspectives(
+  brief: string,
+  topic: string,
+  gradeLevel: string,
+): Promise<{
+  eventDescription: string;
+  perspectives: PerspectivesBlockData['perspectives'];
+  comprehension: NonNullable<PerspectivesBlockData['comprehension']>;
+}> {
+  const response = await ai.models.generateContent({
+    model: 'gemini-flash-lite-latest',
+    contents: `Generate a multi-perspective historical account for a ${gradeLevel} lesson on "${topic}".
+
+Brief: ${brief}
+
+Generate 2-4 distinct first-person perspectives on the SAME event. Each perspective is from a different stakeholder, witness, or affected party. The goal is to teach students that history looks different depending on who is telling it.
+
+For each perspective:
+- Pick a role/group whose viewpoint genuinely differs from the others (different experiences, interests, information, or social position)
+- Write a brief first-person account (1-2 short paragraphs) describing what they saw, felt, and wanted
+- Use age-appropriate language for ${gradeLevel}
+- Stay historically grounded — no anachronisms or modern political projections
+
+Then write ONE comprehension question that requires comparing perspectives — NOT recall of one perspective. Good question shapes:
+- "Which perspective would most likely argue that...?"
+- "What do perspectives A and B both leave out?"
+- "Why does perspective C describe the event so differently?"
+
+Bad question shapes (avoid):
+- "What did [name] say?" (single-perspective recall)
+- "What year was this?" (factual, not analytical)
+
+The eventDescription should be a NEUTRAL framing of what happened — a journalist's summary, not any one perspective's view.
+
+Make the perspectives genuinely different in stance, not just different speakers saying the same thing.`,
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: PERSPECTIVES_SCHEMA,
+    },
+  });
+
+  const text = response.text;
+  if (!text) {
+    throw new Error('Perspectives generation returned empty');
+  }
+
+  const data = JSON.parse(text);
+
+  const perspectives: PerspectivesBlockData['perspectives'] = [];
+  for (let i = 0; i < 4; i++) {
+    const name = data[`p${i}Name`];
+    const role = data[`p${i}Role`];
+    const para0 = data[`p${i}Para0`];
+    const para1 = data[`p${i}Para1`];
+    if (name && role && para0) {
+      const narrative: string[] = [para0];
+      if (para1) narrative.push(para1);
+      perspectives.push({
+        id: `p-${i}`,
+        name,
+        role,
+        narrative,
+      });
+    }
+  }
+
+  if (perspectives.length < 2) {
+    throw new Error('Perspectives generated fewer than 2 voices');
+  }
+
+  const comprehension = {
+    question: data.compQuestion,
+    options: [data.compOption0, data.compOption1, data.compOption2, data.compOption3].filter(Boolean),
+    correctIndex: Math.max(0, Math.min(3, Math.round(data.compCorrectIndex))),
+    explanation: data.compExplanation,
+  };
+
+  return {
+    eventDescription: data.eventDescription,
+    perspectives,
+    comprehension,
+  };
+}
+
+// ── Hypothesis Lab generator ───────────────────────────────────────
+
+const VALID_ROLES: ReadonlySet<HypothesisVariableRole> = new Set<HypothesisVariableRole>([
+  'iv', 'dv', 'control', 'irrelevant',
+]);
+
+const HYPOTHESIS_LAB_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    scenario: {
+      type: Type.STRING,
+      description: 'A 2-4 sentence experimental scenario in plain prose. Name each factor naturally ("Maya plants three sunflowers in different soil types and measures their height after 4 weeks. Each plant gets the same amount of water and sunlight."). MUST NOT pre-label which factor is the IV/DV/control — the student\'s job is to figure that out.',
+    },
+    var0Label: { type: Type.STRING, description: 'Factor 1 label — short noun phrase as named in the scenario (e.g. "soil type", "plant height")' },
+    var0Role: { type: Type.STRING, description: 'Role for factor 1. Must be one of: "iv" (the changed variable), "dv" (the measured outcome), "control" (held constant), or "irrelevant" (mentioned but not part of the experiment).' },
+    var1Label: { type: Type.STRING, description: 'Factor 2 label' },
+    var1Role: { type: Type.STRING, description: 'Role for factor 2 — one of: iv, dv, control, irrelevant' },
+    var2Label: { type: Type.STRING, description: 'Factor 3 label' },
+    var2Role: { type: Type.STRING, description: 'Role for factor 3 — one of: iv, dv, control, irrelevant' },
+    var3Label: { type: Type.STRING, description: 'Factor 4 label' },
+    var3Role: { type: Type.STRING, description: 'Role for factor 4 — one of: iv, dv, control, irrelevant' },
+    var4Label: { type: Type.STRING, description: 'Factor 5 label (optional — usually a control or distractor)', nullable: true },
+    var4Role: { type: Type.STRING, description: 'Role for factor 5 — one of: iv, dv, control, irrelevant', nullable: true },
+    var5Label: { type: Type.STRING, description: 'Factor 6 label (optional — only if scenario has 6 distinct named factors)', nullable: true },
+    var5Role: { type: Type.STRING, description: 'Role for factor 6 — one of: iv, dv, control, irrelevant', nullable: true },
+    explanation: {
+      type: Type.STRING,
+      description: 'Explanation after submission — explain WHY the IV is the IV (the thing the experimenter manipulates), WHY the DV is the DV (the thing that gets measured in response), and why the controls must be held constant (so observed differences can be attributed to the IV alone). 2-3 sentences.',
+    },
+  },
+  required: [
+    'scenario',
+    'var0Label', 'var0Role',
+    'var1Label', 'var1Role',
+    'var2Label', 'var2Role',
+    'var3Label', 'var3Role',
+    'explanation',
+  ],
+};
+
+async function generateHypothesisLab(
+  brief: string,
+  topic: string,
+  gradeLevel: string,
+): Promise<{
+  scenario: string;
+  variables: HypothesisLabBlockData['variables'];
+  explanation: string;
+}> {
+  const response = await ai.models.generateContent({
+    model: 'gemini-flash-lite-latest',
+    contents: `Generate a hypothesis-lab challenge for a ${gradeLevel} lesson on "${topic}".
+
+Brief: ${brief}
+
+Design an experimental scenario where a student must classify factors into:
+- exactly ONE independent variable (the factor the experimenter changes)
+- exactly ONE dependent variable (the outcome that gets measured)
+- one or more controls (factors held constant so the experiment is fair)
+- optionally 1-2 irrelevant distractors (factors mentioned in passing but not actually part of the experiment — e.g., "Maya's age", "the date she started")
+
+Output 4-6 factors total. Rules:
+1. The scenario must describe the experiment in plain prose. NEVER use the words "independent variable", "dependent variable", "control", "constant", or label which factor is which. The student has to figure it out from context.
+2. Each factor label is a short noun phrase as it appears in the scenario.
+3. Role values must be exactly: "iv", "dv", "control", or "irrelevant".
+4. Distractors should be PLAUSIBLE — things a student might mistakenly try to place — not absurd. Good distractor: "the student's grade in school". Bad distractor: "the color of Mars".
+5. The dependent variable must be something that can be MEASURED (height, mass, time, count, distance), not a binary judgment.
+6. Use ${gradeLevel}-appropriate experimental contexts. Elementary: plant growth, paper airplanes, ice melting. Middle: pendulum period, chemical reactions, friction. High: enzyme activity, projectile motion, electrolysis.
+
+The explanation should teach the GENERAL principle of why each role plays its part, not just narrate the answer.`,
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: HYPOTHESIS_LAB_SCHEMA,
+    },
+  });
+
+  const text = response.text;
+  if (!text) throw new Error('Hypothesis-lab generation returned empty');
+
+  const data = JSON.parse(text);
+
+  const variables: HypothesisLabBlockData['variables'] = [];
+  for (let i = 0; i < 6; i++) {
+    const label = data[`var${i}Label`];
+    const roleRaw = data[`var${i}Role`];
+    if (!label || !roleRaw) continue;
+    const role = String(roleRaw).toLowerCase().trim() as HypothesisVariableRole;
+    if (!VALID_ROLES.has(role)) continue;
+    variables.push({
+      id: `var-${i}`,
+      label: String(label).trim(),
+      role,
+    });
+  }
+
+  // Validate experimental structure
+  const ivCount = variables.filter((v) => v.role === 'iv').length;
+  const dvCount = variables.filter((v) => v.role === 'dv').length;
+  const controlCount = variables.filter((v) => v.role === 'control').length;
+
+  if (ivCount !== 1 || dvCount !== 1 || controlCount < 1) {
+    throw new Error(
+      `Hypothesis-lab structure invalid: ivCount=${ivCount}, dvCount=${dvCount}, controlCount=${controlCount}. Needs exactly 1 IV, 1 DV, and >=1 control.`,
+    );
+  }
+
+  return {
+    scenario: data.scenario,
+    variables,
+    explanation: data.explanation,
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // Assembly: Orchestrate + Generate in Parallel
 // ═══════════════════════════════════════════════════════════════════════
@@ -1153,8 +1399,11 @@ async function generateBlock(
   evalMode?: string,
 ): Promise<DeepDiveBlock | null> {
   const baseId = `block-${index}`;
+  const startedAt = performance.now();
+  console.log(`[DeepDive] ▶ block ${index} (${plan.blockType}) started`);
 
   try {
+    const result = await (async (): Promise<DeepDiveBlock | null> => {
     switch (plan.blockType as BlockType) {
       case 'hero-image': {
         const imagePrompt = `Educational illustration for ${gradeLevel} students: ${plan.brief}. Clean, professional, visually engaging. No text overlays.`;
@@ -1310,12 +1559,45 @@ async function generateBlock(
         } as MiniSimBlockData;
       }
 
+      case 'perspectives': {
+        const perspectivesData = await generatePerspectives(plan.brief, topic, gradeLevel);
+        return {
+          id: baseId,
+          blockType: 'perspectives',
+          label: plan.label,
+          tutoringBrief: plan.tutoringBrief,
+          transitionCue: plan.transitionCue,
+          eventDescription: perspectivesData.eventDescription,
+          perspectives: perspectivesData.perspectives,
+          comprehension: perspectivesData.comprehension,
+        } as PerspectivesBlockData;
+      }
+
+      case 'hypothesis-lab': {
+        const labData = await generateHypothesisLab(plan.brief, topic, gradeLevel);
+        return {
+          id: baseId,
+          blockType: 'hypothesis-lab',
+          label: plan.label,
+          tutoringBrief: plan.tutoringBrief,
+          transitionCue: plan.transitionCue,
+          scenario: labData.scenario,
+          variables: labData.variables,
+          explanation: labData.explanation,
+        } as HypothesisLabBlockData;
+      }
+
       default:
         console.warn(`[DeepDive] Unknown block type: ${plan.blockType}`);
         return null;
     }
+    })();
+    const elapsedMs = Math.round(performance.now() - startedAt);
+    console.log(`[DeepDive] ✓ block ${index} (${plan.blockType}) finished in ${elapsedMs}ms`);
+    return result;
   } catch (error) {
-    console.error(`[DeepDive] Failed to generate block ${index} (${plan.blockType}):`, error);
+    const elapsedMs = Math.round(performance.now() - startedAt);
+    console.error(`[DeepDive] ✗ block ${index} (${plan.blockType}) failed after ${elapsedMs}ms:`, error);
     return null;
   }
 }

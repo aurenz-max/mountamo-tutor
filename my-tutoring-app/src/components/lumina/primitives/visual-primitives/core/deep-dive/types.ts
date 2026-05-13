@@ -29,6 +29,8 @@ export type BlockType =
   | 'compare-contrast'
   | 'diagram'
   | 'mini-sim'
+  | 'perspectives'
+  | 'hypothesis-lab'
   | 'reflection';
 
 // ── Base Block Data ─────────────────────────────────────────────────
@@ -200,6 +202,63 @@ export interface ReflectionBlockData extends BaseBlockData {
   prompt: string;
 }
 
+// ── Hypothesis Lab ───────────────────────────────────────────────────
+// Scientific-method scaffold. Student classifies factors from a scenario
+// into independent variable (IV), dependent variable (DV), and controls
+// held constant. Some factors are intentional distractors (irrelevant)
+// that should remain in the pool — prevents shallow pattern matching
+// where every chip must land in a zone.
+
+export type HypothesisVariableRole = 'iv' | 'dv' | 'control' | 'irrelevant';
+
+export interface HypothesisVariable {
+  id: string;
+  /** Short noun-phrase shown on the chip (e.g. "amount of water", "plant height") */
+  label: string;
+  /** Correct experimental role — the answer key */
+  role: HypothesisVariableRole;
+}
+
+export interface HypothesisLabBlockData extends BaseBlockData {
+  blockType: 'hypothesis-lab';
+  /** 2-4 sentence experimental scenario in plain prose. MUST NOT pre-label
+   *  which factor is IV/DV/control — that's the puzzle. */
+  scenario: string;
+  /** Optional instruction prompt — defaults to "Sort each factor into its role." */
+  prompt?: string;
+  /** Factors to classify. Must include exactly one 'iv', exactly one 'dv',
+   *  at least one 'control', and may include up to 2 'irrelevant' distractors. */
+  variables: HypothesisVariable[];
+  /** Explanation shown after submission */
+  explanation: string;
+}
+
+export interface PerspectiveAccount {
+  id: string;
+  /** Speaker name — historical figure or representative individual */
+  name: string;
+  /** Identity label that situates them — role, group, era, location */
+  role: string;
+  /** First-person narrative — 1-3 short paragraphs from this perspective */
+  narrative: string[];
+}
+
+export interface PerspectivesBlockData extends BaseBlockData {
+  blockType: 'perspectives';
+  /** The shared event/topic each perspective speaks to — frames the comparison */
+  eventDescription: string;
+  /** 2-4 first-person accounts of the same event */
+  perspectives: PerspectiveAccount[];
+  /** Optional comprehension question — when present, the block is evaluable.
+   *  Activates only after the student has viewed at least 2 perspectives. */
+  comprehension?: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  };
+}
+
 // ── Union Type ──────────────────────────────────────────────────────
 
 export type DeepDiveBlock =
@@ -214,14 +273,18 @@ export type DeepDiveBlock =
   | CompareContrastBlockData
   | DiagramBlockData
   | MiniSimBlockData
+  | PerspectivesBlockData
+  | HypothesisLabBlockData
   | ReflectionBlockData;
 
 // ── Evaluable block type guard ──────────────────────────────────────
 
-export function isEvaluableBlock(block: DeepDiveBlock): block is MultipleChoiceBlockData | FillInBlankBlockData | DiagramBlockData | MiniSimBlockData {
+export function isEvaluableBlock(block: DeepDiveBlock): block is MultipleChoiceBlockData | FillInBlankBlockData | DiagramBlockData | MiniSimBlockData | PerspectivesBlockData | HypothesisLabBlockData {
   if (block.blockType === 'multiple-choice' || block.blockType === 'fill-in-blank') return true;
   if (block.blockType === 'diagram') return (block as DiagramBlockData).interactionMode === 'label';
   if (block.blockType === 'mini-sim') return !!(block as MiniSimBlockData).prediction;
+  if (block.blockType === 'perspectives') return !!(block as PerspectivesBlockData).comprehension;
+  if (block.blockType === 'hypothesis-lab') return true;
   return false;
 }
 

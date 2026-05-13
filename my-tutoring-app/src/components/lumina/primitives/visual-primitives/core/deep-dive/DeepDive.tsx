@@ -22,10 +22,11 @@ import type {
   FillInBlankBlockData,
   DiagramBlockData,
   MiniSimBlockData,
+  PerspectivesBlockData,
 } from './types';
 
 // Block components
-import { HeroImageBlock, KeyFactsBlock, DataTableBlock, MultipleChoiceBlock, PullQuoteBlock, ProseBlock, TimelineBlock, FillInBlankBlock, CompareContrastBlock, DiagramBlock, MiniSimBlock } from './blocks';
+import { HeroImageBlock, KeyFactsBlock, DataTableBlock, MultipleChoiceBlock, PullQuoteBlock, ProseBlock, TimelineBlock, FillInBlankBlock, CompareContrastBlock, DiagramBlock, MiniSimBlock, PerspectivesBlock, HypothesisLabBlock } from './blocks';
 
 // ── Phase config for evaluable blocks ───────────────────────────────
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
@@ -33,6 +34,8 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'fill-in-blank': { label: 'Vocabulary', icon: '\u270F\uFE0F', accentColor: 'purple' },
   'diagram': { label: 'Diagram Analysis', icon: '\uD83D\uDDFA\uFE0F', accentColor: 'cyan' },
   'mini-sim': { label: 'Prediction', icon: '\uD83E\uDDEA', accentColor: 'cyan' },
+  'perspectives': { label: 'Perspective Analysis', icon: '👁️', accentColor: 'pink' },
+  'hypothesis-lab': { label: 'Experimental Design', icon: '🧪', accentColor: 'emerald' },
 };
 
 // ── Helper: extract evaluable blocks ────────────────────────────────
@@ -48,6 +51,8 @@ function getEvaluableChallenges(blocks: DeepDiveBlock[]): EvaluableChallenge[] {
       if (b.blockType === 'multiple-choice' || b.blockType === 'fill-in-blank') return true;
       if (b.blockType === 'diagram') return (b as DiagramBlockData).interactionMode === 'label';
       if (b.blockType === 'mini-sim') return !!(b as MiniSimBlockData).prediction;
+      if (b.blockType === 'perspectives') return !!(b as PerspectivesBlockData).comprehension;
+      if (b.blockType === 'hypothesis-lab') return true;
       return false;
     })
     .map((b) => ({ id: b.id, type: b.blockType, block: b }));
@@ -57,6 +62,8 @@ function isEvaluableBlockType(blockType: string, block?: DeepDiveBlock): boolean
   if (blockType === 'multiple-choice' || blockType === 'fill-in-blank') return true;
   if (blockType === 'diagram' && block) return (block as DiagramBlockData).interactionMode === 'label';
   if (blockType === 'mini-sim' && block) return !!(block as MiniSimBlockData).prediction;
+  if (blockType === 'perspectives' && block) return !!(block as PerspectivesBlockData).comprehension;
+  if (blockType === 'hypothesis-lab') return true;
   return false;
 }
 
@@ -381,6 +388,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
 
   // ── Render a single block ─────────────────────────────────────
   const renderBlock = useCallback((block: DeepDiveBlock, idx: number) => {
+    console.log(`[DeepDive] renderBlock idx=${idx} type="${block.blockType}" id="${block.id}" label="${block.label || '(no label)'}"`, block);
     switch (block.blockType) {
       case 'hero-image':
         return <HeroImageBlock data={block} index={idx} />;
@@ -442,7 +450,31 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
         }
         return <MiniSimBlock data={simBlock} index={idx} />;
       }
+      case 'perspectives': {
+        const perspectivesBlock = block as PerspectivesBlockData;
+        if (perspectivesBlock.comprehension) {
+          return (
+            <PerspectivesBlock
+              data={perspectivesBlock}
+              index={idx}
+              onAnswer={handleBlockAnswer}
+              answered={answeredBlockIds.has(block.id)}
+            />
+          );
+        }
+        return <PerspectivesBlock data={perspectivesBlock} index={idx} />;
+      }
+      case 'hypothesis-lab':
+        return (
+          <HypothesisLabBlock
+            data={block}
+            index={idx}
+            onAnswer={handleBlockAnswer}
+            answered={answeredBlockIds.has(block.id)}
+          />
+        );
       default:
+        console.warn(`[DeepDive] Unknown block type "${block.blockType}" at idx=${idx} — falling back to placeholder`, block);
         return (
           <div className="p-4 rounded-lg bg-white/5 border border-white/10 text-slate-500 text-sm">
             Block type &quot;{block.blockType}&quot; coming soon

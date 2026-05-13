@@ -5,9 +5,9 @@
  * Templates are organized by pedagogical intent. The orchestrator prompt
  * receives the best-matching template as a structural suggestion.
  *
- * Block catalog (10 types):
+ * Block catalog (13 types):
  *   Display:    hero-image, key-facts, data-table, pull-quote, prose, timeline, compare-contrast, diagram (explore)
- *   Evaluable:  multiple-choice, fill-in-blank, diagram (label)
+ *   Evaluable:  multiple-choice, fill-in-blank, diagram (label), mini-sim (with prediction), perspectives (with comprehension), hypothesis-lab
  */
 
 import type { BlockType, WrapperLayout } from './types';
@@ -111,6 +111,20 @@ const TEMPLATES: CompositionTemplate[] = [
     ],
     wrapperLayout: 'stack',
     estimatedDurationMinutes: 8,
+  },
+  {
+    id: 'multi_perspective_history',
+    description: 'A historical event told through multiple stakeholder voices — first-person accounts that surface how the same event looked different from different positions',
+    intent: 'multi_perspective_analysis',
+    slots: [
+      { primitive: 'hero-image', role: 'event_visual', layoutOverride: { position: 'top', span: 'full' } },
+      { primitive: 'prose', role: 'historical_context', layoutOverride: { span: 'wide' } },
+      { primitive: 'perspectives', role: 'voices_on_the_event', layoutOverride: { span: 'full' } },
+      { primitive: 'pull-quote', role: 'synthesis_insight' },
+      { primitive: 'multiple-choice', role: 'cross_perspective_check' },
+    ],
+    wrapperLayout: 'stack',
+    estimatedDurationMinutes: 10,
   },
 
   // ─── Process / sequence ────────────────────────────────────────
@@ -284,6 +298,23 @@ const TEMPLATES: CompositionTemplate[] = [
     estimatedDurationMinutes: 8,
   },
 
+  // ─── Experimental design ───────────────────────────────────────
+
+  {
+    id: 'experimental_design',
+    description: 'Scientific-method scaffold — read scenario, classify variables (IV/DV/control), reason about what makes a fair test',
+    intent: 'design_experiment',
+    slots: [
+      { primitive: 'prose', role: 'experimental_context', layoutOverride: { span: 'wide' } },
+      { primitive: 'key-facts', role: 'variable_vocabulary' },
+      { primitive: 'hypothesis-lab', role: 'classify_variables', layoutOverride: { span: 'full' } },
+      { primitive: 'pull-quote', role: 'fair_test_principle' },
+      { primitive: 'multiple-choice', role: 'transfer_question' },
+    ],
+    wrapperLayout: 'stack',
+    estimatedDurationMinutes: 9,
+  },
+
   // ─── Cause and effect ──────────────────────────────────────────
 
   {
@@ -307,8 +338,8 @@ const TEMPLATES: CompositionTemplate[] = [
 const EVAL_MODE_TO_INTENTS: Record<string, string[]> = {
   explore: ['explore_concept', 'narrative_exploration', 'broad_overview', 'teach_spatial_structure'],
   recall: ['review_reinforce', 'build_vocabulary', 'introduce_new_concept', 'teach_spatial_structure'],
-  apply: ['data_analysis', 'teach_process', 'analytical_comparison', 'causal_reasoning', 'assess_spatial_understanding'],
-  analyze: ['scientific_reasoning', 'evaluate_perspectives', 'analytical_comparison', 'correct_misconception', 'assess_spatial_understanding'],
+  apply: ['data_analysis', 'teach_process', 'analytical_comparison', 'causal_reasoning', 'assess_spatial_understanding', 'design_experiment'],
+  analyze: ['scientific_reasoning', 'evaluate_perspectives', 'multi_perspective_analysis', 'analytical_comparison', 'correct_misconception', 'assess_spatial_understanding', 'design_experiment'],
 };
 
 const DEFAULT_INTENTS = ['introduce_new_concept', 'narrative_exploration'];
