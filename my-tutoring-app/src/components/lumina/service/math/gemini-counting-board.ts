@@ -35,6 +35,15 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Use encouraging language like "How many do you see right away?"`,
     schemaDescription: "'subitize' (quick visual recognition)",
   },
+  subitize_perceptual: {
+    promptDoc:
+      `"subitize_perceptual": Flash 1-3 objects briefly. Student picks the matching finger-count hand image from 3 options. `
+      + `count MUST be 1, 2, or 3. arrangement MUST be 'scattered' or 'groups'. `
+      + `Instructions must AVOID numerals — say "How many do you see?" not "Is it 2 or 3?". `
+      + `Hints and narration must also AVOID digit characters (0-9). `
+      + `Pre-K only. Use very warm language: "Wow! How many?"`,
+    schemaDescription: "'subitize_perceptual' (pre-K hand-image answer)",
+  },
   count_on: {
     promptDoc:
       `"count_on": Some objects are pre-counted. Student counts the rest and gives total. `
@@ -320,7 +329,7 @@ Return the complete counting board configuration.
   }
 
   // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
-  const validChallengeTypes = ['count_all', 'subitize', 'count_on', 'group_count', 'compare'];
+  const validChallengeTypes = ['count_all', 'subitize', 'subitize_perceptual', 'count_on', 'group_count', 'compare'];
   const validArrangements = ['scattered', 'line', 'groups', 'circle'];
 
   data.challenges = (data.challenges || []).filter(
@@ -370,8 +379,24 @@ Return the complete counting board configuration.
       challenge.count = 30;
     }
 
+    // Pre-K perceptual subitize: clamp count to [1, 3] and constrain arrangement.
+    // Also sanitize any digit characters from student-facing strings — the UI
+    // contract for this mode is that NO numerals appear anywhere.
+    if (challenge.type === 'subitize_perceptual') {
+      if (challenge.count < 1) challenge.count = 1;
+      if (challenge.count > 3) challenge.count = 3;
+      if (challenge.arrangement !== 'scattered' && challenge.arrangement !== 'groups') {
+        challenge.arrangement = 'scattered';
+      }
+      const stripDigits = (s: string) =>
+        (s ?? '').replace(/[0-9]/g, '').replace(/\s{2,}/g, ' ').trim() || 'How many do you see?';
+      challenge.instruction = stripDigits(challenge.instruction);
+      challenge.hint = stripDigits(challenge.hint);
+      challenge.narration = stripDigits(challenge.narration);
+    }
+
     // Force targetAnswer = count (except compare, where targetAnswer = larger group)
-    if (['count_all', 'group_count', 'count_on', 'subitize'].includes(challenge.type)) {
+    if (['count_all', 'group_count', 'count_on', 'subitize', 'subitize_perceptual'].includes(challenge.type)) {
       challenge.targetAnswer = challenge.count;
     }
 
@@ -387,6 +412,7 @@ Return the complete counting board configuration.
     const fallbacks: Record<string, { type: string; count: number; arrangement: string; instruction: string; targetAnswer: number; hint: string; narration: string; groupSize?: number; startFrom?: number }> = {
       count_all: { type: 'count_all', count: 5, arrangement: 'scattered', instruction: `Can you count all the ${data.objects?.type || 'stars'}?`, targetAnswer: 5, hint: 'Touch each one as you count!', narration: "Let's count together! Touch each one as you count." },
       subitize: { type: 'subitize', count: 4, arrangement: 'scattered', instruction: 'How many do you see right away?', targetAnswer: 4, hint: 'Look at the whole group — how many?', narration: "Look carefully — how many do you see without counting?" },
+      subitize_perceptual: { type: 'subitize_perceptual', count: 2, arrangement: 'scattered', instruction: 'How many do you see?', targetAnswer: 2, hint: 'Look quickly — how many?', narration: 'Look carefully. How many do you see?' },
       count_on: { type: 'count_on', count: 8, arrangement: 'scattered', instruction: 'There are 5 already. Count on to find the total!', targetAnswer: 8, hint: 'Start from 5 and keep counting: 6, 7, 8...', narration: "Some are already counted. Count on from there!", startFrom: 5 },
       group_count: { type: 'group_count', count: 8, arrangement: 'groups', instruction: 'Count the groups! How many altogether?', targetAnswer: 8, hint: 'Count each group, then add them up!', narration: "Let's count by groups!", groupSize: 4 },
       compare: { type: 'compare', count: 11, arrangement: 'groups', instruction: 'Which group has more?', targetAnswer: 7, hint: 'Count each group and compare!', narration: "Which side has more? Let's find out!", groupSize: 7 },

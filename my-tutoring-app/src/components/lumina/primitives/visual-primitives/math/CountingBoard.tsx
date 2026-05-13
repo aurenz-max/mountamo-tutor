@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import HandIcon from './HandIcon';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -20,7 +21,7 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 export interface CountingBoardChallenge {
   id: string;
-  type: 'count_all' | 'subitize' | 'count_on' | 'group_count' | 'compare';
+  type: 'count_all' | 'subitize' | 'subitize_perceptual' | 'count_on' | 'group_count' | 'compare';
   instruction: string;
   targetAnswer: number;
   count: number;
@@ -60,11 +61,12 @@ export interface CountingBoardData {
 // Constants
 // ============================================================================
 
-type Phase = 'count' | 'subitize' | 'organize' | 'countOn';
+type Phase = 'count' | 'subitize' | 'subitizePerceptual' | 'organize' | 'countOn';
 
 const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
   count: { label: 'Count', description: 'Tap each object to count' },
   subitize: { label: 'Subitize', description: 'How many do you see?' },
+  subitizePerceptual: { label: 'See & Show', description: 'Pick the matching hand' },
   organize: { label: 'Organize', description: 'Group objects to count faster' },
   countOn: { label: 'Count On', description: 'Start from a number and keep counting' },
 };
@@ -72,6 +74,7 @@ const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   count_all: { label: 'Count All', icon: '\uD83D\uDD22', accentColor: 'orange' },
   subitize: { label: 'Subitize', icon: '\u26A1', accentColor: 'purple' },
+  subitize_perceptual: { label: 'Pre-K Subitize', icon: '✋', accentColor: 'pink' },
   group_count: { label: 'Group Count', icon: '\uD83C\uDFAF', accentColor: 'emerald' },
   count_on: { label: 'Count On', icon: '\u2795', accentColor: 'blue' },
   compare: { label: 'Compare', icon: '\u2696\uFE0F', accentColor: 'amber' },
@@ -309,6 +312,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     if (challenges.length === 0) return 'count';
     const firstType = challenges[0].type;
     if (firstType === 'subitize') return 'subitize';
+    if (firstType === 'subitize_perceptual') return 'subitizePerceptual';
     if (firstType === 'count_on') return 'countOn';
     if (firstType === 'group_count') return 'organize';
     return 'count';
@@ -320,6 +324,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   // Subitize state
   const [subitizeInput, setSubitizeInput] = useState('');
   const [subitizeStartTime, setSubitizeStartTime] = useState(0);
+
+  // Pre-K subitize state (hand-image answer)
+  const [handChoice, setHandChoice] = useState<number | null>(null);
 
   // Count-on state
   const [countOnInput, setCountOnInput] = useState('');
@@ -351,6 +358,29 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     generatePositions(challengeCount, challengeArrangement, challengeGroupSize),
     [challengeCount, challengeArrangement, challengeGroupSize]
   );
+
+  // Pre-K subitize: three hand options (1, 2, 3 fingers), shuffled per challenge.
+  // We seed the shuffle with the challenge id so the order is stable within a
+  // challenge but varies across challenges. The correct answer is NEVER in a
+  // predictable position.
+  const handOptions = useMemo<number[]>(() => {
+    if (currentChallenge?.type !== 'subitize_perceptual') return [];
+    const base = [1, 2, 3];
+    const seedSource = currentChallenge.id ?? `${currentChallengeIndex}`;
+    let h = 0;
+    for (let i = 0; i < seedSource.length; i++) {
+      h = (h * 31 + seedSource.charCodeAt(i)) >>> 0;
+    }
+    const rand = () => {
+      h = (h * 1664525 + 1013904223) >>> 0;
+      return h / 0xFFFFFFFF;
+    };
+    for (let i = base.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [base[i], base[j]] = [base[j], base[i]];
+    }
+    return base;
+  }, [currentChallenge, currentChallengeIndex]);
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -514,6 +544,35 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     return { correct, timeMs };
   }, [currentChallenge, subitizeInput, subitizeStartTime, objects.type, sendText, incrementAttempts]);
 
+  const checkSubitizePerceptualAnswer = useCallback((picked: number) => {
+    if (!currentChallenge) return { correct: false, timeMs: 0 };
+    const target = currentChallenge.targetAnswer;
+    const correct = picked === target;
+    const timeMs = Date.now() - subitizeStartTime;
+    incrementAttempts();
+
+    // Feedback strings must NEVER contain numerals — pre-numeric mode.
+    if (correct) {
+      setFeedback(`Yes! That's how many ${objects.type} you saw!`);
+      setFeedbackType('success');
+      sendText(
+        `[PRE_K_SUBITIZE_CORRECT] Student picked the matching hand for ${target} ${objects.type} in ${timeMs}ms. `
+        + `Celebrate warmly without using numbers: "Wow! Great looking!"`,
+        { silent: true }
+      );
+    } else {
+      setFeedback(`Look again at the ${objects.type}! Which hand matches?`);
+      setFeedbackType('error');
+      sendText(
+        `[PRE_K_SUBITIZE_INCORRECT] Student picked a hand that does not match. Target was ${target} ${objects.type}. `
+        + `Encourage another look. Do NOT say the number — guide perception only.`,
+        { silent: true }
+      );
+    }
+
+    return { correct, timeMs };
+  }, [currentChallenge, subitizeStartTime, objects.type, sendText, incrementAttempts]);
+
   const checkCountOnAnswer = useCallback(() => {
     if (!currentChallenge) return false;
     const target = currentChallenge.targetAnswer;
@@ -554,6 +613,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     setDoubleCounted(false);
     setSubitizeInput('');
     setCountOnInput('');
+    setHandChoice(null);
     setFeedback('');
     setFeedbackType('');
 
@@ -607,6 +667,11 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         correct = checkCountOnAnswer() ?? false;
         oneToOne = true;
         break;
+      case 'subitize_perceptual': {
+        // For this mode, evaluation happens directly on hand-tap via handleHandPick.
+        // This switch arm is a defensive no-op — handleHandPick records the result.
+        return;
+      }
     }
 
     if (correct) {
@@ -620,6 +685,23 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       });
     }
   }, [currentChallenge, currentAttempts, currentRetries, checkCountChallenge, checkSubitizeAnswer, checkCountOnAnswer, recordResult]);
+
+  // Hand-tap commits the answer immediately (pre-K: single-tap UX, no separate Check Answer step).
+  const handleHandPick = useCallback((picked: number) => {
+    if (!currentChallenge || hasSubmittedEvaluation) return;
+    setHandChoice(picked);
+    const { correct, timeMs } = checkSubitizePerceptualAnswer(picked);
+    if (correct) {
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        timeMs,
+        attempts: currentAttempts + 1,
+        oneToOne: true,
+        retries: currentRetries,
+      });
+    }
+  }, [currentChallenge, hasSubmittedEvaluation, checkSubitizePerceptualAnswer, recordResult, currentAttempts, currentRetries]);
 
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
@@ -684,6 +766,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     setFeedbackType('');
     setSubitizeInput('');
     setCountOnInput('');
+    setHandChoice(null);
     setCountedObjects(new Set());
     setCountOrder(new Map());
     setDoubleCounted(false);
@@ -692,6 +775,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
     // Set phase
     if (nextChallenge.type === 'subitize') setCurrentPhase('subitize');
+    else if (nextChallenge.type === 'subitize_perceptual') setCurrentPhase('subitizePerceptual');
     else if (nextChallenge.type === 'count_on') {
       setCurrentPhase('countOn');
       const nextChallengeCount = nextChallenge.count ?? 5;
@@ -727,7 +811,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   // Subitize timer start
   // -------------------------------------------------------------------------
   useEffect(() => {
-    if (currentChallenge?.type === 'subitize') {
+    if (currentChallenge?.type === 'subitize' || currentChallenge?.type === 'subitize_perceptual') {
       setSubitizeStartTime(Date.now());
     }
   }, [currentChallengeIndex, currentChallenge?.type]);
@@ -970,12 +1054,40 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         </div>
 
         {/* Running Count */}
-        {showRunningCount && currentPhase !== 'subitize' && (
+        {showRunningCount && currentPhase !== 'subitize' && currentPhase !== 'subitizePerceptual' && (
           <div className="flex items-center justify-center gap-4 text-sm">
             <span className="text-slate-300">
               Counted: <span className="text-orange-300 font-bold text-lg">{countedObjects.size}</span>
               <span className="text-slate-500"> / {challengeCount}</span>
             </span>
+          </div>
+        )}
+
+        {/* Pre-K Subitize Hand Picker (no numerals anywhere) */}
+        {currentPhase === 'subitizePerceptual' && !isCurrentChallengeComplete && (
+          <div className="flex flex-col items-center gap-3">
+            <span className="text-slate-300 text-sm">Which hand shows how many you saw?</span>
+            <div className="flex items-center justify-center gap-4">
+              {handOptions.map((choice) => {
+                const isPicked = handChoice === choice;
+                return (
+                  <Button
+                    key={choice}
+                    variant="ghost"
+                    aria-label="Pick this hand"
+                    className={`h-24 w-24 p-2 border bg-white/5 hover:bg-white/10 transition-colors ${
+                      isPicked
+                        ? 'border-pink-400/60 ring-2 ring-pink-400/40'
+                        : 'border-white/20'
+                    }`}
+                    onClick={() => handleHandPick(choice)}
+                    disabled={hasSubmittedEvaluation}
+                  >
+                    <HandIcon fingerCount={choice as 1 | 2 | 3} size={72} />
+                  </Button>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -1054,17 +1166,19 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
               <>
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleCheckAnswer}
-                  disabled={
-                    (currentPhase === 'count' && countedObjects.size === 0) ||
-                    hasSubmittedEvaluation
-                  }
-                >
-                  Check Answer
-                </Button>
+                {currentPhase !== 'subitizePerceptual' && (
+                  <Button
+                    variant="ghost"
+                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                    onClick={handleCheckAnswer}
+                    disabled={
+                      (currentPhase === 'count' && countedObjects.size === 0) ||
+                      hasSubmittedEvaluation
+                    }
+                  >
+                    Check Answer
+                  </Button>
+                )}
                 {feedbackType === 'error' && (
                   <Button
                     variant="ghost"

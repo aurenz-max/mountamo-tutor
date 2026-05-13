@@ -11,12 +11,24 @@ import {
 /**
  * Factor Tree Data Interface
  *
- * This matches the FactorTreeData interface in the component
+ * Multi-instance schema: a single session walks the student through 3-6 factor trees
+ * of the same eval mode, surfaced sequentially. The rootValues are pre-selected by
+ * the local pool service (NOT by Gemini) — Gemini structured output converges to the
+ * same number every call regardless of temperature, so it cannot deliver variance.
+ *
+ * Gemini contributes only the wrapper metadata (title, description, mode flags).
  */
+export interface FactorTreeChallenge {
+  id: string;
+  rootValue: number;
+}
+
 export interface FactorTreeData {
   title: string;
   description: string;
-  rootValue: number;
+  /** 3-6 challenges. Required. */
+  challenges: FactorTreeChallenge[];
+  /** Session-level defaults; applied to every challenge. */
   highlightPrimes?: boolean;
   showExponentForm?: boolean;
   guidedMode?: boolean;
@@ -32,7 +44,6 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"guided_small": Small composite numbers (4-24) with 2-3 prime factors. `
       + `guidedMode=true, allowReset=true, highlightPrimes=true, showExponentForm=true. `
-      + `Good numbers: 6, 8, 10, 12, 14, 15, 16, 18, 20, 24. `
       + `Focus on introducing the concept of factor trees and recognizing primes vs composites.`,
     schemaDescription: "'guided_small' (small composites with hints)",
   },
@@ -40,7 +51,6 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"guided_medium": Medium composite numbers (24-60) with 3-4 prime factors. `
       + `guidedMode=true, allowReset=true, highlightPrimes=true, showExponentForm=true. `
-      + `Good numbers: 24, 28, 30, 36, 40, 42, 45, 48, 50, 54, 56, 60. `
       + `Students build fluency with support. Emphasize exponential form (e.g., 2^3 × 3).`,
     schemaDescription: "'guided_medium' (medium composites with hints)",
   },
@@ -48,7 +58,6 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"unguided": Medium composite numbers (20-60) without factor pair hints. `
       + `guidedMode=false, allowReset=true, highlightPrimes=true, showExponentForm=true. `
-      + `Good numbers: 20, 24, 28, 30, 36, 40, 42, 48, 50, 54, 56, 60. `
       + `Student must find factor pairs independently. Tests divisibility rule knowledge.`,
     schemaDescription: "'unguided' (medium composites, no hints)",
   },
@@ -56,7 +65,6 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"unguided_large": Larger composite numbers (40-80) without hints, reset allowed. `
       + `guidedMode=false, allowReset=true, highlightPrimes=true, showExponentForm=true. `
-      + `Good numbers: 40, 42, 48, 54, 56, 60, 63, 72, 80. `
       + `Step up from unguided: bigger numbers with more prime factors to track.`,
     schemaDescription: "'unguided_large' (larger composites, no hints, reset allowed)",
   },
@@ -64,7 +72,6 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"assessment_intro": Medium-large composite numbers (40-80) with no hints and no reset. `
       + `guidedMode=false, allowReset=false, highlightPrimes=true, showExponentForm=true. `
-      + `Good numbers: 40, 42, 48, 54, 56, 60, 63, 72, 80. `
       + `Practice the no-retry format with moderate numbers before full assessment.`,
     schemaDescription: "'assessment_intro' (medium-large composites, no hints, no reset)",
   },
@@ -72,14 +79,127 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"assessment": Larger composite numbers (40-100) with no hints and no reset. `
       + `guidedMode=false, allowReset=false, highlightPrimes=true, showExponentForm=true. `
-      + `Good numbers: 40, 48, 54, 56, 60, 63, 72, 80, 84, 90, 96, 100. `
       + `Formal assessment — student must complete factorization independently on first attempt.`,
     schemaDescription: "'assessment' (large composites, no hints, no reset)",
   },
 };
 
 // ---------------------------------------------------------------------------
-// Base schema
+// Pre-selected candidate pools (per eval mode)
+// ---------------------------------------------------------------------------
+
+const CANDIDATE_POOLS: Record<string, number[]> = {
+  guided_small:    [6, 8, 10, 12, 14, 15, 16, 18, 20, 21, 24],
+  guided_medium:   [24, 27, 28, 30, 32, 33, 35, 36, 40, 42, 44, 45, 48, 50, 54, 56, 60],
+  unguided:        [20, 21, 24, 27, 28, 30, 32, 33, 35, 36, 40, 42, 44, 45, 48, 50, 54, 56, 60],
+  unguided_large:  [40, 42, 44, 45, 48, 50, 54, 56, 60, 63, 64, 70, 72, 75, 80],
+  assessment_intro:[40, 42, 44, 45, 48, 50, 54, 56, 60, 63, 64, 70, 72, 75, 80],
+  assessment:      [40, 42, 48, 54, 56, 60, 63, 64, 70, 72, 75, 80, 84, 90, 96, 100],
+};
+
+/** Default selection size — single source of truth for instance density. */
+const DEFAULT_INSTANCE_COUNT = 4;
+const MAX_INSTANCE_COUNT = 6;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Count prime factors with multiplicity (proxy for difficulty within a mode). */
+const primeFactorCount = (n: number): number => {
+  let count = 0;
+  let temp = n;
+  for (let i = 2; i <= temp; i++) {
+    while (temp % i === 0) {
+      count++;
+      temp /= i;
+    }
+  }
+  return count;
+};
+
+/** Fisher-Yates shuffle. */
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Orchestrator: rootValue pool selection (replaces Gemini for per-instance numbers)
+// ---------------------------------------------------------------------------
+
+export interface SelectRootValuesOptions {
+  /** How many distinct composites to select. Clamped to [1, MAX_INSTANCE_COUNT]. */
+  count?: number;
+  /** Force-include this value as the first challenge (e.g. when manifest provides one). */
+  primary?: number;
+}
+
+/**
+ * Pick `count` distinct composites from the candidate set for a given challenge type,
+ * ordered easier-to-harder. Guarantees variance: at least one odd composite when the
+ * candidate set has one. No LLM call — the candidate pools are small enough that
+ * deterministic selection produces better spread than Gemini's converged output.
+ */
+export function selectFactorTreeRootValues(
+  challengeType: string,
+  options: SelectRootValuesOptions = {},
+): number[] {
+  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, options.count ?? DEFAULT_INSTANCE_COUNT));
+  const pool = CANDIDATE_POOLS[challengeType] ?? CANDIDATE_POOLS.guided_small;
+
+  const shuffled = shuffle(pool);
+  const seen = new Set<number>();
+  const selected: number[] = [];
+
+  if (options.primary != null && pool.includes(options.primary)) {
+    selected.push(options.primary);
+    seen.add(options.primary);
+  }
+
+  for (const n of shuffled) {
+    if (selected.length >= target) break;
+    if (!seen.has(n)) {
+      selected.push(n);
+      seen.add(n);
+    }
+  }
+
+  // Variance guarantee: include at least one odd if the pool has any.
+  const oddInPool = pool.filter((n) => n % 2 !== 0);
+  if (oddInPool.length > 0 && !selected.some((n) => n % 2 !== 0)) {
+    const replacement = oddInPool[Math.floor(Math.random() * oddInPool.length)];
+    // Replace the last picked even value (keep primary in place if it was an even).
+    const swapIdx = selected.length - 1;
+    if (swapIdx >= 0 && !(options.primary != null && selected[0] === options.primary && swapIdx === 0)) {
+      selected[swapIdx] = replacement;
+    }
+  }
+
+  // Order from easier to harder (fewer prime factors first; ties broken by value).
+  selected.sort((a, b) => {
+    const da = primeFactorCount(a);
+    const db = primeFactorCount(b);
+    if (da !== db) return da - db;
+    return a - b;
+  });
+
+  // Pin primary at front even after sort.
+  if (options.primary != null && selected.includes(options.primary) && selected[0] !== options.primary) {
+    const idx = selected.indexOf(options.primary);
+    selected.splice(idx, 1);
+    selected.unshift(options.primary);
+  }
+
+  return selected;
+}
+
+// ---------------------------------------------------------------------------
+// Schema (wrapper metadata only — Gemini does NOT emit per-challenge data)
 // ---------------------------------------------------------------------------
 
 const factorTreeSchema: Schema = {
@@ -87,23 +207,19 @@ const factorTreeSchema: Schema = {
   properties: {
     title: {
       type: Type.STRING,
-      description: "Title for the factor tree (e.g., 'Prime Factorization of 24')"
+      description: "Title for the activity (e.g., 'Prime Factorization Practice'). Do NOT mention specific numbers — the activity uses several composites."
     },
     description: {
       type: Type.STRING,
-      description: "Educational description explaining what students will learn from this visualization"
+      description: "1-2 sentence educational description of what students will learn from the session."
     },
     challengeType: {
       type: Type.STRING,
-      description: "Challenge type: 'guided_small' (small composites with hints), 'guided_medium' (medium composites with hints), 'unguided' (medium composites, no hints), 'assessment' (large composites, no hints, no reset)"
-    },
-    rootValue: {
-      type: Type.NUMBER,
-      description: "Starting composite number to factor. Range 4-100. Choose numbers with clear factorizations for grade level."
+      description: "Challenge type for the session. Drives mode flags."
     },
     highlightPrimes: {
       type: Type.BOOLEAN,
-      description: "Visually distinguish prime leaves with green highlighting. Default: true"
+      description: "Visually distinguish prime leaves. Default: true"
     },
     showExponentForm: {
       type: Type.BOOLEAN,
@@ -111,67 +227,21 @@ const factorTreeSchema: Schema = {
     },
     guidedMode: {
       type: Type.BOOLEAN,
-      description: "Suggest valid factor pairs to help students. true for guided_small/guided_medium, false for unguided/assessment."
+      description: "Suggest valid factor pairs. true for guided modes, false for unguided/assessment."
     },
     allowReset: {
       type: Type.BOOLEAN,
-      description: "Allow students to clear and restart. true for all modes except assessment."
+      description: "Allow the student to clear and restart a tree. true for all modes except assessment."
     }
   },
-  required: ["title", "description", "challengeType", "rootValue"]
+  required: ["title", "description", "challengeType"]
 };
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Mode-flag enforcement (runs after the Gemini call)
 // ---------------------------------------------------------------------------
 
-const isPrime = (n: number): boolean => {
-  if (n < 2) return false;
-  if (n === 2) return true;
-  if (n % 2 === 0) return false;
-  for (let i = 3; i <= Math.sqrt(n); i += 2) {
-    if (n % i === 0) return false;
-  }
-  return true;
-};
-
-/** Enforce rootValue range and composite constraint for a given challenge type */
-function validateRootValue(data: FactorTreeData & { challengeType?: string }): void {
-  const ct = data.challengeType;
-  const ranges: Record<string, [number, number]> = {
-    guided_small: [4, 24],
-    guided_medium: [24, 60],
-    unguided: [20, 60],
-    unguided_large: [40, 80],
-    assessment_intro: [40, 80],
-    assessment: [40, 100],
-  };
-  const [min, max] = ranges[ct ?? ''] ?? [4, 100];
-
-  // Clamp to range
-  if (data.rootValue < min || data.rootValue > max) {
-    const fallbacks: Record<string, number> = {
-      guided_small: 12,
-      guided_medium: 36,
-      unguided: 36,
-      unguided_large: 56,
-      assessment_intro: 60,
-      assessment: 72,
-    };
-    console.warn(`[FactorTree] rootValue ${data.rootValue} out of range [${min}, ${max}] for ${ct}. Using fallback.`);
-    data.rootValue = fallbacks[ct ?? ''] ?? 24;
-  }
-
-  // Ensure composite
-  if (isPrime(data.rootValue)) {
-    console.warn(`[FactorTree] rootValue ${data.rootValue} is prime. Adjusting.`);
-    const adjusted = data.rootValue + 1;
-    data.rootValue = isPrime(adjusted) ? adjusted + 1 : adjusted;
-  }
-}
-
-/** Enforce guidedMode / allowReset based on challenge type */
-function enforceModeFlags(data: FactorTreeData & { challengeType?: string }): void {
+function enforceModeFlags(data: { challengeType?: string; guidedMode?: boolean; allowReset?: boolean; highlightPrimes?: boolean; showExponentForm?: boolean }): void {
   const ct = data.challengeType;
   if (ct === 'guided_small' || ct === 'guided_medium') {
     data.guidedMode = true;
@@ -183,6 +253,8 @@ function enforceModeFlags(data: FactorTreeData & { challengeType?: string }): vo
     data.guidedMode = false;
     data.allowReset = false;
   }
+  if (data.highlightPrimes === undefined) data.highlightPrimes = true;
+  if (data.showExponentForm === undefined) data.showExponentForm = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -193,7 +265,10 @@ export const generateFactorTree = async (
   topic: string,
   gradeLevel: string,
   config?: {
+    /** Legacy single-value override. If provided, it pins challenge #1. */
     rootValue?: number;
+    /** How many factor trees in this session. Default 4, max 6. */
+    instanceCount?: number;
     highlightPrimes?: boolean;
     showExponentForm?: boolean;
     guidedMode?: boolean;
@@ -221,65 +296,22 @@ export const generateFactorTree = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create an educational factor tree visualization for teaching "${topic}" to ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge factor tree session on "${topic}" for ${gradeLevel} students.
 
 CONTEXT:
-- Factor trees are branching diagrams showing prime factorization
-- Students repeatedly split composite numbers into factor pairs
-- The process continues until all branches end in prime numbers
-- The prime factors are then collected to show the prime factorization
+- A factor tree session contains 3-6 separate factorizations of different composite numbers.
+- The system has ALREADY pre-selected the composite numbers for each challenge; you do NOT pick numbers.
+- Your job is only to write the session-level title and description, and to set the mode flags.
 
 ${challengeTypeSection}
 
-${!evalConstraint ? `
-GUIDELINES FOR GRADE LEVELS:
-- Grades 3-4: Simple composite numbers (12, 18, 20, 24, 30), focus on understanding factors
-- Grades 4-5: Two-digit composites (36, 48, 54, 60, 72), introduce prime factorization
-- Grades 5-6: Larger numbers (84, 90, 96, 100), exponential notation, GCF/LCM applications
-- Grades 6-7: More complex numbers, use for simplifying fractions and finding GCF/LCM
-
-TOPIC-SPECIFIC GUIDANCE:
-- "Introduction to factors": Use smaller numbers (12, 18, 24) with clear factor pairs
-- "Prime factorization": Use numbers with multiple prime factors (24, 30, 36, 48)
-- "Prime vs composite": Use numbers that illustrate the difference
-- "GCF and LCM": Use pairs of related numbers (24 and 36, 48 and 60)
-- "Simplifying fractions": Use numbers that are common denominators (24, 36, 48, 60)
-- "Powers and exponents": Use numbers with repeated prime factors (16=2^4, 27=3^3, 72=2^3×3^2)
-` : ''}
-
-GOOD NUMBERS BY PRIME FACTOR PATTERNS:
-- Two primes: 6, 10, 14, 15, 21, 22, 26, 33, 34, 35, 38, 39
-- Three prime factors: 12, 18, 20, 28, 30, 42, 44, 45, 50, 52
-- Four prime factors: 24, 40, 48, 54, 56, 60, 63, 72, 80, 84, 90, 96
-- Powers of 2: 16, 32, 64 (for exponential form emphasis)
-- Powers of 3: 27, 81 (for exponential form emphasis)
-- Mixed: 36 (2^2 × 3^2), 72 (2^3 × 3^2), 100 (2^2 × 5^2)
-
-${(() => {
-  const hints: string[] = [];
-  if (config?.rootValue !== undefined) hints.push(`- Root value: ${config.rootValue}`);
-  if (config?.highlightPrimes !== undefined) hints.push(`- Highlight primes: ${config.highlightPrimes}`);
-  if (config?.showExponentForm !== undefined) hints.push(`- Show exponent form: ${config.showExponentForm}`);
-  if (config?.guidedMode !== undefined) hints.push(`- Guided mode: ${config.guidedMode}`);
-  if (config?.allowReset !== undefined) hints.push(`- Allow reset: ${config.allowReset}`);
-  return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
-})()}
-
 REQUIREMENTS:
-1. Choose a composite number appropriate for the grade level and topic
-2. Write a clear, student-friendly title that includes the number being factored
-3. Provide an educational description of what students will learn
-4. Set challengeType to match the difficulty tier
-5. Set guidedMode and allowReset to match the challengeType constraints
-6. Always highlight primes and show exponent form unless specifically overridden
-7. The number should have educational value for the specific topic
+1. Write a clear, student-friendly title for the whole session. Do NOT name any specific composite number — the session walks through several.
+2. Provide a 1-2 sentence educational description of what students will practice across the session.
+3. Set challengeType to the correct difficulty tier.
+4. Set guidedMode, allowReset, highlightPrimes, showExponentForm to match the tier constraints.
 
-AVOID:
-- Numbers less than 4
-- Prime numbers
-- Numbers greater than 100
-
-Return the complete factor tree configuration.
+Return ONLY the wrapper fields described above.
 `;
 
   logEvalModeResolution('FactorTree', config?.targetEvalMode, evalConstraint);
@@ -288,47 +320,62 @@ Return the complete factor tree configuration.
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
+      temperature: 0.9,
+      topP: 0.95,
       responseMimeType: "application/json",
       responseSchema: activeSchema,
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  const wrapper = result.text ? JSON.parse(result.text) : null;
 
-  if (!data) {
-    throw new Error('No valid factor tree data returned from Gemini API');
+  if (!wrapper) {
+    throw new Error('No valid factor tree wrapper returned from Gemini API');
   }
 
   // ── Validate challengeType ──
   const validTypes = ['guided_small', 'guided_medium', 'unguided', 'unguided_large', 'assessment_intro', 'assessment'];
-  if (!validTypes.includes(data.challengeType)) {
-    data.challengeType = evalConstraint?.allowedTypes[0] ?? 'guided_small';
+  if (!validTypes.includes(wrapper.challengeType)) {
+    wrapper.challengeType = evalConstraint?.allowedTypes[0] ?? 'guided_small';
   }
 
-  // ── Validate rootValue for challenge type range ──
-  validateRootValue(data);
-
-  // ── Enforce mode flags (guidedMode, allowReset) ──
-  enforceModeFlags(data);
-
-  // ── Set defaults ──
-  if (data.highlightPrimes === undefined) data.highlightPrimes = true;
-  if (data.showExponentForm === undefined) data.showExponentForm = true;
+  // ── Enforce mode flags (guidedMode, allowReset, defaults) ──
+  enforceModeFlags(wrapper);
 
   // ── Apply explicit config overrides from manifest ──
   if (config) {
-    if (config.rootValue !== undefined) data.rootValue = config.rootValue;
-    if (config.highlightPrimes !== undefined) data.highlightPrimes = config.highlightPrimes;
-    if (config.showExponentForm !== undefined) data.showExponentForm = config.showExponentForm;
-    // Don't allow config to override guidedMode/allowReset when eval mode is active
+    if (config.highlightPrimes !== undefined) wrapper.highlightPrimes = config.highlightPrimes;
+    if (config.showExponentForm !== undefined) wrapper.showExponentForm = config.showExponentForm;
+    // Don't allow config to override guidedMode/allowReset when eval mode is active.
     if (!evalConstraint) {
-      if (config.guidedMode !== undefined) data.guidedMode = config.guidedMode;
-      if (config.allowReset !== undefined) data.allowReset = config.allowReset;
+      if (config.guidedMode !== undefined) wrapper.guidedMode = config.guidedMode;
+      if (config.allowReset !== undefined) wrapper.allowReset = config.allowReset;
     }
   }
 
-  // Final log
-  console.log(`[FactorTree] Final: challengeType=${data.challengeType}, rootValue=${data.rootValue}, guided=${data.guidedMode}, reset=${data.allowReset}`);
+  // ── Pre-select rootValues for the session (local, deterministic-variance) ──
+  const rootValues = selectFactorTreeRootValues(wrapper.challengeType, {
+    count: config?.instanceCount,
+    primary: config?.rootValue,
+  });
 
-  return data;
+  const challenges: FactorTreeChallenge[] = rootValues.map((rootValue, idx) => ({
+    id: `ft-${idx + 1}`,
+    rootValue,
+  }));
+
+  console.log(
+    `[FactorTree] Final: challengeType=${wrapper.challengeType}, instances=${challenges.length} ` +
+    `[${rootValues.join(', ')}], guided=${wrapper.guidedMode}, reset=${wrapper.allowReset}`
+  );
+
+  return {
+    title: wrapper.title,
+    description: wrapper.description,
+    challenges,
+    highlightPrimes: wrapper.highlightPrimes,
+    showExponentForm: wrapper.showExponentForm,
+    guidedMode: wrapper.guidedMode,
+    allowReset: wrapper.allowReset,
+  };
 };

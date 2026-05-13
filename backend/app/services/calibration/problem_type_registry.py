@@ -60,6 +60,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "compare_datasets":  PriorConfig(5.5, "Transitional: compare two parallel dot plots (CCSS 7.SP.B)"),
     },
     "counting-board": {
+        "subitize_perceptual": PriorConfig(0.5, "Pre-K: flash 1-3 objects, identify via hand image"),
         "count":     PriorConfig(1.0, "Count objects on board"),
         "group":     PriorConfig(2.0, "Group objects by attribute"),
         "compare":   PriorConfig(2.5, "Compare groups"),

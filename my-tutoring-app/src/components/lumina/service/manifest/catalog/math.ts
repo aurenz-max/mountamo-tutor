@@ -699,11 +699,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'factor-tree',
-    description: 'Visual tree diagram showing prime factorization of a number. Perfect for teaching prime numbers, composite numbers, factor decomposition, greatest common factor (GCF), least common multiple (LCM), and divisibility rules. Interactive branches show the breakdown process from composite numbers to prime factors. ESSENTIAL for grades 4-6 number theory.',
-    constraints: 'Requires a composite number (not prime). Best for numbers with interesting factorizations (e.g., 24, 36, 48, 60, 72).',
+    description: 'Multi-challenge factor-tree session: students factor 3-6 different composite numbers in a row at the same difficulty tier. Each challenge is a fresh tree with its own composite. Perfect for teaching prime numbers, composite numbers, factor decomposition, greatest common factor (GCF), least common multiple (LCM), and divisibility rules. ESSENTIAL for grades 4-6 number theory.',
+    constraints: 'Composites only (not primes). Session-level configuration; rootValues are selected by the local pool service per eval mode, so do NOT supply specific numbers from the manifest.',
     tutoring: {
-      taskDescription: 'Find the prime factorization of {{rootValue}} by splitting composite numbers into factor pairs.',
-      contextKeys: ['rootValue', 'currentFactorization', 'leavesCount', 'allPrime', 'guidedMode'],
+      taskDescription: 'Walk through {{totalChallenges}} factor trees. Current factorization: {{rootValue}} (challenge {{currentChallengeIndex}} of {{totalChallenges}}).',
+      contextKeys: ['rootValue', 'currentFactorization', 'leavesCount', 'allPrime', 'guidedMode', 'currentChallengeIndex', 'totalChallenges'],
       scaffoldingLevels: {
         level1: '"Is this number prime or composite? If composite, can you think of two numbers that multiply to make it?"',
         level2: '"Try dividing {{selectedValue}} by small primes: 2, 3, 5, 7. Which one divides evenly?"',
@@ -1484,9 +1484,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'counting-board',
-    description: 'Flexible K-1 counting workspace with tappable objects (bears, apples, stars, fish, butterflies, blocks) arranged in different patterns (scattered, line, groups, circle). Supports counting strategies: count-all (tap each object), subitizing (flash and recognize), count-on (start from a known group), group counting (count by 2s/5s/10s), and compare (which group has more). Builds one-to-one correspondence, cardinality principle, and subitizing fluency. ESSENTIAL for grades K-1 counting, number sense, and early addition foundations.',
-    constraints: 'Best for grades K-1. Object counting and subitizing. K: count 1-20 objects, count_all and subitize only. Grade 1: count to 30, count-on and group counting.',
+    description: 'Flexible Pre-K to Grade 1 counting workspace with tappable objects (bears, apples, stars, fish, butterflies, blocks) arranged in different patterns (scattered, line, groups, circle). Supports counting strategies: pre-numeric perceptual subitizing (Pre-K, hand-image answers, no numerals), count-all (tap each object), subitizing (recognize and type the numeral), count-on (start from a known group), group counting (count by 2s/5s/10s), and compare (which group has more). Builds one-to-one correspondence, cardinality principle, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
+    constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand-image answers (no numerals). K: count 1-20 objects, count_all and subitize. Grade 1: count to 30, count-on and group counting.',
     evalModes: [
+      {
+        evalMode: 'subitize_perceptual',
+        label: 'Subitize (Pre-Numeric)',
+        beta: 0.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['subitize_perceptual'],
+        description: 'Flash 1-3 objects. Student selects matching hand image (no numerals). Pre-K perceptual subitizing.',
+      },
       {
         evalMode: 'count',
         label: 'Count All (Concrete)',
