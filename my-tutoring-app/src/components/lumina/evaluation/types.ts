@@ -967,6 +967,31 @@ export interface FactorTreeMetrics extends BasePrimitiveMetrics {
   treeDepth: number;              // Maximum depth of the tree
 }
 
+export interface BarModelMetrics extends BasePrimitiveMetrics {
+  type: 'bar-model';
+
+  // Which mode the session practiced (all challenges share a mode)
+  evalMode:
+    | 'compare_bars'
+    | 'read_scale'
+    | 'picture_graph'
+    | 'scaled_bar_graph'
+    | 'graph_word_problem'
+    | 'build_graph';
+  graphStyle: 'bar' | 'scaled_bar' | 'picture';
+
+  // Session aggregates
+  totalChallenges: number;
+  correctCount: number;            // Challenges resolved correctly
+  attemptsCount: number;           // Total attempts across all challenges (incl. wrong tries)
+  firstTryCount: number;           // Challenges solved on attempt 1
+  hintsViewed: number;             // Number of challenges where the student saw a hint (wrong tries)
+
+  // Aggregate quality
+  overallAccuracy: number;         // 0-100 — average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
 export interface FastFactMetrics extends BasePrimitiveMetrics {
   type: 'fast-fact';
   subject: string;
@@ -3344,6 +3369,7 @@ export type PrimitiveMetrics =
   | CoordinateGraphMetrics
   | PlaceValueChartMetrics
   | FactorTreeMetrics
+  | BarModelMetrics
   | FormulaCardMetrics
   | ArrayGridMetrics
   | RatioTableMetrics

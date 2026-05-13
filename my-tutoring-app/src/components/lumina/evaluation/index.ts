@@ -87,6 +87,7 @@ export type {
   CoordinateGraphMetrics,
   PlaceValueChartMetrics,
   FactorTreeMetrics,
+  BarModelMetrics,
   FormulaCardMetrics,
   ArrayGridMetrics,
   RatioTableMetrics,

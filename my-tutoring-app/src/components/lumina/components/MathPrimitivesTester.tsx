@@ -6,6 +6,7 @@ import PlaceValueChart from '../primitives/visual-primitives/math/PlaceValueChar
 import AreaModel from '../primitives/visual-primitives/math/AreaModel';
 import ArrayGrid from '../primitives/visual-primitives/math/ArrayGrid';
 import FactorTree from '../primitives/visual-primitives/math/FactorTree';
+import BarModel from '../primitives/visual-primitives/math/BarModel';
 import RatioTable from '../primitives/visual-primitives/math/RatioTable';
 import DoubleNumberLine from '../primitives/visual-primitives/math/DoubleNumberLine';
 import PercentBar from '../primitives/visual-primitives/math/PercentBar';
@@ -74,7 +75,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -84,6 +85,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'area-model', label: 'Area Model', icon: '📐', topic: 'Multi-digit multiplication' },
   { value: 'array-grid', label: 'Array / Grid', icon: '⊞', topic: 'Introduction to multiplication' },
   { value: 'factor-tree', label: 'Factor Tree', icon: '🌳', topic: 'Prime factorization' },
+  { value: 'bar-model', label: 'Bar Model', icon: '📊', topic: 'Reading and building bar graphs' },
   { value: 'ratio-table', label: 'Ratio Table', icon: '⚖️', topic: 'Equivalent ratios and proportions' },
   { value: 'double-number-line', label: 'Double Number Line', icon: '↔️', topic: 'Unit rates and proportional relationships' },
   { value: 'percent-bar', label: 'Percent Bar', icon: '📈', topic: 'Percent concepts and calculations' },
@@ -212,6 +214,20 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'math-number-theory',
             subskillId: 'prime-factorization',
             objectiveId: 'understand-prime-factors',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'bar-model':
+      // BarModel supports evaluation - pass the props
+      return (
+        <BarModel
+          data={{
+            ...(data as Parameters<typeof BarModel>[0]['data']),
+            instanceId: `bar-model-${Date.now()}`,
+            skillId: 'math-data-graphs',
+            subskillId: 'categorical-graphs',
+            objectiveId: 'read-and-build-bar-graphs',
             onEvaluationSubmit,
           }}
         />
@@ -814,6 +830,19 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Efficiency: {Math.round(result.metrics.efficiency * 100)}%</span>
                     <span>Primes: {result.metrics.uniquePrimes.join(', ')}</span>
                     <span>Invalid: {result.metrics.invalidSplitAttempts}</span>
+                  </div>
+                )}
+                {/* Show BarModel-specific metrics */}
+                {result.metrics.type === 'bar-model' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.evalMode}</span>
+                    <span>Style: {result.metrics.graphStyle}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
                   </div>
                 )}
               </div>

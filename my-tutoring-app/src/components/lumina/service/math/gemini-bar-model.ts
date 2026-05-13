@@ -1,12 +1,18 @@
 /**
  * Bar Model Generator — IRT-aware K-5 categorical-data graph generator.
  *
- * Orchestrator pattern: each eval mode has a focused sub-generator with a
- * flat-slot schema where every rendered field is in `required`. This
- * eliminates the SP-14 class of bugs (flash-lite silently dropping nullable
- * fields). Answer-shaping fields (graphStyle, scale, targetBarIndex, options)
- * are derived deterministically in post-process — Gemini only supplies
- * content (labels, values, prompts, hints).
+ * Multi-instance schema: a single session walks the student through 3-6 graph
+ * challenges of the same eval mode, surfaced sequentially. Each challenge
+ * carries its own graph (bars + graphStyle + scale) + question content.
+ *
+ * Generation strategy (orchestrator, per PRD §6a #1 — content-bearing per-
+ * challenge data): the orchestrator fans out N parallel calls to the existing
+ * per-mode sub-generator. Natural variance comes from independent Gemini
+ * generations (structured-output convergence is per-call, not across
+ * independent calls). Each sub-generator emits one BarModelChallenge under a
+ * flat-slot schema where every rendered field is in `required` — answer-
+ * shaping fields (graphStyle, scale, targetBarIndex, options) are derived
+ * deterministically in post-process.
  */
 
 import { Type, Schema } from "@google/genai";
@@ -44,9 +50,16 @@ export interface BarModelScale {
   iconValue?: number;
 }
 
+/**
+ * One graph challenge. Owns its own graph data (bars + style + scale) so a
+ * single session can walk the student through multiple distinct graphs.
+ */
 export interface BarModelChallenge {
   id: string;
   evalMode: BarModelEvalMode;
+  values: BarValue[];
+  graphStyle: BarModelGraphStyle;
+  scale?: BarModelScale;
   prompt: string;
   hint?: string;
   narration?: string;
@@ -61,11 +74,19 @@ export interface BarModelChallenge {
 export interface BarModelData {
   title: string;
   description: string;
-  values: BarValue[];
-  graphStyle?: BarModelGraphStyle;
-  scale?: BarModelScale;
-  challenge?: BarModelChallenge;
+  /** 3-6 challenges. Required. Walked sequentially by the component. */
+  challenges: BarModelChallenge[];
 }
+
+/** Internal sub-generator return shape — wrapped before being merged. */
+interface SubGenResult {
+  title: string;
+  description: string;
+  challenge: BarModelChallenge;
+}
+
+const DEFAULT_INSTANCE_COUNT = 4;
+const MAX_INSTANCE_COUNT = 6;
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -182,7 +203,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // Sub-generator: compare_bars
 // ===========================================================================
 
-async function generateCompareBars(topic: string, gradeContext: string, intent: string): Promise<BarModelData> {
+async function generateCompareBars(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
   const slots = barSlots(2);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -242,11 +263,11 @@ RULES:
   return {
     title: String(raw.title ?? 'Compare Bars'),
     description: String(raw.description ?? 'Compare the two bars.'),
-    values: bars,
-    graphStyle: 'bar',
     challenge: {
-      id: 'bm-1',
+      id: 'bm-pending',
       evalMode: 'compare_bars',
+      values: bars,
+      graphStyle: 'bar',
       prompt: String(raw.prompt ?? 'Which bar is taller?'),
       hint: String(raw.hint ?? 'Look carefully at the bar heights.'),
       targetBarIndex,
@@ -258,7 +279,7 @@ RULES:
 // Sub-generator: read_scale
 // ===========================================================================
 
-async function generateReadScale(topic: string, gradeContext: string, intent: string): Promise<BarModelData> {
+async function generateReadScale(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
   const slots = barSlots(4);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -312,12 +333,12 @@ RULES:
   return {
     title: String(raw.title ?? 'Read the Graph'),
     description: String(raw.description ?? 'Read each bar on the scaled axis.'),
-    values: bars,
-    graphStyle: 'scaled_bar',
-    scale: { step, max },
     challenge: {
-      id: 'bm-1',
+      id: 'bm-pending',
       evalMode: 'read_scale',
+      values: bars,
+      graphStyle: 'scaled_bar',
+      scale: { step, max },
       prompt: String(raw.prompt ?? `How many does ${bars[targetIdx].label} have?`),
       hint: String(raw.hint ?? 'Follow the top of the bar to the number on the axis.'),
       expectedValue,
@@ -331,7 +352,7 @@ RULES:
 // Sub-generator: picture_graph
 // ===========================================================================
 
-async function generatePictureGraph(topic: string, gradeContext: string, intent: string): Promise<BarModelData> {
+async function generatePictureGraph(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
   const slots = barSlots(4);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -391,12 +412,12 @@ RULES:
   return {
     title: String(raw.title ?? 'Picture Graph'),
     description: String(raw.description ?? 'Read the picture graph.'),
-    values: bars,
-    graphStyle: 'picture',
-    scale: { step: iconValue, max, iconEmoji, iconValue },
     challenge: {
-      id: 'bm-1',
+      id: 'bm-pending',
       evalMode: 'picture_graph',
+      values: bars,
+      graphStyle: 'picture',
+      scale: { step: iconValue, max, iconEmoji, iconValue },
       prompt: String(raw.prompt ?? `Each ${iconEmoji} stands for ${iconValue}. How many for ${bars[targetIdx].label}?`),
       hint: String(raw.hint ?? `Count the icons, then multiply by ${iconValue}.`),
       expectedValue,
@@ -410,7 +431,7 @@ RULES:
 // Sub-generator: scaled_bar_graph
 // ===========================================================================
 
-async function generateScaledBarGraph(topic: string, gradeContext: string, intent: string): Promise<BarModelData> {
+async function generateScaledBarGraph(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
   const slots = barSlots(5);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -467,12 +488,12 @@ RULES:
   return {
     title: String(raw.title ?? 'Scaled Bar Graph'),
     description: String(raw.description ?? 'Read a bar between tick marks.'),
-    values: bars,
-    graphStyle: 'scaled_bar',
-    scale: { step, max },
     challenge: {
-      id: 'bm-1',
+      id: 'bm-pending',
       evalMode: 'scaled_bar_graph',
+      values: bars,
+      graphStyle: 'scaled_bar',
+      scale: { step, max },
       prompt: String(raw.prompt ?? `What value does ${bars[targetIdx].label} show?`),
       hint: String(raw.hint ?? `Look at the tick marks around the top of the bar.`),
       expectedValue,
@@ -486,7 +507,7 @@ RULES:
 // Sub-generator: graph_word_problem
 // ===========================================================================
 
-async function generateGraphWordProblem(topic: string, gradeContext: string, intent: string): Promise<BarModelData> {
+async function generateGraphWordProblem(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
   const slots = barSlots(4);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -539,12 +560,12 @@ RULES:
   return {
     title: String(raw.title ?? 'Graph Word Problem'),
     description: String(raw.description ?? 'Read the graph, then solve.'),
-    values: bars,
-    graphStyle: 'scaled_bar',
-    scale: { step, max },
     challenge: {
-      id: 'bm-1',
+      id: 'bm-pending',
       evalMode: 'graph_word_problem',
+      values: bars,
+      graphStyle: 'scaled_bar',
+      scale: { step, max },
       prompt: String(raw.prompt ?? 'How many more does the tallest bar have than the shortest?'),
       hint: String(raw.hint ?? 'Read both bars carefully, then subtract or add.'),
       expectedValue,
@@ -557,7 +578,7 @@ RULES:
 // Sub-generator: build_graph
 // ===========================================================================
 
-async function generateBuildGraph(topic: string, gradeContext: string, intent: string): Promise<BarModelData> {
+async function generateBuildGraph(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
   const slots = barSlots(4);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -612,12 +633,12 @@ RULES:
   return {
     title: String(raw.title ?? 'Build the Graph'),
     description: String(raw.description ?? 'Construct the graph from the dataset.'),
-    values: zeroedBars,
-    graphStyle: 'scaled_bar',
-    scale: { step: expectedStep, max },
     challenge: {
-      id: 'bm-1',
+      id: 'bm-pending',
       evalMode: 'build_graph',
+      values: zeroedBars,
+      graphStyle: 'scaled_bar',
+      scale: { step: expectedStep, max },
       prompt: String(raw.prompt ?? `Build the graph: ${answerBars.map((b) => `${b.label}=${b.value}`).join(', ')}. Choose the best scale.`),
       hint: String(raw.hint ?? 'Look at your largest value — which step lets it fit without lots of empty space?'),
       expectedDataset: answerBars.map((b) => ({ label: b.label, value: b.value })),
@@ -628,14 +649,28 @@ RULES:
 }
 
 // ===========================================================================
-// Main generator — dispatches to per-mode sub-generator
+// Orchestrator: fan out N parallel sub-generator calls for one eval mode
 // ===========================================================================
+
+function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: string, intent: string) => Promise<SubGenResult> {
+  switch (mode) {
+    case 'read_scale':         return generateReadScale;
+    case 'picture_graph':      return generatePictureGraph;
+    case 'scaled_bar_graph':   return generateScaledBarGraph;
+    case 'graph_word_problem': return generateGraphWordProblem;
+    case 'build_graph':        return generateBuildGraph;
+    case 'compare_bars':
+    default:                   return generateCompareBars;
+  }
+}
 
 export const generateBarModel = async (
   topic: string,
   gradeContext: string,
   config?: {
     intent?: string;
+    /** How many challenges in this session. Default 4, max 6. */
+    instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
   },
@@ -649,39 +684,38 @@ export const generateBarModel = async (
 
   const mode = (evalConstraint?.allowedTypes[0] ?? 'compare_bars') as BarModelEvalMode;
   const intent = config?.intent || topic;
+  const instanceCount = Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+  );
 
-  let data: BarModelData;
-  switch (mode) {
-    case 'read_scale':
-      data = await generateReadScale(topic, gradeContext, intent);
-      break;
-    case 'picture_graph':
-      data = await generatePictureGraph(topic, gradeContext, intent);
-      break;
-    case 'scaled_bar_graph':
-      data = await generateScaledBarGraph(topic, gradeContext, intent);
-      break;
-    case 'graph_word_problem':
-      data = await generateGraphWordProblem(topic, gradeContext, intent);
-      break;
-    case 'build_graph':
-      data = await generateBuildGraph(topic, gradeContext, intent);
-      break;
-    case 'compare_bars':
-    default:
-      data = await generateCompareBars(topic, gradeContext, intent);
-      break;
-  }
+  // Fan out N parallel calls of the same per-mode sub-generator. Variance
+  // comes from independent generations (per PRD §6a #2 — structured output
+  // converges per-call, not across independent calls).
+  const runOne = subGeneratorFor(mode);
+  const subResults = await Promise.all(
+    Array.from({ length: instanceCount }, () => runOne(topic, gradeContext, intent)),
+  );
+
+  // First sub-result provides session-level title/description; both are
+  // topic-anchored across all calls so any of them works as the umbrella.
+  const head = subResults[0];
+  const challenges: BarModelChallenge[] = subResults.map((r, idx) => ({
+    ...r.challenge,
+    id: `bm-${idx + 1}`,
+  }));
 
   console.log('📊 Bar Model generated:', {
     topic,
     mode,
-    barCount: data.values.length,
-    graphStyle: data.graphStyle,
-    expectedValue: data.challenge?.expectedValue,
-    optionsCount: data.challenge?.options?.length ?? 0,
-    targetBarIndex: data.challenge?.targetBarIndex,
+    instanceCount: challenges.length,
+    barsPerChallenge: challenges.map((c) => c.values.length),
+    graphStyle: challenges[0]?.graphStyle,
   });
 
-  return data;
+  return {
+    title: head.title,
+    description: head.description,
+    challenges,
+  };
 };

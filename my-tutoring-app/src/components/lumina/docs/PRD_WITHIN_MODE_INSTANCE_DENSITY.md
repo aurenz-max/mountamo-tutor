@@ -1,7 +1,7 @@
 # PRD: Within-Mode Instance Density — From Demo Sessions to Mastery Sessions
 
-**Status:** Workstream 2 (factor-tree pilot) shipped. Workstream 1 + 3 pending.
-**Date:** 2026-05-12 (initial) · 2026-05-12 (pilot post-mortem)
+**Status:** Workstream 2 (factor-tree pilot) shipped. Workstream 3 entry #1 (bar-model) shipped. Workstream 1 + Workstream 3 entries #2-#6 pending.
+**Date:** 2026-05-12 (initial · pilot post-mortem · bar-model ship)
 **Priority:** High — affects every K-3 math primitive's ability to legitimately measure mastery
 **Audience:** Product, Engineering
 **Scope:** K-3 math (workstream-level); pattern generalizes to all math + science primitives
@@ -296,7 +296,136 @@ Every multi-instance refactor must:
 
 ### 6. Tester component: usually no change
 
-The Lumina tester forwards generator output as-is via `Parameters<typeof Component>[0]['data']`. If your generator output type changes (which it will — `rootValue` → `challenges[]`), the tester picks it up automatically through structural typing. The original plan's "1 hour tester update" was unnecessary for factor-tree.
+The Lumina tester forwards generator output as-is via `Parameters<typeof Component>[0]['data']`. If your generator output type changes (which it will — `rootValue` → `challenges[]`), the tester picks it up automatically through structural typing. The original plan's "1 hour tester update" was unnecessary for factor-tree. *Caveat: this only holds if the primitive is **already registered** in the tester — see §6a #10 for the case where it isn't.*
+
+### 7. Orchestrator-same-mode vs orchestrator-mixed-type
+
+§6a #1's "orchestrator" decision rule needs a sub-split. When the session pins to ONE eval mode (the common case — IRT calibration picks exactly one `challengeType` per render), the orchestrator simplifies to **N parallel calls of the single per-mode sub-generator**, not "one call per type":
+
+| Sub-pattern | When | Reference |
+|---|---|---|
+| **Orchestrator-same-mode** | Session pins to one eval mode AND the primitive already has internal per-mode dispatch (one sub-generator function per mode, each emitting one challenge). | `bar-model` — fans out 4 parallel calls of the selected sub-generator. |
+| **Orchestrator-mixed-type** | Session can mix multiple challenge types in one render. | `coin-counter` — one call per type, results merged. |
+
+The same-mode variant is the lowest-friction refactor target because per-mode sub-generators don't need rewriting — only their return shape changes (drop session-level fields, return one `{ title, description, challenge }` tuple). Audit Workstream 3 candidates for existing per-mode dispatch before scoping.
+
+### 8. Handler-driven completion: stale-state guard lives in submit, not effect
+
+§6a #3 placed the stale-state guard in a completion `useEffect` (factor-tree detects "all leaves prime" passively). For primitives where the user *explicitly* submits — button click, option pick, drag-and-drop release — there is no completion effect. The guard moves into the submit helper itself:
+
+```ts
+const submitResult = (correct: boolean, extras = {}) => {
+  if (!currentChallenge) return;
+  // Stale-state guard: in-flight click after advance() can race ahead of the
+  // reset useEffect. Match a per-challenge content field before recording.
+  const stateMatches = builtValues[0]?.label === currentChallenge.values[0]?.label;
+  if (!stateMatches) return;
+  // ... incrementAttempts, setFeedback, recordResult ...
+};
+```
+
+Same principle as §6a #3 (content match, not flag match), different location. Effect-driven primitives put the guard in the completion effect; handler-driven primitives put it in submit.
+
+### 9. Legacy `onComplete` → `usePrimitiveEvaluation` migration is in scope
+
+Several Bucket A primitives still expose a lightweight `onComplete: (results: ChallengeResult[]) => void` callback rather than `usePrimitiveEvaluation` + `onEvaluationSubmit`. The multi-instance refactor is the natural place to upgrade — once the session has real aggregate metrics worth submitting, the legacy callback is no longer sufficient.
+
+Concrete migration steps:
+1. Define `XxxMetrics extends BasePrimitiveMetrics` in [evaluation/types.ts](../evaluation/types.ts); add to the `AnyPrimitiveMetrics` union.
+2. Re-export `XxxMetrics` from [evaluation/index.ts](../evaluation/index.ts).
+3. Component: replace `onComplete?: (results) => void` with `onEvaluationSubmit?: (result: PrimitiveEvaluationResult<XxxMetrics>) => void`.
+4. Add `usePrimitiveEvaluation<XxxMetrics>({ primitiveType, instanceId, skillId, subskillId, objectiveId, exhibitId, onSubmit })` with a stable instance-id ref.
+5. Session-complete useEffect builds aggregate metrics and calls `submitEvaluation(goalMet, score, metrics, { studentWork })`. Don't fire per-challenge.
+6. `PhaseSummaryPanel` reads `submittedResult?.score` and `elapsedMs`.
+
+Audit pending: `tape-diagram`, `percent-bar`, `place-value-chart`, `double-number-line` for the same gap.
+
+### 10. Tester registration is a delivery step, not an afterthought
+
+The math primitives tester ([MathPrimitivesTester.tsx](../components/MathPrimitivesTester.tsx)) is not auto-derived from the catalog. If the primitive isn't registered there, the structural-typing relief from §6a #6 doesn't apply — there's literally no render path. Each new/refactored primitive needs **five** edits to that file:
+
+1. Import the component.
+2. Add the ID to the `PrimitiveType` string union (line ~77).
+3. Add an entry to `PRIMITIVE_OPTIONS` (icon + topic).
+4. Add a render `case` in the switch — use the FactorTree shape for evaluation-hook primitives (pass `instanceId`, `skillId`, `subskillId`, `objectiveId`, `onEvaluationSubmit`).
+5. Add a metrics-breakdown block in the results panel keyed on `result.metrics.type === 'xxx'`.
+
+Step 5 is the most-likely-to-be-forgotten. For Workstream 3 primitives that were previously tester-registered with the old shape, the existing breakdown also needs updating — it reads fields that no longer exist on the new metrics interface.
+
+### 11. Keep metrics honest
+
+When designing `XxxMetrics`, drop fields that would always be tautological under the recording rules. Example from bar-model: an initial `datasetCorrectCount?: number` field for `build_graph` mode was proposed and removed, because `recordResult` is only called on `correct === true`, and bar-model's correctness requires `datasetCorrect && stepCorrect` to BOTH be true — so the field would always equal `correctCount` and carry no signal. If richer per-component signal is wanted, add an attempt-level accumulator state and track partial correctness across attempts; otherwise omit the field.
+
+Reusable per-challenge score formula for handler-driven primitives (used by bar-model):
+
+```ts
+const perChallengeScore = (r: ChallengeResult) =>
+  r.correct ? Math.max(20, 100 - (r.attempts - 1) * 20) : 0;
+```
+
+20-point decay per extra attempt, floored at 20, with 100 on first try. Standardize unless the primitive has a domain-specific signal that warrants something else (e.g., NumberLine's accuracy averaging).
+
+---
+
+## 6b. Bar-model Post-Mortem (Workstream 3 entry #1) ✅ SHIPPED
+
+### Why bar-model first (out of §7's original sequencing)
+
+§7 originally sequenced `tape-diagram` → `place-value-chart` → `bar-model` by K-3 mastery impact. We pivoted to bar-model first because:
+
+1. **Lowest-friction orchestrator shape.** Bar-model already dispatched per-mode internally (one private sub-generator per eval mode, each emitting one challenge). The refactor only needed each sub-generator's return shape changed; schemas and prompts stayed put. This made it an ideal Workstream 3 pilot — same role factor-tree played for Workstream 2.
+2. **Tester gap discovered.** Audit surfaced that bar-model was never registered in the math tester. Fixing that triggered the full integration path (catalog → tester → metrics panel), generating the §6a #10 playbook for the remaining Bucket A primitives.
+
+### What shipped (vs the §7 row)
+
+| Plan (§7 row) | What shipped | Why the deviation |
+|---|---|---|
+| Generation pattern: **Orchestrator** (one call per challenge-type, per coin-counter) | **Orchestrator-same-mode**: N=4 parallel calls of the single per-mode sub-generator. See §6a #7. | A bar-model session pins to one eval mode, so "one call per type" reduces to "one call." Variance comes from independent generations of the same sub-generator. |
+| `challenges: BarModelChallenge[]` (3-6, required) | `challenges: BarModelChallenge[]`, default 4, max 6. Per-challenge owns its own `values: BarValue[]`, `graphStyle`, and `scale?` — moved from session-level into the challenge. | Each challenge has a different graph, not just a different question over a shared graph. |
+| Stale-state guard per §6a #3 (effect-driven) | Guard moved into `submitResult` (handler-driven completion). See §6a #8. | Bar-model has no passive completion-detect effect — submit is button-driven. |
+| Evaluation: not explicitly scoped | **Upgraded**: legacy `onComplete` → `usePrimitiveEvaluation` + `BarModelMetrics`. See §6a #9. | Same gap likely exists in tape-diagram, percent-bar, place-value-chart, double-number-line. |
+| Tester wiring: not explicitly scoped | **Added**: full registration in [MathPrimitivesTester.tsx](../components/MathPrimitivesTester.tsx) including the bar-model metrics-breakdown block. See §6a #10. | Discovered during smoke-test attempt. |
+
+### Files changed
+
+- [gemini-bar-model.ts](../service/math/gemini-bar-model.ts) — sub-generators now return `SubGenResult { title, description, challenge }`; new `generateBarModel` orchestrator fans out 4 parallel calls of the selected sub-generator via `Promise.all`; first result's title/description become session-level.
+- [BarModel.tsx](../primitives/visual-primitives/math/BarModel.tsx) — full rewrite around `useChallengeProgress` + `usePhaseResults` + `PhaseSummaryPanel`; per-challenge reset useEffect keyed on `currentChallenge?.id`; handler-resident stale-state guard; `usePrimitiveEvaluation` + aggregate `BarModelMetrics` on session complete.
+- [catalog/math.ts](../service/manifest/catalog/math.ts) — `taskDescription` templates `{{totalChallenges}}` + `{{currentChallengeIndex}}`; `contextKeys` adds both; `constraints` clarifies manifest must NOT supply specific values/scales/datasets.
+- [evaluation/types.ts](../evaluation/types.ts) — new `BarModelMetrics` interface; added to `AnyPrimitiveMetrics`.
+- [evaluation/index.ts](../evaluation/index.ts) — re-exports `BarModelMetrics`.
+- [MathPrimitivesTester.tsx](../components/MathPrimitivesTester.tsx) — five edits per §6a #10.
+
+### BarModelMetrics shipped
+
+```ts
+export interface BarModelMetrics extends BasePrimitiveMetrics {
+  type: 'bar-model';
+  evalMode: BarModelEvalMode;
+  graphStyle: BarModelGraphStyle;
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries including wrong attempts
+  firstTryCount: number;          // attempts === 1 && correct
+  hintsViewed: number;            // attempts > 1 (saw a wrong-answer hint)
+  overallAccuracy: number;        // 0-100, decayed by attempts
+  averageAttemptsPerChallenge: number;
+}
+```
+
+### Validation status
+
+| Step | Status |
+|---|---|
+| `npx tsc --noEmit` on touched files | ✅ Clean (pre-existing scratch-pad variance errors are unrelated) |
+| `/eval-test bar-model` across all 6 eval modes | ⏳ Owed |
+| Manual UI walk: pin `compare_bars`, finish 4 distinct K-1 graphs, observe `PhaseSummaryPanel` + tester results breakdown | ⏳ Owed |
+| Manual UI walk: pin `graph_word_problem`, verify content-bearing variance across 4 independent Gemini generations | ⏳ Owed |
+| Cost spot-check (4× per-session token spend — see §10 revised criterion) | ⏳ Owed |
+| Backend calibration | ✅ No changes needed (mode-level beta priors) |
+
+### Actual effort
+
+~2-3 hours total: schema/types ~30 min, component rewrite ~60 min, evaluation-hook migration ~30 min, tester wiring ~30 min, type errors ~15 min. Faster than §7's "~1.5 days per primitive" estimate — the per-mode sub-generators were already structurally correct, so only their return type needed work. The original PRD predicted this ("`bar-model` is structurally close"), validated.
 
 ---
 
@@ -304,29 +433,46 @@ The Lumina tester forwards generator output as-is via `Parameters<typeof Compone
 
 After `factor-tree` establishes the pattern, apply to:
 
-| Primitive | Singular field today | Refactor target | Notes |
-|-----------|----------------------|-----------------|-------|
-| `tape-diagram` | `wordProblem`, `part1/2/3Value/Label` | `challenges: TapeDiagramChallenge[]` | Each challenge has its own word problem + parts. Highest K-3 leverage. |
-| `bar-model` | `challenge?: BarModelChallenge` (already typed but optional/singular) | `challenges: BarModelChallenge[]` (required, 3-6) | Minimal change — type is already named correctly. |
-| `place-value-chart` | `targetNumber` | `challenges: PlaceValueChallenge[]` | Each challenge is one number going through its 3-phase flow. Total session = N×3 phases. May be too long — pilot with 3 challenges. |
-| `percent-bar` | single `scenario`/`challengeType` | `challenges: PercentBarChallenge[]` | Verify each challenge can preserve scenario context coherently. |
-| `double-number-line` | single `contextQuestion`/labels | `challenges: DoubleNumberLineChallenge[]` | Each challenge gets its own ratio relationship + context. Be careful that switching context between challenges isn't jarring (e.g. flour→cookies one challenge, cars→hours the next). May want to keep `topLabel`/`bottomLabel` consistent across a session. |
-| `area-model` | (verify first) | likely `challenges: AreaModelChallenge[]` | Run audit first — prompt mentions "6-10 number pairs" so schema may already be plural in a non-obvious way. |
-| `function-machine` | single `rule` with multiple inputs | likely `rules: FunctionRule[]` (3-4 rules, multiple inputs each) | Special case — multiple inputs per rule is *already* multi-instance practice. Question is whether a single session should explore multiple rules. Probably yes for mastery, but discuss. |
+| Primitive | Singular field today | Refactor target | Generation pattern (per §6a #1) | Notes |
+|-----------|----------------------|-----------------|---------------------------------|-------|
+| `tape-diagram` | `wordProblem`, `part1/2/3Value/Label` | `challenges: TapeDiagramChallenge[]` | **Orchestrator** (per-challenge Gemini call; content-bearing) | Each challenge has its own word problem + parts. Highest K-3 leverage. Use [gemini-coin-counter.ts](../service/math/gemini-coin-counter.ts) as the structural reference. |
+| `bar-model` ✅ **SHIPPED** | ~~`challenge?: BarModelChallenge`~~ → `challenges: BarModelChallenge[]` (default 4, max 6) | Shipped | **Orchestrator-same-mode** (per §6a #7) — N parallel calls of the per-mode sub-generator. See §6b for ship details. |
+| `place-value-chart` | `targetNumber` | `challenges: PlaceValueChallenge[]` | **Pool service** (value-only — leverages existing `createNumberPool` per [NUMBER_POOL_SERVICE.md](../service/math/NUMBER_POOL_SERVICE.md)) | Each challenge is one number going through its 3-phase flow. Total session = N×3 phases. May be too long — pilot with 3 challenges. |
+| `percent-bar` | single `scenario`/`challengeType` | `challenges: PercentBarChallenge[]` | **Orchestrator** | Each challenge has its own scenario context (e.g. "tip on a meal", "discount on a jacket"). |
+| `double-number-line` | single `contextQuestion`/labels | `challenges: DoubleNumberLineChallenge[]` | **Orchestrator** | Each challenge gets its own ratio relationship + context. Keep `topLabel`/`bottomLabel` consistent within a session for coherence (e.g. all flour→cookies, not flour→cookies then cars→hours). |
+| `area-model` | (verify first) | likely `challenges: AreaModelChallenge[]` | **Pool service** (value-only — operand pairs via [createOperandPairs](../service/math/numberPoolService.ts)) | Run audit first — prompt mentions "6-10 number pairs" so schema may already be plural in a non-obvious way. |
+| `function-machine` | single `rule` with multiple inputs | likely `rules: FunctionRule[]` (3-4 rules, multiple inputs each) | **Pool service for inputs, orchestrator for rule descriptions** | Special case — multiple inputs per rule is *already* multi-instance practice. Question is whether a single session should explore multiple rules. Probably yes for mastery, but discuss. |
+
+### Mandatory checklist for each Bucket A refactor (derived from pilot)
+
+For every primitive in this workstream, in addition to the per-row notes above:
+
+1. **Schema decision** — apply §6a #1 (pool vs orchestrator). Document the choice at the top of the generator file.
+2. **Pool service** — if value-only, use or extend [numberPoolService.ts](../service/math/numberPoolService.ts). Don't roll your own random selection unless the candidate space is small + per-mode constrained (factor-tree case).
+3. **Variance guarantee** — if the pool has structural variants (odd/even, small/large), enforce a representative pick in code, not in the prompt.
+4. **`useChallengeProgress` + `usePhaseResults` + `PhaseSummaryPanel`** — follow the recipe in [MIGRATING_TO_PHASE_SUMMARY.md](MIGRATING_TO_PHASE_SUMMARY.md). All 7 steps. No shortcuts.
+5. **Per-challenge reset useEffect** — keyed on `currentChallenge?.id`. Resets per-challenge state, sets `treeCompleteTriggeredRef.current = false`.
+6. **Stale-state guard in the completion useEffect** (§6a #3) — match a *content* field (`tree.get('0').value`, `currentInput`, etc.) against the current challenge's expected value before recording. This is non-optional — without it you'll get phantom-completion bugs.
+7. **Aggregate metrics in `submitEvaluation`** — sum per-challenge `attempts`, `hintsUsed`, `resetCount`, etc. into one session-level `XxxMetrics` payload. Don't submit per-challenge.
+8. **Catalog tutoring update** ([catalog/math.ts](../service/manifest/catalog/math.ts)) — add `currentChallengeIndex` + `totalChallenges` to `contextKeys`; template `{{totalChallenges}}` in `taskDescription`; update `constraints` if the manifest should stop supplying primitive-specific values.
+9. **No tester changes** unless the tester seeds data directly (most don't — they forward generator output). *Caveat: this only applies if the primitive is already registered — see step 11.*
+10. **Evaluation-hook migration** (per §6a #9) — If the primitive still uses the legacy `onComplete?: (results) => void` callback, replace with `usePrimitiveEvaluation` + `onEvaluationSubmit`. Add `XxxMetrics` to [evaluation/types.ts](../evaluation/types.ts) and re-export from [evaluation/index.ts](../evaluation/index.ts). Compute aggregate metrics in the session-complete useEffect; call `submitEvaluation(goalMet, score, metrics, { studentWork })` exactly once. Use the standard per-challenge score decay (§6a #11) unless domain-specific scoring is warranted.
+11. **Tester registration** (per §6a #10) — Add five edits to [MathPrimitivesTester.tsx](../components/MathPrimitivesTester.tsx): import, `PrimitiveType` union, `PRIMITIVE_OPTIONS` entry, render `case` (FactorTree shape for eval-hook primitives), metrics-breakdown block keyed on `result.metrics.type === 'xxx'`. If the primitive WAS already registered with the old shape, the metrics breakdown almost certainly reads fields that no longer exist — update or remove it.
 
 ### Per-primitive estimate
 
-~1.5 days per primitive following the `factor-tree` template. Some go faster (`bar-model` is structurally close); some go slower (`double-number-line`'s context coherence).
+~1.5 days per primitive following the `factor-tree` template. Bar-model actuals (per §6b): ~2-3 hours including eval-hook migration and tester wiring, because it already had per-mode sub-generators internally. Expect similarly low effort for any primitive that's already internally per-mode-dispatched. Slower estimates (~2 days) hold for primitives needing new content-bearing schemas — `double-number-line`'s context coherence, `tape-diagram`'s multi-type orchestrator. Always include §6a #9 + #10 work in the estimate.
 
 ### Sequencing within Workstream 3
 
-In order of K-3 mastery impact:
-1. `tape-diagram` — workhorse for word-problem standards (2.OA, 2.MD, 3.MD)
-2. `place-value-chart` — workhorse for place-value standards (K-5 NBT)
-3. `bar-model` — data representation (2.MD.D, 3.MD.B)
-4. `area-model` — multiplication structure (3-5)
-5. `percent-bar`, `double-number-line` — older grades, lower K-3 priority
-6. `function-machine` — special case, design discussion first
+Two competing orderings — K-3 mastery impact vs refactor-friction. Original plan optimized for impact; the bar-model ship demonstrated that picking the lowest-friction primitive first as the Workstream 3 "pilot" generates the playbook (§6a #7-#11) for the rest at lower risk. Recommended order:
+
+1. ~~`bar-model` — data representation (2.MD.D, 3.MD.B)~~ ✅ **SHIPPED** — served as the Workstream 3 pilot. See §6b.
+2. `tape-diagram` — workhorse for word-problem standards (2.OA, 2.MD, 3.MD). Highest K-3 leverage. **Orchestrator-mixed-type** (per §6a #1) since it spans multiple challenge structures; apply §6a #9 eval-hook migration.
+3. `place-value-chart` — workhorse for place-value standards (K-5 NBT). **Pool service** (value-only per §6a #1). Pilot with 3 instances first per Open Question #1 (12 phases at 4 instances may be too long).
+4. `area-model` — multiplication structure (3-5). Audit first per Open Question #5 — may already be plural.
+5. `percent-bar`, `double-number-line` — older grades, lower K-3 priority. Both orchestrator-mixed-type; double-number-line needs context coherence enforcement.
+6. `function-machine` — special case, design discussion first.
 
 ---
 
@@ -346,12 +492,40 @@ export interface FooData {
   /** 3-6 challenges. Required. */
   challenges: FooChallenge[];
 
-  // Session-level defaults — overridable per challenge
+  // Session-level defaults — keep these flat. Per-challenge overrides are YAGNI.
   // ... session-wide config
 }
 ```
 
-Component wiring:
+### Generator: pick a fork
+
+Per §6a #1:
+
+**Fork A — pool service (value-only per-challenge data).** Reference: [gemini-factor-tree.ts](../service/math/gemini-factor-tree.ts).
+
+```ts
+// 1. Gemini call emits ONLY the wrapper (title, description, mode flags).
+// 2. Local service deterministically selects per-challenge values.
+const rootValues = selectFooValues(challengeType, { count: 4 });
+// 3. Build challenges array in-generator.
+const challenges = rootValues.map((v, i) => ({ id: `foo-${i + 1}`, value: v }));
+return { ...wrapper, challenges };
+```
+
+**Fork B — orchestrated parallel Gemini calls (content-bearing per-challenge data).** Reference: [gemini-coin-counter.ts:657-755](../service/math/gemini-coin-counter.ts#L657).
+
+```ts
+// One Gemini call per challenge type; results merged.
+const generators: Promise<FooChallenge[]>[] = [];
+for (const type of allowedTypes) {
+  generators.push(generateFooChallengesOfType(type, ...));
+}
+const results = await Promise.all(generators);
+const challenges = results.flat().map((c, i) => ({ ...c, id: `foo-${i + 1}` }));
+```
+
+### Component wiring (both forks)
+
 ```tsx
 const {
   currentIndex,
@@ -365,13 +539,31 @@ const {
 });
 
 const current = data.challenges[currentIndex];
-// ... render `current` interaction
-// on complete: recordResult({ challengeId: current.id, correct, attempts })
-// then advance()
-// when isComplete: show summary
+
+// Per-challenge reset: keyed on currentChallenge.id, runs whenever advance() flips it.
+useEffect(() => {
+  if (!current) return;
+  setMyInteractionState(initial(current));
+  resetAttemptsCounter();
+  alreadyRecordedRef.current = false;
+}, [current?.id]);
+
+// Completion detection — MUST include the stale-state guard (§6a #3).
+useEffect(() => {
+  if (!current) return;
+  if (!stateLooksComplete) return;
+  if (alreadyRecordedRef.current) return;
+  // Stale-state guard: setX() in the reset effect is async; without this check we
+  // record a phantom completion for the new challenge using old state.
+  if (!stateBelongsToChallenge(myInteractionState, current)) return;
+  alreadyRecordedRef.current = true;
+  recordResult({ challengeId: current.id, correct, attempts });
+}, [stateLooksComplete, current, myInteractionState]);
+
+// When isComplete: render PhaseSummaryPanel and submit aggregated metrics ONCE.
 ```
 
-This pattern is already used by `TenFrame`, `CountingBoard`, `NumberLine`, `FunctionMachine`, and `PatternBuilder` (per [MEMORY.md — Multi-Phase Primitive Hooks](../../../../../../C:/Users/xbox3/.claude/projects/c--Users-xbox3-claude-web-tutor/memory/MEMORY.md)).
+This pattern is used by `TenFrame`, `CountingBoard`, `NumberLine`, `FunctionMachine`, `PatternBuilder`, and (as of this PRD) `FactorTree` (per [MEMORY.md — Multi-Phase Primitive Hooks](../../../../../../C:/Users/xbox3/.claude/projects/c--Users-xbox3-claude-web-tutor/memory/MEMORY.md)).
 
 ---
 
@@ -407,8 +599,9 @@ This pattern is already used by `TenFrame`, `CountingBoard`, `NumberLine`, `Func
 
 | Week | Primitives |
 |------|-----------|
-| Week 3 | `tape-diagram` (Mon-Tue), `place-value-chart` (Wed-Thu), `bar-model` (Fri) |
-| Week 4 | `area-model` (Mon-Tue), `percent-bar` (Wed-Thu), `double-number-line` + `function-machine` design discussion (Fri) |
+| ~~Week 3 (original)~~ | ~~`tape-diagram` → `place-value-chart` → `bar-model`~~ |
+| Week 3 (revised) | `bar-model` ✅ SHIPPED (see §6b) · `tape-diagram` · `place-value-chart` (pilot with 3 instances per Open Q #1) |
+| Week 4 | `area-model` (audit first per Open Q #5) · `percent-bar` · `double-number-line` · `function-machine` design discussion |
 
 **Weeks 3-4 success:** All Bucket A primitives produce 3-6 instances per session.
 
@@ -431,7 +624,7 @@ This pattern is already used by `TenFrame`, `CountingBoard`, `NumberLine`, `Func
 | **Mastery signal density** | Pulse runs show ≥3× the IRT updates per student-minute compared to pre-PRD baseline | `/pulse-agent` comparison report |
 | **Time-on-task** | Single-mode sessions take 3-5 minutes (up from 30-60 seconds for Bucket A) | Manual timing across primitives |
 | **No regression** | All previously passing `/eval-test` runs still pass | Test sweep |
-| **No cost blow-up** | Gemini token spend per session within 2x previous | Cost report |
+| **No cost blow-up** | **Pool-service primitives** within 2× previous (factor-tree, place-value-chart, area-model). **Orchestrator primitives** within N× where N = `instanceCount` (4× default) — accepted trade-off for content-bearing variance per §6a #2. Bar-model precedent. | Cost report per primitive |
 
 ---
 
@@ -448,8 +641,9 @@ This pattern is already used by `TenFrame`, `CountingBoard`, `NumberLine`, `Func
 ## 12. Open Questions
 
 1. **Session length cap.** 3-phase primitives (`place-value-chart`) at 4 instances = 12 phases. Is that too long? Pilot with 3 instances and measure abandonment.
-2. **Variance enforcement.** How strictly does the generator need to vary surface details across instances? Should we add a post-generation deduplication step ("no two instances share the same rootValue / same word problem template")?
-3. **Tester UI implications.** The Lumina tester currently renders one configuration. After this PRD, every primitive renders a 4-6-step flow. Does the tester need an "advance through challenges" affordance or do we trust the primitive's internal navigation?
+2. **Variance enforcement.** ~~How strictly does the generator need to vary surface details across instances?~~ **Resolved by pilot:** for value-only data, deterministic pool selection with a "≥1 odd"-style variance guarantee beats anything prompt-based. Don't rely on Gemini for variance — structured output is convergent. For content-bearing data, the orchestrator pattern (one Gemini call per type) gives natural variance from independent generations.
+3. **Tester UI implications.** ~~The Lumina tester currently renders one configuration.~~ **Resolved by pilot:** the tester forwards generator output via structural typing and worked unchanged after factor-tree's shape change. Existing primitive-internal navigation (Next Challenge button + progress dots) is sufficient — no tester-side affordance needed.
 4. **`function-machine`-specific design.** Is one rule with N inputs already a "multi-instance" session? Or should a single mode visit N rules? Discussion needed before refactor.
 5. **`area-model` reality check.** Prompt at [gemini-area-model.ts:212](../service/math/gemini-area-model.ts#L212) mentions "6-10 number pairs for variety" — is this primitive already in Bucket B (just with weird wording), or is it generating 6-10 cells *within one* multiplication? Audit before scoping.
 6. **K-3 only, or all-math sweep?** This PRD scopes K-3 but the Workstream 1 fix applies trivially to all-math (it's just edit-the-floor). Recommendation: do Workstream 1 across all math; scope Workstreams 2-3 to K-3 explicitly.
+7. **(New, from pilot)** Should `selectFactorTreeRootValues` be generalized into the shared `numberPoolService` as a `createCandidateSetPool({ candidates, count, varianceGuarantees })` helper? Workstream 3 has two more value-only primitives (`place-value-chart`, `area-model`) — if their selection logic looks similar, generalize after the second use, not before.

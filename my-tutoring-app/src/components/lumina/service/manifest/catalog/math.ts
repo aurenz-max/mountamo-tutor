@@ -11,10 +11,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'bar-model',
     description: 'K-5 categorical-data graph: simple comparison bars (K-1), scaled bar graphs with step-2/5/10 axes (3.MD.B.3), and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction; not for histograms or numeric distributions.',
-    constraints: 'Requires bar values + labels. Scaled and picture modes need a scale ({step, max, iconEmoji?, iconValue?}). build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
+    constraints: 'Multi-instance: a session walks the student through 3-6 challenges of the same eval mode, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
     tutoring: {
-      taskDescription: 'Work with a {{graphStyle}} graph. Mode: {{evalMode}}. Values: {{values}}.',
-      contextKeys: ['values', 'value1', 'value2', 'barCount', 'title', 'graphStyle', 'evalMode', 'scaleStep', 'iconEmoji', 'iconValue', 'currentPrompt', 'attemptNumber'],
+      taskDescription: 'Work through {{totalChallenges}} {{graphStyle}} graph challenges. Mode: {{evalMode}}. Currently on challenge {{currentChallengeIndex}}. Values: {{values}}.',
+      contextKeys: ['values', 'value1', 'value2', 'barCount', 'title', 'graphStyle', 'evalMode', 'scaleStep', 'iconEmoji', 'iconValue', 'currentPrompt', 'attemptNumber', 'currentChallengeIndex', 'totalChallenges'],
       scaffoldingLevels: {
         level1: '"Which bar is taller? What does that tell us?"',
         level2: '"Look at the difference between the bars. How much more is the larger one?"',

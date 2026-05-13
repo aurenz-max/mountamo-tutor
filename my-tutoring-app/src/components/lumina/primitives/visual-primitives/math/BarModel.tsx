@@ -4,7 +4,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  usePrimitiveEvaluation,
+  type BarModelMetrics,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the generator)
@@ -27,9 +33,18 @@ export interface BarModelScale {
   iconValue?: number;
 }
 
+export interface BarValue {
+  label: string;
+  value: number;
+  color?: string;
+}
+
 export interface BarModelChallenge {
-  id?: string;
+  id: string;
   evalMode: BarModelEvalMode;
+  values: BarValue[];
+  graphStyle: BarModelGraphStyle;
+  scale?: BarModelScale;
   prompt: string;
   hint?: string;
   narration?: string;
@@ -41,27 +56,19 @@ export interface BarModelChallenge {
   availableScaleSteps?: number[];
 }
 
-export interface BarValue {
-  label: string;
-  value: number;
-  color?: string;
-}
-
 export interface BarModelData {
   title: string;
   description: string;
-  values: BarValue[];
-  graphStyle?: BarModelGraphStyle;
-  scale?: BarModelScale;
-  challenge?: BarModelChallenge;
+  /** 3-6 challenges. Walked sequentially. */
+  challenges: BarModelChallenge[];
 
-  // Eval injection (optional, auto-injected by ManifestOrderRenderer)
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
-  onComplete?: (results: ChallengeResult[]) => void;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<BarModelMetrics>) => void;
 }
 
 interface BarModelProps {
@@ -263,7 +270,7 @@ const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, ax
     >
       {Array.from({ length: maxIconCount }).map((_, i) => (
         <span key={i} className="text-2xl text-center leading-none select-none">
-          {i < iconCount ? iconEmoji : '\u00A0'}
+          {i < iconCount ? iconEmoji : ' '}
         </span>
       ))}
     </button>
@@ -355,61 +362,114 @@ const BuildControls: React.FC<BuildControlsProps> = ({
 };
 
 // ---------------------------------------------------------------------------
+// Phase config (single phase — all challenges share one eval mode per session)
+// ---------------------------------------------------------------------------
+
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  graph: { label: 'Graph', icon: '📊', accentColor: 'emerald' },
+};
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
 const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
-  const graphStyle: BarModelGraphStyle = data.graphStyle ?? 'bar';
-  const challenge = data.challenge;
-  const challenges = useMemo(() => (challenge ? [challenge] : []), [challenge]);
-  const challengeKey = challenge?.id ?? challenge?.evalMode ?? null;
-  const resolvedInstanceId = data.instanceId ?? 'bar-model-default';
+  const {
+    title,
+    description,
+    challenges = [],
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
+  } = data;
 
-  // Local interaction state
-  const [builtValues, setBuiltValues] = useState<BarValue[]>(data.values);
+  const stableInstanceIdRef = useRef(instanceId || `bar-model-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  // ── Challenge progress (shared hooks) ──────────────────────────────────────
+  const {
+    currentIndex,
+    currentAttempts,
+    results,
+    isComplete,
+    recordResult,
+    incrementAttempts,
+    advance,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (c) => c.id,
+  });
+
+  const phaseResults = usePhaseResults({
+    challenges,
+    results,
+    isComplete,
+    getChallengeType: () => 'graph',
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
+  // ── Evaluation hook ───────────────────────────────────────────────────────
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
+  } = usePrimitiveEvaluation<BarModelMetrics>({
+    primitiveType: 'bar-model',
+    instanceId: resolvedInstanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  const currentChallenge = challenges[currentIndex] ?? null;
+  const graphStyle: BarModelGraphStyle = currentChallenge?.graphStyle ?? 'bar';
+
+  // ── Per-challenge interaction state ────────────────────────────────────────
+  const [builtValues, setBuiltValues] = useState<BarValue[]>(() => currentChallenge?.values ?? []);
   const [chosenStep, setChosenStep] = useState<number | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [showHint, setShowHint] = useState(false);
 
-  // Reset interaction state on challenge change
+  const recordedRef = useRef(false);
+  const sessionCompleteFiredRef = useRef(false);
+
+  // Reset per-challenge state when the active challenge changes.
   useEffect(() => {
-    setBuiltValues(data.values);
+    if (!currentChallenge) return;
+    setBuiltValues(currentChallenge.values);
     setChosenStep(null);
     setSelectedOption(null);
     setSelectedBarIndex(null);
     setFeedback(null);
     setShowHint(false);
-  }, [challengeKey, data.values]);
+    recordedRef.current = false;
+  }, [currentChallenge?.id]);
 
-  // Challenge progress (always exactly 0 or 1 challenge)
-  const {
-    results,
-    isComplete,
-    recordResult,
-    incrementAttempts,
-    currentAttempts,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (c) => c.id ?? 'bm-1',
-  });
-
-  // ── AI tutoring ──
+  // ── AI tutoring ────────────────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
-    values: data.values.map((v) => `${v.label}: ${v.value}`).join(', '),
-    value1: data.values[0]?.value,
-    value2: data.values[1]?.value,
-    barCount: data.values.length,
-    title: data.title,
+    title,
+    currentChallengeIndex: currentIndex,
+    totalChallenges: challenges.length,
+    evalMode: currentChallenge?.evalMode,
     graphStyle,
-    evalMode: challenge?.evalMode,
-    scaleStep: data.scale?.step,
-    iconEmoji: data.scale?.iconEmoji,
-    iconValue: data.scale?.iconValue,
-    currentPrompt: challenge?.prompt,
+    values: currentChallenge?.values.map((v) => `${v.label}: ${v.value}`).join(', ') ?? '',
+    value1: currentChallenge?.values[0]?.value,
+    value2: currentChallenge?.values[1]?.value,
+    barCount: currentChallenge?.values.length ?? 0,
+    scaleStep: currentChallenge?.scale?.step,
+    iconEmoji: currentChallenge?.scale?.iconEmoji,
+    iconValue: currentChallenge?.scale?.iconValue,
+    currentPrompt: currentChallenge?.prompt,
     attemptNumber: currentAttempts,
-  }), [data, graphStyle, challenge, currentAttempts]);
+  }), [title, currentIndex, challenges.length, currentChallenge, graphStyle, currentAttempts]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'bar-model',
@@ -418,72 +478,176 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     gradeLevel: 'K-5',
   });
 
+  // Session intro — once, on the first challenge
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || data.values.length === 0) return;
+    if (!isConnected || hasIntroducedRef.current) return;
+    if (challenges.length === 0 || !currentChallenge) return;
     hasIntroducedRef.current = true;
-    const labels = data.values
+    const labels = currentChallenge.values
       .map((v) => `${v.label}${v.value > 0 ? ` (${v.value})` : ''}`)
       .join(', ');
     sendText(
-      challenge?.narration
-        ?? `[ACTIVITY_START] ${data.title}. Bars: ${labels}. ${challenge?.prompt ?? 'Help the student read the graph.'}`,
+      currentChallenge.narration
+        ?? `[ACTIVITY_START] ${title}. ${challenges.length} graph challenges in this session. ` +
+          `Mode: ${currentChallenge.evalMode}. First graph bars: ${labels}. ${currentChallenge.prompt}`,
       { silent: true },
     );
-  }, [isConnected, data.values, data.title, challenge, sendText]);
+  }, [isConnected, challenges.length, currentChallenge, title, sendText]);
 
-  // Fire onComplete once when the challenge resolves
-  const completionFiredRef = useRef(false);
+  // Per-challenge handoff (skips the first because intro covers it)
+  const lastAnnouncedIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (isComplete && !completionFiredRef.current && data.onComplete) {
-      completionFiredRef.current = true;
-      data.onComplete(results);
+    if (!isConnected || !currentChallenge) return;
+    if (!hasIntroducedRef.current) return;
+    if (lastAnnouncedIdRef.current === null) {
+      lastAnnouncedIdRef.current = currentChallenge.id;
+      return;
     }
-  }, [isComplete, results, data]);
+    if (lastAnnouncedIdRef.current === currentChallenge.id) return;
+    lastAnnouncedIdRef.current = currentChallenge.id;
+    const labels = currentChallenge.values
+      .map((v) => `${v.label}${v.value > 0 ? ` (${v.value})` : ''}`)
+      .join(', ');
+    sendText(
+      `[CHALLENGE_START] Challenge ${currentIndex + 1} of ${challenges.length}. ` +
+      `Bars: ${labels}. ${currentChallenge.prompt}`,
+      { silent: true },
+    );
+  }, [currentChallenge, currentIndex, challenges.length, isConnected, sendText]);
 
-  // ── Submission helpers ──
-  const submitResult = useCallback((correct: boolean, extras: Record<string, unknown> = {}) => {
-    incrementAttempts();
-    setFeedback(correct ? 'correct' : 'incorrect');
-    if (correct) {
-      recordResult({
-        challengeId: challenge?.id ?? 'bm-1',
-        correct: true,
-        attempts: currentAttempts + 1,
-        ...extras,
+  // Session complete: AI summary + evaluation submit
+  useEffect(() => {
+    if (!isComplete) return;
+    if (sessionCompleteFiredRef.current) return;
+    if (challenges.length === 0) return;
+    sessionCompleteFiredRef.current = true;
+
+    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
+    const correctCount = results.filter((r) => r.correct).length;
+    const firstTryCount = results.filter((r) => r.attempts === 1 && r.correct).length;
+    const hintsViewed = results.filter((r) => r.attempts > 1).length;
+    // Per-challenge score: 100 if first try, then decays per extra attempt.
+    const perChallengeScore = (r: typeof results[number]) =>
+      r.correct ? Math.max(20, 100 - (r.attempts - 1) * 20) : 0;
+    const overallAccuracy = Math.round(
+      results.reduce((s, r) => s + perChallengeScore(r), 0) / Math.max(1, results.length),
+    );
+    const averageAttemptsPerChallenge =
+      Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
+
+    const sessionMode = challenges[0].evalMode;
+    const sessionGraphStyle = challenges[0].graphStyle;
+
+    const metrics: BarModelMetrics = {
+      type: 'bar-model',
+      evalMode: sessionMode,
+      graphStyle: sessionGraphStyle,
+      totalChallenges: challenges.length,
+      correctCount,
+      attemptsCount: totalAttempts,
+      firstTryCount,
+      hintsViewed,
+      overallAccuracy,
+      averageAttemptsPerChallenge,
+    };
+
+    const phaseStr = phaseResults
+      .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+      .join(', ');
+    sendText(
+      `[ALL_COMPLETE] Phase scores: ${phaseStr}. Overall: ${overallAccuracy}%. ` +
+      `Celebrate completion of the ${challenges.length}-challenge graph session.`,
+      { silent: true },
+    );
+
+    if (!hasSubmittedEvaluation) {
+      const goalMet = correctCount === challenges.length;
+      submitEvaluation(goalMet, overallAccuracy, metrics, {
+        studentWork: {
+          challengeCount: challenges.length,
+          evalMode: sessionMode,
+          prompts: challenges.map((c) => c.prompt),
+          attemptsPerChallenge: challenges.map((c) => {
+            const r = results.find((rr) => rr.challengeId === c.id);
+            return r?.attempts ?? 0;
+          }),
+        },
       });
-    } else {
-      setShowHint(true);
     }
-  }, [incrementAttempts, recordResult, challenge, currentAttempts]);
+  }, [
+    isComplete, results, phaseResults, challenges,
+    sendText, submitEvaluation, hasSubmittedEvaluation,
+  ]);
 
-  // ── Interaction handlers ──
+  // ── Submission helper ──────────────────────────────────────────────────────
+  const submitResult = useCallback(
+    (correct: boolean, extras: Record<string, unknown> = {}) => {
+      if (!currentChallenge) return;
+      // Stale-state guard (PRD §6a #3): the reset useEffect's setBuiltValues
+      // is async — on the render immediately after advance(), `builtValues`
+      // still holds the previous challenge's bars while `currentChallenge`
+      // has already moved on. Only proceed when bar labels line up.
+      const stateMatches =
+        currentChallenge.values.length === 0
+        || builtValues.length === 0
+        || builtValues[0]?.label === currentChallenge.values[0]?.label;
+      if (!stateMatches) return;
+
+      incrementAttempts();
+      setFeedback(correct ? 'correct' : 'incorrect');
+      if (correct) {
+        if (recordedRef.current) return;
+        recordedRef.current = true;
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+          ...extras,
+        });
+        sendText(
+          `[PHASE_COMPLETE] Challenge ${currentIndex + 1}/${challenges.length} solved on attempt ${currentAttempts + 1}. ` +
+          `Briefly acknowledge and preview the next one if there is one.`,
+          { silent: true },
+        );
+      } else {
+        setShowHint(true);
+      }
+    },
+    [
+      currentChallenge, currentAttempts, builtValues,
+      incrementAttempts, recordResult, sendText,
+      currentIndex, challenges.length,
+    ],
+  );
+
+  // ── Interaction handlers ───────────────────────────────────────────────────
   const handleBarClick = (i: number) => {
-    if (!challenge || isComplete) return;
-    if (challenge.evalMode === 'compare_bars') {
-      const correct = challenge.targetBarIndex === i;
+    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    if (currentChallenge.evalMode === 'compare_bars') {
+      const correct = currentChallenge.targetBarIndex === i;
       setSelectedBarIndex(i);
       submitResult(correct, { selectedIndex: i });
     }
   };
 
   const handleOptionClick = (opt: number) => {
-    if (!challenge || isComplete || feedback === 'correct') return;
+    if (!currentChallenge || feedback === 'correct' || isComplete) return;
     setSelectedOption(opt);
-    const correct = opt === challenge.expectedValue;
+    const correct = opt === currentChallenge.expectedValue;
     submitResult(correct, { selectedOption: opt });
   };
 
   const handleBuildSubmit = () => {
-    if (!challenge || isComplete || feedback === 'correct') return;
-    if (chosenStep == null) return; // student must pick a scale
-    const expected = challenge.expectedDataset ?? [];
+    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    if (chosenStep == null) return;
+    const expected = currentChallenge.expectedDataset ?? [];
     const datasetCorrect = expected.length === builtValues.length
       && expected.every((e) => {
         const match = builtValues.find((b) => b.label === e.label);
         return match && match.value === e.value;
       });
-    const stepCorrect = chosenStep === challenge.expectedScaleStep;
+    const stepCorrect = chosenStep === currentChallenge.expectedScaleStep;
     submitResult(datasetCorrect && stepCorrect, {
       datasetCorrect,
       stepCorrect,
@@ -491,43 +655,53 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     });
   };
 
-  const handleNext = () => {
-    // Single-challenge primitive: nothing to advance to. onComplete already fired.
-    // This button just provides a visual "I'm done" affordance.
+  const advanceToNextChallenge = () => {
+    advance();
   };
 
-  // ── Derived render data ──
+  // ── Derived render data ────────────────────────────────────────────────────
   const valuesToRender: BarValue[] =
-    challenge?.evalMode === 'build_graph' ? builtValues : data.values;
+    currentChallenge?.evalMode === 'build_graph'
+      ? builtValues
+      : (currentChallenge?.values ?? []);
 
   const scaleToRender: BarModelScale | undefined =
-    challenge?.evalMode === 'build_graph' && data.scale
-      ? { ...data.scale, step: chosenStep ?? data.scale.step }
-      : data.scale;
+    currentChallenge?.evalMode === 'build_graph' && currentChallenge.scale
+      ? { ...currentChallenge.scale, step: chosenStep ?? currentChallenge.scale.step }
+      : currentChallenge?.scale;
 
-  const showOptions =
-    challenge && (
-      challenge.evalMode === 'read_scale'
-      || challenge.evalMode === 'picture_graph'
-      || challenge.evalMode === 'scaled_bar_graph'
-      || challenge.evalMode === 'graph_word_problem'
-    );
+  const showOptions = currentChallenge && (
+    currentChallenge.evalMode === 'read_scale'
+    || currentChallenge.evalMode === 'picture_graph'
+    || currentChallenge.evalMode === 'scaled_bar_graph'
+    || currentChallenge.evalMode === 'graph_word_problem'
+  );
 
   const highlightedIndex =
-    challenge && (
-      challenge.evalMode === 'read_scale'
-      || challenge.evalMode === 'picture_graph'
-      || challenge.evalMode === 'scaled_bar_graph'
-    ) && typeof challenge.targetBarIndex === 'number'
-      ? challenge.targetBarIndex
+    currentChallenge && (
+      currentChallenge.evalMode === 'read_scale'
+      || currentChallenge.evalMode === 'picture_graph'
+      || currentChallenge.evalMode === 'scaled_bar_graph'
+    ) && typeof currentChallenge.targetBarIndex === 'number'
+      ? currentChallenge.targetBarIndex
       : null;
 
   const compareFeedback =
-    challenge?.evalMode === 'compare_bars' && selectedBarIndex != null && feedback
+    currentChallenge?.evalMode === 'compare_bars' && selectedBarIndex != null && feedback
       ? { index: selectedBarIndex, correct: feedback === 'correct' }
       : null;
 
-  // ---------------------------------------------------------------------------
+  // ── Empty state ────────────────────────────────────────────────────────────
+  if (challenges.length === 0) {
+    return (
+      <div className={`w-full max-w-5xl mx-auto my-12 ${className || ''}`}>
+        <div className="backdrop-blur-xl bg-slate-900/40 rounded-3xl border border-white/10 p-6 text-center">
+          <p className="text-slate-300">No bar-model challenges available.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-12 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -542,7 +716,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <p className="text-xs text-emerald-400 font-mono uppercase tracking-wider">
-              {challenge ? challenge.evalMode.replace(/_/g, ' ') : 'comparative visualization'}
+              {currentChallenge ? currentChallenge.evalMode.replace(/_/g, ' ') : 'comparative visualization'}
             </p>
           </div>
         </div>
@@ -556,113 +730,148 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
         <div className="relative z-10 space-y-6">
           {/* Title + description */}
           <div className="text-center">
-            <h3 className="text-xl font-bold text-white mb-1">{data.title}</h3>
-            <p className="text-slate-300 text-sm font-light">{data.description}</p>
+            <h3 className="text-xl font-bold text-white mb-1">{title}</h3>
+            <p className="text-slate-300 text-sm font-light">{description}</p>
           </div>
 
-          {/* Challenge prompt */}
-          {challenge ? (
-            <div className="rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-center">
-              <p className="text-cyan-100 text-base font-medium">{challenge.prompt}</p>
-            </div>
-          ) : null}
-
-          {/* Bars area */}
-          <div className="px-2">
-            <BarsArea
-              values={valuesToRender}
-              graphStyle={graphStyle}
-              scale={scaleToRender}
-              highlightedIndex={highlightedIndex}
-              selectedIndex={selectedBarIndex}
-              onBarClick={challenge?.evalMode === 'compare_bars' ? handleBarClick : undefined}
-              clickable={challenge?.evalMode === 'compare_bars' && !isComplete}
-              feedbackIndex={compareFeedback}
-            />
-          </div>
-
-          {/* MC options */}
-          {showOptions && challenge?.options && challenge.options.length > 0 ? (
-            <div className="flex flex-wrap justify-center gap-3 pt-2">
-              {challenge.options.map((opt) => {
-                const isSelected = selectedOption === opt;
-                const isAnswer = challenge.expectedValue === opt;
-                const variantClass = isSelected
-                  ? feedback === 'correct'
-                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-100'
-                    : 'bg-rose-500/20 border-rose-400 text-rose-100'
-                  : feedback === 'correct' && isAnswer
-                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-100'
-                    : 'bg-white/5 border-white/20 text-slate-100 hover:bg-white/10';
-                return (
-                  <Button
-                    key={opt}
-                    variant="ghost"
-                    disabled={isComplete}
-                    onClick={() => handleOptionClick(opt)}
-                    className={`min-w-[64px] px-4 py-2 border font-mono text-lg ${variantClass}`}
-                  >
-                    {opt}
-                  </Button>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {/* Build controls */}
-          {challenge?.evalMode === 'build_graph' ? (
-            <div className="space-y-4">
-              <BuildControls
-                values={builtValues}
-                onChange={setBuiltValues}
-                scaleSteps={challenge.availableScaleSteps ?? [1, 2, 5, 10]}
-                chosenStep={chosenStep}
-                onChooseStep={setChosenStep}
-                disabled={isComplete}
-              />
-              <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  disabled={isComplete || chosenStep == null}
-                  onClick={handleBuildSubmit}
-                  className="px-6 py-2 bg-cyan-500/20 border border-cyan-400 text-cyan-100 hover:bg-cyan-500/30 disabled:opacity-50"
-                >
-                  Submit graph
-                </Button>
+          {/* Progress bar */}
+          {!isComplete && challenges.length > 1 ? (
+            <div className="flex items-center justify-center gap-3 text-xs text-emerald-300 font-mono uppercase tracking-wider">
+              <span>Challenge {Math.min(currentIndex + 1, challenges.length)} of {challenges.length}</span>
+              <div className="flex gap-1.5">
+                {challenges.map((ch, idx) => {
+                  const done = results.some((r) => r.challengeId === ch.id);
+                  const isCurrent = idx === currentIndex && !isComplete;
+                  return (
+                    <div
+                      key={ch.id}
+                      className={`w-2.5 h-2.5 rounded-full border ${
+                        done
+                          ? 'bg-green-400/70 border-green-300/80 shadow-[0_0_8px_rgba(34,197,94,0.5)]'
+                          : isCurrent
+                          ? 'bg-emerald-400/70 border-emerald-300/80 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                          : 'bg-slate-700/40 border-slate-600/50'
+                      }`}
+                    />
+                  );
+                })}
               </div>
             </div>
           ) : null}
 
-          {/* Feedback */}
-          {feedback ? (
-            <div className={`rounded-xl px-4 py-3 text-center border ${
-              feedback === 'correct'
-                ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100'
-                : 'bg-rose-500/15 border-rose-400/40 text-rose-100'
-            }`}>
-              {feedback === 'correct' ? (
-                <p className="text-sm font-medium">Nice work — that&apos;s correct.</p>
-              ) : (
-                <div className="space-y-1 text-sm">
-                  <p className="font-medium">Not quite — try again.</p>
-                  {showHint && challenge?.hint ? (
-                    <p className="text-rose-100/80 font-light">{challenge.hint}</p>
-                  ) : null}
+          {/* Per-challenge UI */}
+          {!isComplete && currentChallenge ? (
+            <>
+              <div className="rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-center">
+                <p className="text-cyan-100 text-base font-medium">{currentChallenge.prompt}</p>
+              </div>
+
+              <div className="px-2">
+                <BarsArea
+                  values={valuesToRender}
+                  graphStyle={graphStyle}
+                  scale={scaleToRender}
+                  highlightedIndex={highlightedIndex}
+                  selectedIndex={selectedBarIndex}
+                  onBarClick={currentChallenge.evalMode === 'compare_bars' ? handleBarClick : undefined}
+                  clickable={currentChallenge.evalMode === 'compare_bars' && feedback !== 'correct'}
+                  feedbackIndex={compareFeedback}
+                />
+              </div>
+
+              {showOptions && currentChallenge.options && currentChallenge.options.length > 0 ? (
+                <div className="flex flex-wrap justify-center gap-3 pt-2">
+                  {currentChallenge.options.map((opt) => {
+                    const isSelected = selectedOption === opt;
+                    const isAnswer = currentChallenge.expectedValue === opt;
+                    const variantClass = isSelected
+                      ? feedback === 'correct'
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-100'
+                        : 'bg-rose-500/20 border-rose-400 text-rose-100'
+                      : feedback === 'correct' && isAnswer
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-100'
+                        : 'bg-white/5 border-white/20 text-slate-100 hover:bg-white/10';
+                    return (
+                      <Button
+                        key={opt}
+                        variant="ghost"
+                        disabled={feedback === 'correct'}
+                        onClick={() => handleOptionClick(opt)}
+                        className={`min-w-[64px] px-4 py-2 border font-mono text-lg ${variantClass}`}
+                      >
+                        {opt}
+                      </Button>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
+              ) : null}
+
+              {currentChallenge.evalMode === 'build_graph' ? (
+                <div className="space-y-4">
+                  <BuildControls
+                    values={builtValues}
+                    onChange={setBuiltValues}
+                    scaleSteps={currentChallenge.availableScaleSteps ?? [1, 2, 5, 10]}
+                    chosenStep={chosenStep}
+                    onChooseStep={setChosenStep}
+                    disabled={feedback === 'correct'}
+                  />
+                  <div className="flex justify-center">
+                    <Button
+                      variant="ghost"
+                      disabled={feedback === 'correct' || chosenStep == null}
+                      onClick={handleBuildSubmit}
+                      className="px-6 py-2 bg-cyan-500/20 border border-cyan-400 text-cyan-100 hover:bg-cyan-500/30 disabled:opacity-50"
+                    >
+                      Submit graph
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+
+              {feedback ? (
+                <div className={`rounded-xl px-4 py-3 text-center border ${
+                  feedback === 'correct'
+                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100'
+                    : 'bg-rose-500/15 border-rose-400/40 text-rose-100'
+                }`}>
+                  {feedback === 'correct' ? (
+                    <p className="text-sm font-medium">Nice work — that&apos;s correct.</p>
+                  ) : (
+                    <div className="space-y-1 text-sm">
+                      <p className="font-medium">Not quite — try again.</p>
+                      {showHint && currentChallenge.hint ? (
+                        <p className="text-rose-100/80 font-light">{currentChallenge.hint}</p>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {feedback === 'correct' ? (
+                <div className="text-center">
+                  <Button
+                    variant="ghost"
+                    onClick={advanceToNextChallenge}
+                    className="px-6 py-2 bg-emerald-500/30 border border-emerald-400/60 text-emerald-100 hover:bg-emerald-500/40"
+                  >
+                    {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
+                  </Button>
+                </div>
+              ) : null}
+            </>
           ) : null}
 
-          {isComplete ? (
-            <div className="text-center">
-              <Button
-                variant="ghost"
-                onClick={handleNext}
-                className="px-6 py-2 bg-white/5 border border-white/20 text-slate-100 hover:bg-white/10"
-              >
-                Continue
-              </Button>
-            </div>
+          {/* Phase summary panel */}
+          {isComplete && phaseResults.length > 0 ? (
+            <PhaseSummaryPanel
+              phases={phaseResults}
+              overallScore={submittedResult?.score}
+              durationMs={elapsedMs}
+              heading="Graph Session Complete!"
+              celebrationMessage={`You worked through ${challenges.length} graph ${challenges.length === 1 ? 'challenge' : 'challenges'}!`}
+              className="mt-4"
+            />
           ) : null}
         </div>
       </div>
