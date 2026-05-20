@@ -1,5 +1,22 @@
-import { Type, Schema } from "@google/genai";
-import { AreaModelData } from "../../primitives/visual-primitives/math/AreaModel";
+/**
+ * Area Model Generator — multi-instance pool-service generator.
+ *
+ * Each session walks the student through 3-4 distinct factor pairs in the SAME
+ * eval mode. Per PRD §6a #1, area-model is value-only (per-challenge data is
+ * two integer arrays + display flags derived from the mode), so we follow the
+ * pool-service pattern (factor-tree, place-value-chart precedent):
+ *  - Gemini emits ONLY wrapper metadata (title, description, mode hints).
+ *  - Local code deterministically builds N AreaModelChallenge tuples, each
+ *    with mode-appropriate factor decompositions and display flags.
+ *  - Structured-output Gemini converges per-call (PRD §6a #2), so any per-
+ *    challenge variance comes from local randomness, not the prompt.
+ */
+
+import { Type, Schema, ThinkingLevel } from "@google/genai";
+import {
+  AreaModelData,
+  AreaModelChallenge,
+} from "../../primitives/visual-primitives/math/AreaModel";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
@@ -16,186 +33,271 @@ import {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   build_model: {
     promptDoc:
-      `"build_model": Given two factors, student constructs the area model grid. `
-      + `IMPORTANT: At least one factor MUST be decomposed into 2+ parts `
-      + `(e.g., 3 × 14 → factor1Parts=[3], factor2Parts=[10,4] for a 1×2 grid, `
-      + `or 12 × 8 → factor1Parts=[10,2], factor2Parts=[8] for a 2×1 grid). `
-      + `A 1×1 grid is NOT a valid area model — decomposition is the whole point. `
-      + `showPartialProducts = false so student fills them in. `
-      + `Grades 3-4. Concrete manipulative level.`,
-    schemaDescription: "'build_model' (construct area model from factors)",
+      `"build_model": Student constructs an area model from given factors. `
+      + `Single-digit × 2-digit (e.g., 3 × 14 → factor1Parts=[3], factor2Parts=[10,4]). `
+      + `1×2 grid. Grades 3-4.`,
+    schemaDescription: "'build_model' (construct area model from factors, 3-4)",
   },
   find_area: {
     promptDoc:
       `"find_area": Area model is shown with factor decomposition visible. `
       + `Student calculates each partial product cell and finds the total area. `
-      + `Use 2-digit × 1-digit or 2-digit × 2-digit factors. `
-      + `showDimensions = true, showPartialProducts = false. `
-      + `Grades 3-4. Pictorial with prompts.`,
-    schemaDescription: "'find_area' (calculate partial products and total)",
+      + `2-digit × 2-digit, 2×2 grid. Grades 3-4.`,
+    schemaDescription: "'find_area' (calculate partial products and total, 3-4)",
   },
   perimeter: {
     promptDoc:
-      `"perimeter": A rectangle is shown with side lengths labeled — student computes the perimeter (CCSS 4.MD.3). `
-      + `CRITICAL: factor1Parts and factor2Parts MUST EACH be a SINGLE-ELEMENT array (one number per side). `
-      + `Example: a 12 by 8 rectangle → factor1Parts=[12], factor2Parts=[8]. Perimeter = 2×(12+8) = 40. `
-      + `DO NOT decompose the factors — perimeter is about adding side lengths, not multiplying parts. `
-      + `Use whole-number side lengths 3-30 (Grade 3) or 10-99 (Grade 4). `
-      + `showDimensions = true (student MUST see the numbers). showPartialProducts = false. algebraicMode = false. `
-      + `The title should ask about perimeter (e.g., "Find the Perimeter of This Rectangle"), not area or multiplication. `
-      + `Grades 3-4. Pictorial with reduced prompts.`,
-    schemaDescription: "'perimeter' (find the perimeter of a rectangle)",
+      `"perimeter": Rectangle with single side lengths labeled — student computes perimeter (CCSS 4.MD.3). `
+      + `Length and width are whole numbers 5-30. Grades 3-4.`,
+    schemaDescription: "'perimeter' (find the perimeter of a rectangle, 3-4)",
   },
   multiply: {
     promptDoc:
       `"multiply": Multi-digit × multi-digit multiplication using area model decomposition. `
-      + `MUST be harder than find_area — use 3-digit × 2-digit numbers `
-      + `(e.g., 145 × 23 → factor1Parts=[100,40,5], factor2Parts=[20,3]) `
-      + `or use 3-part decompositions for at least one factor. `
-      + `The grid should be at least 2×3 or 3×2. `
-      + `Grades 4-5. Pictorial with reduced prompts.`,
-    schemaDescription: "'multiply' (multi-digit multiplication via model)",
+      + `3-digit × 2-digit (e.g., 145 × 23). 2×3 or 3×2 grids. Grades 4-5.`,
+    schemaDescription: "'multiply' (multi-digit multiplication via model, 4-5)",
   },
   factor: {
     promptDoc:
       `"factor": Reverse operation — student sees partial products in each cell `
       + `and must discover the factor decomposition (dimension labels). `
-      + `showDimensions = false (student discovers them), showPartialProducts = true. `
-      + `Use 2-digit × 2-digit numbers with 2×2 grid. `
-      + `CRITICAL: The title MUST state the correct product (sum of all partial products). `
-      + `Grades 5-6. Transitional symbolic/pictorial.`,
-    schemaDescription: "'factor' (find factors from given area)",
+      + `2-digit × 2-digit with 2×2 grid. Grades 5-6.`,
+    schemaDescription: "'factor' (find factors from given area, 5-6)",
   },
 };
 
 // ---------------------------------------------------------------------------
-// Schema definition for Area Model Data
+// Wrapper schema — Gemini emits session-level metadata only.
+// Per-challenge data (factor parts, display flags) is built locally below.
 // ---------------------------------------------------------------------------
 
-/**
- * Schema definition for Area Model Data
- *
- * This schema defines the structure for area model visualization,
- * including factor decomposition, partial products, and algebraic extensions.
- */
-const areaModelSchema: Schema = {
+const areaModelWrapperSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     challengeType: {
       type: Type.STRING,
-      description: "Challenge type: 'build_model' (construct area model from factors), 'find_area' (calculate partial products and total), 'perimeter' (find perimeter of a rectangle — 4.MD.3), 'multiply' (multi-digit multiplication via model), 'factor' (find factors from given area)",
       enum: ["build_model", "find_area", "perimeter", "multiply", "factor"],
+      description:
+        "Challenge type controlling difficulty: 'build_model' (3-4), 'find_area' (3-4), 'perimeter' (3-4), 'multiply' (4-5), 'factor' (5-6).",
     },
     title: {
       type: Type.STRING,
-      description: "Title for the area model (e.g., 'Multiplying 23 × 15 using Area Model')"
+      description:
+        "Short session title (e.g., 'Area Model Practice — Grade 4'). Do NOT include specific numbers; the session uses multiple factor pairs.",
     },
     description: {
       type: Type.STRING,
-      description: "Educational description explaining what students will learn from this visualization"
+      description:
+        "1-2 sentence warm introduction that motivates the strategy (decomposition, distributive property, or perimeter — match the mode). Do NOT include specific numbers.",
     },
-    factor1Parts: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.NUMBER,
-        description: "Parts of first factor decomposition"
-      },
-      description: "Decomposition of first factor (e.g., [20, 3] for 23). For algebraic: use coefficient values"
+    gradeLevel: {
+      type: Type.STRING,
+      description: "Grade level string (e.g., 'Grade 4').",
     },
-    factor2Parts: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.NUMBER,
-        description: "Parts of second factor decomposition"
-      },
-      description: "Decomposition of second factor (e.g., [10, 5] for 15). For algebraic: use coefficient values"
-    },
-    showPartialProducts: {
-      type: Type.BOOLEAN,
-      description: "Display products in cells. Default: true"
-    },
-    showDimensions: {
-      type: Type.BOOLEAN,
-      description: "Label side lengths. Default: true"
-    },
-    algebraicMode: {
-      type: Type.BOOLEAN,
-      description: "Allow variable terms for polynomial multiplication. Use for algebra topics. Default: false"
-    },
-    highlightCell: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.NUMBER
-      },
-      description: "Emphasize specific cell [row, col]. Use to focus attention. Example: [0, 1]. Use null for no highlight.",
-      nullable: true
-    },
-    showAnimation: {
-      type: Type.BOOLEAN,
-      description: "Animate assembly of final product. Good for first introduction. Default: false"
-    },
-    labels: {
-      type: Type.OBJECT,
-      properties: {
-        factor1: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.STRING
-          },
-          description: "Custom labels for factor1Parts (e.g., ['2x', '3'] for algebraic). Use only in algebraicMode."
-        },
-        factor2: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.STRING
-          },
-          description: "Custom labels for factor2Parts (e.g., ['x', '4'] for algebraic). Use only in algebraicMode."
-        }
-      },
-      description: "Custom labels for algebraic mode. Only include when algebraicMode is true.",
-      nullable: true
-    }
   },
-  required: ["challengeType", "title", "description", "factor1Parts", "factor2Parts"]
+  required: ["challengeType", "title", "description"],
 };
 
-/**
- * Generate area model data for visualization
- *
- * This function creates area model data including:
- * - Appropriate factor decompositions based on topic and grade level
- * - Configuration for partial products visualization
- * - Support for both numeric and algebraic multiplication
- * - Educational context and descriptions
- * - Interactive features configuration
- *
- * @param topic - The math topic or concept to teach
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns AreaModelData with complete configuration
- */
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const DEFAULT_INSTANCE_COUNT = 3;
+const MAX_INSTANCE_COUNT = 6;
+
+type ChallengeType = 'build_model' | 'find_area' | 'perimeter' | 'multiply' | 'factor';
+
+// ---------------------------------------------------------------------------
+// Local randomness helpers (own the randomness — Gemini convergence per §6a #2)
+// ---------------------------------------------------------------------------
+
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function decomposeByPlace(n: number): number[] {
+  if (n < 10) return [n];
+  if (n < 100) {
+    const tens = Math.floor(n / 10) * 10;
+    const ones = n - tens;
+    return ones > 0 ? [tens, ones] : [tens];
+  }
+  // 100-999
+  const hundreds = Math.floor(n / 100) * 100;
+  const remainder = n - hundreds;
+  const tens = Math.floor(remainder / 10) * 10;
+  const ones = remainder - tens;
+  const parts = [hundreds];
+  if (tens > 0) parts.push(tens);
+  if (ones > 0) parts.push(ones);
+  return parts;
+}
+
+function canonKey(a: number[], b: number[]): string {
+  // Treat (3, [10,4]) and ([10,4], 3) as the same pair for dedup.
+  const aSum = a.reduce((s, v) => s + v, 0);
+  const bSum = b.reduce((s, v) => s + v, 0);
+  return aSum <= bSum ? `${aSum}x${bSum}` : `${bSum}x${aSum}`;
+}
+
+// ---------------------------------------------------------------------------
+// Per-mode operand generators
+// ---------------------------------------------------------------------------
+
+interface OperandPair {
+  factor1Parts: number[];
+  factor2Parts: number[];
+}
+
+function buildModelOperands(count: number): OperandPair[] {
+  // Single-digit (3-9) × 2-digit (11-25), 1×2 grid.
+  const pairs: OperandPair[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 8;
+  for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
+    const single = randInt(3, 9);
+    const two = randInt(11, 25);
+    const key = canonKey([single], decomposeByPlace(two));
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push({ factor1Parts: [single], factor2Parts: decomposeByPlace(two) });
+  }
+  return pairs;
+}
+
+function findAreaOperands(count: number): OperandPair[] {
+  // 2-digit × 2-digit, 2×2 grid. Both factors in 11-49.
+  const pairs: OperandPair[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 8;
+  for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
+    const a = randInt(11, 49);
+    const b = randInt(11, 49);
+    const aParts = decomposeByPlace(a);
+    const bParts = decomposeByPlace(b);
+    // Require 2×2 grids (both decomposed into 2+ parts)
+    if (aParts.length < 2 || bParts.length < 2) continue;
+    const key = canonKey(aParts, bParts);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push({ factor1Parts: aParts, factor2Parts: bParts });
+  }
+  return pairs;
+}
+
+function perimeterOperands(count: number): OperandPair[] {
+  // Single side lengths, no decomposition. Whole numbers 5-30, distinct sides.
+  const pairs: OperandPair[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 8;
+  for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
+    const length = randInt(5, 30);
+    let width = randInt(5, 30);
+    // Avoid square (length === width) so the problem isn't degenerate.
+    if (width === length) width = width === 30 ? width - 1 : width + 1;
+    const key = canonKey([length], [width]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push({ factor1Parts: [length], factor2Parts: [width] });
+  }
+  return pairs;
+}
+
+function multiplyOperands(count: number): OperandPair[] {
+  // 3-digit × 2-digit. First factor 110-499 (must have 3 parts), second 12-49.
+  const pairs: OperandPair[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 12;
+  for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
+    const a = randInt(110, 499);
+    const b = randInt(12, 49);
+    const aParts = decomposeByPlace(a);
+    const bParts = decomposeByPlace(b);
+    // Require 3-part × 2-part for sufficient difficulty.
+    if (aParts.length < 3 || bParts.length < 2) continue;
+    const key = canonKey(aParts, bParts);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push({ factor1Parts: aParts, factor2Parts: bParts });
+  }
+  return pairs;
+}
+
+function factorOperands(count: number): OperandPair[] {
+  // Same shape as find_area (2-digit × 2-digit, 2×2 grid).
+  return findAreaOperands(count);
+}
+
+function selectAreaModelOperands(
+  challengeType: ChallengeType,
+  count: number,
+): OperandPair[] {
+  switch (challengeType) {
+    case 'build_model': return buildModelOperands(count);
+    case 'find_area': return findAreaOperands(count);
+    case 'perimeter': return perimeterOperands(count);
+    case 'multiply': return multiplyOperands(count);
+    case 'factor': return factorOperands(count);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Build challenges array from operand pairs + mode-specific display flags
+// ---------------------------------------------------------------------------
+
+function buildChallenges(
+  challengeType: ChallengeType,
+  count: number,
+): AreaModelChallenge[] {
+  const pairs = selectAreaModelOperands(challengeType, count);
+
+  // Pad if short — generate one more pair, accepting duplicates if needed.
+  while (pairs.length < count) {
+    const fallback = selectAreaModelOperands(challengeType, 1);
+    if (fallback.length > 0) pairs.push(fallback[0]);
+    else break;
+  }
+
+  return pairs.slice(0, count).map((pair, idx): AreaModelChallenge => {
+    const base: AreaModelChallenge = {
+      id: `area-model-${idx + 1}`,
+      factor1Parts: pair.factor1Parts,
+      factor2Parts: pair.factor2Parts,
+      showPartialProducts: false,
+      showDimensions: true,
+      algebraicMode: false,
+      highlightCell: null,
+    };
+
+    switch (challengeType) {
+      case 'build_model':
+        return { ...base, showPartialProducts: false, showDimensions: true };
+      case 'find_area':
+        return { ...base, showPartialProducts: false, showDimensions: true };
+      case 'perimeter':
+        return { ...base, showPartialProducts: false, showDimensions: true };
+      case 'multiply':
+        return { ...base, showPartialProducts: false, showDimensions: true };
+      case 'factor':
+        return { ...base, showPartialProducts: true, showDimensions: false };
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Main generator
+// ---------------------------------------------------------------------------
+
 export const generateAreaModel = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    factor1Parts?: number[];
-    factor2Parts?: number[];
-    showPartialProducts?: boolean;
-    showDimensions?: boolean;
-    algebraicMode?: boolean;
-    highlightCell?: [number, number] | null;
-    showAnimation?: boolean;
-    labels?: {
-      factor1?: string[];
-      factor2?: string[];
-    };
-    /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
-  }
+    /** Number of challenges in this session. Default 3 (pilot per PRD §6e). */
+    instanceCount?: number;
+  },
 ): Promise<AreaModelData> => {
-  // ---------------------------------------------------------------------------
-  // Eval mode resolution
-  // ---------------------------------------------------------------------------
+  // ── Eval-mode constraint resolution ──────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'area-model',
     config?.targetEvalMode,
@@ -204,344 +306,77 @@ export const generateAreaModel = async (
   logEvalModeResolution('AreaModel', config?.targetEvalMode, evalConstraint);
 
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(areaModelSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
-    : areaModelSchema;
-
+    ? constrainChallengeTypeEnum(areaModelWrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
+    : areaModelWrapperSchema;
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
-  // Generate 6-10 random number pairs to encourage variety
-  const numPairs = 6 + Math.floor(Math.random() * 5); // 6-10 pairs
-  const randomPairs: string[] = [];
+  const instanceCount = Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+  );
 
-  for (let i = 0; i < numPairs; i++) {
-    const num1 = 10 + Math.floor(Math.random() * 31); // 10-40
-    const num2 = Math.floor(Math.random() * 31); // 1-30
-    randomPairs.push(`${num1}×${num2}`);
-  }
-
+  // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
-Create an educational area model visualization for teaching "${topic}" to ${gradeLevel} students.
+Create the wrapper metadata for a MULTI-CHALLENGE area model session for "${topic}" (${gradeLevel}).
 
-RANDOMIZATION GUIDANCE: Consider these diverse number combinations for variety: ${randomPairs.join(', ')}
-IMPORTANT: Generate DIFFERENT and VARIED numbers each time. Vary the tens and ones digits across the full range appropriate for the grade level.
+This session walks the student through ${instanceCount} DIFFERENT factor pairs of the SAME challenge type.
 
 ${challengeTypeSection}
 
-CONTEXT:
-- Area models are rectangular grids representing multiplication as area
-- Each dimension is decomposed into parts (e.g., 23 = 20 + 3)
-- Cells show partial products that sum to the final answer
-- Excellent for multi-digit multiplication and distributive property
-- Can extend to polynomial multiplication in algebra
+DO NOT include specific numbers in the title or description — the system picks ${instanceCount} factor pairs locally and the same session covers all of them.
 
-${!evalConstraint ? `GUIDELINES FOR GRADE LEVELS:
-- Grades 3-4: Single-digit × double-digit (e.g., 3 × 12 = 3 × [10 + 2])
-  - Use 2 parts for one factor, 1 part for other
-  - Keep numbers small (under 20)
-  - Always show partial products and dimensions
+GUIDELINES:
+- title: short and number-free, e.g., "Area Model Practice — Grade 4" or "Multiplying with the Area Model"
+- description: 1-2 sentences warmly introducing the multi-challenge session. Motivate the strategy (decomposition, distributive property, or perimeter — match the mode). No specific numbers.
+- gradeLevel: echo back "${gradeLevel}"
 
-- Grades 4-5: Multi-digit multiplication (e.g., 23 × 15)
-  - Decompose both factors into 2 parts (tens and ones)
-  - Use 2×2 grid
-  - Show partial products breakdown
-
-- Grades 6-7: Larger numbers, introduction to distributive property
-  - Can use 3 parts for decomposition (hundreds, tens, ones)
-  - Use 2×3 or 3×3 grids
-  - Emphasize connection to standard algorithm
-
-- Algebra (Grades 8+): Polynomial multiplication
-  - Use algebraicMode = true
-  - Provide labels with variables (e.g., ["2x", "3"], ["x", "4"])
-  - Show (2x + 3)(x + 4) = 2x² + 8x + 3x + 12
-  - Keep to 2×2 grids for clarity
-` : ''}
-TOPIC-SPECIFIC GUIDANCE:
-- "Single-digit multiplication": Use 1×1 grid with simple decomposition
-- "Multi-digit multiplication": Use 2×2 grid, decompose by place value
-- "Distributive property": Highlight one cell to show distribution
-- "Polynomial multiplication": Use algebraicMode with variable labels
-- "Factoring": Reverse process - start with area, find dimensions
-- "FOIL method": 2×2 grid with (a+b)(c+d) structure
-
-DECOMPOSITION STRATEGIES:
-- By place value: 23 = [20, 3], 145 = [100, 40, 5]
-- By friendly numbers: 24 = [20, 4] or [10, 10, 4]
-- For algebra: (2x + 3) = ["2x", "3"]
-
-CONFIGURATION RULES:
-1. factor1Parts and factor2Parts should have 1-3 elements each
-2. For beginners: Use 1×2 or 2×2 grids
-3. For advanced: Can use up to 3×3 grids
-4. showPartialProducts = true (almost always, unless practicing mental math)
-5. showDimensions = true (always for learning)
-6. algebraicMode = true ONLY for polynomial topics
-7. highlightCell = [row, col] to emphasize specific partial product
-8. showAnimation = true for first introduction to concept
-9. labels object ONLY when algebraicMode = true
-
-${config ? `
-CONFIGURATION HINTS:
-${config.factor1Parts ? `- Factor 1 decomposition: ${JSON.stringify(config.factor1Parts)}` : ''}
-${config.factor2Parts ? `- Factor 2 decomposition: ${JSON.stringify(config.factor2Parts)}` : ''}
-${config.showPartialProducts !== undefined ? `- Show partial products: ${config.showPartialProducts}` : ''}
-${config.showDimensions !== undefined ? `- Show dimensions: ${config.showDimensions}` : ''}
-${config.algebraicMode !== undefined ? `- Algebraic mode: ${config.algebraicMode}` : ''}
-${config.highlightCell ? `- Highlight cell: ${JSON.stringify(config.highlightCell)}` : ''}
-${config.showAnimation !== undefined ? `- Show animation: ${config.showAnimation}` : ''}
-${config.labels ? `- Custom labels: ${JSON.stringify(config.labels)}` : ''}
-` : ''}
-
-REQUIREMENTS:
-1. Choose appropriate factor decompositions based on topic and grade level
-2. For numeric multiplication: Use place value decomposition
-3. For algebraic multiplication: Set algebraicMode = true and provide labels
-4. Write a clear, student-friendly title describing the multiplication
-5. Provide an educational description explaining the area model strategy
-6. Enable showAnimation for introduction lessons
-7. Use highlightCell to draw attention to specific concepts
-8. Ensure factor1Parts and factor2Parts create a manageable grid (max 3×3)
-9. ${evalConstraint ? 'Use ONLY the allowed challenge type' : 'Choose the most appropriate challenge type for the topic and grade level'}
-
-EXAMPLES:
-- Elementary (23 × 15):
-  factor1Parts: [20, 3]
-  factor2Parts: [10, 5]
-  algebraicMode: false
-
-- Algebra ((2x + 3)(x + 4)):
-  factor1Parts: [2, 3]  // Coefficients for calculation
-  factor2Parts: [1, 4]  // Coefficients for calculation
-  algebraicMode: true
-  labels: { factor1: ["2x", "3"], factor2: ["x", "4"] }
-
-IMPORTANT:
-- Always provide numeric values in factor1Parts and factor2Parts arrays
-- Labels are ONLY for display in algebraicMode - the parts arrays still need numbers
-- Keep grids reasonably sized (prefer 2×2, max 3×3)
-- For polynomial multiplication: factor1Parts/factor2Parts are coefficients, labels show the algebraic terms
-
-Return the complete area model configuration.
+Return ONLY the wrapper metadata in the response schema.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
+      temperature: 0.9,
+      topP: 0.95,
+      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
       responseMimeType: "application/json",
-      responseSchema: activeSchema
+      responseSchema: activeSchema,
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
-
-  if (!data) {
-    throw new Error('No valid area model data returned from Gemini API');
+  const wrapper = result.text ? JSON.parse(result.text) : null;
+  if (!wrapper) {
+    throw new Error('No valid area model wrapper returned from Gemini API');
   }
 
-  // Validation: ensure arrays are not empty
-  if (!data.factor1Parts || data.factor1Parts.length === 0) {
-    console.warn('Invalid area model: factor1Parts is empty. Setting default [10, 2].');
-    data.factor1Parts = [10, 2];
-  }
+  // ── Local: build challenges array ─────────────────────────────────
+  const challengeType: ChallengeType =
+    (wrapper.challengeType as ChallengeType) ||
+    (evalConstraint?.allowedTypes[0] as ChallengeType) ||
+    'find_area';
 
-  if (!data.factor2Parts || data.factor2Parts.length === 0) {
-    console.warn('Invalid area model: factor2Parts is empty. Setting default [10, 3].');
-    data.factor2Parts = [10, 3];
-  }
+  const challenges = buildChallenges(challengeType, instanceCount);
 
-  // Validation: if algebraicMode is false, remove labels
-  if (!data.algebraicMode) {
-    delete data.labels;
-  }
+  console.log('📐 Area Model generated:', {
+    topic,
+    challengeType,
+    instanceCount: challenges.length,
+    pairs: challenges.map(c => ({
+      f1: c.factor1Parts,
+      f2: c.factor2Parts,
+      f1Total: c.factor1Parts.reduce((s, v) => s + v, 0),
+      f2Total: c.factor2Parts.reduce((s, v) => s + v, 0),
+    })),
+  });
 
-  // Validation: if labels exist, ensure they match array lengths
-  if (data.labels) {
-    if (data.labels.factor1 && data.labels.factor1.length !== data.factor1Parts.length) {
-      console.warn('Mismatch between factor1Parts and labels.factor1 lengths. Removing labels.');
-      delete data.labels;
-    }
-    if (data.labels.factor2 && data.labels.factor2.length !== data.factor2Parts.length) {
-      console.warn('Mismatch between factor2Parts and labels.factor2 lengths. Removing labels.');
-      delete data.labels;
-    }
-  }
-
-  // Validation: ensure challengeType is valid
-  const validChallengeTypes = ['build_model', 'find_area', 'perimeter', 'multiply', 'factor'];
-  if (!data.challengeType || !validChallengeTypes.includes(data.challengeType)) {
-    data.challengeType = evalConstraint?.allowedTypes[0] ?? 'find_area';
-  }
-
-  // Apply any explicit config overrides from manifest
-  if (config) {
-    if (config.factor1Parts) data.factor1Parts = config.factor1Parts;
-    if (config.factor2Parts) data.factor2Parts = config.factor2Parts;
-    if (config.showPartialProducts !== undefined) data.showPartialProducts = config.showPartialProducts;
-    if (config.showDimensions !== undefined) data.showDimensions = config.showDimensions;
-    if (config.algebraicMode !== undefined) data.algebraicMode = config.algebraicMode;
-    if (config.highlightCell !== undefined) data.highlightCell = config.highlightCell;
-    if (config.showAnimation !== undefined) data.showAnimation = config.showAnimation;
-    if (config.labels) data.labels = config.labels;
-  }
-
-  // Set defaults for optional fields if not present
-  if (data.showPartialProducts === undefined) data.showPartialProducts = true;
-  if (data.showDimensions === undefined) data.showDimensions = true;
-  if (data.algebraicMode === undefined) data.algebraicMode = false;
-  if (data.showAnimation === undefined) data.showAnimation = false;
-  if (data.highlightCell === undefined) data.highlightCell = null;
-
-  // ---------------------------------------------------------------------------
-  // Mode-specific post-validation (fixes eval report issues)
-  // ---------------------------------------------------------------------------
-
-  // build_model: ensure at least one factor has 2+ parts (no trivial 1×1 grids)
-  if (data.challengeType === 'build_model') {
-    data.showPartialProducts = false; // student fills these in
-    if (Math.max(data.factor1Parts.length, data.factor2Parts.length) < 2) {
-      // Decompose the larger factor by place value
-      const f1Total = data.factor1Parts.reduce((s: number, v: number) => s + v, 0);
-      const f2Total = data.factor2Parts.reduce((s: number, v: number) => s + v, 0);
-      const larger = Math.max(f1Total, f2Total);
-      if (larger >= 10) {
-        const tens = Math.floor(larger / 10) * 10;
-        const ones = larger - tens;
-        const parts = ones > 0 ? [tens, ones] : [tens];
-        if (f1Total >= f2Total) {
-          data.factor1Parts = parts;
-        } else {
-          data.factor2Parts = parts;
-        }
-      } else {
-        // Both single-digit: split the larger into friendly parts
-        const splitTarget = Math.max(f1Total, f2Total);
-        const half = Math.floor(splitTarget / 2);
-        const remainder = splitTarget - half;
-        if (f1Total >= f2Total) {
-          data.factor1Parts = [half, remainder];
-        } else {
-          data.factor2Parts = [half, remainder];
-        }
-      }
-      console.warn('build_model: decomposed factor to avoid trivial 1×1 grid');
-    }
-  }
-
-  // find_area: force correct display settings
-  if (data.challengeType === 'find_area') {
-    data.showPartialProducts = false; // student calculates these
-    data.showDimensions = true;
-  }
-
-  // perimeter: force 1×1 rectangle (no decomposition), correct display settings, and perimeter-oriented title
-  if (data.challengeType === 'perimeter') {
-    data.showDimensions = true;      // must see side lengths
-    data.showPartialProducts = false; // perimeter isn't about products
-    data.algebraicMode = false;
-    delete data.labels;
-
-    // Collapse any LLM-provided decomposition back to a single side length
-    if (data.factor1Parts.length > 1) {
-      const total = data.factor1Parts.reduce((s: number, v: number) => s + v, 0);
-      data.factor1Parts = [total];
-    }
-    if (data.factor2Parts.length > 1) {
-      const total = data.factor2Parts.reduce((s: number, v: number) => s + v, 0);
-      data.factor2Parts = [total];
-    }
-
-    const length = data.factor1Parts[0];
-    const width = data.factor2Parts[0];
-    const perimeter = 2 * (length + width);
-
-    // Rewrite title if it mentions "product", "multiply", or the area value instead of perimeter
-    const area = length * width;
-    const titleLower = (data.title ?? '').toLowerCase();
-    const mentionsPerimeter = titleLower.includes('perimeter');
-    const titleNums = (data.title?.match(/\d+/g) ?? []).map(Number);
-    const titleHasArea = titleNums.includes(area) && !titleNums.includes(perimeter);
-    if (!mentionsPerimeter || /multiply|product|area model/i.test(data.title ?? '') || titleHasArea) {
-      data.title = `Find the Perimeter of This ${length} × ${width} Rectangle`;
-      console.warn(`perimeter: rewrote title to focus on perimeter (P=${perimeter})`);
-    }
-
-    // Fix description if it talks about multiplication/area
-    if (/multipl|partial product|area/i.test(data.description ?? '')) {
-      data.description = `Find the perimeter of this rectangle by adding the lengths of all four sides. The rectangle is ${length} units long and ${width} units wide.`;
-    }
-  }
-
-  // multiply: ensure harder than find_area (3-digit×2-digit or 3-part decomposition)
-  if (data.challengeType === 'multiply') {
-    data.showPartialProducts = false; // student calculates these
-    const f1Total = data.factor1Parts.reduce((s: number, v: number) => s + v, 0);
-    const f2Total = data.factor2Parts.reduce((s: number, v: number) => s + v, 0);
-    const maxParts = Math.max(data.factor1Parts.length, data.factor2Parts.length);
-    const maxTotal = Math.max(f1Total, f2Total);
-
-    // If grid is only 2×2 with small numbers, upgrade to 3-part decomposition
-    if (maxParts < 3 && maxTotal < 100) {
-      // Redecompose the larger factor into 3 parts by place value
-      if (f1Total >= f2Total && f1Total >= 10) {
-        const hundreds = Math.floor(f1Total / 100) * 100;
-        const tens = Math.floor((f1Total - hundreds) / 10) * 10;
-        const ones = f1Total - hundreds - tens;
-        if (hundreds > 0) {
-          data.factor1Parts = ones > 0 ? [hundreds, tens, ones] : [hundreds, tens || 1];
-        } else {
-          // Number is < 100, bump it up
-          const bumped = f1Total + 100;
-          data.factor1Parts = [100, Math.floor((bumped - 100) / 10) * 10, (bumped - 100) % 10 || 1];
-          console.warn(`multiply: bumped factor1 from ${f1Total} to ${bumped} for difficulty`);
-        }
-      } else if (f2Total >= 10) {
-        const hundreds = Math.floor(f2Total / 100) * 100;
-        const tens = Math.floor((f2Total - hundreds) / 10) * 10;
-        const ones = f2Total - hundreds - tens;
-        if (hundreds > 0) {
-          data.factor2Parts = ones > 0 ? [hundreds, tens, ones] : [hundreds, tens || 1];
-        } else {
-          const bumped = f2Total + 100;
-          data.factor2Parts = [100, Math.floor((bumped - 100) / 10) * 10, (bumped - 100) % 10 || 1];
-          console.warn(`multiply: bumped factor2 from ${f2Total} to ${bumped} for difficulty`);
-        }
-      }
-    }
-  }
-
-  // factor: force correct display settings and validate title product
-  if (data.challengeType === 'factor') {
-    data.showDimensions = false; // student discovers dimensions
-    data.showPartialProducts = true; // show products so student can reverse-engineer
-    // Fix title if the stated product doesn't match the actual product
-    const actualProduct = data.factor1Parts.reduce((s: number, v: number) => s + v, 0)
-      * data.factor2Parts.reduce((s: number, v: number) => s + v, 0);
-    const titleMatch = data.title.match(/\d+/g);
-    if (titleMatch) {
-      const titleNumbers = titleMatch.map(Number);
-      // If the title contains a number that doesn't match the actual product,
-      // rewrite the title with the correct product
-      const hasCorrectProduct = titleNumbers.includes(actualProduct);
-      if (!hasCorrectProduct) {
-        data.title = `Finding the Factors of ${actualProduct} Using the Area Model`;
-        console.warn(`factor: corrected title product from stated value to ${actualProduct}`);
-      }
-    }
-    // Fix description if it contains hallucinated numbers (AM-1)
-    const f1Total = data.factor1Parts.reduce((s: number, v: number) => s + v, 0);
-    const f2Total = data.factor2Parts.reduce((s: number, v: number) => s + v, 0);
-    const validNums = new Set([actualProduct, f1Total, f2Total, ...data.factor1Parts, ...data.factor2Parts]);
-    const descNums = data.description?.match(/\d+/g)?.map(Number) ?? [];
-    const wrongNums = descNums.filter((n: number) => n > 1 && !validNums.has(n));
-    if (wrongNums.length > 0) {
-      // Replace each wrong number with the actual product
-      for (const wrong of wrongNums) {
-        data.description = data.description.replace(String(wrong), String(actualProduct));
-      }
-      console.warn(`factor: corrected hallucinated numbers in description: ${wrongNums.join(', ')} → ${actualProduct}`);
-    }
-  }
-
-  return data;
+  return {
+    title: wrapper.title || 'Area Model Practice',
+    description:
+      wrapper.description ||
+      `Practice ${instanceCount} ${challengeType.replace('_', ' ')} problems with the area model.`,
+    challenges,
+    challengeType,
+    gradeLevel: wrapper.gradeLevel || gradeLevel,
+  };
 };

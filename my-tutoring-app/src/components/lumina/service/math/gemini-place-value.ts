@@ -1,5 +1,27 @@
+/**
+ * Place Value Chart Generator — multi-instance pool-service generator.
+ *
+ * Each session walks the student through 3 distinct numbers in the SAME eval
+ * mode. Each challenge has its own 3-phase within-challenge flow
+ * (identify-place → find-value → build-number). Total session = 3 × 3 = 9
+ * phases (PRD §7 Open Q #1 pilot — full 4 instances would be 12 phases, too
+ * long).
+ *
+ * Per-challenge data is value-only (targetNumber + derived MC choices), so we
+ * follow the pool-service pattern (PRD §6a #1, factor-tree precedent):
+ *  - Gemini emits ONLY wrapper metadata (title, description, mode flags).
+ *  - Local code deterministically selects N targetNumbers from the pool,
+ *    derives highlightedDigitPlace, minPlace/maxPlace, placeNameChoices and
+ *    digitValueChoices per challenge.
+ *  - Structured-output Gemini converges per-call (PRD §6a #2), so any per-
+ *    challenge variance must come from local randomness, not the prompt.
+ */
+
 import { Type, Schema, ThinkingLevel } from "@google/genai";
-import { PlaceValueChartData } from "../../primitives/visual-primitives/math/PlaceValueChart";
+import {
+  PlaceValueChartData,
+  PlaceValueChartChallenge,
+} from "../../primitives/visual-primitives/math/PlaceValueChart";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
@@ -18,111 +40,73 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   identify: {
     promptDoc:
       `"identify": Simple 2-digit numbers, focus on recognizing place names. `
-      + `Choose a 2-digit number with non-zero digits. Set highlightedDigitPlace to ones (0) or tens (1). `
-      + `Great for K-2 students just learning place value vocabulary. Grades K-2.`,
+      + `Grades K-2.`,
     schemaDescription: "'identify' (recognize place names, K-2)",
   },
   build: {
     promptDoc:
       `"build": 3-digit numbers, focus on constructing the number in the chart. `
-      + `Choose a 3-digit number with varied digits. Set minPlace=0, maxPlace=2. `
       + `Phase 3 (build) is the primary challenge. Grades 2-3.`,
     schemaDescription: "'build' (construct number in chart, 2-3)",
   },
   compare: {
     promptDoc:
-      `"compare": 3-4 digit numbers. Generate a number with multiple non-zero digits. `
-      + `Choose a varied number within the given range. Set minPlace=0, maxPlace=3. `
+      `"compare": 3-4 digit numbers with multiple non-zero digits. `
       + `Pick an interior place for highlighting. Grades 3-4.`,
     schemaDescription: "'compare' (multi-digit place reasoning, 3-4)",
   },
   expanded_form: {
     promptDoc:
       `"expanded_form": 4+ digit numbers or decimals, with showExpandedForm=true. `
-      + `Choose a varied number with decimals when appropriate. `
-      + `Set minPlace to cover decimal digits, maxPlace to cover integer digits. Grades 5+.`,
+      + `Grades 5+.`,
     schemaDescription: "'expanded_form' (expanded form with larger numbers, 5+)",
   },
 };
 
-/**
- * Schema definition for Place Value Chart Data (multi-phase interface)
- *
- * Three-phase educational flow:
- *   Phase 1: Identify the Place (multiple choice — which place is this digit in?)
- *   Phase 2: Find the Value (multiple choice — what is this digit worth?)
- *   Phase 3: Build the Number (interactive chart — enter digits to construct the number)
- *
- * The generator produces:
- *   - targetNumber: the number students will study and build
- *   - highlightedDigitPlace: which place column to spotlight in phases 1 & 2
- *   - placeNameChoices: 4 MC options for phase 1 (one correct)
- *   - digitValueChoices: 4 MC options for phase 2 (one correct)
- */
-const placeValueChartSchema: Schema = {
+// ---------------------------------------------------------------------------
+// Wrapper schema — Gemini emits session-level metadata only.
+// Per-challenge data (targetNumber etc.) is selected locally below.
+// ---------------------------------------------------------------------------
+
+const placeValueWrapperSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     challengeType: {
       type: Type.STRING,
       enum: ["identify", "build", "compare", "expanded_form"],
-      description: "Challenge type controlling difficulty: 'identify' (K-2 simple place names), 'build' (2-3 construct numbers), 'compare' (3-4 multi-digit), 'expanded_form' (5+ expanded form with large numbers/decimals)"
+      description: "Challenge type controlling difficulty: 'identify' (K-2), 'build' (2-3), 'compare' (3-4), 'expanded_form' (5+).",
     },
     title: {
       type: Type.STRING,
-      description: "Title for the place value chart (e.g., 'Explore 3,472' or 'Place Value Challenge')"
+      description: "Short session title (e.g., 'Place Value Practice — Grade 3'). Do NOT include specific numbers; the session uses multiple numbers.",
     },
     description: {
       type: Type.STRING,
-      description: "Educational description. Introduce the number and tell students they will identify place names, digit values, and then build the number."
-    },
-    targetNumber: {
-      type: Type.NUMBER,
-      description: "The number students will study and build. Must be age-appropriate for the grade level. Should have a non-zero digit at highlightedDigitPlace."
-    },
-    highlightedDigitPlace: {
-      type: Type.NUMBER,
-      description: "The place value position to highlight in phases 1 and 2. 0 = ones, 1 = tens, 2 = hundreds, 3 = thousands, -1 = tenths, -2 = hundredths. The digit at this place in targetNumber MUST be non-zero."
-    },
-    minPlace: {
-      type: Type.NUMBER,
-      description: "Smallest place value column to show. 0 for ones, -1 for tenths, -2 for hundredths. Should cover all digits in targetNumber."
-    },
-    maxPlace: {
-      type: Type.NUMBER,
-      description: "Largest place value column to show. 1 for tens, 2 for hundreds, 3 for thousands, etc. Should cover all digits in targetNumber."
+      description: "1-2 sentence warm introduction. Tell the student they'll explore multiple numbers across three phases (identify, value, build). Do NOT include specific numbers.",
     },
     showExpandedForm: {
       type: Type.BOOLEAN,
-      description: "Whether to show expanded form during the build phase. Recommended true for learning. Default: true."
+      description: "Whether to show expanded form during build phase. Recommended true.",
     },
     showMultipliers: {
       type: Type.BOOLEAN,
-      description: "Whether to show multiplier labels (x1, x10, x100, etc.) above each column. Helpful for younger students. Default: true."
+      description: "Whether to show multiplier labels (×1, ×10, etc.) above each column. Recommended true for K-4.",
     },
     gradeLevel: {
       type: Type.STRING,
-      description: "Grade level string for age-appropriate language (e.g., 'Grade 2', 'Grade 5')."
+      description: "Grade level string (e.g., 'Grade 3').",
     },
-    placeNameChoices: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "Exactly 4 place name options for Phase 1 multiple choice. One must be the correct place name for highlightedDigitPlace. Example: ['Ones', 'Tens', 'Hundreds', 'Thousands']. Always include the correct answer and 3 plausible distractors from nearby places."
-    },
-    digitValueChoices: {
-      type: Type.ARRAY,
-      items: { type: Type.NUMBER },
-      description: "Exactly 4 numeric value options for Phase 2 multiple choice. One must be the correct value of the digit at highlightedDigitPlace. Example for digit 4 in hundreds place: [4, 40, 400, 4000]. Include the face value of the digit and values at neighboring places as distractors."
-    }
   },
-  required: [
-    "challengeType", "title", "description", "targetNumber", "highlightedDigitPlace",
-    "minPlace", "maxPlace", "placeNameChoices", "digitValueChoices"
-  ]
+  required: ["challengeType", "title", "description"],
 };
 
-/**
- * Place name lookup for validation
- */
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const DEFAULT_INSTANCE_COUNT = 3;
+const MAX_INSTANCE_COUNT = 6;
+
 const PLACE_NAMES: Record<number, string> = {
   6: 'Millions',
   5: 'Hundred Thousands',
@@ -136,48 +120,298 @@ const PLACE_NAMES: Record<number, string> = {
   [-3]: 'Thousandths',
 };
 
+// Spoken vocabulary for digit values. Phase 2 uses these word-forms instead of
+// raw numerals so the student must retrieve place-value vocabulary, not just
+// append zeros to the visible digit (PVC-1 fix).
+const ONES_WORDS: Record<number, string> = {
+  1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five',
+  6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine',
+};
+
+const TENS_WORDS: Record<number, string> = {
+  1: 'Ten', 2: 'Twenty', 3: 'Thirty', 4: 'Forty', 5: 'Fifty',
+  6: 'Sixty', 7: 'Seventy', 8: 'Eighty', 9: 'Ninety',
+};
+
+const DECIMAL_PLACE_WORDS_SINGULAR: Record<number, string> = {
+  [-1]: 'Tenth',
+  [-2]: 'Hundredth',
+  [-3]: 'Thousandth',
+};
+
+const DECIMAL_PLACE_WORDS_PLURAL: Record<number, string> = {
+  [-1]: 'Tenths',
+  [-2]: 'Hundredths',
+  [-3]: 'Thousandths',
+};
+
 /**
- * Get the digit at a specific place in a number.
- * place 0 = ones, 1 = tens, 2 = hundreds, -1 = tenths, etc.
+ * Spoken word-form of a single digit's value at a given place.
+ * Examples: (7, 1) → "Seventy"; (3, 2) → "Three Hundred"; (5, -1) → "Five Tenths"; (1, -1) → "One Tenth".
  */
+function buildDigitValueWord(digit: number, place: number): string {
+  if (digit === 0) return 'Zero';
+
+  if (place < 0) {
+    const words = digit === 1
+      ? DECIMAL_PLACE_WORDS_SINGULAR
+      : DECIMAL_PLACE_WORDS_PLURAL;
+    const decWord = words[place] ?? `10^${place}`;
+    return `${ONES_WORDS[digit]} ${decWord}`;
+  }
+
+  switch (place) {
+    case 0: return ONES_WORDS[digit];
+    case 1: return TENS_WORDS[digit];                      // "Seventy"
+    case 2: return `${ONES_WORDS[digit]} Hundred`;
+    case 3: return `${ONES_WORDS[digit]} Thousand`;
+    case 4: return `${TENS_WORDS[digit]} Thousand`;        // "Seventy Thousand"
+    case 5: return `${ONES_WORDS[digit]} Hundred Thousand`;
+    case 6: return `${ONES_WORDS[digit]} Million`;
+    default: return `${ONES_WORDS[digit]} × 10^${place}`;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-mode number range + place range (drives the pool service)
+// ---------------------------------------------------------------------------
+
+interface ModeProfile {
+  numberRange: { min: number; max: number };
+  minPlace: number;
+  maxPlace: number;
+  allowDecimals?: boolean;
+}
+
+const MODE_PROFILES: Record<string, ModeProfile> = {
+  identify:      { numberRange: { min: 11, max: 99 },      minPlace: 0,  maxPlace: 1 },
+  build:         { numberRange: { min: 111, max: 999 },    minPlace: 0,  maxPlace: 2 },
+  compare:       { numberRange: { min: 1111, max: 9999 },  minPlace: 0,  maxPlace: 3 },
+  expanded_form: { numberRange: { min: 1111, max: 99999 }, minPlace: 0,  maxPlace: 4 },
+};
+
+// ---------------------------------------------------------------------------
+// Per-challenge helpers (deterministic — own the randomness)
+// ---------------------------------------------------------------------------
+
 function getDigitAtPlace(num: number, place: number): number {
   const absNum = Math.abs(num);
   if (place >= 0) {
     return Math.floor(absNum / Math.pow(10, place)) % 10;
-  } else {
-    // For decimal places: multiply to shift the decimal, then extract
-    const shifted = Math.round(absNum * Math.pow(10, -place));
-    return shifted % 10;
   }
+  const shifted = Math.round(absNum * Math.pow(10, -place));
+  return shifted % 10;
+}
+
+function getPlaceName(place: number): string {
+  return PLACE_NAMES[place] || `10^${place}`;
 }
 
 /**
- * Generate place value chart data for multi-phase interactive problems
- *
- * This function creates place value chart problems where students:
- * 1. Phase 1 - Identify the place name of a highlighted digit (MC)
- * 2. Phase 2 - Determine the value of that digit in its place (MC)
- * 3. Phase 3 - Build the entire number by entering digits in the chart
- *
- * @param topic - The math topic or concept to teach
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns PlaceValueChartData configured for multi-phase interaction
+ * Pick an interior place (preferred) or any place with a non-zero digit.
+ * Returns a place index within [minPlace, maxPlace].
  */
+function selectHighlightedPlace(
+  targetNumber: number,
+  minPlace: number,
+  maxPlace: number,
+): number {
+  const candidates: number[] = [];
+  for (let p = minPlace; p <= maxPlace; p++) {
+    if (getDigitAtPlace(targetNumber, p) !== 0) candidates.push(p);
+  }
+  if (candidates.length === 0) return minPlace;
+
+  // Prefer interior places (not the ones digit, not the leftmost). Otherwise any.
+  const interior = candidates.filter(p => p > minPlace && p < maxPlace);
+  const pool = interior.length > 0 ? interior : candidates;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/**
+ * Build 4 place-name MC choices, with the correct answer at a random position
+ * and 3 plausible adjacent-place distractors.
+ */
+function buildPlaceNameChoices(
+  correctPlace: number,
+  minPlace: number,
+  maxPlace: number,
+): string[] {
+  const correctName = getPlaceName(correctPlace);
+  const allPlaces: Array<{ place: number; name: string }> = [];
+
+  // Gather all places in range, sorted by distance to correctPlace.
+  for (let p = minPlace; p <= maxPlace; p++) {
+    if (p === correctPlace) continue;
+    allPlaces.push({ place: p, name: getPlaceName(p) });
+  }
+  // Pull from outside the range if we don't have enough distractors.
+  for (const p of [maxPlace + 1, minPlace - 1, maxPlace + 2, minPlace - 2]) {
+    if (allPlaces.length >= 6) break;
+    if (PLACE_NAMES[p] && !allPlaces.some(x => x.name === PLACE_NAMES[p])) {
+      allPlaces.push({ place: p, name: PLACE_NAMES[p] });
+    }
+  }
+  allPlaces.sort(
+    (a, b) => Math.abs(a.place - correctPlace) - Math.abs(b.place - correctPlace),
+  );
+
+  const distractors = allPlaces.slice(0, 3).map(p => p.name);
+  const choices = [...distractors];
+  const insertIdx = Math.floor(Math.random() * 4);
+  choices.splice(insertIdx, 0, correctName);
+  return choices;
+}
+
+/**
+ * Build 4 digit-value MC choices as { value, wordForm } pairs: the correct
+ * value plus 3 plausible off-by-one-place errors. Phase 2 displays wordForm
+ * (e.g., "Seventy"); correctness compares on numeric value.
+ *
+ * Distractors are derived from the SAME digit at adjacent places, so each
+ * choice is also expressible as a real word-form via buildDigitValueWord.
+ */
+function buildDigitValueChoices(
+  digit: number,
+  correctPlace: number,
+): { value: number; wordForm: string }[] {
+  const correctValue = digit * Math.pow(10, correctPlace);
+  const correctChoice = {
+    value: correctValue,
+    wordForm: buildDigitValueWord(digit, correctPlace),
+  };
+
+  const candidatePlaces: number[] = [];
+  for (const offset of [-1, 1, -2, 2, -3, 3]) {
+    const p = correctPlace + offset;
+    const v = digit * Math.pow(10, p);
+    // Filter: positive, not the correct value, place we have a word-form for.
+    if (v <= 0 || v === correctValue) continue;
+    if (p < -3 || p > 6) continue; // outside our word-form range
+    if (candidatePlaces.includes(p)) continue;
+    candidatePlaces.push(p);
+    if (candidatePlaces.length >= 3) break;
+  }
+
+  const distractors = candidatePlaces.slice(0, 3).map((p) => ({
+    value: digit * Math.pow(10, p),
+    wordForm: buildDigitValueWord(digit, p),
+  }));
+
+  // If we still don't have 3 distractors, pad by walking outward from
+  // correctPlace using whatever word-form-supported places remain.
+  if (distractors.length < 3) {
+    for (let p = -3; p <= 6 && distractors.length < 3; p++) {
+      if (p === correctPlace) continue;
+      if (candidatePlaces.includes(p)) continue;
+      const v = digit * Math.pow(10, p);
+      if (v <= 0 || v === correctValue) continue;
+      distractors.push({ value: v, wordForm: buildDigitValueWord(digit, p) });
+    }
+  }
+
+  const choices = [...distractors];
+  const insertIdx = Math.floor(Math.random() * (choices.length + 1));
+  choices.splice(insertIdx, 0, correctChoice);
+  return choices;
+}
+
+/**
+ * Compute minPlace/maxPlace that cover the given number's digits, expanding
+ * the mode default if needed.
+ */
+function computePlaceRange(
+  targetNumber: number,
+  defaultMin: number,
+  defaultMax: number,
+): { minPlace: number; maxPlace: number } {
+  const absTarget = Math.abs(targetNumber);
+  let minPlace = defaultMin;
+  let maxPlace = defaultMax;
+
+  if (absTarget >= 1) {
+    const integerDigits = Math.floor(Math.log10(absTarget));
+    if (maxPlace < integerDigits) maxPlace = integerDigits;
+  }
+
+  const targetStr = String(targetNumber);
+  if (targetStr.includes('.')) {
+    const decimalLen = targetStr.split('.')[1]?.length ?? 0;
+    if (minPlace > -decimalLen) minPlace = -decimalLen;
+  }
+
+  return { minPlace, maxPlace };
+}
+
+/**
+ * Select N distinct targetNumbers from the pool and build one
+ * PlaceValueChartChallenge per number.
+ */
+function buildChallenges(
+  challengeType: string,
+  count: number,
+  manifestRange?: { min: number; max: number },
+): PlaceValueChartChallenge[] {
+  const profile = MODE_PROFILES[challengeType] ?? MODE_PROFILES.compare;
+  const range = manifestRange ?? profile.numberRange;
+
+  const pool = createNumberPool(range, {
+    count,
+    integers: true,
+    unique: true,
+    minNonZeroDigits: 2,
+  });
+  const numbers = pool?.numbers ?? [];
+
+  // Pad if the pool came up short (e.g., very tight range).
+  while (numbers.length < count) {
+    const fill = Math.floor(range.min + Math.random() * (range.max - range.min + 1));
+    if (!numbers.includes(fill)) numbers.push(fill);
+    else if (numbers.length === 0) {
+      numbers.push(range.min);
+      break;
+    } else {
+      break;
+    }
+  }
+
+  return numbers.slice(0, count).map((targetNumber, idx) => {
+    const { minPlace, maxPlace } = computePlaceRange(
+      targetNumber,
+      profile.minPlace,
+      profile.maxPlace,
+    );
+    const highlightedDigitPlace = selectHighlightedPlace(targetNumber, minPlace, maxPlace);
+    const digit = getDigitAtPlace(targetNumber, highlightedDigitPlace);
+    return {
+      id: `pvc-${idx + 1}`,
+      targetNumber,
+      highlightedDigitPlace,
+      minPlace,
+      maxPlace,
+      placeNameChoices: buildPlaceNameChoices(highlightedDigitPlace, minPlace, maxPlace),
+      digitValueChoices: buildDigitValueChoices(digit, highlightedDigitPlace),
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Main generator
+// ---------------------------------------------------------------------------
+
 export const generatePlaceValueChart = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<PlaceValueChartData> & {
-    /** Target eval mode from the IRT calibration system. */
+  config?: {
     targetEvalMode?: string;
-    /** Structured number range from the manifest — controls grade-appropriate values. */
     numberRange?: { min: number; max: number };
-    difficulty?: string;
-  }
+    /** Number of challenges in this session. Default 3 (pilot per PRD Open Q #1). */
+    instanceCount?: number;
+    showExpandedForm?: boolean;
+    showMultipliers?: boolean;
+  },
 ): Promise<PlaceValueChartData> => {
-  // ---------------------------------------------------------------------------
-  // Eval-mode constraint resolution
-  // ---------------------------------------------------------------------------
+  // ── Eval-mode constraint resolution ──────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'place-value-chart',
     config?.targetEvalMode,
@@ -186,95 +420,36 @@ export const generatePlaceValueChart = async (
   logEvalModeResolution('PlaceValueChart', config?.targetEvalMode, evalConstraint);
 
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(placeValueChartSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
-    : placeValueChartSchema;
+    ? constrainChallengeTypeEnum(placeValueWrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
+    : placeValueWrapperSchema;
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
-  // ── Build number pool (Gemini structured output is near-deterministic — we own the randomness) ──
-  const pool = createNumberPool(config?.numberRange, { minNonZeroDigits: 2 });
-  console.log(`[PlaceValueChart] pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
+  const instanceCount = Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+  );
 
-  const rangeSection = pool?.toPromptSection({
-    extraInstructions: `- Use the FIRST number (${pool.primary}) as the targetNumber for this activity.\n- Infer minPlace/maxPlace from the number (e.g., 3-digit → maxPlace 2, 4-digit → maxPlace 3, etc.)`,
-  }) ?? '';
-
+  // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
-Create a MULTI-PHASE place value chart problem for "${topic}" for ${gradeLevel} students.
+Create the wrapper metadata for a MULTI-CHALLENGE place value chart session for "${topic}" (${gradeLevel}).
 
-PROBLEM FLOW (three phases):
-  Phase 1: "Identify the Place" — student picks the place name of a highlighted digit (MC)
-  Phase 2: "Find the Value" — student picks the value of that digit (MC)
-  Phase 3: "Build the Number" — student enters every digit in the place value chart
+This session walks the student through ${instanceCount} DIFFERENT numbers. Each number runs through a 3-phase flow:
+  Phase 1: "Identify the Place" — pick the place name of a highlighted digit
+  Phase 2: "Find the Value"     — pick the value of that digit
+  Phase 3: "Build the Number"   — enter each digit in the chart
 
 ${challengeTypeSection}
 
-${rangeSection}
+DO NOT include specific numbers in the title or description — the system picks ${instanceCount} numbers locally and the same session covers all of them.
 
-${!evalConstraint && !pool ? `
-GRADE-APPROPRIATE TARGET NUMBERS (use when no explicit range is provided):
-- Grades K-1: 2-digit whole numbers
-  -> minPlace: 0, maxPlace: 1
-- Grades 1-2: 2- to 3-digit whole numbers
-  -> minPlace: 0, maxPlace: 2
-- Grades 3-4: 3- to 4-digit whole numbers
-  -> minPlace: 0, maxPlace: 3 or 4
-- Grades 5-6: Include decimals
-  -> minPlace: -2, maxPlace: 4 or 5
-- Grades 7-8: Larger numbers with decimals
-  -> minPlace: -3, maxPlace: 5 or 6
-` : ''}
+GUIDELINES:
+- title: short and number-free, e.g., "Place Value Practice — Grade 3" or "Build & Explore Place Value"
+- description: 1-2 sentences warmly introducing the multi-challenge session and the three phases. No specific numbers.
+- showExpandedForm: true (recommended)
+- showMultipliers: true for K-4, optional for 5+
+- gradeLevel: echo back "${gradeLevel}"
 
-CHOOSING highlightedDigitPlace:
-- Pick a place whose digit in targetNumber is NON-ZERO
-- Prefer interior places (hundreds, tens) over edge places for interest
-- Example: for 3,472, highlight the hundreds place (highlightedDigitPlace: 2, digit = 4)
-
-GENERATING placeNameChoices (Phase 1 MC):
-- Exactly 4 options, one correct
-- Correct answer: the place name for highlightedDigitPlace (e.g., "Hundreds")
-- Distractors: 3 other place names from adjacent or nearby places
-- Shuffle order so correct answer is not always first
-- Example: ["Tens", "Hundreds", "Thousands", "Ones"]
-
-GENERATING digitValueChoices (Phase 2 MC):
-- Exactly 4 options, one correct
-- Correct answer: digit * 10^highlightedDigitPlace (e.g., 4 * 100 = 400)
-- Distractors: the same digit multiplied by neighboring powers of 10
-- Example for digit 4 at hundreds place: [4, 40, 400, 4000]
-- Shuffle order so correct answer is not always first
-
-${config?.targetNumber ? `
-SPECIFIED TARGET: ${config.targetNumber}
-Use this exact number as the targetNumber. Adjust minPlace, maxPlace, and highlightedDigitPlace to match.
-` : ''}
-${config?.highlightedDigitPlace !== undefined ? `
-SPECIFIED HIGHLIGHTED PLACE: ${config.highlightedDigitPlace}
-Use this exact place position. Ensure the digit at this place in targetNumber is non-zero.
-` : ''}
-
-ADDITIONAL GUIDELINES:
-- title: Use format like "Explore [number]" or "Place Value Challenge: [number]"
-- description: Introduce the challenge warmly, referencing the target number
-- showExpandedForm: true (helps students see the breakdown during build phase)
-- showMultipliers: true for grades K-4, optional for 5+
-- gradeLevel: echo back the grade level string
-EXAMPLE OUTPUT (structure only${pool?.numbers ? ` — use targetNumber ${pool?.numbers[0]} as specified above` : ''}):
-{
-  "challengeType": "compare",
-  "title": "Explore ${pool?.numbers?.[0] ?? '[your number]'}",
-  "description": "Let's explore ${pool?.numbers?.[0] ?? '[your number]'}! Which place is the highlighted digit in? What is it worth? Then build the whole number!",
-  "targetNumber": ${pool?.numbers?.[0] ?? 3472},
-  "highlightedDigitPlace": 2,
-  "minPlace": 0,
-  "maxPlace": 3,
-  "showExpandedForm": true,
-  "showMultipliers": true,
-  "gradeLevel": "Grade 3",
-  "placeNameChoices": ["Tens", "Hundreds", "Thousands", "Ones"],
-  "digitValueChoices": [4, 40, 400, 4000]
-}
-
-Return a complete multi-phase place value chart problem.
+Return ONLY the wrapper metadata in the response schema.
 `;
 
   const result = await ai.models.generateContent({
@@ -283,174 +458,35 @@ Return a complete multi-phase place value chart problem.
     config: {
       temperature: 0.9,
       topP: 0.95,
-      thinkingConfig: {
-        thinkingLevel: ThinkingLevel.LOW,
-      },
+      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
       responseMimeType: "application/json",
-      responseSchema: activeSchema
+      responseSchema: activeSchema,
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
-
-  if (!data) {
-    throw new Error('No valid place value chart data returned from Gemini API');
+  const wrapper = result.text ? JSON.parse(result.text) : null;
+  if (!wrapper) {
+    throw new Error('No valid place value chart wrapper returned from Gemini API');
   }
 
-  // ── Apply explicit config overrides from manifest ──
-  if (config) {
-    if (config.targetNumber !== undefined) data.targetNumber = config.targetNumber;
-    if (config.highlightedDigitPlace !== undefined) data.highlightedDigitPlace = config.highlightedDigitPlace;
-    if (config.minPlace !== undefined) data.minPlace = config.minPlace;
-    if (config.maxPlace !== undefined) data.maxPlace = config.maxPlace;
-    if (config.showExpandedForm !== undefined) data.showExpandedForm = config.showExpandedForm;
-    if (config.showMultipliers !== undefined) data.showMultipliers = config.showMultipliers;
-    if (config.gradeLevel !== undefined) data.gradeLevel = config.gradeLevel;
-    if (config.placeNameChoices !== undefined) data.placeNameChoices = config.placeNameChoices;
-    if (config.digitValueChoices !== undefined) data.digitValueChoices = config.digitValueChoices;
-  }
+  // ── Local: build challenges array ─────────────────────────────────
+  const challengeType: string = wrapper.challengeType || evalConstraint?.allowedTypes[0] || 'compare';
+  const challenges = buildChallenges(challengeType, instanceCount, config?.numberRange);
 
-  // ── Validation & defaults ──
+  console.log('🔢 Place Value Chart generated:', {
+    topic,
+    challengeType,
+    instanceCount: challenges.length,
+    numbers: challenges.map(c => c.targetNumber),
+  });
 
-  // Ensure targetNumber is a valid number
-  if (typeof data.targetNumber !== 'number' || isNaN(data.targetNumber)) {
-    data.targetNumber = 347; // safe fallback
-  }
-
-  // Ensure gradeLevel is set
-  if (!data.gradeLevel) {
-    data.gradeLevel = gradeLevel;
-  }
-
-  // Ensure minPlace and maxPlace are numbers and cover the targetNumber
-  if (typeof data.minPlace !== 'number') data.minPlace = 0;
-  if (typeof data.maxPlace !== 'number') data.maxPlace = 3;
-
-  // Calculate the actual range needed by targetNumber
-  const absTarget = Math.abs(data.targetNumber);
-  const integerDigits = absTarget >= 1 ? Math.floor(Math.log10(absTarget)) : 0;
-  if (data.maxPlace < integerDigits) {
-    data.maxPlace = integerDigits;
-  }
-
-  // Check for decimal places needed
-  const targetStr = String(data.targetNumber);
-  if (targetStr.includes('.')) {
-    const decimalPart = targetStr.split('.')[1];
-    const decPlaces = decimalPart ? decimalPart.length : 0;
-    if (data.minPlace > -decPlaces) {
-      data.minPlace = -decPlaces;
-    }
-  }
-
-  // Ensure highlightedDigitPlace is within [minPlace, maxPlace]
-  if (typeof data.highlightedDigitPlace !== 'number') {
-    data.highlightedDigitPlace = 0;
-  }
-  if (data.highlightedDigitPlace < data.minPlace) {
-    data.highlightedDigitPlace = data.minPlace;
-  }
-  if (data.highlightedDigitPlace > data.maxPlace) {
-    data.highlightedDigitPlace = data.maxPlace;
-  }
-
-  // Ensure the digit at highlightedDigitPlace is non-zero; if not, find one that is
-  const highlightedDigit = getDigitAtPlace(data.targetNumber, data.highlightedDigitPlace);
-  if (highlightedDigit === 0) {
-    // Search for a non-zero digit, preferring middle places
-    let found = false;
-    for (let offset = 1; offset <= data.maxPlace - data.minPlace; offset++) {
-      for (const dir of [1, -1]) {
-        const candidate = data.highlightedDigitPlace + offset * dir;
-        if (candidate >= data.minPlace && candidate <= data.maxPlace) {
-          if (getDigitAtPlace(data.targetNumber, candidate) !== 0) {
-            data.highlightedDigitPlace = candidate;
-            found = true;
-            break;
-          }
-        }
-      }
-      if (found) break;
-    }
-  }
-
-  // Recompute the correct digit and value after potential adjustment
-  const finalDigit = getDigitAtPlace(data.targetNumber, data.highlightedDigitPlace);
-  const correctValue = finalDigit * Math.pow(10, data.highlightedDigitPlace);
-  const correctPlaceName = PLACE_NAMES[data.highlightedDigitPlace] || `10^${data.highlightedDigitPlace}`;
-
-  // Validate placeNameChoices: must be an array of 4 strings containing the correct answer
-  if (
-    !Array.isArray(data.placeNameChoices) ||
-    data.placeNameChoices.length !== 4 ||
-    !data.placeNameChoices.includes(correctPlaceName)
-  ) {
-    // Rebuild placeNameChoices from scratch
-    const allPlaces = Object.entries(PLACE_NAMES)
-      .map(([k, v]) => ({ place: Number(k), name: v }))
-      .filter(p => p.place >= data.minPlace && p.place <= data.maxPlace && p.name !== correctPlaceName);
-
-    // Pick 3 distractors, preferring nearby places
-    allPlaces.sort((a, b) =>
-      Math.abs(a.place - data.highlightedDigitPlace) - Math.abs(b.place - data.highlightedDigitPlace)
-    );
-    const distractors = allPlaces.slice(0, 3).map(p => p.name);
-
-    // If we don't have enough distractors, pull from outside range
-    while (distractors.length < 3) {
-      const fallbacks = Object.values(PLACE_NAMES).filter(
-        n => n !== correctPlaceName && !distractors.includes(n)
-      );
-      if (fallbacks.length > 0) {
-        distractors.push(fallbacks[0]);
-      } else {
-        break;
-      }
-    }
-
-    // Shuffle: insert correct answer at random position
-    const choices = [...distractors.slice(0, 3)];
-    const insertIdx = Math.floor(Math.random() * 4);
-    choices.splice(insertIdx, 0, correctPlaceName);
-    data.placeNameChoices = choices;
-  }
-
-  // Validate digitValueChoices: must be an array of 4 numbers containing the correct value
-  if (
-    !Array.isArray(data.digitValueChoices) ||
-    data.digitValueChoices.length !== 4 ||
-    !data.digitValueChoices.includes(correctValue)
-  ) {
-    // Rebuild: use the digit at neighboring powers of 10
-    const distractorValues: number[] = [];
-    for (const offset of [-1, 1, -2, 2, -3, 3]) {
-      const candidatePlace = data.highlightedDigitPlace + offset;
-      const val = finalDigit * Math.pow(10, candidatePlace);
-      if (val !== correctValue && val > 0 && !distractorValues.includes(val)) {
-        distractorValues.push(val);
-      }
-      if (distractorValues.length >= 3) break;
-    }
-    // If still short, add face value and simple multiples
-    if (!distractorValues.includes(finalDigit) && finalDigit !== correctValue) {
-      distractorValues.push(finalDigit);
-    }
-    while (distractorValues.length < 3) {
-      const filler = correctValue * (distractorValues.length + 2);
-      if (!distractorValues.includes(filler) && filler !== correctValue) {
-        distractorValues.push(filler);
-      }
-    }
-
-    const valChoices = [...distractorValues.slice(0, 3)];
-    const insertIdx = Math.floor(Math.random() * 4);
-    valChoices.splice(insertIdx, 0, correctValue);
-    data.digitValueChoices = valChoices;
-  }
-
-  // Default optional booleans
-  if (data.showExpandedForm === undefined) data.showExpandedForm = true;
-  if (data.showMultipliers === undefined) data.showMultipliers = true;
-
-  return data as PlaceValueChartData;
+  return {
+    title: wrapper.title || 'Place Value Practice',
+    description: wrapper.description || `Explore place values across ${instanceCount} different numbers.`,
+    challenges,
+    challengeType: challengeType as PlaceValueChartData['challengeType'],
+    showExpandedForm: config?.showExpandedForm ?? wrapper.showExpandedForm ?? true,
+    showMultipliers: config?.showMultipliers ?? wrapper.showMultipliers ?? true,
+    gradeLevel: wrapper.gradeLevel || gradeLevel,
+  };
 };

@@ -152,7 +152,7 @@ function NumberLineViz({ operand1, operand2, operation, hopsRevealed }: {
             />
             <circle cx={x2} cy={lineY} r={4} fill="#60a5fa" />
             <text x={midX} y={lineY - 38} textAnchor="middle" fontSize={9} fill="#93c5fd">
-              +1
+              {direction === -1 ? '−1' : '+1'}
             </text>
           </g>
         );

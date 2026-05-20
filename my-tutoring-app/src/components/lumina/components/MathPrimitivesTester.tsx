@@ -78,64 +78,149 @@ interface MathPrimitivesTesterProps {
 type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
-const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
-  { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊', topic: 'Understanding fractions' },
-  { value: 'fraction-circles', label: 'Fraction Circles', icon: '🥧', topic: 'Understanding fractions' },
-  { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢', topic: 'Place value and decimal numbers' },
-  { value: 'area-model', label: 'Area Model', icon: '📐', topic: 'Multi-digit multiplication' },
-  { value: 'array-grid', label: 'Array / Grid', icon: '⊞', topic: 'Introduction to multiplication' },
-  { value: 'factor-tree', label: 'Factor Tree', icon: '🌳', topic: 'Prime factorization' },
-  { value: 'bar-model', label: 'Bar Model', icon: '📊', topic: 'Reading and building bar graphs' },
-  { value: 'ratio-table', label: 'Ratio Table', icon: '⚖️', topic: 'Equivalent ratios and proportions' },
-  { value: 'double-number-line', label: 'Double Number Line', icon: '↔️', topic: 'Unit rates and proportional relationships' },
-  { value: 'percent-bar', label: 'Percent Bar', icon: '📈', topic: 'Percent concepts and calculations' },
-  { value: 'tape-diagram', label: 'Tape Diagram', icon: '📏', topic: 'Part-part-whole word problems' },
-  { value: 'balance-scale', label: 'Balance / Scale Model', icon: '⚖️', topic: 'Solving equations' },
-  { value: 'function-machine', label: 'Function Machine', icon: '⚙️', topic: 'Input-output patterns and functions' },
-  { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍', topic: 'Plotting ordered pairs' },
-  { value: 'slope-triangle', label: 'Slope Triangle', icon: '📐', topic: 'Understanding slope with rise and run' },
-  { value: 'systems-equations-visualizer', label: 'Systems of Equations', icon: '📊', topic: 'Solving systems of equations' },
-  { value: 'matrix-display', label: 'Matrix Display', icon: '▦', topic: 'Matrix operations and transformations' },
-  { value: 'dot-plot', label: 'Dot Plot', icon: '⚬', topic: 'Mean, median, and mode with data sets' },
-  { value: 'histogram', label: 'Histogram', icon: '📊', topic: 'Distribution shapes and frequency analysis' },
-  { value: 'two-way-table', label: 'Two-Way Table', icon: '⊞', topic: 'Categorical data and conditional probability' },
-  { value: 'ten-frame', label: 'Ten Frame', icon: '🔟', topic: 'Building numbers, subitizing, and making ten' },
-  { value: 'counting-board', label: 'Counting Board', icon: '🧸', topic: 'Counting objects, subitizing, and one-to-one correspondence' },
-  { value: 'pattern-builder', label: 'Pattern Builder', icon: '🔁', topic: 'Pattern recognition, extension, and algebraic thinking' },
-  { value: 'practice-problem', label: 'Practice Problem', icon: '✏️', topic: 'Solve a multi-step linear equation' },
-  { value: 'skip-counting-runner', label: 'Skip Counting Runner', icon: '🐸', topic: 'Skip counting, multiplication foundations, and number patterns' },
-  { value: 'regrouping-workbench', label: 'Regrouping Workbench', icon: '🧮', topic: 'Addition and subtraction with carrying and borrowing' },
-  { value: 'multiplication-explorer', label: 'Multiplication Explorer', icon: '✖️', topic: 'Multiplication through multiple representations' },
-  { value: 'measurement-tools', label: 'Measurement Tools', icon: '📏', topic: 'Length, weight, capacity, and temperature measurement' },
-  { value: 'shape-builder', label: 'Shape Builder', icon: '📐', topic: 'Identifying quadrilaterals' },
-  { value: 'number-line' as PrimitiveType, label: 'Number Line', icon: '📏', topic: 'Addition and subtraction on a number line' },
-  { value: 'base-ten-blocks', label: 'Base Ten Blocks', icon: '🧱', topic: 'Place value and regrouping' },
-  { value: 'comparison-builder', label: 'Comparison Builder', icon: '🐻', topic: 'Compare numbers 1-10' },
-  { value: 'number-sequencer', label: 'Number Sequencer', icon: '🔢', topic: 'Number sequences and counting' },
-  { value: 'number-bond', label: 'Number Bond', icon: '🔗', topic: 'number bonds' },
-  { value: 'addition-subtraction-scene', label: 'Addition & Subtraction Scene', icon: '🎭', topic: 'Addition and subtraction stories within 10' },
-  { value: 'ordinal-line', label: 'Ordinal Line', icon: '📏', topic: 'Ordinal positions' },
-  { value: 'sorting-station', label: 'Sorting Station', icon: '📦', topic: 'sorting shapes and colors' },
-  { value: 'shape-sorter', label: 'Shape Sorter', icon: '📐', topic: 'Shapes and Geometry' },
-  { value: '3d-shape-explorer', label: '3D Shape Explorer', icon: '🔷', topic: '3D shapes for kids' },
-  { value: 'shape-tracer', label: 'Shape Tracer', icon: '✏️', topic: 'basic shapes' },
-  { value: 'number-tracer', label: 'Number Tracer', icon: '✏️', topic: 'writing numbers 0 to 10' },
-  { value: 'math-fact-fluency', label: 'Math Fact Fluency', icon: '⚡', topic: 'Addition facts within 5' },
-  { value: 'strategy-picker', label: 'Strategy Picker', icon: '🎯', topic: 'Addition strategies within 10' },
-  { value: 'hundreds-chart', label: 'Hundreds Chart', icon: '⊞', topic: 'Skip counting by 5s' },
-  { value: 'length-lab', label: 'Length Lab', icon: '📏', topic: 'Measuring and comparing lengths' },
-  { value: 'analog-clock', label: 'Analog Clock', icon: '🕐', topic: 'Reading and setting time on analog clocks' },
-  { value: 'coin-counter', label: 'Coin Counter', icon: '🪙', topic: 'coins and money' },
-  { value: 'time-sequencer', label: 'Time Sequencer', icon: '🕐', topic: 'daily routines and time' },
-  { value: 'spatial-scene', label: 'Spatial Scene', icon: '🗺️', topic: 'spatial positions and directions' },
-  { value: 'shape-composer', label: 'Shape Composer', icon: '🧩', topic: 'composing and decomposing shapes' },
-  { value: 'net-folder', label: 'Net Folder', icon: '📐', topic: '3D Shapes & Surface Area' },
-  { value: 'equation-builder', label: 'Equation Builder', icon: '➕', topic: 'K-2 Equations' },
-  { value: 'compare-objects', label: 'Compare Objects', icon: '🔍', topic: 'Comparing attributes and properties of objects' },
-  { value: 'parameter-explorer', label: 'Parameter Explorer', icon: '🎛️', topic: 'Exploring how parameters affect functions and graphs' },
-  { value: 'equation-workspace', label: 'Equation Workspace', icon: '⚖️', topic: 'Equation Workspace' },
-  { value: 'function-sketch', label: 'Function Sketch', icon: '✏️', topic: 'Trigonometric functions' },
+type PrimitiveOption = { value: PrimitiveType; label: string; icon: string; topic: string };
+
+// Grouped to mirror a K-12 math curriculum progression. Headers below render as
+// section labels in the sidebar; `PRIMITIVE_OPTIONS` (flattened) is used for
+// value lookups elsewhere in the file.
+const PRIMITIVE_GROUPS: Array<{ label: string; grade: string; items: PrimitiveOption[] }> = [
+  {
+    label: 'Number Sense',
+    grade: 'PreK–K',
+    items: [
+      { value: 'counting-board', label: 'Counting Board', icon: '🧸', topic: 'Counting objects, subitizing, and one-to-one correspondence' },
+      { value: 'ten-frame', label: 'Ten Frame', icon: '🔟', topic: 'Building numbers, subitizing, and making ten' },
+      { value: 'number-sequencer', label: 'Number Sequencer', icon: '🔢', topic: 'Number sequences and counting' },
+      { value: 'number-tracer', label: 'Number Tracer', icon: '✏️', topic: 'writing numbers 0 to 10' },
+      { value: 'number-bond', label: 'Number Bond', icon: '🔗', topic: 'number bonds' },
+      { value: 'ordinal-line', label: 'Ordinal Line', icon: '📏', topic: 'Ordinal positions' },
+      { value: 'sorting-station', label: 'Sorting Station', icon: '📦', topic: 'sorting shapes and colors' },
+      { value: 'comparison-builder', label: 'Comparison Builder', icon: '🐻', topic: 'Compare numbers 1-10' },
+      { value: 'compare-objects', label: 'Compare Objects', icon: '🔍', topic: 'Comparing attributes and properties of objects' },
+    ],
+  },
+  {
+    label: 'Addition & Subtraction',
+    grade: 'K–2',
+    items: [
+      { value: 'addition-subtraction-scene', label: 'Addition & Subtraction Scene', icon: '🎭', topic: 'Addition and subtraction stories within 10' },
+      { value: 'number-line' as PrimitiveType, label: 'Number Line', icon: '📏', topic: 'Addition and subtraction on a number line' },
+      { value: 'math-fact-fluency', label: 'Math Fact Fluency', icon: '⚡', topic: 'Addition facts within 5' },
+      { value: 'strategy-picker', label: 'Strategy Picker', icon: '🎯', topic: 'Addition strategies within 10' },
+      { value: 'equation-builder', label: 'Equation Builder', icon: '➕', topic: 'K-2 Equations' },
+      { value: 'hundreds-chart', label: 'Hundreds Chart', icon: '⊞', topic: 'Skip counting by 5s' },
+      { value: 'skip-counting-runner', label: 'Skip Counting Runner', icon: '🐸', topic: 'Skip counting, multiplication foundations, and number patterns' },
+    ],
+  },
+  {
+    label: 'Place Value',
+    grade: '1–3',
+    items: [
+      { value: 'base-ten-blocks', label: 'Base Ten Blocks', icon: '🧱', topic: 'Place value and regrouping' },
+      { value: 'place-value-chart', label: 'Place Value Chart', icon: '🔢', topic: 'Place value and decimal numbers' },
+      { value: 'regrouping-workbench', label: 'Regrouping Workbench', icon: '🧮', topic: 'Addition and subtraction with carrying and borrowing' },
+    ],
+  },
+  {
+    label: 'Multiplication & Division',
+    grade: '3–5',
+    items: [
+      { value: 'array-grid', label: 'Array / Grid', icon: '⊞', topic: 'Introduction to multiplication' },
+      { value: 'multiplication-explorer', label: 'Multiplication Explorer', icon: '✖️', topic: 'Multiplication through multiple representations' },
+      { value: 'area-model', label: 'Area Model', icon: '📐', topic: 'Multi-digit multiplication' },
+      { value: 'factor-tree', label: 'Factor Tree', icon: '🌳', topic: 'Prime factorization' },
+    ],
+  },
+  {
+    label: 'Fractions & Percent',
+    grade: '3–6',
+    items: [
+      { value: 'fraction-bar', label: 'Fraction Bar', icon: '📊', topic: 'Understanding fractions' },
+      { value: 'fraction-circles', label: 'Fraction Circles', icon: '🥧', topic: 'Understanding fractions' },
+      { value: 'percent-bar', label: 'Percent Bar', icon: '📈', topic: 'Percent concepts and calculations' },
+    ],
+  },
+  {
+    label: 'Patterns & Functions',
+    grade: '2–8',
+    items: [
+      { value: 'pattern-builder', label: 'Pattern Builder', icon: '🔁', topic: 'Pattern recognition, extension, and algebraic thinking' },
+      { value: 'function-machine', label: 'Function Machine', icon: '⚙️', topic: 'Input-output patterns and functions' },
+    ],
+  },
+  {
+    label: 'Ratios & Proportions',
+    grade: '6–7',
+    items: [
+      { value: 'ratio-table', label: 'Ratio Table', icon: '⚖️', topic: 'Equivalent ratios and proportions' },
+      { value: 'double-number-line', label: 'Double Number Line', icon: '↔️', topic: 'Unit rates and proportional relationships' },
+      { value: 'tape-diagram', label: 'Tape Diagram', icon: '📏', topic: 'Part-part-whole word problems' },
+      { value: 'bar-model', label: 'Bar Model', icon: '📊', topic: 'Reading and building bar graphs' },
+    ],
+  },
+  {
+    label: 'Equations & Algebra',
+    grade: '6–9',
+    items: [
+      { value: 'balance-scale', label: 'Balance / Scale Model', icon: '⚖️', topic: 'Solving equations' },
+      { value: 'equation-workspace', label: 'Equation Workspace', icon: '⚖️', topic: 'Equation Workspace' },
+      { value: 'practice-problem', label: 'Practice Problem', icon: '✏️', topic: 'Solve a multi-step linear equation' },
+    ],
+  },
+  {
+    label: 'Coordinate Plane & Functions',
+    grade: '8–12',
+    items: [
+      { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍', topic: 'Plotting ordered pairs' },
+      { value: 'slope-triangle', label: 'Slope Triangle', icon: '📐', topic: 'Understanding slope with rise and run' },
+      { value: 'systems-equations-visualizer', label: 'Systems of Equations', icon: '📊', topic: 'Solving systems of equations' },
+      { value: 'parameter-explorer', label: 'Parameter Explorer', icon: '🎛️', topic: 'Exploring how parameters affect functions and graphs' },
+      { value: 'function-sketch', label: 'Function Sketch', icon: '✏️', topic: 'Trigonometric functions' },
+      { value: 'matrix-display', label: 'Matrix Display', icon: '▦', topic: 'Matrix operations and transformations' },
+    ],
+  },
+  {
+    label: '2D Geometry',
+    grade: 'K–5',
+    items: [
+      { value: 'shape-tracer', label: 'Shape Tracer', icon: '✏️', topic: 'basic shapes' },
+      { value: 'shape-sorter', label: 'Shape Sorter', icon: '📐', topic: 'Shapes and Geometry' },
+      { value: 'shape-builder', label: 'Shape Builder', icon: '📐', topic: 'Identifying quadrilaterals' },
+      { value: 'shape-composer', label: 'Shape Composer', icon: '🧩', topic: 'composing and decomposing shapes' },
+      { value: 'spatial-scene', label: 'Spatial Scene', icon: '🗺️', topic: 'spatial positions and directions' },
+    ],
+  },
+  {
+    label: '3D Geometry',
+    grade: '3–8',
+    items: [
+      { value: '3d-shape-explorer', label: '3D Shape Explorer', icon: '🔷', topic: '3D shapes for kids' },
+      { value: 'net-folder', label: 'Net Folder', icon: '📐', topic: '3D Shapes & Surface Area' },
+    ],
+  },
+  {
+    label: 'Measurement, Time & Money',
+    grade: 'K–5',
+    items: [
+      { value: 'length-lab', label: 'Length Lab', icon: '📏', topic: 'Measuring and comparing lengths' },
+      { value: 'measurement-tools', label: 'Measurement Tools', icon: '📏', topic: 'Length, weight, capacity, and temperature measurement' },
+      { value: 'analog-clock', label: 'Analog Clock', icon: '🕐', topic: 'Reading and setting time on analog clocks' },
+      { value: 'time-sequencer', label: 'Time Sequencer', icon: '🕐', topic: 'daily routines and time' },
+      { value: 'coin-counter', label: 'Coin Counter', icon: '🪙', topic: 'coins and money' },
+    ],
+  },
+  {
+    label: 'Data & Statistics',
+    grade: '6–12',
+    items: [
+      { value: 'dot-plot', label: 'Dot Plot', icon: '⚬', topic: 'Mean, median, and mode with data sets' },
+      { value: 'histogram', label: 'Histogram', icon: '📊', topic: 'Distribution shapes and frequency analysis' },
+      { value: 'two-way-table', label: 'Two-Way Table', icon: '⊞', topic: 'Categorical data and conditional probability' },
+    ],
+  },
 ];
+
+const PRIMITIVE_OPTIONS: PrimitiveOption[] = PRIMITIVE_GROUPS.flatMap(g => g.items);
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
   { value: 'toddler', label: 'Toddler' },
@@ -188,18 +273,17 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'place-value-chart':
-      // PlaceValueChart handles its own evaluation internally — do NOT pass onEvaluationSubmit
-      // to avoid double submission.  The generator now produces PlaceValueChartData with:
-      //   targetNumber, highlightedDigitPlace, minPlace, maxPlace, etc.
+      // PlaceValueChart now produces multi-challenge sessions (3 numbers × 3 phases each).
+      // Evaluation flows through onEvaluationSubmit per PRD §6a #9.
       return (
         <PlaceValueChart
           data={{
             ...(data as Parameters<typeof PlaceValueChart>[0]['data']),
-            // Evaluation integration props (no onEvaluationSubmit)
             instanceId: `place-value-chart-${Date.now()}`,
             skillId: 'math-place-value',
             subskillId: 'decimal-numbers',
             objectiveId: 'understand-place-value',
+            onEvaluationSubmit,
           }}
         />
       );
@@ -233,7 +317,19 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'area-model':
-      return <AreaModel data={data as Parameters<typeof AreaModel>[0]['data']} />;
+      // AreaModel supports evaluation - pass the props
+      return (
+        <AreaModel
+          data={{
+            ...(data as Parameters<typeof AreaModel>[0]['data']),
+            instanceId: `area-model-${Date.now()}`,
+            skillId: 'math-multiplication',
+            subskillId: 'area-model-multiplication',
+            objectiveId: 'multiply-with-area-models',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'array-grid':
       // ArrayGrid supports evaluation - pass the props
       return (
@@ -269,11 +365,36 @@ const PrimitiveRenderer: React.FC<{
     case 'percent-bar':
       return <PercentBar data={data as Parameters<typeof PercentBar>[0]['data']} />;
     case 'tape-diagram':
-      return <TapeDiagram data={data as Parameters<typeof TapeDiagram>[0]['data']} />;
+      // TapeDiagram supports evaluation - pass the props
+      return (
+        <TapeDiagram
+          data={{
+            ...(data as Parameters<typeof TapeDiagram>[0]['data']),
+            instanceId: `tape-diagram-${Date.now()}`,
+            skillId: 'math-word-problems',
+            subskillId: 'tape-diagram-modeling',
+            objectiveId: 'model-word-problems-with-tape-diagrams',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'balance-scale':
       return <BalanceScale data={data as Parameters<typeof BalanceScale>[0]['data']} />;
     case 'function-machine':
-      return <FunctionMachine data={data as Parameters<typeof FunctionMachine>[0]['data']} />;
+      // FunctionMachine produces multi-challenge sessions (3-6 rules of one mode).
+      // Evaluation flows through onEvaluationSubmit per PRD §6a #9.
+      return (
+        <FunctionMachine
+          data={{
+            ...(data as Parameters<typeof FunctionMachine>[0]['data']),
+            instanceId: `function-machine-${Date.now()}`,
+            skillId: 'math-functions',
+            subskillId: 'function-rules',
+            objectiveId: 'identify-function-rules',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'coordinate-graph':
       return <CoordinateGraph data={data as CoordinateGraphData} />;
     case 'slope-triangle':
@@ -802,23 +923,25 @@ const EvaluationResultsPanel: React.FC = () => {
                 {/* Show FractionBar-specific metrics */}
                 {result.metrics.type === 'fraction-bar' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
-                    <span>All Phases: {result.metrics.allPhasesCompleted ? 'Complete' : 'Incomplete'}</span>
-                    <span>Target: {result.metrics.targetFraction || 'N/A'}</span>
-                    <span>Numerator: {result.metrics.numeratorCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.numeratorAttempts} attempt{result.metrics.numeratorAttempts !== 1 ? 's' : ''})</span>
-                    <span>Denominator: {result.metrics.denominatorCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.denominatorAttempts} attempt{result.metrics.denominatorAttempts !== 1 ? 's' : ''})</span>
-                    <span>Build: {result.metrics.buildCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.buildAttempts} attempt{result.metrics.buildAttempts !== 1 ? 's' : ''})</span>
-                    <span>Selected: {result.metrics.selectedFraction}</span>
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
                   </div>
                 )}
                 {/* Show PlaceValueChart-specific metrics */}
                 {result.metrics.type === 'place-value-chart' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
-                    <span>All Phases: {result.metrics.allPhasesCompleted ? 'Complete' : 'Incomplete'}</span>
-                    <span>Place ID: {result.metrics.placeIdentifyCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.placeAttempts} attempt{result.metrics.placeAttempts !== 1 ? 's' : ''})</span>
-                    <span>Value ID: {result.metrics.valueIdentifyCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.valueAttempts} attempt{result.metrics.valueAttempts !== 1 ? 's' : ''})</span>
-                    <span>Build: {result.metrics.isCorrect ? 'Correct' : 'Incorrect'} ({result.metrics.buildAttempts} attempt{result.metrics.buildAttempts !== 1 ? 's' : ''})</span>
-                    <span>Final Value: {result.metrics.finalValue}</span>
-                    <span>Changes: {result.metrics.digitChanges}</span>
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
                   </div>
                 )}
                 {/* Show FactorTree-specific metrics */}
@@ -837,6 +960,54 @@ const EvaluationResultsPanel: React.FC = () => {
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
                     <span>Mode: {result.metrics.evalMode}</span>
                     <span>Style: {result.metrics.graphStyle}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show TapeDiagram-specific metrics */}
+                {result.metrics.type === 'tape-diagram' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show AreaModel-specific metrics */}
+                {result.metrics.type === 'area-model' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show FunctionMachine-specific metrics */}
+                {result.metrics.type === 'function-machine' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show ArrayGrid-specific metrics */}
+                {result.metrics.type === 'array-grid' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
                     <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
                     <span>First try: {result.metrics.firstTryCount}</span>
                     <span>Total attempts: {result.metrics.attemptsCount}</span>
@@ -933,65 +1104,77 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
         console.log('Competency updates received:', updates);
       }}
     >
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="mb-8 text-center">
-        <button
-          onClick={onBack}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-full border border-slate-600 transition-all"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to Home
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/30 to-slate-950">
+      {/* Header bar */}
+      <div className="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-20">
+        <div className="max-w-[1920px] mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="text-slate-400 hover:text-white transition-colors text-sm"
+            >
+              &larr; Back
+            </button>
+            <div className="h-6 w-px bg-slate-700" />
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <span>🧮</span>
+              <span>Math Primitives Tester</span>
+            </h1>
+            <span className="hidden md:inline text-xs text-slate-500 ml-2">
+              AI-generated math visualizations for any grade level
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Title */}
-      <div className="text-center mb-8">
-        <h2 className="text-4xl font-bold text-white mb-2">Math Primitives Tester</h2>
-        <p className="text-slate-400">AI-generated math visualizations for any grade level</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto px-4">
-        {/* Left Column: Controls */}
-        <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 h-fit">
-          <h3 className="text-2xl font-bold text-white mb-6">Generate</h3>
-
+      {/* Main layout: narrow sidebar + flex-1 main */}
+      <div className="flex h-[calc(100vh-73px)]">
+        {/* Sidebar — controls */}
+        <div className="w-[300px] border-r border-slate-800 bg-slate-900/30 backdrop-blur p-4 overflow-y-auto flex-shrink-0 space-y-5">
           {/* Primitive Selector */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-300 mb-3">Select Primitive</label>
-            <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2">
-              {PRIMITIVE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => {
-                    setSelectedPrimitive(option.value);
-                    setSelectedEvalMode(null);
-                    setGeneratedData(null);
-                  }}
-                  className={`p-3 rounded-lg border transition-all text-left ${
-                    selectedPrimitive === option.value
-                      ? 'border-purple-500 bg-purple-500/20 text-purple-300'
-                      : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{option.icon}</span>
-                    <span className="text-sm font-medium">{option.label}</span>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Primitive</label>
+            <div className="space-y-1 max-h-[40vh] overflow-y-auto pr-1">
+              {PRIMITIVE_GROUPS.map((group, groupIdx) => (
+                <div key={group.label} className="space-y-1">
+                  <div className={`px-1 pb-1 flex items-baseline justify-between gap-2 ${groupIdx > 0 ? 'pt-3' : ''}`}>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      {group.label}
+                    </span>
+                    <span className="text-[10px] text-slate-600 tabular-nums">{group.grade}</span>
                   </div>
-                </button>
+                  {group.items.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSelectedPrimitive(option.value);
+                        setSelectedEvalMode(null);
+                        setGeneratedData(null);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
+                        selectedPrimitive === option.value
+                          ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                          : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{option.icon}</span>
+                        <span className="text-sm font-medium block truncate flex-1 min-w-0">{option.label}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
 
           {/* Grade Level */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-300 mb-2">Grade Level</label>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Grade Level</label>
             <select
               value={gradeLevel}
               onChange={(e) => setGradeLevel(e.target.value as GradeLevel)}
-              className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none"
+              className="w-full bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               {GRADE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -1001,24 +1184,24 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
 
           {/* Eval Mode Selector — shown when the primitive has IRT eval modes */}
           {evalModes.length > 0 && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
                 Difficulty Mode
-                <span className="text-slate-500 font-normal ml-1">(IRT Calibration)</span>
+                <span className="text-slate-600 font-normal ml-1">(IRT)</span>
               </label>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {/* "Auto" option — no mode constraint */}
                 <button
                   onClick={() => setSelectedEvalMode(null)}
-                  className={`w-full p-3 rounded-lg border transition-all text-left ${
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm ${
                     selectedEvalMode === null
-                      ? 'border-purple-500 bg-purple-500/20 text-purple-300'
-                      : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                      : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Auto (mixed difficulty)</span>
-                    <span className="text-xs text-slate-500">Default</span>
+                    <span className="font-medium">Auto (mixed)</span>
+                    <span className="text-xs opacity-60">Default</span>
                   </div>
                 </button>
                 {/* One button per eval mode */}
@@ -1026,15 +1209,15 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
                   <button
                     key={mode.evalMode}
                     onClick={() => setSelectedEvalMode(mode.evalMode)}
-                    className={`w-full p-3 rounded-lg border transition-all text-left ${
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm ${
                       selectedEvalMode === mode.evalMode
-                        ? 'border-purple-500 bg-purple-500/20 text-purple-300'
-                        : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700'
+                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                        : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{mode.label}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      <span className="font-medium">{mode.label}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                         mode.scaffoldingMode <= 2
                           ? 'bg-green-500/20 text-green-400'
                           : mode.scaffoldingMode <= 4
@@ -1044,7 +1227,7 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
                         Mode {mode.scaffoldingMode} / {'\u03B2'} {mode.beta}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">{mode.description}</p>
+                    <p className="text-xs opacity-60 mt-0.5">{mode.description}</p>
                   </button>
                 ))}
               </div>
@@ -1053,8 +1236,8 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
 
           {/* Error Display */}
           {error && (
-            <div className="mb-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
+              <p className="text-red-400 text-xs">{error}</p>
             </div>
           )}
 
@@ -1062,11 +1245,11 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 disabled:from-slate-700 disabled:to-slate-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isGenerating ? (
               <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Generating...
               </>
             ) : (
@@ -1078,7 +1261,7 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
           </button>
 
           {/* Info */}
-          <p className="mt-4 text-xs text-slate-500 text-center">
+          <p className="text-xs text-slate-500 text-center">
             Gemini will generate a {selectedOption.label.toLowerCase()} appropriate for {gradeLevel} level
             {selectedEvalMode && evalModes.length > 0 && (() => {
               const mode = evalModes.find(m => m.evalMode === selectedEvalMode);
@@ -1091,27 +1274,37 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
           </p>
         </div>
 
-        {/* Right Column: Preview */}
-        <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
-          <h3 className="text-2xl font-bold text-white mb-6">Preview</h3>
+        {/* Main content area — preview + eval results */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+            {/* Preview */}
+            <div className="bg-slate-800/30 rounded-2xl p-6 border border-slate-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Preview</h3>
+                {generatedData != null && (
+                  <span className="text-xs text-slate-500">
+                    {selectedOption.icon} {selectedOption.label}
+                  </span>
+                )}
+              </div>
 
-          {generatedData ? (
-            <PrimitiveRenderer
-              key={generationKey}
-              componentId={selectedPrimitive}
-              data={generatedData}
-              onEvaluationSubmit={handleEvaluationSubmit}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-slate-500">
-              <span className="text-4xl mb-4">{selectedOption.icon}</span>
-              <p>Click "Generate with AI" to create a {selectedOption.label.toLowerCase()}</p>
+              {generatedData ? (
+                <PrimitiveRenderer
+                  key={generationKey}
+                  componentId={selectedPrimitive}
+                  data={generatedData}
+                  onEvaluationSubmit={handleEvaluationSubmit}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-[400px] text-slate-500">
+                  <span className="text-5xl mb-4">{selectedOption.icon}</span>
+                  <p className="text-base">Click <span className="text-purple-400">Generate with AI</span> to create a {selectedOption.label.toLowerCase()}</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Evaluation Results Panel - Third Column */}
-        <div className="lg:col-span-2">
+            {/* Results section */}
+            <div>
           <EvaluationResultsPanel />
 
           {/* Generated Data (Gemini Output) */}
@@ -1207,7 +1400,9 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
               </pre>
             </div>
           )}
+          </div>
         </div>
+      </div>
       </div>
     </div>
     </EvaluationProvider>

@@ -41,7 +41,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"read_blocks": Blocks are pre-placed, student identifies the number they represent. `
       + `Set targetNumber to the correct answer. `
-      + `Instruction asks "What number do these blocks show?" — do NOT reveal the answer. `
+      + `Instruction must be a GENERIC prompt to look at the blocks — for example: `
+      + `"Look at the blocks shown above. What number do they represent?" or `
+      + `"What number is shown by these blocks?". `
+      + `CRITICAL: The instruction must NOT name how many blocks are in each place value. `
+      + `Do NOT say "2 hundreds blocks, 4 tens rods, and 5 ones" — that lets the student `
+      + `compute the answer (2·100+4·10+5=245) from the text alone without looking at the blocks. `
+      + `Do NOT mention specific digit counts ("X hundreds", "Y tens", "Z ones"). `
+      + `Do NOT mention block words ("hundreds blocks", "tens rods", "ones units", "flats", "rods", "units"). `
       + `K-1: numbers 1-20. Grades 2-3: numbers 1-999. Vary digit patterns (e.g., 305 has 0 tens).`,
     schemaDescription: "'read_blocks' (identify number from blocks)",
   },
@@ -227,7 +234,7 @@ K-1 (Kindergarten-Grade 1):
 - interactionMode: 'build' (build numbers from blocks)
 - decimalMode: false
 - Simple challenges: build_number, read_blocks
-- 2-3 challenges max
+- 4-6 challenges
 
 2-3 (Grades 2-3):
 - Numbers 1-999
@@ -235,7 +242,7 @@ K-1 (Kindergarten-Grade 1):
 - interactionMode: 'build' or 'regroup'
 - decimalMode: false
 - Challenges: build_number, read_blocks, regroup, add_with_blocks
-- 3-4 challenges
+- 4-6 challenges
 
 4-5 (Grades 4-5):
 - Numbers up to 9999, may include decimals
@@ -243,13 +250,13 @@ K-1 (Kindergarten-Grade 1):
 - interactionMode: 'operate' or 'decompose'
 - decimalMode: true if topic involves decimals
 - Challenges: all types including add_with_blocks, subtract_with_blocks
-- 3-5 challenges
+- 4-6 challenges
 ` : ''}
 ${!evalConstraint && pool ? `
 INFER GRADE BAND FROM RANGE:
-- Range max <= 20: gradeBand 'K-1', maxPlace 'tens', interactionMode 'build', 2-3 challenges
-- Range max <= 999: gradeBand '2-3', maxPlace 'hundreds', interactionMode 'build' or 'regroup', 3-4 challenges
-- Range max >= 1000: gradeBand '4-5', maxPlace 'thousands', interactionMode 'operate' or 'decompose', 3-5 challenges
+- Range max <= 20: gradeBand 'K-1', maxPlace 'tens', interactionMode 'build', 4-6 challenges
+- Range max <= 999: gradeBand '2-3', maxPlace 'hundreds', interactionMode 'build' or 'regroup', 4-6 challenges
+- Range max >= 1000: gradeBand '4-5', maxPlace 'thousands', interactionMode 'operate' or 'decompose', 4-6 challenges
 ` : ''}
 
 REQUIREMENTS:
@@ -257,7 +264,7 @@ REQUIREMENTS:
 2. Description should explain the place value concept being practiced
 3. Choose a numberValue appropriate for the grade level and topic
 4. Set interactionMode based on the learning objective
-5. Include 2-5 challenges that progress in difficulty
+5. Include 4-6 challenges that progress in difficulty
 6. Each challenge must have a clear instruction, targetNumber, and helpful hint
 7. For operation challenges, include secondNumber
 8. Set gradeBand based on the target audience
@@ -318,6 +325,35 @@ Return the complete base-ten blocks data structure.`;
     secondNumber: c.secondNumber,
     hint: c.hint || 'Think about the place values',
   }));
+
+  // ── BT-3: Strip block-count leaks from read_blocks instructions ──
+  // Gemini often names the decomposition ("2 hundreds, 4 tens, 5 ones") in the
+  // instruction text, letting the student compute the answer without looking at
+  // the blocks. Replace any leaky instruction with a generic prompt.
+  const READ_BLOCKS_LEAK_PATTERNS = [
+    /\d+\s+(hundreds?|tens?|ones?|thousands?)\b/i,           // "2 hundreds", "4 tens", "5 ones"
+    /\b(hundreds?\s+blocks?|tens?\s+rods?|ones?\s+units?|unit\s+cubes?|flats?|rods?)\b/i,
+  ];
+  const GENERIC_READ_BLOCKS_INSTRUCTIONS = [
+    'Look at the blocks shown above. What number do they represent?',
+    'What number is shown by these blocks?',
+    'Count the blocks above. What number do they make?',
+  ];
+  let readBlocksRewriteCount = 0;
+  data.challenges = (data.challenges as BaseTenBlocksChallenge[]).map((c, idx) => {
+    if (c.type !== 'read_blocks') return c;
+    const instr = c.instruction ?? '';
+    const leaks = READ_BLOCKS_LEAK_PATTERNS.some(re => re.test(instr));
+    if (!leaks) return c;
+    readBlocksRewriteCount++;
+    return {
+      ...c,
+      instruction: GENERIC_READ_BLOCKS_INSTRUCTIONS[idx % GENERIC_READ_BLOCKS_INSTRUCTIONS.length],
+    };
+  });
+  if (readBlocksRewriteCount > 0) {
+    console.warn(`[BaseTenBlocks] BT-3 safety net: rewrote ${readBlocksRewriteCount} read_blocks instruction(s) that leaked block counts`);
+  }
 
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {

@@ -10,44 +10,36 @@ import {
 } from '../../../evaluation';
 import type { FunctionMachineMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import CalculatorInput from '../../input-primitives/CalculatorInput';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
 
-export interface MachineConfig {
-  id: string;
-  rule: string;
-  label?: string;
-  showRule?: boolean;
-}
+export type FunctionMachineChallengeType =
+  | 'observe'
+  | 'predict'
+  | 'discover_rule'
+  | 'create_rule';
 
 export interface FunctionMachineChallenge {
-  type: 'discover' | 'predict' | 'create' | 'chain';
-  instruction: string;
+  id: string;
   rule: string;
-  showRule?: boolean;
-  inputQueue?: number[];
-  chainedRules?: string[];
-  hint?: string;
+  inputQueue: number[];
+  showRule: boolean;
 }
 
 export interface FunctionMachineData {
   title: string;
   description: string;
-  rule?: string;
-  showRule?: boolean;
-  inputQueue?: number[];
-  outputDisplay?: 'immediate' | 'animated' | 'hidden';
-  chainable?: boolean;
+  challengeType: FunctionMachineChallengeType;
+  /** 3-6 function rules per session. Required. */
+  challenges: FunctionMachineChallenge[];
   ruleComplexity?: 'oneStep' | 'twoStep' | 'expression';
   gradeBand?: '3-4' | '5' | 'advanced';
-  chainedMachines?: MachineConfig[];
-  challenges?: FunctionMachineChallenge[];
+  outputDisplay?: 'immediate' | 'animated' | 'hidden';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -59,37 +51,32 @@ export interface FunctionMachineData {
 }
 
 // ============================================================================
-// Phase System
+// Display config for each challenge type (used by usePhaseResults)
 // ============================================================================
 
-type Phase = 'observe' | 'predict' | 'discover' | 'create';
-
-const PHASE_CONFIG: Record<Phase, { label: string; description: string; icon: string }> = {
-  observe: { label: 'Observe', description: 'Watch inputs transform into outputs', icon: '👁️' },
-  predict: { label: 'Predict', description: 'Guess the output before you see it', icon: '🔮' },
-  discover: { label: 'Discover', description: 'Figure out the hidden rule', icon: '💡' },
-  create: { label: 'Create', description: 'Build your own function machine', icon: '🛠️' },
+const PHASE_TYPE_CONFIG: Record<FunctionMachineChallengeType, PhaseConfig> = {
+  observe:       { label: 'Observe', icon: '👁️', accentColor: 'blue' },
+  predict:       { label: 'Predict', icon: '🔮', accentColor: 'amber' },
+  discover_rule: { label: 'Discover', icon: '💡', accentColor: 'emerald' },
+  create_rule:   { label: 'Create', icon: '🛠️', accentColor: 'purple' },
 };
 
-const PHASES: Phase[] = ['observe', 'predict', 'discover', 'create'];
-
-/** Phase type config for usePhaseResults hook (maps challenge types to display config). */
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  discover: { label: 'Discover', icon: '💡', accentColor: 'emerald' },
-  predict: { label: 'Predict', icon: '🔮', accentColor: 'amber' },
-  create: { label: 'Create', icon: '🛠️', accentColor: 'purple' },
-  chain: { label: 'Chain', icon: '🔗', accentColor: 'blue' },
+const CHALLENGE_TYPE_LABEL: Record<FunctionMachineChallengeType, string> = {
+  observe: 'Watch & Learn',
+  predict: 'Predict the Output',
+  discover_rule: 'Discover the Rule',
+  create_rule: 'Write the Rule',
 };
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
-/** Safely evaluate a rule string at a given x value */
+/** Safely evaluate a rule string at a given x value. */
 const evaluateRule = (rule: string, x: number): number | null => {
   if (!rule || !rule.trim()) return null;
   try {
-    const expression = rule.replace(/x/g, String(x));
+    const expression = rule.replace(/x/g, `(${x})`);
     if (!/^[\d+\-*/().^\s]+$/.test(expression)) return null;
     const safeExpression = expression.replace(/\^/g, '**');
     const result = new Function('return ' + safeExpression)();
@@ -100,13 +87,23 @@ const evaluateRule = (rule: string, x: number): number | null => {
   }
 };
 
-/** Normalize rule strings for comparison */
+/** Normalize rule strings for textual comparison. */
 const normalizeRule = (r: string): string => {
   if (!r) return '';
   return r.replace(/\s/g, '').toLowerCase().replace(/\*/g, '');
 };
 
-/** Grade-level label helper */
+/** Functional equivalence: two rules behave the same on multiple test inputs. */
+const rulesEquivalent = (a: string, b: string): boolean => {
+  if (normalizeRule(a) === normalizeRule(b)) return true;
+  const testInputs = [0, 1, 2, 3, 5, 10, -1];
+  return testInputs.every((x) => {
+    const va = evaluateRule(a, x);
+    const vb = evaluateRule(b, x);
+    return va !== null && vb !== null && Math.abs(va - vb) < 0.01;
+  });
+};
+
 const gradeLabel = (band?: string): string => {
   switch (band) {
     case '3-4': return 'Grade 3';
@@ -115,6 +112,9 @@ const gradeLabel = (band?: string): string => {
     default: return 'Grade 5';
   }
 };
+
+/** Per-attempt decay (§6a #11). */
+const phaseScore = (attempts: number): number => Math.max(20, 100 - (attempts - 1) * 20);
 
 // ============================================================================
 // Component
@@ -129,15 +129,11 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   const {
     title,
     description,
-    rule = '',
-    showRule = false,
-    inputQueue = [1, 2, 3, 4, 5],
-    outputDisplay = 'animated',
-    chainable = false,
+    challengeType,
+    challenges,
     ruleComplexity = 'oneStep',
     gradeBand = '3-4',
-    chainedMachines = [],
-    challenges = [],
+    outputDisplay = 'animated',
     instanceId,
     skillId,
     subskillId,
@@ -151,67 +147,99 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   const stableInstanceIdRef = useRef(instanceId || `function-machine-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const recordedRef = useRef(false);
 
   // -------------------------------------------------------------------------
   // Challenge Progress (shared hook)
   // -------------------------------------------------------------------------
   const {
-    currentIndex: _currentChallengeIndex,
-    currentAttempts: _currentAttempts,
+    currentIndex,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult: _recordResult,
-    incrementAttempts: _incrementAttempts,
-    advance: _advanceProgress,
-  } = useChallengeProgress({
+    recordResult,
+    advance,
+  } = useChallengeProgress<FunctionMachineChallenge>({
     challenges,
-    getChallengeId: (ch) => `${ch.type}-${ch.rule}`,
+    getChallengeId: (ch) => ch.id,
   });
 
+  const currentChallenge = challenges[currentIndex];
+
   // -------------------------------------------------------------------------
-  // Phase Results (shared hook — used when challenges are provided)
+  // Phase Results (shared hook) — uses per-challenge `score` field via getScore
   // -------------------------------------------------------------------------
   const phaseResults = usePhaseResults({
     challenges,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
+    getChallengeType: () => challengeType,
     phaseConfig: PHASE_TYPE_CONFIG,
+    getScore: (rs) => {
+      if (rs.length === 0) return 0;
+      const total = rs.reduce(
+        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+        0,
+      );
+      return Math.round(total / rs.length);
+    },
   });
 
   // -------------------------------------------------------------------------
-  // State
+  // State — all reset on currentChallenge.id change.
   // -------------------------------------------------------------------------
-  const [phase, setPhase] = useState<Phase>('observe');
+  const [processedPairs, setProcessedPairs] = useState<Array<{ input: number; output: number }>>([]);
   const [currentInput, setCurrentInput] = useState<number | null>(null);
   const [currentOutput, setCurrentOutput] = useState<number | null>(null);
-  const [processedPairs, setProcessedPairs] = useState<Array<{ input: number; output: number }>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [availableInputs, setAvailableInputs] = useState<number[]>(inputQueue);
-  const [customInput, setCustomInput] = useState('');
+  const [availableInputs, setAvailableInputs] = useState<number[]>(currentChallenge?.inputQueue ?? []);
 
-  // Prediction state
+  // Predict-mode state
   const [prediction, setPrediction] = useState('');
-  const [predictionResult, setPredictionResult] = useState<'correct' | 'incorrect' | null>(null);
+  const [predictionFeedback, setPredictionFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [predictionsCorrect, setPredictionsCorrect] = useState(0);
   const [predictionsTotal, setPredictionsTotal] = useState(0);
 
-  // Discovery state
+  // Discover/Create-mode state
   const [guessedRule, setGuessedRule] = useState('');
   const [guessResult, setGuessResult] = useState<'correct' | 'incorrect' | null>(null);
   const [guessAttempts, setGuessAttempts] = useState(0);
 
-  // Create state
-  const [createdRule, setCreatedRule] = useState('');
-  const [createTestInput, setCreateTestInput] = useState('');
-  const [createPairs, setCreatePairs] = useState<Array<{ input: number; output: number }>>([]);
+  // Between-challenge interstitial
+  const [challengeDone, setChallengeDone] = useState(false);
 
-  // Chaining state
-  const [activeChainMachines, setActiveChainMachines] = useState<MachineConfig[]>(
-    chainedMachines.length > 0 ? chainedMachines : rule ? [{ id: 'machine-1', rule, label: 'Machine 1', showRule }] : []
-  );
-  const [chainResults, setChainResults] = useState<Array<{ machineId: string; input: number; output: number }>>([]);
-  const [showChainView, setShowChainView] = useState(chainable && chainedMachines.length > 1);
+  // -------------------------------------------------------------------------
+  // Per-challenge reset effect — runs whenever advance() flips currentChallenge.id
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!currentChallenge) return;
+    setProcessedPairs([]);
+    setCurrentInput(null);
+    setCurrentOutput(null);
+    setIsProcessing(false);
+    setAvailableInputs(currentChallenge.inputQueue);
+    setPrediction('');
+    setPredictionFeedback(null);
+    setPredictionsCorrect(0);
+    setPredictionsTotal(0);
+    setGuessedRule('');
+    setGuessResult(null);
+    setGuessAttempts(0);
+    setChallengeDone(false);
+    recordedRef.current = false;
+  }, [currentChallenge?.id]);
+
+  // -------------------------------------------------------------------------
+  // For create_rule: pre-populate the I/O pair table from the rule
+  // -------------------------------------------------------------------------
+  const createRulePairs = useMemo(() => {
+    if (challengeType !== 'create_rule' || !currentChallenge) return [];
+    return currentChallenge.inputQueue
+      .map((input) => {
+        const output = evaluateRule(currentChallenge.rule, input);
+        return output === null ? null : { input, output };
+      })
+      .filter((p): p is { input: number; output: number } => p !== null);
+  }, [challengeType, currentChallenge]);
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -235,22 +263,26 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   // AI Tutoring
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
-    rule,
-    showRule,
+    challengeType,
+    title,
+    currentChallengeIndex: currentIndex + 1,
+    totalChallenges: challenges.length,
+    rule: currentChallenge?.rule ?? '',
+    showRule: currentChallenge?.showRule ?? false,
     processedPairs,
     guessedRule,
     gradeBand,
     ruleComplexity,
-    phase,
     pairsCount: processedPairs.length,
     predictionsCorrect,
     predictionsTotal,
     guessAttempts,
     ruleDiscovered: guessResult === 'correct',
-    chainedMachineCount: activeChainMachines.length,
-    isChaining: showChainView,
-  }), [rule, showRule, processedPairs, guessedRule, gradeBand, ruleComplexity, phase,
-       predictionsCorrect, predictionsTotal, guessAttempts, guessResult, activeChainMachines.length, showChainView]);
+  }), [
+    challengeType, title, currentIndex, challenges.length, currentChallenge,
+    processedPairs, guessedRule, gradeBand, ruleComplexity, predictionsCorrect,
+    predictionsTotal, guessAttempts, guessResult,
+  ]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'function-machine',
@@ -259,325 +291,229 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     gradeLevel: gradeLabel(gradeBand),
   });
 
-  // Introduction
+  // Introduction (once per session)
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current) return;
     hasIntroducedRef.current = true;
     sendText(
-      `[ACTIVITY_START] Function machine activity: "${title}". Rule: ${showRule ? rule : 'hidden'}. `
+      `[ACTIVITY_START] Function machine session "${title}". `
+      + `${challenges.length} function rules, mode: ${challengeType}. `
       + `Grade band: ${gradeBand}. Complexity: ${ruleComplexity}. `
-      + `${showRule ? 'Learning mode — rule is visible.' : 'Discovery mode — student must figure out the rule.'} `
       + `Introduce the activity warmly and explain the first step.`,
-      { silent: true }
+      { silent: true },
     );
-  }, [isConnected]);
+  }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
-  // Exploration-based Phase Summary (fallback when no challenges provided)
-  // -------------------------------------------------------------------------
-  // FunctionMachine's phase summary is computed from exploration state
-  // (processedPairs, predictions, guessAttempts) rather than from challenge
-  // results. When the challenges array is populated, usePhaseResults provides
-  // the summary; otherwise this exploration-based computation is used.
-  const explorationPhaseResults = useMemo(() => {
-    if (!hasSubmittedEvaluation) return [];
-    // If usePhaseResults produced results, defer to those
-    if (phaseResults.length > 0) return [];
-
-    const phases: Array<{
-      label: string;
-      score: number;
-      attempts: number;
-      firstTry: boolean;
-      icon?: string;
-      accentColor?: 'purple' | 'blue' | 'emerald' | 'amber' | 'cyan' | 'pink' | 'orange';
-    }> = [];
-
-    // Observe phase: score based on thoroughness of exploration
-    const observeScore = processedPairs.length >= 5 ? 100
-      : processedPairs.length >= 3 ? 85
-      : processedPairs.length >= 2 ? 70
-      : 50;
-    phases.push({
-      label: 'Observation',
-      score: observeScore,
-      attempts: processedPairs.length,
-      firstTry: processedPairs.length >= 3,
-      icon: '👁️',
-      accentColor: 'blue',
-    });
-
-    // Predict phase: only include if the student made predictions
-    if (predictionsTotal > 0) {
-      const predictScore = Math.round((predictionsCorrect / predictionsTotal) * 100);
-      phases.push({
-        label: 'Prediction',
-        score: predictScore,
-        attempts: predictionsTotal,
-        firstTry: predictionsCorrect === predictionsTotal,
-        icon: '🔮',
-        accentColor: 'amber',
-      });
-    }
-
-    // Discover phase: score based on guess attempts
-    const discoverScore = Math.max(50, 100 - ((guessAttempts - 1) * 10));
-    phases.push({
-      label: 'Rule Discovery',
-      score: discoverScore,
-      attempts: guessAttempts,
-      firstTry: guessAttempts === 1,
-      icon: '💡',
-      accentColor: 'emerald',
-    });
-
-    return phases;
-  }, [hasSubmittedEvaluation, phaseResults.length, processedPairs.length, predictionsTotal, predictionsCorrect, guessAttempts]);
-
-  /** Resolved phase results: prefer hook-computed results, fall back to exploration-based. */
-  const resolvedPhaseResults = phaseResults.length > 0 ? phaseResults : explorationPhaseResults;
-
-  // -------------------------------------------------------------------------
-  // Process value through the machine
+  // Process value through the machine (observe / predict / discover_rule)
   // -------------------------------------------------------------------------
   const processValue = useCallback(async (input: number) => {
-    if (isProcessing) return;
+    if (isProcessing || !currentChallenge) return;
     setIsProcessing(true);
     setCurrentInput(input);
     setCurrentOutput(null);
-    setAvailableInputs(prev => prev.filter(v => v !== input));
 
-    await new Promise(resolve => setTimeout(resolve, 700));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
-    const output = evaluateRule(rule, input);
+    const output = evaluateRule(currentChallenge.rule, input);
     if (output === null) {
       setIsProcessing(false);
       setCurrentInput(null);
       return;
     }
 
-    setCurrentOutput(output);
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const newPair = { input, output };
-    setProcessedPairs(prev => [...prev, newPair]);
-
-    // In predict phase, check prediction
-    if (phase === 'predict' && prediction.trim()) {
+    // Predict-mode: judge the prediction BEFORE revealing the output.
+    let predictionWasCorrect: boolean | null = null;
+    if (challengeType === 'predict' && prediction.trim()) {
       const predicted = parseFloat(prediction);
-      const isCorrect = !isNaN(predicted) && Math.abs(predicted - output) < 0.01;
-      setPredictionResult(isCorrect ? 'correct' : 'incorrect');
-      setPredictionsTotal(t => t + 1);
-      if (isCorrect) {
-        setPredictionsCorrect(c => c + 1);
-        sendText(`[PREDICTION_CORRECT] Student predicted output ${predicted} for input ${input}. Correct! Celebrate briefly.`, { silent: true });
+      predictionWasCorrect = !isNaN(predicted) && Math.abs(predicted - output) < 0.01;
+      setPredictionFeedback(predictionWasCorrect ? 'correct' : 'incorrect');
+      setPredictionsTotal((t) => t + 1);
+      if (predictionWasCorrect) setPredictionsCorrect((c) => c + 1);
+      if (predictionWasCorrect) {
+        sendText(`[PREDICTION_CORRECT] Student predicted ${predicted} for input ${input}. Output ${output}. Celebrate briefly.`, { silent: true });
       } else {
-        sendText(`[PREDICTION_INCORRECT] Student predicted ${predicted} for input ${input}, but output is ${output}. Encourage and give a hint about the pattern.`, { silent: true });
+        sendText(`[PREDICTION_INCORRECT] Student predicted ${predicted} for input ${input}, actual output ${output}. Encourage and hint at the pattern.`, { silent: true });
       }
-      setPrediction('');
     }
 
-    await new Promise(resolve => setTimeout(resolve, 300));
+    setCurrentOutput(output);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    setProcessedPairs((prev) => [...prev, { input, output }]);
+    setAvailableInputs((prev) => prev.filter((v) => v !== input));
+    setPrediction('');
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
     setCurrentInput(null);
     setCurrentOutput(null);
     setIsProcessing(false);
-
-    // Phase progression hint
-    if (phase === 'observe' && processedPairs.length + 1 >= 3) {
-      sendText(`[PHASE_HINT] Student has observed ${processedPairs.length + 1} pairs. Suggest moving to Predict or Discover phase.`, { silent: true });
-    }
-  }, [isProcessing, rule, phase, prediction, processedPairs.length, sendText]);
+  }, [isProcessing, currentChallenge, challengeType, prediction, sendText]);
 
   // -------------------------------------------------------------------------
-  // Check rule guess
+  // Completion helpers — each mode has its own submit, all share stale-state guard
   // -------------------------------------------------------------------------
-  const checkGuess = useCallback(() => {
-    if (!guessedRule.trim() || !rule) return;
-    setGuessAttempts(a => a + 1);
 
-    // Check by normalizing AND by functional equivalence
-    const normalizedGuess = normalizeRule(guessedRule);
-    const normalizedActual = normalizeRule(rule);
-    let isCorrect = normalizedGuess === normalizedActual;
+  /** Stale-state guard: only record when the local state belongs to the active challenge. */
+  const completeCurrentChallenge = useCallback((result: ChallengeResult) => {
+    if (!currentChallenge) return;
+    if (recordedRef.current) return;
+    if (result.challengeId !== currentChallenge.id) return;
+    recordedRef.current = true;
+    recordResult(result);
+    setChallengeDone(true);
+  }, [currentChallenge, recordResult]);
 
-    // Functional equivalence: test with multiple inputs
-    if (!isCorrect) {
-      const testInputs = [0, 1, 2, 3, 5, 10, -1];
-      isCorrect = testInputs.every(x => {
-        const expected = evaluateRule(rule, x);
-        const guessed = evaluateRule(guessedRule, x);
-        return expected !== null && guessed !== null && Math.abs(expected - guessed) < 0.01;
-      });
-    }
+  /** observe: complete on "Continue" button after >=3 pairs observed. */
+  const completeObserve = useCallback(() => {
+    if (!currentChallenge) return;
+    const pairsObserved = processedPairs.length;
+    const allInputsUsed = availableInputs.length === 0;
+    const score = allInputsUsed ? 100 : pairsObserved >= 3 ? 85 : 60;
+    completeCurrentChallenge({
+      challengeId: currentChallenge.id,
+      correct: true,
+      attempts: 1,
+      score,
+      pairsObserved,
+    });
+    sendText(
+      `[PHASE_COMPLETE] Observe rule "${currentChallenge.rule}" complete with ${pairsObserved} pairs observed. Encourage moving to the next function.`,
+      { silent: true },
+    );
+  }, [currentChallenge, processedPairs.length, availableInputs.length, completeCurrentChallenge, sendText]);
 
+  /** predict: complete when all inputs have been predicted. */
+  useEffect(() => {
+    if (challengeType !== 'predict') return;
+    if (!currentChallenge) return;
+    if (recordedRef.current) return;
+    if (availableInputs.length !== 0) return;
+    if (predictionsTotal === 0) return;
+    // Stale-state guard: the pairs we just produced must belong to this challenge.
+    if (processedPairs.length !== currentChallenge.inputQueue.length) return;
+    const score = Math.round((predictionsCorrect / predictionsTotal) * 100);
+    completeCurrentChallenge({
+      challengeId: currentChallenge.id,
+      correct: predictionsCorrect === predictionsTotal,
+      attempts: predictionsTotal,
+      score,
+      predictionsCorrect,
+      predictionsTotal,
+    });
+    sendText(
+      `[PHASE_COMPLETE] Predict rule "${currentChallenge.rule}" complete: ${predictionsCorrect}/${predictionsTotal} correct.`,
+      { silent: true },
+    );
+  }, [
+    challengeType, currentChallenge, availableInputs.length, predictionsTotal,
+    predictionsCorrect, processedPairs.length, completeCurrentChallenge, sendText,
+  ]);
+
+  /** discover_rule / create_rule: complete on correct rule guess. */
+  const checkRuleGuess = useCallback(() => {
+    if (!currentChallenge) return;
+    if (!guessedRule.trim()) return;
+    const nextAttempts = guessAttempts + 1;
+    setGuessAttempts(nextAttempts);
+
+    const isCorrect = rulesEquivalent(guessedRule, currentChallenge.rule);
     setGuessResult(isCorrect ? 'correct' : 'incorrect');
 
     if (isCorrect) {
-      const observeScore = processedPairs.length >= 5 ? 100 : processedPairs.length >= 3 ? 85 : processedPairs.length >= 2 ? 70 : 50;
-      const discoverScore = Math.max(50, 100 - (guessAttempts * 10));
-      const predictScore = predictionsTotal > 0 ? Math.round((predictionsCorrect / predictionsTotal) * 100) : null;
-      const overallScore = Math.max(50, 100 - (guessAttempts * 10));
-
+      const score = phaseScore(nextAttempts);
+      completeCurrentChallenge({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts: nextAttempts,
+        score,
+        ruleDiscovered: true,
+      });
       sendText(
-        `[ALL_COMPLETE] Student discovered the rule after ${guessAttempts + 1} attempts! `
-        + `They guessed "${guessedRule}", rule was "${rule}". `
-        + `Phase scores: Observation ${observeScore}% (${processedPairs.length} pairs), `
-        + `${predictScore !== null ? `Prediction ${predictScore}% (${predictionsCorrect}/${predictionsTotal}), ` : ''}`
-        + `Discovery ${discoverScore}% (${guessAttempts + 1} attempts). `
-        + `Overall: ${overallScore}%. Give encouraging phase-specific feedback and celebrate!`,
-        { silent: true }
+        `[PHASE_COMPLETE] ${challengeType === 'discover_rule' ? 'Discover' : 'Create'} rule complete: student guessed "${guessedRule}" matching "${currentChallenge.rule}" in ${nextAttempts} attempt(s). Celebrate!`,
+        { silent: true },
       );
-
-      // Submit evaluation
-      if (!hasSubmittedEvaluation) {
-        submitEvaluation(
-          true,
-          Math.max(50, 100 - (guessAttempts * 10)),
-          {
-            type: 'function-machine',
-            evalMode: phase ?? 'default',
-            functionRule: rule,
-            ruleDiscovered: true,
-            inputsExplored: processedPairs.map(p => p.input),
-            outputsObserved: processedPairs.map(p => p.output),
-            attemptsToDiscover: guessAttempts + 1,
-            hintsUsed: 0,
-            predictionsCorrect,
-            predictionsTotal,
-            phase,
-            chainDepth: activeChainMachines.length > 1 ? activeChainMachines.length : undefined,
-          },
-        );
-      }
     } else {
       sendText(
-        `[GUESS_INCORRECT] Student guessed "${guessedRule}" but rule is "${rule}". `
-        + `Attempt ${guessAttempts + 1}. Pairs seen: ${processedPairs.map(p => `${p.input}→${p.output}`).join(', ')}. `
-        + `Give a targeted hint based on the pattern.`,
-        { silent: true }
+        `[GUESS_INCORRECT] Student guessed "${guessedRule}" but rule is "${currentChallenge.rule}". Attempt ${nextAttempts}. ${challengeType === 'discover_rule' ? `Pairs seen: ${processedPairs.map((p) => `${p.input}→${p.output}`).join(', ')}.` : ''} Give a targeted hint.`,
+        { silent: true },
       );
     }
-  }, [guessedRule, rule, guessAttempts, processedPairs, predictionsCorrect, predictionsTotal,
-      phase, activeChainMachines.length, sendText, submitEvaluation, hasSubmittedEvaluation]);
+  }, [currentChallenge, guessedRule, guessAttempts, challengeType, processedPairs, completeCurrentChallenge, sendText]);
 
   // -------------------------------------------------------------------------
-  // Chain processing
+  // Submit aggregate evaluation when all challenges complete
   // -------------------------------------------------------------------------
-  const processChain = useCallback(async (input: number) => {
-    if (isProcessing || activeChainMachines.length < 2) return;
-    setIsProcessing(true);
-    setChainResults([]);
+  useEffect(() => {
+    if (!allChallengesComplete) return;
+    if (hasSubmittedEvaluation) return;
 
-    let currentVal = input;
-    const results: Array<{ machineId: string; input: number; output: number }> = [];
+    const totalChallenges = challenges.length;
+    const correctCount = challengeResults.filter((r) => r.correct).length;
+    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
+    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
+    const hintsViewed = challengeResults.filter((r) => r.attempts > 1).length;
+    const overallAccuracy = totalChallenges > 0
+      ? Math.round(
+          challengeResults.reduce(
+            (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+            0,
+          ) / totalChallenges,
+        )
+      : 0;
+    const averageAttemptsPerChallenge = totalChallenges > 0
+      ? Math.round((attemptsCount / totalChallenges) * 10) / 10
+      : 0;
 
-    for (const machine of activeChainMachines) {
-      const output = evaluateRule(machine.rule, currentVal);
-      if (output === null) break;
-      results.push({ machineId: machine.id, input: currentVal, output });
-      currentVal = output;
-      setChainResults([...results]);
-      await new Promise(resolve => setTimeout(resolve, 600));
-    }
+    const goalMet = overallAccuracy >= 70;
 
-    setChainResults(results);
-    setIsProcessing(false);
+    submitEvaluation(
+      goalMet,
+      overallAccuracy,
+      {
+        type: 'function-machine',
+        challengeType,
+        totalChallenges,
+        correctCount,
+        attemptsCount,
+        firstTryCount,
+        hintsViewed,
+        overallAccuracy,
+        averageAttemptsPerChallenge,
+      },
+    );
 
-    if (results.length === activeChainMachines.length) {
-      const finalOutput = results[results.length - 1].output;
-      sendText(
-        `[CHAIN_COMPLETE] Input ${input} went through ${results.length} machines: `
-        + results.map(r => `${r.input}→${r.output}`).join(', ')
-        + `. Final output: ${finalOutput}. Ask what the combined rule might be.`,
-        { silent: true }
-      );
-    }
-  }, [isProcessing, activeChainMachines, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Create phase: test student-created rule
-  // -------------------------------------------------------------------------
-  const testCreatedRule = useCallback(() => {
-    const input = parseFloat(createTestInput);
-    if (isNaN(input) || !createdRule.trim()) return;
-
-    const output = evaluateRule(createdRule, input);
-    if (output !== null) {
-      setCreatePairs(prev => [...prev, { input, output }]);
-      setCreateTestInput('');
-      sendText(
-        `[CREATE_TEST] Student created rule "${createdRule}" and tested input ${input} → output ${output}. `
-        + `Encourage and ask about the pattern they created.`,
-        { silent: true }
-      );
-    }
-  }, [createTestInput, createdRule, sendText]);
+    sendText(
+      `[ALL_COMPLETE] Function machine session complete. ${correctCount}/${totalChallenges} correct, overall accuracy ${overallAccuracy}%. Celebrate the session and give phase-specific feedback.`,
+      { silent: true },
+    );
+  }, [
+    allChallengesComplete, hasSubmittedEvaluation, challenges.length, challengeResults,
+    challengeType, submitEvaluation, sendText,
+  ]);
 
   // -------------------------------------------------------------------------
-  // Add custom input
+  // Empty / error states
   // -------------------------------------------------------------------------
-  const addCustomInput = useCallback(() => {
-    const value = parseFloat(customInput);
-    if (!isNaN(value) && !availableInputs.includes(value)) {
-      setAvailableInputs(prev => [...prev, value]);
-      setCustomInput('');
-    }
-  }, [customInput, availableInputs]);
-
-  // -------------------------------------------------------------------------
-  // Reset
-  // -------------------------------------------------------------------------
-  const reset = useCallback(() => {
-    setProcessedPairs([]);
-    setCurrentInput(null);
-    setCurrentOutput(null);
-    setGuessedRule('');
-    setGuessResult(null);
-    setGuessAttempts(0);
-    setAvailableInputs(inputQueue);
-    setPrediction('');
-    setPredictionResult(null);
-    setPredictionsCorrect(0);
-    setPredictionsTotal(0);
-    setCreatePairs([]);
-    setCreatedRule('');
-    setChainResults([]);
-    setPhase('observe');
-  }, [inputQueue]);
-
-  // -------------------------------------------------------------------------
-  // Phase advancement
-  // -------------------------------------------------------------------------
-  const advancePhase = useCallback(() => {
-    const currentIdx = PHASES.indexOf(phase);
-    if (currentIdx < PHASES.length - 1) {
-      const nextPhase = PHASES[currentIdx + 1];
-      setPhase(nextPhase);
-      sendText(
-        `[PHASE_CHANGE] Moving to "${nextPhase}" phase. `
-        + `${PHASE_CONFIG[nextPhase].description}. `
-        + `Guide the student on what to do next.`,
-        { silent: true }
-      );
-    }
-  }, [phase, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Error: no rule configured
-  // -------------------------------------------------------------------------
-  if (!rule || !rule.trim()) {
+  if (!challenges || challenges.length === 0) {
     return (
       <Card className={`backdrop-blur-xl bg-slate-900/40 border-red-500/20 ${className || ''}`}>
         <CardHeader>
           <CardTitle className="text-red-300">Configuration Error</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-red-200/80">No function rule provided. Please provide a valid rule (e.g., &quot;x + 3&quot;, &quot;2*x&quot;, &quot;x^2&quot;).</p>
+          <p className="text-red-200/80">No function machine challenges provided.</p>
         </CardContent>
       </Card>
     );
   }
+
+  if (!currentChallenge) {
+    return null;
+  }
+
+  const showRule = currentChallenge.showRule || guessResult === 'correct';
 
   // -------------------------------------------------------------------------
   // Render
@@ -590,9 +526,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center border border-blue-400/40">
-                <svg className="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
+                <span className="text-xl">{PHASE_TYPE_CONFIG[challengeType].icon}</span>
               </div>
               <div>
                 <CardTitle className="text-slate-100">{title}</CardTitle>
@@ -601,7 +535,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="border-blue-400/40 text-blue-300 text-xs">
-                {gradeBand === '3-4' ? 'Grades 3-4' : gradeBand === '5' ? 'Grade 5' : 'Advanced'}
+                {CHALLENGE_TYPE_LABEL[challengeType]}
               </Badge>
               <Badge variant="outline" className="border-purple-400/40 text-purple-300 text-xs">
                 {ruleComplexity === 'oneStep' ? 'One-Step' : ruleComplexity === 'twoStep' ? 'Two-Step' : 'Expression'}
@@ -611,193 +545,101 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
         </CardHeader>
       </Card>
 
-      {/* Phase Navigation */}
+      {/* Challenge Progress Dots */}
       <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardContent className="py-4">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            {PHASES.map((p, idx) => {
-              const config = PHASE_CONFIG[p];
-              const isActive = p === phase;
-              const isPast = PHASES.indexOf(p) < PHASES.indexOf(phase);
-              const isNext = PHASES.indexOf(p) === PHASES.indexOf(phase) + 1;
-
-              return (
-                <React.Fragment key={p}>
-                  {idx > 0 && (
-                    <div className={`w-8 h-px ${isPast ? 'bg-green-400/60' : 'bg-slate-600/40'}`} />
-                  )}
-                  <button
-                    onClick={() => {
-                      setPhase(p);
-                      sendText(`[PHASE_CHANGE] Student switched to "${p}" phase. ${config.description}. Guide them.`, { silent: true });
-                    }}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                      isActive
-                        ? 'bg-blue-500/20 border border-blue-400/50 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
-                        : isPast
-                        ? 'bg-green-500/10 border border-green-400/30 text-green-300'
-                        : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+        <CardContent className="py-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs uppercase tracking-wider text-slate-400 font-mono">
+              Function {currentIndex + 1} of {challenges.length}
+            </span>
+            <div className="flex items-center gap-2">
+              {challenges.map((ch, idx) => {
+                const isDone = challengeResults.some((r) => r.challengeId === ch.id);
+                const isActive = idx === currentIndex;
+                return (
+                  <div
+                    key={ch.id}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${
+                      isDone
+                        ? 'bg-emerald-400'
+                        : isActive
+                        ? 'bg-blue-400 ring-2 ring-blue-400/30'
+                        : 'bg-slate-600'
                     }`}
-                  >
-                    <span>{config.icon}</span>
-                    <span>{config.label}</span>
-                  </button>
-                </React.Fragment>
-              );
-            })}
+                  />
+                );
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Success Celebration */}
-      {guessResult === 'correct' && (
-        <Card className="backdrop-blur-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-green-400/50">
-          <CardContent className="py-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center border-2 border-yellow-300/50 shadow-[0_0_30px_rgba(250,204,21,0.4)]">
-              <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-green-100 mb-2">Rule Discovered!</h3>
-            <div className="inline-block px-6 py-3 bg-slate-900/50 border border-green-400/40 rounded-xl mb-4">
-              <span className="text-sm text-green-300 font-mono">f(x) = </span>
-              <span className="text-xl font-bold text-white font-mono">{rule}</span>
-            </div>
-            <div className="flex justify-center gap-6 mt-4 text-sm">
-              <div className="text-center">
-                <div className="text-lg font-bold text-green-200">{processedPairs.length}</div>
-                <div className="text-green-300/70">Pairs Tested</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-green-200">{guessAttempts}</div>
-                <div className="text-green-300/70">Attempts</div>
-              </div>
-              {predictionsTotal > 0 && (
-                <div className="text-center">
-                  <div className="text-lg font-bold text-green-200">{predictionsCorrect}/{predictionsTotal}</div>
-                  <div className="text-green-300/70">Predictions</div>
-                </div>
-              )}
-            </div>
-            <Button variant="ghost" onClick={reset} className="mt-6 bg-white/5 border border-white/20 hover:bg-white/10">
-              Try Another Challenge
+      {/* Phase Summary Panel (final) */}
+      {hasSubmittedEvaluation && phaseResults.length > 0 && (
+        <PhaseSummaryPanel
+          phases={phaseResults}
+          overallScore={submittedResult?.score}
+          durationMs={elapsedMs}
+          heading="Session Complete!"
+          celebrationMessage={`You finished all ${challenges.length} function machines.`}
+          className="mb-6"
+        />
+      )}
+
+      {/* Between-challenge interstitial */}
+      {challengeDone && !allChallengesComplete && (
+        <Card className="backdrop-blur-xl bg-emerald-500/10 border-emerald-400/40">
+          <CardContent className="py-6 text-center">
+            <div className="text-3xl mb-2">✅</div>
+            <h3 className="text-emerald-100 font-semibold text-lg mb-1">
+              Function {currentIndex + 1} Complete!
+            </h3>
+            <p className="text-sm text-emerald-200/80 mb-4">
+              Rule was <span className="font-mono font-bold text-white">f(x) = {currentChallenge.rule}</span>. Ready for the next one?
+            </p>
+            <Button
+              variant="ghost"
+              onClick={() => advance()}
+              className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-100"
+            >
+              Next Function →
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Phase Summary Panel */}
-      {hasSubmittedEvaluation && resolvedPhaseResults.length > 0 && (
-        <PhaseSummaryPanel
-          phases={resolvedPhaseResults}
-          overallScore={submittedResult?.score}
-          durationMs={elapsedMs}
-          heading="Challenge Complete!"
-          celebrationMessage="You explored the function machine and discovered the hidden rule!"
-          className="mb-6"
-        />
-      )}
-
-      {/* Machine Visualization (single or chain) */}
-      {showChainView && activeChainMachines.length > 1 ? (
-        /* ============= Chained Machines View ============= */
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-slate-100 text-lg flex items-center gap-2">
-              <span>Chained Machines</span>
-              <Badge variant="outline" className="border-purple-400/40 text-purple-300">
-                {activeChainMachines.length} machines
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4 overflow-x-auto py-4">
-              {activeChainMachines.map((machine, idx) => (
-                <React.Fragment key={machine.id}>
-                  {idx > 0 && (
-                    <div className="flex flex-col items-center flex-shrink-0">
-                      <svg className="w-10 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 40 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12H36M28 6L36 12L28 18" />
-                      </svg>
-                      {chainResults[idx - 1] && (
-                        <span className="text-xs text-purple-300 font-mono">{chainResults[idx - 1].output}</span>
-                      )}
-                    </div>
-                  )}
-                  <div className={`flex-shrink-0 w-36 h-36 rounded-xl border-2 flex flex-col items-center justify-center relative transition-all ${
-                    chainResults.some(r => r.machineId === machine.id)
-                      ? 'bg-green-500/10 border-green-400/40'
-                      : 'bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-blue-400/40'
-                  }`}>
-                    <div className="text-xs text-slate-400 font-mono mb-1">{machine.label || `Machine ${idx + 1}`}</div>
-                    {machine.showRule ? (
-                      <div className="text-lg font-bold text-white font-mono">f(x) = {machine.rule}</div>
-                    ) : (
-                      <div className="flex gap-1">
-                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.1s' }} />
-                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.2s' }} />
-                      </div>
-                    )}
-                    {chainResults.find(r => r.machineId === machine.id) && (
-                      <div className="mt-2 text-xs text-green-300 font-mono">
-                        {chainResults.find(r => r.machineId === machine.id)!.input} → {chainResults.find(r => r.machineId === machine.id)!.output}
+      {/* Active interaction (hidden once challenge is done or all done) */}
+      {!challengeDone && !allChallengesComplete && (
+        <>
+          {/* Machine Visualization */}
+          <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+            <CardContent className="py-8">
+              <div className="flex items-center justify-center gap-6 md:gap-8">
+                {/* Input Hopper */}
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-blue-400 font-mono uppercase tracking-wider mb-2">Input</span>
+                  <div className="w-20 h-28 border-2 border-blue-400/40 rounded-t-lg bg-blue-500/10 relative flex items-center justify-center">
+                    {currentInput !== null && (
+                      <div className="w-11 h-11 rounded-full bg-blue-500/30 border-2 border-blue-400/60 flex items-center justify-center text-white font-bold animate-bounce text-sm">
+                        {currentInput}
                       </div>
                     )}
                   </div>
-                </React.Fragment>
-              ))}
-            </div>
-
-            {/* Chain input controls */}
-            <div className="mt-4 flex items-center gap-3 flex-wrap">
-              <span className="text-sm text-slate-400">Feed a value:</span>
-              {[1, 2, 3, 4, 5].map(v => (
-                <Button
-                  key={v}
-                  variant="ghost"
-                  size="sm"
-                  disabled={isProcessing}
-                  onClick={() => processChain(v)}
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-white font-mono"
-                >
-                  {v}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        /* ============= Single Machine View ============= */
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardContent className="py-8">
-            <div className="flex items-center justify-center gap-6 md:gap-8">
-              {/* Input Hopper */}
-              <div className="flex flex-col items-center">
-                <span className="text-xs text-blue-400 font-mono uppercase tracking-wider mb-2">Input</span>
-                <div className="w-20 h-28 border-2 border-blue-400/40 rounded-t-lg bg-blue-500/10 relative flex items-center justify-center">
-                  {currentInput !== null && (
-                    <div className="w-11 h-11 rounded-full bg-blue-500/30 border-2 border-blue-400/60 flex items-center justify-center text-white font-bold animate-bounce text-sm">
-                      {currentInput}
-                    </div>
-                  )}
                 </div>
-              </div>
 
-              {/* Arrow */}
-              <svg className="w-10 h-6 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 40 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12H36M28 6L36 12L28 18" />
-              </svg>
+                {/* Arrow */}
+                <svg className="w-10 h-6 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 40 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12H36M28 6L36 12L28 18" />
+                </svg>
 
-              {/* Machine Body */}
-              <div className="relative">
+                {/* Machine Body */}
                 <div className={`w-40 h-40 md:w-48 md:h-48 rounded-2xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-2 border-blue-400/40 flex flex-col items-center justify-center relative overflow-hidden shadow-[0_0_20px_rgba(59,130,246,0.2)] ${isProcessing ? 'border-blue-400/70' : ''}`}>
                   {isProcessing && <div className="absolute inset-0 bg-blue-500/10 animate-pulse" />}
                   <div className="relative z-10 text-center px-3">
                     <div className="text-xs text-blue-300 font-mono mb-2 uppercase">Function Rule</div>
-                    {showRule || guessResult === 'correct' ? (
+                    {showRule ? (
                       <div className="text-xl font-bold text-white font-mono bg-slate-900/30 px-3 py-1.5 rounded-lg border border-blue-400/20">
-                        f(x) = {rule}
+                        f(x) = {currentChallenge.rule}
                       </div>
                     ) : (
                       <div className="flex gap-1 justify-center">
@@ -811,309 +653,247 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                     )}
                   </div>
                 </div>
+
+                {/* Arrow */}
+                <svg className="w-10 h-6 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 40 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12H36M28 6L36 12L28 18" />
+                </svg>
+
+                {/* Output Chute */}
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-purple-400 font-mono uppercase tracking-wider mb-2">Output</span>
+                  <div className="w-20 h-28 border-2 border-purple-400/40 rounded-b-lg bg-purple-500/10 relative flex items-center justify-center">
+                    {currentOutput !== null && outputDisplay !== 'hidden' && (
+                      <div className={`w-11 h-11 rounded-full bg-purple-500/30 border-2 border-purple-400/60 flex items-center justify-center text-white font-bold text-sm ${outputDisplay === 'animated' ? 'animate-bounce' : ''}`}>
+                        {currentOutput}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Arrow */}
-              <svg className="w-10 h-6 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 40 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12H36M28 6L36 12L28 18" />
-              </svg>
-
-              {/* Output Chute */}
-              <div className="flex flex-col items-center">
-                <span className="text-xs text-purple-400 font-mono uppercase tracking-wider mb-2">Output</span>
-                <div className="w-20 h-28 border-2 border-purple-400/40 rounded-b-lg bg-purple-500/10 relative flex items-center justify-center">
-                  {currentOutput !== null && outputDisplay !== 'hidden' && (
-                    <div className={`w-11 h-11 rounded-full bg-purple-500/30 border-2 border-purple-400/60 flex items-center justify-center text-white font-bold text-sm ${outputDisplay === 'animated' ? 'animate-bounce' : ''}`}>
-                      {currentOutput}
-                    </div>
+          {/* Prediction Panel (predict mode only) */}
+          {challengeType === 'predict' && (
+            <Card className="backdrop-blur-xl bg-amber-500/10 border-amber-400/30">
+              <CardContent className="py-5">
+                <h4 className="text-amber-200 font-semibold mb-3">Predict the Output</h4>
+                <p className="text-sm text-amber-100/80 mb-4">
+                  Type your prediction first, then click an input below to feed it through the machine.
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-amber-300 text-sm">My prediction:</span>
+                  <input
+                    type="text"
+                    value={prediction}
+                    onChange={(e) => { setPrediction(e.target.value); setPredictionFeedback(null); }}
+                    placeholder="?"
+                    disabled={isProcessing}
+                    className="w-24 px-3 py-2 bg-slate-800/50 text-white rounded-lg border border-amber-400/40 focus:border-amber-400 focus:outline-none text-center font-mono"
+                  />
+                  {predictionFeedback === 'correct' && (
+                    <Badge className="bg-green-500/20 text-green-300 border-green-400/40">Correct!</Badge>
+                  )}
+                  {predictionFeedback === 'incorrect' && (
+                    <Badge className="bg-red-500/20 text-red-300 border-red-400/40">Not quite</Badge>
+                  )}
+                  {predictionsTotal > 0 && (
+                    <span className="text-xs text-amber-300/70 ml-auto">
+                      {predictionsCorrect}/{predictionsTotal} correct
+                    </span>
                   )}
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Prediction Panel (predict phase) */}
-      {phase === 'predict' && guessResult !== 'correct' && (
-        <Card className="backdrop-blur-xl bg-amber-500/10 border-amber-400/30">
-          <CardContent className="py-5">
-            <h4 className="text-amber-200 font-semibold mb-3">Predict the Output</h4>
-            <p className="text-sm text-amber-100/80 mb-4">
-              Choose an input below, but first type your prediction for what the output will be!
-            </p>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-amber-300 text-sm">My prediction:</span>
-              <input
-                type="text"
-                value={prediction}
-                onChange={(e) => { setPrediction(e.target.value); setPredictionResult(null); }}
-                placeholder="?"
-                className="w-24 px-3 py-2 bg-slate-800/50 text-white rounded-lg border border-amber-400/40 focus:border-amber-400 focus:outline-none text-center font-mono"
-              />
-              {predictionResult === 'correct' && (
-                <Badge className="bg-green-500/20 text-green-300 border-green-400/40">Correct!</Badge>
-              )}
-              {predictionResult === 'incorrect' && (
-                <Badge className="bg-red-500/20 text-red-300 border-red-400/40">Not quite</Badge>
-              )}
-              {predictionsTotal > 0 && (
-                <span className="text-xs text-amber-300/70 ml-auto">{predictionsCorrect}/{predictionsTotal} correct</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Input Queue */}
-      {(phase === 'observe' || phase === 'predict') && guessResult !== 'correct' && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardContent className="py-5">
-            <div className="flex items-center gap-3 mb-4">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-blue-400">Available Inputs</h4>
-              {availableInputs.length > 0 && (
-                <Badge variant="outline" className="border-blue-400/30 text-blue-300 text-xs">
-                  {availableInputs.length} remaining
-                </Badge>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-3 mb-4">
-              {availableInputs.length > 0 ? (
-                availableInputs.map((value, idx) => (
-                  <Button
-                    key={idx}
-                    variant="ghost"
-                    disabled={isProcessing || (phase === 'predict' && !prediction.trim())}
-                    onClick={() => processValue(value)}
-                    className="bg-blue-500/15 border border-blue-400/40 hover:bg-blue-500/30 text-white font-bold"
-                  >
-                    {value}
-                  </Button>
-                ))
-              ) : (
-                <p className="text-slate-400 text-sm">All inputs used. Add a custom value or advance to the next phase.</p>
-              )}
-            </div>
-            <div className="max-w-xs">
-              <CalculatorInput
-                label="Custom Value"
-                value={customInput}
-                onChange={setCustomInput}
-                onSubmit={addCustomInput}
-                placeholder="0"
-                showSubmitButton={true}
-                allowNegative={true}
-                allowDecimal={true}
-                maxLength={10}
-                disabled={isProcessing}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Processed Pairs */}
-      {processedPairs.length > 0 && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardContent className="py-5">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-purple-400">Input → Output Pairs</h4>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-purple-300/70">{processedPairs.length} tested</span>
-                {!showRule && processedPairs.length >= 2 && guessResult !== 'correct' && (
-                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-400/40 animate-pulse text-xs">
-                    Ready to guess!
-                  </Badge>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {processedPairs.map((pair, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 rounded-lg bg-slate-800/40 border border-slate-600/30 text-center"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-blue-300 font-bold">{pair.input}</span>
-                    <span className="text-slate-500">→</span>
-                    <span className="text-purple-300 font-bold">{pair.output}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Discover Phase: Guess the Rule */}
-      {(phase === 'discover' || (processedPairs.length >= 2 && phase !== 'create')) && !showRule && guessResult !== 'correct' && (
-        <Card className="backdrop-blur-xl bg-amber-500/10 border-amber-400/30">
-          <CardContent className="py-5">
-            <h4 className="text-amber-200 font-semibold mb-3 text-center">Can you guess the rule?</h4>
-            <div className="flex items-center gap-3 justify-center flex-wrap">
-              <span className="text-amber-300 font-mono">f(x) =</span>
-              <input
-                type="text"
-                value={guessedRule}
-                onChange={(e) => { setGuessedRule(e.target.value); setGuessResult(null); }}
-                onKeyDown={(e) => e.key === 'Enter' && checkGuess()}
-                placeholder="e.g., x + 3"
-                className="flex-1 max-w-xs px-4 py-2 bg-slate-800/50 text-white rounded-lg border border-amber-400/40 focus:border-amber-400 focus:outline-none font-mono"
-              />
-              <Button
-                variant="ghost"
-                onClick={checkGuess}
-                className="bg-amber-500/20 border border-amber-400/40 hover:bg-amber-500/30 text-amber-200"
-              >
-                Check
-              </Button>
-            </div>
-            {guessResult === 'incorrect' && (
-              <>
-                <div className="mt-3 p-3 bg-red-500/15 border border-red-400/30 rounded-lg text-center">
-                  <span className="text-red-200 text-sm">Not quite! Study the pairs more carefully. {guessAttempts >= 3 ? 'Try looking at the difference between inputs and outputs.' : ''}</span>
-                </div>
-                <div className="mt-2 text-center text-xs text-slate-500">{guessAttempts} attempt{guessAttempts !== 1 ? 's' : ''} so far</div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Create Phase */}
-      {phase === 'create' && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardContent className="py-5">
-            <h4 className="text-slate-100 font-semibold mb-3">Create Your Own Function Machine</h4>
-            <p className="text-sm text-slate-400 mb-4">
-              Write a rule and test it with different inputs. See what patterns emerge!
-            </p>
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <span className="text-blue-300 font-mono">f(x) =</span>
-              <input
-                type="text"
-                value={createdRule}
-                onChange={(e) => setCreatedRule(e.target.value)}
-                placeholder="e.g., 2*x + 1"
-                className="flex-1 max-w-xs px-4 py-2 bg-slate-800/50 text-white rounded-lg border border-blue-400/40 focus:border-blue-400 focus:outline-none font-mono"
-              />
-            </div>
-            {createdRule.trim() && (
-              <div className="flex items-center gap-3 mb-4 flex-wrap">
-                <span className="text-sm text-slate-400">Test input:</span>
-                <input
-                  type="text"
-                  value={createTestInput}
-                  onChange={(e) => setCreateTestInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && testCreatedRule()}
-                  placeholder="x"
-                  className="w-20 px-3 py-2 bg-slate-800/50 text-white rounded-lg border border-slate-600/40 focus:border-blue-400 focus:outline-none text-center font-mono"
-                />
-                <Button
-                  variant="ghost"
-                  onClick={testCreatedRule}
-                  className="bg-white/5 border border-white/20 hover:bg-white/10"
-                >
-                  Run
-                </Button>
-              </div>
-            )}
-            {createPairs.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
-                {createPairs.map((pair, idx) => (
-                  <div key={idx} className="p-2 rounded-lg bg-slate-800/40 border border-slate-600/30 text-center text-sm">
-                    <span className="text-blue-300 font-mono">{pair.input}</span>
-                    <span className="text-slate-500 mx-1">→</span>
-                    <span className="text-purple-300 font-mono">{pair.output}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Chain toggle & controls */}
-      {chainable && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <h4 className="text-sm text-slate-300">Machine Chaining</h4>
-                <Badge variant="outline" className="border-purple-400/30 text-purple-300 text-xs">
-                  Composition
-                </Badge>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (!showChainView && activeChainMachines.length < 2) {
-                    setActiveChainMachines(prev => [
-                      ...prev,
-                      { id: `machine-${prev.length + 1}`, rule: 'x + 1', label: `Machine ${prev.length + 1}`, showRule: true }
-                    ]);
-                  }
-                  setShowChainView(!showChainView);
-                }}
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-sm"
-              >
-                {showChainView ? 'Single View' : 'Chain View'}
-              </Button>
-            </div>
-            {showChainView && (
-              <div className="mt-3 text-xs text-slate-400">
-                Output of each machine becomes the input for the next. This is function composition: g(f(x)).
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* How to Use (first time) */}
-      {processedPairs.length === 0 && phase === 'observe' && guessResult !== 'correct' && (
-        <Card className="backdrop-blur-xl bg-amber-500/5 border-amber-400/20">
-          <CardContent className="py-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/30 flex-shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-amber-300" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-                </svg>
-              </div>
-              <div>
-                <h4 className="text-amber-200 font-medium text-sm mb-1">How it works</h4>
-                <ol className="text-xs text-amber-100/80 space-y-1 list-decimal list-inside">
-                  <li>Click an input number to feed it into the machine</li>
-                  <li>Watch the machine process it and produce an output</li>
-                  <li>Study the input → output patterns to discover the hidden rule</li>
-                  <li>Use the phase tabs above to guide your exploration</li>
-                </ol>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Controls Bar */}
-      {guessResult !== 'correct' && (
-        <div className="flex gap-3 justify-center flex-wrap">
-          <Button
-            variant="ghost"
-            onClick={reset}
-            className="bg-red-500/15 border border-red-400/30 hover:bg-red-500/25 text-red-200"
-          >
-            Reset
-          </Button>
-          {PHASES.indexOf(phase) < PHASES.length - 1 && (
-            <Button
-              variant="ghost"
-              onClick={advancePhase}
-              className="bg-blue-500/15 border border-blue-400/30 hover:bg-blue-500/25 text-blue-200"
-            >
-              Next Phase: {PHASE_CONFIG[PHASES[PHASES.indexOf(phase) + 1]].label}
-            </Button>
+              </CardContent>
+            </Card>
           )}
-        </div>
+
+          {/* Available Inputs (observe / predict / discover_rule) */}
+          {challengeType !== 'create_rule' && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardContent className="py-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <h4 className="text-sm font-mono uppercase tracking-wider text-blue-400">Available Inputs</h4>
+                  {availableInputs.length > 0 && (
+                    <Badge variant="outline" className="border-blue-400/30 text-blue-300 text-xs">
+                      {availableInputs.length} remaining
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {availableInputs.length > 0 ? (
+                    availableInputs.map((value, idx) => (
+                      <Button
+                        key={idx}
+                        variant="ghost"
+                        disabled={isProcessing || (challengeType === 'predict' && !prediction.trim())}
+                        onClick={() => processValue(value)}
+                        className="bg-blue-500/15 border border-blue-400/40 hover:bg-blue-500/30 text-white font-bold"
+                      >
+                        {value}
+                      </Button>
+                    ))
+                  ) : (
+                    <p className="text-slate-400 text-sm">
+                      All inputs used.{' '}
+                      {challengeType === 'observe' && 'Click Continue when ready.'}
+                      {challengeType === 'discover_rule' && 'Now guess the rule below.'}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Processed Pairs (observe / predict / discover_rule) */}
+          {challengeType !== 'create_rule' && processedPairs.length > 0 && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardContent className="py-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-mono uppercase tracking-wider text-purple-400">Input → Output Pairs</h4>
+                  <span className="text-xs text-purple-300/70">{processedPairs.length} so far</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {processedPairs.map((pair, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-lg bg-slate-800/40 border border-slate-600/30 text-center"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-blue-300 font-bold">{pair.input}</span>
+                        <span className="text-slate-500">→</span>
+                        <span className="text-purple-300 font-bold">{pair.output}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pre-populated I/O Table (create_rule only) */}
+          {challengeType === 'create_rule' && (
+            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+              <CardContent className="py-5">
+                <h4 className="text-sm font-mono uppercase tracking-wider text-purple-400 mb-4">
+                  Input → Output Table
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                  {createRulePairs.map((pair, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-lg bg-slate-800/40 border border-slate-600/30 text-center"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-blue-300 font-bold">{pair.input}</span>
+                        <span className="text-slate-500">→</span>
+                        <span className="text-purple-300 font-bold">{pair.output}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-sm text-slate-400">
+                  Look at the pattern. What rule transforms each input into its output?
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Rule Guess (discover_rule / create_rule) */}
+          {(challengeType === 'discover_rule' || challengeType === 'create_rule')
+            && (challengeType === 'create_rule' || processedPairs.length >= 2)
+            && (
+            <Card className="backdrop-blur-xl bg-amber-500/10 border-amber-400/30">
+              <CardContent className="py-5">
+                <h4 className="text-amber-200 font-semibold mb-3 text-center">
+                  {challengeType === 'discover_rule' ? 'Can you guess the rule?' : 'Write the rule'}
+                </h4>
+                <div className="flex items-center gap-3 justify-center flex-wrap">
+                  <span className="text-amber-300 font-mono">f(x) =</span>
+                  <input
+                    type="text"
+                    value={guessedRule}
+                    onChange={(e) => { setGuessedRule(e.target.value); setGuessResult(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && checkRuleGuess()}
+                    placeholder="e.g., x + 3"
+                    className="flex-1 max-w-xs px-4 py-2 bg-slate-800/50 text-white rounded-lg border border-amber-400/40 focus:border-amber-400 focus:outline-none font-mono"
+                  />
+                  <Button
+                    variant="ghost"
+                    onClick={checkRuleGuess}
+                    className="bg-amber-500/20 border border-amber-400/40 hover:bg-amber-500/30 text-amber-200"
+                  >
+                    Check
+                  </Button>
+                </div>
+                {guessResult === 'incorrect' && (
+                  <div className="mt-3 p-3 bg-red-500/15 border border-red-400/30 rounded-lg text-center">
+                    <span className="text-red-200 text-sm">
+                      Not quite — try again. {guessAttempts >= 2 && 'Hint: look at how the output changes as the input grows by 1.'}
+                    </span>
+                    <div className="mt-1 text-center text-xs text-slate-500">
+                      {guessAttempts} attempt{guessAttempts !== 1 ? 's' : ''} so far
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Observe completion button */}
+          {challengeType === 'observe' && processedPairs.length >= 3 && (
+            <div className="flex justify-center">
+              <Button
+                variant="ghost"
+                onClick={completeObserve}
+                className="bg-blue-500/20 border border-blue-400/40 hover:bg-blue-500/30 text-blue-100"
+              >
+                Continue →
+              </Button>
+            </div>
+          )}
+
+          {/* How to Use (first challenge only) */}
+          {currentIndex === 0 && processedPairs.length === 0 && challengeType !== 'create_rule' && (
+            <Card className="backdrop-blur-xl bg-amber-500/5 border-amber-400/20">
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/30 flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-amber-300" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-amber-200 font-medium text-sm mb-1">How it works</h4>
+                    <ol className="text-xs text-amber-100/80 space-y-1 list-decimal list-inside">
+                      {challengeType === 'observe' && (
+                        <>
+                          <li>Click an input number to feed it into the machine</li>
+                          <li>Watch how the rule transforms it into an output</li>
+                          <li>After observing a few pairs, click Continue</li>
+                        </>
+                      )}
+                      {challengeType === 'predict' && (
+                        <>
+                          <li>Type your prediction for the output</li>
+                          <li>Then click an input — the machine reveals the answer</li>
+                          <li>Predict every input in the queue</li>
+                        </>
+                      )}
+                      {challengeType === 'discover_rule' && (
+                        <>
+                          <li>The rule is hidden — feed inputs to see outputs</li>
+                          <li>Study the pairs to find the pattern</li>
+                          <li>Type your guess for the rule and click Check</li>
+                        </>
+                      )}
+                    </ol>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

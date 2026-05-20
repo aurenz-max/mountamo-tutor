@@ -313,13 +313,14 @@ export const generatePatternBuilder = async (
   // Mode-aware requirements: single-type eval modes get focused instructions
   const requirementsSection = evalConstraint && evalConstraint.allowedTypes.length === 1
     ? `REQUIREMENTS (${evalConstraint.allowedTypes[0].toUpperCase()}-ONLY MODE):
-1. Generate 2-3 challenges, ALL of type '${evalConstraint.allowedTypes[0]}'
+1. Generate 4-6 challenges, ALL of type '${evalConstraint.allowedTypes[0]}'
 2. Each challenge MUST include its own 'sequence' field with DIFFERENT given/hidden/core arrays
-3. Progress in difficulty across challenges (each challenge has a DIFFERENT pattern):
-   - For 'extend': Challenge 1: simple AB core (e.g. R,B,R,B → R,B hidden), Challenge 2: AAB or ABB, Challenge 3: ABC
-   - For 'translate': Challenge 1: simple AB color→shape mapping, Challenge 2: AAB pattern, Challenge 3: ABC or color→letter
-   - For 'identify_core': Challenge 1: obvious AB sequence, Challenge 2: AAB, Challenge 3: AABB or ABC
-   - For 'find_rule': Challenge 1: simple +N rule, Challenge 2: larger step or subtraction, Challenge 3: harder rule
+3. Progress in difficulty across challenges (each challenge has a DIFFERENT pattern). Use this progression — start simple and ratchet up:
+   - For 'extend': simple AB core (e.g. R,B,R,B → R,B hidden) → AAB or ABB → ABC → AABB → longer cores (ABCD or AABBC)
+   - For 'translate': simple AB color→shape mapping → AAB pattern → ABC or color→letter → AABB → mixed-type translations
+   - For 'identify_core': obvious AB sequence → AAB → AABB → ABC → longer cores (ABCD)
+   - For 'find_rule': simple +N rule → larger step or subtraction → ×N (multiplicative) → two-step rules (×N then +M)
+   NOTE: pick a number of challenges that fits the progression and the available difficulty levels for the type — don't repeat the same difficulty tier twice.
 4. For 'extend' AND 'find_rule' challenges: the challenge's 'answer' MUST match that challenge's sequence.hidden token-for-token
 5. For 'translate' challenges: include 'translationMapping' as [{source:'red',target:'circle'}, ...] pairs for that challenge's tokens; 'answer' = the translated version of that challenge's sequence.given
 6. The top-level 'sequence' field should equal the first challenge's sequence
@@ -329,7 +330,7 @@ export const generatePatternBuilder = async (
 10. Use warm, encouraging language appropriate for young children
 11. Include narration text for the AI tutor`
     : `REQUIREMENTS:
-1. Generate 3-5 challenges that progress in difficulty
+1. Generate 4-6 challenges that progress in difficulty
 2. Start with extend challenges, then move to identify_core, then create/translate
 3. The 'given' sequence must clearly show the pattern (at least 2 full repetitions)
 4. The 'hidden' sequence must be the natural continuation

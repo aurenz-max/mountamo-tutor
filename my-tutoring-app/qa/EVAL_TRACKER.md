@@ -15,7 +15,7 @@
 | tape-diagram | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/tape-diagram-2026-03-15.md) |
 | sorting-station | 6 | 6 | 0 | 2026-04-01 | [report](eval-reports/sorting-station-2026-04-01.md) |
 | number-sequencer | 5 | 5 | 0 | 2026-03-18 | [report](eval-reports/number-sequencer-2026-03-15.md) |
-| base-ten-blocks | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/base-ten-blocks-2026-03-15.md) |
+| base-ten-blocks | 4 | 4 | 0 | 2026-05-19 | [report](eval-reports/base-ten-blocks-2026-05-19.md) |
 | phonics-blender | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phonics-blender-2026-03-15.md) |
 | rhyme-studio | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/rhyme-studio-2026-03-15.md) |
 | syllable-clapper | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/syllable-clapper-2026-03-15.md) |
@@ -32,18 +32,18 @@
 | opinion-builder | 2 | 1 | 1 | 2026-03-15 | [report](eval-reports/opinion-builder-2026-03-15.md) |
 | revision-workshop | 6 | 5 | 1 | 2026-03-15 | [report](eval-reports/revision-workshop-2026-03-15.md) |
 | sentence-builder | 4 | 2 | 2 | 2026-03-15 | [report](eval-reports/sentence-builder-2026-03-15.md) |
-| area-model | 4 | 4 | 0 | 2026-03-18 | [report](eval-reports/area-model-2026-03-15.md) |
+| area-model | 5 | 5 | 0 | 2026-05-19 | [report](eval-reports/area-model-2026-05-19.md) |
 | counting-board | 5 | 5 | 0 | 2026-03-15 | [report](eval-reports/counting-board-2026-03-15.md) |
 | ten-frame | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/ten-frame-2026-03-16.md) |
 | factor-tree | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/factor-tree-2026-03-16.md) |
 | addition-subtraction-scene | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/addition-subtraction-scene-2026-03-16.md) |
-| number-line | 5 | 5 | 0 | 2026-04-06 | [report](eval-reports/number-line-2026-04-06.md) |
+| number-line | 5 | 5 | 0 | 2026-05-19 | [report](eval-reports/number-line-2026-05-19.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/fraction-circles-2026-03-17.md) |
 | number-bond | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/number-bond-2026-03-17.md) |
 | pattern-builder | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/pattern-builder-2026-03-17.md) |
 | comparison-builder | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/comparison-builder-2026-03-17.md) |
 | balance-scale | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/balance-scale-2026-03-17.md) |
-| ordinal-line | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/ordinal-line-2026-03-17.md) |
+| ordinal-line | 5 | 5 | 0 | 2026-05-19 | [report](eval-reports/ordinal-line-2026-05-19.md) |
 | shape-sorter | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/shape-sorter-2026-03-17.md) |
 | math-fact-fluency | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/math-fact-fluency-2026-03-17.md) |
 | multiplication-explorer | 6 | 6 | 0 | 2026-03-17 | [report](eval-reports/multiplication-explorer-2026-03-17.md) |
@@ -51,18 +51,18 @@
 | shape-builder | 6 | 5 | 1 | 2026-03-28 | [report](eval-reports/shape-builder-2026-03-28.md) |
 | shape-tracer | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/shape-tracer-2026-03-17.md) |
 | 3d-shape-explorer | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/3d-shape-explorer-2026-03-17.md) |
-| strategy-picker | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/strategy-picker-2026-03-17.md) |
+| strategy-picker | 5 | 5 | 0 | 2026-05-19 | [report](eval-reports/strategy-picker-2026-05-19.md) |
 | ratio-table | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/ratio-table-2026-03-17.md) |
 | matrix-display | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/matrix-2026-03-17.md) |
 | double-number-line | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/double-number-line-2026-03-17.md) |
-| place-value-chart | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/place-value-chart-2026-03-17.md) |
+| place-value-chart | 4 | 4 | 0 | 2026-05-15 | [report](eval-reports/place-value-chart-2026-05-15.md) |
 | function-machine | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/function-machine-2026-03-17.md) |
 | knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
 | how-it-works | 3 | 1 | 2 | 2026-05-03 | [report](eval-reports/how-it-works-2026-05-03.md) |
 | light-shadow-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/light-shadow-lab-2026-03-29.md) |
 | constellation-builder | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/constellation-builder-2026-03-29.md) |
 | sound-wave-explorer | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/sound-wave-explorer-2026-03-29.md) |
-| hundreds-chart | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/hundreds-chart-2026-03-29.md) |
+| hundreds-chart | 4 | 4 | 0 | 2026-05-19 | [report](eval-reports/hundreds-chart-2026-05-19.md) |
 | length-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/length-lab-2026-03-29.md) |
 | analog-clock | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/analog-clock-2026-03-29.md) |
 | media-player | 1 | 0 | 1 | 2026-04-02 | [report](eval-reports/media-player-2026-04-02.md) |
@@ -85,7 +85,7 @@
 | bar-model | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/bar-model-2026-04-19.md) |
 | annotated-example | 1 | 1 | 0 | 2026-04-24 | [report](eval-reports/annotated-example-2026-04-24.md) |
 
-**Totals:** 283/292 modes passing (96.9%) | 22 open issues (2 CRITICAL, 19 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 284/293 modes passing (96.9%) | 22 open issues (2 CRITICAL, 19 HIGH, 1 MEDIUM, 0 LOW)
 
 Note: annotated-example passes structurally (final answers correct, schema refactor successful) but has 3 HIGH content-quality issues around redundant step planning — see AE-1..AE-4 and SP-16.
 
@@ -206,6 +206,17 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 **Root cause:** Two-stage orchestrator has no redundancy contract. Architect prompt rewards detailed decomposition; executor prompt rewards showing complete work ("actually carry out the computation described in the brief"). No mechanism tells the architect "two steps that perform the same move are wrong" or tells the executor "stop at the brief's scope — don't finish what downstream steps will finish."
 **Fix pattern:** Three options, probably layered: (1) Architect prompt: add "no two steps may perform the same mathematical move; merge them" as a hard rule. (2) Executor prompt: "match your output depth to the brief's scope — if brief says 'set up the integral', stop at the integral setup, do not evaluate." (3) Post-generation audit: detect identical `from→to` pairs across adjacent algebra steps and collapse them in repairPlan.
 
+### SP-17: Generator's deterministic post-process desyncs with LLM-generated instruction text
+
+**Affected:** hundreds-chart (HC-1, HC-2, HC-3 — all resolved 2026-05-19 via schema removal of `instruction` field)
+**Risk:** Any primitive where the generator splits responsibility — LLM provides creative `instruction`/`hint` text while a deterministic post-process (e.g., `buildChallenge`, `selectXxxRootValues`, per-mode operand generator) controls the visual/answer data. When Gemini's instruction text references specific numbers, ranges, scope qualifiers ("first two rows", "starting at 20") or quantities ("next three", "tap five"), the post-process overwrites the underlying data with canonical values — leaving the instruction stale.
+**Root cause:** The pool-service pattern (§6a #1 of PRD_WITHIN_MODE_INSTANCE_DENSITY) intentionally relies on Gemini for prose and on code for values, because structured-output Gemini converges deterministically on numeric fields. But the wrapper-only prompt usually does NOT constrain the instruction text to be value-agnostic — it lets Gemini reference any numbers it pleases. The result is two sources of truth (LLM instruction vs deterministic data) that drift.
+**Fix patterns (ordered cheapest → most robust):**
+1. **Prompt constraint** — instruct Gemini to write instructions that reference the pattern abstractly. Forbid specific numbers, row scopes, or quantities. Cheap, but stochastically violated.
+2. **Post-process sanitizer** — detect violations (digit checks, phrase blacklists) and replace with canonical templates. Brittle — number words slip past digit checks, benign phrases produce false positives, list grows every release.
+3. **SCHEMA-SIMPLIFY (preferred when feasible)** — remove the `instruction` field from the schema entirely. Generate it deterministically inside the post-process from the same primitives (type + skipValue + cells) that drive everything else. Topic personality stays in `title`/`description`. Eliminates the bug class by construction — no LLM field, no desync, no validator can produce false negatives. Trade-off: instructions are uniform per challenge type rather than topic-flavored. For primitives where the instruction must reference exact cell counts/positions, clarity beats variety. Applied to hundreds-chart 2026-05-19 — reference implementation for future SP-17 fixes.
+**Status:** Structurally eliminated for hundreds-chart via schema removal. Consider for other pool-service primitives whose instruction text must make exact structural claims.
+
 ### SP-4: Render path and validation path use different data sources
 
 **Affected:** number-sequencer (decade_fill — renderer uses `correctAnswers` to determine blanks, but check logic uses `blankIndices` from sequence nulls)
@@ -269,6 +280,14 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | HW-1 | how-it-works | predict | CRITICAL | Broken interaction | `handleMCAnswer` early-returns for `'explain'` type at HowItWorks.tsx:386 but the render block includes explain in the option-button condition — clicking any option on an explain challenge does nothing (no selection, no feedback, no advance). User-reported: stuck on "Why are nitrogen shocks important..." Challenge 3 of 3. | COMPONENT |
 | HW-2 | how-it-works | predict | HIGH | Eval mode bleed | `validateHowItWorksData` pads challenges to min 3 with hardcoded `type: 'identify'`, ignoring the eval mode's allowed types. Predict mode (allowed: predict, explain) returned a boilerplate identify challenge — eval-test API explicitly flagged disallowed type. | GENERATOR |
 | HW-3 | how-it-works | sequence | HIGH | Missing data | Flash Lite drops nullable `sequenceItem*` flat fields (SP-14) — observed sequence challenge with only 2 items + empty `correctOrder` array. Challenge unsolvable; component renders 2 reorder rows that can never match the empty target. | GENERATOR |
+| ~~HC-1~~ | ~~hundreds-chart~~ | ~~complete_sequence~~ | ~~CRITICAL~~ | ~~Instruction-data desync (SP-17)~~ | ~~All 5 challenges say "Tap the next three numbers" but check requires the full remainder of the sequence to 100. Fixed 2026-05-19: removed `instruction` from schema; now derived deterministically from type+skipValue in buildChallenge.~~ | ~~GENERATOR~~ |
+| ~~HC-2~~ | ~~hundreds-chart~~ | ~~highlight_sequence~~ | ~~CRITICAL~~ | ~~Instruction-data desync (SP-17)~~ | ~~C3 instruction "Tap on every even number you see in the first two rows" but `correctCells` holds all 50 evens 1-100. Fixed 2026-05-19 via schema removal of instruction field.~~ | ~~GENERATOR~~ |
+| ~~HC-3~~ | ~~hundreds-chart~~ | ~~find_skip_value~~ | ~~HIGH~~ | ~~Instruction-data desync (SP-17)~~ | ~~C4 instruction names 12,14,16,18 but `givenCells=[2,4,6,8]`. Fixed 2026-05-19 via schema removal of instruction field.~~ | ~~GENERATOR~~ |
+| ~~STP-1~~ | ~~strategy-picker~~ | ~~guided, try_another, compare, match~~ | ~~CRITICAL~~ | ~~Strategy/operation mismatch~~ | ~~Pool service randomly pairs non-counting-back strategies with subtraction problems — viz hardcodes operand1+operand2.~~ Fixed 2026-05-19: STRATEGY_CONSTRAINTS table + strategy-first pool selection. | ~~GENERATOR~~ |
+| ~~STP-2~~ | ~~strategy-picker~~ | ~~guided, try_another, compare, match~~ | ~~CRITICAL~~ | ~~Strategy/problem constraint violation~~ | ~~Doubles assigned to non-doubles, make-ten to non-make-ten sums, near-doubles to non-near-doubles.~~ Fixed 2026-05-19 via per-strategy predicate in STRATEGY_CONSTRAINTS. | ~~GENERATOR~~ |
+| ~~STP-3~~ | ~~strategy-picker~~ | ~~compare~~ | ~~CRITICAL~~ | ~~Mixed-operation strategy pair~~ | ~~Compare rendered two visualizations from incompatible operation buckets.~~ Fixed 2026-05-19: `selectPairProblemTriples` requires non-empty intersection of both strategies' compatible problem pools. | ~~GENERATOR~~ |
+| ~~STP-4~~ | ~~strategy-picker~~ | ~~guided, match~~ | ~~HIGH~~ | ~~Trivial challenge~~ | ~~Subtraction pool included `a == b` cases (`1-1`, `8-8`, `9-9`).~~ Fixed 2026-05-19: `enumerateProblems` uses strict `a > b`. | ~~GENERATOR~~ |
+| ~~STP-5~~ | ~~strategy-picker~~ | ~~all (counting-back)~~ | ~~HIGH~~ | ~~UI label wrong~~ | ~~NumberLineViz hop label hardcoded "+1" regardless of direction.~~ Fixed 2026-05-19: label uses `direction === -1 ? '−1' : '+1'`. | ~~COMPONENT~~ |
 
 ---
 
@@ -276,6 +295,12 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| STP-1 | strategy-picker | 2026-05-19 | STRATEGY-CONSTRAINT-TABLE + STRATEGY-FIRST-POOL: Added `STRATEGY_CONSTRAINTS` declaring each strategy's required operation + optional operand predicate. Replaced independent `selectDistinctProblems` + `selectStrategyPairs` with `selectStrategyProblemPairs` (single-strategy) and `selectPairProblemTriples` (pair, intersection-of-pools). Counting-back can only land on subtraction problems; all other strategies pull from addition only. |
+| STP-2 | strategy-picker | 2026-05-19 | Same STRATEGY_CONSTRAINTS fix as STP-1 — `doubles` predicate `a==b`, `near-doubles` predicate `|a-b|==1`, `make-ten` predicate `sum ∈ [8,10]`. Strategy assignment now respects operand structure. |
+| STP-3 | strategy-picker | 2026-05-19 | `selectPairProblemTriples` re-rolls (up to 20 attempts) until both strategies have a non-empty intersection of compatible problems; falls back to two unconstrained "safe" strategies (counting-on + tally-marks) if pairing is impossible for the configured strategy pool. |
+| STP-4 | strategy-picker | 2026-05-19 | `enumerateProblems` changed subtraction predicate from `a >= b` to `a > b` — trivial `a-a=0` removed from the candidate pool. |
+| STP-5 | strategy-picker | 2026-05-19 | `NumberLineViz` hop label now reads `direction === -1 ? '−1' : '+1'` instead of hardcoded `'+1'`. |
+| PVC-1 | place-value-chart | 2026-05-15 | SCHEMA-CHANGE + COMPONENT: Phase 2 redesigned from numeric MC ("70/7/700/0.7") to word-form vocabulary MC ("Seventy/Seven/Seven Hundred/Seven Tenths"). Generator: `digitValueChoices` schema changed to `{value, wordForm}[]`; new `buildDigitValueWord(digit, place)` produces correct -ty/Hundred/Thousand/Tenths forms with singular/plural agreement (digit=1 → "One Tenth", else "Tenths"). Component: Phase 2 buttons render `wordForm`, comparison still on numeric `value` (stable correctness key). Hint and wrong-answer feedback rewritten to coach vocabulary retrieval instead of "multiply by place value" (which leaked the answer). Catalog tutoring scaffolds and AI directives updated to coach spoken place-value vocabulary and forbid the AI from speaking the answer word directly. All 4 modes pass G1-G5. |
 | BM-1 | bar-model | 2026-04-19 | ORCHESTRATOR-REFACTOR (SP-14): Split generator into 6 per-mode sub-generators with focused flat-slot schemas (all rendered fields required). `options` now derived deterministically in post-process via `deriveOptions(expectedValue, scale.step)` — 4 distinct non-negative integers spaced by step, always includes expectedValue. Gemini never supplies options. Structurally eliminates missing-options class of bugs. |
 | BM-2 | bar-model | 2026-04-19 | ORCHESTRATOR-REFACTOR: Each sub-generator hardcodes `graphStyle` per mode (read_scale→`scaled_bar`, picture_graph→`picture`, etc.) — Gemini never picks it. `targetBarIndex` derived via `findBarIndex(bars, targetBarLabel, expectedValue)` — Gemini supplies a label string, generator resolves to index (LLMs unreliable at array indexing but reliable at echoing a label). `scale` synthesized from max bar value + step. Eliminates inline-value answer leak. |
 | BM-3 | bar-model | 2026-04-19 | Same fix as BM-1 — scaled_bar_graph sub-generator uses required `targetBarLabel`/`expectedValue` and derived options. |
@@ -335,6 +360,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | BT-2 | base-ten-blocks | 2026-03-17 | Component hides digit counts and "Blocks Total" display when challenge type is read_blocks — student must count visual blocks. |
 | BT-3 | base-ten-blocks | 2026-03-17 | Same SP-5 fix as BT-1 — initialColumns uses challenges[0].targetNumber instead of top-level numberValue. |
 | BT-4 | base-ten-blocks | 2026-03-17 | Generator regroup promptDoc rewritten: challenges start from standard form, instructions describe the trade. Product decision #6 resolved as Option B. |
+| BT-3 (2026-05-19) | base-ten-blocks | 2026-05-19 | PROMPT-CHANGE + POST-PROCESS-VALIDATE: read_blocks promptDoc tightened with explicit negative constraints forbidding digit-count language ("N hundreds/tens/ones") and block words ("hundreds blocks", "tens rods", "ones units", "flats", "rods"). Generic example instructions provided. Safety net regex in post-process detects either pattern and replaces with a generic prompt ("Look at the blocks shown above. What number do they represent?"). 3/3 stochastic runs produce clean instructions; no regressions in build_number/regroup/operate. Restores pictorial-recognition pedagogy that BT-2 UI hiding was meant to enforce. |
 | MX-1 | matrix-display | 2026-03-17 | Eval-test was called with wrong componentId (`matrix` instead of `matrix-display`). Re-ran with correct ID — all 4 modes pass. No code changes needed. |
 | SS-1 | shape-sorter | 2026-03-18 | Duplicated SHAPE_PROPERTIES into generator to avoid importing 'use client' module on server. All 3 modes pass. |
 | SS-4 | sorting-station | 2026-03-18 | Added `setSelectedOddOne(null)` on wrong answer in odd-one-out — clears selection so student must pick a new object before re-checking. |
@@ -376,6 +402,10 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 | SW-2 | sound-swap | 2026-04-04 | PROMPT-CHANGE + POST-PROCESS-VALIDATE (SP-7): Added curated VALID_DELETION_PAIRS to prompt + COMMON_WORDS post-process. Nonsense results ("un", "ig", "ap") rejected. |
 | SW-3 | sound-swap | 2026-04-04 | PROMPT-CHANGE + POST-PROCESS-DERIVE: Prompt says "Use /r/ NOT /ɹ/". IPA_NORMALIZATIONS maps /ɹ/,/ɾ/,/ɻ/ → /r/ in all phoneme arrays. |
 | SW-4 | sound-swap | 2026-04-04 | Same fix as SW-1/SW-2 — COMMON_WORDS validation rejects challenges with non-real originalWord. |
+| AM-2 | area-model | 2026-05-19 | COMPONENT-DISPLAY: Replaced unbounded linear cell-sizing (`Math.max(100, part * 8)` / `Math.max(80, part * 6)`) with log-scaled helpers `cellWidthForPart` / `cellHeightForPart` at module scope. Multi-digit factors no longer overflow `max-w-6xl` container (part=300: 2400px → 258px). 6 sizing sites updated. Proportional pedagogy preserved; other 4 modes (parts < 50) unaffected — they still bottom out at the 100/80 floor. All 5 modes re-tested PASS. |
+| HC-1 | hundreds-chart | 2026-05-19 | SCHEMA-SIMPLIFY (SP-17): Removed `instruction` from Gemini schema entirely. Replaced with deterministic `buildInstruction(type, skipValue)` called inside `buildChallenge`. Eliminates "next three" / start-position drift by construction — no LLM field, no desync possible. First-pass sanitizer with regex+phrase lists abandoned as brittle. |
+| HC-2 | hundreds-chart | 2026-05-19 | Same fix as HC-1 — schema removal of `instruction` eliminates the row-scope and quantity-qualifier desync structurally. |
+| HC-3 | hundreds-chart | 2026-05-19 | Same fix as HC-1 — Gemini cannot name digit lists like "12, 14, 16, 18" because it no longer authors the instruction. |
 
 ---
 

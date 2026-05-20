@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   usePrimitiveEvaluation,
@@ -8,38 +8,47 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
 /**
- * Fraction Bar — Multi-phase interactive fraction model
+ * Fraction Bar — multi-challenge interactive fraction model.
  *
- * Three-phase educational flow:
+ * Each session walks the student through 3-6 distinct fractions in the SAME
+ * eval mode. Each fraction runs through a three-phase within-challenge flow:
  *   Phase 1: Identify the Numerator (multiple choice)
  *   Phase 2: Identify the Denominator (multiple choice)
  *   Phase 3: Build the Fraction on the bar (shade partitions)
  *
- * AI tutoring triggers at every pedagogical moment:
- *   [ACTIVITY_START]      — introduce the fraction challenge
- *   [ANSWER_CORRECT]      — celebrate correct MC answer
- *   [ANSWER_INCORRECT]    — nudge after wrong MC answer
- *   [PHASE_TRANSITION]    — introduce the next phase
- *   [BUILD_CORRECT]       — celebrate successful bar construction
- *   [BUILD_INCORRECT]     — coach on shading error
- *   [ALL_COMPLETE]        — celebrate full completion
- *   [HINT_REQUESTED]      — student asked for help
- *
- * Tracks per-phase accuracy, attempts, and interaction metrics.
+ * The session ends when every challenge has been completed; results aggregate
+ * into one PhaseSummaryPanel row per eval mode (PRD §6e pattern).
  */
+
+export type FractionBarChallengeType =
+  | 'identify'
+  | 'build'
+  | 'compare'
+  | 'add_subtract';
+
+export interface FractionBarChallenge {
+  id: string;
+  numerator: number;
+  denominator: number;
+  numeratorChoices: number[];
+  denominatorChoices: number[];
+}
 
 export interface FractionBarData {
   title: string;
   description: string;
-  numerator: number;            // Target numerator (parts to shade)
-  denominator: number;          // Target denominator (total equal parts)
-  showDecimal?: boolean;        // Show decimal approximation in build phase
-  gradeLevel?: string;          // Grade level for age-appropriate language
-  numeratorChoices?: number[];  // Pre-generated MC options for phase 1
-  denominatorChoices?: number[];// Pre-generated MC options for phase 2
+  /** 1-6 challenges. Walked sequentially by the component. */
+  challenges: FractionBarChallenge[];
+  /** Eval mode pinned for this session (all challenges share one mode). */
+  challengeType: FractionBarChallengeType;
+  /** Whether to show the decimal approximation in the build phase. */
+  showDecimal?: boolean;
+  gradeLevel?: string;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -57,22 +66,27 @@ interface FractionBarProps {
 
 type LearningPhase = 'identify-numerator' | 'identify-denominator' | 'build-fraction';
 
-/** Compute a phase score from attempt count (shared between submit and summary) */
-function computePhaseScore(attempts: number, penalty: number): number {
-  if (attempts <= 1) return 100;
-  return Math.max(50, 100 - (attempts - 1) * penalty);
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  identify:     { label: 'Identify Fractions',  icon: '🔢', accentColor: 'purple' },
+  build:        { label: 'Build Fractions',     icon: '🎯', accentColor: 'emerald' },
+  compare:      { label: 'Compare Fractions',   icon: '⚖️', accentColor: 'blue' },
+  add_subtract: { label: 'Fraction Operations', icon: '➕',       accentColor: 'pink' },
+};
+
+/** Per-challenge score: 100 first try, then -20 per extra attempt, floored at 20. */
+function phaseScore(attempts: number): number {
+  if (attempts <= 0) return 0;
+  return Math.max(20, 100 - (attempts - 1) * 20);
 }
 
 const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
   const {
     title,
     description,
-    numerator,
-    denominator,
+    challenges = [],
+    challengeType: sessionChallengeType,
     showDecimal = true,
     gradeLevel,
-    numeratorChoices: providedNumeratorChoices,
-    denominatorChoices: providedDenominatorChoices,
     instanceId,
     skillId,
     subskillId,
@@ -81,28 +95,66 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  const resolvedInstanceId = instanceId || `fraction-bar-${Date.now()}`;
+  const stableInstanceIdRef = useRef(instanceId || `fraction-bar-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Phase state ──────────────────────────────────────────────
+  // ── Challenge progress ─────────────────────────────────────────
+  const {
+    currentIndex,
+    results,
+    isComplete,
+    recordResult,
+    advance,
+  } = useChallengeProgress<FractionBarChallenge>({
+    challenges,
+    getChallengeId: (c) => c.id,
+  });
+
+  const currentChallenge = challenges[currentIndex] ?? null;
+  const numerator = currentChallenge?.numerator ?? 1;
+  const denominator = currentChallenge?.denominator ?? 2;
+  const numeratorChoices = currentChallenge?.numeratorChoices ?? [];
+  const denominatorChoices = currentChallenge?.denominatorChoices ?? [];
+
+  // ── Per-challenge interaction state (resets on advance) ────────
   const [currentPhase, setCurrentPhase] = useState<LearningPhase>('identify-numerator');
   const [feedback, setFeedback] = useState<string>('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'hint' | 'info'>('info');
 
-  // Phase 1: Identify numerator
   const [selectedNumerator, setSelectedNumerator] = useState<number | null>(null);
   const [numeratorAttempts, setNumeratorAttempts] = useState(0);
 
-  // Phase 2: Identify denominator
   const [selectedDenominator, setSelectedDenominator] = useState<number | null>(null);
   const [denominatorAttempts, setDenominatorAttempts] = useState(0);
 
-  // Phase 3: Build fraction on bar
   const [shadedCount, setShadedCount] = useState(0);
   const [shadingChanges, setShadingChanges] = useState(0);
   const [buildAttempts, setBuildAttempts] = useState(0);
 
-  // Hints
-  const [hintsUsed, setHintsUsed] = useState(0);
+  const [challengeHintCount, setChallengeHintCount] = useState(0);
+  const [challengeDone, setChallengeDone] = useState(false);
+
+  const recordedRef = useRef(false);
+  const sessionCompleteFiredRef = useRef(false);
+
+  // ── Reset every per-challenge slot when the active challenge changes ──
+  // PRD §6c: missing any slot leaks state from challenge N into challenge N+1.
+  useEffect(() => {
+    if (!currentChallenge) return;
+    setCurrentPhase('identify-numerator');
+    setFeedback('');
+    setFeedbackType('info');
+    setSelectedNumerator(null);
+    setNumeratorAttempts(0);
+    setSelectedDenominator(null);
+    setDenominatorAttempts(0);
+    setShadedCount(0);
+    setShadingChanges(0);
+    setBuildAttempts(0);
+    setChallengeHintCount(0);
+    setChallengeDone(false);
+    recordedRef.current = false;
+  }, [currentChallenge?.id]);
 
   // ── AI Tutoring ──────────────────────────────────────────────
   const aiPrimitiveData = useMemo(
@@ -111,9 +163,21 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       denominator,
       currentPhase,
       shadedCount,
+      currentChallengeIndex: currentIndex + 1,
+      totalChallenges: challenges.length,
+      challengeType: sessionChallengeType,
       gradeLevel: gradeLevel || 'Grade 3',
     }),
-    [numerator, denominator, currentPhase, shadedCount, gradeLevel],
+    [
+      numerator,
+      denominator,
+      currentPhase,
+      shadedCount,
+      currentIndex,
+      challenges.length,
+      sessionChallengeType,
+      gradeLevel,
+    ],
   );
 
   const { sendText, isConnected } = useLuminaAI({
@@ -123,17 +187,21 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     gradeLevel,
   });
 
-  // Activity start — introduce the challenge
+  // Activity start — introduce the session once
+  const activityStartSentRef = useRef(false);
   useEffect(() => {
     if (!isConnected) return;
+    if (activityStartSentRef.current) return;
+    if (challenges.length === 0) return;
+    activityStartSentRef.current = true;
     sendText(
-      `[ACTIVITY_START] This is a multi-phase fraction bar activity for ${gradeLevel || 'Grade 3'}. `
-        + `The student will learn about the fraction ${numerator}/${denominator}. `
-        + `Phase 1: identify the numerator. Phase 2: identify the denominator. Phase 3: build the fraction by shading ${numerator} of ${denominator} parts. `
-        + `Introduce the activity warmly and briefly.`,
+      `[ACTIVITY_START] Multi-challenge fraction bar activity for ${gradeLevel || 'Grade 3'}. `
+        + `Mode: ${sessionChallengeType}. The student will work through ${challenges.length} different fractions, `
+        + `each running through three phases (identify numerator, identify denominator, build on the bar). `
+        + `Introduce the session warmly and briefly.`,
       { silent: true },
     );
-  }, [isConnected, numerator, denominator, gradeLevel, sendText]);
+  }, [isConnected, challenges.length, sessionChallengeType, gradeLevel, sendText]);
 
   // ── Evaluation hook ──────────────────────────────────────────
   const {
@@ -141,7 +209,6 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     hasSubmitted: hasSubmittedEvaluation,
     submittedResult,
     elapsedMs,
-    resetAttempt: resetEvaluationAttempt,
   } = usePrimitiveEvaluation<FractionBarMetrics>({
     primitiveType: 'fraction-bar',
     instanceId: resolvedInstanceId,
@@ -152,93 +219,125 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── Phase summary data (for PhaseSummaryPanel) ─────────────
-  const phaseSummaryData = useMemo((): PhaseResult[] => {
-    if (!hasSubmittedEvaluation) return [];
+  // ── PhaseSummaryPanel: one row, aggregated by eval mode ────────
+  const phaseResults = usePhaseResults({
+    challenges,
+    results,
+    isComplete,
+    getChallengeType: () => sessionChallengeType,
+    phaseConfig: PHASE_TYPE_CONFIG,
+    getScore: (rs) =>
+      rs.length === 0
+        ? 0
+        : Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length),
+  });
 
-    const p1Score = computePhaseScore(numeratorAttempts, 20);
-    const p2Score = computePhaseScore(denominatorAttempts, 20);
-    // buildAttempts is 0-indexed at submit time, so +1 for display
-    const p3Score = buildAttempts === 0 ? 100 : Math.max(50, 100 - buildAttempts * 15);
-
-    return [
-      {
-        label: 'Identify the Numerator',
-        score: p1Score,
-        attempts: numeratorAttempts,
-        firstTry: numeratorAttempts === 1,
-        icon: '\uD83D\uDD22',
-        accentColor: 'purple',
-      },
-      {
-        label: 'Identify the Denominator',
-        score: p2Score,
-        attempts: denominatorAttempts,
-        firstTry: denominatorAttempts === 1,
-        icon: '\uD83D\uDD22',
-        accentColor: 'blue',
-      },
-      {
-        label: 'Build the Fraction',
-        score: p3Score,
-        attempts: buildAttempts + 1,
-        firstTry: buildAttempts === 0,
-        icon: '\uD83C\uDFAF',
-        accentColor: 'emerald',
-      },
-    ];
-  }, [hasSubmittedEvaluation, numeratorAttempts, denominatorAttempts, buildAttempts]);
-
-  // ── Generate MC choices ──────────────────────────────────────
-  const generateChoices = useCallback(
-    (correct: number, other: number): number[] => {
-      const choices = new Set<number>([correct]);
-      if (other !== correct) choices.add(other);
-      const sum = numerator + denominator;
-      if (!choices.has(sum)) choices.add(sum);
-      if (correct > 1 && !choices.has(correct - 1)) choices.add(correct - 1);
-      if (!choices.has(correct + 1)) choices.add(correct + 1);
-      if (!choices.has(correct + 2)) choices.add(correct + 2);
-      let v = 1;
-      while (choices.size < 4) {
-        if (!choices.has(v)) choices.add(v);
-        v++;
-      }
-      return Array.from(choices)
-        .sort((a, b) => a - b)
-        .slice(0, 4);
+  // ── Per-challenge content match (stale-state guard, §6a #8) ────
+  const stateMatchesChallenge = useCallback(
+    (challenge: FractionBarChallenge | null): boolean => {
+      if (!challenge) return false;
+      return challenge.numerator === numerator && challenge.denominator === denominator;
     },
     [numerator, denominator],
   );
 
-  const numeratorChoices = useMemo(
-    () => providedNumeratorChoices ?? generateChoices(numerator, denominator),
-    [providedNumeratorChoices, numerator, denominator, generateChoices],
+  // ── Per-challenge completion (called from submit handlers) ─────
+  const completeCurrentChallenge = useCallback(
+    (
+      correct: boolean,
+      score: number,
+      totalAttempts: number,
+      extras: Record<string, unknown> = {},
+    ) => {
+      if (!currentChallenge) return;
+      if (recordedRef.current) return;
+      if (!stateMatchesChallenge(currentChallenge)) return;
+      recordedRef.current = true;
+      setChallengeDone(true);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct,
+        attempts: totalAttempts,
+        score,
+        hintsUsed: challengeHintCount,
+        ...extras,
+      });
+    },
+    [currentChallenge, stateMatchesChallenge, recordResult, challengeHintCount],
   );
 
-  const denominatorChoices = useMemo(
-    () => providedDenominatorChoices ?? generateChoices(denominator, numerator),
-    [providedDenominatorChoices, numerator, denominator, generateChoices],
-  );
+  // ── Session complete → aggregate metrics + submitEvaluation ────
+  useEffect(() => {
+    if (!isComplete) return;
+    if (sessionCompleteFiredRef.current) return;
+    if (challenges.length === 0) return;
+    sessionCompleteFiredRef.current = true;
+
+    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
+    const correctCount = results.filter((r) => r.correct).length;
+    const firstTryCount = results.filter((r) => Number(r.score ?? 0) === 100).length;
+    const hintsViewed = results.filter((r) => Number(r.hintsUsed ?? 0) > 0).length;
+    const overallAccuracy = Math.round(
+      results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length),
+    );
+    const averageAttemptsPerChallenge =
+      Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
+
+    const metrics: FractionBarMetrics = {
+      type: 'fraction-bar',
+      challengeType: sessionChallengeType,
+      totalChallenges: challenges.length,
+      correctCount,
+      attemptsCount: totalAttempts,
+      firstTryCount,
+      hintsViewed,
+      overallAccuracy,
+      averageAttemptsPerChallenge,
+    };
+
+    if (!hasSubmittedEvaluation) {
+      const goalMet = correctCount === challenges.length;
+      submitEvaluation(goalMet, overallAccuracy, metrics, {
+        studentWork: {
+          challengeCount: challenges.length,
+          challengeType: sessionChallengeType,
+          fractions: challenges.map((c) => ({
+            numerator: c.numerator,
+            denominator: c.denominator,
+          })),
+          scoresPerChallenge: challenges.map((c) => {
+            const r = results.find((rr) => rr.challengeId === c.id);
+            return Number(r?.score ?? 0);
+          }),
+        },
+      });
+    }
+  }, [
+    isComplete, results, challenges, sessionChallengeType,
+    submitEvaluation, hasSubmittedEvaluation,
+  ]);
 
   // ── Phase 1: Check numerator ─────────────────────────────────
   const handleCheckNumerator = useCallback(() => {
-    if (selectedNumerator === null) {
-      setFeedback('Please select an answer first!');
-      setFeedbackType('error');
+    if (selectedNumerator === null || challengeDone) {
+      if (selectedNumerator === null) {
+        setFeedback('Please select an answer first!');
+        setFeedbackType('error');
+      }
       return;
     }
-    setNumeratorAttempts((p) => p + 1);
+    const nextAttempts = numeratorAttempts + 1;
+    setNumeratorAttempts(nextAttempts);
 
     if (selectedNumerator === numerator) {
       setFeedback(
-        `Correct! The numerator is ${numerator} \u2014 it\u2019s the top number that tells us how many parts are shaded.`,
+        `Correct! The numerator is ${numerator} — it’s the top number that tells us how many parts are shaded.`,
       );
       setFeedbackType('success');
 
       sendText(
-        `[ANSWER_CORRECT] Student correctly identified the numerator as ${numerator} for the fraction ${numerator}/${denominator}. `
-          + `Attempt ${numeratorAttempts + 1}. Congratulate briefly and explain what the numerator means.`,
+        `[ANSWER_CORRECT] Student correctly identified the numerator as ${numerator} for ${numerator}/${denominator}. `
+          + `Attempt ${nextAttempts}. Congratulate briefly and explain what the numerator means.`,
         { silent: true },
       );
 
@@ -246,12 +345,11 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
         setCurrentPhase('identify-denominator');
         setFeedback('');
         sendText(
-          `[PHASE_TRANSITION] Moving to Phase 2: Identify the Denominator. `
-            + `The student already knows the numerator is ${numerator}. Now they need to identify ${denominator} as the denominator. `
+          `[PHASE_TRANSITION] Moving to Phase 2: Identify the Denominator for ${numerator}/${denominator}. `
             + `Briefly introduce what the denominator means.`,
           { silent: true },
         );
-      }, 2000);
+      }, 1500);
     } else {
       setFeedback(
         `Not quite. The numerator is the top number in a fraction. In ${numerator}/${denominator}, look at which number is on top.`,
@@ -259,31 +357,34 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       setFeedbackType('error');
 
       sendText(
-        `[ANSWER_INCORRECT] Student chose ${selectedNumerator} but the correct numerator is ${numerator} for ${numerator}/${denominator}. `
-          + `Attempt ${numeratorAttempts + 1}. Give a gentle hint about what the numerator means without giving the answer.`,
+        `[ANSWER_INCORRECT] Student chose ${selectedNumerator} but the correct numerator is ${numerator}. `
+          + `Attempt ${nextAttempts}. Give a gentle hint about what the numerator means without giving the answer.`,
         { silent: true },
       );
     }
-  }, [selectedNumerator, numerator, denominator, numeratorAttempts, sendText]);
+  }, [selectedNumerator, challengeDone, numerator, denominator, numeratorAttempts, sendText]);
 
   // ── Phase 2: Check denominator ───────────────────────────────
   const handleCheckDenominator = useCallback(() => {
-    if (selectedDenominator === null) {
-      setFeedback('Please select an answer first!');
-      setFeedbackType('error');
+    if (selectedDenominator === null || challengeDone) {
+      if (selectedDenominator === null) {
+        setFeedback('Please select an answer first!');
+        setFeedbackType('error');
+      }
       return;
     }
-    setDenominatorAttempts((p) => p + 1);
+    const nextAttempts = denominatorAttempts + 1;
+    setDenominatorAttempts(nextAttempts);
 
     if (selectedDenominator === denominator) {
       setFeedback(
-        `Correct! The denominator is ${denominator} \u2014 it\u2019s the bottom number that tells us how many equal parts make up the whole.`,
+        `Correct! The denominator is ${denominator} — it’s the bottom number that tells us how many equal parts make up the whole.`,
       );
       setFeedbackType('success');
 
       sendText(
         `[ANSWER_CORRECT] Student correctly identified the denominator as ${denominator} for ${numerator}/${denominator}. `
-          + `Attempt ${denominatorAttempts + 1}. Congratulate and explain what the denominator means.`,
+          + `Attempt ${nextAttempts}. Congratulate and explain what the denominator means.`,
         { silent: true },
       );
 
@@ -291,12 +392,11 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
         setCurrentPhase('build-fraction');
         setFeedback('');
         sendText(
-          `[PHASE_TRANSITION] Moving to Phase 3: Build the Fraction. `
-            + `The student knows that in ${numerator}/${denominator}, the numerator is ${numerator} and the denominator is ${denominator}. `
-            + `Now they must shade exactly ${numerator} out of ${denominator} equal parts on the bar. Encourage them to apply what they learned.`,
+          `[PHASE_TRANSITION] Moving to Phase 3: Build ${numerator}/${denominator}. `
+            + `The student must shade exactly ${numerator} out of ${denominator} equal parts on the bar.`,
           { silent: true },
         );
-      }, 2000);
+      }, 1500);
     } else {
       setFeedback(
         `Not quite. The denominator is the bottom number in a fraction. In ${numerator}/${denominator}, look at which number is on the bottom.`,
@@ -304,16 +404,17 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       setFeedbackType('error');
 
       sendText(
-        `[ANSWER_INCORRECT] Student chose ${selectedDenominator} but the correct denominator is ${denominator} for ${numerator}/${denominator}. `
-          + `Attempt ${denominatorAttempts + 1}. Give a gentle hint about what the denominator means without giving the answer.`,
+        `[ANSWER_INCORRECT] Student chose ${selectedDenominator} but the correct denominator is ${denominator}. `
+          + `Attempt ${nextAttempts}. Give a gentle hint about what the denominator means without giving the answer.`,
         { silent: true },
       );
     }
-  }, [selectedDenominator, numerator, denominator, denominatorAttempts, sendText]);
+  }, [selectedDenominator, challengeDone, numerator, denominator, denominatorAttempts, sendText]);
 
   // ── Phase 3: Toggle partition ────────────────────────────────
   const togglePartition = useCallback(
     (partitionIndex: number) => {
+      if (challengeDone) return;
       if (partitionIndex < shadedCount) {
         setShadedCount(partitionIndex);
       } else {
@@ -321,13 +422,14 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       }
       setShadingChanges((p) => p + 1);
     },
-    [shadedCount],
+    [shadedCount, challengeDone],
   );
 
   // ── Phase 3: Submit build ────────────────────────────────────
   const handleSubmitBuild = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-    setBuildAttempts((p) => p + 1);
+    if (challengeDone || !currentChallenge) return;
+    const nextBuildAttempts = buildAttempts + 1;
+    setBuildAttempts(nextBuildAttempts);
 
     const isCorrect = shadedCount === numerator;
     const selectedFraction = `${shadedCount}/${denominator}`;
@@ -341,7 +443,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
 
       sendText(
         `[BUILD_INCORRECT] Student shaded ${shadedCount}/${denominator} but target is ${numerator}/${denominator}. `
-          + `Attempt ${buildAttempts + 1}. ${
+          + `Attempt ${nextBuildAttempts}. ${
             shadedCount < numerator
               ? `They shaded too few parts (${numerator - shadedCount} short). Encourage them to shade more.`
               : `They shaded too many parts (${shadedCount - numerator} extra). Encourage them to unshade some.`
@@ -351,88 +453,49 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       return;
     }
 
-    // ── Score each phase ──
-    const p1 = computePhaseScore(numeratorAttempts, 20);
-    const p2 = computePhaseScore(denominatorAttempts, 20);
-    const p3 = buildAttempts === 0 ? 100 : Math.max(50, 100 - buildAttempts * 15);
-    const overallScore = Math.round((p1 + p2 + p3) / 3);
-
-    const metrics: FractionBarMetrics = {
-      type: 'fraction-bar',
-
-      // Overall
-      allPhasesCompleted: true,
-      finalSuccess: true,
-
-      // Phase 1
-      correctNumerator: numerator,
-      studentNumeratorAnswer: selectedNumerator,
-      numeratorCorrect: selectedNumerator === numerator,
-      numeratorAttempts,
-
-      // Phase 2
-      correctDenominator: denominator,
-      studentDenominatorAnswer: selectedDenominator,
-      denominatorCorrect: selectedDenominator === denominator,
-      denominatorAttempts,
-
-      // Phase 3
-      targetFraction,
-      selectedFraction,
-      buildCorrect: true,
-      buildAttempts: buildAttempts + 1,
-      shadingChanges,
-
-      // Aggregate
-      totalAttempts: numeratorAttempts + denominatorAttempts + buildAttempts + 1,
-      solvedOnFirstTry: numeratorAttempts === 1 && denominatorAttempts === 1 && buildAttempts === 0,
-      hintsUsed,
-    };
-
-    submitEvaluation(true, overallScore, metrics, {
-      studentWork: {
-        phases: {
-          identifyNumerator: { answer: selectedNumerator, attempts: numeratorAttempts },
-          identifyDenominator: { answer: selectedDenominator, attempts: denominatorAttempts },
-          buildFraction: { shadedCount, attempts: buildAttempts + 1 },
-        },
-      },
-    });
+    // ── Score each within-challenge phase ──
+    const p1 = phaseScore(numeratorAttempts);
+    const p2 = phaseScore(denominatorAttempts);
+    const p3 = phaseScore(nextBuildAttempts);
+    const score = Math.round((p1 + p2 + p3) / 3);
 
     setFeedback(
-      `Excellent! You correctly built the fraction ${targetFraction} by shading ${numerator} out of ${denominator} equal parts!`,
+      `Excellent! You correctly built ${targetFraction} by shading ${numerator} out of ${denominator} equal parts!`,
     );
     setFeedbackType('success');
 
     sendText(
-      `[ALL_COMPLETE] Student completed all 3 phases for ${numerator}/${denominator}! `
-        + `Phase scores: Identify Numerator ${p1}% (${numeratorAttempts} attempt${numeratorAttempts !== 1 ? 's' : ''}), `
-        + `Identify Denominator ${p2}% (${denominatorAttempts} attempt${denominatorAttempts !== 1 ? 's' : ''}), `
-        + `Build Fraction ${p3}% (${buildAttempts + 1} attempt${buildAttempts !== 0 ? 's' : ''}). `
-        + `Overall: ${overallScore}%. Hints used: ${hintsUsed}. `
-        + `Give a brief, encouraging summary of their performance across all three phases. `
-        + `If any phase had multiple attempts, mention what they could practice more.`,
+      `[BUILD_CORRECT] Student built ${numerator}/${denominator} correctly. `
+        + `Phase scores: numerator ${p1}, denominator ${p2}, build ${p3}, overall ${score}. `
+        + `Briefly celebrate and acknowledge any phase that took multiple attempts.`,
       { silent: true },
     );
+
+    const totalAttempts = numeratorAttempts + denominatorAttempts + nextBuildAttempts;
+    completeCurrentChallenge(true, score, totalAttempts, {
+      numeratorAttempts,
+      denominatorAttempts,
+      buildAttempts: nextBuildAttempts,
+      shadingChanges,
+    });
   }, [
+    challengeDone,
+    currentChallenge,
+    buildAttempts,
     shadedCount,
     numerator,
     denominator,
-    hasSubmittedEvaluation,
     numeratorAttempts,
     denominatorAttempts,
-    buildAttempts,
-    selectedNumerator,
-    selectedDenominator,
     shadingChanges,
-    hintsUsed,
-    submitEvaluation,
     sendText,
+    completeCurrentChallenge,
   ]);
 
   // ── Hints ────────────────────────────────────────────────────
   const handleShowHint = useCallback(() => {
-    setHintsUsed((p) => p + 1);
+    if (challengeDone) return;
+    setChallengeHintCount((c) => c + 1);
     setFeedbackType('hint');
 
     if (currentPhase === 'identify-numerator') {
@@ -441,7 +504,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       );
       sendText(
         `[HINT_REQUESTED] Student asked for a hint during Phase 1 (Identify Numerator) for ${numerator}/${denominator}. `
-          + `Hint #${hintsUsed + 1}. Give a scaffolded hint about numerators without revealing the answer.`,
+          + `Give a scaffolded hint about numerators without revealing the answer.`,
         { silent: true },
       );
     } else if (currentPhase === 'identify-denominator') {
@@ -450,7 +513,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       );
       sendText(
         `[HINT_REQUESTED] Student asked for a hint during Phase 2 (Identify Denominator) for ${numerator}/${denominator}. `
-          + `Hint #${hintsUsed + 1}. Give a scaffolded hint about denominators without revealing the answer.`,
+          + `Give a scaffolded hint about denominators without revealing the answer.`,
         { silent: true },
       );
     } else {
@@ -459,28 +522,16 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       );
       sendText(
         `[HINT_REQUESTED] Student asked for a hint during Phase 3 (Build Fraction). `
-          + `They have ${shadedCount}/${denominator} shaded, target is ${numerator}/${denominator}. `
-          + `Hint #${hintsUsed + 1}. Guide them on how many parts to shade.`,
+          + `Target is ${numerator}/${denominator}. Guide them on how many parts to shade.`,
         { silent: true },
       );
     }
-  }, [currentPhase, numerator, denominator, hintsUsed, shadedCount, sendText]);
+  }, [challengeDone, currentPhase, numerator, denominator, sendText]);
 
-  // ── Reset ────────────────────────────────────────────────────
-  const handleReset = useCallback(() => {
-    setCurrentPhase('identify-numerator');
-    setSelectedNumerator(null);
-    setSelectedDenominator(null);
-    setShadedCount(0);
-    setNumeratorAttempts(0);
-    setDenominatorAttempts(0);
-    setBuildAttempts(0);
-    setShadingChanges(0);
-    setHintsUsed(0);
-    setFeedback('');
-    setFeedbackType('info');
-    resetEvaluationAttempt();
-  }, [resetEvaluationAttempt]);
+  // ── Advance to next challenge ──────────────────────────────────
+  const handleNextChallenge = () => {
+    advance();
+  };
 
   // ── Helpers ──────────────────────────────────────────────────
   const feedbackColors: Record<typeof feedbackType, string> = {
@@ -489,6 +540,40 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     hint: 'bg-blue-500/10 border-blue-500/30 text-blue-300',
     info: 'bg-white/5 border-white/10 text-slate-300',
   };
+
+  const hasNextChallenge = currentIndex + 1 < challenges.length;
+
+  // ── Empty state ────────────────────────────────────────────────
+  if (challenges.length === 0) {
+    return (
+      <div className={`w-full ${className || ''}`}>
+        <div className="max-w-6xl mx-auto p-8 text-center text-slate-400">
+          No fraction bar challenges available.
+        </div>
+      </div>
+    );
+  }
+
+  // ── Session summary ────────────────────────────────────────────
+  if (isComplete) {
+    return (
+      <div className={`w-full ${className || ''}`}>
+        <div className="max-w-6xl mx-auto my-16">
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score}
+            durationMs={elapsedMs}
+            heading="Fraction Bar Session Complete"
+            celebrationMessage={
+              results.every((r) => r.correct)
+                ? 'Perfect! You built every fraction correctly.'
+                : 'Great work — review the fractions you struggled with and try again next time.'
+            }
+          />
+        </div>
+      </div>
+    );
+  }
 
   // ── Render ───────────────────────────────────────────────────
   return (
@@ -512,6 +597,32 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
             <p className="text-slate-300 leading-relaxed">{description}</p>
           </div>
 
+          {/* ── Session progress dots ──────────────────────── */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            {challenges.map((c, idx) => {
+              const r = results.find((rr) => rr.challengeId === c.id);
+              const isDone = !!r;
+              const isCurrent = idx === currentIndex && !challengeDone;
+              return (
+                <div
+                  key={c.id}
+                  className={`flex items-center justify-center rounded-full border text-xs font-mono w-8 h-8 ${
+                    isDone
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : isCurrent
+                        ? 'bg-purple-500/20 text-purple-200 border-purple-400/50 shadow-lg scale-105'
+                        : 'bg-white/5 text-slate-400 border-white/10'
+                  }`}
+                >
+                  {idx + 1}
+                </div>
+              );
+            })}
+            <span className="ml-3 text-xs font-mono uppercase tracking-wider text-slate-400">
+              Problem {currentIndex + 1} / {challenges.length}
+            </span>
+          </div>
+
           {/* ── Fraction display (constant reference) ──────── */}
           <div className="flex justify-center mb-8">
             <div className="glass-panel rounded-2xl border border-purple-500/20 px-12 py-6 text-center">
@@ -528,7 +639,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
             </div>
           </div>
 
-          {/* ── Phase progress indicator ───────────────────── */}
+          {/* ── Within-challenge phase indicator ──────────── */}
           <div className="flex items-center justify-center gap-3 mb-8">
             {/* Phase 1 pill */}
             <div
@@ -539,11 +650,11 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
               }`}
             >
               <span className="text-lg">
-                {currentPhase === 'identify-numerator' ? '\uD83D\uDD22' : '\u2705'}
+                {currentPhase === 'identify-numerator' ? '🔢' : '✅'}
               </span>
               <span className="font-medium text-sm">1. Numerator</span>
             </div>
-            <div className="text-slate-600">{'\u2192'}</div>
+            <div className="text-slate-600">{'→'}</div>
 
             {/* Phase 2 pill */}
             <div
@@ -557,14 +668,12 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
             >
               <span className="text-lg">
                 {currentPhase === 'build-fraction'
-                  ? '\u2705'
-                  : currentPhase === 'identify-denominator'
-                    ? '\uD83D\uDD22'
-                    : '\uD83D\uDD22'}
+                  ? '✅'
+                  : '🔢'}
               </span>
               <span className="font-medium text-sm">2. Denominator</span>
             </div>
-            <div className="text-slate-600">{'\u2192'}</div>
+            <div className="text-slate-600">{'→'}</div>
 
             {/* Phase 3 pill */}
             <div
@@ -575,7 +684,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
               }`}
             >
               <span className="text-lg">
-                {hasSubmittedEvaluation ? '\u2705' : '\uD83C\uDFAF'}
+                {challengeDone ? '✅' : '🎯'}
               </span>
               <span className="font-medium text-sm">3. Build It</span>
             </div>
@@ -584,12 +693,12 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
           {/* ═══════════════════════════════════════════════════
               Phase 1 — Identify the Numerator
              ═══════════════════════════════════════════════════ */}
-          {currentPhase === 'identify-numerator' && (
+          {currentPhase === 'identify-numerator' && !challengeDone && (
             <div className="glass-panel rounded-2xl border border-purple-500/30 p-6 mb-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
               <div className="pt-2">
                 <h3 className="text-xl font-light text-white mb-4 flex items-center gap-2">
-                  <span className="text-2xl">{'\uD83D\uDD22'}</span>
+                  <span className="text-2xl">{'🔢'}</span>
                   Step 1: Identify the Numerator
                 </h3>
                 <p className="text-slate-300 leading-relaxed mb-6">
@@ -602,9 +711,9 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
                 </p>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {numeratorChoices.map((choice) => (
+                  {numeratorChoices.map((choice, idx) => (
                     <button
-                      key={choice}
+                      key={`${choice}-${idx}`}
                       onClick={() => setSelectedNumerator(choice)}
                       className={`p-4 rounded-xl border text-center transition-all duration-300 text-2xl font-bold font-mono ${
                         selectedNumerator === choice
@@ -631,12 +740,12 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
           {/* ═══════════════════════════════════════════════════
               Phase 2 — Identify the Denominator
              ═══════════════════════════════════════════════════ */}
-          {currentPhase === 'identify-denominator' && (
+          {currentPhase === 'identify-denominator' && !challengeDone && (
             <div className="glass-panel rounded-2xl border border-blue-500/30 p-6 mb-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
               <div className="pt-2">
                 <h3 className="text-xl font-light text-white mb-4 flex items-center gap-2">
-                  <span className="text-2xl">{'\uD83D\uDD22'}</span>
+                  <span className="text-2xl">{'🔢'}</span>
                   Step 2: Identify the Denominator
                 </h3>
                 <p className="text-slate-300 leading-relaxed mb-6">
@@ -650,9 +759,9 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
                 </p>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {denominatorChoices.map((choice) => (
+                  {denominatorChoices.map((choice, idx) => (
                     <button
-                      key={choice}
+                      key={`${choice}-${idx}`}
                       onClick={() => setSelectedDenominator(choice)}
                       className={`p-4 rounded-xl border text-center transition-all duration-300 text-2xl font-bold font-mono ${
                         selectedDenominator === choice
@@ -679,12 +788,12 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
           {/* ═══════════════════════════════════════════════════
               Phase 3 — Build the Fraction on the Bar
              ═══════════════════════════════════════════════════ */}
-          {currentPhase === 'build-fraction' && (
+          {currentPhase === 'build-fraction' && !challengeDone && (
             <div className="glass-panel rounded-2xl border border-emerald-500/30 p-6 mb-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
               <div className="pt-2">
                 <h3 className="text-xl font-light text-white mb-4 flex items-center gap-2">
-                  <span className="text-2xl">{'\uD83C\uDFAF'}</span>
+                  <span className="text-2xl">{'🎯'}</span>
                   Step 3: Build the Fraction
                 </h3>
                 <p className="text-slate-300 leading-relaxed mb-6">
@@ -730,10 +839,10 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
                     return (
                       <button
                         key={i}
-                        onClick={() => !hasSubmittedEvaluation && togglePartition(i)}
-                        disabled={hasSubmittedEvaluation}
+                        onClick={() => togglePartition(i)}
+                        disabled={challengeDone}
                         className={`flex-1 border-r border-slate-600 last:border-r-0 transition-all duration-200 flex items-center justify-center ${
-                          hasSubmittedEvaluation
+                          challengeDone
                             ? 'cursor-default'
                             : 'cursor-pointer hover:brightness-110'
                         } ${
@@ -753,20 +862,16 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
 
                 {showDecimal && (
                   <div className="text-xs text-slate-400 text-right font-mono mb-4">
-                    {'\u2248'} {(shadedCount / denominator).toFixed(3)}
+                    {'≈'} {(shadedCount / denominator).toFixed(3)}
                   </div>
                 )}
 
                 <button
                   onClick={handleSubmitBuild}
-                  disabled={hasSubmittedEvaluation}
-                  className={`w-full font-medium py-3 px-6 rounded-xl transition-all duration-300 hover:scale-[1.02] ${
-                    hasSubmittedEvaluation
-                      ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 cursor-not-allowed'
-                      : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                  }`}
+                  disabled={challengeDone}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {hasSubmittedEvaluation ? '\u2713 Submitted' : 'Submit Fraction'}
+                  Submit Fraction
                 </button>
               </div>
             </div>
@@ -781,37 +886,49 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
             </div>
           )}
 
-          {/* ── Phase Evaluation Summary ────────────────────── */}
-          {hasSubmittedEvaluation && phaseSummaryData.length > 0 && (
-            <PhaseSummaryPanel
-              phases={phaseSummaryData}
-              overallScore={submittedResult?.score}
-              durationMs={elapsedMs}
-              heading="Fraction Challenge Complete!"
-              celebrationMessage={`You correctly built the fraction ${numerator}/${denominator} by shading ${numerator} out of ${denominator} equal parts!`}
-              className="mb-6"
-            />
+          {/* ── Between-challenge interstitial ──────────────── */}
+          {challengeDone && (
+            <div className="glass-panel rounded-2xl border border-emerald-500/30 p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-bold text-emerald-300">
+                  &#x2713; Problem {currentIndex + 1} complete!
+                </h4>
+                {hasNextChallenge ? (
+                  <Button
+                    variant="ghost"
+                    onClick={handleNextChallenge}
+                    className="bg-purple-500/80 text-white border border-purple-400/30 hover:bg-purple-500"
+                  >
+                    Next Problem →
+                  </Button>
+                ) : (
+                  <span className="text-sm text-slate-400 font-mono uppercase tracking-wider">
+                    Last problem
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-300">
+                You correctly built the fraction{' '}
+                <span className="font-bold text-white">
+                  {numerator}/{denominator}
+                </span>{' '}
+                by shading {numerator} out of {denominator} equal parts.
+              </p>
+            </div>
           )}
 
           {/* ── Bottom actions ─────────────────────────────── */}
-          <div className="flex gap-3 pt-4 border-t border-white/10">
-            <Button
-              variant="ghost"
-              onClick={handleShowHint}
-              className="px-5 py-2.5 bg-white/5 text-slate-300 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20"
-            >
-              Show Hint
-            </Button>
-            {hasSubmittedEvaluation && (
+          {!challengeDone && (
+            <div className="flex gap-3 pt-4 border-t border-white/10">
               <Button
                 variant="ghost"
-                onClick={handleReset}
+                onClick={handleShowHint}
                 className="px-5 py-2.5 bg-white/5 text-slate-300 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20"
               >
-                Try Again
+                Show Hint
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

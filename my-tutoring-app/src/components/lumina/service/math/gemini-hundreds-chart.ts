@@ -14,31 +14,29 @@ import {
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   highlight_sequence: {
-    promptDoc:
-      `"highlight_sequence": Student clicks every cell in a skip-count sequence. `
-      + `Instruction MUST say "click" or "tap" — never "watch" or "observe".`,
+    promptDoc: `"highlight_sequence": Student clicks every cell in a skip-count sequence from 1-100.`,
     schemaDescription: "'highlight_sequence' (click all skip-count cells)",
   },
   complete_sequence: {
-    promptDoc:
-      `"complete_sequence": First 3 cells are pre-highlighted. Student clicks the remaining cells to complete the pattern.`,
+    promptDoc: `"complete_sequence": First 3 cells are pre-highlighted. Student clicks all remaining cells of the sequence to 100.`,
     schemaDescription: "'complete_sequence' (continue a partially-shown pattern)",
   },
   identify_pattern: {
-    promptDoc:
-      `"identify_pattern": Full sequence is shown. Student picks which visual description matches the grid pattern from 4 options.`,
+    promptDoc: `"identify_pattern": Full sequence is shown. Student picks which visual description matches the grid pattern from 4 options.`,
     schemaDescription: "'identify_pattern' (name the visual shape on the grid)",
   },
   find_skip_value: {
-    promptDoc:
-      `"find_skip_value": First 3-4 cells are shown. Student picks the correct skip interval from 4 number options.`,
+    promptDoc: `"find_skip_value": First 3-4 cells are shown. Student picks the correct skip interval from 4 number options.`,
     schemaDescription: "'find_skip_value' (deduce the skip interval)",
   },
 };
 
 // ---------------------------------------------------------------------------
-// Minimal schema — Gemini only provides creative text + skip values
-// All cell lists, options, and correct answers are computed deterministically.
+// Schema — Gemini provides only title/description and per-challenge type +
+// skipValue + hint. The `instruction` field is generated deterministically
+// inside buildChallenge so it cannot desync with the canonical cell data
+// (SP-17). The `hint` is shown after a wrong answer and makes no structural
+// claims about cells, so it stays LLM-generated.
 // ---------------------------------------------------------------------------
 
 const hundredsChartSchema: Schema = {
@@ -54,7 +52,7 @@ const hundredsChartSchema: Schema = {
     },
     challenges: {
       type: Type.ARRAY,
-      description: "3-4 challenges. IMPORTANT: use a DIFFERENT skipValue for each challenge for variety.",
+      description: "4-6 challenges. IMPORTANT: vary skipValue across challenges for variety; repeats are allowed only if the grade-appropriate skip pool has fewer values than challenges.",
       items: {
         type: Type.OBJECT,
         properties: {
@@ -66,16 +64,12 @@ const hundredsChartSchema: Schema = {
             type: Type.INTEGER,
             description: "Skip interval (2, 3, 4, 5, or 10). Use a DIFFERENT value per challenge.",
           },
-          instruction: {
-            type: Type.STRING,
-            description: "Student-facing instruction. For highlight/complete: must say 'click' or 'tap'. Must NOT reveal the answer or the skip value for find_skip_value.",
-          },
           hint: {
             type: Type.STRING,
-            description: "Helpful hint shown after a wrong answer. Must not give away the answer.",
+            description: "Helpful, encouraging hint shown after a wrong answer. Must not give away the answer or the skip value.",
           },
         },
-        required: ["type", "skipValue", "instruction", "hint"],
+        required: ["type", "skipValue", "hint"],
       },
     },
   },
@@ -83,7 +77,8 @@ const hundredsChartSchema: Schema = {
 };
 
 // ---------------------------------------------------------------------------
-// Deterministic helpers — all math computed here, never by the LLM
+// Deterministic helpers — all math + instruction text computed here, never
+// by the LLM. Eliminates SP-17 (instruction-data desync) by construction.
 // ---------------------------------------------------------------------------
 
 function buildSequence(skipValue: number, startNumber: number): number[] {
@@ -92,6 +87,21 @@ function buildSequence(skipValue: number, startNumber: number): number[] {
     seq.push(n);
   }
   return seq;
+}
+
+function buildInstruction(type: string, skipValue: number): string {
+  switch (type) {
+    case 'highlight_sequence':
+      return `Tap every number in the skip-counting-by-${skipValue}s pattern, all the way to 100.`;
+    case 'complete_sequence':
+      return `The first 3 numbers are highlighted. Tap all the remaining numbers in the pattern up to 100.`;
+    case 'identify_pattern':
+      return `Look at the highlighted cells. Which description best matches the visual pattern on the grid?`;
+    case 'find_skip_value':
+      return `Look at the highlighted numbers. What is the skip value (how much is added each step)?`;
+    default:
+      return `Look at the highlighted numbers.`;
+  }
 }
 
 /** Correct visual pattern descriptions for each skip value on a 10×10 grid */
@@ -131,7 +141,6 @@ const GRADE_SKIP_VALUES: Record<string, number[]> = {
 function getPatternOptions(sv: number): { options: string[]; correctAnswer: string } {
   const entry = PATTERN_DESCRIPTIONS[sv] ?? PATTERN_DESCRIPTIONS[5];
   const allOptions = [entry.correct, ...entry.distractors];
-  // Shuffle distractors but keep correct answer trackable
   const shuffled = allOptions.sort(() => Math.random() - 0.5);
   return { options: shuffled, correctAnswer: entry.correct };
 }
@@ -145,13 +154,12 @@ function getSkipValueOptions(sv: number): { options: string[]; correctAnswer: st
 
 /**
  * Build the full challenge data deterministically from type + skipValue.
- * Gemini only provides instruction + hint text.
+ * Gemini provides only the hint text.
  */
 function buildChallenge(
   index: number,
   type: string,
   skipValue: number,
-  instruction: string,
   hint: string,
 ): HundredsChartChallenge {
   const startNumber = skipValue; // tidy multiples
@@ -194,7 +202,7 @@ function buildChallenge(
   return {
     id: `c${index + 1}`,
     type: type as HundredsChartChallenge['type'],
-    instruction,
+    instruction: buildInstruction(type, skipValue),
     skipValue,
     startNumber,
     givenCells,
@@ -231,7 +239,7 @@ export const generateHundredsChart = async (
   const gradeBand = config?.gradeBand ?? '2';
   const gradeSkips = GRADE_SKIP_VALUES[gradeBand] ?? GRADE_SKIP_VALUES['2'];
 
-  // ── Build prompt — only ask for creative text ──
+  // ── Build prompt — Gemini only picks types/skips and writes hints + topic flavor ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
@@ -250,14 +258,12 @@ PROGRESSION (use this order when no eval mode is specified):
 ` : ''}
 
 RULES:
-- Generate 3-4 challenges.
-- Use DIFFERENT skipValue for each challenge (choose from: ${gradeSkips.join(', ')}).
+- Generate 4-6 challenges.
+- Vary skipValue across challenges (choose from: ${gradeSkips.join(', ')}). Each skipValue from the pool should appear at least once before any repeats; if there are more challenges than skip values, you may reuse a skipValue but pair it with a different challenge type so the activity still feels varied.
 ${config?.skipValue ? `- At least one challenge must use skipValue=${config.skipValue}.` : ''}
 ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChallengeTypes.join(' or ')}.` : ''}
-- For highlight_sequence / complete_sequence: instruction MUST say "click" or "tap". Never "watch" or "observe".
-- For find_skip_value: instruction must NOT reveal the skip value.
-- Instructions must be student-friendly, encouraging, and NOT reveal answers.
-- Hints should guide thinking without giving away the answer.
+- Hints should guide thinking without giving away the answer or the skip value. Keep them short (one sentence).
+- Title and description may reference the topic for flavor; do NOT name specific numbers, rows, or quantities (the chart and instruction handle that).
 `;
 
   logEvalModeResolution('HundredsChart', config?.targetEvalMode, evalConstraint);
@@ -278,7 +284,7 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
     throw new Error('No valid hundreds chart data returned from Gemini API');
   }
 
-  // ── Build challenges deterministically from Gemini's creative text ──
+  // ── Build challenges deterministically; Gemini supplies only type/skip/hint ──
   const validTypes = new Set(['highlight_sequence', 'complete_sequence', 'identify_pattern', 'find_skip_value']);
 
   const challenges: HundredsChartChallenge[] = (raw.challenges ?? [])
@@ -286,17 +292,14 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
     .filter((c: any) => validTypes.has(c.type))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((c: any, i: number) => {
-      // Validate skipValue — must be a positive integer in grade-appropriate range
       let sv: number = c.skipValue;
       if (!sv || sv <= 0 || sv > 10) {
         sv = config?.skipValue ?? gradeSkips[i % gradeSkips.length];
       }
-
       return buildChallenge(
         i,
         c.type,
         sv,
-        c.instruction ?? `Click the numbers when counting by ${sv}s!`,
         c.hint ?? `Look at the pattern — what do the ones digits have in common?`,
       );
     });
@@ -308,7 +311,6 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
       0,
       effectiveChallengeTypes?.[0] ?? 'highlight_sequence',
       sv,
-      `Click every number you say when counting by ${sv}s!`,
       `Start at ${sv} and keep adding ${sv}. Click each number you land on.`,
     ));
     console.log('[HundredsChart] No valid challenges from Gemini — using fallback');

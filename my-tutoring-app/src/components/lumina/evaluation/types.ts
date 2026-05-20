@@ -788,66 +788,30 @@ export interface PercentBarMetrics extends BasePrimitiveMetrics {
 
 export interface FractionBarMetrics extends BasePrimitiveMetrics {
   type: 'fraction-bar';
-
-  // Overall
-  allPhasesCompleted: boolean;
-  finalSuccess: boolean;
-
-  // Phase 1: Identify Numerator
-  correctNumerator: number;
-  studentNumeratorAnswer: number | null;
-  numeratorCorrect: boolean;
-  numeratorAttempts: number;
-
-  // Phase 2: Identify Denominator
-  correctDenominator: number;
-  studentDenominatorAnswer: number | null;
-  denominatorCorrect: boolean;
-  denominatorAttempts: number;
-
-  // Phase 3: Build Fraction
-  targetFraction: string;
-  selectedFraction: string;
-  buildCorrect: boolean;
-  buildAttempts: number;
-  shadingChanges: number;
-
-  // Aggregate
-  totalAttempts: number;
-  solvedOnFirstTry: boolean;
-  hintsUsed: number;
+  challengeType: 'identify' | 'build' | 'compare' | 'add_subtract';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
 }
 
 export interface AreaModelMetrics extends BasePrimitiveMetrics {
   type: 'area-model';
 
-  // Goal achievement
-  targetProduct: number;
-  studentProduct: number;
-  correctFinalAnswer: boolean;
+  /** Eval mode pinned for this session (all challenges share one mode). */
+  challengeType: 'build_model' | 'find_area' | 'perimeter' | 'multiply' | 'factor';
 
-  // Partial products understanding
-  totalPartialProducts: number;
-  correctPartialProducts: number;
-  incorrectPartialProducts: number;
-  skippedPartialProducts: number;
-
-  // Step 2: Addition verification
-  attemptedSum: boolean;
-  correctSum: boolean;
-
-  // Accuracy
-  partialProductAccuracy: number;  // 0-100 (correct partials / total partials)
-  overallAccuracy: number;         // 0-100 (weighted: 70% partials, 30% sum)
-
-  // Problem-solving approach
-  completedInOrder: boolean;       // Did they do cells in sequence?
-  attemptsPerCell: number;         // Average attempts per cell
-  totalAttempts: number;
-
-  // For algebraic mode
-  isAlgebraic: boolean;
-  usedDistributiveProperty: boolean;
+  // Session-level aggregates (one ChallengeResult per area-model problem)
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;              // Total tries across all challenges
+  firstTryCount: number;              // Challenges scoring 100 (perfect first attempt)
+  hintsViewed: number;                // Challenges where the student opened a hint
+  overallAccuracy: number;            // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 
 export interface CoordinateGraphMetrics extends BasePrimitiveMetrics {
@@ -865,74 +829,30 @@ export interface CoordinateGraphMetrics extends BasePrimitiveMetrics {
 
 export interface FunctionMachineMetrics extends BasePrimitiveMetrics {
   type: 'function-machine';
-
-  functionRule: string;         // e.g., "2x + 1"
-  ruleDiscovered: boolean;
-
-  inputsExplored: number[];
-  outputsObserved: number[];
-
-  attemptsToDiscover: number;
-  hintsUsed: number;
-
-  // New: prediction tracking
-  predictionsCorrect?: number;
-  predictionsTotal?: number;
-
-  // New: phase tracking
-  phase?: 'observe' | 'predict' | 'discover' | 'create';
-
-  // New: chaining
-  chainDepth?: number;
+  challengeType: 'observe' | 'predict' | 'discover_rule' | 'create_rule';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where the student had multiple attempts
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 
 export interface PlaceValueChartMetrics extends BasePrimitiveMetrics {
   type: 'place-value-chart';
 
-  // Overall
-  allPhasesCompleted: boolean;
-  finalSuccess: boolean;
+  /** Eval mode pinned for this session (all challenges share one mode). */
+  challengeType: 'identify' | 'build' | 'compare' | 'expanded_form';
 
-  // Phase 1: Identify the place
-  correctPlaceName: string;
-  studentPlaceAnswer: string | null;
-  placeIdentifyCorrect: boolean;
-  placeAttempts: number;
-
-  // Phase 2: Find the value
-  correctDigitValue: number;
-  studentValueAnswer: number | null;
-  valueIdentifyCorrect: boolean;
-  valueAttempts: number;
-
-  // Phase 3: Build the number
-  targetValue?: number;
-  finalValue: number;
-  isCorrect: boolean;
-  buildAttempts: number;
-  digitChanges: number;
-
-  // Place value understanding
-  placeRange: {
-    minPlace: number;
-    maxPlace: number;
-  };
-  usesDecimals: boolean;
-  usesLargeNumbers: boolean;
-
-  // Digit composition
-  totalDigitsEntered: number;
-  digitsByPlace: { [place: number]: string };
-
-  // Expanded form accuracy
-  expandedFormCorrect: boolean;
-  expandedFormParts: string[];
-  placeValueAccuracy: number;
-
-  // Aggregate
-  totalAttempts: number;
-  solvedOnFirstTry: boolean;
-  hintsUsed: number;
+  // Session-level aggregates (one ChallengeResult per place-value problem)
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;              // Total tries across all challenges (sum of per-phase attempts per challenge)
+  firstTryCount: number;              // Challenges scoring 100 (all three phases first try)
+  hintsViewed: number;                // Challenges where the student opened a hint
+  overallAccuracy: number;            // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 
 export interface FactorTreeMetrics extends BasePrimitiveMetrics {
@@ -1132,44 +1052,14 @@ export interface FormulaCardMetrics extends BasePrimitiveMetrics {
 
 export interface ArrayGridMetrics extends BasePrimitiveMetrics {
   type: 'array-grid';
-
-  // Goal achievement
-  taskType: 'build' | 'count' | 'multiply' | 'partition' | 'skip-count' | 'explore';
-  goalMet: boolean;
-
-  // Array configuration
-  finalRows: number;
-  finalColumns: number;
-  totalItems: number;
-
-  // Build task metrics
-  targetProduct?: number;
-  productCorrect?: boolean;
-  dimensionsCorrect?: boolean;      // Exact rows/cols match target
-  commuteRecognized?: boolean;      // Built 4×3 when asked for 3×4 (still correct!)
-
-  // Partition task metrics
-  partitionsPlaced?: number;
-  correctPartitions?: number;
-  partitionAccuracy?: number;       // 0-100
-
-  // Skip count metrics
-  skipCountSequence?: number[];     // Numbers entered by student
-  skipCountCorrect?: boolean;
-
-  // Interaction tracking
-  rowChanges: number;               // How many times they adjusted rows
-  columnChanges: number;            // How many times they adjusted columns
-  cellClicks: number;               // Exploration engagement
-  partitionAttempts?: number;       // For partition tasks
-
-  // Final state for replay
-  finalConfiguration: {
-    rows: number;
-    columns: number;
-    partitionLines: Array<{ type: 'row' | 'column'; index: number }>;
-    highlightedCells: string[];     // Cell keys that were highlighted
-  };
+  challengeType: 'build_array' | 'count_array' | 'multiply_array';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where the student saw a hint
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 
 export interface RatioTableMetrics extends BasePrimitiveMetrics {
@@ -1196,58 +1086,17 @@ export interface RatioTableMetrics extends BasePrimitiveMetrics {
 export interface TapeDiagramMetrics extends BasePrimitiveMetrics {
   type: 'tape-diagram';
 
-  /** Which interaction mode was active */
-  challengeType?: 'represent' | 'solve_part_whole' | 'solve_comparison' | 'multi_step';
+  /** Eval mode pinned for this session (all challenges share one mode) */
+  challengeType: 'represent' | 'solve_part_whole' | 'solve_comparison' | 'multi_step';
 
-  // Goal achievement
-  allPhasesCompleted: boolean;        // Did student complete all three phases
-  finalSuccess: boolean;              // Did they solve all unknowns correctly
-
-  // Phase completion tracking
-  explorePhaseCompleted: boolean;     // Phase 1: Identified the whole correctly
-  practicePhaseCompleted: boolean;    // Phase 2: Solved practice unknowns
-  applyPhaseCompleted: boolean;       // Phase 3: Solved all remaining unknowns
-
-  // Phase 1: Explore (Understanding the Whole)
-  wholeCorrectlyIdentified: boolean;  // Did they calculate the total correctly
-  exploreAttempts: number;            // Number of tries to find the whole
-  exploreHintsUsed: number;           // Hints requested in explore phase
-
-  // Phase 2: Practice (Guided Unknown Solving)
-  practiceUnknownsTotal: number;      // Number of unknowns in practice phase (1-2)
-  practiceUnknownsCorrect: number;    // How many they got right
-  practiceAccuracy: number;           // 0-100: practiceCorrect / practiceTotal
-  practiceAttempts: number;           // Total attempts in practice phase
-  practiceHintsUsed: number;          // Hints requested in practice
-
-  // Phase 3: Apply (Full Problem)
-  totalUnknownSegments: number;       // Total unknowns across all bars
-  correctUnknownSegments: number;     // How many unknowns solved correctly
-  accuracyPercentage: number;         // 0-100: correct / total unknowns
-  applyAttempts: number;              // Attempts in final phase
-  applyHintsUsed: number;             // Hints in final phase
-
-  // Overall performance
-  totalAttempts: number;              // Total attempts across all phases
-  totalHintsUsed: number;             // Total hints requested
-  firstAttemptSuccess: boolean;       // Got all unknowns right on first submission
-
-  // Problem-solving strategy
-  solvedInSequence: boolean;          // Did they solve unknowns in order presented
-  usedPartWholeStrategy: boolean;     // Evidence of whole - parts = unknown thinking
-  segmentRelationships: Array<{       // Per-segment tracking
-    barIndex: number;
-    segmentIndex: number;
-    segmentLabel: string;
-    expectedValue: number;
-    studentValue: number | null;
-    correctOnFirstTry: boolean;
-    attempts: number;
-  }>;
-
-  // Efficiency
-  solvedWithoutHints: boolean;        // Completed without using any hints
-  averageAttemptsPerUnknown: number;  // Total attempts / total unknowns
+  // Session-level aggregates (one ChallengeResult per tape-diagram problem)
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;              // Total tries across all challenges
+  firstTryCount: number;              // attempts === 1 && correct
+  hintsViewed: number;                // Challenges where the hint panel was opened
+  overallAccuracy: number;            // 0-100, decayed by attempts (see perChallengeScore in component)
+  averageAttemptsPerChallenge: number;
 }
 
 // -----------------------------------------------------------------------------

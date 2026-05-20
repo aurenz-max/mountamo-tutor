@@ -1,5 +1,22 @@
-import { Type, Schema } from "@google/genai";
-import { FractionBarData } from "../../primitives/visual-primitives/math/FractionBar";
+/**
+ * Fraction Bar Generator — multi-instance pool-service generator.
+ *
+ * Each session walks the student through 3-6 distinct fractions in the SAME
+ * eval mode. Per PRD §6a #1, fraction-bar is value-only (per-challenge data is
+ * `numerator`, `denominator`, plus derived MC choice arrays), so we follow the
+ * pool-service pattern (factor-tree, place-value-chart, area-model precedent):
+ *  - Gemini emits ONLY wrapper metadata (title, description, mode hints).
+ *  - Local code deterministically builds N FractionBarChallenge tuples, each
+ *    with mode-appropriate fraction values and shuffled MC distractors.
+ *  - Structured-output Gemini converges per-call (PRD §6a #2), so any per-
+ *    challenge variance comes from local randomness, not the prompt.
+ */
+
+import { Type, Schema, ThinkingLevel } from "@google/genai";
+import {
+  FractionBarData,
+  FractionBarChallenge,
+} from "../../primitives/visual-primitives/math/FractionBar";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
@@ -42,88 +59,234 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
-// Schema definition for Fraction Bar Data
+// Wrapper schema — Gemini emits session-level metadata only.
+// Per-challenge data (numerator, denominator, choices) is built locally below.
 // ---------------------------------------------------------------------------
 
-/**
- * Schema definition for Fraction Bar Data
- *
- * This schema defines the structure for the multi-phase fraction bar,
- * including the target fraction, MC choices, and display options.
- */
-const fractionBarSchema: Schema = {
+const fractionBarWrapperSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     challengeType: {
       type: Type.STRING,
-      description: "Challenge type: 'identify' (unit fractions), 'build' (non-unit proper fractions), 'compare' (larger denominators), 'add_subtract' (fractions in operation context)",
       enum: ["identify", "build", "compare", "add_subtract"],
+      description:
+        "Challenge type controlling difficulty: 'identify' (2-3), 'build' (3-4), 'compare' (4-5), 'add_subtract' (5-6).",
     },
     title: {
       type: Type.STRING,
-      description: "Title for the fraction bar challenge (e.g., 'Shade 3/4 of the bar')"
+      description:
+        "Short session title (e.g., 'Fraction Bar Practice — Grade 3'). Do NOT include specific fractions; the session uses multiple fractions.",
     },
     description: {
       type: Type.STRING,
-      description: "Educational description explaining what students will learn from this activity"
-    },
-    numerator: {
-      type: Type.NUMBER,
-      description: "Target numerator — the number of parts to shade. Must be <= denominator"
-    },
-    denominator: {
-      type: Type.NUMBER,
-      description: "Target denominator — total equal parts the bar is divided into. Must be >= 2"
+      description:
+        "1-2 sentence warm introduction that motivates the strategy (identifying parts of a fraction, building fractions on a bar, comparing magnitudes — match the mode). Do NOT include specific fractions.",
     },
     showDecimal: {
       type: Type.BOOLEAN,
-      description: "Whether to show the decimal approximation during the build phase. Default: true"
+      description:
+        "Whether to show the decimal approximation during the build phase. Default: true for grades 4+, false for K-3 to avoid cognitive overload.",
     },
     gradeLevel: {
       type: Type.STRING,
-      description: "Grade level string for age-appropriate language (e.g., 'Grade 3', 'Grade 5')"
+      description: "Grade level string (e.g., 'Grade 3').",
     },
-    numeratorChoices: {
-      type: Type.ARRAY,
-      items: { type: Type.NUMBER },
-      description: "Exactly 4 multiple-choice options for identifying the numerator. Must include the correct numerator plus 3 plausible distractors, shuffled"
-    },
-    denominatorChoices: {
-      type: Type.ARRAY,
-      items: { type: Type.NUMBER },
-      description: "Exactly 4 multiple-choice options for identifying the denominator. Must include the correct denominator plus 3 plausible distractors, shuffled"
-    }
   },
-  required: ["challengeType", "title", "description", "numerator", "denominator"]
+  required: ["challengeType", "title", "description"],
 };
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const DEFAULT_INSTANCE_COUNT = 3;
+const MAX_INSTANCE_COUNT = 6;
+
+type ChallengeType = 'identify' | 'build' | 'compare' | 'add_subtract';
+
+// ---------------------------------------------------------------------------
+// Local randomness helpers (own the randomness — Gemini convergence per §6a #2)
+// ---------------------------------------------------------------------------
+
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+interface FractionPair {
+  numerator: number;
+  denominator: number;
+}
+
+function pairKey(p: FractionPair): string {
+  return `${p.numerator}/${p.denominator}`;
+}
+
+// ---------------------------------------------------------------------------
+// Per-mode operand generators
+// ---------------------------------------------------------------------------
+
+function identifyOperands(count: number): FractionPair[] {
+  // Unit fractions only (numerator = 1) with denominators 2-4.
+  // The candidate space is small (3 pairs), so we exhaust then pad with dupes.
+  const candidates: FractionPair[] = [
+    { numerator: 1, denominator: 2 },
+    { numerator: 1, denominator: 3 },
+    { numerator: 1, denominator: 4 },
+  ];
+  const shuffled = shuffle(candidates);
+  // If the caller wants more than 3 instances, allow repeats by cycling.
+  const out: FractionPair[] = [];
+  for (let i = 0; i < count; i++) {
+    out.push(shuffled[i % shuffled.length]);
+  }
+  return out;
+}
+
+function buildOperands(count: number): FractionPair[] {
+  // Non-unit proper fractions: 2 <= numerator < denominator, denominators 3-6.
+  const pairs: FractionPair[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 12;
+  for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
+    const denominator = randInt(3, 6);
+    const numerator = randInt(2, denominator - 1);
+    const pair = { numerator, denominator };
+    const key = pairKey(pair);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push(pair);
+  }
+  return pairs;
+}
+
+function compareOperands(count: number): FractionPair[] {
+  // Proper fractions, denominators 4-12, full numerator range.
+  const pairs: FractionPair[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 12;
+  for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
+    const denominator = randInt(4, 12);
+    const numerator = randInt(1, denominator - 1);
+    const pair = { numerator, denominator };
+    const key = pairKey(pair);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push(pair);
+  }
+  return pairs;
+}
+
+function addSubtractOperands(count: number): FractionPair[] {
+  // Proper fractions, denominators 3-10. Operation context lives in the
+  // prompt copy, not the per-challenge data.
+  const pairs: FractionPair[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 12;
+  for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
+    const denominator = randInt(3, 10);
+    const numerator = randInt(1, denominator - 1);
+    const pair = { numerator, denominator };
+    const key = pairKey(pair);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push(pair);
+  }
+  return pairs;
+}
+
+function selectFractionBarOperands(
+  challengeType: ChallengeType,
+  count: number,
+): FractionPair[] {
+  switch (challengeType) {
+    case 'identify': return identifyOperands(count);
+    case 'build': return buildOperands(count);
+    case 'compare': return compareOperands(count);
+    case 'add_subtract': return addSubtractOperands(count);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MC choice generation
+// ---------------------------------------------------------------------------
+
 /**
- * Generate fraction bar data for the multi-phase interactive component
+ * Build 4 shuffled multiple-choice options.
  *
- * The FractionBar component uses a three-phase educational flow:
- *   Phase 1 — Identify the Numerator (multiple choice)
- *   Phase 2 — Identify the Denominator (multiple choice)
- *   Phase 3 — Build the Fraction on a bar by shading parts
+ * `correct` is always included. `other` is the partner value (e.g., when
+ * generating numerator choices, `other` is the denominator) — adding it as a
+ * distractor creates the classic numerator/denominator confusion test. The
+ * remaining slots are filled with off-by-one neighbors.
  *
- * This generator produces a proper fraction with MC distractors
- * appropriate for the given topic and grade level.
- *
- * @param topic - The math topic or concept to teach
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional overrides for numerator, denominator, showDecimal, targetEvalMode
- * @returns FractionBarData with complete configuration
+ * `floor` is the minimum legal value: 0 for numerator choices (a fraction
+ * can have a zero numerator conceptually), 2 for denominator choices (a
+ * denominator must be at least 2 for the bar to make sense).
  */
+function buildChoices(correct: number, other: number, floor: number): number[] {
+  const choices = new Set<number>([correct]);
+  if (other !== correct && other >= floor) choices.add(other);
+  if (correct - 1 >= floor) choices.add(correct - 1);
+  choices.add(correct + 1);
+  choices.add(correct + 2);
+  // Fill any remaining slots with positive integers we haven't used.
+  let v = Math.max(floor, 1);
+  while (choices.size < 4) {
+    if (!choices.has(v)) choices.add(v);
+    v++;
+  }
+  return shuffle(Array.from(choices).slice(0, 4));
+}
+
+// ---------------------------------------------------------------------------
+// Build challenges array from fraction pairs + per-pair choice arrays
+// ---------------------------------------------------------------------------
+
+function buildChallenges(
+  challengeType: ChallengeType,
+  count: number,
+): FractionBarChallenge[] {
+  const pairs = selectFractionBarOperands(challengeType, count);
+
+  // Pad if short — generate one more pair, accepting duplicates if needed.
+  while (pairs.length < count) {
+    const fallback = selectFractionBarOperands(challengeType, 1);
+    if (fallback.length > 0) pairs.push(fallback[0]);
+    else break;
+  }
+
+  return pairs.slice(0, count).map((pair, idx): FractionBarChallenge => ({
+    id: `fraction-bar-${idx + 1}`,
+    numerator: pair.numerator,
+    denominator: pair.denominator,
+    numeratorChoices: buildChoices(pair.numerator, pair.denominator, 0),
+    denominatorChoices: buildChoices(pair.denominator, pair.numerator, 2),
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Main generator
+// ---------------------------------------------------------------------------
+
 export const generateFractionBar = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    numerator?: number;
-    denominator?: number;
-    showDecimal?: boolean;
     targetEvalMode?: string;
-  }
+    /** Number of challenges in this session. Default 3 (matches §6e pilot). */
+    instanceCount?: number;
+    showDecimal?: boolean;
+  },
 ): Promise<FractionBarData> => {
-  // ── Resolve eval mode from the catalog (single source of truth) ──
+  // ── Eval-mode constraint resolution ──────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'fraction-bar',
     config?.targetEvalMode,
@@ -131,119 +294,79 @@ export const generateFractionBar = async (
   );
   logEvalModeResolution('FractionBar', config?.targetEvalMode, evalConstraint);
 
-  // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(fractionBarSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
-    : fractionBarSchema;
-
-  // ── Build prompt ──
+    ? constrainChallengeTypeEnum(fractionBarWrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
+    : fractionBarWrapperSchema;
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  const instanceCount = Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+  );
+
+  // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
-Create an educational fraction bar challenge for teaching "${topic}" to ${gradeLevel} students.
+Create the wrapper metadata for a MULTI-CHALLENGE fraction bar session for "${topic}" (${gradeLevel}).
 
-THE FRACTION BAR COMPONENT — MULTI-PHASE FLOW:
-This component guides students through three phases to deeply understand a single fraction:
-
-  Phase 1 — Identify the Numerator (multiple choice)
-    The student sees a shaded bar and must pick how many parts are shaded.
-    You must provide "numeratorChoices": an array of exactly 4 numbers,
-    one of which is the correct numerator. The other 3 should be plausible
-    distractors (e.g., off-by-one, the denominator, or a nearby number).
-
-  Phase 2 — Identify the Denominator (multiple choice)
-    The student must pick how many total equal parts the bar has.
-    You must provide "denominatorChoices": an array of exactly 4 numbers,
-    one of which is the correct denominator. Distractors should be plausible
-    (e.g., adjacent numbers, common denominators, the numerator).
-
-  Phase 3 — Build the Fraction
-    The student shades the correct number of parts on a blank bar divided
-    into the correct number of equal parts.
+This session walks the student through ${instanceCount} DIFFERENT fractions of the SAME challenge type. Each fraction runs through a three-phase flow: identify the numerator (MC) → identify the denominator (MC) → shade the fraction on a bar.
 
 ${challengeTypeSection}
 
-REQUIREMENTS:
-1. Generate a PROPER fraction: numerator <= denominator, denominator >= 2.
-2. Choose an appropriate fraction for the topic and grade level.
-${!evalConstraint ? `3. Grade-level guidelines:
-   - Grades 2-3: Simple fractions with small denominators (2, 3, 4)
-   - Grades 4-5: Broader denominators (2-8), including unit and non-unit fractions
-   - Grades 6+: Larger denominators (2-12), more complex fractions` : ''}
-4. Write a clear, student-friendly title that mentions the fraction.
-5. Provide an educational description of what the student will practice.
-6. numeratorChoices: exactly 4 numbers including the correct numerator. Shuffle the order.
-7. denominatorChoices: exactly 4 numbers including the correct denominator. Shuffle the order.
-8. Set showDecimal to true if connecting fractions to decimals is relevant, false otherwise.
-9. Set gradeLevel to "${gradeLevel}".
+DO NOT include specific fractions in the title or description — the system picks ${instanceCount} fraction pairs locally and the same session covers all of them.
 
-${config ? `
-CONFIGURATION HINTS (use these values if provided):
-${config.numerator !== undefined ? `- Numerator: ${config.numerator}` : ''}
-${config.denominator !== undefined ? `- Denominator: ${config.denominator}` : ''}
-${config.showDecimal !== undefined ? `- Show decimal: ${config.showDecimal}` : ''}
-` : ''}
+GUIDELINES:
+- title: short and number-free, e.g., "Fraction Bar Practice — Grade 3" or "Building Fractions on a Bar"
+- description: 1-2 sentences warmly introducing the multi-challenge session. Motivate the strategy (identifying parts of a fraction, building fractions on a bar, comparing magnitudes, or working in operation context — match the mode). No specific fractions.
+- showDecimal: true for grades 4+ (helpful for connecting fractions to decimals), false for grades K-3 to avoid cognitive overload
+- gradeLevel: echo back "${gradeLevel}"
 
-DISTRACTOR GUIDELINES:
-- For numeratorChoices: include the correct numerator, plus 3 distractors such as
-  (numerator ± 1), the denominator, or 0. All values should be non-negative integers.
-- For denominatorChoices: include the correct denominator, plus 3 distractors such as
-  (denominator ± 1), the numerator, or a common denominator like 10.
-  All values should be positive integers >= 1.
-- Shuffle the choices so the correct answer is not always in the same position.
-
-Return the complete fraction bar configuration as JSON.
+Return ONLY the wrapper metadata in the response schema.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
+      temperature: 0.9,
+      topP: 0.95,
+      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
       responseMimeType: "application/json",
-      responseSchema: activeSchema
+      responseSchema: activeSchema,
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
-
-  if (!data) {
-    throw new Error('No valid fraction bar data returned from Gemini API');
+  const wrapper = result.text ? JSON.parse(result.text) : null;
+  if (!wrapper) {
+    throw new Error('No valid fraction bar wrapper returned from Gemini API');
   }
 
-  // Apply explicit config overrides
-  if (config) {
-    if (config.denominator !== undefined) data.denominator = config.denominator;
-    if (config.numerator !== undefined) data.numerator = config.numerator;
-    if (config.showDecimal !== undefined) data.showDecimal = config.showDecimal;
-  }
+  // ── Local: build challenges array ─────────────────────────────────
+  const challengeType: ChallengeType =
+    (wrapper.challengeType as ChallengeType) ||
+    (evalConstraint?.allowedTypes[0] as ChallengeType) ||
+    'identify';
 
-  // Validation: denominator must be >= 2
-  if (data.denominator < 2) {
-    console.warn(`Invalid fraction bar: denominator (${data.denominator}) < 2. Setting to 2.`);
-    data.denominator = 2;
-  }
+  const challenges = buildChallenges(challengeType, instanceCount);
 
-  // Validation: numerator must be <= denominator (proper fraction)
-  if (data.numerator > data.denominator) {
-    console.warn(`Invalid fraction bar: numerator (${data.numerator}) > denominator (${data.denominator}). Clamping numerator to ${data.denominator}.`);
-    data.numerator = data.denominator;
-  }
+  const showDecimal =
+    config?.showDecimal ??
+    (typeof wrapper.showDecimal === 'boolean' ? wrapper.showDecimal : true);
 
-  // Validation: numerator must be non-negative
-  if (data.numerator < 0) {
-    console.warn(`Invalid fraction bar: numerator (${data.numerator}) < 0. Setting to 0.`);
-    data.numerator = 0;
-  }
+  console.log('🍰 Fraction Bar generated:', {
+    topic,
+    challengeType,
+    instanceCount: challenges.length,
+    fractions: challenges.map(c => `${c.numerator}/${c.denominator}`),
+  });
 
-  // Ensure numeratorChoices includes the correct numerator
-  if (Array.isArray(data.numeratorChoices) && !data.numeratorChoices.includes(data.numerator)) {
-    data.numeratorChoices[0] = data.numerator;
-  }
-
-  // Ensure denominatorChoices includes the correct denominator
-  if (Array.isArray(data.denominatorChoices) && !data.denominatorChoices.includes(data.denominator)) {
-    data.denominatorChoices[0] = data.denominator;
-  }
-
-  return data;
+  return {
+    title: wrapper.title || 'Fraction Bar Practice',
+    description:
+      wrapper.description ||
+      `Practice ${instanceCount} ${challengeType.replace('_', ' ')} fraction problems on a bar.`,
+    challenges,
+    challengeType,
+    showDecimal,
+    gradeLevel: wrapper.gradeLevel || gradeLevel,
+  };
 };

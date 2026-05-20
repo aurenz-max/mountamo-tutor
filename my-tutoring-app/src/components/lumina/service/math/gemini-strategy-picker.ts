@@ -8,7 +8,65 @@ import {
 } from "../evalMode";
 
 // ============================================================================
-// Setup Schema (lightweight first call)
+// Constants
+// ============================================================================
+
+const VALID_STRATEGIES: StrategyId[] = [
+  'counting-on', 'counting-back', 'make-ten', 'doubles',
+  'near-doubles', 'tally-marks', 'draw-objects',
+];
+
+const STRATEGY_LABELS: Record<string, string> = {
+  'counting-on': 'counting on (start from the bigger number and count up)',
+  'counting-back': 'counting back (start from the bigger number and count down)',
+  'make-ten': 'make-ten (decompose a number to fill a ten frame)',
+  'doubles': 'doubles (use a known doubles fact)',
+  'near-doubles': 'near-doubles (use a doubles fact and add 1)',
+  'tally-marks': 'tally marks (draw tally marks for each number, then count all)',
+  'draw-objects': 'drawing objects (draw circles for each number, then count all)',
+};
+
+/** Default number of distinct challenges to build when the eval mode pins to one type. */
+const TARGET_INSTANCE_COUNT = 4;
+
+// ---------------------------------------------------------------------------
+// Strategy constraints — which problems each strategy's visualization can
+// legitimately represent. Without this, the pool service randomly pairs
+// strategies with operations/operands that their visualizations can't render
+// (e.g., tally-marks for subtraction shows operand1+operand2 marks, doubles
+// for non-doubles shows two equal piles of the smaller operand). See QA report
+// strategy-picker-2026-05-19.md / EVAL_TRACKER STP-1..STP-4.
+// ---------------------------------------------------------------------------
+
+type Operation = 'addition' | 'subtraction';
+type Problem = { operand1: number; operand2: number; operation: Operation };
+
+interface StrategyConstraint {
+  operation: Operation;
+  /** Optional predicate the problem must satisfy (e.g. doubles ⇒ operand1 === operand2). */
+  predicate?: (p: Problem) => boolean;
+}
+
+const STRATEGY_CONSTRAINTS: Record<StrategyId, StrategyConstraint> = {
+  'counting-on':   { operation: 'addition' },
+  'counting-back': { operation: 'subtraction' },
+  'make-ten':      { operation: 'addition', predicate: p => p.operand1 + p.operand2 >= 8 && p.operand1 + p.operand2 <= 10 },
+  'doubles':       { operation: 'addition', predicate: p => p.operand1 === p.operand2 },
+  'near-doubles':  { operation: 'addition', predicate: p => Math.abs(p.operand1 - p.operand2) === 1 },
+  'tally-marks':   { operation: 'addition' },
+  'draw-objects':  { operation: 'addition' },
+};
+
+function strategyMatchesProblem(strat: StrategyId, p: Problem): boolean {
+  const c = STRATEGY_CONSTRAINTS[strat];
+  if (!c) return true;
+  if (c.operation !== p.operation) return false;
+  if (c.predicate && !c.predicate(p)) return false;
+  return true;
+}
+
+// ============================================================================
+// Setup Schema (lightweight first call — title + description only)
 // ============================================================================
 
 interface SetupResult {
@@ -18,14 +76,6 @@ interface SetupResult {
   maxNumber: number;
   operations: ('addition' | 'subtraction')[];
   strategiesIntroduced: StrategyId[];
-  /** 3 problems: problem[0] for guided+try+compare, problem[1] for choose, problem[2] for match */
-  problems: Array<{ operand1: number; operand2: number; operation: 'addition' | 'subtraction' }>;
-  /** Which strategy to use for guided-strategy (problem 0) */
-  guidedStrategy: StrategyId;
-  /** Which strategy to use for try-another (problem 0) */
-  tryAnotherStrategy: StrategyId;
-  /** Which strategy the worked solution in match-strategy uses */
-  matchCorrectStrategy: StrategyId;
 }
 
 const setupSchema: Schema = {
@@ -33,131 +83,15 @@ const setupSchema: Schema = {
   properties: {
     title: {
       type: Type.STRING,
-      description: "Fun title for the activity (e.g., 'Many Ways to Add!', 'Strategy Toolbox')"
+      description: "Fun title for the activity (e.g., 'Many Ways to Add!', 'Strategy Toolbox')",
     },
     description: {
       type: Type.STRING,
-      description: "Brief educational description"
+      description: "1-sentence educational description",
     },
-    problems: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          operand1: { type: Type.NUMBER, description: "First number" },
-          operand2: { type: Type.NUMBER, description: "Second number" },
-          operation: { type: Type.STRING, description: "'addition' or 'subtraction'" }
-        },
-        required: ["operand1", "operand2", "operation"]
-      },
-      description: "Exactly 3 arithmetic problems within maxNumber. Problem 1 is for guided+compare, problem 2 for choose-your-strategy, problem 3 for match-strategy."
-    },
-    guidedStrategy: {
-      type: Type.STRING,
-      description: "Strategy for the guided-strategy challenge. One of: counting-on, counting-back, make-ten, doubles, near-doubles, tally-marks, draw-objects"
-    },
-    tryAnotherStrategy: {
-      type: Type.STRING,
-      description: "A DIFFERENT strategy for the try-another challenge (same problem). Must differ from guidedStrategy."
-    },
-    matchCorrectStrategy: {
-      type: Type.STRING,
-      description: "Which strategy the worked-solution in the match challenge demonstrates."
-    }
   },
-  required: ["title", "description", "problems", "guidedStrategy", "tryAnotherStrategy", "matchCorrectStrategy"]
+  required: ["title", "description"],
 };
-
-// ============================================================================
-// Per-Challenge Schemas (tiny, focused)
-// ============================================================================
-
-const guidedSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    instruction: {
-      type: Type.STRING,
-      description: "Warm instruction like 'Let\\'s solve this by counting on! Start from the bigger number.'"
-    },
-    strategySteps: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "2-4 scaffold steps guiding the strategy WITHOUT revealing the answer"
-    }
-  },
-  required: ["instruction", "strategySteps"]
-};
-
-const tryAnotherSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    instruction: {
-      type: Type.STRING,
-      description: "Instruction for solving the SAME problem a different way, e.g. 'Now try using tally marks!'"
-    },
-    strategySteps: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "2-4 scaffold steps for the new strategy WITHOUT revealing the answer"
-    }
-  },
-  required: ["instruction", "strategySteps"]
-};
-
-const compareSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    instruction: {
-      type: Type.STRING,
-      description: "Instruction like 'You solved it two ways! Let\\'s compare.'"
-    },
-    comparisonQuestion: {
-      type: Type.STRING,
-      description: "Reflective question like 'Which strategy felt easier for you?'"
-    }
-  },
-  required: ["instruction", "comparisonQuestion"]
-};
-
-const chooseSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    instruction: {
-      type: Type.STRING,
-      description: "Instruction like 'Pick any strategy you like to solve this problem!'"
-    }
-  },
-  required: ["instruction"]
-};
-
-const matchSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    instruction: {
-      type: Type.STRING,
-      description: "Instruction like 'Someone already solved this. Which strategy did they use?'"
-    },
-    workedSolution: {
-      type: Type.STRING,
-      description: "2-3 sentence description of a worked-out solution using a specific strategy. Do NOT name the strategy in the text."
-    },
-    strategyOptions: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "3 strategy names as multiple-choice options"
-    }
-  },
-  required: ["instruction", "workedSolution", "strategyOptions"]
-};
-
-// ============================================================================
-// Setup Generator
-// ============================================================================
-
-const VALID_STRATEGIES: StrategyId[] = [
-  'counting-on', 'counting-back', 'make-ten', 'doubles',
-  'near-doubles', 'tally-marks', 'draw-objects'
-];
 
 async function generateSetup(
   topic: string,
@@ -166,7 +100,6 @@ async function generateSetup(
     maxNumber: number;
     operations: string[];
     strategiesIntroduced: string[];
-    challengeCount: number;
     gradeBand: string;
   }>,
 ): Promise<SetupResult> {
@@ -180,111 +113,286 @@ async function generateSetup(
 
   const prompt = `
 Create a setup for a strategy-picker math activity teaching "${topic}" to ${gradeLevel} students.
+Grade band: ${gradeBand}. Strategies in play: ${strategies.join(', ')}.
 
-Grade band: ${gradeBand}. Max number: ${maxNumber}. Operations: ${operations.join(', ')}.
-Available strategies: ${strategies.join(', ')}.
-
-Requirements:
-- Generate exactly 3 problems. All operands and results must be within ${maxNumber}.
-  - Problem 1: for guided-strategy + try-another + compare (addition preferred)
-  - Problem 2: for choose-your-strategy (can be different operation)
-  - Problem 3: for match-strategy
-- guidedStrategy and tryAnotherStrategy must be DIFFERENT and both from: ${strategies.join(', ')}
-- matchCorrectStrategy must be from: ${strategies.join(', ')}
-- For subtraction: operand1 must be >= operand2 (no negative results)
-- Title should be fun and engaging for young children
+Return only:
+- title: fun and engaging for young children
+- description: 1-sentence educational summary
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: setupSchema },
-  });
+  let data: { title?: string; description?: string } = {};
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: setupSchema },
+    });
+    data = result.text ? JSON.parse(result.text) : {};
+  } catch {
+    // fall through to defaults below
+  }
 
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data) throw new Error('No setup data returned from Gemini');
-
-  // --- Validate & fix ---
-  const validGradeBand = (gradeBand === 'K' || gradeBand === '1') ? gradeBand : 'K';
+  const validGradeBand: 'K' | '1' = (gradeBand === 'K' || gradeBand === '1') ? gradeBand : 'K';
   const validOps = (operations as string[]).filter(o => o === 'addition' || o === 'subtraction') as ('addition' | 'subtraction')[];
   const validStrats = (strategies as string[]).filter(s => VALID_STRATEGIES.includes(s as StrategyId)) as StrategyId[];
 
-  // Validate problems
-  let problems = Array.isArray(data.problems) ? data.problems : [];
-  problems = problems.map((p: Record<string, unknown>) => ({
-    operand1: typeof p.operand1 === 'number' ? Math.min(Math.max(p.operand1 as number, 0), maxNumber) : 2,
-    operand2: typeof p.operand2 === 'number' ? Math.min(Math.max(p.operand2 as number, 0), maxNumber) : 3,
-    operation: p.operation === 'subtraction' ? 'subtraction' as const : 'addition' as const,
-  }));
-
-  // Ensure 3 problems
-  while (problems.length < 3) {
-    problems.push({ operand1: 2, operand2: 1, operation: 'addition' as const });
-  }
-
-  // Clamp sums/differences
-  for (const p of problems) {
-    if (p.operation === 'addition' && p.operand1 + p.operand2 > maxNumber) {
-      p.operand2 = maxNumber - p.operand1;
-      if (p.operand2 < 0) { p.operand1 = 1; p.operand2 = 1; }
-    }
-    if (p.operation === 'subtraction' && p.operand1 < p.operand2) {
-      [p.operand1, p.operand2] = [p.operand2, p.operand1];
-    }
-  }
-
-  // Validate strategies
-  let guided = VALID_STRATEGIES.includes(data.guidedStrategy) ? data.guidedStrategy : validStrats[0] || 'counting-on';
-  let tryAnother = VALID_STRATEGIES.includes(data.tryAnotherStrategy) ? data.tryAnotherStrategy : validStrats[1] || 'tally-marks';
-  if (guided === tryAnother) {
-    tryAnother = validStrats.find(s => s !== guided) || 'draw-objects';
-  }
-  const matchCorrect = VALID_STRATEGIES.includes(data.matchCorrectStrategy) ? data.matchCorrectStrategy : validStrats[0] || 'counting-on';
-
   return {
     title: data.title || 'Many Ways to Solve!',
-    description: data.description || 'Solve the same problem using different strategies.',
-    gradeBand: validGradeBand as 'K' | '1',
+    description: data.description || 'Solve problems using different strategies.',
+    gradeBand: validGradeBand,
     maxNumber,
     operations: validOps.length > 0 ? validOps : ['addition'],
     strategiesIntroduced: validStrats.length > 0 ? validStrats : ['counting-on', 'tally-marks'],
-    problems,
-    guidedStrategy: guided,
-    tryAnotherStrategy: tryAnother,
-    matchCorrectStrategy: matchCorrect,
   };
 }
 
 // ============================================================================
-// Per-Challenge Generators
+// Pool Service — Problems & Strategies (strategy-aware)
+// ============================================================================
+// Per PRD §6a #1 (pool-service for value-only data) and §6g #3 (pre-randomize
+// assignments — structured-output Gemini is convergent). Selecting problems
+// and strategy assignments in code rather than asking Gemini for them gives
+// us deterministic variance and saves one call per session.
+//
+// Selection is *strategy-first*: pick the strategy, then pick a problem from
+// the strategy's compatible pool (per STRATEGY_CONSTRAINTS). Pair builders
+// (compare, try-another) further restrict to the intersection so both
+// strategies' visualizations apply to the chosen problem.
+
+function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+const FALLBACK_PROBLEM: Problem = { operand1: 2, operand2: 1, operation: 'addition' };
+
+function enumerateProblems(
+  maxNumber: number,
+  operations: Operation[],
+): Problem[] {
+  const out: Problem[] = [];
+  for (const op of operations) {
+    for (let a = 1; a <= maxNumber; a++) {
+      for (let b = 1; b <= maxNumber; b++) {
+        if (op === 'addition' && a + b <= maxNumber) {
+          out.push({ operand1: a, operand2: b, operation: 'addition' });
+        } else if (op === 'subtraction' && a > b && a <= maxNumber) {
+          // strict `a > b` excludes trivial a-a=0 (STP-4).
+          out.push({ operand1: a, operand2: b, operation: 'subtraction' });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+function problemsForStrategy(
+  strat: StrategyId,
+  maxNumber: number,
+  operations: Operation[],
+): Problem[] {
+  const c = STRATEGY_CONSTRAINTS[strat];
+  if (!c || !operations.includes(c.operation)) return [];
+  const pool = enumerateProblems(maxNumber, [c.operation]);
+  return c.predicate ? pool.filter(c.predicate) : pool;
+}
+
+function problemKey(p: Problem): string {
+  return `${p.operation}:${p.operand1}:${p.operand2}`;
+}
+
+function pickRandom<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function intersectProblems(a: Problem[], b: Problem[]): Problem[] {
+  const keys = new Set(b.map(problemKey));
+  return a.filter(p => keys.has(problemKey(p)));
+}
+
+function padStrategies(strategies: StrategyId[]): StrategyId[] {
+  const out = [...strategies];
+  for (const s of VALID_STRATEGIES) {
+    if (out.length >= 2) break;
+    if (!out.includes(s)) out.push(s);
+  }
+  return out;
+}
+
+/** Pick N (strategy, problem) pairs — strategy cycled for variance, problem
+ *  drawn from that strategy's compatible pool. Used by guided + match. */
+function selectStrategyProblemPairs(
+  count: number,
+  strategies: StrategyId[],
+  maxNumber: number,
+  operations: Operation[],
+): Array<{ strat: StrategyId; p: Problem }> {
+  if (strategies.length === 0) {
+    return Array.from({ length: count }, () => ({ strat: 'counting-on' as StrategyId, p: FALLBACK_PROBLEM }));
+  }
+  const cycled = shuffleInPlace([...strategies]);
+  return Array.from({ length: count }, (_, i) => {
+    const strat = cycled[i % cycled.length];
+    const p = pickRandom(problemsForStrategy(strat, maxNumber, operations));
+    if (p) return { strat, p };
+    // Strategy has no compatible problems in this config — fall back to any
+    // strategy whose pool is non-empty.
+    for (const s of VALID_STRATEGIES) {
+      const candidate = pickRandom(problemsForStrategy(s, maxNumber, operations));
+      if (candidate) return { strat: s, p: candidate };
+    }
+    return { strat, p: FALLBACK_PROBLEM };
+  });
+}
+
+/** Pick N (stratA, stratB, problem) triples where the problem satisfies both
+ *  strategies' constraints. Used by compare + try-another. If a strategy pair
+ *  has empty intersection (e.g. doubles + near-doubles), re-roll up to 20
+ *  times, then fall back to a known-safe pair. */
+function selectPairProblemTriples(
+  count: number,
+  strategies: StrategyId[],
+  maxNumber: number,
+  operations: Operation[],
+): Array<{ stratA: StrategyId; stratB: StrategyId; p: Problem }> {
+  const pool = padStrategies(strategies);
+  const safePool = pool.filter(s => {
+    const c = STRATEGY_CONSTRAINTS[s];
+    // "Safe" strategies have no operand predicate and are always pairable.
+    return c && !c.predicate;
+  });
+
+  const triples: Array<{ stratA: StrategyId; stratB: StrategyId; p: Problem }> = [];
+  for (let i = 0; i < count; i++) {
+    let triple: { stratA: StrategyId; stratB: StrategyId; p: Problem } | null = null;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const shuffled = shuffleInPlace([...pool]);
+      const stratA = shuffled[0];
+      const stratB = shuffled[1];
+      if (stratA === stratB) continue;
+      const p = pickRandom(intersectProblems(
+        problemsForStrategy(stratA, maxNumber, operations),
+        problemsForStrategy(stratB, maxNumber, operations),
+      ));
+      if (p) { triple = { stratA, stratB, p }; break; }
+    }
+    if (!triple) {
+      // Fallback: pair two unconstrained safe strategies (both work on any
+      // addition problem). Prefer pulling from `strategies`; if it's all
+      // constrained, fall back to global VALID_STRATEGIES.
+      const safeA = safePool[0] ?? 'counting-on';
+      const safeB = safePool[1] ?? (safePool[0] === 'counting-on' ? 'tally-marks' : 'counting-on');
+      const p = pickRandom(intersectProblems(
+        problemsForStrategy(safeA, maxNumber, operations),
+        problemsForStrategy(safeB, maxNumber, operations),
+      )) ?? FALLBACK_PROBLEM;
+      triple = { stratA: safeA, stratB: safeB, p };
+    }
+    triples.push(triple);
+  }
+  return triples;
+}
+
+// ============================================================================
+// Per-Challenge Schemas (tiny, focused — unchanged)
 // ============================================================================
 
-function problemStr(p: { operand1: number; operand2: number; operation: string }): string {
+const guidedSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    instruction: {
+      type: Type.STRING,
+      description: "Warm instruction like 'Let\\'s solve this by counting on! Start from the bigger number.'",
+    },
+    strategySteps: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "2-4 scaffold steps guiding the strategy WITHOUT revealing the answer",
+    },
+  },
+  required: ["instruction", "strategySteps"],
+};
+
+const tryAnotherSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    instruction: {
+      type: Type.STRING,
+      description: "Instruction for trying a different strategy on this problem",
+    },
+    strategySteps: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "2-4 scaffold steps for the new strategy WITHOUT revealing the answer",
+    },
+  },
+  required: ["instruction", "strategySteps"],
+};
+
+const compareSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    instruction: {
+      type: Type.STRING,
+      description: "Instruction like 'You solved it two ways! Let\\'s compare.'",
+    },
+    comparisonQuestion: {
+      type: Type.STRING,
+      description: "Reflective question like 'Which strategy felt easier for you?'",
+    },
+  },
+  required: ["instruction", "comparisonQuestion"],
+};
+
+const chooseSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    instruction: {
+      type: Type.STRING,
+      description: "Instruction like 'Pick any strategy you like to solve this problem!'",
+    },
+  },
+  required: ["instruction"],
+};
+
+const matchSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    instruction: {
+      type: Type.STRING,
+      description: "Instruction like 'Someone already solved this. Which strategy did they use?'",
+    },
+    workedSolution: {
+      type: Type.STRING,
+      description: "2-3 sentence description of a worked-out solution using a specific strategy. Do NOT name the strategy in the text.",
+    },
+  },
+  required: ["instruction", "workedSolution"],
+};
+
+// ============================================================================
+// Per-Challenge Generators (parametric on problem + strategy)
+// ============================================================================
+
+function problemStr(p: Problem): string {
   return p.operation === 'subtraction'
     ? `${p.operand1} - ${p.operand2}`
     : `${p.operand1} + ${p.operand2}`;
 }
 
-function problemResult(p: { operand1: number; operand2: number; operation: string }): number {
+function problemResult(p: Problem): number {
   return p.operation === 'subtraction' ? p.operand1 - p.operand2 : p.operand1 + p.operand2;
 }
 
-const STRATEGY_LABELS: Record<string, string> = {
-  'counting-on': 'counting on (start from the bigger number and count up)',
-  'counting-back': 'counting back (start from the bigger number and count down)',
-  'make-ten': 'make-ten (decompose a number to fill a ten frame)',
-  'doubles': 'doubles (use a known doubles fact)',
-  'near-doubles': 'near-doubles (use a doubles fact and add 1)',
-  'tally-marks': 'tally marks (draw tally marks for each number, then count all)',
-  'draw-objects': 'drawing objects (draw circles for each number, then count all)',
-};
-
-async function generateGuided(
-  setup: SetupResult,
+async function generateGuidedContent(
+  p: Problem,
+  strat: StrategyId,
   gradeLevel: string,
-) {
-  const p = setup.problems[0];
-  const strat = setup.guidedStrategy;
+): Promise<{ instruction: string; strategySteps: string[] }> {
   const prompt = `
 Create a guided-strategy challenge for ${gradeLevel} students.
 Problem: ${problemStr(p)} = ?
@@ -296,83 +404,85 @@ BAD: "Count 3 more: 4, 5. The answer is 5!"
 GOOD: "Start at the bigger number. Now count up the smaller number. What number did you land on?"
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: guidedSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data) return fallbackGuided(setup);
-
-  if (!data.instruction || !Array.isArray(data.strategySteps) || data.strategySteps.length === 0) {
-    return fallbackGuided(setup);
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: guidedSchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (data?.instruction && Array.isArray(data.strategySteps) && data.strategySteps.length > 0) {
+      return data;
+    }
+  } catch {
+    // fall through to fallback
   }
-
-  return data as { instruction: string; strategySteps: string[] };
+  return fallbackGuidedContent(p, strat);
 }
 
-async function generateTryAnotherChallenge(
-  setup: SetupResult,
+async function generateTryAnotherContent(
+  p: Problem,
+  priorStrat: StrategyId,
+  newStrat: StrategyId,
   gradeLevel: string,
-) {
-  const p = setup.problems[0];
-  const strat = setup.tryAnotherStrategy;
+): Promise<{ instruction: string; strategySteps: string[] }> {
   const prompt = `
 Create a try-another challenge for ${gradeLevel} students.
-The student already solved ${problemStr(p)} using ${setup.guidedStrategy}.
-Now they solve the SAME problem using: ${strat} — ${STRATEGY_LABELS[strat] || strat}
+Problem: ${problemStr(p)} = ?
+The student might have used ${priorStrat} before. Now they solve it using: ${newStrat} — ${STRATEGY_LABELS[newStrat] || newStrat}
 
-Write an encouraging instruction like "Great job! Now let's try a different way."
-Write 2-4 scaffold steps for ${strat} WITHOUT revealing the answer.
+Write an encouraging instruction that frames this as a fresh angle on the problem
+(e.g., "Try this one with ${newStrat}!" or "Let's see what ${newStrat} feels like.").
+Write 2-4 scaffold steps for ${newStrat} WITHOUT revealing the answer.
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: tryAnotherSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data) return fallbackTryAnother(setup);
-
-  if (!data.instruction || !Array.isArray(data.strategySteps) || data.strategySteps.length === 0) {
-    return fallbackTryAnother(setup);
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: tryAnotherSchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (data?.instruction && Array.isArray(data.strategySteps) && data.strategySteps.length > 0) {
+      return data;
+    }
+  } catch {
+    // fall through
   }
-
-  return data as { instruction: string; strategySteps: string[] };
+  return fallbackTryAnotherContent(p, newStrat);
 }
 
-async function generateCompareChallenge(
-  setup: SetupResult,
+async function generateCompareContent(
+  p: Problem,
+  stratA: StrategyId,
+  stratB: StrategyId,
   gradeLevel: string,
-) {
-  const s1 = setup.guidedStrategy;
-  const s2 = setup.tryAnotherStrategy;
+): Promise<{ instruction: string; comparisonQuestion: string }> {
   const prompt = `
 Create a compare challenge for ${gradeLevel} students.
-They solved ${problemStr(setup.problems[0])} two ways: using ${s1} and ${s2}.
-Both gave the same answer. Now ask a reflective question — there's no wrong answer.
+They are looking at ${problemStr(p)} solved two ways: using ${stratA} and ${stratB}.
+Both give the same answer. Ask a reflective question — there's no wrong answer.
 Example questions: "Which strategy felt easier?", "Which way was faster for you?"
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: compareSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data) return fallbackCompare(setup);
-
-  return data as { instruction: string; comparisonQuestion: string };
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: compareSchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (data?.instruction && data?.comparisonQuestion) return data;
+  } catch {
+    // fall through
+  }
+  return fallbackCompareContent(stratA, stratB);
 }
 
-async function generateChooseChallenge(
-  setup: SetupResult,
+async function generateChooseContent(
+  p: Problem,
   gradeLevel: string,
-) {
-  const p = setup.problems[1];
+): Promise<{ instruction: string }> {
   const prompt = `
 Create a choose-your-strategy challenge for ${gradeLevel} students.
 Problem: ${problemStr(p)} = ?
@@ -380,26 +490,25 @@ The student picks their own strategy from a menu, then solves.
 Write an encouraging instruction like "Pick any strategy you like to solve this!"
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: chooseSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data?.instruction) {
-    return { instruction: 'Pick any strategy you like to solve this problem!' };
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: chooseSchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (data?.instruction) return data;
+  } catch {
+    // fall through
   }
-
-  return data as { instruction: string };
+  return { instruction: 'Pick any strategy you like to solve this problem!' };
 }
 
-async function generateMatchChallenge(
-  setup: SetupResult,
+async function generateMatchContent(
+  p: Problem,
+  strat: StrategyId,
   gradeLevel: string,
-) {
-  const p = setup.problems[2];
-  const strat = setup.matchCorrectStrategy;
+): Promise<{ instruction: string; workedSolution: string }> {
   const prompt = `
 Create a match-strategy challenge for ${gradeLevel} students.
 Problem: ${problemStr(p)} = ?
@@ -408,72 +517,57 @@ The worked solution uses: ${strat} — ${STRATEGY_LABELS[strat] || strat}
 Write a 2-3 sentence workedSolution describing how someone solved it using ${strat}.
 Do NOT name the strategy in the text — the student must figure it out.
 Example: "I started at 6 and counted up 3 hops on the number line: 7, 8, 9." (This is counting-on but doesn't say so.)
-
-Provide 3 strategyOptions (strategy IDs) as multiple-choice answers, one of which is "${strat}".
-Available strategies: ${setup.strategiesIntroduced.join(', ')}
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: matchSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data) return fallbackMatch(setup);
-
-  // Ensure correctStrategy is in strategyOptions
-  if (!Array.isArray(data.strategyOptions) || data.strategyOptions.length < 2) {
-    return fallbackMatch(setup);
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: matchSchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (data?.instruction && data?.workedSolution) return data;
+  } catch {
+    // fall through
   }
-  if (!data.strategyOptions.includes(strat)) {
-    data.strategyOptions[data.strategyOptions.length - 1] = strat;
-  }
-
-  return data as { instruction: string; workedSolution: string; strategyOptions: string[] };
+  return fallbackMatchContent(p, strat);
 }
 
 // ============================================================================
-// Fallbacks
+// Fallbacks (parametric)
 // ============================================================================
 
-function fallbackGuided(setup: SetupResult) {
-  const p = setup.problems[0];
+function fallbackGuidedContent(p: Problem, strat: StrategyId) {
   return {
-    instruction: `Let's solve ${problemStr(p)} by ${setup.guidedStrategy.replace('-', ' ')}! Follow the steps below.`,
+    instruction: `Let's solve ${problemStr(p)} by ${strat.replace('-', ' ')}! Follow the steps below.`,
     strategySteps: [
       'Look at the two numbers in the problem.',
-      `Use the ${setup.guidedStrategy.replace('-', ' ')} strategy to work it out.`,
+      `Use the ${strat.replace('-', ' ')} strategy to work it out.`,
       'What answer did you get?',
     ],
   };
 }
 
-function fallbackTryAnother(setup: SetupResult) {
-  const p = setup.problems[0];
+function fallbackTryAnotherContent(p: Problem, strat: StrategyId) {
   return {
-    instruction: `Great job! Now solve ${problemStr(p)} a different way — using ${setup.tryAnotherStrategy.replace('-', ' ')}!`,
+    instruction: `Try ${problemStr(p)} a new way — using ${strat.replace('-', ' ')}!`,
     strategySteps: [
-      `This time, use ${setup.tryAnotherStrategy.replace('-', ' ')}.`,
+      `This time, use ${strat.replace('-', ' ')}.`,
       'Follow the visual to help you.',
-      'Did you get the same answer as before?',
+      'What answer did you get?',
     ],
   };
 }
 
-function fallbackCompare(setup: SetupResult) {
+function fallbackCompareContent(stratA: StrategyId, stratB: StrategyId) {
   return {
-    instruction: `You solved it two ways! Let's compare ${setup.guidedStrategy.replace('-', ' ')} and ${setup.tryAnotherStrategy.replace('-', ' ')}.`,
+    instruction: `You can see this solved two ways: ${stratA.replace('-', ' ')} and ${stratB.replace('-', ' ')}.`,
     comparisonQuestion: 'Which strategy felt easier for you?',
   };
 }
 
-function fallbackMatch(setup: SetupResult) {
-  const p = setup.problems[2];
+function fallbackMatchContent(p: Problem, strat: StrategyId) {
   const result = problemResult(p);
-  const strat = setup.matchCorrectStrategy;
-
-  // Generate a generic worked solution
   const workedSolutions: Record<string, string> = {
     'counting-on': `I started at ${p.operand1} and counted up ${p.operand2} more on my fingers. I landed on ${result}.`,
     'counting-back': `I started at ${p.operand1} and counted back ${p.operand2}. I landed on ${result}.`,
@@ -483,21 +577,288 @@ function fallbackMatch(setup: SetupResult) {
     'tally-marks': `I drew ${p.operand1} tally marks, then ${p.operand2} more. I counted them all and got ${result}.`,
     'draw-objects': `I drew ${p.operand1} circles, then ${p.operand2} more. I counted them all and got ${result}.`,
   };
-
-  const options = [strat];
-  for (const s of setup.strategiesIntroduced) {
-    if (s !== strat && options.length < 3) options.push(s);
-  }
-  while (options.length < 3) {
-    const filler = VALID_STRATEGIES.find(s => !options.includes(s));
-    if (filler) options.push(filler); else break;
-  }
-
   return {
     instruction: 'Someone already solved this problem. Which strategy did they use?',
     workedSolution: workedSolutions[strat] || `I used a strategy to solve ${problemStr(p)} and got ${result}.`,
-    strategyOptions: options,
   };
+}
+
+// ============================================================================
+// Challenge Builders (assemble StrategyPickerChallenge objects)
+// ============================================================================
+
+function buildProblemPayload(p: Problem): StrategyPickerChallenge['problem'] {
+  return {
+    equation: problemStr(p),
+    operation: p.operation,
+    operand1: p.operand1,
+    operand2: p.operand2,
+    result: problemResult(p),
+  };
+}
+
+function buildMatchOptions(
+  correct: StrategyId,
+  strategiesIntroduced: StrategyId[],
+  problem: Problem,
+): string[] {
+  // Distractors must be plausible for this problem, otherwise a savvy student
+  // can eliminate them by operation/operand structure alone.
+  const options: StrategyId[] = [correct];
+  const plausible = strategiesIntroduced
+    .filter(s => s !== correct && strategyMatchesProblem(s, problem));
+  for (const s of shuffleInPlace([...plausible])) {
+    if (options.length >= 3) break;
+    options.push(s);
+  }
+  // If we still need fillers, pull from any compatible strategy in the global pool.
+  if (options.length < 3) {
+    for (const s of VALID_STRATEGIES) {
+      if (options.length >= 3) break;
+      if (!options.includes(s) && strategyMatchesProblem(s, problem)) options.push(s);
+    }
+  }
+  return shuffleInPlace(options);
+}
+
+// ============================================================================
+// Single-Mode Builders (N=4 distinct instances of one type, parallel calls)
+// ============================================================================
+//
+// When the eval mode pins to ONE challenge type, fan out N parallel
+// per-challenge Gemini calls with pre-randomized (problem, strategy) inputs.
+// Variance comes from the in-code selection — not prompt phrasing — per PRD
+// §6a #2 / §6g #3 (structured-output Gemini is convergent).
+
+async function buildGuidedChallenges(
+  setup: SetupResult,
+  gradeLevel: string,
+  count: number,
+): Promise<StrategyPickerChallenge[]> {
+  const pairs = selectStrategyProblemPairs(count, setup.strategiesIntroduced, setup.maxNumber, setup.operations);
+
+  const contents = await Promise.all(
+    pairs.map(({ p, strat }) => generateGuidedContent(p, strat, gradeLevel)),
+  );
+
+  return pairs.map(({ p, strat }, i) => ({
+    id: `ch${i + 1}`,
+    type: 'guided-strategy' as const,
+    instruction: contents[i].instruction,
+    problem: buildProblemPayload(p),
+    assignedStrategy: strat,
+    strategySteps: contents[i].strategySteps,
+  }));
+}
+
+async function buildTryAnotherChallenges(
+  setup: SetupResult,
+  gradeLevel: string,
+  count: number,
+): Promise<StrategyPickerChallenge[]> {
+  // Both strategies must apply to the problem so the instruction's "prior"
+  // framing isn't nonsensical and the visualization renders correctly.
+  const triples = selectPairProblemTriples(count, setup.strategiesIntroduced, setup.maxNumber, setup.operations);
+
+  const contents = await Promise.all(
+    triples.map(({ p, stratA, stratB }) => generateTryAnotherContent(p, stratA, stratB, gradeLevel)),
+  );
+
+  return triples.map(({ p, stratB }, i) => ({
+    id: `ch${i + 1}`,
+    type: 'try-another' as const,
+    instruction: contents[i].instruction,
+    problem: buildProblemPayload(p),
+    assignedStrategy: stratB,
+    strategySteps: contents[i].strategySteps,
+  }));
+}
+
+async function buildCompareChallenges(
+  setup: SetupResult,
+  gradeLevel: string,
+  count: number,
+): Promise<StrategyPickerChallenge[]> {
+  const triples = selectPairProblemTriples(count, setup.strategiesIntroduced, setup.maxNumber, setup.operations);
+
+  const contents = await Promise.all(
+    triples.map(({ p, stratA, stratB }) => generateCompareContent(p, stratA, stratB, gradeLevel)),
+  );
+
+  return triples.map(({ p, stratA, stratB }, i) => ({
+    id: `ch${i + 1}`,
+    type: 'compare' as const,
+    instruction: contents[i].instruction,
+    problem: buildProblemPayload(p),
+    strategies: [stratA, stratB],
+    comparisonQuestion: contents[i].comparisonQuestion,
+  }));
+}
+
+async function buildChooseChallenges(
+  setup: SetupResult,
+  gradeLevel: string,
+  count: number,
+): Promise<StrategyPickerChallenge[]> {
+  // Pick the problem first, then restrict the strategy menu to options that
+  // actually apply (e.g., subtraction problems offer only counting-back).
+  const problems: Problem[] = [];
+  const seen = new Set<string>();
+  while (problems.length < count) {
+    const all = enumerateProblems(setup.maxNumber, setup.operations);
+    if (all.length === 0) { problems.push(FALLBACK_PROBLEM); break; }
+    const candidate = pickRandom(all);
+    if (!candidate) break;
+    const key = problemKey(candidate);
+    if (problems.length < all.length && seen.has(key)) continue;
+    seen.add(key);
+    problems.push(candidate);
+  }
+
+  const contents = await Promise.all(problems.map((p) => generateChooseContent(p, gradeLevel)));
+
+  return problems.map((p, i) => {
+    const available = setup.strategiesIntroduced.filter(s => strategyMatchesProblem(s, p));
+    return {
+      id: `ch${i + 1}`,
+      type: 'choose-your-strategy' as const,
+      instruction: contents[i].instruction,
+      problem: buildProblemPayload(p),
+      // Always offer at least one option — if the strategiesIntroduced pool has
+      // nothing compatible (shouldn't happen with default configs), fall back
+      // to the operation's canonical strategy.
+      availableStrategies: available.length > 0
+        ? available
+        : [p.operation === 'subtraction' ? 'counting-back' : 'counting-on'],
+    };
+  });
+}
+
+async function buildMatchChallenges(
+  setup: SetupResult,
+  gradeLevel: string,
+  count: number,
+): Promise<StrategyPickerChallenge[]> {
+  const pairs = selectStrategyProblemPairs(count, setup.strategiesIntroduced, setup.maxNumber, setup.operations);
+
+  const contents = await Promise.all(
+    pairs.map(({ p, strat }) => generateMatchContent(p, strat, gradeLevel)),
+  );
+
+  return pairs.map(({ p, strat }, i) => ({
+    id: `ch${i + 1}`,
+    type: 'match-strategy' as const,
+    instruction: contents[i].instruction,
+    problem: buildProblemPayload(p),
+    workedSolution: contents[i].workedSolution,
+    strategyOptions: buildMatchOptions(strat, setup.strategiesIntroduced, p),
+    correctStrategy: strat,
+  }));
+}
+
+async function buildSingleModeChallenges(
+  singleType: string,
+  setup: SetupResult,
+  gradeLevel: string,
+  count: number,
+): Promise<StrategyPickerChallenge[]> {
+  switch (singleType) {
+    case 'guided-strategy':       return buildGuidedChallenges(setup, gradeLevel, count);
+    case 'try-another':           return buildTryAnotherChallenges(setup, gradeLevel, count);
+    case 'compare':               return buildCompareChallenges(setup, gradeLevel, count);
+    case 'choose-your-strategy':  return buildChooseChallenges(setup, gradeLevel, count);
+    case 'match-strategy':        return buildMatchChallenges(setup, gradeLevel, count);
+    default:                      return [];
+  }
+}
+
+// ============================================================================
+// Multi-Mode Builder (auto-mode: one challenge per allowed type)
+// ============================================================================
+//
+// Preserves the original behavior: a shared problem across guided / try-another
+// / compare (so the "compare" phase can reference the same equation), and
+// separate problems for choose-your-strategy and match-strategy.
+
+async function buildMultiModeChallenges(
+  setup: SetupResult,
+  gradeLevel: string,
+  allowedTypes: Set<string>,
+): Promise<StrategyPickerChallenge[]> {
+  // Shared problem + strategy pair for guided/try/compare (so compare can
+  // legitimately reference the prior solve). Both strategies must apply to
+  // the shared problem — drive selection through `selectPairProblemTriples`.
+  const sharedTriple = selectPairProblemTriples(1, setup.strategiesIntroduced, setup.maxNumber, setup.operations)[0];
+  const chooseProblem =
+    pickRandom(enumerateProblems(setup.maxNumber, setup.operations)) ?? FALLBACK_PROBLEM;
+  const matchPair = selectStrategyProblemPairs(1, setup.strategiesIntroduced, setup.maxNumber, setup.operations)[0];
+
+  const sharedP = sharedTriple.p;
+  const matchP = matchPair.p;
+  const matchStrategy = matchPair.strat;
+
+  const needGuided = allowedTypes.has('guided-strategy') || allowedTypes.has('try-another') || allowedTypes.has('compare');
+  const needTryAnother = allowedTypes.has('try-another') || allowedTypes.has('compare');
+  const needCompare = allowedTypes.has('compare');
+  const needChoose = allowedTypes.has('choose-your-strategy');
+  const needMatch = allowedTypes.has('match-strategy');
+
+  const [guided, tryAnother, compare, choose, match] = await Promise.all([
+    needGuided ? generateGuidedContent(sharedP, sharedTriple.stratA, gradeLevel) : Promise.resolve(fallbackGuidedContent(sharedP, sharedTriple.stratA)),
+    needTryAnother ? generateTryAnotherContent(sharedP, sharedTriple.stratA, sharedTriple.stratB, gradeLevel) : Promise.resolve(fallbackTryAnotherContent(sharedP, sharedTriple.stratB)),
+    needCompare ? generateCompareContent(sharedP, sharedTriple.stratA, sharedTriple.stratB, gradeLevel) : Promise.resolve(fallbackCompareContent(sharedTriple.stratA, sharedTriple.stratB)),
+    needChoose ? generateChooseContent(chooseProblem, gradeLevel) : Promise.resolve({ instruction: 'Pick any strategy you like!' }),
+    needMatch ? generateMatchContent(matchP, matchStrategy, gradeLevel) : Promise.resolve(fallbackMatchContent(matchP, matchStrategy)),
+  ]);
+
+  const chooseAvailable = setup.strategiesIntroduced.filter(s => strategyMatchesProblem(s, chooseProblem));
+
+  const allChallenges: StrategyPickerChallenge[] = [
+    {
+      id: 'ch1',
+      type: 'guided-strategy',
+      instruction: guided.instruction,
+      problem: buildProblemPayload(sharedP),
+      assignedStrategy: sharedTriple.stratA,
+      strategySteps: guided.strategySteps,
+    },
+    {
+      id: 'ch2',
+      type: 'try-another',
+      instruction: tryAnother.instruction,
+      problem: buildProblemPayload(sharedP),
+      assignedStrategy: sharedTriple.stratB,
+      strategySteps: tryAnother.strategySteps,
+    },
+    {
+      id: 'ch3',
+      type: 'compare',
+      instruction: compare.instruction,
+      problem: buildProblemPayload(sharedP),
+      strategies: [sharedTriple.stratA, sharedTriple.stratB],
+      comparisonQuestion: compare.comparisonQuestion,
+    },
+    {
+      id: 'ch4',
+      type: 'choose-your-strategy',
+      instruction: choose.instruction,
+      problem: buildProblemPayload(chooseProblem),
+      availableStrategies: chooseAvailable.length > 0
+        ? chooseAvailable
+        : [chooseProblem.operation === 'subtraction' ? 'counting-back' : 'counting-on'],
+    },
+    {
+      id: 'ch5',
+      type: 'match-strategy',
+      instruction: match.instruction,
+      problem: buildProblemPayload(matchP),
+      workedSolution: match.workedSolution,
+      strategyOptions: buildMatchOptions(matchStrategy, setup.strategiesIntroduced, matchP),
+      correctStrategy: matchStrategy,
+    },
+  ];
+
+  return allChallenges.filter(c => allowedTypes.has(c.type));
 }
 
 // ============================================================================
@@ -542,12 +903,19 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // ============================================================================
 
 /**
- * Generate strategy picker data using parallel LLM calls.
+ * Generate strategy picker data.
  *
  * Architecture:
- *   1. Lightweight "setup" call → title, problems, strategy pairings
- *   2. Parallel calls for needed challenge types (filtered by eval mode)
- *   3. Recombine into StrategyPickerData
+ *   1. Lightweight "setup" call → title + description.
+ *   2. In-code pool service selects problems + strategy assignments.
+ *   3. Per-challenge Gemini calls (parallel) for instructions, scaffold steps,
+ *      worked solutions, etc.
+ *
+ * Branching:
+ *   - Single-mode (eval mode pins to one challenge type) → N=4 distinct
+ *     instances of that type via the pool-service builders.
+ *   - Multi-mode (auto / no constraint) → one challenge per allowed type with
+ *     a shared problem across guided / try-another / compare.
  */
 export const generateStrategyPicker = async (
   topic: string,
@@ -560,11 +928,8 @@ export const generateStrategyPicker = async (
     gradeBand: string;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode: string;
-  }>
+  }>,
 ): Promise<StrategyPickerData> => {
-  // ---------------------------------------------------------------------------
-  // Eval mode resolution
-  // ---------------------------------------------------------------------------
   const evalConstraint = resolveEvalModeConstraint(
     'strategy-picker',
     config?.targetEvalMode,
@@ -572,90 +937,22 @@ export const generateStrategyPicker = async (
   );
   logEvalModeResolution('StrategyPicker', config?.targetEvalMode, evalConstraint);
 
-  const allowedTypes = evalConstraint?.allowedTypes ?? [
-    'guided-strategy', 'try-another', 'compare', 'choose-your-strategy', 'match-strategy',
-  ];
+  const allTypes = ['guided-strategy', 'try-another', 'compare', 'choose-your-strategy', 'match-strategy'];
+  const allowedTypes = new Set(evalConstraint?.allowedTypes ?? allTypes);
 
-  // Step 1: Setup call
   const setup = await generateSetup(topic, gradeLevel, config);
 
-  // Step 2: Parallel challenge calls — only for allowed types
-  // Some types depend on others (try-another and compare need guided first),
-  // so always generate guided if try-another or compare are needed.
-  const needGuided = allowedTypes.includes('guided-strategy') || allowedTypes.includes('try-another') || allowedTypes.includes('compare');
-  const needTryAnother = allowedTypes.includes('try-another') || allowedTypes.includes('compare');
-  const needCompare = allowedTypes.includes('compare');
-  const needChoose = allowedTypes.includes('choose-your-strategy');
-  const needMatch = allowedTypes.includes('match-strategy');
+  let challenges: StrategyPickerChallenge[];
+  if (allowedTypes.size === 1) {
+    const [singleType] = Array.from(allowedTypes);
+    const count = Math.max(1, config?.challengeCount ?? TARGET_INSTANCE_COUNT);
+    challenges = await buildSingleModeChallenges(singleType, setup, gradeLevel, count);
+  } else {
+    challenges = await buildMultiModeChallenges(setup, gradeLevel, allowedTypes);
+  }
 
-  const [guided, tryAnother, compare, choose, match] = await Promise.all([
-    needGuided ? generateGuided(setup, gradeLevel) : Promise.resolve(fallbackGuided(setup)),
-    needTryAnother ? generateTryAnotherChallenge(setup, gradeLevel) : Promise.resolve(fallbackTryAnother(setup)),
-    needCompare ? generateCompareChallenge(setup, gradeLevel) : Promise.resolve(fallbackCompare(setup)),
-    needChoose ? generateChooseChallenge(setup, gradeLevel) : Promise.resolve({ instruction: 'Pick any strategy you like!' }),
-    needMatch ? generateMatchChallenge(setup, gradeLevel) : Promise.resolve(fallbackMatch(setup)),
-  ]);
-
-  // Step 3: Build problem objects
-  const buildProblem = (p: { operand1: number; operand2: number; operation: string }) => ({
-    equation: problemStr(p),
-    operation: p.operation as 'addition' | 'subtraction',
-    operand1: p.operand1,
-    operand2: p.operand2,
-    result: problemResult(p),
-  });
-
-  const p0 = buildProblem(setup.problems[0]);
-  const p1 = buildProblem(setup.problems[1]);
-  const p2 = buildProblem(setup.problems[2]);
-
-  // Step 4: Assemble challenges — only include allowed types
-  const allChallenges: StrategyPickerChallenge[] = [
-    {
-      id: 'ch1',
-      type: 'guided-strategy',
-      instruction: guided.instruction,
-      problem: p0,
-      assignedStrategy: setup.guidedStrategy,
-      strategySteps: guided.strategySteps,
-    },
-    {
-      id: 'ch2',
-      type: 'try-another',
-      instruction: tryAnother.instruction,
-      problem: p0,
-      assignedStrategy: setup.tryAnotherStrategy,
-      strategySteps: tryAnother.strategySteps,
-    },
-    {
-      id: 'ch3',
-      type: 'compare',
-      instruction: compare.instruction,
-      problem: p0,
-      strategies: [setup.guidedStrategy, setup.tryAnotherStrategy],
-      comparisonQuestion: compare.comparisonQuestion,
-    },
-    {
-      id: 'ch4',
-      type: 'choose-your-strategy',
-      instruction: choose.instruction,
-      problem: p1,
-      availableStrategies: setup.strategiesIntroduced,
-    },
-    {
-      id: 'ch5',
-      type: 'match-strategy',
-      instruction: match.instruction,
-      problem: p2,
-      workedSolution: match.workedSolution,
-      strategyOptions: match.strategyOptions,
-      correctStrategy: setup.matchCorrectStrategy,
-    },
-  ];
-
-  const challenges = evalConstraint
-    ? allChallenges.filter(c => allowedTypes.includes(c.type))
-    : allChallenges;
+  const typeBreakdown = challenges.map(c => c.type).join(', ');
+  console.log(`[StrategyPicker] Final: ${challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   return {
     title: setup.title,

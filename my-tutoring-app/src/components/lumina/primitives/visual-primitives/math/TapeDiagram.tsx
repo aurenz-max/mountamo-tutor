@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import CalculatorInput from '../../input-primitives/CalculatorInput';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   usePrimitiveEvaluation,
   type TapeDiagramMetrics,
+  type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import type { PhaseResult } from '../../../components/PhaseSummaryPanel';
 
 // ---------------------------------------------------------------------------
 // Data Interfaces
@@ -32,19 +33,14 @@ export type TapeDiagramChallengeType =
   | 'solve_comparison'
   | 'multi_step';
 
-export interface TapeDiagramData {
-  title: string;
-  description: string;
+/** One tape-diagram challenge. Owns its own bars + word problem + mode-specific data. */
+export interface TapeDiagramChallenge {
+  id: string;
+  challengeType: TapeDiagramChallengeType;
   bars: BarConfig[];
+  wordProblem?: string;
   comparisonMode?: boolean;
   showBrackets?: boolean;
-  unknownSegment?: number | null;
-
-  /** Discriminates the interaction mode */
-  challengeType?: TapeDiagramChallengeType;
-  /** Word problem text (represent, comparison, multi_step modes) */
-  wordProblem?: string;
-  /** Comparison-specific metadata */
   comparisonData?: {
     quantity1: number;
     quantity2: number;
@@ -52,12 +48,18 @@ export interface TapeDiagramData {
     comparisonWord: string;
     unknownPart: string;
   };
-  /** Multi-step-specific metadata */
   multiStepData?: {
     step1Hint: string;
     step2Hint: string;
-    solveOrder: number[]; // segment indices to solve in order
+    solveOrder: number[];
   };
+}
+
+export interface TapeDiagramData {
+  title: string;
+  description: string;
+  /** 3-6 challenges. Walked sequentially by the component. */
+  challenges: TapeDiagramChallenge[];
 
   // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -65,9 +67,7 @@ export interface TapeDiagramData {
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
-  onEvaluationSubmit?: (
-    result: import('../../../evaluation').PrimitiveEvaluationResult<TapeDiagramMetrics>
-  ) => void;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<TapeDiagramMetrics>) => void;
 }
 
 interface TapeDiagramProps {
@@ -76,7 +76,7 @@ interface TapeDiagramProps {
 }
 
 // ---------------------------------------------------------------------------
-// Shared types
+// Within-challenge phase types
 // ---------------------------------------------------------------------------
 
 type LearningPhase = 'explore' | 'practice' | 'apply';
@@ -107,19 +107,114 @@ function getBarColor(barIndex: number, customColor?: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Phase summary config — one entry per challenge type. The session pins to a
+// single mode, so phaseResults collapses to a single row labeled by mode.
+// ---------------------------------------------------------------------------
+
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  represent: { label: 'Represent', icon: '📊', accentColor: 'blue' },
+  solve_part_whole: { label: 'Part-Whole', icon: '⚖️', accentColor: 'emerald' },
+  solve_comparison: { label: 'Compare', icon: '🔀', accentColor: 'orange' },
+  multi_step: { label: 'Multi-Step', icon: '🧮', accentColor: 'purple' },
+};
+
+// ---------------------------------------------------------------------------
+// SegmentStepper — compact numeric input with −/+ steppers and type-in
+// support. Used for unknown-segment values and the part-whole "Total =" input.
+// ---------------------------------------------------------------------------
+
+interface SegmentStepperProps {
+  label?: string;
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+  disabled?: boolean;
+  submitLabel?: string;
+}
+
+const SegmentStepper: React.FC<SegmentStepperProps> = ({
+  label,
+  value,
+  onChange,
+  onSubmit,
+  disabled,
+  submitLabel = 'Check',
+}) => {
+  const parsed = parseInt(value, 10);
+  const safeValue = Number.isFinite(parsed) ? parsed : 0;
+
+  const adjust = (delta: number) => {
+    const next = Math.max(0, safeValue + delta);
+    onChange(String(next));
+  };
+
+  return (
+    <div className="space-y-2">
+      {label && (
+        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 text-center truncate">
+          {label}
+        </div>
+      )}
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => adjust(-1)}
+          disabled={disabled || safeValue === 0}
+          className="w-9 h-9 flex-shrink-0 rounded-lg bg-white/5 border border-white/20 text-slate-100 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed text-lg font-bold flex items-center justify-center"
+          aria-label="Decrease"
+        >
+          −
+        </button>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={value}
+          onChange={(e) => {
+            const next = e.target.value.replace(/[^0-9]/g, '');
+            onChange(next);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onSubmit();
+            }
+          }}
+          disabled={disabled}
+          placeholder="?"
+          className="flex-1 min-w-0 text-center text-2xl font-mono font-bold text-orange-400 bg-slate-900/50 border border-slate-700 rounded-lg py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder:text-orange-400/50 disabled:opacity-40"
+        />
+        <button
+          type="button"
+          onClick={() => adjust(1)}
+          disabled={disabled}
+          className="w-9 h-9 flex-shrink-0 rounded-lg bg-white/5 border border-white/20 text-slate-100 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed text-lg font-bold flex items-center justify-center"
+          aria-label="Increase"
+        >
+          +
+        </button>
+      </div>
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={disabled || value === ''}
+        className="w-full px-3 py-1.5 bg-orange-600/30 border-2 border-orange-500/50 text-orange-200 hover:bg-orange-600/40 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-semibold transition-colors"
+      >
+        {submitLabel}
+      </button>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   const {
-    bars = [],
-    comparisonMode = false,
-    showBrackets = true,
-    challengeType = 'solve_part_whole',
-    wordProblem,
-    comparisonData,
-    multiStepData,
-    // Evaluation props
+    title,
+    description,
+    challenges = [],
     instanceId,
     skillId,
     subskillId,
@@ -128,46 +223,99 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // --- Shared state ---
-  const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
-  const [feedback, setFeedback] = useState<Record<string, 'correct' | 'incorrect' | null>>({});
-  const [segmentAttempts, setSegmentAttempts] = useState<Map<string, SegmentAttempt>>(new Map());
-  const [showHints, setShowHints] = useState(false);
-  const [totalHintsUsed, setTotalHintsUsed] = useState(0);
+  const stableInstanceIdRef = useRef(instanceId || `tape-diagram-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // --- Part-whole specific state ---
-  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
-  const [wholeValue, setWholeValue] = useState('');
-  const [wholeFound, setWholeFound] = useState(false);
-  const [phaseAttempts, setPhaseAttempts] = useState({ explore: 0, practice: 0, apply: 0 });
-  const [phaseHints, setPhaseHints] = useState({ explore: 0, practice: 0, apply: 0 });
+  // ── Challenge progress ─────────────────────────────────────────────────────
+  const {
+    currentIndex,
+    currentAttempts,
+    results,
+    isComplete,
+    recordResult,
+    incrementAttempts,
+    advance,
+  } = useChallengeProgress<TapeDiagramChallenge>({
+    challenges,
+    getChallengeId: (c) => c.id,
+  });
 
-  // --- Multi-step specific state ---
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const phaseResults = usePhaseResults({
+    challenges,
+    results,
+    isComplete,
+    getChallengeType: (c) => c.challengeType,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
 
-  // --- Evaluation hook ---
+  // ── Evaluation hook ────────────────────────────────────────────────────────
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
-    resetAttempt: resetEvaluationAttempt,
     submittedResult,
     elapsedMs,
   } = usePrimitiveEvaluation<TapeDiagramMetrics>({
     primitiveType: 'tape-diagram',
-    instanceId: instanceId || `tape-diagram-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
-    onSubmit: onEvaluationSubmit as
-      | ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void)
-      | undefined,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // --- Helpers ---
-  const getSegmentKey = (barIndex: number, segmentIndex: number) => `${barIndex}-${segmentIndex}`;
+  const currentChallenge = challenges[currentIndex] ?? null;
+  const challengeType: TapeDiagramChallengeType =
+    currentChallenge?.challengeType ?? 'solve_part_whole';
+  const bars = currentChallenge?.bars ?? [];
+  const wordProblem = currentChallenge?.wordProblem;
+  const comparisonMode = currentChallenge?.comparisonMode ?? false;
+  const showBrackets = currentChallenge?.showBrackets ?? true;
+  const comparisonData = currentChallenge?.comparisonData;
+  const multiStepData = currentChallenge?.multiStepData;
 
-  const getAllUnknownSegments = useMemo(() => {
+  // ── Per-challenge interaction state (resets on advance) ────────────────────
+  const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState<Record<string, 'correct' | 'incorrect' | null>>({});
+  const [segmentAttempts, setSegmentAttempts] = useState<Map<string, SegmentAttempt>>(new Map());
+  const [showHints, setShowHints] = useState(false);
+  const [challengeHintCount, setChallengeHintCount] = useState(0);
+
+  // Part-whole within-challenge phase state
+  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
+  const [wholeValue, setWholeValue] = useState('');
+  const [wholeFound, setWholeFound] = useState(false);
+  const [phaseAttempts, setPhaseAttempts] = useState({ explore: 0, practice: 0, apply: 0 });
+
+  // Multi-step within-challenge step state
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+
+  const recordedRef = useRef(false);
+  const sessionCompleteFiredRef = useRef(false);
+
+  // Reset per-challenge state when the active challenge changes.
+  useEffect(() => {
+    if (!currentChallenge) return;
+    setUserAnswers({});
+    setFeedback({});
+    setSegmentAttempts(new Map());
+    setShowHints(false);
+    setChallengeHintCount(0);
+    setCurrentPhase('explore');
+    setWholeValue('');
+    setWholeFound(false);
+    setPhaseAttempts({ explore: 0, practice: 0, apply: 0 });
+    setCurrentStepIndex(0);
+    recordedRef.current = false;
+  }, [currentChallenge?.id]);
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const getSegmentKey = useCallback(
+    (barIndex: number, segmentIndex: number) => `${barIndex}-${segmentIndex}`,
+    [],
+  );
+
+  const allUnknowns = useMemo(() => {
     const unknowns: Array<{ barIndex: number; segmentIndex: number }> = [];
     bars.forEach((bar, barIndex) => {
       bar.segments.forEach((segment, segmentIndex) => {
@@ -179,19 +327,108 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     return unknowns;
   }, [bars]);
 
-  // --- AI Tutoring ---
+  // Per-challenge content match for stale-state guard (PRD §6a #8): the per-
+  // challenge reset useEffect's setX() is async, so after advance() the next
+  // render still has the previous challenge's bar labels in segmentAttempts /
+  // feedback. Match the current challenge's first segment label against the
+  // bars we're rendering before recording a result.
+  const stateMatchesChallenge = useCallback(
+    (challenge: TapeDiagramChallenge | null): boolean => {
+      if (!challenge) return false;
+      // After reset, segmentAttempts is empty and feedback is empty — that's a
+      // clean state for this challenge, OK to proceed.
+      if (segmentAttempts.size === 0 && Object.keys(feedback).length === 0) return true;
+      // Otherwise, any tracked attempt must belong to a segment on this challenge's bars.
+      const firstAttempt = Array.from(segmentAttempts.values())[0];
+      if (!firstAttempt) return true;
+      const expectedLabel = challenge.bars[firstAttempt.barIndex]?.segments[firstAttempt.segmentIndex]?.label;
+      // If the segment doesn't exist on the new challenge's bars (or label
+      // differs from what produced the attempt), state is stale.
+      if (!expectedLabel) return false;
+      return true;
+    },
+    [segmentAttempts, feedback],
+  );
+
+  const trackAttempt = useCallback(
+    (barIndex: number, segmentIndex: number, isCorrect: boolean) => {
+      const key = getSegmentKey(barIndex, segmentIndex);
+      setSegmentAttempts((prev) => {
+        const next = new Map(prev);
+        const current = prev.get(key) || {
+          barIndex,
+          segmentIndex,
+          attempts: 0,
+          correctOnFirstTry: false,
+        };
+        const updated: SegmentAttempt = {
+          ...current,
+          attempts: current.attempts + 1,
+          correctOnFirstTry:
+            isCorrect && current.attempts === 0 ? true : current.correctOnFirstTry,
+        };
+        next.set(key, updated);
+        return next;
+      });
+    },
+    [getSegmentKey],
+  );
+
+  const handleShowHints = () => {
+    if (!showHints) {
+      setChallengeHintCount((c) => c + 1);
+    }
+    setShowHints(!showHints);
+  };
+
+  const advanceToNextChallenge = () => {
+    advance();
+  };
+
+  // Record one ChallengeResult per challenge (called by the per-mode handler
+  // when the student has solved the active challenge).
+  const completeCurrentChallenge = useCallback(
+    (correct: boolean, extras: Record<string, unknown> = {}) => {
+      if (!currentChallenge) return;
+      if (recordedRef.current) return;
+      // Stale-state guard (PRD §6a #8): in-flight handlers can race ahead of
+      // the per-challenge reset useEffect. Only record when local state
+      // belongs to the active challenge.
+      if (!stateMatchesChallenge(currentChallenge)) return;
+      recordedRef.current = true;
+      // currentAttempts is incremented by the calling handler before this fires
+      // (via incrementAttempts), so currentAttempts here is the final count.
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct,
+        attempts: currentAttempts,
+        hintsUsed: challengeHintCount,
+        ...extras,
+      });
+    },
+    [currentChallenge, currentAttempts, challengeHintCount, recordResult, stateMatchesChallenge],
+  );
+
+  // ── AI Tutoring ────────────────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
+    title,
     challengeType,
+    currentChallengeIndex: currentIndex,
+    totalChallenges: challenges.length,
     currentPhase,
     totalBars: bars.length,
-    unknownSegments: getAllUnknownSegments.length,
-    solvedSegments: Object.values(feedback).filter(f => f === 'correct').length,
-    totalHintsUsed,
-  }), [challengeType, currentPhase, bars.length, getAllUnknownSegments.length, feedback, totalHintsUsed]);
+    unknownSegments: allUnknowns.length,
+    solvedSegments: Object.values(feedback).filter((f) => f === 'correct').length,
+    currentWordProblem: wordProblem,
+    challengeHintCount,
+  }), [
+    title, challengeType, currentIndex, challenges.length, currentPhase,
+    bars.length, allUnknowns.length, feedback, wordProblem, challengeHintCount,
+  ]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'tape-diagram',
-    instanceId: instanceId || `tape-diagram-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'Grade 3',
   });
@@ -199,210 +436,109 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current) return;
+    if (challenges.length === 0 || !currentChallenge) return;
     hasIntroducedRef.current = true;
     sendText(
-      `[ACTIVITY_START] Tape diagram: ${challengeType} mode. ${getAllUnknownSegments.length} unknowns to solve. `
+      `[ACTIVITY_START] Tape diagram session: ${challengeType} mode, ${challenges.length} challenges. `
+      + `First problem: ${wordProblem ? `"${wordProblem}". ` : `${allUnknowns.length} unknowns. `}`
+      + `Guide the student through the diagram.`,
+      { silent: true },
+    );
+  }, [
+    isConnected, currentChallenge, challenges.length, challengeType,
+    wordProblem, allUnknowns.length, sendText,
+  ]);
+
+  const lastAnnouncedIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isConnected || !currentChallenge) return;
+    if (!hasIntroducedRef.current) return;
+    if (lastAnnouncedIdRef.current === null) {
+      lastAnnouncedIdRef.current = currentChallenge.id;
+      return;
+    }
+    if (lastAnnouncedIdRef.current === currentChallenge.id) return;
+    lastAnnouncedIdRef.current = currentChallenge.id;
+    sendText(
+      `[CHALLENGE_START] Challenge ${currentIndex + 1} of ${challenges.length}. `
       + `${wordProblem ? `Problem: "${wordProblem}". ` : ''}`
       + `Guide the student through the diagram.`,
-      { silent: true }
+      { silent: true },
     );
-  }, [isConnected, challengeType, getAllUnknownSegments.length, wordProblem, sendText]);
+  }, [currentChallenge, currentIndex, challenges.length, wordProblem, isConnected, sendText]);
 
-  // --- Phase Results for PhaseSummaryPanel ---
-  const phaseResults = useMemo((): PhaseResult[] => {
-    if (!hasSubmittedEvaluation) return [];
+  // ── Session complete → aggregate metrics + submitEvaluation ────────────────
+  useEffect(() => {
+    if (!isComplete) return;
+    if (sessionCompleteFiredRef.current) return;
+    if (challenges.length === 0) return;
+    sessionCompleteFiredRef.current = true;
 
-    if (challengeType === 'solve_part_whole') {
-      return [
-        {
-          label: 'Find the Whole',
-          score: wholeFound ? 100 : 0,
-          attempts: phaseAttempts.explore,
-          firstTry: wholeFound && phaseAttempts.explore <= 1,
-          icon: '🔍',
-          accentColor: 'blue',
-        },
-        {
-          label: 'Practice',
-          score: (() => {
-            const practiceUnknowns = getAllUnknownSegments.slice(0, 1);
-            const correct = practiceUnknowns.filter(({ barIndex, segmentIndex }) =>
-              feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
-            ).length;
-            return practiceUnknowns.length > 0 ? Math.round((correct / practiceUnknowns.length) * 100) : 100;
-          })(),
-          attempts: phaseAttempts.practice,
-          firstTry: phaseAttempts.practice <= 1,
-          icon: '📝',
-          accentColor: 'amber',
-        },
-        {
-          label: 'Apply',
-          score: (() => {
-            const allUnknowns = getAllUnknownSegments;
-            const correct = allUnknowns.filter(({ barIndex, segmentIndex }) =>
-              feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
-            ).length;
-            return allUnknowns.length > 0 ? Math.round((correct / allUnknowns.length) * 100) : 100;
-          })(),
-          attempts: phaseAttempts.apply,
-          firstTry: phaseAttempts.apply <= 1,
-          icon: '🎯',
-          accentColor: 'emerald',
-        },
-      ];
-    }
+    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
+    const correctCount = results.filter((r) => r.correct).length;
+    const firstTryCount = results.filter((r) => r.attempts === 1 && r.correct).length;
+    const hintsViewed = results.filter((r) => Number(r.hintsUsed ?? 0) > 0).length;
+    // Per-challenge score: 100 on first try, then decays per extra attempt.
+    const perChallengeScore = (r: typeof results[number]) =>
+      r.correct ? Math.max(20, 100 - (r.attempts - 1) * 20) : 0;
+    const overallAccuracy = Math.round(
+      results.reduce((s, r) => s + perChallengeScore(r), 0) / Math.max(1, results.length),
+    );
+    const averageAttemptsPerChallenge =
+      Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
 
-    if (challengeType === 'multi_step') {
-      const solveOrder = multiStepData?.solveOrder || [2, 3];
-      return solveOrder.map((segIdx, i) => {
-        const key = getSegmentKey(0, segIdx);
-        const segment = bars[0]?.segments[segIdx];
-        const attempt = segmentAttempts.get(key);
-        return {
-          label: segment?.label || `Step ${i + 1}`,
-          score: feedback[key] === 'correct' ? 100 : 0,
-          attempts: attempt?.attempts || 0,
-          firstTry: attempt?.correctOnFirstTry || false,
-          icon: i === 0 ? '1️⃣' : '2️⃣',
-          accentColor: (i === 0 ? 'cyan' : 'purple') as PhaseResult['accentColor'],
-        };
+    const sessionMode = challenges[0].challengeType;
+
+    const metrics: TapeDiagramMetrics = {
+      type: 'tape-diagram',
+      challengeType: sessionMode,
+      totalChallenges: challenges.length,
+      correctCount,
+      attemptsCount: totalAttempts,
+      firstTryCount,
+      hintsViewed,
+      overallAccuracy,
+      averageAttemptsPerChallenge,
+    };
+
+    const phaseStr = phaseResults
+      .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+      .join(', ');
+    sendText(
+      `[ALL_COMPLETE] Phase scores: ${phaseStr}. Overall: ${overallAccuracy}%. `
+      + `Celebrate completion of the ${challenges.length}-challenge tape-diagram session.`,
+      { silent: true },
+    );
+
+    if (!hasSubmittedEvaluation) {
+      const goalMet = correctCount === challenges.length;
+      submitEvaluation(goalMet, overallAccuracy, metrics, {
+        studentWork: {
+          challengeCount: challenges.length,
+          challengeType: sessionMode,
+          attemptsPerChallenge: challenges.map((c) => {
+            const r = results.find((rr) => rr.challengeId === c.id);
+            return r?.attempts ?? 0;
+          }),
+        },
       });
     }
+  }, [
+    isComplete, results, phaseResults, challenges,
+    sendText, submitEvaluation, hasSubmittedEvaluation,
+  ]);
 
-    // represent and solve_comparison: single phase
-    const allUnknowns = getAllUnknownSegments;
-    const correct = allUnknowns.filter(({ barIndex, segmentIndex }) =>
-      feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
-    ).length;
-    return [{
-      label: challengeType === 'represent' ? 'Represent' : 'Compare',
-      score: allUnknowns.length > 0 ? Math.round((correct / allUnknowns.length) * 100) : 100,
-      attempts: Array.from(segmentAttempts.values()).reduce((s, a) => s + a.attempts, 0),
-      firstTry: Array.from(segmentAttempts.values()).every(a => a.correctOnFirstTry),
-      icon: challengeType === 'represent' ? '📊' : '⚖️',
-      accentColor: 'orange',
-    }];
-  }, [hasSubmittedEvaluation, challengeType, wholeFound, phaseAttempts, getAllUnknownSegments, feedback, getSegmentKey, segmentAttempts, multiStepData, bars]);
-
-  const localOverallScore = useMemo(() => {
-    if (!hasSubmittedEvaluation) return 0;
-    const allUnknowns = getAllUnknownSegments;
-    const correct = allUnknowns.filter(({ barIndex, segmentIndex }) =>
-      feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
-    ).length;
-    return allUnknowns.length > 0 ? Math.round((correct / allUnknowns.length) * 100) : 0;
-  }, [hasSubmittedEvaluation, getAllUnknownSegments, feedback]);
-
+  // ── Input change handler (shared across modes) ─────────────────────────────
   const handleAnswerChange = (barIndex: number, segmentIndex: number, value: string) => {
     const key = getSegmentKey(barIndex, segmentIndex);
-    setUserAnswers(prev => ({ ...prev, [key]: value }));
+    setUserAnswers((prev) => ({ ...prev, [key]: value }));
     if (feedback[key]) {
-      setFeedback(prev => ({ ...prev, [key]: null }));
+      setFeedback((prev) => ({ ...prev, [key]: null }));
     }
-  };
-
-  const trackAttempt = (barIndex: number, segmentIndex: number, isCorrect: boolean) => {
-    const key = getSegmentKey(barIndex, segmentIndex);
-    const current = segmentAttempts.get(key) || {
-      barIndex, segmentIndex, attempts: 0, correctOnFirstTry: false,
-    };
-    current.attempts += 1;
-    if (isCorrect && current.attempts === 1) current.correctOnFirstTry = true;
-    setSegmentAttempts(new Map(segmentAttempts.set(key, current)));
-  };
-
-  const handleShowHints = () => {
-    if (!showHints) {
-      setTotalHintsUsed(prev => prev + 1);
-      if (challengeType === 'solve_part_whole') {
-        setPhaseHints(prev => ({ ...prev, [currentPhase]: prev[currentPhase] + 1 }));
-      }
-    }
-    setShowHints(!showHints);
-  };
-
-  const handleReset = () => {
-    setUserAnswers({});
-    setFeedback({});
-    setSegmentAttempts(new Map());
-    setShowHints(false);
-    setTotalHintsUsed(0);
-    setCurrentPhase('explore');
-    setWholeValue('');
-    setWholeFound(false);
-    setPhaseAttempts({ explore: 0, practice: 0, apply: 0 });
-    setPhaseHints({ explore: 0, practice: 0, apply: 0 });
-    setCurrentStepIndex(0);
-    resetEvaluationAttempt();
-  };
-
-  // --- Build evaluation metrics for any mode ---
-  const buildMetrics = (overrides?: Partial<TapeDiagramMetrics>): TapeDiagramMetrics => {
-    const allUnknowns = getAllUnknownSegments;
-    const totalUnknowns = allUnknowns.length;
-    const correctCount = allUnknowns.filter(({ barIndex, segmentIndex }) => {
-      return feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct';
-    }).length;
-
-    const segmentRelationships = allUnknowns.map(({ barIndex, segmentIndex }) => {
-      const key = getSegmentKey(barIndex, segmentIndex);
-      const segment = bars[barIndex].segments[segmentIndex];
-      const attempt = segmentAttempts.get(key);
-      return {
-        barIndex,
-        segmentIndex,
-        segmentLabel: segment.label,
-        expectedValue: segment.value || 0,
-        studentValue: parseFloat(userAnswers[key]) || null,
-        correctOnFirstTry: attempt?.correctOnFirstTry || false,
-        attempts: attempt?.attempts || 0,
-      };
-    });
-
-    const totalAttemptCount = Array.from(segmentAttempts.values()).reduce((s, a) => s + a.attempts, 0);
-    const accuracy = totalUnknowns > 0 ? (correctCount / totalUnknowns) * 100 : 100;
-
-    return {
-      type: 'tape-diagram',
-      challengeType,
-
-      // Overall
-      allPhasesCompleted: true,
-      finalSuccess: correctCount === totalUnknowns,
-      totalAttempts: totalAttemptCount,
-      totalHintsUsed,
-      firstAttemptSuccess: totalAttemptCount === totalUnknowns,
-      solvedWithoutHints: totalHintsUsed === 0,
-      averageAttemptsPerUnknown: totalUnknowns > 0 ? totalAttemptCount / totalUnknowns : 0,
-
-      // Phase defaults (overridden by part-whole mode)
-      explorePhaseCompleted: true,
-      practicePhaseCompleted: true,
-      applyPhaseCompleted: true,
-      wholeCorrectlyIdentified: true,
-      exploreAttempts: 0,
-      exploreHintsUsed: 0,
-      practiceUnknownsTotal: 0,
-      practiceUnknownsCorrect: 0,
-      practiceAccuracy: 100,
-      practiceAttempts: 0,
-      practiceHintsUsed: 0,
-      totalUnknownSegments: totalUnknowns,
-      correctUnknownSegments: correctCount,
-      accuracyPercentage: accuracy,
-      applyAttempts: 0,
-      applyHintsUsed: 0,
-      solvedInSequence: true,
-      usedPartWholeStrategy: true,
-      segmentRelationships,
-
-      ...overrides,
-    };
   };
 
   // =========================================================================
-  // RENDER: Shared bar visualization
+  // Shared bar visualization
   // =========================================================================
 
   const renderBar = (
@@ -415,7 +551,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       showUnknownInputs?: boolean;
       isSegmentLocked?: (segIdx: number) => boolean;
       onSegmentSubmit?: (barIdx: number, segIdx: number) => void;
-    } = {}
+    } = {},
   ) => {
     const {
       visibleSegmentIndices,
@@ -427,7 +563,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     } = options;
 
     const indices = visibleSegmentIndices || bar.segments.map((_, i) => i);
-    const visibleSegments = indices.map(idx => ({ segment: bar.segments[idx], originalIndex: idx }));
+    const visibleSegments = indices.map((idx) => ({ segment: bar.segments[idx], originalIndex: idx }));
     const total = bar.segments.reduce((s, seg) => s + (seg.value || 0), 0);
 
     return (
@@ -505,20 +641,16 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                 </div>
 
                 {/* Input for unknown segments */}
-                {isUnknown && showUnknownInputs && !locked && segFeedback !== 'correct' && !hasSubmittedEvaluation && (
+                {isUnknown && showUnknownInputs && !locked && segFeedback !== 'correct' && !isComplete && (
                   <div className="mt-3">
-                    <CalculatorInput
+                    <SegmentStepper
                       label={`${segment.label} =`}
                       value={userAnswers[key] || ''}
                       onChange={(v) => handleAnswerChange(barIndex, segIdx, v)}
                       onSubmit={() => onSegmentSubmit?.(barIndex, segIdx)}
-                      showSubmitButton={true}
-                      allowNegative={false}
-                      allowDecimal={true}
-                      className="mb-2"
                     />
                     {segFeedback === 'incorrect' && (
-                      <div className="text-center text-red-400 text-sm font-semibold">Not quite — try again!</div>
+                      <div className="mt-2 text-center text-red-400 text-sm font-semibold">Not quite — try again!</div>
                     )}
                   </div>
                 )}
@@ -540,40 +672,36 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   // =========================================================================
 
   const renderRepresentMode = () => {
-    const allUnknowns = getAllUnknownSegments;
     const allCorrect = allUnknowns.every(({ barIndex, segmentIndex }) =>
-      feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct'
+      feedback[getSegmentKey(barIndex, segmentIndex)] === 'correct',
     );
 
     const handleRepresentSubmit = (barIndex: number, segmentIndex: number) => {
-      if (hasSubmittedEvaluation) return;
+      if (isComplete || recordedRef.current) return;
       const key = getSegmentKey(barIndex, segmentIndex);
       const userVal = parseFloat(userAnswers[key]);
       const segment = bars[barIndex]?.segments[segmentIndex];
-      if (isNaN(userVal) || !segment?.value) return;
+      if (isNaN(userVal) || segment?.value === undefined) return;
 
       const isCorrect = Math.abs(userVal - segment.value) < 0.01;
+      incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
 
-      // Check if all done
       if (isCorrect) {
         const nowAllCorrect = allUnknowns.every(({ barIndex: bi, segmentIndex: si }) =>
-          (bi === barIndex && si === segmentIndex) ? isCorrect : newFeedback[getSegmentKey(bi, si)] === 'correct'
+          (bi === barIndex && si === segmentIndex) ? true : newFeedback[getSegmentKey(bi, si)] === 'correct',
         );
         if (nowAllCorrect) {
-          sendText('[ALL_COMPLETE] All segments solved! Celebrate.', { silent: true });
-          const metrics = buildMetrics();
-          submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, { studentWork: { userAnswers } });
+          completeCurrentChallenge(true);
         }
       }
     };
 
     return (
       <>
-        {/* Word problem */}
         {wordProblem && (
           <div className="mb-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
             <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">Read the Problem</div>
@@ -585,19 +713,17 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           <p className="text-sm text-yellow-200">Fill in each segment value from the word problem above.</p>
         </div>
 
-        {/* Bars */}
         <div className="space-y-16">
           {bars.map((bar, barIndex) =>
             renderBar(bar, barIndex, {
               showBracket: false,
               showUnknownInputs: true,
               onSegmentSubmit: handleRepresentSubmit,
-            })
+            }),
           )}
         </div>
 
-        {/* Hint */}
-        {Object.values(feedback).some(f => f === 'incorrect') && !allCorrect && (
+        {Object.values(feedback).some((f) => f === 'incorrect') && !allCorrect && (
           <div className="mt-4 text-center">
             <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
               {showHints ? 'Hide Hint' : 'Need a Hint?'}
@@ -614,13 +740,10 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   };
 
   // =========================================================================
-  // MODE: Solve Part-Whole (original 3-phase behavior)
+  // MODE: Solve Part-Whole (within-challenge 3-phase progression)
   // =========================================================================
 
   const renderPartWholeMode = () => {
-    const allUnknowns = getAllUnknownSegments;
-
-    // Phase-specific visible segments
     const getVisibleSegments = (barIndex: number): number[] => {
       const bar = bars[barIndex];
       if (!bar) return [];
@@ -638,7 +761,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     const visibleUnknowns = getVisibleUnknowns();
 
     const handleCheckWhole = () => {
-      if (hasSubmittedEvaluation) return;
+      if (isComplete || recordedRef.current) return;
       const inputWhole = parseFloat(wholeValue);
       if (isNaN(inputWhole)) return;
 
@@ -651,28 +774,30 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         if (seg.value !== undefined) actualTotal += seg.value;
       }
 
-      setPhaseAttempts(prev => ({ ...prev, explore: prev.explore + 1 }));
+      incrementAttempts();
+      setPhaseAttempts((prev) => ({ ...prev, explore: prev.explore + 1 }));
 
       if (Math.abs(inputWhole - actualTotal) < 0.01) {
         setWholeFound(true);
         setFeedback({ explore: 'correct' });
         sendText('[PHASE_TRANSITION] Student found the whole. Moving to practice phase.', { silent: true });
-        setTimeout(() => { setCurrentPhase('practice'); setFeedback({}); }, 2000);
+        setTimeout(() => { setCurrentPhase('practice'); setFeedback({}); }, 1500);
       } else {
         setFeedback({ explore: 'incorrect' });
       }
     };
 
     const handlePartWholeSubmit = (barIndex: number, segmentIndex: number) => {
-      if (hasSubmittedEvaluation) return;
+      if (isComplete || recordedRef.current) return;
       const key = getSegmentKey(barIndex, segmentIndex);
       const userVal = parseFloat(userAnswers[key]);
       const segment = bars[barIndex]?.segments[segmentIndex];
-      if (isNaN(userVal) || !segment?.value) return;
+      if (isNaN(userVal) || segment?.value === undefined) return;
 
       const isCorrect = Math.abs(userVal - segment.value) < 0.01;
+      incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
-      setPhaseAttempts(prev => ({ ...prev, [currentPhase]: prev[currentPhase] + 1 }));
+      setPhaseAttempts((prev) => ({ ...prev, [currentPhase]: prev[currentPhase] + 1 }));
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
@@ -682,52 +807,26 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           const firstUnknown = allUnknowns[0];
           if (firstUnknown && getSegmentKey(firstUnknown.barIndex, firstUnknown.segmentIndex) === key) {
             sendText('[PHASE_TRANSITION] Practice complete. Moving to apply phase.', { silent: true });
-            setTimeout(() => setCurrentPhase('apply'), 1500);
+            setTimeout(() => setCurrentPhase('apply'), 1200);
           }
         } else if (currentPhase === 'apply') {
           const allSolved = allUnknowns.every(({ barIndex: bi, segmentIndex: si }) =>
-            newFeedback[getSegmentKey(bi, si)] === 'correct'
+            newFeedback[getSegmentKey(bi, si)] === 'correct',
           );
           if (allSolved) {
-            const practiceUnknowns = allUnknowns.slice(0, 1);
-            const practiceCorrect = practiceUnknowns.filter(({ barIndex: bi, segmentIndex: si }) =>
-              newFeedback[getSegmentKey(bi, si)] === 'correct'
-            ).length;
-
-            const totalAttemptCount = phaseAttempts.explore + phaseAttempts.practice + phaseAttempts.apply + 1;
-            const correctCount = allUnknowns.length;
-
-            const metrics = buildMetrics({
-              explorePhaseCompleted: wholeFound,
-              practicePhaseCompleted: practiceCorrect === practiceUnknowns.length,
-              applyPhaseCompleted: true,
+            completeCurrentChallenge(true, {
               wholeCorrectlyIdentified: wholeFound,
-              exploreAttempts: phaseAttempts.explore,
-              exploreHintsUsed: phaseHints.explore,
-              practiceUnknownsTotal: practiceUnknowns.length,
-              practiceUnknownsCorrect: practiceCorrect,
-              practiceAccuracy: practiceUnknowns.length > 0 ? (practiceCorrect / practiceUnknowns.length) * 100 : 100,
-              practiceAttempts: phaseAttempts.practice,
-              practiceHintsUsed: phaseHints.practice,
-              applyAttempts: phaseAttempts.apply + 1,
-              applyHintsUsed: phaseHints.apply,
-              totalAttempts: totalAttemptCount,
-              usedPartWholeStrategy: wholeFound,
-            });
-            sendText('[ALL_COMPLETE] All segments solved! Celebrate.', { silent: true });
-            submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, {
-              studentWork: { userAnswers, phaseAttempts },
+              phaseAttempts: { ...phaseAttempts, apply: phaseAttempts.apply + 1 },
             });
           }
         }
       }
     };
 
-    // Compute phase total for bracket label
     const bar = bars[0];
     const visibleIndices = bar ? getVisibleSegments(0) : [];
     let phaseTotal = 0;
-    visibleIndices.forEach(idx => {
+    visibleIndices.forEach((idx) => {
       const seg = bar?.segments[idx];
       if (seg?.value !== undefined) phaseTotal += seg.value;
     });
@@ -738,13 +837,15 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
     return (
       <>
-        {/* Phase Progress */}
+        {/* Phase progress (within-challenge) */}
         <div className="flex items-center justify-center gap-4 mb-8">
           {(['explore', 'practice', 'apply'] as LearningPhase[]).map((phase, i) => {
             const isActive = currentPhase === phase;
-            const isDone = phase === 'explore' ? wholeFound
-              : phase === 'practice' ? (currentPhase === 'apply')
-              : false;
+            const isDone = phase === 'explore'
+              ? wholeFound
+              : phase === 'practice'
+                ? currentPhase === 'apply'
+                : false;
             return (
               <React.Fragment key={phase}>
                 {i > 0 && <div className="h-px w-8 bg-slate-600"></div>}
@@ -761,7 +862,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         </div>
 
         {/* Phase instructions */}
-        {!hasSubmittedEvaluation && (
+        {!isComplete && (
           <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl text-center">
             <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">
               {currentPhase === 'explore' && 'Step 1: Find the Whole'}
@@ -785,12 +886,12 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
               bracketLabel,
               showUnknownInputs: currentPhase !== 'explore',
               onSegmentSubmit: handlePartWholeSubmit,
-            })
+            }),
           )}
         </div>
 
         {/* Phase 1: Find the whole */}
-        {currentPhase === 'explore' && !hasSubmittedEvaluation && (
+        {currentPhase === 'explore' && !isComplete && (
           <div className="mt-8">
             <div className="flex items-center gap-4 mb-6">
               <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">Phase 1: Explore</span>
@@ -801,16 +902,15 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                 What is the <span className="text-orange-400">total</span> of all the known parts?
               </h5>
             </div>
-            <CalculatorInput
-              label="Total ="
-              value={wholeValue}
-              onChange={setWholeValue}
-              onSubmit={handleCheckWhole}
-              showSubmitButton={true}
-              allowNegative={false}
-              allowDecimal={true}
-              className="mb-6"
-            />
+            <div className="max-w-xs mx-auto mb-6">
+              <SegmentStepper
+                label="Total ="
+                value={wholeValue}
+                onChange={setWholeValue}
+                onSubmit={handleCheckWhole}
+                submitLabel="Check total"
+              />
+            </div>
             {feedback.explore === 'correct' && (
               <div className="p-4 bg-green-500/20 border-2 border-green-500/50 rounded-xl text-center">
                 <div className="text-green-400 font-bold text-lg">Perfect!</div>
@@ -821,8 +921,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Phase 2 & 3: Solve unknowns — handled by renderBar's inline inputs */}
-        {(currentPhase === 'practice' || currentPhase === 'apply') && !hasSubmittedEvaluation && visibleUnknowns.length > 0 && (
+        {(currentPhase === 'practice' || currentPhase === 'apply') && !isComplete && visibleUnknowns.length > 0 && (
           <div className="mt-8">
             <div className="flex items-center gap-4 mb-4">
               <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">
@@ -841,16 +940,15 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   // =========================================================================
 
   const renderComparisonMode = () => {
-    const allUnknowns = getAllUnknownSegments;
-
     const handleComparisonSubmit = (barIndex: number, segmentIndex: number) => {
-      if (hasSubmittedEvaluation) return;
+      if (isComplete || recordedRef.current) return;
       const key = getSegmentKey(barIndex, segmentIndex);
       const userVal = parseFloat(userAnswers[key]);
       const segment = bars[barIndex]?.segments[segmentIndex];
-      if (isNaN(userVal) || !segment?.value) return;
+      if (isNaN(userVal) || segment?.value === undefined) return;
 
       const isCorrect = Math.abs(userVal - segment.value) < 0.01;
+      incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
@@ -858,21 +956,16 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
       if (isCorrect) {
         const allSolved = allUnknowns.every(({ barIndex: bi, segmentIndex: si }) =>
-          newFeedback[getSegmentKey(bi, si)] === 'correct'
+          newFeedback[getSegmentKey(bi, si)] === 'correct',
         );
         if (allSolved) {
-          sendText('[ALL_COMPLETE] All segments solved! Celebrate.', { silent: true });
-          const metrics = buildMetrics();
-          submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, {
-            studentWork: { userAnswers, comparisonData },
-          });
+          completeCurrentChallenge(true);
         }
       }
     };
 
     return (
       <>
-        {/* Word problem */}
         {wordProblem && (
           <div className="mb-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
             <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">Comparison Problem</div>
@@ -880,31 +973,27 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Two bars for comparison */}
         <div className="space-y-8">
           {bars.map((bar, barIndex) =>
             renderBar(bar, barIndex, {
               showBracket: false,
               showUnknownInputs: true,
               onSegmentSubmit: handleComparisonSubmit,
-            })
+            }),
           )}
         </div>
 
-        {/* Comparison visual cue */}
         {comparisonData && (
           <div className="mt-6 p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl text-center">
             <p className="text-sm text-purple-200">
               {comparisonData.unknownPart === 'difference'
                 ? `How many ${comparisonData.comparisonWord} does the first group have?`
-                : `Find the missing quantity.`
-              }
+                : `Find the missing quantity.`}
             </p>
           </div>
         )}
 
-        {/* Hint */}
-        {Object.values(feedback).some(f => f === 'incorrect') && (
+        {Object.values(feedback).some((f) => f === 'incorrect') && (
           <div className="mt-4 text-center">
             <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
               {showHints ? 'Hide Hint' : 'Need a Hint?'}
@@ -915,8 +1004,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                   ? `Subtract the smaller value (${comparisonData.quantity2}) from the larger value (${comparisonData.quantity1}).`
                   : comparisonData.unknownPart === 'quantity2'
                     ? `The difference is ${comparisonData.difference}. Subtract it from the larger value.`
-                    : `The difference is ${comparisonData.difference}. Add it to the smaller value.`
-                }
+                    : `The difference is ${comparisonData.difference}. Add it to the smaller value.`}
               </div>
             )}
           </div>
@@ -941,15 +1029,16 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     };
 
     const handleMultiStepSubmit = (barIndex: number, segmentIndex: number) => {
-      if (hasSubmittedEvaluation) return;
-      if (segmentIndex !== currentSolveSegIdx) return; // Can only solve current step
+      if (isComplete || recordedRef.current) return;
+      if (segmentIndex !== currentSolveSegIdx) return;
 
       const key = getSegmentKey(barIndex, segmentIndex);
       const userVal = parseFloat(userAnswers[key]);
       const segment = bars[barIndex]?.segments[segmentIndex];
-      if (isNaN(userVal) || !segment?.value) return;
+      if (isNaN(userVal) || segment?.value === undefined) return;
 
       const isCorrect = Math.abs(userVal - segment.value) < 0.01;
+      incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
@@ -958,17 +1047,12 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       if (isCorrect) {
         const nextStep = currentStepIndex + 1;
         if (nextStep >= totalSteps) {
-          // All steps complete
-          sendText('[ALL_COMPLETE] All segments solved! Celebrate.', { silent: true });
-          const metrics = buildMetrics();
-          submitEvaluation(metrics.finalSuccess, metrics.accuracyPercentage, metrics, {
-            studentWork: { userAnswers, stepsCompleted: totalSteps },
-          });
+          completeCurrentChallenge(true);
         } else {
           setTimeout(() => {
             setCurrentStepIndex(nextStep);
             setShowHints(false);
-          }, 1500);
+          }, 1200);
         }
       }
     };
@@ -979,7 +1063,6 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
     return (
       <>
-        {/* Word problem */}
         {wordProblem && (
           <div className="mb-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
             <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">Multi-Step Problem</div>
@@ -987,7 +1070,6 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Step progress */}
         <div className="flex items-center justify-center gap-4 mb-8">
           {solveOrder.map((_, i) => (
             <React.Fragment key={i}>
@@ -1003,8 +1085,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           ))}
         </div>
 
-        {/* Current step instruction */}
-        {!hasSubmittedEvaluation && (
+        {!isComplete && (
           <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-center">
             <div className="text-sm font-mono uppercase tracking-wider text-yellow-400 mb-1">
               Step {currentStepIndex + 1} of {totalSteps}
@@ -1017,7 +1098,6 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Bars with locking */}
         <div className="space-y-16">
           {bars.map((bar, barIndex) =>
             renderBar(bar, barIndex, {
@@ -1026,12 +1106,11 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
               showUnknownInputs: true,
               isSegmentLocked,
               onSegmentSubmit: handleMultiStepSubmit,
-            })
+            }),
           )}
         </div>
 
-        {/* Hint */}
-        {Object.values(feedback).some(f => f === 'incorrect') && !hasSubmittedEvaluation && (
+        {Object.values(feedback).some((f) => f === 'incorrect') && !isComplete && (
           <div className="mt-4 text-center">
             <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
               {showHints ? 'Hide Hint' : 'Need a Hint?'}
@@ -1048,7 +1127,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   };
 
   // =========================================================================
-  // Shared feedback helper
+  // Shared incorrect-feedback helper (used by part-whole explore phase)
   // =========================================================================
 
   const renderFeedbackIncorrect = (message: string) => (
@@ -1077,6 +1156,25 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   }[challengeType] || 'Part-Whole Visualization';
 
   // =========================================================================
+  // Empty state
+  // =========================================================================
+
+  if (challenges.length === 0) {
+    return (
+      <div className={`w-full max-w-6xl mx-auto my-12 ${className || ''}`}>
+        <div className="backdrop-blur-xl bg-slate-900/40 rounded-3xl border border-white/10 p-6 text-center">
+          <p className="text-slate-300">No tape-diagram challenges available.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Has the active challenge already been recorded? (used to gate the "Next challenge" CTA)
+  const currentChallengeSolved = currentChallenge
+    ? results.some((r) => r.challengeId === currentChallenge.id)
+    : false;
+
+  // =========================================================================
   // Main render
   // =========================================================================
 
@@ -1099,7 +1197,6 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       </div>
 
       <div className="glass-panel p-8 md:p-12 rounded-3xl border border-orange-500/20 relative overflow-hidden">
-        {/* Background texture */}
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(#f97316 1px, transparent 1px)', backgroundSize: '20px 20px' }}
@@ -1107,63 +1204,97 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
         <div className="relative z-10 w-full">
           <div className="mb-8 text-center max-w-3xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-2">{data.title}</h3>
-            <p className="text-slate-300 font-light">{data.description}</p>
+            <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
+            <p className="text-slate-300 font-light">{description}</p>
           </div>
 
-          {/* Mode-specific content */}
-          {challengeType === 'represent' && renderRepresentMode()}
-          {challengeType === 'solve_part_whole' && renderPartWholeMode()}
-          {challengeType === 'solve_comparison' && renderComparisonMode()}
-          {challengeType === 'multi_step' && renderMultiStepMode()}
-
-          {/* Final success state */}
-          {hasSubmittedEvaluation && (
-            <div className="mt-8 space-y-4">
-              {phaseResults.length > 0 && (
-                <PhaseSummaryPanel
-                  phases={phaseResults}
-                  overallScore={submittedResult?.score ?? localOverallScore}
-                  durationMs={elapsedMs}
-                  heading="All Complete!"
-                  celebrationMessage="You've mastered this tape diagram problem!"
-                  className="mt-4"
-                />
-              )}
-              <div className="text-center">
-                <button
-                  onClick={handleReset}
-                  className="px-6 py-2 bg-orange-600/20 border-2 border-orange-500/40 text-orange-400 rounded-lg hover:bg-orange-600/30 transition-all font-semibold"
-                >
-                  Try Another Problem
-                </button>
+          {/* Session progress (challenge X of N) */}
+          {!isComplete && challenges.length > 1 && (
+            <div className="flex items-center justify-center gap-3 text-xs text-orange-300 font-mono uppercase tracking-wider mb-6">
+              <span>Challenge {Math.min(currentIndex + 1, challenges.length)} of {challenges.length}</span>
+              <div className="flex gap-1.5">
+                {challenges.map((ch, idx) => {
+                  const done = results.some((r) => r.challengeId === ch.id);
+                  const isCurrent = idx === currentIndex && !isComplete;
+                  return (
+                    <div
+                      key={ch.id}
+                      className={`w-2.5 h-2.5 rounded-full border ${
+                        done
+                          ? 'bg-green-400/70 border-green-300/80 shadow-[0_0_8px_rgba(34,197,94,0.5)]'
+                          : isCurrent
+                            ? 'bg-orange-400/70 border-orange-300/80 shadow-[0_0_8px_rgba(249,115,22,0.5)]'
+                            : 'bg-slate-700/40 border-slate-600/50'
+                      }`}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
 
+          {/* Mode-specific content */}
+          {!isComplete && currentChallenge && (
+            <>
+              {challengeType === 'represent' && renderRepresentMode()}
+              {challengeType === 'solve_part_whole' && renderPartWholeMode()}
+              {challengeType === 'solve_comparison' && renderComparisonMode()}
+              {challengeType === 'multi_step' && renderMultiStepMode()}
+
+              {/* Per-challenge advance CTA */}
+              {currentChallengeSolved && (
+                <div className="mt-8 text-center">
+                  <button
+                    onClick={advanceToNextChallenge}
+                    className="px-6 py-2 bg-emerald-500/30 border-2 border-emerald-400/60 text-emerald-100 rounded-lg hover:bg-emerald-500/40 transition-all font-semibold"
+                  >
+                    {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Session complete state */}
+          {isComplete && (
+            <div className="mt-4 space-y-4">
+              {phaseResults.length > 0 && (
+                <PhaseSummaryPanel
+                  phases={phaseResults}
+                  overallScore={submittedResult?.score}
+                  durationMs={elapsedMs}
+                  heading="All Complete!"
+                  celebrationMessage={`You worked through ${challenges.length} tape-diagram ${challenges.length === 1 ? 'problem' : 'problems'}!`}
+                  className="mt-4"
+                />
+              )}
+            </div>
+          )}
+
           {/* Instructions */}
-          <div className="mt-8 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
-            <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Interactive Controls</h4>
-            <ul className="text-sm text-slate-300 space-y-2">
-              <li className="flex items-start gap-2">
-                <span className="text-orange-400 mt-1">▸</span>
-                <span>
-                  {challengeType === 'represent'
-                    ? 'Read the word problem and enter the value for each segment'
-                    : challengeType === 'solve_comparison'
-                    ? 'Compare the two bars and find the missing value'
-                    : challengeType === 'multi_step'
-                    ? 'Solve each step in order — later steps unlock as you progress'
-                    : 'Follow the 3-step progression: Explore → Practice → Apply'
-                  }
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-orange-400 mt-1">▸</span>
-                <span>Yellow dashed segments with &ldquo;?&rdquo; represent values to solve for</span>
-              </li>
-            </ul>
-          </div>
+          {!isComplete && (
+            <div className="mt-8 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
+              <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Interactive Controls</h4>
+              <ul className="text-sm text-slate-300 space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-400 mt-1">▸</span>
+                  <span>
+                    {challengeType === 'represent'
+                      ? 'Read the word problem and enter the value for each segment'
+                      : challengeType === 'solve_comparison'
+                        ? 'Compare the two bars and find the missing value'
+                        : challengeType === 'multi_step'
+                          ? 'Solve each step in order — later steps unlock as you progress'
+                          : 'Follow the 3-step progression: Explore → Practice → Apply'}
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-400 mt-1">▸</span>
+                  <span>Yellow dashed segments with &ldquo;?&rdquo; represent values to solve for</span>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

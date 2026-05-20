@@ -1,51 +1,62 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   usePrimitiveEvaluation,
   type ArrayGridMetrics,
+  type PrimitiveEvaluationResult,
 } from '../../../evaluation';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 /**
- * Array Grid - Interactive array builder for teaching multiplication
+ * Array Grid — multi-challenge array builder / counter / multiplier.
  *
- * K-5 Math Primitive for understanding:
- * - Multiplication as repeated addition (K-2)
- * - Array models for multiplication (2-3)
- * - Commutative property (a*b = b*a) (3-4)
- *
- * Supports three challenge types:
- * - build_array: Student builds array with buttons, then counts total
- * - count_array: Array shown pre-built, student counts total
- * - multiply_array: Array shown pre-built, student writes rows x columns = total
+ * Session walks the student through 3-6 distinct (rows, columns) pairs in the
+ * SAME eval mode. Per PRD §6h (array-grid post-mortem), per-challenge state
+ * must reset on advance; the stale-state guard lives in submit handlers
+ * (§6a #8). Pool-service generator owns dimension variance — Gemini emits
+ * only wrapper metadata.
  */
+
+// ============================================================================
+// Data Types (Single Source of Truth)
+// ============================================================================
+
+export type ArrayGridChallengeType = 'build_array' | 'count_array' | 'multiply_array';
+export type ArrayGridIconType = 'dot' | 'square' | 'star';
+
+export interface ArrayGridChallenge {
+  id: string;
+  targetRows: number;
+  targetColumns: number;
+}
 
 export interface ArrayGridData {
   title: string;
   description: string;
+  /** 1-6 challenges. Walked sequentially by the component. */
+  challenges: ArrayGridChallenge[];
+  /** Eval mode pinned for this session (all challenges share one mode). */
+  challengeType: ArrayGridChallengeType;
 
-  // Challenge type determines interaction mode
-  challengeType?: 'build_array' | 'count_array' | 'multiply_array';
+  // Display options (session-level)
+  iconType?: ArrayGridIconType;
+  showLabels?: boolean;
+  maxRows?: number;
+  maxColumns?: number;
 
-  // Task configuration
-  targetRows: number; // Required: number of rows to build (e.g., 3)
-  targetColumns: number; // Required: number of columns to build (e.g., 5)
-
-  // Display options
-  iconType?: 'dot' | 'square' | 'star';
-  showLabels?: boolean; // Show row/column numbers (default true)
-  maxRows?: number; // Maximum rows in button panel (default 6)
-  maxColumns?: number; // Maximum columns in button panel (default 8)
-
-  // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
+  // Evaluation integration (auto-injected by ManifestOrderRenderer / tester)
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
-  onEvaluationSubmit?: (
-    result: import('../../../evaluation').PrimitiveEvaluationResult<ArrayGridMetrics>
-  ) => void;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<ArrayGridMetrics>) => void;
 }
 
 interface ArrayGridProps {
@@ -53,18 +64,36 @@ interface ArrayGridProps {
   className?: string;
 }
 
+// ============================================================================
+// Constants
+// ============================================================================
+
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  build_array:    { label: 'Build',    icon: '🔨', accentColor: 'emerald' },
+  count_array:    { label: 'Count',    icon: '🔢', accentColor: 'blue' },
+  multiply_array: { label: 'Multiply', icon: '✖️', accentColor: 'purple' },
+};
+
+/** Per-challenge score: 100 first try, then -20 per extra attempt, floored at 20. */
+function phaseScore(attempts: number): number {
+  if (attempts <= 0) return 0;
+  return Math.max(20, 100 - (attempts - 1) * 20);
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
 const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
   const {
     title,
     description,
-    challengeType = 'build_array',
-    targetRows,
-    targetColumns,
+    challenges = [],
+    challengeType: sessionChallengeType,
     iconType = 'star',
     showLabels = true,
     maxRows = 6,
     maxColumns = 8,
-    // Evaluation props
     instanceId,
     skillId,
     subskillId,
@@ -73,140 +102,251 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // Determine mode
-  const isPreBuilt = challengeType === 'count_array' || challengeType === 'multiply_array';
-  const isMultiplyMode = challengeType === 'multiply_array';
+  const stableInstanceIdRef = useRef(instanceId || `array-grid-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // State — pre-built modes start with array already constructed
-  const [currentRows, setCurrentRows] = useState(isPreBuilt ? targetRows : 0);
-  const [currentColumns, setCurrentColumns] = useState(isPreBuilt ? targetColumns : 0);
+  // ── Challenge progress ─────────────────────────────────────────
+  const {
+    currentIndex,
+    results,
+    isComplete,
+    recordResult,
+    advance,
+  } = useChallengeProgress<ArrayGridChallenge>({
+    challenges,
+    getChallengeId: (c) => c.id,
+  });
+
+  const currentChallenge = challenges[currentIndex] ?? null;
+  const targetRows = currentChallenge?.targetRows ?? 0;
+  const targetColumns = currentChallenge?.targetColumns ?? 0;
+  const targetProduct = targetRows * targetColumns;
+
+  const isMultiplyMode = sessionChallengeType === 'multiply_array';
+  const isPreBuilt = sessionChallengeType === 'count_array' || isMultiplyMode;
+
+  // Capped button ranges (must match component caps in the catalog/generator)
+  const rowButtonCount = Math.min(maxRows, 6);
+  const colButtonCount = Math.min(maxColumns, 8);
+
+  // ── Per-challenge interaction state (resets on advance) ────────
+  const [currentRows, setCurrentRows] = useState(0);
+  const [currentColumns, setCurrentColumns] = useState(0);
   const [totalAnswer, setTotalAnswer] = useState('');
   const [rowsAnswer, setRowsAnswer] = useState('');
   const [columnsAnswer, setColumnsAnswer] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'hint' | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [challengeDone, setChallengeDone] = useState(false);
 
-  const targetProduct = targetRows * targetColumns;
-  const arrayBuilt = currentRows === targetRows && currentColumns === targetColumns;
+  const recordedRef = useRef(false);
+  const sessionCompleteFiredRef = useRef(false);
 
-  // Capped button ranges
-  const rowButtonCount = Math.min(maxRows, 6);
-  const colButtonCount = Math.min(maxColumns, 8);
+  // ── Reset every per-challenge slot when the active challenge changes ──
+  // PRD §6c lesson: missing any slot leaks state from challenge N into N+1.
+  useEffect(() => {
+    if (!currentChallenge) return;
+    // Pre-built modes show the array immediately at target dimensions.
+    const startRows = isPreBuilt ? currentChallenge.targetRows : 0;
+    const startCols = isPreBuilt ? currentChallenge.targetColumns : 0;
+    setCurrentRows(startRows);
+    setCurrentColumns(startCols);
+    setTotalAnswer('');
+    setRowsAnswer('');
+    setColumnsAnswer('');
+    setFeedback(null);
+    setFeedbackType(null);
+    setAttempts(0);
+    setChallengeDone(false);
+    recordedRef.current = false;
+  }, [currentChallenge?.id, isPreBuilt]);
 
-  // Evaluation hook
+  // ── Evaluation hook ────────────────────────────────────────────
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
-    resetAttempt: resetEvaluationAttempt,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<ArrayGridMetrics>({
     primitiveType: 'array-grid',
-    instanceId: instanceId || `array-grid-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
-    onSubmit: onEvaluationSubmit as
-      | ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void)
-      | undefined,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // Handler for row changes (build_array only)
+  // ── PhaseSummaryPanel: one row, aggregated by eval mode ────────
+  const phaseResults = usePhaseResults({
+    challenges,
+    results,
+    isComplete,
+    getChallengeType: () => sessionChallengeType,
+    phaseConfig: PHASE_TYPE_CONFIG,
+    getScore: (rs) =>
+      rs.length === 0
+        ? 0
+        : Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length),
+  });
+
+  // ── Per-challenge content match (stale-state guard, §6a #8) ────
+  const stateMatchesChallenge = useCallback(
+    (challenge: ArrayGridChallenge | null): boolean => {
+      if (!challenge) return false;
+      // For pre-built modes the array is rendered at target dims from the reset
+      // effect — match against that. For build mode, the student-built dims can
+      // legitimately disagree with target dims, so any state belongs to the
+      // active challenge.
+      if (isPreBuilt) {
+        return (
+          currentRows === challenge.targetRows &&
+          currentColumns === challenge.targetColumns
+        );
+      }
+      return true;
+    },
+    [isPreBuilt, currentRows, currentColumns],
+  );
+
+  // ── Per-challenge completion (called from submit handlers) ─────
+  const completeCurrentChallenge = useCallback(
+    (
+      correct: boolean,
+      score: number,
+      attemptsCount: number,
+      extras: Record<string, unknown> = {},
+    ) => {
+      if (!currentChallenge) return;
+      if (recordedRef.current) return;
+      if (!stateMatchesChallenge(currentChallenge)) return;
+      recordedRef.current = true;
+      setChallengeDone(true);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct,
+        attempts: attemptsCount,
+        score,
+        ...extras,
+      });
+    },
+    [currentChallenge, stateMatchesChallenge, recordResult],
+  );
+
+  // ── Session complete → aggregate metrics + submitEvaluation ────
+  useEffect(() => {
+    if (!isComplete) return;
+    if (sessionCompleteFiredRef.current) return;
+    if (challenges.length === 0) return;
+    sessionCompleteFiredRef.current = true;
+
+    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
+    const correctCount = results.filter((r) => r.correct).length;
+    const firstTryCount = results.filter((r) => Number(r.score ?? 0) === 100).length;
+    const hintsViewed = results.filter((r) => Number(r.hintsUsed ?? 0) > 0).length;
+    const overallAccuracy = Math.round(
+      results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length),
+    );
+    const averageAttemptsPerChallenge =
+      Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
+
+    const metrics: ArrayGridMetrics = {
+      type: 'array-grid',
+      challengeType: sessionChallengeType,
+      totalChallenges: challenges.length,
+      correctCount,
+      attemptsCount: totalAttempts,
+      firstTryCount,
+      hintsViewed,
+      overallAccuracy,
+      averageAttemptsPerChallenge,
+    };
+
+    if (!hasSubmittedEvaluation) {
+      const goalMet = correctCount === challenges.length;
+      submitEvaluation(goalMet, overallAccuracy, metrics, {
+        studentWork: {
+          challengeCount: challenges.length,
+          challengeType: sessionChallengeType,
+          pairs: challenges.map((c) => ({
+            rows: c.targetRows,
+            columns: c.targetColumns,
+          })),
+          scoresPerChallenge: challenges.map((c) => {
+            const r = results.find((rr) => rr.challengeId === c.id);
+            return Number(r?.score ?? 0);
+          }),
+        },
+      });
+    }
+  }, [
+    isComplete, results, challenges, sessionChallengeType,
+    submitEvaluation, hasSubmittedEvaluation,
+  ]);
+
+  // ── Build-mode controls ────────────────────────────────────────
   const handleRowChange = (newRows: number) => {
-    if (hasSubmittedEvaluation || isPreBuilt) return;
+    if (challengeDone || isPreBuilt) return;
     setCurrentRows(newRows);
     setFeedback(null);
   };
 
-  // Handler for column changes (build_array only)
   const handleColumnChange = (newColumns: number) => {
-    if (hasSubmittedEvaluation || isPreBuilt) return;
+    if (challengeDone || isPreBuilt) return;
     setCurrentColumns(newColumns);
     setFeedback(null);
   };
 
-  // Submit handler — branches by challenge type
-  const handleSubmit = () => {
-    if (hasSubmittedEvaluation) return;
+  // ── Submit handlers ────────────────────────────────────────────
+  const arrayBuilt =
+    currentRows === targetRows && currentColumns === targetColumns;
 
-    if (isMultiplyMode) {
-      handleSubmitMultiply();
-    } else {
-      handleSubmitCountOrBuild();
-    }
-  };
-
-  // Build / Count submission — validate total
   const handleSubmitCountOrBuild = () => {
+    if (!currentChallenge) return;
     const studentTotal = parseInt(totalAnswer, 10);
     const correctArray = currentRows === targetRows && currentColumns === targetColumns;
     const correctTotal = studentTotal === targetProduct;
+    const isCorrect = correctArray && correctTotal;
+    const nextAttempts = attempts + 1;
+    setAttempts(nextAttempts);
 
-    let success = false;
-    let score = 0;
-
-    if (correctArray && correctTotal) {
-      success = true;
-      score = 100;
+    if (isCorrect) {
       setFeedback(
-        challengeType === 'count_array'
+        sessionChallengeType === 'count_array'
           ? `Correct! There are ${targetProduct} ${iconType}s in total.`
-          : `Perfect! You built a ${currentRows} x ${currentColumns} array with ${studentTotal} total items.`
+          : `Perfect! You built a ${currentRows} × ${currentColumns} array with ${studentTotal} total items.`,
       );
       setFeedbackType('success');
-    } else if (correctArray && !correctTotal) {
-      score = 50;
+      const score = phaseScore(nextAttempts);
+      completeCurrentChallenge(true, score, nextAttempts);
+      return;
+    }
+
+    if (correctArray && !correctTotal) {
       setFeedback(
-        challengeType === 'count_array'
-          ? `Not quite. Try counting again — you can skip count by rows or columns!`
-          : `You built the array correctly (${currentRows} x ${currentColumns}), but your total is incorrect. Count again!`
+        sessionChallengeType === 'count_array'
+          ? `Not quite. Try counting again — skip count by rows or columns.`
+          : `You built the array correctly (${currentRows} × ${currentColumns}), but your total is incorrect. Count again!`,
       );
       setFeedbackType('hint');
     } else if (!correctArray && correctTotal) {
-      score = 50;
       setFeedback(
-        `Your total (${studentTotal}) would be correct for a different array. Build ${targetRows} rows x ${targetColumns} columns.`
+        `Your total (${studentTotal}) would be correct for a different array. Build ${targetRows} rows × ${targetColumns} columns.`,
       );
       setFeedbackType('hint');
     } else {
-      score = 0;
       setFeedback(
-        challengeType === 'count_array'
+        sessionChallengeType === 'count_array'
           ? `Not quite. Count the items carefully — try skip counting by rows!`
-          : `Not quite. First, build the array with ${targetRows} rows and ${targetColumns} columns, then count the total.`
+          : `Not quite. First, build a ${targetRows} × ${targetColumns} array, then count the total.`,
       );
       setFeedbackType('error');
     }
-
-    const taskType = challengeType === 'count_array' ? 'count' : 'build';
-
-    const metrics: ArrayGridMetrics = {
-      type: 'array-grid',
-      taskType: taskType as ArrayGridMetrics['taskType'],
-      goalMet: success,
-      finalRows: currentRows,
-      finalColumns: currentColumns,
-      totalItems: currentRows * currentColumns,
-      targetProduct,
-      productCorrect: correctTotal,
-      dimensionsCorrect: correctArray,
-      rowChanges: 0,
-      columnChanges: 0,
-      cellClicks: 0,
-      finalConfiguration: {
-        rows: currentRows,
-        columns: currentColumns,
-        partitionLines: [],
-        highlightedCells: [],
-      },
-    };
-
-    submitEvaluation(success, score, metrics, {
-      studentWork: { rows: currentRows, columns: currentColumns, total: studentTotal },
-    });
   };
 
-  // Multiply submission — validate rows, columns, and total
   const handleSubmitMultiply = () => {
+    if (!currentChallenge) return;
     const studentRows = parseInt(rowsAnswer, 10);
     const studentColumns = parseInt(columnsAnswer, 10);
     const studentTotal = parseInt(totalAnswer, 10);
@@ -214,85 +354,52 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     const correctRows = studentRows === targetRows;
     const correctColumns = studentColumns === targetColumns;
     const correctTotal = studentTotal === targetProduct;
+    const isCorrect = correctRows && correctColumns && correctTotal;
 
-    // Partial credit: each part worth ~33%
-    let score = 0;
-    if (correctRows) score += 33;
-    if (correctColumns) score += 33;
-    if (correctTotal) score += 34;
+    const nextAttempts = attempts + 1;
+    setAttempts(nextAttempts);
 
-    const success = correctRows && correctColumns && correctTotal;
-
-    if (success) {
+    if (isCorrect) {
       setFeedback(
-        `Excellent! ${targetRows} x ${targetColumns} = ${targetProduct}. You wrote the multiplication fact correctly!`
+        `Excellent! ${targetRows} × ${targetColumns} = ${targetProduct}. You wrote the multiplication fact correctly!`,
       );
       setFeedbackType('success');
-    } else {
-      const hints: string[] = [];
-      if (!correctRows) hints.push('count the rows (horizontal groups)');
-      if (!correctColumns) hints.push('count the columns (items in each row)');
-      if (!correctTotal) hints.push('multiply rows times columns for the total');
-      setFeedback(`Not quite. Try to ${hints.join(', ')}.`);
-      setFeedbackType(score >= 50 ? 'hint' : 'error');
+      const score = phaseScore(nextAttempts);
+      completeCurrentChallenge(true, score, nextAttempts);
+      return;
     }
 
-    const metrics: ArrayGridMetrics = {
-      type: 'array-grid',
-      taskType: 'multiply' as ArrayGridMetrics['taskType'],
-      goalMet: success,
-      finalRows: targetRows,
-      finalColumns: targetColumns,
-      totalItems: targetProduct,
-      targetProduct,
-      productCorrect: correctTotal,
-      dimensionsCorrect: correctRows && correctColumns,
-      rowChanges: 0,
-      columnChanges: 0,
-      cellClicks: 0,
-      finalConfiguration: {
-        rows: targetRows,
-        columns: targetColumns,
-        partitionLines: [],
-        highlightedCells: [],
-      },
-    };
-
-    submitEvaluation(success, score, metrics, {
-      studentWork: {
-        rows: studentRows,
-        columns: studentColumns,
-        total: studentTotal,
-        sentence: `${studentRows} x ${studentColumns} = ${studentTotal}`,
-      },
-    });
+    const hints: string[] = [];
+    if (!correctRows) hints.push('count the rows (horizontal groups)');
+    if (!correctColumns) hints.push('count the columns (items in each row)');
+    if (!correctTotal) hints.push('multiply rows × columns for the total');
+    setFeedback(`Not quite. Try to ${hints.join(', ')}.`);
+    setFeedbackType(hints.length === 1 ? 'hint' : 'error');
   };
 
-  // Reset handler
-  const handleReset = () => {
-    setCurrentRows(isPreBuilt ? targetRows : 0);
-    setCurrentColumns(isPreBuilt ? targetColumns : 0);
-    setTotalAnswer('');
-    setRowsAnswer('');
-    setColumnsAnswer('');
-    setFeedback(null);
-    setFeedbackType(null);
-    resetEvaluationAttempt();
+  const handleSubmit = () => {
+    if (challengeDone) return;
+    if (isMultiplyMode) handleSubmitMultiply();
+    else handleSubmitCountOrBuild();
   };
 
-  // Can submit?
+  // ── Advance to next challenge ──────────────────────────────────
+  const handleNextChallenge = () => {
+    advance();
+  };
+
+  // ── Can submit? ────────────────────────────────────────────────
   const canSubmit = useMemo(() => {
-    if (hasSubmittedEvaluation) return false;
+    if (challengeDone) return false;
     if (isMultiplyMode) {
       return rowsAnswer !== '' && columnsAnswer !== '' && totalAnswer !== '';
     }
     return arrayBuilt && totalAnswer !== '';
-  }, [hasSubmittedEvaluation, isMultiplyMode, rowsAnswer, columnsAnswer, totalAnswer, arrayBuilt]);
+  }, [challengeDone, isMultiplyMode, rowsAnswer, columnsAnswer, totalAnswer, arrayBuilt]);
 
-  // Render icon based on type
+  // ── Icon renderer ──────────────────────────────────────────────
   const renderIcon = () => {
     const baseClass = 'fill-blue-400/80';
-
     switch (iconType) {
       case 'dot':
         return (
@@ -300,15 +407,14 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             <circle cx="12" cy="12" r="8" className={baseClass} />
           </svg>
         );
-
       case 'square':
         return (
           <svg className="w-6 h-6" viewBox="0 0 24 24">
             <rect x="6" y="6" width="12" height="12" className={baseClass} />
           </svg>
         );
-
       case 'star':
+      default:
         return (
           <svg className="w-6 h-6" viewBox="0 0 24 24">
             <path
@@ -317,19 +423,43 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             />
           </svg>
         );
-
-      default:
-        return (
-          <svg className="w-6 h-6" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="8" className={baseClass} />
-          </svg>
-        );
     }
   };
 
   // Displayed rows/columns for the grid
   const displayRows = isPreBuilt ? targetRows : currentRows;
   const displayColumns = isPreBuilt ? targetColumns : currentColumns;
+  const hasNextChallenge = currentIndex + 1 < challenges.length;
+
+  // ── Empty state ────────────────────────────────────────────────
+  if (challenges.length === 0) {
+    return (
+      <div className={`w-full ${className || ''}`}>
+        <div className="max-w-6xl mx-auto p-8 text-center text-slate-400">
+          No array grid challenges available.
+        </div>
+      </div>
+    );
+  }
+
+  // ── Session summary ────────────────────────────────────────────
+  if (isComplete) {
+    return (
+      <div className={`w-full max-w-6xl mx-auto my-16 ${className || ''}`}>
+        <PhaseSummaryPanel
+          phases={phaseResults}
+          overallScore={submittedResult?.score}
+          durationMs={elapsedMs}
+          heading="Array Session Complete"
+          celebrationMessage={
+            results.every((r) => r.correct)
+              ? 'Perfect! You solved every array.'
+              : 'Great work — keep practicing arrays!'
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
@@ -349,34 +479,59 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           <h2 className="text-2xl font-bold text-white tracking-tight">Array Builder</h2>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-            <p className="text-xs text-green-400 font-mono uppercase tracking-wider">
+            <Badge className="bg-green-500/20 border-green-500/30 text-green-400 text-xs font-mono uppercase tracking-wider">
               {isMultiplyMode ? 'Multiply' : isPreBuilt ? 'Count' : 'Build & Multiply'}
-            </p>
+            </Badge>
           </div>
         </div>
       </div>
 
-      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-green-500/20 relative overflow-hidden">
-        {/* Background Texture */}
+      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl">
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-10 rounded-3xl"
           style={{
             backgroundImage: 'radial-gradient(#22c55e 1px, transparent 1px)',
             backgroundSize: '20px 20px',
           }}
         ></div>
 
-        <div className="relative z-10 w-full">
-          <div className="mb-8 text-center max-w-3xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-            <p className="text-slate-300 font-light">{description}</p>
+        <CardHeader className="relative z-10 text-center">
+          <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
+          <CardDescription className="text-slate-300">{description}</CardDescription>
+        </CardHeader>
+
+        <CardContent className="relative z-10">
+          {/* Session progress dots */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            {challenges.map((c, idx) => {
+              const r = results.find((rr) => rr.challengeId === c.id);
+              const isDone = !!r;
+              const isCurrent = idx === currentIndex && !challengeDone;
+              return (
+                <div
+                  key={c.id}
+                  className={`flex items-center justify-center rounded-full border text-xs font-mono w-8 h-8 ${
+                    isDone
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : isCurrent
+                        ? 'bg-green-500/20 text-green-200 border-green-400/50 shadow-lg scale-105'
+                        : 'bg-white/5 text-slate-400 border-white/10'
+                  }`}
+                >
+                  {idx + 1}
+                </div>
+              );
+            })}
+            <span className="ml-3 text-xs font-mono uppercase tracking-wider text-slate-400">
+              Array {currentIndex + 1} / {challenges.length}
+            </span>
           </div>
 
-          {/* Step 1: Build the Array (build_array mode only) */}
-          {!isPreBuilt && (
+          {/* Step 1: Build (build_array mode only) */}
+          {!isPreBuilt && !challengeDone && (
             <div className="mb-8">
               <h4 className="text-lg font-semibold text-green-300 mb-4 text-center">
-                Step 1: Build the Array
+                Step 1: Build an array with {targetRows} rows and {targetColumns} columns
               </h4>
 
               <div className="flex flex-col items-center gap-6">
@@ -388,7 +543,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                       <button
                         key={`row-${num}`}
                         onClick={() => handleRowChange(num)}
-                        disabled={hasSubmittedEvaluation}
+                        disabled={challengeDone}
                         className={`w-10 h-10 rounded-lg font-bold transition-all ${
                           currentRows === num
                             ? 'bg-green-500 text-white scale-110 shadow-lg'
@@ -409,7 +564,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                       <button
                         key={`col-${num}`}
                         onClick={() => handleColumnChange(num)}
-                        disabled={hasSubmittedEvaluation}
+                        disabled={challengeDone}
                         className={`w-10 h-10 rounded-lg font-bold transition-all ${
                           currentColumns === num
                             ? 'bg-blue-500 text-white scale-110 shadow-lg'
@@ -425,7 +580,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             </div>
           )}
 
-          {/* Array Grid — shown when built (build mode) or always (pre-built modes) */}
+          {/* Array Grid */}
           {displayRows > 0 && displayColumns > 0 && (
             <div className="flex justify-center items-center mb-8">
               <div className="relative inline-block">
@@ -461,14 +616,11 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                   {/* Grid */}
                   <div
                     className="grid gap-2"
-                    style={{
-                      gridTemplateColumns: `repeat(${displayColumns}, 64px)`,
-                    }}
+                    style={{ gridTemplateColumns: `repeat(${displayColumns}, 64px)` }}
                   >
                     {Array.from({ length: displayRows }).map((_, rowIndex) =>
                       Array.from({ length: displayColumns }).map((_, colIndex) => {
                         const cellKey = `${rowIndex}-${colIndex}`;
-
                         return (
                           <div
                             key={cellKey}
@@ -477,7 +629,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                             {renderIcon()}
                           </div>
                         );
-                      })
+                      }),
                     )}
                   </div>
                 </div>
@@ -487,13 +639,12 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
 
           {/* Input Section — varies by challenge type */}
 
-          {/* count_array: Just total input (shown immediately since array is pre-built) */}
-          {challengeType === 'count_array' && !hasSubmittedEvaluation && (
+          {/* count_array */}
+          {sessionChallengeType === 'count_array' && !challengeDone && (
             <div className="mb-8 animate-fade-in">
               <h4 className="text-lg font-semibold text-purple-300 mb-4 text-center">
                 How many {iconType}s in total?
               </h4>
-
               <div className="flex justify-center items-center gap-4">
                 <label className="text-slate-300 font-semibold">Total:</label>
                 <input
@@ -511,13 +662,12 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             </div>
           )}
 
-          {/* multiply_array: Three inputs for rows x columns = total */}
-          {isMultiplyMode && !hasSubmittedEvaluation && (
+          {/* multiply_array */}
+          {isMultiplyMode && !challengeDone && (
             <div className="mb-8 animate-fade-in">
               <h4 className="text-lg font-semibold text-purple-300 mb-4 text-center">
                 Write the multiplication sentence
               </h4>
-
               <div className="flex justify-center items-center gap-3 flex-wrap">
                 <input
                   type="number"
@@ -526,7 +676,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                   placeholder="rows"
                   className="px-3 py-2 w-24 bg-slate-800 border border-green-500/40 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-green-400"
                 />
-                <span className="text-2xl text-slate-300 font-bold">x</span>
+                <span className="text-2xl text-slate-300 font-bold">×</span>
                 <input
                   type="number"
                   value={columnsAnswer}
@@ -549,13 +699,12 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
             </div>
           )}
 
-          {/* build_array: Total input appears after array is built */}
-          {challengeType === 'build_array' && arrayBuilt && !hasSubmittedEvaluation && (
+          {/* build_array */}
+          {sessionChallengeType === 'build_array' && arrayBuilt && !challengeDone && (
             <div className="mb-8 animate-fade-in">
               <h4 className="text-lg font-semibold text-purple-300 mb-4 text-center">
                 Step 2: How many {iconType}s in total?
               </h4>
-
               <div className="flex justify-center items-center gap-4">
                 <label className="text-slate-300 font-semibold">Total:</label>
                 <input
@@ -580,113 +729,59 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                 feedbackType === 'success'
                   ? 'bg-green-500/20 border-green-500/50 text-green-300'
                   : feedbackType === 'error'
-                  ? 'bg-red-500/20 border-red-500/50 text-red-300'
-                  : 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300'
+                    ? 'bg-red-500/20 border-red-500/50 text-red-300'
+                    : 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300'
               }`}
             >
-              <div className="flex items-start gap-3">
-                {feedbackType === 'success' && (
-                  <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-                {feedbackType === 'error' && (
-                  <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-                {feedbackType === 'hint' && (
-                  <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-                <p className="font-medium">{feedback}</p>
-              </div>
+              <p className="font-medium">{feedback}</p>
             </div>
           )}
 
-          {/* Submit/Reset Controls */}
-          <div className="flex justify-center gap-4 mb-8">
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold rounded-lg hover:from-green-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
-            >
-              {hasSubmittedEvaluation ? 'Submitted' : 'Check Answer'}
-            </button>
-            {hasSubmittedEvaluation && (
-              <button
-                onClick={handleReset}
-                className="px-8 py-3 bg-slate-600 text-white font-bold rounded-lg hover:bg-slate-500 transition-all duration-200 shadow-lg"
+          {/* Submit Control */}
+          {!challengeDone && (
+            <div className="flex justify-center gap-4 mb-8">
+              <Button
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                variant="ghost"
+                className="bg-gradient-to-r from-green-500 to-blue-500 text-white border border-green-400/30 hover:from-green-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all px-8 py-3"
               >
-                Try Again
-              </button>
-            )}
-          </div>
+                Check Answer
+              </Button>
+            </div>
+          )}
 
-          {/* Instructions — context-sensitive */}
-          <div className="mt-6 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
-            <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Instructions</h4>
-            <ul className="text-sm text-slate-300 space-y-2">
-              {challengeType === 'build_array' && (
-                <>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">&#9656;</span>
-                    <span>
-                      Click the row and column buttons to build an array with {targetRows} rows and {targetColumns}{' '}
-                      columns
+          {/* Between-challenge interstitial */}
+          {challengeDone && (
+            <Card className="mt-2 bg-green-900/20 border-green-500/30">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-bold text-green-400">
+                    ✓ Array {currentIndex + 1} complete!
+                  </h4>
+                  {hasNextChallenge ? (
+                    <Button
+                      onClick={handleNextChallenge}
+                      variant="ghost"
+                      className="bg-blue-500/80 text-white border border-blue-400/30 hover:bg-blue-500"
+                    >
+                      Next Array →
+                    </Button>
+                  ) : (
+                    <span className="text-sm text-slate-400 font-mono uppercase tracking-wider">
+                      Last array
                     </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">&#9656;</span>
-                    <span>Once you've built the correct array, count the total number of {iconType}s</span>
-                  </li>
-                </>
-              )}
-              {challengeType === 'count_array' && (
-                <>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">&#9656;</span>
-                    <span>Look at the array of {iconType}s shown above</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">&#9656;</span>
-                    <span>Count the total number of {iconType}s — try skip counting by rows or columns!</span>
-                  </li>
-                </>
-              )}
-              {isMultiplyMode && (
-                <>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">&#9656;</span>
-                    <span>Look at the array and count how many rows and columns it has</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">&#9656;</span>
-                    <span>Write the multiplication sentence: rows x columns = total</span>
-                  </li>
-                </>
-              )}
-              <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-1">&#9656;</span>
-                <span>Enter your answer and click &quot;Check Answer&quot; to see if you&apos;re correct</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
+                  )}
+                </div>
+                <p className="text-sm text-slate-300">
+                  {targetRows} × {targetColumns} ={' '}
+                  <span className="font-bold text-white">{targetProduct}</span>
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

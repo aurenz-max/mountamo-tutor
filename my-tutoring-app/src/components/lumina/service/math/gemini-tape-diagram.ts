@@ -1,5 +1,21 @@
+/**
+ * Tape Diagram Generator — multi-instance word-problem generator.
+ *
+ * Each session walks the student through 3-6 distinct tape-diagram challenges
+ * of the SAME eval mode, surfaced sequentially. Per-challenge data is content-
+ * bearing (word problem text + segment labels), so we use the orchestrator-
+ * same-mode pattern (per PRD §6a #1 / §6a #7): the orchestrator fans out N
+ * parallel calls to the existing per-mode sub-generator. Variance comes from
+ * independent generations of the same sub-generator — structured-output
+ * convergence is per-call, not across independent calls.
+ */
+
 import { Type, Schema, ThinkingLevel } from "@google/genai";
-import { TapeDiagramData, BarSegment } from "../../primitives/visual-primitives/math/TapeDiagram";
+import {
+  TapeDiagramData,
+  TapeDiagramChallenge,
+  BarSegment,
+} from "../../primitives/visual-primitives/math/TapeDiagram";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
@@ -52,6 +68,19 @@ function getNumberGuidance(gradeLevel: string): string {
   return 'Use numbers 20–500 (larger, realistic).';
 }
 
+// ---------------------------------------------------------------------------
+// Sub-generator return shape
+// ---------------------------------------------------------------------------
+
+interface SubGenResult {
+  title: string;
+  description: string;
+  challenge: TapeDiagramChallenge;
+}
+
+const DEFAULT_INSTANCE_COUNT = 4;
+const MAX_INSTANCE_COUNT = 6;
+
 // ===========================================================================
 // Schema: Represent mode
 // ===========================================================================
@@ -79,7 +108,7 @@ const representSchema: Schema = {
 };
 
 // ===========================================================================
-// Schema: Part-Whole mode (existing behavior)
+// Schema: Part-Whole mode
 // ===========================================================================
 
 const partWholeSchema: Schema = {
@@ -175,10 +204,10 @@ const multiStepSchema: Schema = {
 };
 
 // ===========================================================================
-// Sub-generators per mode
+// Sub-generators per mode (each emits a single SubGenResult)
 // ===========================================================================
 
-async function generateRepresentMode(topic: string, gradeLevel: string): Promise<TapeDiagramData> {
+async function generateRepresentMode(topic: string, gradeLevel: string): Promise<SubGenResult> {
   const prompt = `
 Create a word problem for teaching "${topic}" to ${gradeLevel} students using a tape diagram.
 
@@ -193,16 +222,6 @@ RULES:
 - Labels should be concrete and descriptive (not "Part 1")
 - Values must be positive integers
 - Do NOT put the answer in the title or description
-
-EXAMPLE for "Addition" (Grade 2):
-{
-  "title": "Fruit Basket",
-  "wordProblem": "Emma has a basket with 5 red apples, 3 green apples, and 4 yellow apples. Help her organize the tape diagram!",
-  "description": "Read the problem and fill in each part of the tape diagram.",
-  "part1Value": 5, "part1Label": "red apples",
-  "part2Value": 3, "part2Label": "green apples",
-  "part3Value": 4, "part3Label": "yellow apples"
-}
 `;
 
   const result = await ai.models.generateContent({
@@ -227,20 +246,23 @@ EXAMPLE for "Addition" (Grade 2):
   const total = data.part1Value + data.part2Value + data.part3Value;
 
   return {
-    challengeType: 'represent',
     title: data.title,
     description: data.description,
-    wordProblem: data.wordProblem,
-    bars: [{
-      segments,
-      totalLabel: `Total = ${total}`,
-    }],
-    comparisonMode: false,
-    showBrackets: false,
+    challenge: {
+      id: 'td-pending',
+      challengeType: 'represent',
+      wordProblem: data.wordProblem,
+      bars: [{
+        segments,
+        totalLabel: `Total = ${total}`,
+      }],
+      comparisonMode: false,
+      showBrackets: false,
+    },
   };
 }
 
-async function generatePartWholeMode(topic: string, gradeLevel: string): Promise<TapeDiagramData> {
+async function generatePartWholeMode(topic: string, gradeLevel: string): Promise<SubGenResult> {
   const prompt = `
 Create a cohesive part-whole problem for teaching "${topic}" to ${gradeLevel} students.
 
@@ -265,16 +287,6 @@ RULES:
 - Use a single coherent scenario (marbles, cookies, books, points, etc.)
 - All 4 labels should fit the same theme
 - Use concrete, descriptive labels (not "Part 1", "Segment A")
-
-EXAMPLE for "Addition" (Grade 3):
-{
-  "title": "Marble Collection",
-  "description": "Learn to find the whole and unknown parts using a tape diagram",
-  "knownPart1Value": 8, "knownPart1Label": "red marbles",
-  "knownPart2Value": 5, "knownPart2Label": "blue marbles",
-  "unknown1Value": 7, "unknown1Label": "green marbles",
-  "unknown2Value": 4, "unknown2Label": "yellow marbles"
-}
 `;
 
   const result = await ai.models.generateContent({
@@ -302,19 +314,22 @@ EXAMPLE for "Addition" (Grade 3):
   ];
 
   return {
-    challengeType: 'solve_part_whole',
     title: data.title,
     description: data.description,
-    bars: [{
-      segments,
-      totalLabel: `Total = ${grandTotal}`,
-    }],
-    comparisonMode: false,
-    showBrackets: true,
+    challenge: {
+      id: 'td-pending',
+      challengeType: 'solve_part_whole',
+      bars: [{
+        segments,
+        totalLabel: `Total = ${grandTotal}`,
+      }],
+      comparisonMode: false,
+      showBrackets: true,
+    },
   };
 }
 
-async function generateComparisonMode(topic: string, gradeLevel: string): Promise<TapeDiagramData> {
+async function generateComparisonMode(topic: string, gradeLevel: string): Promise<SubGenResult> {
   const prompt = `
 Create a comparison word problem for teaching "${topic}" to ${gradeLevel} students.
 
@@ -331,17 +346,6 @@ RULES:
 - unknownPart: "difference" means student finds how many more/fewer,
   "quantity2" means student finds the smaller quantity given the difference,
   "quantity1" means student finds the larger quantity given the difference
-
-EXAMPLE for "Subtraction" (Grade 3):
-{
-  "title": "Sticker Collection",
-  "description": "Compare two collections to find the difference",
-  "wordProblem": "Sam has 15 stickers and Maya has 9 stickers. How many more stickers does Sam have than Maya?",
-  "quantity1Label": "Sam's stickers", "quantity1Value": 15,
-  "quantity2Label": "Maya's stickers", "quantity2Value": 9,
-  "comparisonWord": "more",
-  "unknownPart": "difference"
-}
 `;
 
   const result = await ai.models.generateContent({
@@ -357,20 +361,14 @@ EXAMPLE for "Subtraction" (Grade 3):
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data) throw new Error('No valid comparison data returned from Gemini API');
 
-  // Ensure quantity1 >= quantity2
   const q1 = Math.max(data.quantity1Value, data.quantity2Value);
   const q2 = Math.min(data.quantity1Value, data.quantity2Value);
   const diff = q1 - q2;
-
-  // Bar 1: the larger quantity (fully known, or with unknown segment)
-  // Bar 2: the smaller quantity (fully known, or with unknown segment)
-  // We also show the difference as a segment on the larger bar
 
   let bar1Segments: BarSegment[];
   let bar2Segments: BarSegment[];
 
   if (data.unknownPart === 'difference') {
-    // Student finds the difference: bar1 has [quantity2 portion | difference?], bar2 has [quantity2]
     bar1Segments = [
       { value: q2, label: `matching ${data.quantity2Label}` },
       { value: diff, label: 'difference', isUnknown: true },
@@ -379,7 +377,6 @@ EXAMPLE for "Subtraction" (Grade 3):
       { value: q2, label: data.quantity2Label },
     ];
   } else if (data.unknownPart === 'quantity2') {
-    // Student finds quantity2: bar1 has [quantity1], bar2 has [quantity2?]
     bar1Segments = [
       { value: q1, label: data.quantity1Label },
     ];
@@ -387,7 +384,6 @@ EXAMPLE for "Subtraction" (Grade 3):
       { value: q2, label: data.quantity2Label, isUnknown: true },
     ];
   } else {
-    // Student finds quantity1: bar1 has [quantity1?], bar2 has [quantity2]
     bar1Segments = [
       { value: q1, label: data.quantity1Label, isUnknown: true },
     ];
@@ -397,27 +393,30 @@ EXAMPLE for "Subtraction" (Grade 3):
   }
 
   return {
-    challengeType: 'solve_comparison',
     title: data.title,
     description: data.description,
-    wordProblem: data.wordProblem,
-    bars: [
-      { segments: bar1Segments, totalLabel: data.quantity1Label, color: 'from-blue-500 to-blue-600' },
-      { segments: bar2Segments, totalLabel: data.quantity2Label, color: 'from-purple-500 to-purple-600' },
-    ],
-    comparisonMode: true,
-    showBrackets: true,
-    comparisonData: {
-      quantity1: q1,
-      quantity2: q2,
-      difference: diff,
-      comparisonWord: data.comparisonWord || 'more',
-      unknownPart: data.unknownPart,
+    challenge: {
+      id: 'td-pending',
+      challengeType: 'solve_comparison',
+      wordProblem: data.wordProblem,
+      bars: [
+        { segments: bar1Segments, totalLabel: data.quantity1Label, color: 'from-blue-500 to-blue-600' },
+        { segments: bar2Segments, totalLabel: data.quantity2Label, color: 'from-purple-500 to-purple-600' },
+      ],
+      comparisonMode: true,
+      showBrackets: true,
+      comparisonData: {
+        quantity1: q1,
+        quantity2: q2,
+        difference: diff,
+        comparisonWord: data.comparisonWord || 'more',
+        unknownPart: data.unknownPart,
+      },
     },
   };
 }
 
-async function generateMultiStepMode(topic: string, gradeLevel: string): Promise<TapeDiagramData> {
+async function generateMultiStepMode(topic: string, gradeLevel: string): Promise<SubGenResult> {
   const prompt = `
 Create a multi-step word problem for teaching "${topic}" to ${gradeLevel} students.
 
@@ -438,19 +437,6 @@ RULES:
 MATHEMATICAL RELATIONSHIP:
 - intermediateValue = part1Value + part2Value (or a clear operation on them)
 - finalValue should relate to intermediateValue via another operation
-
-EXAMPLE for "Multi-step Addition/Subtraction" (Grade 4):
-{
-  "title": "School Supply Budget",
-  "description": "Solve a two-step problem using a tape diagram",
-  "wordProblem": "Alex spent $12 on pens and $8 on notebooks. He started with $35. How much does he have left after buying a $5 eraser too?",
-  "part1Value": 12, "part1Label": "pens cost",
-  "part2Value": 8, "part2Label": "notebooks cost",
-  "intermediateValue": 20, "intermediateLabel": "supplies subtotal",
-  "finalValue": 10, "finalLabel": "money remaining",
-  "step1Hint": "First, find the total spent on pens and notebooks",
-  "step2Hint": "Now subtract the subtotal and eraser cost from 35"
-}
 `;
 
   const result = await ai.models.generateContent({
@@ -466,7 +452,6 @@ EXAMPLE for "Multi-step Addition/Subtraction" (Grade 4):
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data) throw new Error('No valid multi-step data returned from Gemini API');
 
-  // Build bar with 4 segments: 2 known + intermediate (unknown step 1) + final (unknown step 2)
   const segments: BarSegment[] = [
     { value: data.part1Value, label: data.part1Label },
     { value: data.part2Value, label: data.part2Label },
@@ -477,50 +462,85 @@ EXAMPLE for "Multi-step Addition/Subtraction" (Grade 4):
   const total = data.part1Value + data.part2Value + data.intermediateValue + data.finalValue;
 
   return {
-    challengeType: 'multi_step',
     title: data.title,
     description: data.description,
-    wordProblem: data.wordProblem,
-    bars: [{
-      segments,
-      totalLabel: `Total = ${total}`,
-    }],
-    comparisonMode: false,
-    showBrackets: true,
-    multiStepData: {
-      step1Hint: data.step1Hint,
-      step2Hint: data.step2Hint,
-      solveOrder: [2, 3], // segment indices: solve intermediate first, then final
+    challenge: {
+      id: 'td-pending',
+      challengeType: 'multi_step',
+      wordProblem: data.wordProblem,
+      bars: [{
+        segments,
+        totalLabel: `Total = ${total}`,
+      }],
+      comparisonMode: false,
+      showBrackets: true,
+      multiStepData: {
+        step1Hint: data.step1Hint,
+        step2Hint: data.step2Hint,
+        solveOrder: [2, 3],
+      },
     },
   };
 }
 
 // ===========================================================================
-// Main generator — delegates to sub-generator based on eval mode
+// Orchestrator: fan out N parallel sub-generator calls for one eval mode
 // ===========================================================================
+
+function subGeneratorFor(
+  challengeType: string,
+): (topic: string, gradeLevel: string) => Promise<SubGenResult> {
+  switch (challengeType) {
+    case 'represent':         return generateRepresentMode;
+    case 'solve_comparison':  return generateComparisonMode;
+    case 'multi_step':        return generateMultiStepMode;
+    case 'solve_part_whole':
+    default:                  return generatePartWholeMode;
+  }
+}
 
 export const generateTapeDiagram = async (
   topic: string,
   gradeLevel: string,
   config?: {
     targetEvalMode?: string;
+    /** How many challenges in this session. Default 4, max 6. */
+    instanceCount?: number;
   }
 ): Promise<TapeDiagramData> => {
   const evalConstraint = resolveEvalModeConstraint('tape-diagram', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('TapeDiagram', config?.targetEvalMode, evalConstraint);
 
-  // Determine challenge type from eval constraint (defaults to solve_part_whole)
   const challengeType = evalConstraint?.allowedTypes[0] || 'solve_part_whole';
+  const instanceCount = Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+  );
 
-  switch (challengeType) {
-    case 'represent':
-      return generateRepresentMode(topic, gradeLevel);
-    case 'solve_comparison':
-      return generateComparisonMode(topic, gradeLevel);
-    case 'multi_step':
-      return generateMultiStepMode(topic, gradeLevel);
-    case 'solve_part_whole':
-    default:
-      return generatePartWholeMode(topic, gradeLevel);
-  }
+  // Fan out N parallel calls of the same per-mode sub-generator. Variance
+  // comes from independent generations (per PRD §6a #2 — structured output
+  // converges per-call, not across independent calls).
+  const runOne = subGeneratorFor(challengeType);
+  const subResults = await Promise.all(
+    Array.from({ length: instanceCount }, () => runOne(topic, gradeLevel)),
+  );
+
+  const head = subResults[0];
+  const challenges: TapeDiagramChallenge[] = subResults.map((r, idx) => ({
+    ...r.challenge,
+    id: `td-${idx + 1}`,
+  }));
+
+  console.log('📏 Tape Diagram generated:', {
+    topic,
+    challengeType,
+    instanceCount: challenges.length,
+    barsPerChallenge: challenges.map((c) => c.bars.length),
+  });
+
+  return {
+    title: head.title,
+    description: head.description,
+    challenges,
+  };
 };

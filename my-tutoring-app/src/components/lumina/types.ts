@@ -1756,7 +1756,7 @@ export type { BaseTenBlocksData, BaseTenBlocksChallenge } from './primitives/vis
 export type { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from './primitives/visual-primitives/math/BalanceScale';
 export type { CompareObjectsData } from './primitives/visual-primitives/math/CompareObjects';
 export type { ComparisonBuilderData } from './primitives/visual-primitives/math/ComparisonBuilder';
-export type { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from './primitives/visual-primitives/math/FunctionMachine';
+export type { FunctionMachineData, FunctionMachineChallenge, FunctionMachineChallengeType } from './primitives/visual-primitives/math/FunctionMachine';
 export type { FunctionSketchData } from './primitives/visual-primitives/math/FunctionSketch';
 export type { NumberBondData } from './primitives/visual-primitives/math/NumberBond';
 export type { PlaceValueChartData } from './primitives/visual-primitives/math/PlaceValueChart';

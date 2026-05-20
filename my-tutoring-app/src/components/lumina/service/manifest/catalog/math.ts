@@ -322,11 +322,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fraction-bar',
-    description: 'Multi-phase interactive fraction bar with three learning stages: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. ESSENTIAL for elementary fraction introduction.',
-    constraints: 'Requires a proper fraction (numerator <= denominator). Denominator range 2-12 for best visual clarity.',
+    description: 'Multi-challenge interactive fraction bar. Each session walks the student through 3-6 distinct fractions in the same eval mode. Every fraction runs through three within-challenge phases: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. ESSENTIAL for elementary fraction introduction.',
+    constraints: 'Session-level configuration. The generator picks fractions locally per eval mode, so do NOT supply specific numerators, denominators, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (2-3, unit fractions), build (3-4, non-unit proper fractions), compare (4-5, larger denominators), add_subtract (5-6, operation context).',
     tutoring: {
-      taskDescription: 'Three-phase fraction learning: identify numerator and denominator of {{numerator}}/{{denominator}}, then build it on a bar. Phase: {{currentPhase}}.',
-      contextKeys: ['numerator', 'denominator', 'currentPhase', 'shadedCount', 'attemptNumber'],
+      taskDescription: 'Walk through {{totalChallenges}} fraction problems in {{challengeType}} mode. Current: fraction {{currentChallengeIndex}} of {{totalChallenges}} = {{numerator}}/{{denominator}}. Phase: {{currentPhase}}.',
+      contextKeys: ['numerator', 'denominator', 'currentPhase', 'shadedCount', 'currentChallengeIndex', 'totalChallenges', 'challengeType'],
       scaffoldingLevels: {
         level1: '"Look at the fraction. The top number and bottom number each have a special name."',
         level2: '"The numerator is the top number — it tells how many parts are shaded. The denominator is the bottom number — it tells how many equal parts there are."',
@@ -387,8 +387,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'place-value-chart',
-    description: 'Multi-phase interactive place value chart with three learning stages: (1) identify the place of a highlighted digit via multiple choice, (2) find the value of that digit via multiple choice, (3) build the number by entering digits into an interactive chart. Progressive scaffolding from place recognition to value understanding to full number construction. Supports whole numbers and decimals from millions to thousandths. ESSENTIAL for elementary place value instruction.',
-    constraints: 'Requires a target number with clear place value structure. Grade level determines digit range and decimal inclusion. Supports challengeTypes: identify (K-2), build (2-3), compare (3-4), expanded_form (5+).',
+    description: 'Multi-challenge interactive place value chart. Each session walks the student through 3 distinct numbers in the same eval mode. Each number runs through three within-challenge phases: (1) identify the place of a highlighted digit via multiple choice, (2) find the value of that digit via multiple choice, (3) build the number by entering digits into the chart. Supports whole numbers and decimals from millions to thousandths. ESSENTIAL for elementary place value instruction.',
+    constraints: 'Session-level configuration. The generator selects target numbers locally from the number pool service per the selected eval mode, so do NOT supply specific numbers, place ranges, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (K-2), build (2-3), compare (3-4), expanded_form (5+).',
     evalModes: [
       { evalMode: 'identify', label: 'Identify Place (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['identify'], description: 'Simple 2-digit numbers, identify place name and value.' },
       { evalMode: 'build', label: 'Build Number (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['build'], description: '3-digit numbers, construct the number in the chart.' },
@@ -396,16 +396,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       { evalMode: 'expanded_form', label: 'Expanded Form (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['expanded_form'], description: '4+ digit numbers or decimals with expanded form.' },
     ],
     tutoring: {
-      taskDescription: 'Three-phase place value learning: identify the place of the highlighted digit in {{targetNumber}}, find its value, then build the number on the chart. Phase: {{currentPhase}}.',
-      contextKeys: ['targetNumber', 'highlightedDigit', 'highlightedPlace', 'highlightedValue', 'currentPhase', 'gradeLevel'],
+      taskDescription: 'Walk through {{totalChallenges}} place-value problems in {{challengeType}} mode. Current: number {{currentChallengeIndex}} of {{totalChallenges}} = {{targetNumber}}. Phase: {{currentPhase}}. Highlighted digit: {{highlightedDigit}} in the {{highlightedPlace}} place.',
+      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetNumber', 'highlightedDigit', 'highlightedPlace', 'highlightedValue', 'currentPhase', 'gradeLevel'],
       scaffoldingLevels: {
         level1: '"Look at the highlighted digit. Think about its position in the number. What place is it in?"',
-        level2: '"The digit {{highlightedDigit}} is in the {{highlightedPlace}} place. What is {{highlightedDigit}} worth in that position? Multiply the digit by the place value."',
-        level3: '"In {{targetNumber}}, the digit {{highlightedDigit}} is in the {{highlightedPlace}} place, so it is worth {{highlightedValue}}. Now place each digit in the correct column on the chart to build the whole number."',
+        level2: '"The digit {{highlightedDigit}} is in the {{highlightedPlace}} place. How would you SAY that out loud? Try the digit name plus the place — for example, a 4 in the Hundreds place is \'four hundred\'."',
+        level3: '"In {{targetNumber}}, the digit {{highlightedDigit}} is in the {{highlightedPlace}} place. Say its value out loud (using the place vocabulary), then place each digit in the correct column on the chart to build the whole number."',
       },
       commonStruggles: [
-        { pattern: 'Confusing place name with digit value', response: '"The PLACE tells you the position (ones, tens, hundreds). The VALUE is the digit times its place. A 5 in the tens place is worth 50, not 5."' },
+        { pattern: 'Confusing place name with spoken value', response: '"The PLACE is the position (ones, tens, hundreds). The SPOKEN VALUE combines the digit with the place name. A 5 in the Tens place is said \'fifty\' (not just \'five\' and not \'fifty hundred\')."' },
         { pattern: 'Selecting the digit value when asked for the place', response: '"This question asks WHICH PLACE the digit is in — not what it is worth. Look at the column name above the highlighted digit."' },
+        { pattern: 'Picking a wrong word-form in Phase 2', response: '"Try saying the digit name first ({{highlightedDigit}} = \'one/two/three…\'), then add the place ({{highlightedPlace}}). The two pieces snap together into the spoken value."' },
         { pattern: 'Entering digits in wrong columns during build phase', response: '"Read the number left to right: {{targetNumber}}. Match each digit to its column header. The leftmost digit goes in the highest place."' },
         { pattern: 'Decimal place confusion', response: '"After the decimal point, places get 10 times smaller: tenths, hundredths, thousandths. The first digit after the dot is in the tenths place."' },
       ],
@@ -415,8 +416,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           instruction:
             'In Phase 1 (Identify the Place): focus on position vocabulary — "The highlighted digit is in the {{highlightedPlace}} place. '
             + 'Remember: places go ones, tens, hundreds as you move LEFT." '
-            + 'In Phase 2 (Find the Value): connect place to value — "You know the digit {{highlightedDigit}} is in the {{highlightedPlace}} place. '
-            + 'Multiply the digit by its place value to find what it is worth." '
+            + 'In Phase 2 (Say the Value): coach spoken vocabulary — combine the digit name with the place. '
+            + 'For Tens use the -ty form (twenty, thirty, …, ninety). For Hundreds/Thousands/Millions append the place word. '
+            + 'For decimals append the plural form (Tenths, Hundredths, Thousandths). '
+            + 'NEVER say the answer word directly — instead model with a different example digit. '
             + 'In Phase 3 (Build the Number): guide construction column by column — "Read {{targetNumber}} digit by digit. '
             + 'Which column does each digit go in? Start with the highest place and work right." '
             + 'Use the mnemonic: "Each place is 10 times the one to its right."',
@@ -470,11 +473,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'area-model',
-    description: 'Visual area model for multiplication using rectangles divided by factor decomposition. Perfect for teaching multi-digit multiplication, distributive property, partial products, binomial multiplication (FOIL), and polynomial expansion. Shows how (a+b)×(c+d) breaks into partial products. ESSENTIAL for grades 3-8 math and algebra.',
-    constraints: 'Requires two factors that can be decomposed (e.g., 23×15 or (x+3)(x+5)). Supports both numeric and algebraic modes.',
+    description: 'Multi-challenge visual area model for multiplication, perimeter, and factoring. Each session walks the student through 3-6 distinct factor pairs in the same eval mode. Per-challenge data (factor decompositions, display flags) is built locally from a pool service; Gemini emits only session-level wrapper metadata. Use for multi-digit multiplication, distributive property, partial products, perimeter (4.MD.3), and area-model factoring. ESSENTIAL for grades 3-6 math.',
+    constraints: 'The manifest must NOT supply specific factor numbers, decompositions, or display flags — the generator picks 3-6 pairs locally per the selected eval mode. Algebraic mode is reserved for future expansion (no eval mode currently uses it).',
     tutoring: {
-      taskDescription: 'Calculate partial products in the area model. Factors: ({{factor1Parts}}) × ({{factor2Parts}}). Total cells: {{totalCells}}.',
-      contextKeys: ['factor1Parts', 'factor2Parts', 'correctCells', 'totalCells', 'algebraicMode'],
+      taskDescription: 'Area model session: {{challengeType}}, {{totalChallenges}} problems. Currently on problem {{currentChallengeIndex}}/{{totalChallenges}}.',
+      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'factor1Parts', 'factor2Parts', 'algebraicMode'],
       scaffoldingLevels: {
         level1: '"What two numbers are multiplied in this cell?"',
         level2: '"This cell is {{factor1Part}} × {{factor2Part}}. What is that product?"',
@@ -543,15 +546,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'array-grid',
-    description: 'Rectangular array of discrete objects (dots, squares, stars) arranged in rows and columns. Perfect for teaching multiplication introduction, repeated addition, skip counting, commutative property, area concepts, and combinatorics. Interactive highlighting by row, column, or cell. ESSENTIAL for elementary multiplication (grades 2-5).',
-    constraints: 'Best for multiplication facts and concrete counting. Keep arrays reasonable size (2-10 rows, 2-12 columns).',
+    description: 'Multi-challenge rectangular array of discrete objects (dots, squares, stars) arranged in rows and columns. Each session walks the student through 3-6 distinct (rows, columns) pairs in the same eval mode. Per-challenge dimensions are picked locally by a pool service; Gemini emits only session-level wrapper metadata. Teaches multiplication introduction, repeated addition, skip counting, commutative property, and arrays-as-multiplication. ESSENTIAL for elementary multiplication (grades 2-5).',
+    constraints: 'The manifest must NOT supply specific row/column counts — the generator picks 3-6 dimension pairs locally per the selected eval mode. Keep arrays within the component caps (rows 2-6, columns 2-8).',
     tutoring: {
-      taskDescription: 'Build an array with {{targetRows}} rows and {{targetColumns}} columns, then find the total.',
-      contextKeys: ['targetRows', 'targetColumns', 'currentRows', 'currentColumns', 'totalAnswer'],
+      taskDescription: 'Array session: {{challengeType}}, {{totalChallenges}} arrays. Currently on array {{currentChallengeIndex}}/{{totalChallenges}}.',
+      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetRows', 'targetColumns'],
       scaffoldingLevels: {
         level1: '"How many rows do you need? How many columns?"',
         level2: '"You need {{targetRows}} rows of {{targetColumns}}. Can you count by {{targetColumns}}s?"',
-        level3: '"{{targetRows}} rows × {{targetColumns}} columns = {{targetRows}} groups of {{targetColumns}}. Count: {{targetColumns}}, {{targetColumns2}}, {{targetColumns3}}..."',
+        level3: '"{{targetRows}} rows × {{targetColumns}} columns = {{targetRows}} groups of {{targetColumns}}. Skip count by rows of {{targetColumns}} to find the total."',
       },
       commonStruggles: [
         { pattern: 'Confusing rows and columns', response: '"Rows go across (left to right). Columns go up and down."' },
@@ -562,11 +565,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         {
           title: 'ARRAY-TO-MULTIPLICATION BRIDGING',
           instruction:
-            'Help students see the array as multiplication, not just counting. '
-            + 'Guide the connection: "You have {{targetRows}} rows. Each row has {{targetColumns}}. '
+            'Help students see arrays as multiplication, not just counting. '
+            + 'For each new array in the session, guide the connection: "You have {{targetRows}} rows. Each row has {{targetColumns}}. '
             + 'That is {{targetRows}} groups of {{targetColumns}}, which is {{targetRows}} × {{targetColumns}}!" '
-            + 'Encourage skip counting over one-by-one counting: "Count by rows: each row adds {{targetColumns}} more." '
-            + 'When the student discovers the commutative property, celebrate: "You flipped it and got the same answer! That always works with multiplication."',
+            + 'Encourage skip counting over one-by-one counting. '
+            + 'When the student notices the commutative property across two arrays in the session, celebrate: "You flipped it and got the same total — that always works with multiplication."',
+        },
+        {
+          title: 'MULTI-ARRAY PACING',
+          instruction:
+            'This is a multi-array session — the student is on array {{currentChallengeIndex}} of {{totalChallenges}}. '
+            + 'Each array is a fresh (rows, columns) pair. Do not re-explain the strategy from scratch every time — '
+            + 'reinforce on array 1, encourage independence on array 2+, and celebrate completion patterns across the session.',
         },
       ],
     },
@@ -664,8 +674,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'tape-diagram',
-    description: 'Rectangular bars divided into labeled segments representing part-part-whole and comparison relationships. The single most versatile visual for word problems from elementary through algebra. Perfect for addition/subtraction word problems, comparison problems (more than, less than), multi-step word problems, ratio and proportion, and algebraic equation setup. Students click segments to explore values. Supports unknown segments marked with "?" for algebra. ESSENTIAL for word problem solving (grades 1-algebra).',
-    constraints: 'Requires clear part-whole or comparison relationship. Use 1 bar for part-whole problems, 2+ bars for comparison. Can include unknown segments for algebra (marked with isUnknown: true).',
+    description: 'Multi-challenge tape-diagram session: students walk through 3-6 distinct word problems of the same eval mode, each with its own bars and (where applicable) word problem. Rectangular bars divided into labeled segments representing part-part-whole and comparison relationships. The single most versatile visual for word problems from elementary through algebra. Perfect for addition/subtraction word problems, comparison problems (more than, less than), multi-step word problems, ratio and proportion, and algebraic equation setup. Supports unknown segments marked with "?" for algebra. ESSENTIAL for word problem solving (grades 1-algebra).',
+    constraints: 'Session-level configuration. The generator fans out N parallel sub-generator calls per the selected eval mode, so do NOT supply specific values, bar segments, or word problems from the manifest — they are generated per challenge.',
     evalModes: [
       { evalMode: 'represent', label: 'Represent (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['represent'], description: 'Build tape diagram from word problem, identify parts.' },
       { evalMode: 'solve_part_whole', label: 'Part-Whole (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['solve_part_whole'], description: 'Standard part-whole: given parts find total, or vice versa.' },
@@ -673,8 +683,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       { evalMode: 'multi_step', label: 'Multi-Step (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['multi_step'], description: 'Multi-step problems requiring multiple operations.' },
     ],
     tutoring: {
-      taskDescription: 'Solve a part-whole word problem using a tape diagram. Phase: {{currentPhase}}. Total segments: {{totalSegments}}. Unknown segments: {{unknownCount}}.',
-      contextKeys: ['currentPhase', 'totalSegments', 'unknownCount', 'wholeFound', 'title', 'description'],
+      taskDescription: 'Walk through {{totalChallenges}} tape-diagram problems in {{challengeType}} mode. Current: challenge {{currentChallengeIndex}} of {{totalChallenges}}. Phase: {{currentPhase}}. Unknown segments: {{unknownSegments}}.',
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'currentPhase', 'totalBars', 'unknownSegments', 'solvedSegments', 'currentWordProblem', 'challengeHintCount', 'title'],
       scaffoldingLevels: {
         level1: '"Look at the parts you can see. What do you notice about their values?"',
         level2: '"Add the known parts together to find the whole. Then use subtraction to find the unknown."',
@@ -1003,11 +1013,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'function-machine',
-    description: 'Visual "machine" with input hopper, rule display, and output chute with 4-phase interaction (Observe → Predict → Discover → Create). Numbers enter, get transformed by the rule, and exit. Supports machine chaining for function composition. Grade-banded: 3-4 (one-step rules like x+3, x*2), 5 (two-step rules like 2*x+1), advanced (expressions like x^2). Perfect for teaching input/output patterns, function concepts, function notation f(x), linear functions, composition of functions, and inverse functions. ESSENTIAL for grades 3-4 patterns, grades 5-8 function introduction, and Algebra 1-2 function concepts.',
-    constraints: 'Requires a transformation rule using variable x (e.g., "x+3", "2*x", "x^2"). Phases: observe (watch pairs), predict (guess output before seeing), discover (guess the rule), create (build own machine). Supports chainedMachines for composition. gradeBand controls rule complexity.',
+    description: 'Visual "machine" with input hopper, rule display, and output chute. Each session walks the student through 3-6 distinct function rules of the same challenge type (observe / predict / discover_rule / create_rule). Numbers enter, get transformed by the rule, and exit. Grade-banded: 3-4 (one-step rules like x+3, x*2), 5 (two-step rules like 2*x+1), advanced (expressions like x^2). ESSENTIAL for grades 3-4 patterns, grades 5-8 function introduction, and Algebra 1-2 function concepts.',
+    constraints: 'The generator pre-selects the rules and input queues for each session — the manifest must NOT supply specific rules, inputs, or numeric values. The manifest may set instanceCount (default 3, max 6), ruleComplexity, gradeBand, outputDisplay, and the targetEvalMode.',
     tutoring: {
-      taskDescription: 'Discover or apply the function rule. Rule: {{rule}} ({{showRule}}). Phase: {{phase}}. Processed pairs: {{pairsCount}}. Predictions: {{predictionsCorrect}}/{{predictionsTotal}}. Grade band: {{gradeBand}}.',
-      contextKeys: ['rule', 'showRule', 'processedPairs', 'guessedRule', 'gradeBand', 'ruleComplexity', 'phase', 'pairsCount', 'predictionsCorrect', 'predictionsTotal', 'guessAttempts', 'ruleDiscovered', 'chainedMachineCount', 'isChaining'],
+      taskDescription: 'Function machine session: {{title}}. Mode: {{challengeType}}. Function {{currentChallengeIndex}} of {{totalChallenges}}. Current rule: {{rule}} (visible={{showRule}}). Pairs observed: {{pairsCount}}. Predictions: {{predictionsCorrect}}/{{predictionsTotal}}. Grade band: {{gradeBand}}.',
+      contextKeys: ['challengeType', 'title', 'currentChallengeIndex', 'totalChallenges', 'rule', 'showRule', 'processedPairs', 'guessedRule', 'gradeBand', 'ruleComplexity', 'pairsCount', 'predictionsCorrect', 'predictionsTotal', 'guessAttempts', 'ruleDiscovered'],
       scaffoldingLevels: {
         level1: '"Look at the input and output. What changed? What stayed the same?"',
         level2: '"Compare the pairs: input {{input1}} → output {{output1}}, input {{input2}} → output {{output2}}. What pattern do you see?"',
@@ -1018,17 +1028,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Only looking at one pair', response: '"Look at multiple input-output pairs. The rule works for ALL of them."' },
         { pattern: 'Confusing two-step rules', response: '"Some rules have two steps. Try: first multiply, then add (or subtract)."' },
         { pattern: 'Prediction consistently wrong', response: '"Look at the pairs you already have. Before you predict, check: does your idea work for ALL previous pairs?"' },
-        { pattern: 'Stuck in observe phase too long', response: '"You have enough pairs! Try moving to the Predict phase to test your understanding, or jump to Discover to guess the rule."' },
-        { pattern: 'Cannot compose chained machines', response: '"For chained machines, the output of Machine 1 becomes the INPUT of Machine 2. Follow the number through each machine step by step."' },
       ],
       aiDirectives: [
         {
-          title: 'PHASE-AWARE GUIDANCE',
+          title: 'CHALLENGE-TYPE GUIDANCE',
           instruction:
-            'In Observe phase: let the student explore freely, narrate what is happening. '
-            + 'In Predict phase: ask "What do you think will come out?" BEFORE revealing the output. Celebrate correct predictions. '
-            + 'In Discover phase: guide toward the rule using scaffolding. Never reveal the rule directly. '
-            + 'In Create phase: encourage creativity and ask about the patterns they created.',
+            'In observe mode: let the student explore freely, narrate the transformation. '
+            + 'In predict mode: ask "What do you think will come out?" BEFORE revealing the output. Celebrate correct predictions. '
+            + 'In discover_rule mode: guide toward the rule using scaffolding. Never reveal the rule directly. '
+            + 'In create_rule mode: focus on writing the rule symbolically. Confirm understanding of the operation order.',
         },
         {
           title: 'GRADE-BAND ADAPTATION',
@@ -1036,6 +1044,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             'For grades 3-4: use simple language, focus on one-step patterns like "add 3" or "double". '
             + 'For grade 5: introduce two-step thinking: "first multiply, then add". '
             + 'For advanced: use algebraic notation f(x), discuss domain and range concepts.',
+        },
+        {
+          title: 'MULTI-RULE PACING',
+          instruction:
+            'After each rule is complete, give a brief celebration and frame the next one as a fresh puzzle. '
+            + 'Reference progress ("Function {{currentChallengeIndex}} of {{totalChallenges}}") when appropriate.',
         },
       ],
     },
@@ -2324,8 +2338,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'Interactive ordinal positions activity with a horizontal queue of characters. Students identify positions (1st-10th), match ordinal words to symbols, answer relative position questions, solve story-based word problems, and build sequences from clues. Perfect for teaching ordinal numbers in context. ESSENTIAL for K-1 number sense.',
     constraints: 'maxPosition 5 for Kindergarten, 10 for Grade 1. Characters array must have distinct emoji. Each challenge needs correctAnswer matching the expected response.',
     tutoring: {
-      taskDescription: 'The student is working with ordinal positions in a {{context}} context. They are on a {{challengeType}} challenge: "{{instruction}}". The line has {{characters}} in positions up to {{maxPosition}}.',
-      contextKeys: ['challengeType', 'targetPosition', 'targetOrdinalWord', 'characters', 'context', 'storyText', 'attemptNumber', 'correctAnswer', 'instruction', 'maxPosition', 'gradeBand'],
+      taskDescription: 'The student is working through {{totalChallenges}} ordinal-position challenges in a {{context}} context. They are on challenge {{currentChallengeIndex}} ({{challengeType}}): "{{instruction}}". The line has {{characters}} in positions up to {{maxPosition}}.',
+      contextKeys: ['challengeType', 'totalChallenges', 'currentChallengeIndex', 'targetPosition', 'targetOrdinalWord', 'characters', 'context', 'storyText', 'attemptNumber', 'correctAnswer', 'instruction', 'maxPosition', 'gradeBand'],
       scaffoldingLevels: {
         level1: '"Count from the front of the line: first, second, third... Which one is in the spot we need?"',
         level2: '"Point to each character and count: 1st, 2nd, 3rd. Which one is in the {{targetOrdinalWord}} spot? Remember, {{targetOrdinalWord}} means position number {{targetPosition}} from the front."',
@@ -2686,8 +2700,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'An interactive strategy-comparison activity where students solve the same problem using 2-3 different strategies (counting on, make-ten, doubles, tally marks, draw objects), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10.',
     constraints: 'Numbers within 5 (K) or 10 (Grade 1). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.',
     tutoring: {
-      taskDescription: 'Student is solving {{equation}} using {{assignedStrategy}}. Challenge type: {{challengeType}}. They have completed strategies: {{strategiesCompleted}}.',
-      contextKeys: ['challengeType', 'equation', 'assignedStrategy', 'strategySteps', 'studentAnswer', 'attemptNumber', 'chosenStrategy', 'strategiesCompleted'],
+      taskDescription: 'Student is on challenge {{currentChallengeIndex}} of {{totalChallenges}}, solving {{equation}} using {{assignedStrategy}}. Challenge type: {{challengeType}}. They have completed strategies: {{strategiesCompleted}}.',
+      contextKeys: ['currentChallengeIndex', 'totalChallenges', 'challengeType', 'equation', 'assignedStrategy', 'strategySteps', 'studentAnswer', 'attemptNumber', 'chosenStrategy', 'strategiesCompleted'],
       scaffoldingLevels: {
         level1: '"Let\'s try this problem a different way! This time, we\'ll use {{assignedStrategy}}. What do you think the answer might be?"',
         level2: '"For counting on, start at {{operand1}} and hop forward {{operand2}} times. Let\'s count together: what comes after {{operand1}}?"',

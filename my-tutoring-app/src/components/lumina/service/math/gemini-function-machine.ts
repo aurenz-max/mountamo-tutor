@@ -1,6 +1,24 @@
+/**
+ * Function Machine Generator — multi-instance pool-service generator.
+ *
+ * Per PRD_WITHIN_MODE_INSTANCE_DENSITY §7 entry #6 + §6f post-mortem.
+ *
+ * Each session walks the student through 3 distinct function rules in the
+ * SAME eval mode. The four eval modes (observe / predict / discover_rule /
+ * create_rule) used to be in-component "phases" walked sequentially over ONE
+ * rule; that conflicted with the new world where eval mode = challenge type
+ * and the engine pins to one mode per session (PRD §6a #7). Now each mode is
+ * a discrete interaction shape and the session multiplies on rule count.
+ *
+ * Per-challenge data is value-only ({rule, inputQueue, showRule}). Strings
+ * are short and deterministic-friendly — structured-output Gemini converges
+ * across calls (PRD §6a #2), so we keep the rule pool local and let Gemini
+ * emit only the session wrapper. Mirrors factor-tree, place-value-chart,
+ * area-model.
+ */
+
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import { FunctionMachineData, MachineConfig, FunctionMachineChallenge } from '../../primitives/visual-primitives/math/FunctionMachine';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -8,6 +26,10 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import type {
+  FunctionMachineData,
+  FunctionMachineChallenge,
+} from "../../primitives/visual-primitives/math/FunctionMachine";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -16,136 +38,265 @@ import {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   observe: {
     promptDoc:
-      `"observe": Rule IS shown. Student watches inputs go through the machine and sees outputs. `
+      `"observe": Rule IS shown. Student watches inputs flow through the machine and sees outputs. `
       + `Full guidance — the student observes how the rule transforms each input. `
-      + `Set showRule=true. Use 5-8 sequential inputs. Concrete manipulative with full scaffolding.`,
+      + `Concrete manipulative with full scaffolding.`,
     schemaDescription: "'observe' (watch input/output with rule visible)",
   },
   predict: {
     promptDoc:
-      `"predict": Rule IS shown. Student must predict outputs for NEW inputs not already in the queue. `
-      + `The student sees the rule and must mentally apply it before the machine reveals the answer. `
-      + `Set showRule=true. Use inputs that test understanding (include 0, negatives for higher grades). `
-      + `Pictorial with prompts.`,
+      `"predict": Rule IS shown. Student must predict outputs BEFORE feeding inputs into the machine. `
+      + `Tests mental application of the rule. Pictorial with prompts.`,
     schemaDescription: "'predict' (predict output for new input)",
   },
   discover_rule: {
     promptDoc:
       `"discover_rule": Rule is HIDDEN. Student sees input/output pairs and must figure out the rule. `
-      + `Set showRule=false. Choose inputs that make the pattern discoverable but not trivial. `
-      + `Include 0 to reveal the constant term for two-step rules. Strategy/pictorial with reduced prompts.`,
+      + `Inputs chosen to make the pattern discoverable but not trivial. Strategy/pictorial with reduced prompts.`,
     schemaDescription: "'discover_rule' (identify hidden function rule)",
   },
   create_rule: {
     promptDoc:
-      `"create_rule": Student is given a pattern of I/O pairs and must write the rule expression. `
-      + `Set showRule=false. Provide clear input/output pairs. The student writes the rule in algebraic form. `
-      + `Transitional symbolic/pictorial — bridges concrete understanding to symbolic notation.`,
+      `"create_rule": Student is given a complete table of I/O pairs and must write the rule expression. `
+      + `Transitional symbolic — bridges concrete understanding to algebraic notation.`,
     schemaDescription: "'create_rule' (write rule for given I/O pairs)",
   },
 };
 
 // ---------------------------------------------------------------------------
-// Schema definition for Function Machine Data
+// Rule pool (per eval mode × rule complexity)
 // ---------------------------------------------------------------------------
 
 /**
- * Schema definition for Function Machine Data
- *
- * This schema defines the structure for function machine visualization,
- * including the transformation rule and input values.
+ * Each entry is a normalized rule string using 'x' as the variable, '*' for
+ * multiplication, '^' for exponents. Pools are grouped by complexity so the
+ * mode profile can pick the right band.
  */
-const functionMachineSchema: Schema = {
+const RULE_POOLS: Record<'oneStep' | 'twoStep' | 'expression', string[]> = {
+  oneStep: [
+    'x + 1', 'x + 2', 'x + 3', 'x + 4', 'x + 5', 'x + 7', 'x + 10',
+    'x - 1', 'x - 2', 'x - 3', 'x - 5',
+    '2*x', '3*x', '4*x', '5*x', '10*x',
+    'x/2',
+  ],
+  twoStep: [
+    '2*x + 1', '2*x + 3', '2*x - 1', '2*x - 3',
+    '3*x + 1', '3*x + 2', '3*x - 2', '3*x - 4',
+    '4*x + 1', '4*x - 3',
+    'x/2 + 1', 'x/2 + 3',
+  ],
+  expression: [
+    'x^2', 'x^2 + 1', 'x^2 - 1', 'x^2 + 2', 'x^2 - 3',
+    '2*x^2', '2*x^2 + 1', 'x^2 + x',
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Mode profiles
+// ---------------------------------------------------------------------------
+
+interface ModeProfile {
+  showRule: boolean;
+  /** Default rule complexity band when the manifest doesn't override. */
+  defaultComplexity: 'oneStep' | 'twoStep' | 'expression';
+  /** Recommended input queue for a challenge. */
+  inputQueue: number[];
+  /** Should include 0 as an input (reveals y-intercept for two-step rules). */
+  preferIncludeZero?: boolean;
+}
+
+const MODE_PROFILES: Record<string, ModeProfile> = {
+  observe:       { showRule: true,  defaultComplexity: 'oneStep', inputQueue: [1, 2, 3, 4, 5] },
+  predict:       { showRule: true,  defaultComplexity: 'oneStep', inputQueue: [2, 3, 4, 6, 8] },
+  discover_rule: { showRule: false, defaultComplexity: 'twoStep', inputQueue: [0, 1, 2, 3, 4], preferIncludeZero: true },
+  create_rule:   { showRule: false, defaultComplexity: 'twoStep', inputQueue: [0, 1, 2, 3, 5], preferIncludeZero: true },
+};
+
+const DEFAULT_INSTANCE_COUNT = 3;
+const MAX_INSTANCE_COUNT = 6;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Operation family signature — used for variance enforcement across selected rules. */
+function ruleFamily(rule: string): 'add' | 'sub' | 'mul' | 'div' | 'two' | 'sq' | 'other' {
+  if (rule.includes('^')) return 'sq';
+  const hasMul = /\*/.test(rule);
+  const hasPlus = /\+/.test(rule);
+  const hasMinus = /(?:^|[^a-zA-Z0-9])-/.test(rule.replace(/^\s*-/, ''));
+  const hasDiv = /\//.test(rule);
+  if (hasMul && (hasPlus || hasMinus)) return 'two';
+  if (hasMul) return 'mul';
+  if (hasDiv) return 'div';
+  if (hasPlus) return 'add';
+  if (hasMinus) return 'sub';
+  return 'other';
+}
+
+/** Evaluate the rule for an input — used to filter overly-clean or messy outputs. */
+function evaluateRule(rule: string, x: number): number | null {
+  if (!rule || !rule.trim()) return null;
+  try {
+    const expression = rule.replace(/x/g, `(${x})`);
+    if (!/^[\d+\-*/().^\s]+$/.test(expression)) return null;
+    const safe = expression.replace(/\^/g, '**');
+    const result = new Function('return ' + safe)();
+    if (typeof result !== 'number' || !isFinite(result)) return null;
+    return Math.round(result * 100) / 100;
+  } catch {
+    return null;
+  }
+}
+
+/** Pre-flight check: rule produces integer outputs for the given inputs and stays under 100. */
+function ruleProducesCleanOutputs(rule: string, inputs: number[]): boolean {
+  for (const x of inputs) {
+    const y = evaluateRule(rule, x);
+    if (y === null) return false;
+    if (Math.abs(y) > 100) return false;
+    if (Math.abs(y - Math.round(y)) > 0.001) return false;
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Rule selection — pool service
+// ---------------------------------------------------------------------------
+
+export interface SelectFunctionMachineRulesOptions {
+  /** How many distinct rules to select for this session. Clamped to [1, MAX_INSTANCE_COUNT]. */
+  count?: number;
+  /** Complexity band — overrides the mode default. */
+  complexity?: 'oneStep' | 'twoStep' | 'expression';
+}
+
+/**
+ * Pick `count` distinct rules from the pool for a given challenge type. Variance
+ * guarantees: includes at least 2 different operation families when the pool
+ * allows. Filters out rules whose outputs would be too large or non-integer for
+ * the mode's standard input queue.
+ */
+export function selectFunctionMachineRules(
+  challengeType: string,
+  options: SelectFunctionMachineRulesOptions = {},
+): string[] {
+  const profile = MODE_PROFILES[challengeType] ?? MODE_PROFILES.observe;
+  const complexity = options.complexity ?? profile.defaultComplexity;
+  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, options.count ?? DEFAULT_INSTANCE_COUNT));
+
+  const pool = RULE_POOLS[complexity];
+  // Filter: outputs must be clean integers under |100| for the standard inputs.
+  const eligible = pool.filter((r) => ruleProducesCleanOutputs(r, profile.inputQueue));
+  const source = eligible.length >= target ? eligible : pool;
+
+  const shuffled = shuffle(source);
+  const selected: string[] = [];
+  const families = new Set<string>();
+
+  // First pass: pick rules that introduce a new operation family.
+  for (const rule of shuffled) {
+    if (selected.length >= target) break;
+    const fam = ruleFamily(rule);
+    if (!families.has(fam)) {
+      selected.push(rule);
+      families.add(fam);
+    }
+  }
+  // Second pass: fill the rest.
+  for (const rule of shuffled) {
+    if (selected.length >= target) break;
+    if (!selected.includes(rule)) selected.push(rule);
+  }
+
+  // Variance guarantee: if everything ended up the same family AND the pool has
+  // a different family available, force-swap the last one.
+  if (families.size === 1 && selected.length > 1) {
+    const otherFamilyRule = shuffled.find((r) => !selected.includes(r) && ruleFamily(r) !== Array.from(families)[0]);
+    if (otherFamilyRule) selected[selected.length - 1] = otherFamilyRule;
+  }
+
+  return selected;
+}
+
+// ---------------------------------------------------------------------------
+// Build per-challenge data from rule selection
+// ---------------------------------------------------------------------------
+
+function buildChallenges(
+  rules: string[],
+  challengeType: string,
+): FunctionMachineChallenge[] {
+  const profile = MODE_PROFILES[challengeType] ?? MODE_PROFILES.observe;
+  return rules.map((rule, idx) => ({
+    id: `fm-${idx + 1}`,
+    rule,
+    inputQueue: [...profile.inputQueue],
+    showRule: profile.showRule,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Wrapper schema — Gemini emits session-level metadata only
+// ---------------------------------------------------------------------------
+
+const functionMachineWrapperSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     challengeType: {
       type: Type.STRING,
-      description: "Challenge type: 'observe' (watch input/output with rule visible), 'predict' (predict output for new input), 'discover_rule' (identify hidden function rule), 'create_rule' (write rule for given I/O pairs)",
       enum: ["observe", "predict", "discover_rule", "create_rule"],
+      description: "Challenge type for the session.",
     },
     title: {
       type: Type.STRING,
-      description: "Title for the function machine (e.g., 'Mystery Function', 'Linear Function Explorer')"
+      description: "Short session title (e.g., 'Function Machine Practice'). Do NOT name specific rules or numbers — the session walks through multiple.",
     },
     description: {
       type: Type.STRING,
-      description: "Educational description explaining what students will learn from this visualization"
-    },
-    rule: {
-      type: Type.STRING,
-      description: "The transformation rule using 'x' as variable (e.g., 'x + 3', '2*x', 'x^2', '3*x - 1'). Use * for multiplication, ^ for exponents."
-    },
-    showRule: {
-      type: Type.BOOLEAN,
-      description: "Display or hide the rule. Set false for discovery mode, true for learning mode. Default: false"
-    },
-    inputQueue: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.NUMBER
-      },
-      description: "Array of initial input values to process. Choose values that make the pattern clear."
-    },
-    outputDisplay: {
-      type: Type.STRING,
-      description: "How outputs are displayed: 'immediate', 'animated', or 'hidden'. Default: 'animated'"
-    },
-    chainable: {
-      type: Type.BOOLEAN,
-      description: "Allow connecting multiple machines for function composition. Default: false"
+      description: "1-2 sentence educational description. Do NOT include specific rules or numbers.",
     },
     ruleComplexity: {
       type: Type.STRING,
-      description: "Complexity level: 'oneStep' (x+3), 'twoStep' (2x+1), 'expression' (x^2-3). Default: 'oneStep'"
+      enum: ["oneStep", "twoStep", "expression"],
+      description: "Complexity band: 'oneStep' (x+3), 'twoStep' (2x+1), 'expression' (x^2). Match to grade level.",
     },
     gradeBand: {
       type: Type.STRING,
-      description: "Grade band: '3-4' for one-step rules, '5' for two-step rules, 'advanced' for expressions. Default: '3-4'"
+      enum: ["3-4", "5", "advanced"],
+      description: "Grade band: '3-4' for elementary, '5' for grade 5, 'advanced' for middle/high school.",
     },
-    chainedMachines: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: { type: Type.STRING },
-          rule: { type: Type.STRING },
-          label: { type: Type.STRING },
-          showRule: { type: Type.BOOLEAN }
-        },
-        required: ['id', 'rule']
-      },
-      description: "Array of chained machines for function composition. Each machine has its own rule. Output of one becomes input of next."
-    }
+    outputDisplay: {
+      type: Type.STRING,
+      enum: ["immediate", "animated", "hidden"],
+      description: "How outputs are revealed: 'animated' (default), 'immediate', or 'hidden' (predict mode).",
+    },
   },
-  required: ["challengeType", "title", "description", "rule"]
+  required: ["challengeType", "title", "description", "ruleComplexity", "gradeBand"],
 };
 
-/**
- * Generate function machine data for visualization
- *
- * This function creates function machine data including:
- * - Appropriate function rule for the topic and grade level
- * - Input values that make the pattern discoverable
- * - Educational context and descriptions
- * - Configuration for interactive features
- *
- * @param topic - The math topic or concept to teach
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns FunctionMachineData with complete configuration
- */
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 export const generateFunctionMachine = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    rule?: string;
-    showRule?: boolean;
-    inputQueue?: number[];
-    outputDisplay?: 'immediate' | 'animated' | 'hidden';
-    chainable?: boolean;
+    /** How many rules in this session. Default 3, max 6. */
+    instanceCount?: number;
     ruleComplexity?: 'oneStep' | 'twoStep' | 'expression';
     gradeBand?: '3-4' | '5' | 'advanced';
-    chainedMachines?: MachineConfig[];
+    outputDisplay?: 'immediate' | 'animated' | 'hidden';
     targetEvalMode?: string;
   }
 ): Promise<FunctionMachineData> => {
@@ -159,161 +310,97 @@ export const generateFunctionMachine = async (
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(functionMachineSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
-    : functionMachineSchema;
+    ? constrainChallengeTypeEnum(functionMachineWrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'challengeType',
+        rootLevel: true,
+      })
+    : functionMachineWrapperSchema;
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create an educational function machine visualization for teaching "${topic}" to ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge function machine session on "${topic}" for ${gradeLevel} students.
 
 CONTEXT:
-- Function machines are visual tools showing input-output transformations
-- Students drop numbers into the input hopper, watch them transform, and see the output
-- They can guess the rule by analyzing input-output pairs
-- Builds understanding of functions, patterns, and algebraic thinking
+- A function machine session contains 3-6 separate function rules of the SAME challenge type.
+- The system has ALREADY pre-selected the rules and input queues for each challenge; you do NOT pick rules or numbers.
+- Your job is to write the session-level title and description, and to set the mode flags (challengeType, ruleComplexity, gradeBand, outputDisplay).
 
 ${challengeTypeSection}
 
-GUIDELINES FOR GRADE LEVELS:
-- Grades 3-4: Simple one-step rules (x+3, x-2, x*2), small positive integers
-- Grades 4-5: One-step rules with multiplication/division (2*x, x/2), introduce pattern recognition
-- Grades 5-6: Two-step rules (2*x+1, 3*x-2), negative numbers, decimals
-- Grades 6-7: More complex expressions (x^2, 2*x+3), function notation introduction
-- Grade 8: Linear functions (mx+b), quadratic basics (x^2, x^2+1)
-- Algebra 1: Linear functions, quadratics, inverse functions
-- Algebra 2: Polynomial functions, composition, transformations
-
-TOPIC-SPECIFIC GUIDANCE:
-- "Input/output patterns": Simple rules like x+5, x*2, x-3 (discovery mode)
-- "Function concept": Show rule, explain f(x) notation (learning mode)
-- "Linear functions": Rules like 2*x+3, -x+5 with negative and positive slopes
-- "Function notation": Introduce f(x) = rule format
-- "Composition of functions": Enable chainable mode for g(f(x))
-- "Inverse functions": Pairs like x+3 and x-3, 2*x and x/2
-- "Quadratic functions": x^2, x^2+2, x^2-1
-- "Patterns and sequences": Rules that generate arithmetic/geometric sequences
-
-RULE COMPLEXITY EXAMPLES:
-- oneStep: "x+5", "x-3", "x*2", "x/2", "x*10"
-- twoStep: "2*x+1", "3*x-2", "x/2+3", "4*x-5"
-- expression: "x^2", "x^2+1", "2*x^2-3", "(x+1)^2"
-
-INPUT QUEUE STRATEGY:
-- For discovery mode: Choose inputs that make the pattern clear but not obvious
-  - Addition: [1,2,3,4,5] or [0,1,2,3,4]
-  - Multiplication: [1,2,3,4,5] shows doubling, tripling clearly
-  - Quadratic: [0,1,2,3,4] shows square pattern well
-  - Two-step: [0,1,2,3,4] makes constant term obvious
-- For learning mode: Use varied inputs including 0, negative numbers
-- Include 0 in inputs when teaching linear functions (reveals y-intercept)
-- For assessment: Mix of small and larger numbers, positive and negative
-
-GOOD RULES BY GRADE:
-- Elementary (3-5): x+3, x-2, x*2, x*5, x/2, 2*x, 10*x
-- Middle (6-8): 2*x+1, 3*x-2, x^2, x^2+1, -x+5, x/2+3
-- High School: 2*x+3, -3*x+2, x^2-4, (x-1)^2, 3*x^2+1
-
-AVOID:
-- Rules with remainders/fractions for elementary unless intended
-- Rules that produce very large numbers (keep outputs < 100 when possible)
-- Overly complex expressions for the grade level
-- Division by zero scenarios
-
-SYNTAX RULES:
-- Use 'x' as the variable (lowercase)
-- Use '*' for multiplication (not implicit: write '2*x' not '2x')
-- Use '^' for exponents (x^2 for x squared)
-- Use parentheses for clarity: (x+1)^2
-
-${config ? `
-CONFIGURATION HINTS:
-${config.rule !== undefined ? `- Rule: ${config.rule}` : ''}
-${config.showRule !== undefined ? `- Show rule: ${config.showRule}` : ''}
-${config.inputQueue !== undefined ? `- Input queue: ${JSON.stringify(config.inputQueue)}` : ''}
-${config.outputDisplay !== undefined ? `- Output display: ${config.outputDisplay}` : ''}
-${config.chainable !== undefined ? `- Chainable: ${config.chainable}` : ''}
-${config.ruleComplexity !== undefined ? `- Rule complexity: ${config.ruleComplexity}` : ''}
-${config.gradeBand !== undefined ? `- Grade band: ${config.gradeBand}` : ''}
-${config.chainedMachines !== undefined ? `- Chained machines: ${JSON.stringify(config.chainedMachines)}` : ''}
-` : ''}
+GRADE-COMPLEXITY MATCHING:
+- Grades 3-4 → ruleComplexity 'oneStep' (rules like x+3, 2*x)
+- Grade 5 → ruleComplexity 'twoStep' (rules like 2*x+1, 3*x-2)
+- Middle/High School → ruleComplexity 'expression' (rules like x^2, x^2+1)
 
 REQUIREMENTS:
-1. Choose a rule appropriate for the grade level and topic
-2. Write a clear, engaging title (use "Mystery Function" for discovery mode)
-3. Provide an educational description of what students will learn
-4. Select 5-8 input values that help students discover the pattern
-5. Use discovery mode (showRule: false) for exploration, learning mode (showRule: true) for instruction
-6. Set outputDisplay to 'animated' for engaging visualization
-7. Only enable chainable mode if topic involves function composition
-8. Match ruleComplexity to the actual rule complexity
-9. Set gradeBand based on grade level: '3-4' for elementary, '5' for grade 5, 'advanced' for middle/high school
-10. Only include chainedMachines if the topic involves function composition
+1. Write a clear, student-friendly session title. Do NOT name a specific rule or number.
+2. Provide a 1-2 sentence educational description of what students will practice across the session.
+3. Set challengeType, ruleComplexity, gradeBand, outputDisplay to match the tier.
 
-IMPORTANT:
-- For pattern recognition: Hide the rule and use inputs that show clear progression
-- For function notation: Show the rule and explain the f(x) format
-- For composition: Enable chainable and use simpler rules
-- For assessment: Hide rule, use varied inputs including edge cases
-- Always use proper syntax with '*' for multiplication
-
-Return the complete function machine configuration.
+Return ONLY the wrapper fields described above.
 `;
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
+      temperature: 0.9,
+      topP: 0.95,
       responseMimeType: "application/json",
-      responseSchema: activeSchema
+      responseSchema: activeSchema,
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  const wrapper = result.text ? JSON.parse(result.text) : null;
 
-  if (!data) {
-    throw new Error('No valid function machine data returned from Gemini API');
+  if (!wrapper) {
+    throw new Error('No valid function machine wrapper returned from Gemini API');
   }
 
-  // Apply any explicit config overrides from manifest
+  // ── Validate challengeType ──
+  const validTypes = ['observe', 'predict', 'discover_rule', 'create_rule'];
+  if (!validTypes.includes(wrapper.challengeType)) {
+    wrapper.challengeType = evalConstraint?.allowedTypes[0] ?? 'observe';
+  }
+
+  // ── Apply explicit config overrides from manifest ──
   if (config) {
-    if (config.rule !== undefined) data.rule = config.rule;
-    if (config.showRule !== undefined) data.showRule = config.showRule;
-    if (config.inputQueue !== undefined) data.inputQueue = config.inputQueue;
-    if (config.outputDisplay !== undefined) data.outputDisplay = config.outputDisplay;
-    if (config.chainable !== undefined) data.chainable = config.chainable;
-    if (config.ruleComplexity !== undefined) data.ruleComplexity = config.ruleComplexity;
-    if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
-    if (config.chainedMachines !== undefined) data.chainedMachines = config.chainedMachines;
+    if (config.ruleComplexity !== undefined) wrapper.ruleComplexity = config.ruleComplexity;
+    if (config.gradeBand !== undefined) wrapper.gradeBand = config.gradeBand;
+    if (config.outputDisplay !== undefined) wrapper.outputDisplay = config.outputDisplay;
   }
 
-  // Set defaults
-  if (data.showRule === undefined) data.showRule = false; // Discovery mode by default
-  if (data.outputDisplay === undefined) data.outputDisplay = 'animated';
-  if (data.chainable === undefined) data.chainable = false;
-  if (data.gradeBand === undefined) data.gradeBand = '3-4';
-  if (data.inputQueue === undefined || data.inputQueue.length === 0) {
-    data.inputQueue = [1, 2, 3, 4, 5]; // Default sensible inputs
+  // ── Defaults ──
+  if (wrapper.outputDisplay === undefined) {
+    wrapper.outputDisplay = wrapper.challengeType === 'predict' ? 'hidden' : 'animated';
+  }
+  if (wrapper.gradeBand === undefined) wrapper.gradeBand = '3-4';
+  if (wrapper.ruleComplexity === undefined) {
+    wrapper.ruleComplexity = MODE_PROFILES[wrapper.challengeType]?.defaultComplexity ?? 'oneStep';
   }
 
-  // Infer ruleComplexity if not set
-  if (data.ruleComplexity === undefined) {
-    const rule = data.rule;
-    if (rule.includes('^') || rule.split(/[+\-*/]/).length > 2) {
-      data.ruleComplexity = 'expression';
-    } else if (rule.split(/[+\-]/).length > 1 && rule.includes('*')) {
-      data.ruleComplexity = 'twoStep';
-    } else {
-      data.ruleComplexity = 'oneStep';
-    }
-  }
+  // ── Pre-select rules for the session (local, deterministic-variance) ──
+  const rules = selectFunctionMachineRules(wrapper.challengeType, {
+    count: config?.instanceCount,
+    complexity: wrapper.ruleComplexity,
+  });
 
-  // Validate rule syntax (basic check)
-  if (!data.rule.includes('x')) {
-    console.warn(`Rule does not contain variable 'x': ${data.rule}. Adding default rule.`);
-    data.rule = 'x + 1';
-  }
+  const challenges = buildChallenges(rules, wrapper.challengeType);
 
-  return data;
+  console.log(
+    `[FunctionMachine] Final: challengeType=${wrapper.challengeType}, complexity=${wrapper.ruleComplexity}, ` +
+    `instances=${challenges.length} [${rules.join(' | ')}]`
+  );
+
+  return {
+    title: wrapper.title,
+    description: wrapper.description,
+    challengeType: wrapper.challengeType,
+    challenges,
+    ruleComplexity: wrapper.ruleComplexity,
+    gradeBand: wrapper.gradeBand,
+    outputDisplay: wrapper.outputDisplay,
+  };
 };

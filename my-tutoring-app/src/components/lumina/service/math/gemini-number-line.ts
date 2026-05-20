@@ -20,7 +20,6 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   plot_point: {
     promptDoc:
       `"plot_point": Student places a point at the correct value on the number line. `
-      + `targetValues contains the exact value(s) to plot. `
       + `K-2: integers 0-20, warm language ("Can you find where 7 lives?"). `
       + `3-5: fractions, decimals, negatives. Concrete manipulative with full guidance.`,
     schemaDescription: "'plot_point' (place value on line)",
@@ -28,301 +27,224 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   show_jump: {
     promptDoc:
       `"show_jump": Student shows an operation as movement on the number line. `
-      + `EACH challenge MUST include its own "startValue" and "operations" array. `
-      + `operations: [{type, startValue, changeValue, showJumpArc: false}]. `
-      + `targetValues contains the FINAL landing value after all operations. `
       + `K-2: simple +1/+2/+3 jumps within 0-20. 3-5: larger jumps, fractions, negatives.`,
     schemaDescription: "'show_jump' (operation as movement)",
   },
   order_values: {
     promptDoc:
-      `"order_values": Student arranges 3-5 values in order on the number line. `
-      + `targetValues contains the values to be ordered (3-5 numbers). `
-      + `3-5: fractions, decimals, mixed numbers, negatives. `
-      + `K-2: integers only, typically 3 values within 0-20.`,
+      `"order_values": Student arranges 3-4 values in order on the number line. `
+      + `K-2: integers only, typically 3 values within 0-20. `
+      + `3-5: fractions, decimals, mixed numbers, negatives.`,
     schemaDescription: "'order_values' (sequence values)",
   },
   find_between: {
     promptDoc:
       `"find_between": Student estimates or finds a value between two given marks. `
-      + `targetValues contains exactly 2 boundary values; student must identify a value between them. `
-      + `Use for fraction/decimal estimation, number sense reasoning. `
       + `Primarily 3-5: fractions between benchmarks, decimals on a zoomed line.`,
     schemaDescription: "'find_between' (estimate between marks)",
   },
 };
 
 // ---------------------------------------------------------------------------
-// Per-mode schemas — focused, minimal fields (SP-14)
+// Tuning
 // ---------------------------------------------------------------------------
 
-function buildPlotPointSchema(): Schema {
-  return {
-    type: Type.OBJECT,
-    properties: {
-      title: { type: Type.STRING, description: "Engaging, age-appropriate title" },
-      description: { type: Type.STRING, description: "Brief explanation of the learning goal" },
-      rangeMin: { type: Type.NUMBER, description: "Minimum value on the number line" },
-      rangeMax: { type: Type.NUMBER, description: "Maximum value on the number line" },
-      gradeBand: { type: Type.STRING, description: "Grade band", enum: ["K-2", "3-5"] },
-      numberType: { type: Type.STRING, description: "Type of numbers", enum: ["integer", "fraction", "decimal", "mixed"] },
-      highlight0Label: { type: Type.STRING, description: "Optional reference point 1 label" },
-      highlight0Value: { type: Type.NUMBER, description: "Optional reference point 1 value" },
-      highlight1Label: { type: Type.STRING, description: "Optional reference point 2 label" },
-      highlight1Value: { type: Type.NUMBER, description: "Optional reference point 2 value" },
-      c1Instruction: { type: Type.STRING, description: "Challenge 1 instruction" },
-      c1Target0: { type: Type.NUMBER, description: "Challenge 1 target value" },
-      c1Hint: { type: Type.STRING, description: "Challenge 1 hint" },
-      c2Instruction: { type: Type.STRING, description: "Challenge 2 instruction" },
-      c2Target0: { type: Type.NUMBER, description: "Challenge 2 target value" },
-      c2Hint: { type: Type.STRING, description: "Challenge 2 hint" },
-      c3Instruction: { type: Type.STRING, description: "Challenge 3 instruction" },
-      c3Target0: { type: Type.NUMBER, description: "Challenge 3 target value" },
-      c3Hint: { type: Type.STRING, description: "Challenge 3 hint" },
-      c4Instruction: { type: Type.STRING, description: "Challenge 4 instruction (optional)" },
-      c4Target0: { type: Type.NUMBER, description: "Challenge 4 target value (optional)" },
-      c4Hint: { type: Type.STRING, description: "Challenge 4 hint (optional)" },
-    },
-    required: [
-      "title", "description", "rangeMin", "rangeMax", "gradeBand", "numberType",
-      "c1Instruction", "c1Target0", "c1Hint",
-      "c2Instruction", "c2Target0", "c2Hint",
-      "c3Instruction", "c3Target0", "c3Hint",
-    ],
-  };
-}
-
-function buildShowJumpSchema(): Schema {
-  return {
-    type: Type.OBJECT,
-    properties: {
-      title: { type: Type.STRING, description: "Engaging title" },
-      description: { type: Type.STRING, description: "Brief learning goal" },
-      rangeMin: { type: Type.NUMBER, description: "Minimum value on the number line" },
-      rangeMax: { type: Type.NUMBER, description: "Maximum value on the number line" },
-      gradeBand: { type: Type.STRING, description: "Grade band", enum: ["K-2", "3-5"] },
-      // Challenge 1
-      c1Instruction: { type: Type.STRING, description: "Challenge 1 instruction" },
-      c1StartValue: { type: Type.NUMBER, description: "Challenge 1 starting position" },
-      c1Op0Type: { type: Type.STRING, description: "Challenge 1 operation type", enum: ["add", "subtract"] },
-      c1Op0Change: { type: Type.NUMBER, description: "Challenge 1 jump amount (positive)" },
-      c1TargetValue: { type: Type.NUMBER, description: "Challenge 1 final landing value" },
-      c1Hint: { type: Type.STRING, description: "Challenge 1 hint" },
-      // Challenge 2
-      c2Instruction: { type: Type.STRING, description: "Challenge 2 instruction" },
-      c2StartValue: { type: Type.NUMBER, description: "Challenge 2 starting position" },
-      c2Op0Type: { type: Type.STRING, description: "Challenge 2 operation type", enum: ["add", "subtract"] },
-      c2Op0Change: { type: Type.NUMBER, description: "Challenge 2 jump amount (positive)" },
-      c2TargetValue: { type: Type.NUMBER, description: "Challenge 2 final landing value" },
-      c2Hint: { type: Type.STRING, description: "Challenge 2 hint" },
-      // Challenge 3
-      c3Instruction: { type: Type.STRING, description: "Challenge 3 instruction" },
-      c3StartValue: { type: Type.NUMBER, description: "Challenge 3 starting position" },
-      c3Op0Type: { type: Type.STRING, description: "Challenge 3 operation type", enum: ["add", "subtract"] },
-      c3Op0Change: { type: Type.NUMBER, description: "Challenge 3 jump amount (positive)" },
-      c3TargetValue: { type: Type.NUMBER, description: "Challenge 3 final landing value" },
-      c3Hint: { type: Type.STRING, description: "Challenge 3 hint" },
-    },
-    required: [
-      "title", "description", "rangeMin", "rangeMax", "gradeBand",
-      "c1Instruction", "c1StartValue", "c1Op0Type", "c1Op0Change", "c1TargetValue", "c1Hint",
-      "c2Instruction", "c2StartValue", "c2Op0Type", "c2Op0Change", "c2TargetValue", "c2Hint",
-      "c3Instruction", "c3StartValue", "c3Op0Type", "c3Op0Change", "c3TargetValue", "c3Hint",
-    ],
-  };
-}
-
-function buildOrderValuesSchema(): Schema {
-  return {
-    type: Type.OBJECT,
-    properties: {
-      title: { type: Type.STRING, description: "Engaging title" },
-      description: { type: Type.STRING, description: "Brief learning goal" },
-      rangeMin: { type: Type.NUMBER, description: "Minimum value" },
-      rangeMax: { type: Type.NUMBER, description: "Maximum value" },
-      gradeBand: { type: Type.STRING, description: "Grade band", enum: ["K-2", "3-5"] },
-      numberType: { type: Type.STRING, description: "Type of numbers", enum: ["integer", "fraction", "decimal", "mixed"] },
-      // Challenge 1: 4 values
-      c1Instruction: { type: Type.STRING, description: "Challenge 1 instruction" },
-      c1Val0: { type: Type.NUMBER, description: "Value 1 to order" },
-      c1Val1: { type: Type.NUMBER, description: "Value 2 to order" },
-      c1Val2: { type: Type.NUMBER, description: "Value 3 to order" },
-      c1Val3: { type: Type.NUMBER, description: "Value 4 to order (optional)" },
-      c1Hint: { type: Type.STRING, description: "Challenge 1 hint" },
-      // Challenge 2
-      c2Instruction: { type: Type.STRING, description: "Challenge 2 instruction" },
-      c2Val0: { type: Type.NUMBER, description: "Value 1 to order" },
-      c2Val1: { type: Type.NUMBER, description: "Value 2 to order" },
-      c2Val2: { type: Type.NUMBER, description: "Value 3 to order" },
-      c2Val3: { type: Type.NUMBER, description: "Value 4 to order (optional)" },
-      c2Hint: { type: Type.STRING, description: "Challenge 2 hint" },
-      // Challenge 3
-      c3Instruction: { type: Type.STRING, description: "Challenge 3 instruction" },
-      c3Val0: { type: Type.NUMBER, description: "Value 1 to order" },
-      c3Val1: { type: Type.NUMBER, description: "Value 2 to order" },
-      c3Val2: { type: Type.NUMBER, description: "Value 3 to order" },
-      c3Val3: { type: Type.NUMBER, description: "Value 4 to order (optional)" },
-      c3Hint: { type: Type.STRING, description: "Challenge 3 hint" },
-    },
-    required: [
-      "title", "description", "rangeMin", "rangeMax", "gradeBand", "numberType",
-      "c1Instruction", "c1Val0", "c1Val1", "c1Val2", "c1Hint",
-      "c2Instruction", "c2Val0", "c2Val1", "c2Val2", "c2Hint",
-      "c3Instruction", "c3Val0", "c3Val1", "c3Val2", "c3Hint",
-    ],
-  };
-}
-
-function buildFindBetweenSchema(): Schema {
-  return {
-    type: Type.OBJECT,
-    properties: {
-      title: { type: Type.STRING, description: "Engaging title" },
-      description: { type: Type.STRING, description: "Brief learning goal" },
-      rangeMin: { type: Type.NUMBER, description: "Minimum value" },
-      rangeMax: { type: Type.NUMBER, description: "Maximum value" },
-      gradeBand: { type: Type.STRING, description: "Grade band", enum: ["K-2", "3-5"] },
-      numberType: { type: Type.STRING, description: "Type of numbers", enum: ["integer", "fraction", "decimal", "mixed"] },
-      // Challenge 1: 2 boundary values
-      c1Instruction: { type: Type.STRING, description: "Challenge 1 instruction" },
-      c1Boundary0: { type: Type.NUMBER, description: "Challenge 1 lower boundary" },
-      c1Boundary1: { type: Type.NUMBER, description: "Challenge 1 upper boundary" },
-      c1Hint: { type: Type.STRING, description: "Challenge 1 hint" },
-      // Challenge 2
-      c2Instruction: { type: Type.STRING, description: "Challenge 2 instruction" },
-      c2Boundary0: { type: Type.NUMBER, description: "Challenge 2 lower boundary" },
-      c2Boundary1: { type: Type.NUMBER, description: "Challenge 2 upper boundary" },
-      c2Hint: { type: Type.STRING, description: "Challenge 2 hint" },
-      // Challenge 3
-      c3Instruction: { type: Type.STRING, description: "Challenge 3 instruction" },
-      c3Boundary0: { type: Type.NUMBER, description: "Challenge 3 lower boundary" },
-      c3Boundary1: { type: Type.NUMBER, description: "Challenge 3 upper boundary" },
-      c3Hint: { type: Type.STRING, description: "Challenge 3 hint" },
-    },
-    required: [
-      "title", "description", "rangeMin", "rangeMax", "gradeBand", "numberType",
-      "c1Instruction", "c1Boundary0", "c1Boundary1", "c1Hint",
-      "c2Instruction", "c2Boundary0", "c2Boundary1", "c2Hint",
-      "c3Instruction", "c3Boundary0", "c3Boundary1", "c3Hint",
-    ],
-  };
-}
+/** Per-mode instance count. PRD §5 floor is 4. Picked here as the default. */
+const INSTANCES_PER_MODE = 4;
 
 // ---------------------------------------------------------------------------
-// Flat → structured reconstruction helpers
+// Shared single-challenge text schema (used by every per-mode sub-generator)
 // ---------------------------------------------------------------------------
+//
+// Every per-mode Gemini call now generates ONE challenge worth of text, given
+// pre-selected numerics in the prompt. Schema is tiny (4 fields) so Flash Lite
+// has zero field-drop risk (SP-14). Session-level metadata is taken from the
+// first non-empty result (orchestrator-same-mode pattern, §6a #7).
 
-interface FlatData {
-  [key: string]: unknown;
+function buildChallengeTextSchema(): Schema {
+  return {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Engaging, age-appropriate session title" },
+      description: { type: Type.STRING, description: "Brief explanation of the learning goal for this session" },
+      instruction: { type: Type.STRING, description: "Warm, grade-appropriate instruction for THIS specific challenge" },
+      hint: { type: Type.STRING, description: "Hint that guides without giving the answer" },
+    },
+    required: ["title", "description", "instruction", "hint"],
+  };
 }
 
-function reconstructPlotPointChallenges(flat: FlatData): NumberLineChallenge[] {
-  const challenges: NumberLineChallenge[] = [];
-  for (let i = 1; i <= 4; i++) {
-    const instruction = flat[`c${i}Instruction`] as string | undefined;
-    const target = flat[`c${i}Target0`] as number | undefined;
-    const hint = flat[`c${i}Hint`] as string | undefined;
-    if (!instruction || target === undefined) continue;
-    challenges.push({
-      id: `plot_point-${i - 1}`,
-      type: 'plot_point',
-      instruction,
-      targetValues: [target],
-      hint: hint || "Look carefully at the numbers on the line.",
+interface ChallengeText {
+  title: string;
+  description: string;
+  instruction: string;
+  hint: string;
+}
+
+async function generateChallengeText(prompt: string): Promise<ChallengeText | null> {
+  try {
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: prompt,
+      config: {
+        temperature: 0.9,
+        topP: 0.95,
+        responseMimeType: 'application/json',
+        responseSchema: buildChallengeTextSchema(),
+      },
     });
+    if (!result.text) return null;
+    const parsed = JSON.parse(result.text);
+    if (!parsed?.instruction || !parsed?.hint) return null;
+    return {
+      title: parsed.title || '',
+      description: parsed.description || '',
+      instruction: parsed.instruction,
+      hint: parsed.hint,
+    };
+  } catch (e) {
+    console.warn('[NumberLine] challenge text generation failed:', e);
+    return null;
   }
-  return challenges;
 }
 
-function reconstructShowJumpChallenges(flat: FlatData): NumberLineChallenge[] {
-  const challenges: NumberLineChallenge[] = [];
-  for (let i = 1; i <= 3; i++) {
-    const instruction = flat[`c${i}Instruction`] as string | undefined;
-    const startValue = flat[`c${i}StartValue`] as number | undefined;
-    const opType = flat[`c${i}Op0Type`] as string | undefined;
-    const opChange = flat[`c${i}Op0Change`] as number | undefined;
-    const target = flat[`c${i}TargetValue`] as number | undefined;
-    const hint = flat[`c${i}Hint`] as string | undefined;
-    if (!instruction || startValue === undefined || target === undefined) continue;
+// ---------------------------------------------------------------------------
+// Per-mode numeric pickers (pool service — §6a #1, §6a #2)
+// ---------------------------------------------------------------------------
+//
+// Gemini Flash Lite's structured-output mode is convergent for numeric values
+// regardless of temperature. To avoid getting the same target/start/etc on
+// every parallel call, pre-select the numerics in code.
 
-    const resolvedType = opType === 'subtract' ? 'subtract' as const : 'add' as const;
-    const resolvedChange = typeof opChange === 'number' && opChange > 0 ? opChange : Math.abs(target - startValue);
-
-    challenges.push({
-      id: `show_jump-${i - 1}`,
-      type: 'show_jump',
-      instruction,
-      targetValues: [target],
-      hint: hint || "Count the hops on the number line.",
-      startValue,
-      operations: [{
-        type: resolvedType,
-        startValue,
-        changeValue: resolvedChange,
-        showJumpArc: false,
-      }],
-    });
+function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return challenges;
+  return arr;
 }
 
-function reconstructOrderValuesChallenges(flat: FlatData): NumberLineChallenge[] {
-  const challenges: NumberLineChallenge[] = [];
-  for (let i = 1; i <= 3; i++) {
-    const instruction = flat[`c${i}Instruction`] as string | undefined;
-    const hint = flat[`c${i}Hint`] as string | undefined;
-    if (!instruction) continue;
+function uniqueIntegerPool(min: number, max: number): number[] {
+  const result: number[] = [];
+  const lo = Math.ceil(min);
+  const hi = Math.floor(max);
+  for (let v = lo; v <= hi; v++) result.push(v);
+  return result;
+}
 
-    const values: number[] = [];
-    for (let v = 0; v < 5; v++) {
-      const val = flat[`c${i}Val${v}`] as number | undefined;
-      if (val !== undefined) values.push(val);
+interface ResolvedRange {
+  min: number;
+  max: number;
+  numberType: 'integer' | 'fraction' | 'decimal' | 'mixed';
+}
+
+function resolvedPoolNumbers(
+  config: { numberRange?: { min: number; max: number } } | undefined,
+  fallback: { min: number; max: number },
+): number[] {
+  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
+  if (pool?.numbers && pool.numbers.length > 0) return [...pool.numbers];
+  return uniqueIntegerPool(fallback.min, fallback.max);
+}
+
+function selectPlotPointTargets(pool: number[], count: number): number[] {
+  const filtered = pool.filter(v => Number.isFinite(v));
+  const shuffled = shuffleInPlace(Array.from(new Set(filtered)));
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+interface ShowJumpTuple {
+  startValue: number;
+  opType: 'add' | 'subtract';
+  change: number;
+  targetValue: number;
+}
+
+function selectShowJumpTuples(
+  range: { min: number; max: number },
+  gradeBand: 'K-2' | '3-5',
+  count: number,
+): ShowJumpTuple[] {
+  const jumpChoices = gradeBand === 'K-2' ? [1, 2, 3, 4, 5] : [2, 3, 5, 7, 10];
+  const tuples: ShowJumpTuple[] = [];
+  const seen = new Set<string>();
+
+  // Try every viable combination, then sample.
+  const candidates: ShowJumpTuple[] = [];
+  for (let start = Math.ceil(range.min); start <= Math.floor(range.max); start++) {
+    for (const change of jumpChoices) {
+      for (const opType of ['add', 'subtract'] as const) {
+        const target = opType === 'add' ? start + change : start - change;
+        if (target < range.min || target > range.max) continue;
+        candidates.push({ startValue: start, opType, change, targetValue: target });
+      }
     }
-    if (values.length < 3) continue;
-
-    challenges.push({
-      id: `order_values-${i - 1}`,
-      type: 'order_values',
-      instruction,
-      targetValues: values,
-      hint: hint || "Find each number on the line. Which is furthest left?",
-    });
   }
-  return challenges;
+  shuffleInPlace(candidates);
+
+  for (const c of candidates) {
+    const key = `${c.startValue}|${c.opType}|${c.change}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    tuples.push(c);
+    if (tuples.length >= count) break;
+  }
+  return tuples;
 }
 
-function reconstructFindBetweenChallenges(flat: FlatData): NumberLineChallenge[] {
-  const challenges: NumberLineChallenge[] = [];
-  for (let i = 1; i <= 3; i++) {
-    const instruction = flat[`c${i}Instruction`] as string | undefined;
-    const b0 = flat[`c${i}Boundary0`] as number | undefined;
-    const b1 = flat[`c${i}Boundary1`] as number | undefined;
-    const hint = flat[`c${i}Hint`] as string | undefined;
-    if (!instruction || b0 === undefined || b1 === undefined) continue;
+function selectOrderValueSets(
+  pool: number[],
+  count: number,
+  perSet: number,
+): number[][] {
+  const sets: number[][] = [];
+  const seen = new Set<string>();
 
-    challenges.push({
-      id: `find_between-${i - 1}`,
-      type: 'find_between',
-      instruction,
-      targetValues: [b0, b1],
-      hint: hint || "Look at the tick marks between the two values.",
-    });
+  for (let attempt = 0; attempt < count * 12 && sets.length < count; attempt++) {
+    if (pool.length < perSet) break;
+    const shuffled = shuffleInPlace([...pool]).slice(0, perSet);
+    const key = [...shuffled].sort((a, b) => a - b).join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    sets.push(shuffled);
   }
-  return challenges;
+  return sets;
 }
 
-function reconstructHighlights(flat: FlatData): { label: string; value: number }[] {
-  const highlights: { label: string; value: number }[] = [];
-  for (let i = 0; i < 2; i++) {
-    const label = flat[`highlight${i}Label`] as string | undefined;
-    const value = flat[`highlight${i}Value`] as number | undefined;
-    if (label && value !== undefined) highlights.push({ label, value });
+function selectFindBetweenPairs(
+  pool: number[],
+  count: number,
+): Array<[number, number]> {
+  if (pool.length < 2) return [];
+  const sorted = Array.from(new Set(pool)).sort((a, b) => a - b);
+  const pairs: Array<[number, number]> = [];
+  const seen = new Set<string>();
+
+  // Build all gapped pairs (gap >= 2 ticks where possible), then sample.
+  const candidates: Array<[number, number]> = [];
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 2; j < sorted.length; j++) {
+      candidates.push([sorted[i], sorted[j]]);
+    }
   }
-  return highlights;
+  if (candidates.length === 0) {
+    // Fall back to adjacent pairs.
+    for (let i = 0; i < sorted.length - 1; i++) candidates.push([sorted[i], sorted[i + 1]]);
+  }
+  shuffleInPlace(candidates);
+
+  for (const [a, b] of candidates) {
+    const key = `${a}|${b}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push([a, b]);
+    if (pairs.length >= count) break;
+  }
+  return pairs;
 }
 
 // ---------------------------------------------------------------------------
-// Per-mode sub-generators
+// Per-mode result container
 // ---------------------------------------------------------------------------
 
 type SubResult = {
@@ -330,17 +252,31 @@ type SubResult = {
   description: string;
   range: { min: number; max: number };
   gradeBand: 'K-2' | '3-5';
-  numberType: string;
-  interactionMode: string;
+  numberType: 'integer' | 'fraction' | 'decimal' | 'mixed';
+  interactionMode: 'plot' | 'jump' | 'compare' | 'order';
   challenges: NumberLineChallenge[];
   highlights: { label: string; value: number }[];
   operations: NumberLineOperation[];
 };
 
+function emptySubResult(interactionMode: SubResult['interactionMode']): SubResult {
+  return {
+    title: '', description: '',
+    range: { min: 0, max: 10 },
+    gradeBand: 'K-2', numberType: 'integer',
+    interactionMode,
+    challenges: [], highlights: [], operations: [],
+  };
+}
+
 function resolveGradeBand(gradeLevel: string): 'K-2' | '3-5' {
   const lower = gradeLevel.toLowerCase();
   return lower.includes('k') || lower.includes('1') || lower.includes('2') ? 'K-2' : '3-5';
 }
+
+// ---------------------------------------------------------------------------
+// Per-mode sub-generators (orchestrator-same-mode, §6a #7)
+// ---------------------------------------------------------------------------
 
 async function generatePlotPointChallenges(
   topic: string,
@@ -348,77 +284,63 @@ async function generatePlotPointChallenges(
   config?: { targetEvalMode?: string; numberRange?: { min: number; max: number }; difficulty?: string },
 ): Promise<SubResult> {
   const isIdentify = config?.targetEvalMode === 'identify';
-  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
-  const rangeSection = pool?.toPromptSection() ?? '';
+  const gradeBand: 'K-2' | '3-5' = isIdentify ? 'K-2' : resolveGradeBand(gradeLevel);
+  const numberType: ResolvedRange['numberType'] = isIdentify
+    ? 'integer'
+    : (gradeBand === 'K-2' ? 'integer' : 'decimal');
+  const range = isIdentify
+    ? { min: 0, max: 10 }
+    : (config?.numberRange ?? { min: 0, max: 20 });
 
-  const modeConstraint = isIdentify
-    ? `\nIMPORTANT — IDENTIFY MODE (Kindergarten):
-- Range MUST be 0 to 10.
-- ALL target values must be whole numbers between 0 and 10.
-- Use very warm, simple language: "Can you find where 3 lives on the line?"
-- gradeBand MUST be "K-2", numberType MUST be "integer".
-- Every tick mark on the line is labeled — this is pure number recognition.\n`
-    : '';
+  const poolNumbers = isIdentify
+    ? uniqueIntegerPool(0, 10)
+    : resolvedPoolNumbers(config, range);
+  const targets = selectPlotPointTargets(poolNumbers, INSTANCES_PER_MODE);
+  if (targets.length === 0) return emptySubResult('plot');
 
-  const gradeBand = resolveGradeBand(gradeLevel);
-  const gradeGuidelines = isIdentify ? '' : `
-GRADE-LEVEL GUIDELINES:
-- K-2: integers 0-20, warm language, simple plotting
-- 3-5: fractions, decimals, negatives, more precise placement`;
+  const modeBanner = isIdentify
+    ? 'IDENTIFY MODE (Kindergarten): use very warm, simple language. Every tick is labeled; this is pure number recognition.'
+    : `GRADE BAND: ${gradeBand}. ${gradeBand === 'K-2' ? 'Use counting language, warm tone.' : 'Concise, neutral tone.'}`;
 
-  const prompt = `Create an interactive Number Line PLOT activity for "${topic}" (Grade ${gradeLevel}).
-${modeConstraint}
-${rangeSection}
-${gradeGuidelines}
+  const promptFor = (target: number, index: number) => `Create text for ONE Number Line PLOT challenge for "${topic}" (Grade ${gradeLevel}).
 
-For each challenge, the student places a point at the correct value on the number line.
-- c1..c4: instruction (warm, grade-appropriate), target value, hint
-- Challenges should progress in difficulty (first easier, last harder)
-- Hints guide without giving the answer
-- Include 0-2 reference highlight points on the line (optional)
+${modeBanner}
 
-Generate 3-4 challenges.`;
+This is challenge ${index + 1} of ${targets.length} in a session that asks the student to plot a target value on a number line ranging from ${range.min} to ${range.max}.
 
-  const result = await ai.models.generateContent({
-    model: 'gemini-flash-lite-latest',
-    contents: prompt,
-    config: {
-      temperature: 0.9,
-      topP: 0.95,
-      responseMimeType: 'application/json',
-      responseSchema: buildPlotPointSchema(),
-    },
+For THIS challenge the target value is: ${target}
+
+Return ONLY:
+- title: an engaging session title (will be shared across all challenges in this session)
+- description: a brief session-level learning goal
+- instruction: a warm, grade-appropriate instruction that asks the student to plot ${target} on the number line (you may vary phrasing across calls — "Can you find...", "Show me where...", "Place a point at...", etc.)
+- hint: a hint that guides the student to ${target} WITHOUT naming the number directly (e.g. reference neighboring tick marks or counting from a benchmark)`;
+
+  const texts = await Promise.all(targets.map((t, i) => generateChallengeText(promptFor(t, i))));
+
+  const wrapperSource = texts.find(t => t && t.title) ?? texts.find(t => !!t) ?? null;
+  const challenges: NumberLineChallenge[] = targets.map((target, i) => {
+    const text = texts[i];
+    const instruction = text?.instruction ?? `Can you find ${target} on the number line?`;
+    const hint = text?.hint ?? 'Count the tick marks from the start.';
+    return {
+      id: `plot_point-${i}`,
+      type: 'plot_point',
+      instruction,
+      targetValues: [target],
+      hint,
+    };
   });
 
-  const flat = result.text ? JSON.parse(result.text) : null;
-  if (!flat) return emptySubResult('plot');
-
-  let challenges = reconstructPlotPointChallenges(flat);
-  const highlights = reconstructHighlights(flat);
-
-  // ── Semantic differentiation for identify mode (post-filter) ──
-  if (isIdentify) {
-    const before = challenges.length;
-    challenges = challenges.filter(ch =>
-      ch.targetValues.every(v => Number.isInteger(v) && v >= 0 && v <= 10)
-    );
-    if (challenges.length < before) {
-      console.log(`[NumberLine] identify: filtered ${before - challenges.length} out-of-range challenges`);
-    }
-  }
-
-  const rangeMin = isIdentify ? 0 : (flat.rangeMin ?? 0);
-  const rangeMax = isIdentify ? 10 : (flat.rangeMax ?? 20);
-
   return {
-    title: flat.title || `Number Line: ${topic}`,
-    description: flat.description || '',
-    range: { min: rangeMin, max: rangeMax },
-    gradeBand: isIdentify ? 'K-2' : (flat.gradeBand === '3-5' ? '3-5' : gradeBand),
-    numberType: isIdentify ? 'integer' : (flat.numberType || (gradeBand === 'K-2' ? 'integer' : 'decimal')),
+    title: wrapperSource?.title || `Number Line: ${topic}`,
+    description: wrapperSource?.description || '',
+    range,
+    gradeBand,
+    numberType,
     interactionMode: 'plot',
     challenges,
-    highlights,
+    highlights: [],
     operations: [],
   };
 }
@@ -428,57 +350,60 @@ async function generateShowJumpChallenges(
   gradeLevel: string,
   config?: { numberRange?: { min: number; max: number }; difficulty?: string },
 ): Promise<SubResult> {
-  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
-  const rangeSection = pool?.toPromptSection() ?? '';
   const gradeBand = resolveGradeBand(gradeLevel);
+  const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
+  const tuples = selectShowJumpTuples(range, gradeBand, INSTANCES_PER_MODE);
+  if (tuples.length === 0) return emptySubResult('jump');
 
-  const prompt = `Create an interactive Number Line JUMP activity for "${topic}" (Grade ${gradeLevel}).
+  const promptFor = (t: ShowJumpTuple, index: number) => `Create text for ONE Number Line JUMP challenge for "${topic}" (Grade ${gradeLevel}).
 
-${rangeSection}
+GRADE BAND: ${gradeBand}. ${gradeBand === 'K-2' ? 'Use counting language, warm tone.' : 'Concise, neutral tone.'}
 
-Students show operations as movement on the number line.
-For each challenge:
-- instruction: what jump(s) to show
-- startValue: where the student starts on the line
-- op0Type: "add" or "subtract"
-- op0Change: how far to jump (positive number)
-- targetValue: the final landing position after the jump
+This is challenge ${index + 1} of ${tuples.length} in a session on a number line ranging from ${range.min} to ${range.max}.
 
-K-2: simple +1/+2/+3/+5 jumps within 0-20, warm language.
-3-5: larger jumps, negatives, fractions possible.
+For THIS challenge:
+- Start position: ${t.startValue}
+- Operation: ${t.opType === 'add' ? `add ${t.change} (jump right)` : `subtract ${t.change} (jump left)`}
+- Landing value: ${t.targetValue}
 
-Each challenge should have DIFFERENT starting points and operations.
-Hints should guide without giving the answer.
+Return ONLY:
+- title: an engaging session title (shared across all challenges)
+- description: a brief session-level learning goal
+- instruction: a warm, grade-appropriate instruction telling the student to start at ${t.startValue} and ${t.opType === 'add' ? 'jump forward' : 'jump back'} ${t.change} (you may vary phrasing — "Start at X and hop forward Y", "Begin at X. Take Y jumps to the right", etc.)
+- hint: a hint that guides counting the hops WITHOUT giving the landing number directly`;
 
-Generate 3 challenges with increasing difficulty.`;
+  const texts = await Promise.all(tuples.map((t, i) => generateChallengeText(promptFor(t, i))));
 
-  const result = await ai.models.generateContent({
-    model: 'gemini-flash-lite-latest',
-    contents: prompt,
-    config: {
-      temperature: 0.9,
-      topP: 0.95,
-      responseMimeType: 'application/json',
-      responseSchema: buildShowJumpSchema(),
-    },
+  const wrapperSource = texts.find(t => t && t.title) ?? texts.find(t => !!t) ?? null;
+  const challenges: NumberLineChallenge[] = tuples.map((t, i) => {
+    const text = texts[i];
+    const instruction = text?.instruction
+      ?? `Start at ${t.startValue} and jump ${t.opType === 'add' ? 'forward' : 'back'} ${t.change}. Where do you land?`;
+    const hint = text?.hint ?? `Count ${t.change} hops to the ${t.opType === 'add' ? 'right' : 'left'} from ${t.startValue}.`;
+    return {
+      id: `show_jump-${i}`,
+      type: 'show_jump',
+      instruction,
+      targetValues: [t.targetValue],
+      hint,
+      startValue: t.startValue,
+      operations: [{
+        type: t.opType,
+        startValue: t.startValue,
+        changeValue: t.change,
+        showJumpArc: false,
+      }],
+    };
   });
 
-  const flat = result.text ? JSON.parse(result.text) : null;
-  if (!flat) return emptySubResult('jump');
-
-  const challenges = reconstructShowJumpChallenges(flat);
-
-  // Build global operations from first challenge for backward compatibility
-  const firstOps = challenges[0]?.operations ?? [];
-  const globalOps: NumberLineOperation[] = firstOps.length > 0
-    ? firstOps
-    : [{ type: 'add' as const, startValue: flat.rangeMin ?? 0, changeValue: 3, showJumpArc: false }];
+  // Backward-compat global operations.
+  const globalOps = challenges[0]?.operations ?? [];
 
   return {
-    title: flat.title || `Number Line Jumps: ${topic}`,
-    description: flat.description || '',
-    range: { min: flat.rangeMin ?? 0, max: flat.rangeMax ?? 20 },
-    gradeBand: flat.gradeBand === '3-5' ? '3-5' : gradeBand,
+    title: wrapperSource?.title || `Number Line Jumps: ${topic}`,
+    description: wrapperSource?.description || '',
+    range,
+    gradeBand,
     numberType: 'integer',
     interactionMode: 'jump',
     challenges,
@@ -492,47 +417,51 @@ async function generateOrderValuesChallenges(
   gradeLevel: string,
   config?: { numberRange?: { min: number; max: number }; difficulty?: string },
 ): Promise<SubResult> {
-  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
-  const rangeSection = pool?.toPromptSection() ?? '';
   const gradeBand = resolveGradeBand(gradeLevel);
+  const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
+  const perSet = gradeBand === 'K-2' ? 3 : 4;
+  const poolNumbers = resolvedPoolNumbers(config, range);
+  const sets = selectOrderValueSets(poolNumbers, INSTANCES_PER_MODE, perSet);
+  if (sets.length === 0) return emptySubResult('order');
 
-  const prompt = `Create an interactive Number Line ORDER activity for "${topic}" (Grade ${gradeLevel}).
+  const promptFor = (values: number[], index: number) => `Create text for ONE Number Line ORDER challenge for "${topic}" (Grade ${gradeLevel}).
 
-${rangeSection}
+GRADE BAND: ${gradeBand}.
 
-Students arrange 3-4 values in correct order on the number line.
-For each challenge:
-- instruction: what to order
-- val0..val3: 3-4 values to be ordered
-- hint: guide without revealing the answer
+This is challenge ${index + 1} of ${sets.length} in a session on a number line ranging from ${range.min} to ${range.max}.
 
-K-2: integers only, typically 3 values within 0-20.
-3-5: fractions, decimals, mixed numbers, negatives, 3-5 values.
+For THIS challenge the student must arrange these values in order: ${values.join(', ')}.
 
-Generate 3 challenges with increasing difficulty.`;
+Return ONLY:
+- title: an engaging session title (shared across all challenges)
+- description: a brief session-level learning goal
+- instruction: a warm, grade-appropriate instruction asking the student to put the values in order from smallest to largest
+- hint: a hint that guides comparison WITHOUT giving the answer (e.g. "Find each number on the line first" or "Compare two at a time")`;
 
-  const result = await ai.models.generateContent({
-    model: 'gemini-flash-lite-latest',
-    contents: prompt,
-    config: {
-      temperature: 0.9,
-      topP: 0.95,
-      responseMimeType: 'application/json',
-      responseSchema: buildOrderValuesSchema(),
-    },
+  const texts = await Promise.all(sets.map((s, i) => generateChallengeText(promptFor(s, i))));
+
+  const wrapperSource = texts.find(t => t && t.title) ?? texts.find(t => !!t) ?? null;
+  const challenges: NumberLineChallenge[] = sets.map((values, i) => {
+    const text = texts[i];
+    const instruction = text?.instruction ?? 'Put these numbers in order from smallest to largest.';
+    const hint = text?.hint ?? 'Find each number on the line. Which is furthest left?';
+    return {
+      id: `order_values-${i}`,
+      type: 'order_values',
+      instruction,
+      targetValues: values,
+      hint,
+    };
   });
 
-  const flat = result.text ? JSON.parse(result.text) : null;
-  if (!flat) return emptySubResult('order');
-
   return {
-    title: flat.title || `Number Line Order: ${topic}`,
-    description: flat.description || '',
-    range: { min: flat.rangeMin ?? 0, max: flat.rangeMax ?? 20 },
-    gradeBand: flat.gradeBand === '3-5' ? '3-5' : gradeBand,
-    numberType: flat.numberType || (gradeBand === 'K-2' ? 'integer' : 'decimal'),
+    title: wrapperSource?.title || `Number Line Order: ${topic}`,
+    description: wrapperSource?.description || '',
+    range,
+    gradeBand,
+    numberType: gradeBand === 'K-2' ? 'integer' : 'decimal',
     interactionMode: 'order',
-    challenges: reconstructOrderValuesChallenges(flat),
+    challenges,
     highlights: [],
     operations: [],
   };
@@ -543,59 +472,52 @@ async function generateFindBetweenChallenges(
   gradeLevel: string,
   config?: { numberRange?: { min: number; max: number }; difficulty?: string },
 ): Promise<SubResult> {
-  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
-  const rangeSection = pool?.toPromptSection() ?? '';
   const gradeBand = resolveGradeBand(gradeLevel);
+  const range = config?.numberRange ?? { min: 0, max: 10 };
+  const poolNumbers = resolvedPoolNumbers(config, range);
+  const pairs = selectFindBetweenPairs(poolNumbers, INSTANCES_PER_MODE);
+  if (pairs.length === 0) return emptySubResult('compare');
 
-  const prompt = `Create an interactive Number Line FIND BETWEEN activity for "${topic}" (Grade ${gradeLevel}).
+  const promptFor = ([b0, b1]: [number, number], index: number) => `Create text for ONE Number Line FIND-BETWEEN challenge for "${topic}" (Grade ${gradeLevel}).
 
-${rangeSection}
+GRADE BAND: ${gradeBand}.
 
-Students find or estimate a value between two given marks.
-For each challenge:
-- instruction: what to find between
-- boundary0, boundary1: the two boundary values
-- hint: guide without giving the answer
+This is challenge ${index + 1} of ${pairs.length} in a session on a number line ranging from ${range.min} to ${range.max}.
 
-Primarily 3-5: fractions between benchmarks, decimals on a zoomed line.
-Can include K-2 with integers if range is simple.
+For THIS challenge the student must find a value strictly between ${b0} and ${b1}.
 
-Generate 3 challenges with increasing difficulty.`;
+Return ONLY:
+- title: an engaging session title (shared across all challenges)
+- description: a brief session-level learning goal
+- instruction: a warm, grade-appropriate instruction asking the student to find a number between ${b0} and ${b1}
+- hint: a hint that guides reasoning between the two boundaries WITHOUT naming a specific answer`;
 
-  const result = await ai.models.generateContent({
-    model: 'gemini-flash-lite-latest',
-    contents: prompt,
-    config: {
-      temperature: 0.9,
-      topP: 0.95,
-      responseMimeType: 'application/json',
-      responseSchema: buildFindBetweenSchema(),
-    },
+  const texts = await Promise.all(pairs.map((p, i) => generateChallengeText(promptFor(p, i))));
+
+  const wrapperSource = texts.find(t => t && t.title) ?? texts.find(t => !!t) ?? null;
+  const challenges: NumberLineChallenge[] = pairs.map(([b0, b1], i) => {
+    const text = texts[i];
+    const instruction = text?.instruction ?? `Find a number between ${b0} and ${b1}.`;
+    const hint = text?.hint ?? 'Look at the tick marks between the two values.';
+    return {
+      id: `find_between-${i}`,
+      type: 'find_between',
+      instruction,
+      targetValues: [b0, b1],
+      hint,
+    };
   });
 
-  const flat = result.text ? JSON.parse(result.text) : null;
-  if (!flat) return emptySubResult('compare');
-
   return {
-    title: flat.title || `Number Line: Find Between — ${topic}`,
-    description: flat.description || '',
-    range: { min: flat.rangeMin ?? 0, max: flat.rangeMax ?? 10 },
-    gradeBand: flat.gradeBand === '3-5' ? '3-5' : gradeBand,
-    numberType: flat.numberType || 'decimal',
+    title: wrapperSource?.title || `Number Line: Find Between — ${topic}`,
+    description: wrapperSource?.description || '',
+    range,
+    gradeBand,
+    numberType: gradeBand === 'K-2' ? 'integer' : 'decimal',
     interactionMode: 'compare',
-    challenges: reconstructFindBetweenChallenges(flat),
+    challenges,
     highlights: [],
     operations: [],
-  };
-}
-
-function emptySubResult(interactionMode: string): SubResult {
-  return {
-    title: '', description: '',
-    range: { min: 0, max: 10 },
-    gradeBand: 'K-2', numberType: 'integer',
-    interactionMode,
-    challenges: [], highlights: [], operations: [],
   };
 }
 
@@ -639,21 +561,21 @@ function buildFallbackChallenge(type: string, range: { min: number; max: number 
 }
 
 // ---------------------------------------------------------------------------
-// Orchestrator
+// Top-level orchestrator
 // ---------------------------------------------------------------------------
 
 /**
- * Generate interactive Number Line content
+ * Generate interactive Number Line content.
  *
- * Uses per-mode sub-generators (orchestrator pattern) to avoid Gemini Flash
- * Lite dropping fields in overly complex schemas (SP-14). Each challenge type
- * has its own focused schema and generation function; the orchestrator
- * dispatches them in parallel and merges results.
+ * Two-layer orchestration:
+ *   1. Top level dispatches per allowed eval-mode challenge type.
+ *   2. Each per-mode sub-generator pre-selects N=4 numeric challenge tuples
+ *      via a local pool service (avoids §6a #2 Gemini convergence on numbers),
+ *      then fans out N parallel single-challenge Gemini calls for instruction
+ *      and hint text. Session-level title/description are taken from the first
+ *      non-empty result.
  *
- * @param topic - The math topic or concept
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration including intent and targetEvalMode
- * @returns NumberLineData with full interactive configuration
+ * Per-call schema is 4 fields — no SP-14 field-drop risk.
  */
 export const generateNumberLine = async (
   topic: string,
@@ -665,7 +587,7 @@ export const generateNumberLine = async (
     difficulty: string;
   }>
 ): Promise<NumberLineData> => {
-  // ── Resolve eval mode from the catalog (single source of truth) ──
+  // Resolve eval mode from the catalog (single source of truth).
   const evalConstraint = resolveEvalModeConstraint(
     'number-line',
     config?.targetEvalMode,
@@ -673,12 +595,10 @@ export const generateNumberLine = async (
   );
   logEvalModeResolution('NumberLine', config?.targetEvalMode, evalConstraint);
 
-  // ── Determine which challenge types to generate ──
   const allowedTypes = evalConstraint
     ? evalConstraint.allowedTypes
     : ['plot_point', 'show_jump', 'order_values', 'find_between'];
 
-  // ── Build number pool ──
   const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
   console.log(`[NumberLine] display:`, pool?.displayRange ?? 'none', `pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
 
@@ -688,7 +608,7 @@ export const generateNumberLine = async (
     difficulty: config?.difficulty,
   };
 
-  // ── Dispatch per-mode sub-generators in parallel ──
+  // Dispatch per-mode sub-generators in parallel.
   const generators: Promise<SubResult>[] = [];
 
   if (allowedTypes.includes('plot_point')) {
@@ -706,10 +626,7 @@ export const generateNumberLine = async (
 
   const subResults = await Promise.all(generators);
 
-  // ── Combine results ──
   const allChallenges = subResults.flatMap(r => r.challenges);
-
-  // Pick metadata from first successful sub-result
   const primary = subResults.find(r => r.challenges.length > 0) ?? subResults[0] ?? emptySubResult('plot');
 
   const data: NumberLineData = {
@@ -717,8 +634,8 @@ export const generateNumberLine = async (
     description: primary.description || undefined,
     range: primary.range,
     gradeBand: primary.gradeBand,
-    numberType: primary.numberType as NumberLineData['numberType'],
-    interactionMode: primary.interactionMode as NumberLineData['interactionMode'],
+    numberType: primary.numberType,
+    interactionMode: primary.interactionMode,
     challenges: allChallenges,
     highlights: primary.highlights,
     operations: primary.operations,
@@ -728,24 +645,20 @@ export const generateNumberLine = async (
   // Validation & Defaults
   // ---------------------------------------------------------------------------
 
-  // Ensure gradeBand is valid
   if (data.gradeBand !== 'K-2' && data.gradeBand !== '3-5') {
     data.gradeBand = resolveGradeBand(gradeLevel);
   }
 
-  // Ensure numberType is valid
   const validNumberTypes = ['integer', 'fraction', 'decimal', 'mixed'];
   if (!data.numberType || !validNumberTypes.includes(data.numberType)) {
     data.numberType = data.gradeBand === 'K-2' ? 'integer' : 'decimal';
   }
 
-  // Ensure interactionMode is valid
   const validModes = ['plot', 'jump', 'compare', 'order'];
   if (!data.interactionMode || !validModes.includes(data.interactionMode)) {
     data.interactionMode = 'plot';
   }
 
-  // Ensure range is reasonable
   if (!data.range || typeof data.range.min !== 'number' || typeof data.range.max !== 'number') {
     data.range = { min: 0, max: 10 };
   }
@@ -753,31 +666,25 @@ export const generateNumberLine = async (
     data.range = { min: 0, max: data.gradeBand === 'K-2' ? 20 : 10 };
   }
 
-  // K-2 guardrails
   if (data.gradeBand === 'K-2') {
     data.numberType = 'integer';
     data.range.min = Math.max(-1, Math.round(data.range.min));
     data.range.max = Math.min(30, Math.round(data.range.max));
   }
 
-  // Ensure challenges is an array with at least one entry
   if (!data.challenges || data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'plot_point';
     console.log(`[NumberLine] No valid challenges — using ${fallbackType} fallback`);
     data.challenges = [buildFallbackChallenge(fallbackType, data.range)];
   }
 
-  // Ensure highlights is an array
   if (!Array.isArray(data.highlights)) {
     data.highlights = [];
   }
-
-  // Ensure operations is an array
   if (!Array.isArray(data.operations)) {
     data.operations = [];
   }
 
-  // Final summary log
   const typeBreakdown = data.challenges.map(c => c.type).join(', ');
   console.log(`[NumberLine] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 

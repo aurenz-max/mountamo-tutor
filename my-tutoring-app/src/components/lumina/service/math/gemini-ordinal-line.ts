@@ -618,6 +618,318 @@ function fallbackBuild(setup: SetupResult) {
 }
 
 // ============================================================================
+// Multi-Instance Builders (single-mode, pool-service style per PRD §6a #1/#7)
+// ============================================================================
+//
+// When the eval mode pins to ONE challenge type, we generate N distinct
+// instances of THAT type instead of 1-per-type. For value-only modes
+// (identify, match, relative-position, build-sequence) we build the
+// challenges deterministically in code. For sequence-story we fan out N
+// parallel Gemini calls with pre-randomized character orderings to force
+// variance (structured-output Gemini is convergent — see PRD §6a #2).
+
+const TARGET_INSTANCE_COUNT = 4;
+const ORDINAL_WORDS = [
+  'first', 'second', 'third', 'fourth', 'fifth',
+  'sixth', 'seventh', 'eighth', 'ninth', 'tenth',
+];
+const ORDINAL_SYMBOLS = [
+  '1st', '2nd', '3rd', '4th', '5th',
+  '6th', '7th', '8th', '9th', '10th',
+];
+
+function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function pickDistinctPositions(maxPosition: number, count: number): number[] {
+  const pool = Array.from({ length: maxPosition }, (_, i) => i + 1);
+  shuffleInPlace(pool);
+  return pool.slice(0, Math.min(count, maxPosition));
+}
+
+function contextNoun(context: SetupResult['context']): string {
+  switch (context) {
+    case 'race':       return 'animal';
+    case 'parade':     return 'animal';
+    case 'lunch-line': return 'one';
+    case 'train':      return 'one';
+    case 'bookshelf':  return 'book';
+    default:           return 'one';
+  }
+}
+
+function buildIdentifyChallenges(
+  setup: SetupResult,
+  count: number,
+): OrdinalLineChallenge[] {
+  const positions = pickDistinctPositions(setup.maxPosition, count);
+  const noun = contextNoun(setup.context);
+  return positions.map((pos, i) => ({
+    id: `c${i + 1}`,
+    type: 'identify' as const,
+    characters: setup.characters,
+    instruction: `Tap the ${ORDINAL_WORDS[pos - 1]} ${noun} in the ${setup.context}!`,
+    targetPosition: pos,
+    targetOrdinalWord: ORDINAL_WORDS[pos - 1],
+    targetOrdinalSymbol: ORDINAL_SYMBOLS[pos - 1],
+    correctAnswer: String(pos),
+  }));
+}
+
+function buildMatchChallenges(
+  setup: SetupResult,
+  count: number,
+): OrdinalLineChallenge[] {
+  const minPairs = setup.gradeBand === 'K' ? 3 : 5;
+  const maxPairs = Math.min(setup.gradeBand === 'K' ? 5 : 8, setup.maxPosition);
+  const allPositions = Array.from({ length: setup.maxPosition }, (_, i) => i + 1);
+
+  const challenges: OrdinalLineChallenge[] = [];
+  const seenKeys = new Set<string>();
+  let attempts = 0;
+
+  while (challenges.length < count && attempts < count * 20) {
+    attempts++;
+    const pairCount = minPairs + Math.floor(Math.random() * (maxPairs - minPairs + 1));
+    const positions = shuffleInPlace([...allPositions])
+      .slice(0, pairCount)
+      .sort((a, b) => a - b);
+    const key = positions.join(',');
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+
+    challenges.push({
+      id: `c${challenges.length + 1}`,
+      type: 'match' as const,
+      characters: setup.characters,
+      instruction: 'Match each ordinal word to its symbol!',
+      matchPairs: positions.map((p) => ({
+        word: ORDINAL_WORDS[p - 1],
+        symbol: ORDINAL_SYMBOLS[p - 1],
+      })),
+      correctAnswer: 'all_matched',
+    });
+  }
+
+  return challenges;
+}
+
+function buildRelativeChallenges(
+  setup: SetupResult,
+  count: number,
+): OrdinalLineChallenge[] {
+  // Enumerate all valid (position, query) tuples
+  const validTuples: Array<{ pos: number; query: 'before' | 'after' }> = [];
+  for (let p = 1; p <= setup.maxPosition; p++) {
+    if (p > 1) validTuples.push({ pos: p, query: 'before' });
+    if (p < setup.maxPosition) validTuples.push({ pos: p, query: 'after' });
+  }
+  shuffleInPlace(validTuples);
+  const selected = validTuples.slice(0, Math.min(count, validTuples.length));
+
+  return selected.map((t, i) => {
+    const answerIdx = t.query === 'before' ? t.pos - 2 : t.pos;
+    const correctChar = setup.characters[answerIdx];
+
+    // Build 3-4 multiple-choice options: correct + distractors from the lineup
+    const distractors = setup.characters
+      .filter((c) => c.name !== correctChar.name)
+      .map((c) => c.name);
+    shuffleInPlace(distractors);
+    const distractorCount = Math.min(3, distractors.length);
+    const options = shuffleInPlace([
+      correctChar.name,
+      ...distractors.slice(0, distractorCount),
+    ]);
+
+    return {
+      id: `c${i + 1}`,
+      type: 'relative-position' as const,
+      characters: setup.characters,
+      instruction: `Who is right ${t.query === 'before' ? 'BEFORE' : 'AFTER'} the ${ORDINAL_WORDS[t.pos - 1]} character?`,
+      targetPosition: t.pos,
+      targetOrdinalWord: ORDINAL_WORDS[t.pos - 1],
+      targetOrdinalSymbol: ORDINAL_SYMBOLS[t.pos - 1],
+      relativeQuery: t.query,
+      options,
+      correctAnswer: correctChar.name,
+    };
+  });
+}
+
+function buildBuildSequenceChallenges(
+  setup: SetupResult,
+  count: number,
+): OrdinalLineChallenge[] {
+  // Clue count mirrors the original prompt: K → 3, G1 → 4
+  const clueCount = Math.min(
+    setup.gradeBand === 'K' ? 3 : 4,
+    setup.characters.length,
+  );
+
+  const challenges: OrdinalLineChallenge[] = [];
+  const seenKeys = new Set<string>();
+  let attempts = 0;
+
+  while (challenges.length < count && attempts < count * 20) {
+    attempts++;
+    const shuffled = shuffleInPlace([...setup.characters]).slice(0, clueCount);
+    const clues = shuffled.map((c, i) => ({ character: c.name, position: i + 1 }));
+    const key = clues.map((c) => `${c.character}@${c.position}`).join('|');
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+
+    challenges.push({
+      id: `c${challenges.length + 1}`,
+      type: 'build-sequence' as const,
+      characters: setup.characters,
+      instruction: 'Place the animals in the correct order using the clues!',
+      clues,
+      correctAnswer: 'sequence_complete',
+    });
+  }
+
+  return challenges;
+}
+
+const storySchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    instruction: { type: Type.STRING },
+    storyText: { type: Type.STRING },
+  },
+  required: ['instruction', 'storyText'],
+};
+
+async function generateStoryForOrdering(
+  setup: SetupResult,
+  topic: string,
+  gradeLevel: string,
+  clues: Array<{ character: string; position: number }>,
+): Promise<{ instruction: string; storyText: string }> {
+  const sorted = [...clues].sort((a, b) => a.position - b.position);
+  const orderingHint = sorted
+    .map((c) => `${c.character} is ${ORDINAL_WORDS[c.position - 1]}`)
+    .join(', ');
+
+  const prompt = `
+Create a SEQUENCE-STORY for an ordinal positions activity about "${topic}".
+${sharedContext(setup, gradeLevel)}
+
+Write a fun 2-3 sentence story in the "${setup.context}" using this EXACT character ordering:
+${orderingHint}.
+
+Every character must be mentioned with their ordinal position word (first, second, third, etc.).
+Vary the wording — do not just say "X is first, Y is second."
+Return only:
+- instruction: a warm, brief instruction
+- storyText: the 2-3 sentence story matching the ordering above
+`;
+
+  try {
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: prompt,
+      config: { responseMimeType: 'application/json', responseSchema: storySchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (!data?.storyText) return fallbackStoryWithOrdering(setup, sorted);
+    return {
+      instruction: data.instruction || 'Read the story and drag each animal to their correct spot!',
+      storyText: data.storyText,
+    };
+  } catch {
+    return fallbackStoryWithOrdering(setup, sorted);
+  }
+}
+
+function fallbackStoryWithOrdering(
+  setup: SetupResult,
+  sorted: Array<{ character: string; position: number }>,
+): { instruction: string; storyText: string } {
+  const parts = sorted.map((c, i) =>
+    `${c.character} ${i === 0 ? 'leads the way in' : 'is in'} ${ORDINAL_WORDS[c.position - 1]} place`,
+  );
+  return {
+    instruction: 'Read the story and drag each animal to their correct spot!',
+    storyText: `The animals are lining up for the ${setup.context}! ${parts.join('. ')}.`,
+  };
+}
+
+async function buildStoryChallenges(
+  setup: SetupResult,
+  topic: string,
+  gradeLevel: string,
+  count: number,
+): Promise<OrdinalLineChallenge[]> {
+  // Generate N distinct character orderings before fanning out Gemini calls.
+  // Structured-output Gemini converges per call (PRD §6a #2), so variance
+  // must come from pre-randomized clues, not from prompt phrasing.
+  const orderings: Array<Array<{ character: string; position: number }>> = [];
+  const seenKeys = new Set<string>();
+
+  // First ordering: natural left-to-right
+  const natural = setup.characters.map((c, i) => ({ character: c.name, position: i + 1 }));
+  orderings.push(natural);
+  seenKeys.add(natural.map((c) => c.character).join('|'));
+
+  let safety = 0;
+  while (orderings.length < count && safety < count * 30) {
+    safety++;
+    const shuffled = shuffleInPlace([...setup.characters]);
+    const clues = shuffled.map((c, i) => ({ character: c.name, position: i + 1 }));
+    const key = clues.map((c) => c.character).join('|');
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    orderings.push(clues);
+  }
+
+  const stories = await Promise.all(
+    orderings.map((clues) =>
+      generateStoryForOrdering(setup, topic, gradeLevel, clues),
+    ),
+  );
+
+  return stories.map((story, i) => ({
+    id: `c${i + 1}`,
+    type: 'sequence-story' as const,
+    characters: setup.characters,
+    instruction: story.instruction,
+    storyText: story.storyText,
+    clues: orderings[i],
+    correctAnswer: 'sequence_complete',
+  }));
+}
+
+async function buildSingleModeChallenges(
+  singleType: string,
+  setup: SetupResult,
+  topic: string,
+  gradeLevel: string,
+): Promise<OrdinalLineChallenge[]> {
+  const count = TARGET_INSTANCE_COUNT;
+  switch (singleType) {
+    case 'identify':
+      return buildIdentifyChallenges(setup, count);
+    case 'match':
+      return buildMatchChallenges(setup, count);
+    case 'relative-position':
+      return buildRelativeChallenges(setup, count);
+    case 'build-sequence':
+      return buildBuildSequenceChallenges(setup, count);
+    case 'sequence-story':
+      return buildStoryChallenges(setup, topic, gradeLevel, count);
+    default:
+      return [];
+  }
+}
+
+// ============================================================================
 // Main Generator (public API)
 // ============================================================================
 
@@ -649,66 +961,76 @@ export const generateOrdinalLine = async (
   // Step 1: Setup call (always needed)
   const setup = await generateSetup(topic, gradeLevel, config);
 
-  // Step 2: Parallel calls — only for allowed types (skip others to save LLM calls)
-  const [identify, match, relative, story, build] = await Promise.all([
-    allowedTypes.has('identify') ? generateIdentify(setup, topic, gradeLevel) : null,
-    allowedTypes.has('match') ? generateMatch(setup, topic, gradeLevel) : null,
-    allowedTypes.has('relative-position') ? generateRelative(setup, topic, gradeLevel) : null,
-    allowedTypes.has('sequence-story') ? generateStory(setup, topic, gradeLevel) : null,
-    allowedTypes.has('build-sequence') ? generateBuild(setup, topic, gradeLevel) : null,
-  ]);
+  // Step 2: Build challenges.
+  //
+  // Single-mode (IRT-pinned to one eval mode): produce N=4 distinct instances of
+  // that type via the pool-service / pre-randomized-clue builders (PRD §6a #7).
+  // Multi-mode (auto / no constraint): keep the one-per-type orchestration so
+  // the tester preview surfaces every challenge shape.
+  let challenges: OrdinalLineChallenge[] = [];
 
-  // Step 3: Recombine — only include generated (non-null) challenges
-  const challenges: OrdinalLineChallenge[] = [];
-  let idx = 1;
+  if (allowedTypes.size === 1) {
+    const [singleType] = Array.from(allowedTypes);
+    challenges = await buildSingleModeChallenges(singleType, setup, topic, gradeLevel);
+  } else {
+    const [identify, match, relative, story, build] = await Promise.all([
+      allowedTypes.has('identify') ? generateIdentify(setup, topic, gradeLevel) : null,
+      allowedTypes.has('match') ? generateMatch(setup, topic, gradeLevel) : null,
+      allowedTypes.has('relative-position') ? generateRelative(setup, topic, gradeLevel) : null,
+      allowedTypes.has('sequence-story') ? generateStory(setup, topic, gradeLevel) : null,
+      allowedTypes.has('build-sequence') ? generateBuild(setup, topic, gradeLevel) : null,
+    ]);
 
-  if (identify) {
-    challenges.push({
-      id: `c${idx++}`,
-      type: 'identify',
-      characters: setup.characters,
-      correctAnswer: identify.correctAnswer ?? String(identify.targetPosition),
-      ...identify,
-    } as OrdinalLineChallenge);
-  }
+    let idx = 1;
 
-  if (match) {
-    challenges.push({
-      id: `c${idx++}`,
-      type: 'match',
-      characters: setup.characters,
-      correctAnswer: 'all_matched',
-      ...match,
-    } as OrdinalLineChallenge);
-  }
+    if (identify) {
+      challenges.push({
+        id: `c${idx++}`,
+        type: 'identify',
+        characters: setup.characters,
+        correctAnswer: identify.correctAnswer ?? String(identify.targetPosition),
+        ...identify,
+      } as OrdinalLineChallenge);
+    }
 
-  if (relative) {
-    challenges.push({
-      id: `c${idx++}`,
-      type: 'relative-position',
-      characters: setup.characters,
-      ...relative,
-    } as OrdinalLineChallenge);
-  }
+    if (match) {
+      challenges.push({
+        id: `c${idx++}`,
+        type: 'match',
+        characters: setup.characters,
+        correctAnswer: 'all_matched',
+        ...match,
+      } as OrdinalLineChallenge);
+    }
 
-  if (story) {
-    challenges.push({
-      id: `c${idx++}`,
-      type: 'sequence-story',
-      characters: setup.characters,
-      correctAnswer: 'sequence_complete',
-      ...story,
-    } as OrdinalLineChallenge);
-  }
+    if (relative) {
+      challenges.push({
+        id: `c${idx++}`,
+        type: 'relative-position',
+        characters: setup.characters,
+        ...relative,
+      } as OrdinalLineChallenge);
+    }
 
-  if (build) {
-    challenges.push({
-      id: `c${idx++}`,
-      type: 'build-sequence',
-      characters: setup.characters,
-      correctAnswer: 'sequence_complete',
-      ...build,
-    } as OrdinalLineChallenge);
+    if (story) {
+      challenges.push({
+        id: `c${idx++}`,
+        type: 'sequence-story',
+        characters: setup.characters,
+        correctAnswer: 'sequence_complete',
+        ...story,
+      } as OrdinalLineChallenge);
+    }
+
+    if (build) {
+      challenges.push({
+        id: `c${idx++}`,
+        type: 'build-sequence',
+        characters: setup.characters,
+        correctAnswer: 'sequence_complete',
+        ...build,
+      } as OrdinalLineChallenge);
+    }
   }
 
   // Final summary log
