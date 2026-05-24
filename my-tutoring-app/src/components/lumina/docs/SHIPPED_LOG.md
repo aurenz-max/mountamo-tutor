@@ -1,56 +1,48 @@
-# PRD: Within-Mode Instance Density — From Demo Sessions to Mastery Sessions
+# Shipped Log: Within-Mode Instance Density
 
-**Status (as of 2026-05-23):**
-- **Workstream 2** (factor-tree pilot, §6) — ✅ shipped.
-- **Workstream 3** (Bucket A schema refactors, §7) — 15 of 18 shipped: bar-model, tape-diagram, place-value-chart, area-model, function-machine, ordinal-line, array-grid, fraction-bar, function-sketch, balance-scale, measurement-tools, slope-triangle, matrix, **histogram (§6o, 2026-05-22)**, **systems-equations (§6p, 2026-05-23)**. **Pending:** percent-bar + double-number-line (K-3 adjacent, originally entry #5); two-way-table (last upper-grade Bucket A). Strategy-picker (Bucket B-single) re-verified 2026-05-23 — `challengeCount=4` for `guided`, structurally healthy; one component-side answer-leak issue (STP-6, `TallyViz` / `DoublesViz` printing the sum as a text label) surfaced and fixed in `StrategyPicker.tsx`.
-- **Workstream 1** (Bucket B prompt-floor sweep + §6n 3-point audit, §5) — 6 of ~18 generators have the prompt floor at 4-6; pattern-builder is the only one with the full §6n audit applied. Remaining: see §5 table.
-- **Audits feeding the backlog:** §3a (2026-05-19 runtime `validation.challengeCount`) and §3b (2026-05-20 full-folder static-scan) are both closed. Strategy-picker re-verification (§3a stale row) done — see status above.
-- **Latest lessons** (§6o-§6p, 2026-05-22 / 2026-05-23): pool-service variance scales hierarchically — from numeric values (factor-tree) to operation families (function-machine) to *distribution shapes* (histogram); the variance-enforcement loop generalizes unchanged (§6o #1). Mode-specific answer-leak gating is now a required audit step for any visualization-shaped refactor — labels, tooltips, stats panels, and frequency labels can be correct as defaults but assessment-defeating as challenges (§6o #2). Back-solving from the integer answer beats forward-search rejection sampling whenever the per-challenge data must satisfy a *constraint that depends on the answer* (§6p #1); dual-form representations let one canvas drive multiple display modes without parse-at-render foot-guns (§6p #2). Net-new evaluation wiring is now mechanical — 4 of the last 4 upper-grade entries needed it, and the 5-step checklist (§6p #3) is stable.
+**Purpose:** Per-primitive post-mortems and historical audit records for the multi-instance refactor work tracked by [PRD_WITHIN_MODE_INSTANCE_DENSITY.md](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md). The main PRD holds the design, playbook, and current backlog; this file is the historical record.
 
-**Priority:** High — affects every K-3 math primitive's ability to legitimately measure mastery
-**Audience:** Product, Engineering
-**Scope:** K-3 math (workstream-level); pattern generalizes to all math + science primitives
+**Why split:** The PRD accreted a ship post-mortem per primitive (~13 entries × 100-200 lines each = ~1500 lines of historical content) that drowned the operational sections. Lessons that generalize are lifted into the PRD's §5 Playbook; the per-primitive narratives stay here as the historical record.
 
----
+**How to use this file:**
+- **Looking up a shipped primitive's refactor details** — find its `§6x. Xxx Post-Mortem` section below.
+- **Reviewing audit history (the three buckets)** — see §3 / §3a / §3b at the top.
+- **Looking for "how to do a multi-instance refactor"** — that's in [PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5 Playbook](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules), not here.
 
-## 1. Problem Statement
-
-When a student is pinned to a single eval mode (e.g. `factor-tree.guided_small`, β 1.5), the primitive often produces **one problem instance** per session. After one factorization the student is done. The session is shaped like a demo, not a mastery practice.
-
-This is distinct from — and downstream of — the difficulty ladder problem that [PRD_K3_CONTENT_DENSITY](PRD_K3_CONTENT_DENSITY.md) addresses. That PRD smooths the *vertical* β gaps between eval modes. This PRD addresses the *horizontal* thinness inside each mode: when the engine routes a student to mode X at β Y, what does the student actually do for 5 minutes?
-
-### The evidence (screenshots from production)
-
-1. **Factor Tree → Guided Small (β 1.5)** → one composite (12), factored, done.
-2. **Factor Tree → Guided Medium (β 2.5)** → one composite (60), factored, done.
-
-Both sessions terminate after a single binary correct/incorrect signal. The student barely practices; IRT learns almost nothing about θ; the mode's pedagogical range (10 valid candidate composites in `guided_small`) goes 90% unused.
-
-### Why this is a mastery problem, not a UX problem
-
-- **One instance ≠ mastery.** A student who factors 12 correctly has not demonstrated they can factor `guided_small` composites. They have demonstrated they can factor 12.
-- **One instance is a bad IRT update.** A single binary correct/incorrect signal is noisier than 4-6 binary signals against the same θ. The 4-gate mastery engine learns less per session than it should.
-- **One instance is gameable on surface features.** The factor tree for 12 has a memorable shape. Mastery requires variance.
-- **Auto-mode does NOT fix this.** The engine's auto-mode varies *across* eval modes within a session. It does not — and should not — multiply *within* a single mode's session. That responsibility belongs to the primitive's generator.
-
-### What "mastery-shaped" means for this PRD
-
-A single-mode session should produce **3–6 distinct problem instances** of that eval mode's challenge type, surfaced sequentially. The student progresses through `[instance 1 → result] → [instance 2 → result] → …` within the same primitive render. Final session result is an aggregate across all instances.
+**Note on cross-references:** The post-mortems below reference `§6a #N` extensively. That was the original numbering of the playbook section when it lived in the main PRD. The canonical rules now live in [PRD §5](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules) with a different (consolidated) numbering. The historical `§6a #N` references are kept as breadcrumbs — when you see one, search for the rule's *concept* (e.g. "stale-state guard", "pool service vs orchestrator") in PRD §5 rather than trusting the number.
 
 ---
 
-## 2. Why This Is Different From PRD_K3_CONTENT_DENSITY
+## Table of Contents
 
-| Axis | K3_CONTENT_DENSITY | This PRD |
-|------|--------------------|----------|
-| Direction | Vertical (β gaps between modes) | Horizontal (instance count inside a mode) |
-| Symptom | Adjacent modes jump 1.5 β apart, student hits cliff | Mode is one problem long, student hits "done" wall |
-| Fix shape | Insert new atomic eval modes between existing ones | Multiply instances within existing eval modes |
-| Risk if ignored | Difficulty progression has cliffs | Sessions can't establish mastery |
+### Audits
+- §3. Evidence: The Three Buckets (original 2026-05-19 audit)
+- §3a. 2026-05-19 Re-audit — `validation.challengeCount` under single-mode
+- §3b. 2026-05-20 Full-math-folder static-scan audit
 
-These PRDs are complementary. K3 density alone produces a smoother ladder of demos. This PRD alone produces fewer but deeper sessions. Both are needed for a mastery product.
+### Workstream 2 (Pilot)
+- §6. Factor-tree ✅ 2026-05-19
 
-**Re-prioritization implication:** Several proposed inserts in K3_CONTENT_DENSITY (`missing_factor_small`, `fluency_small`, `equivalent_visual`, `expanded_form_3digit`) may be better served by adding *instances* to the existing mode than by splitting the mode further. After Workstream 1 of this PRD ships, the K3 density plan should be re-audited — some of its inserts may become unnecessary.
+### Workstream 3 (Bucket A schema refactors)
+- §6b. Bar-model ✅ 2026-05-19
+- §6c. Tape-diagram ✅ 2026-05-19
+- §6d. Place-value-chart ✅ 2026-05-19
+- §6e. Area-model ✅ 2026-05-19
+- §6f. Function-machine ✅ 2026-05-19
+- §6g. Ordinal-line ✅ 2026-05-19
+- §6h. Array-grid ✅ 2026-05-19
+- §6i. Function-sketch ✅ 2026-05-20
+- §6j. Balance-scale ✅ 2026-05-21
+- §6k. Measurement-tools ✅ 2026-05-21
+- §6l. Slope-triangle ✅ 2026-05-22
+- §6m. Matrix-display ✅ 2026-05-22
+- §6n. Pattern-builder §6a compliance audit (Bucket B retrofit) ✅ 2026-05-23
+- §6o. Histogram ✅ 2026-05-22
+- §6p. Systems-equations ✅ 2026-05-23
+- §6q. Percent-bar ✅ 2026-05-23
+
+### Historical Execution Plan
+- §9. Week-by-week execution plan (now historical; refer to current backlog in main PRD)
 
 ---
 
@@ -65,7 +57,7 @@ The generator's data type has no `challenges: ChallengeDef[]` field. The shape c
 | Primitive | Generator | Singular field | Grade band |
 |-----------|-----------|----------------|------------|
 | `factor-tree` | [gemini-factor-tree.ts:100](../service/math/gemini-factor-tree.ts#L100) | `rootValue: number` | 3-7 |
-| `percent-bar` | [gemini-percent-bar.ts](../service/math/gemini-percent-bar.ts) | single `scenario` + `challengeType` | 5-8 |
+| ~~`percent-bar`~~ ✅ SHIPPED 2026-05-23 (§6q) | ~~[gemini-percent-bar.ts](../service/math/gemini-percent-bar.ts)~~ Pool-service per-mode scenario builders | ~~single `scenario` + `challengeType` (plus an in-component `explore → practice → apply` phase walk on one shared scenario per rule 13 anti-pattern)~~ Fixed | 5-8 |
 | `double-number-line` | [gemini-double-number-line.ts](../service/math/gemini-double-number-line.ts) | single `contextQuestion`, given/target points | 5-7 |
 | `tape-diagram` | [gemini-tape-diagram.ts](../service/math/gemini-tape-diagram.ts) | single `wordProblem` + part1/2/3 fields | 2-5 |
 | `bar-model` | [gemini-bar-model.ts:67](../service/math/gemini-bar-model.ts#L67) | `challenge?: BarModelChallenge` (singular) | 2-5 |
@@ -257,110 +249,6 @@ K-3 priority remains entries #1-#2 (already in §7). Mid-elementary (entries #3-
 
 ---
 
-## 4. Solution Overview
-
-Three workstreams, in order:
-
-1. **Prompt-floor sweep (Bucket B)** — Sweep generators that have multi-instance schemas but stingy prompts. Bump the floor to 4-6 instances. One-line changes. No schema or component work. Ships in 1 day.
-2. **Schema refactor — `factor-tree` (Bucket A pilot)** — Refactor `factor-tree` first as the canonical multi-instance template using existing `useChallengeProgress` / `usePhaseResults` hooks. This produces a reusable pattern.
-3. **Schema refactor — remaining Bucket A primitives** — Apply the `factor-tree` template to `tape-diagram`, `bar-model`, `place-value-chart`, `percent-bar`, `double-number-line` (and `area-model` if verified singular).
-
-Workstream 1 should ship before 2 and 3 because:
-- It's the cheap win that immediately improves most K-3 sessions
-- The success metric (4-6 instances per session) gets validated cheaply before we invest schema work
-- It buys breathing room to refactor Bucket A correctly
-
----
-
-## 5. Workstream 1: Bucket B Prompt-Floor Sweep + §6n 3-Point Audit
-
-### Goal
-
-Every multi-instance generator produces **at least 4 instances** per single-mode session, **and** is wired through the §6a multi-instance checklist (catalog context keys, evaluation barrel re-export, tester metrics breakdown). The original "1-line prompt edit" framing was incomplete — pattern-builder's audit on 2026-05-23 (§6n) showed every Bucket B primitive needs the same surgical 3-point audit on top of the prompt bump.
-
-### What "shipping a Workstream 1 entry" now means
-
-Per primitive, the work is **4 touches**:
-
-| # | Touch | File | What it does |
-|---|---|---|---|
-| 1 | Prompt floor bump | `service/math/gemini-<primitive>.ts` | `Generate 3-5 challenges` → `Generate 4-6 challenges` (single line) |
-| 2 | Catalog context keys (§6a #5) | `service/manifest/catalog/math.ts` | Add `currentChallengeIndex` and `totalChallenges` to `contextKeys`; template `{{totalChallenges}}` into `taskDescription` |
-| 3 | Metrics barrel re-export (§6a #9 step 2) | `evaluation/index.ts` | Add `<Primitive>Metrics` to the math-phase-2 export block; switch the component to import from the public barrel |
-| 4 | Tester metrics breakdown (§6a #10 step 5) | `components/MathPrimitivesTester.tsx` | Add `result.metrics.type === '<primitive>'` block to the results panel |
-
-Per-primitive effort: ~30 min coding + `/eval-test` per single-mode tier. See `pattern-builder-2026-05-23.md` and §6n for the canonical example.
-
-### Pending — primitives still needing both prompt-bump AND §6n audit
-
-Ordered by routing volume / grade-band impact (K-3 first, since the engine routes most heavily there today).
-
-| # | Primitive | Prompt site | Grade band | Notes |
-|---|---|---|---|---|
-| 1 | `ten-frame` | [gemini-ten-frame.ts:291](../service/math/gemini-ten-frame.ts#L291) — `Generate 3-5` | K-1 | Added in §3b; high-routing K-1 primitive |
-| 2 | `number-bond` | [gemini-number-bond.ts:287](../service/math/gemini-number-bond.ts#L287) — `'3-5'` config default | K-3 | Config-driven default — change default, not call sites |
-| 3 | `counting-board` | [gemini-counting-board.ts:283](../service/math/gemini-counting-board.ts#L283) — `Generate 3-5` | K-2 | — |
-| 4 | `regrouping-workbench` | [gemini-regrouping-workbench.ts:304](../service/math/gemini-regrouping-workbench.ts#L304) — `Generate 3-5` | 1-3 | Added in §3b |
-| 5 | `skip-counting-runner` | [gemini-skip-counting-runner.ts:298](../service/math/gemini-skip-counting-runner.ts#L298) — `Generate 3-5` | 1-3 | — |
-| 6 | `length-lab` | [gemini-length-lab.ts:266](../service/math/gemini-length-lab.ts#L266) — `Generate 3-5` | 3-5 | — |
-| 7 | `shape-builder` | [gemini-shape-builder.ts:406](../service/math/gemini-shape-builder.ts#L406) — `Generate 3-5` | 3-5 | — |
-| 8 | `3d-shape-explorer` | [gemini-3d-shape-explorer.ts:279](../service/math/gemini-3d-shape-explorer.ts#L279) — `Generate 3-5` | 3-5 | — |
-| 9 | `equation-builder` | [gemini-equation-builder.ts:967](../service/math/gemini-equation-builder.ts#L967) — `'3-5'` config default | 3+ | Config-driven default |
-| 10 | `ratio-table` | [gemini-ratio-table.ts:193](../service/math/gemini-ratio-table.ts#L193) — `Generate 3-5` | 3-5 | §3a tested at 3 — borderline; prompt bump should resolve |
-| 11 | `parameter-explorer` | [gemini-parameter-explorer.ts:299](../service/math/gemini-parameter-explorer.ts#L299) — `Generate 3-4` | 3-5+ | — |
-| 12 | `strategy-picker` | Bucket B-single per §3a; code already has `TARGET_INSTANCE_COUNT=4` at [gemini-strategy-picker.ts:30](../service/math/gemini-strategy-picker.ts#L30) | 3+ | **Prompt likely already shipped** — needs `/eval-test strategy-picker --evalMode guided` confirmation + §6n audit only |
-
-### Pending — primitives with prompt floor already at 4-6, needing only the §6n audit
-
-These were swept during the original §5 prompt-bump pass but never got the §6a checklist applied (same gap pattern-builder had before 2026-05-23). Each needs touches #2, #3, #4 above — but not #1.
-
-| Primitive | Prompt floor | Audit status |
-|---|---|---|
-| `base-ten-blocks` | 4-6 (all branches) | §6n audit pending |
-| `hundreds-chart` | 4-6 | §6n audit pending |
-| `number-line` | 4-6 (all sub-generators) | §6n audit pending |
-| `comparison-builder` | 4-6 | §6n audit pending |
-| `fraction-circles` | 4-6 | §6n audit pending |
-| `pattern-builder` | 4-6 | ✅ §6n audit shipped 2026-05-23 |
-
-### Shipped log (for reference)
-
-Prompt floor bumped from stingy → 4-6 in earlier passes: pattern-builder, base-ten-blocks, hundreds-chart, number-line (4 sub-generators), comparison-builder, fraction-circles. §6n full audit: pattern-builder.
-
-### Reclassified out of §5 (do not bump prompt — needs schema refactor)
-
-`measurement-tools` was originally in this sweep with "Generate 3 to 5 shapes." §3b reclassified it as Bucket A — bumping the shape count inside one rendered tool doesn't multiply pedagogical instances. Shipped via §6k schema refactor instead.
-
-### Validation per primitive
-
-1. `npx tsc --noEmit` clean for touched files.
-2. `/eval-test <primitive> --evalMode <each-single-mode-tier>` — assert `validation.challengeCount >= 4` for every eval mode whose `challengeTypes` length is 1.
-3. Manual UI render — confirm distinct per-challenge content (no surface-feature repetition across N instances).
-4. Token/cost sanity — Gemini Flash Lite output approximately doubles for some primitives; verify within budget.
-
-### Out of scope for Workstream 1
-
-- Generators in Bucket A (singular schema — need refactor, not a bump).
-- Generators in Bucket C (already 4+).
-- Schema changes, component changes, backend registry changes.
-
-### Revised effort estimate
-
-- **Per primitive:** ~30 min (4 file touches + eval-test sweep).
-- **Pending Workstream 1 entries with prompt bump needed:** 12 primitives × 30 min ≈ 6 hours.
-- **Pending §6n-only audits (already-shipped prompt floor):** 5 primitives × 20 min ≈ 100 min.
-- **Total remaining Workstream 1:** ~1.5 days of focused work.
-
-### Suggested sequencing
-
-1. Re-verify strategy-picker (5 min — likely already passing, just confirm).
-2. K-3 batch: ten-frame, number-bond, counting-board, regrouping-workbench (highest engine routing volume).
-3. Mid-elementary batch: skip-counting-runner, length-lab, shape-builder, 3d-shape-explorer.
-4. Mid-grade batch: equation-builder, ratio-table, parameter-explorer.
-5. §6n-only audits on already-shipped Bucket B primitives (5 quick passes).
-
----
-
 ## 6. Workstream 2: Schema Refactor — `factor-tree` as Template ✅ SHIPPED
 
 ### Goal
@@ -424,151 +312,6 @@ export interface FactorTreeData {
 ### Actual effort
 
 ~3 hours including bug-fix iteration. The deviations (pool service + slim schema) made schema and generator faster than estimated; the stale-state guard added ~30 min of debugging not in the original estimate.
-
----
-
-## 6a. Pattern Refinements From the Pilot
-
-These are the *general* lessons from the `factor-tree` ship that should inform Workstream 3 and future multi-instance primitives. They replace the original §6 plan's implicit assumption that Gemini owns per-challenge data.
-
-### 1. Decision rule: pool service vs orchestrated Gemini
-
-Before writing the schema, classify the per-challenge data:
-
-| If per-challenge data is… | Use | Examples |
-|---|---|---|
-| **Value-only** (a number, a coordinate, a target) | Local pool service. Gemini emits wrapper only. | `factor-tree` (rootValue), `place-value-chart` (targetNumber), `area-model` (number pairs) |
-| **Content-bearing** (word problem text, scenario context, label sets) | Orchestrated parallel Gemini calls per challenge type — pattern in [gemini-coin-counter.ts](../service/math/gemini-coin-counter.ts) lines 657-755 | `tape-diagram`, `bar-model`, `percent-bar`, `double-number-line` |
-
-The orchestrator pattern (one Gemini call per challenge-type, results merged via `Promise.all`) is the right answer when *any* per-instance field requires LLM-quality text. Don't try to one-shot 4-6 word problems in a single response schema — it's exactly the failure mode the user flagged.
-
-### 2. Structured-output Gemini convergence is the gravitational pull
-
-When the schema has a `responseMimeType: "application/json"` and a `responseSchema`, Gemini **ignores temperature** for numeric/categorical values. It returns the same composites (12, 24, 36…), same coordinates, same scenarios on every call. This is documented in [NUMBER_POOL_SERVICE.md](../service/math/NUMBER_POOL_SERVICE.md) and was directly observable in the pilot — the original prompt-based "spread coverage" instruction was not going to work no matter how carefully phrased. Always pre-randomize the value-only fields and inject them as mandatory.
-
-### 3. The stale-state guard (React-effects pitfall)
-
-Every multi-instance primitive that resets per-challenge UI state on advance will hit this:
-
-When `useChallengeProgress.advance()` increments the index, the render that follows has the **new** `currentChallenge` but **old** per-challenge state (the reset `useEffect`'s `setX(...)` calls are scheduled, not applied until the next render). If a completion-detection `useEffect` runs in the same batch, it sees `(newChallenge, oldCompletedState)` and records a phantom success for the upcoming challenge. Symptom: completing 2 challenges reports 4 done.
-
-**Fix pattern** — guard completion effects on a *content* match, not just a flag:
-
-```tsx
-useEffect(() => {
-  if (!currentChallenge) return;
-  if (!stateLooksComplete) return;
-  if (alreadyRecordedRef.current) return;
-  // Stale-state guard: ensure the UI state belongs to the active challenge.
-  // The reset useEffect's setX() is async — without this guard we'd record
-  // results for the *next* challenge using the *previous* challenge's state.
-  if (!stateMatchesChallenge(currentChallenge)) return;
-  alreadyRecordedRef.current = true;
-  recordResult(...);
-}, [stateLooksComplete, currentChallenge, /* ... */]);
-```
-
-For `factor-tree` the match is `tree.get('0').value === currentChallenge.rootValue`. For other primitives it's whatever uniquely identifies the per-challenge work product. Resetting a `ref` alone is not enough — the ref reset and the new-challenge-id are *both* visible to the completion effect on the same render.
-
-### 4. PhaseSummaryPanel with a single phase
-
-When all challenges in a session share one eval mode (the common case post-refactor), use a one-entry `PhaseConfig`:
-
-```ts
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  factor: { label: 'Factor', icon: '🌳', accentColor: 'amber' },
-};
-// In usePhaseResults: getChallengeType: () => 'factor'
-```
-
-The panel renders as one row showing aggregate stats. This is fine and visually clean — no special-case rendering needed.
-
-### 5. AI tutoring context keys
-
-Every multi-instance refactor must:
-- Add `currentChallengeIndex` and `totalChallenges` to `aiPrimitiveData`.
-- Update the catalog entry's `tutoring.contextKeys` to include both.
-- Update `taskDescription` to template `{{totalChallenges}}` so the tutor knows it's a session, not a single problem.
-- Emit `[ACTIVITY_START]` once on mount (session-level), `[TREE_COMPLETE]` / `[PHASE_COMPLETE]` per challenge, `[ALL_COMPLETE]` once at the end with the phase score breakdown.
-
-### 6. Tester component: usually no change
-
-The Lumina tester forwards generator output as-is via `Parameters<typeof Component>[0]['data']`. If your generator output type changes (which it will — `rootValue` → `challenges[]`), the tester picks it up automatically through structural typing. The original plan's "1 hour tester update" was unnecessary for factor-tree. *Caveat: this only holds if the primitive is **already registered** in the tester — see §6a #10 for the case where it isn't.*
-
-### 7. Orchestrator-same-mode vs orchestrator-mixed-type
-
-§6a #1's "orchestrator" decision rule needs a sub-split. When the session pins to ONE eval mode (the common case — IRT calibration picks exactly one `challengeType` per render), the orchestrator simplifies to **N parallel calls of the single per-mode sub-generator**, not "one call per type":
-
-| Sub-pattern | When | Reference |
-|---|---|---|
-| **Orchestrator-same-mode** | Session pins to one eval mode AND the primitive already has internal per-mode dispatch (one sub-generator function per mode, each emitting one challenge). | `bar-model` — fans out 4 parallel calls of the selected sub-generator. |
-| **Orchestrator-mixed-type** | Session can mix multiple challenge types in one render. | `coin-counter` — one call per type, results merged. |
-
-The same-mode variant is the lowest-friction refactor target because per-mode sub-generators don't need rewriting — only their return shape changes (drop session-level fields, return one `{ title, description, challenge }` tuple). Audit Workstream 3 candidates for existing per-mode dispatch before scoping.
-
-### 8. Handler-driven completion: stale-state guard lives in submit, not effect
-
-§6a #3 placed the stale-state guard in a completion `useEffect` (factor-tree detects "all leaves prime" passively). For primitives where the user *explicitly* submits — button click, option pick, drag-and-drop release — there is no completion effect. The guard moves into the submit helper itself:
-
-```ts
-const submitResult = (correct: boolean, extras = {}) => {
-  if (!currentChallenge) return;
-  // Stale-state guard: in-flight click after advance() can race ahead of the
-  // reset useEffect. Match a per-challenge content field before recording.
-  const stateMatches = builtValues[0]?.label === currentChallenge.values[0]?.label;
-  if (!stateMatches) return;
-  // ... incrementAttempts, setFeedback, recordResult ...
-};
-```
-
-Same principle as §6a #3 (content match, not flag match), different location. Effect-driven primitives put the guard in the completion effect; handler-driven primitives put it in submit.
-
-### 9. Legacy `onComplete` → `usePrimitiveEvaluation` migration is in scope
-
-Several Bucket A primitives still expose a lightweight `onComplete: (results: ChallengeResult[]) => void` callback rather than `usePrimitiveEvaluation` + `onEvaluationSubmit`. The multi-instance refactor is the natural place to upgrade — once the session has real aggregate metrics worth submitting, the legacy callback is no longer sufficient.
-
-Concrete migration steps:
-1. Define `XxxMetrics extends BasePrimitiveMetrics` in [evaluation/types.ts](../evaluation/types.ts); add to the `AnyPrimitiveMetrics` union.
-2. Re-export `XxxMetrics` from [evaluation/index.ts](../evaluation/index.ts).
-3. Component: replace `onComplete?: (results) => void` with `onEvaluationSubmit?: (result: PrimitiveEvaluationResult<XxxMetrics>) => void`.
-4. Add `usePrimitiveEvaluation<XxxMetrics>({ primitiveType, instanceId, skillId, subskillId, objectiveId, exhibitId, onSubmit })` with a stable instance-id ref.
-5. Session-complete useEffect builds aggregate metrics and calls `submitEvaluation(goalMet, score, metrics, { studentWork })`. Don't fire per-challenge.
-6. `PhaseSummaryPanel` reads `submittedResult?.score` and `elapsedMs`.
-
-Audit pending: `tape-diagram`, `percent-bar`, `place-value-chart`, `double-number-line` for the same gap.
-
-### 10. Tester registration is a delivery step, not an afterthought
-
-The math primitives tester ([MathPrimitivesTester.tsx](../components/MathPrimitivesTester.tsx)) is not auto-derived from the catalog. If the primitive isn't registered there, the structural-typing relief from §6a #6 doesn't apply — there's literally no render path. Each new/refactored primitive needs **five** edits to that file:
-
-1. Import the component.
-2. Add the ID to the `PrimitiveType` string union (line ~77).
-3. Add an entry to `PRIMITIVE_OPTIONS` (icon + topic).
-4. Add a render `case` in the switch — use the FactorTree shape for evaluation-hook primitives (pass `instanceId`, `skillId`, `subskillId`, `objectiveId`, `onEvaluationSubmit`).
-5. Add a metrics-breakdown block in the results panel keyed on `result.metrics.type === 'xxx'`.
-
-Step 5 is the most-likely-to-be-forgotten. For Workstream 3 primitives that were previously tester-registered with the old shape, the existing breakdown also needs updating — it reads fields that no longer exist on the new metrics interface.
-
-### 11. Keep metrics honest
-
-When designing `XxxMetrics`, drop fields that would always be tautological under the recording rules. Example from bar-model: an initial `datasetCorrectCount?: number` field for `build_graph` mode was proposed and removed, because `recordResult` is only called on `correct === true`, and bar-model's correctness requires `datasetCorrect && stepCorrect` to BOTH be true — so the field would always equal `correctCount` and carry no signal. If richer per-component signal is wanted, add an attempt-level accumulator state and track partial correctness across attempts; otherwise omit the field.
-
-Reusable per-challenge score formula for handler-driven primitives (used by bar-model):
-
-```ts
-const perChallengeScore = (r: ChallengeResult) =>
-  r.correct ? Math.max(20, 100 - (r.attempts - 1) * 20) : 0;
-```
-
-20-point decay per extra attempt, floored at 20, with 100 on first try. Standardize unless the primitive has a domain-specific signal that warrants something else (e.g., NumberLine's accuracy averaging).
-
-### 12. Compact numeric inputs beat the full CalculatorInput keypad
-
-Where a primitive renders multiple unknown slots that each need a small numeric answer (tape-diagram represent has 3 segments side-by-side; place-value-chart and percent-bar will have similar patterns), the shared `CalculatorInput` component dominates the screen — it stacks a 4×4 keypad (~14 rows) under every slot. Multiply by 3 slots and the diagram itself becomes a footnote on the page.
-
-Replace with an inline stepper-plus-text-input: `[−] [typeable orange field] [+]` with a small "Check" button beneath. Reference: `SegmentStepper` helper in [TapeDiagram.tsx](../primitives/visual-primitives/math/TapeDiagram.tsx). Vertical footprint drops from ~14 rows to ~3. Type-in supports larger values; `−/+` supports rapid small adjustments; Enter submits.
-
-**When to apply:** any multi-slot numeric entry primitive (`place-value-chart`, `percent-bar`, `double-number-line`, `area-model`). When in doubt, keep CalculatorInput for single large-number entry contexts (one prominent answer field), swap for stepper when there are 2+ slots rendered together.
 
 ---
 
@@ -2113,162 +1856,115 @@ Plus the catalog: if `evalModes` aren't declared yet, add them (matrix-display h
 
 ---
 
-## 7. Workstream 3: Apply Template to Remaining Bucket A Primitives
+## 6q. Percent-bar Post-Mortem (Workstream 3 entry #17 / mid-grade Bucket A) ✅ SHIPPED 2026-05-23
 
-After `factor-tree` establishes the pattern, apply to:
+### Why percent-bar next
 
-| Primitive | Singular field today | Refactor target | Generation pattern (per §6a #1) | Notes |
-|-----------|----------------------|-----------------|---------------------------------|-------|
-| `tape-diagram` ✅ **SHIPPED** | ~~`wordProblem`, `part1/2/3Value/Label`~~ → `challenges: TapeDiagramChallenge[]` (default 4, max 6) | Shipped | **Orchestrator-same-mode** (per §6a #7) — N parallel calls of the per-mode sub-generator. See §6c for ship details. Pattern matched bar-model: internal per-mode dispatch existed, so same-mode reduction applied. |
-| `bar-model` ✅ **SHIPPED** | ~~`challenge?: BarModelChallenge`~~ → `challenges: BarModelChallenge[]` (default 4, max 6) | Shipped | **Orchestrator-same-mode** (per §6a #7) — N parallel calls of the per-mode sub-generator. See §6b for ship details. |
-| `place-value-chart` ✅ **SHIPPED** | ~~`targetNumber`~~ → `challenges: PlaceValueChartChallenge[]` (default 3, max 6 per §6d pilot decision) | Shipped | **Pool service** (value-only — leverages existing `createNumberPool` per [NUMBER_POOL_SERVICE.md](../service/math/NUMBER_POOL_SERVICE.md)) | Shipped. See §6d for ship details. Pilot at 3 instances. New within-challenge "challenge-done" phase with explicit "Next Number" affordance — candidate pattern for other multi-phase primitives. |
-| `percent-bar` | single `scenario`/`challengeType` + in-component `explore → practice → apply` phase walk on one problem | `challenges: PercentBarChallenge[]` | **Orchestrator-mixed-type OR pool-service** (audit pending) | Each challenge has its own scenario context (e.g. "tip on a meal", "discount on a jacket"). **2026-05-23 audit finding:** the pre-refactor `PercentBar.tsx` already uses `useChallengeProgress` + `usePrimitiveEvaluation`, BUT the challenges array is built from session-level fields (`exploreQuestion` / `exploreTargetPercent` + `practiceQuestions[]` + `mainQuestion` / `mainTargetPercent`) into an explore→practice→apply walk on ONE wholeValue/scenario context. This is the **§6f #1 in-component phase navigator anti-pattern** — eval-mode pinning makes the phase walk redundant (each phase is a different question shape but all on the same problem). Refactor must (a) drop the explore/practice/apply phase navigator, (b) make each of the 4 challenges an independent problem of the pinned eval mode, (c) decide pool-service vs orchestrator-mixed-type based on whether scenarios can be pre-authored from a fixed pool (pool-service) or require LLM-quality text per challenge (orchestrator). Scenarios like "8% sales tax on a $50 shirt" are templatable from `(rate, base, contextLabel)` tuples — pool-service is likely the right call. |
-| `double-number-line` | single `contextQuestion`/labels | `challenges: DoubleNumberLineChallenge[]` | **Orchestrator** | Each challenge gets its own ratio relationship + context. Keep `topLabel`/`bottomLabel` consistent within a session for coherence (e.g. all flour→cookies, not flour→cookies then cars→hours). |
-| `area-model` ✅ **SHIPPED** | ~~singular `factor1Parts`/`factor2Parts`~~ → `challenges: AreaModelChallenge[]` (default 3, max 6) | Shipped | **Pool service** (value-only — local per-mode operand generators in [gemini-area-model.ts](../service/math/gemini-area-model.ts)) | Shipped. See §6e for ship details. Audit resolved Open Q #5: was confirmed Bucket A (the "6-10 number pairs" was prompt-level seed for ONE call, not a multi-instance array). User-visible "Try Another Problem replays the same problem" bug fixed by replacing reset-local-state with `advance()`. |
-| `function-machine` ✅ **SHIPPED** | ~~single `rule` with multiple inputs~~ → `challenges: FunctionMachineChallenge[]` (default 3, max 6) | Shipped | **Pool service** (value-only — local `selectFunctionMachineRules` in [gemini-function-machine.ts](../service/math/gemini-function-machine.ts)) | Shipped. See §6f for ship details. Design Q resolved: N rules per session (not N inputs of one rule). Dropped the in-component 4-phase navigator — eval mode === interaction shape (§6f #1). Dropped orphan chaining feature (§6f #5). |
-| `ordinal-line` ✅ **SHIPPED** | ~~Bucket B-mixed: orchestrator emitted one challenge per allowed type → 1 challenge in single-mode~~ → branches on `allowedTypes.size === 1` and builds 4 distinct instances of the pinned type | Shipped | **Pool service** for 4 modes (identify, match, relative-position, build-sequence) + **orchestrator (parallel calls with pre-randomized clue orderings)** for sequence-story | Shipped 2026-05-19. See §6g for ship details. **Not in the original §3 audit** — surfaced as the third bucket (B-mixed) via user report. Component required zero changes (already wired to `useChallengeProgress`). |
-| `array-grid` ✅ **SHIPPED** | ~~Bucket A (§3a new) — singular `targetRows`/`targetColumns`~~ → `challenges: ArrayGridChallenge[]` (default 4, max 6) | Shipped | **Pool service** (value-only — local per-mode dimension generators in [gemini-array-grid.ts](../service/math/gemini-array-grid.ts)) | Shipped 2026-05-19. See §6h. Confirmed the §3a prediction — "likely the easiest of the new Bucket A entries." Pool-service pattern matched factor-tree / place-value-chart / area-model. |
-| `fraction-bar` ✅ **SHIPPED** | ~~Bucket A (§3a new) — singular `numerator` / `denominator`~~ → `challenges: FractionBarChallenge[]` (default 3, max 6) | Shipped | **Pool service** (value-only — local per-mode operand generators in [gemini-fraction-bar.ts](../service/math/gemini-fraction-bar.ts)) | Shipped 2026-05-19. Per-§3a prediction we expected per-mode shape divergence, but in practice all four modes (identify, build, compare, add_subtract) only differ in operand difficulty — the within-challenge interaction shape is identical (numerator MC → denominator MC → shade bar). So a single per-mode operand generator + local MC distractor builder was sufficient; no per-mode UI dispatch needed. Same pool-service template as area-model / array-grid. |
-| `strategy-picker` | **Bucket B-single** (§3a new) — `challenges[]` exists but generator emits exactly one | bump generator to pre-select N distinct equations per mode | **Pool service** (equations) | Newly identified in §3a re-audit. `challengeCount=1` not 0 — could be a one-line prompt bump if the orchestration shape allows it, or a small refactor. Audit before scoping. |
+Per [PRD_MATH_PRIMITIVE_COMPLETION §A1](./PRD_MATH_PRIMITIVE_COMPLETION.md#a1-percent-bar-5-8-grade--2-3-hours), percent-bar was the highest-routing remaining Bucket A entry (grade 5-8 percent concepts cover a high-volume curriculum slice). Distinct from prior Bucket A entries because the pre-refactor code already used `useChallengeProgress` + `usePrimitiveEvaluation`, BUT the array it iterated was assembled locally from session-level `exploreQuestion` + `practiceQuestions[]` + `mainQuestion` — an `explore → practice → apply` phase walk on ONE shared `wholeValue`/scenario. The classic [PRD §5 rule 13](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules) anti-pattern: in-component phase navigator that masks a singular underlying problem. From the IRT engine's point of view this was always one problem per session despite the local `challenges` array.
 
-### Mandatory checklist for each Bucket A refactor (derived from pilot)
+### What shipped (vs the §A1 spec)
 
-For every primitive in this workstream, in addition to the per-row notes above:
+| Plan (§A1 spec) | What shipped | Why the deviation |
+|---|---|---|
+| Generation pattern: **Pool service** with per-mode `(rate, base, contextLabel)` tuples | **Pool service** with four per-mode scenario builders (`buildDirect`, `buildSubtraction`, `buildAddition`, `buildComparison`). Each mode owns its own pre-authored scenario templates (7 direct, 6 subtraction, 6 addition, 5 comparison) × a curated `rate` pool × a curated `base` pool. The template stores `scenario` + `question` + `hint` as parameterized functions of `(rate, base)`; the builder composes them with sampled values and stores the pre-computed `targetPercent` + `context` on the challenge. | First Workstream 3 entry where the pool produces **text-bearing scenarios** rather than purely numeric values — each template is a small string-rendering function rather than a number. Cleaner than orchestrator (no Gemini calls per challenge) because the scenario *shapes* are templatable from a small parameter set. |
+| `challenges: PercentBarChallenge[]` (each owns `id`, `scenario`, `wholeValue`, `wholeValueLabel`, `targetPercent`, `question`, `hint`, mode-specific fields) | `challenges: PercentBarChallenge[]` (default 4, max 6). Each challenge owns `id`, `type`, `scenario`, `wholeValue`, `wholeValueLabel`, `question`, `targetPercent`, `hint`, and a structured `context: PercentContext` (`{ problemType, initialValue, changeRate, discountFactor, finalValue }`). The `context` object stays for parity with the pre-refactor tutoring AI hooks that read those fields. | Per-mode `targetPercent` derivation is the pedagogical distinction (see §6q #1 below). |
+| Drop `setPhase('explore'\|'practice'\|'apply')` navigator | Dropped. PHASE_TYPE_CONFIG block, phase-tabs render, currentPhase derivation, three separate hint counters, three separate accuracy aggregations — all removed. The eval mode (`direct` / `subtraction` / `addition` / `comparison`) IS the session shape; each of N challenges is an independent percent problem of the pinned mode. | Per [PRD §5 rule 13](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules) — the rule's exact citation case. |
+| Per-challenge reset useEffect keyed on `currentChallenge?.id`; stale-state guard | Per-challenge reset enumerates `currentPercent`, `feedback`, `feedbackType`, `showHint`, `isDragging`, `hoveredBenchmark`, `recordedRef.current`, `hintViewedRef.current`. Stale-state guard via `recordedRef.current` checked at the top of `handleCheckAnswer`; flipped to true on successful record; flipped to false in the reset effect. | **Handler-driven** guard since Check Answer is a button click. Same shape as balance-scale (§6j), function-machine `discover_rule` mode, systems-equations (§6p). |
+| `PercentBarMetrics` canonical 9-field shape | Yes — replaced the legacy 21-field per-phase shape (`exploreAccuracy`, `practiceQuestionsCorrect`, `mainProblemAttempts`, etc.) with the canonical 9 (`challengeType`, `totalChallenges`, `correctCount`, `attemptsCount`, `firstTryCount`, `hintsViewed`, `overallAccuracy`, `averageAttemptsPerChallenge`). All the per-phase fields measured the LAST phase's state, not the session — pure deadweight per [PRD §5 rule 18](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules). | Largest single-primitive metrics collapse so far in Workstream 3. The pre-refactor interface had 21 fields; 12 of them were per-phase per-instance state values being read at session-end (i.e. only the apply-phase's value survived). |
+| Catalog `taskDescription` / `contextKeys` / aiDirectives | `taskDescription` now templates `{{challengeType}}`, `{{currentChallengeIndex}}`, `{{totalChallenges}}`, `{{scenario}}`, `{{question}}`, `{{wholeValue}}`, `{{wholeValueLabel}}`, `{{targetPercent}}`, `{{currentPercent}}`. `contextKeys` lists those plus `currentValue`, `attemptNumber` (all scalar — no per-challenge arrays per [PRD §5 rule 15](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules)). Replaced `PHASE-AWARE GUIDANCE` with `MODE-AWARE GUIDANCE` (covers all four modes' distinct cognitive demands — see §6q #1) and added `MULTI-PERCENT PACING`. `constraints` rewritten to forbid the manifest supplying specific scenarios, questions, or target percents. | Same shape as the catalog updates for balance-scale (§6j), histogram (§6o), systems-equations (§6p). |
+| Tester wiring | Render case spreads `data` with `instanceId` / `skillId` / `subskillId` / `objectiveId` / `onEvaluationSubmit`. Added `result.metrics.type === 'percent-bar'` breakdown block with the 7-stat layout matching balance-scale. | Per [PRD §5 rule 17](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules). |
 
-1. **Schema decision** — apply §6a #1 (pool vs orchestrator). Document the choice at the top of the generator file.
-2. **Pool service** — if value-only, use or extend [numberPoolService.ts](../service/math/numberPoolService.ts). Don't roll your own random selection unless the candidate space is small + per-mode constrained (factor-tree case).
-3. **Variance guarantee** — if the pool has structural variants (odd/even, small/large), enforce a representative pick in code, not in the prompt.
-4. **`useChallengeProgress` + `usePhaseResults` + `PhaseSummaryPanel`** — follow the recipe in [MIGRATING_TO_PHASE_SUMMARY.md](MIGRATING_TO_PHASE_SUMMARY.md). All 7 steps. No shortcuts.
-5. **Per-challenge reset useEffect** — keyed on `currentChallenge?.id`. Resets per-challenge state, sets `treeCompleteTriggeredRef.current = false`.
-6. **Stale-state guard in the completion useEffect** (§6a #3) — match a *content* field (`tree.get('0').value`, `currentInput`, etc.) against the current challenge's expected value before recording. This is non-optional — without it you'll get phantom-completion bugs.
-7. **Aggregate metrics in `submitEvaluation`** — sum per-challenge `attempts`, `hintsUsed`, `resetCount`, etc. into one session-level `XxxMetrics` payload. Don't submit per-challenge.
-8. **Catalog tutoring update** ([catalog/math.ts](../service/manifest/catalog/math.ts)) — add `currentChallengeIndex` + `totalChallenges` to `contextKeys`; template `{{totalChallenges}}` in `taskDescription`; update `constraints` if the manifest should stop supplying primitive-specific values.
-9. **No tester changes** unless the tester seeds data directly (most don't — they forward generator output). *Caveat: this only applies if the primitive is already registered — see step 11.*
-10. **Evaluation-hook migration** (per §6a #9) — If the primitive still uses the legacy `onComplete?: (results) => void` callback, replace with `usePrimitiveEvaluation` + `onEvaluationSubmit`. Add `XxxMetrics` to [evaluation/types.ts](../evaluation/types.ts) and re-export from [evaluation/index.ts](../evaluation/index.ts). Compute aggregate metrics in the session-complete useEffect; call `submitEvaluation(goalMet, score, metrics, { studentWork })` exactly once. Use the standard per-challenge score decay (§6a #11) unless domain-specific scoring is warranted.
-11. **Tester registration** (per §6a #10) — Add five edits to [MathPrimitivesTester.tsx](../components/MathPrimitivesTester.tsx): import, `PrimitiveType` union, `PRIMITIVE_OPTIONS` entry, render `case` (FactorTree shape for eval-hook primitives), metrics-breakdown block keyed on `result.metrics.type === 'xxx'`. If the primitive WAS already registered with the old shape, the metrics breakdown almost certainly reads fields that no longer exist — update or remove it.
+### Files changed
 
-### Per-primitive estimate
+- [gemini-percent-bar.ts](../service/math/gemini-percent-bar.ts) — full rewrite (505 → 545 lines). Slim wrapper schema (Gemini emits `title` / `description` / `challengeType` only — three fields). Four per-mode scenario template arrays + rate/base pools. `selectPercentBarChallenges` runs the per-mode builder N times with canonical-key dedup (`${problemType}|${target}|${whole}|${scenario.slice(0,32)}`), shuffles, fills with possible repeats only as fallback.
+- [PercentBar.tsx](../primitives/visual-primitives/math/PercentBar.tsx) — full rewrite (813 → 540 lines). Data interface flattened to `challenges: PercentBarChallenge[]` (required) + session-level visual config + evaluation props. Dropped: phase navigator (≈80 lines), local `challenges` assembly memo (≈40 lines), three separate hint-count states, three separate per-phase accuracy aggregations at session-end. Added: per-challenge reset useEffect keyed on `currentChallenge?.id`, handler-driven `recordedRef.current` stale-state guard, single canonical 9-field metrics submission. `PhaseSummaryPanel` config now keys on `challengeType` (single-mode → one row).
+- [evaluation/types.ts](../evaluation/types.ts) — `PercentBarMetrics` collapsed from 21 fields to canonical 9 (`type`, `challengeType`, `totalChallenges`, `correctCount`, `attemptsCount`, `firstTryCount`, `hintsViewed`, `overallAccuracy`, `averageAttemptsPerChallenge`). Already in `AnyPrimitiveMetrics` union; already re-exported from `evaluation/index.ts`.
+- [catalog/math.ts](../service/manifest/catalog/math.ts) — `description` rewritten to lead with "Multi-challenge percent-bar session"; `constraints` rewritten to forbid the manifest supplying specific numbers, scenarios, questions, or target percents; multi-challenge `taskDescription` + `contextKeys`; new `MULTI-PERCENT PACING` aiDirective; `MODE-AWARE GUIDANCE` directive replaces the legacy `PHASE-AWARE GUIDANCE` (which referenced explore/practice/apply that no longer exist). `evalModes` labels nudged to reflect what the mode actually demands (e.g. `find_part` → "Find Remaining / Discount" since the target = 100 - rate).
+- [MathPrimitivesTester.tsx](../components/MathPrimitivesTester.tsx) — render case spreads evaluation props (was bare `<PercentBar data={...} />` pre-refactor); added `result.metrics.type === 'percent-bar'` metrics-breakdown block.
 
-~1.5 days per primitive following the `factor-tree` template. Bar-model actuals (per §6b): ~2-3 hours including eval-hook migration and tester wiring, because it already had per-mode sub-generators internally. Expect similarly low effort for any primitive that's already internally per-mode-dispatched. Slower estimates (~2 days) hold for primitives needing new content-bearing schemas — `double-number-line`'s context coherence, `tape-diagram`'s multi-type orchestrator. Always include §6a #9 + #10 work in the estimate.
-
-### Sequencing within Workstream 3
-
-Two competing orderings — K-3 mastery impact vs refactor-friction. Original plan optimized for impact; the bar-model ship demonstrated that picking the lowest-friction primitive first as the Workstream 3 "pilot" generates the playbook (§6a #7-#11) for the rest at lower risk. Recommended order:
-
-1. ~~`bar-model` — data representation (2.MD.D, 3.MD.B)~~ ✅ **SHIPPED** — served as the Workstream 3 pilot. See §6b.
-2. ~~`tape-diagram` — workhorse for word-problem standards (2.OA, 2.MD, 3.MD)~~ ✅ **SHIPPED** — Orchestrator-same-mode pattern matched bar-model. See §6c.
-3. ~~`place-value-chart` — workhorse for place-value standards (K-5 NBT). Pool-service pattern; pilot at 3 instances per Open Q #1.~~ ✅ **SHIPPED** — first pool-service entry in Workstream 3. See §6d.
-4. ~~`area-model` — multiplication structure (3-5). Audit first per Open Question #5 — may already be plural.~~ ✅ **SHIPPED** — second pool-service entry. Audit resolved Open Q #5 (confirmed Bucket A). See §6e.
-5. `percent-bar`, `double-number-line` — older grades, lower K-3 priority. Both orchestrator-mixed-type; double-number-line needs context coherence enforcement.
-6. ~~`function-machine` — special case, design discussion first.~~ ✅ **SHIPPED** — third pool-service entry. Design Q resolved: N rules per session. See §6f.
-7. ~~`ordinal-line` — K-1 number sense. Discovered as Bucket B-mixed in production after the original §3 audit.~~ ✅ **SHIPPED 2026-05-19** — mixed-pattern primitive (pool-service for 4 modes, orchestrator for sequence-story). See §6g.
-8. ~~`array-grid` — K-2 multiplication intro. Newly identified via §3a re-audit; pool-service, value-only.~~ ✅ **SHIPPED 2026-05-19** — fourth pool-service entry in Workstream 3. See §6h.
-9. ~~`fraction-bar` — elementary fraction introduction (2-6). Newly identified via §3a re-audit; pool-service, value-only across all four modes.~~ ✅ **SHIPPED 2026-05-19** — fifth pool-service entry. Per-mode operand generators + local MC distractor builder; component refactored to walk N fractions sequentially via `useChallengeProgress`. `strategy-picker` remains on backlog.
-
-**§3b additions (2026-05-20):** the full-folder static-scan audit added **8 new Bucket A primitives** to the long-term backlog. K-3 priorities (#1-#2 above) unchanged; mid-elementary additions:
-
-10. ~~`function-sketch` — function-sketching (5.OA / 6.EE). Effective Bucket A (`challenges: [result.challenge]` wrapper). Recommended pattern: **orchestrator-same-mode** (per §6a #7) — the per-mode subgenerators already exist (`generateIdentifyFeatures`, `generateClassifyShape`, `generateSketchMatch`, `generateCompareFunctions`); each emits a singular result that just needs to be called N times in parallel and wrapped as `challenges[0..N-1]`. Same shape as bar-model's pilot refactor.~~ ✅ **SHIPPED 2026-05-20** — see §6i. Confirmed the §3b "same shape as bar-model's pilot refactor" prediction; ~45 min total because the eval-hook migration was already complete from a prior pass.
-11. ~~`balance-scale` — equality / algebra prep (K-5+). Effective Bucket A (`challenges?` declared but never populated). Recommended pattern: **pool-service** (value-only) — equations decompose into deterministic `(leftSide, rightSide, variableValue)` tuples per eval mode. Same shape as factor-tree.~~ ✅ **SHIPPED 2026-05-21** — see §6j. Per-mode equation builders + canonical-key dedup; component already multi-instance-aware so the refactor was generator-heavy (~1.5 hours total). Confirmed the §3b "same shape as factor-tree" prediction.
-12. ~~`measurement-tools` — 3.MD measurement. Reclassified from §5 to Bucket A. Recommended pattern: **pool-service** (value-only — `(shapeType, dimensions)` tuples per challenge).~~ ✅ **SHIPPED 2026-05-21** — see §6k. Confirmed the §3b "pool-service value-only" prediction; per-mode width pools (measure / compare / estimate / convert) + canonical-key dedup; component already had `useChallengeProgress` wiring so the rewrite was mostly schema-renaming + reset useEffect + flattened metrics (~1.5 hours total).
-
-Upper-grade Bucket A entries (#13-#17 below) are tracked but lower priority — the engine's content-density pressure compounds where students are routed most. Pick up only after K-3 + mid-elementary backlog is clear:
-
-13. ~~`histogram` (6-8) — `(data, binWidth, binStart)` tuples per challenge.~~ ✅ **SHIPPED 2026-05-22** — see §6o. Pool-service with distribution-shape builders (symmetric / right-skewed / left-skewed / bimodal / uniform) emitting datasets with named shape signatures; per-mode wrappers (`buildIdentifyShape`, `buildFindModalBin`, `buildReadFrequency`, `buildEstimateCenter`) attach mode-specific context, bin configs, and pre-computed expected answers. Introduced mode-specific answer-leak UI gating (§6o #2) and continuous-tolerance scoring with snap-to-bin (§6o #3). All 4 eval modes pass eval-test (see [histogram-2026-05-22.md](../../../../qa/eval-reports/histogram-2026-05-22.md)).
-14. ~~`matrix` (8-12) — `(rows, columns, values, operationType)` tuples per challenge.~~ ✅ **SHIPPED 2026-05-22** — see §6m. Pool-service with per-operation builders (`buildTransposeChallenge`, `buildAddSubtractChallenge`, `buildMultiplyChallenge`, `buildDeterminantChallenge`, `buildInverseChallenge`); inverse-mode enforces det = ±1 so A⁻¹ has integer entries; expected results pre-computed on the challenge. First Workstream 3 entry where the **judgment loop itself was net-new** (catalog claimed `supportsEvaluation: true` but the component had no submit / no scoring path — see §6m #1).
-15. ~~`slope-triangle` (8) — `(attachedLine, triangleConfig)` tuples per challenge.~~ ✅ **SHIPPED 2026-05-22** — see §6l. Confirmed the §3b "pool-service value-only" prediction; per-mode slope + run pools with viewport-safe intercept selection; net-new evaluation hook + SlopeTriangleMetrics + 3-mode evalModes block.
-16. ~~`systems-equations` (8) — `(equationA, equationB, systemType, intersectionPoint)` tuples per challenge.~~ ✅ **SHIPPED 2026-05-23** — see §6p. Pool-service with two per-form builders (`buildSlopeInterceptChallenge` for graph/substitution; `buildEliminationChallenge` for elimination); **back-solving** from the integer (x₀, y₀) solution to equation parameters guarantees integer-solution constraints with ~95% sample acceptance (vs ~5% for forward-search rejection sampling — see §6p #1). Dual-form representations (slope-intercept + standard form) on `SystemEquation` let the canvas draw form-agnostically while the display label stays form-aware (§6p #2). Net-new evaluation wiring + 3-mode evalModes block.
-17. `two-way-table` (7-8) — `(rowCategories, columnCategories, frequencies)` tuples per challenge. **Last remaining upper-grade Bucket A entry.** Pool-service per-mode; expected to reuse `MatrixInput`-style editable grid from §6m #3 + mode-specific UI gating from §6o #2 (conditional-probability mode hides cell totals to prevent answer leak).
-
----
-
-## 8. Canonical Multi-Instance Schema Pattern (Reference)
-
-For any future primitive in Lumina:
+### PercentBarMetrics shipped
 
 ```ts
-export interface FooChallenge {
-  id: string;
-  // ... per-challenge problem data
-}
-
-export interface FooData {
-  title: string;
-  description: string;
-  /** 3-6 challenges. Required. */
-  challenges: FooChallenge[];
-
-  // Session-level defaults — keep these flat. Per-challenge overrides are YAGNI.
-  // ... session-wide config
+export interface PercentBarMetrics extends BasePrimitiveMetrics {
+  type: 'percent-bar';
+  challengeType: 'direct' | 'subtraction' | 'addition' | 'comparison';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct within tolerance)
+  hintsViewed: number;            // Challenges where the student opened a hint
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 ```
 
-### Generator: pick a fork
+### Lessons (additions to §6a)
 
-Per §6a #1:
+#### §6q #1. Per-mode `targetPercent` derivation is the eval-mode pedagogical distinction
 
-**Fork A — pool service (value-only per-challenge data).** Reference: [gemini-factor-tree.ts](../service/math/gemini-factor-tree.ts).
+The four modes look surface-similar (each gives a scenario and a rate; student places a percent on the bar) but the *cognitive operation* required to derive the target differs:
 
-```ts
-// 1. Gemini call emits ONLY the wrapper (title, description, mode flags).
-// 2. Local service deterministically selects per-challenge values.
-const rootValues = selectFooValues(challengeType, { count: 4 });
-// 3. Build challenges array in-generator.
-const challenges = rootValues.map((v, i) => ({ id: `foo-${i + 1}`, value: v }));
-return { ...wrapper, challenges };
-```
+| Mode | Cognitive op | Target derivation |
+|---|---|---|
+| `direct` | Place the named percent | `target = rate` (stated in scenario) |
+| `subtraction` | Subtract from 100 to find remaining | `target = 100 - rate` |
+| `addition` | Identify the added rate | `target = rate` |
+| `comparison` | Pick the larger of two rates | `target = max(rateA, rateB)` |
 
-**Fork B — orchestrated parallel Gemini calls (content-bearing per-challenge data).** Reference: [gemini-coin-counter.ts:657-755](../service/math/gemini-coin-counter.ts#L657).
+Pre-refactor, the schema let Gemini pick `targetPercent` per phase but did not constrain its relation to the challengeType — Gemini routinely emitted `direct`-mode challenges in `subtraction` sessions and vice versa. With the pool service the target is **derived in code** from the challengeType, so the cognitive demand is mode-pinned by construction. Subtraction is the most distinctive mode (only one requiring an actual arithmetic operation on the rate); addition vs direct differs only in scenario framing (tax/tip/markup context vs. test-score/fraction context).
 
-```ts
-// One Gemini call per challenge type; results merged.
-const generators: Promise<FooChallenge[]>[] = [];
-for (const type of allowedTypes) {
-  generators.push(generateFooChallengesOfType(type, ...));
-}
-const results = await Promise.all(generators);
-const challenges = results.flat().map((c, i) => ({ ...c, id: `foo-${i + 1}` }));
-```
+**Generalization (extension of §6m #2 / §6p #1):** when an eval mode is *defined by the cognitive operation* (not just by the scenario context), derive the target answer in code from the mode + sampled inputs. Don't let the generator hallucinate the relationship. Same shape as the back-solving pattern (§6p #1) but for percent transforms instead of integer-solution constraints.
 
-### Component wiring (both forks)
+#### §6q #2. Bar-only primitives constrain mode framings
 
-```tsx
-const {
-  currentIndex,
-  results,
-  isComplete,
-  recordResult,
-  advance,
-} = useChallengeProgress<FooChallenge>({
-  challenges: data.challenges,
-  getChallengeId: c => c.id,
-});
+The percent-bar accepts a single 0-100 placement — no dollar amounts, no two-percent comparisons, no totals. This forced two pedagogical decisions during the refactor:
 
-const current = data.challenges[currentIndex];
+- **Addition (tax/tip/markup):** the question MUST ask "what percent IS the tax?" not "what is the total cost?" The pre-refactor prompt warned about this but the schema let Gemini violate it. The pool-service templates encode the rule as part of the question string.
+- **Comparison:** the natural "compare two scenarios" framing doesn't map cleanly to a single-placement bar. Resolved by asking the student to place the **larger** of two stated percents — student still has to compute and compare two percents mentally, the placement carries the answer.
 
-// Per-challenge reset: keyed on currentChallenge.id, runs whenever advance() flips it.
-useEffect(() => {
-  if (!current) return;
-  setMyInteractionState(initial(current));
-  resetAttemptsCounter();
-  alreadyRecordedRef.current = false;
-}, [current?.id]);
+**Generalization:** for any input-constrained primitive (single-value bar, two-state toggle, single-tile drop target), audit each eval mode against the input shape *before* authoring the pool. If a mode can't be naturally framed within the input constraint, either rework the mode framing (comparison case above) or drop the mode.
 
-// Completion detection — MUST include the stale-state guard (§6a #3).
-useEffect(() => {
-  if (!current) return;
-  if (!stateLooksComplete) return;
-  if (alreadyRecordedRef.current) return;
-  // Stale-state guard: setX() in the reset effect is async; without this check we
-  // record a phantom completion for the new challenge using old state.
-  if (!stateBelongsToChallenge(myInteractionState, current)) return;
-  alreadyRecordedRef.current = true;
-  recordResult({ challengeId: current.id, correct, attempts });
-}, [stateLooksComplete, current, myInteractionState]);
+#### §6q #3. Pool-service patterns scale from numeric values to text-bearing scenarios
 
-// When isComplete: render PhaseSummaryPanel and submit aggregated metrics ONCE.
-```
+Prior pool-service refactors (factor-tree §6, balance-scale §6j, matrix-display §6m) all sampled purely numeric or categorical values from pools — `(value)`, `(slope, intercept)`, `(matrix dimensions, op)`. Percent-bar is the first where each "value" includes a **text scenario** rendered from a parameterized template (`(rate, base) => "A $${base} shirt has a ${rate}% discount."`). Variance is now hierarchical at *three* levels: scenario template (which story?) × rate (what number?) × base (what magnitude?), versus prior pool services' two levels (operation × magnitude).
 
-This pattern is used by `TenFrame`, `CountingBoard`, `NumberLine`, `FunctionMachine`, `PatternBuilder`, and (as of this PRD) `FactorTree` (per [MEMORY.md — Multi-Phase Primitive Hooks](../../../../../../C:/Users/xbox3/.claude/projects/c--Users-xbox3-claude-web-tutor/memory/MEMORY.md)).
+The implementation cost is small — each template is ~5 lines (scenario / wholeValueLabel / question / hint as functions of the sampled `(rate, base)`). The variance gain is large: 4 modes × 5-7 templates × 8-12 rates × 6-8 bases = several hundred distinct (template, rate, base) tuples per mode, easily enough for the de-dup loop to fill 4-6 distinct challenges per session without falling back to repeats.
+
+**Generalization (extension of [PRD §5 rule 3](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules)):** pool-service variance hierarchy extends to text scenarios. Numeric-value pools (factor-tree) → operation-family pools (function-machine) → distribution-shape pools (histogram) → **template-bearing scenario pools (percent-bar)**. The pre-authored cost is one-time; the per-call cost stays zero LLM tokens for the per-challenge content. Cheaper than orchestrator-mixed-type whenever the scenarios are template-shaped.
+
+#### §6q #4. The 21-field per-phase metrics interface was 12 fields of last-state noise
+
+The pre-refactor `PercentBarMetrics` had `exploreAccuracy`, `explorePhaseCompleted`, `exploreAttempts`, `exploreHintsUsed`, `practiceQuestionsCorrect`, `practiceAttempts`, `practiceHintsUsed`, `mainProblemAccuracy`, `mainProblemAttempts`, `mainProblemHintsUsed`, `targetPercent`, `finalStudentPercent` — twelve fields that, at session-end, only held data for the LAST challenge of each "phase" (often `1 / 1 / 0` since each phase had one or two instances). Per [PRD §5 rule 18](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules) these are tautological at session-end. The canonical 9-field shape rolls all of it into `correctCount` / `attemptsCount` / `hintsViewed` / `overallAccuracy` aggregates that actually describe the session.
+
+**Audit hook (extension of §6m #1):** when refactoring any pre-existing multi-phase primitive, count the metric fields that reference a specific phase by name. If > 3, the primitive almost certainly has the §6f rule-13 anti-pattern (in-component phase navigator). The metrics interface bloat is a *symptom* of "the schema thinks it's multiple challenges but the session only delivers one of each shape."
+
+### Validation status
+
+| Step | Status |
+|---|---|
+| `npx tsc --noEmit` on touched files | ✅ Clean. (PercentBar joins the same scratch-pad `PrimitiveRenderer` variance noise list as all 22 primitives per §6e — pre-existing, not introduced.) |
+| `/eval-test percent-bar` across all 4 eval modes (`identify_percent` / `find_part` / `find_whole` / `convert`) | ⏳ Owed |
+| Manual UI walk: pin `identify_percent`, finish 4 distinct direct problems, observe `PhaseSummaryPanel` + tester metrics breakdown | ⏳ Owed |
+| Manual UI walk: pin `find_part`, verify subtraction target = 100 - rate (not rate) | ⏳ Owed |
+| Manual UI walk: pin `find_whole`, verify tax/tip framing asks for percent (never dollars) | ⏳ Owed |
+| Manual UI walk: pin `convert`, verify comparison framing places the larger of two rates | ⏳ Owed |
+| Cost spot-check (1× per-session Gemini call — wrapper only, 3 fields) | ⏳ Owed |
+| Backend calibration | ✅ No changes needed (mode-level beta priors). |
+
+### Actual effort
+
+~1.5 hours total: scope audit + reference reading (balance-scale post-mortem, current PercentBar component, eval mode catalog) ~20 min, generator rewrite (4 per-mode template arrays + pool-service selector + canonical-key dedup + wrapper schema + manifest config plumbing) ~35 min, component rewrite (drop phase navigator + multi-challenge shell + per-challenge reset + stale-state guard + canonical 9-field metrics submission + scenario/question/hint rendering) ~25 min, types collapse (21-field → 9-field) ~5 min, catalog updates (taskDescription + contextKeys + MODE-AWARE + MULTI-PERCENT PACING + constraints rewrite + evalModes label nudge) ~10 min, tester wiring ~5 min, type-check + audit ~5 min. Came in well under the §A1 estimate (~2-3 hours) because the prior Workstream 3 entries had established every pattern this refactor needed — no design decisions left.
+
+### Next steps (percent-bar + Workstream 3 carry-forward)
+
+| # | Item | Owner | Notes |
+|---|------|-------|-------|
+| 1 | **`/eval-test percent-bar`** across all 4 eval modes | Eng | Per §6q validation table. Each single-mode tier should return `validation.challengeCount >= 4` and 4 distinct (template, rate, base) tuples. |
+| 2 | **Manual UI walks** for all 4 modes | Eng | Per §6q validation table. `find_part` (subtraction) walk is the most pedagogically important — confirm the question asks for the remaining percent and the bar's correct answer is `100 - rate`, not `rate`. |
+| 3 | **Cost spot-check** for percent-bar (wrapper-only Gemini call) | Eng | Per §10. Expect significant savings vs pre-refactor since the wrapper schema dropped from 15 required fields (with nested `practiceQuestions[]` array of objects) to 3 scalar fields. |
+| 4 | Workstream 3: `double-number-line` refactor | Eng | **Now the only remaining mid-grade Bucket A entry.** Context-coherence design challenge per [PRD §A2](./PRD_MATH_PRIMITIVE_COMPLETION.md#a2-double-number-line-5-7-grade--2-3-hours). |
+| 5 | Workstream 3: `two-way-table` refactor (deferred) | Eng | Last upper-grade Bucket A. Pool-service value-only; reuses `MatrixInput` (§6m #3) + histogram UI gating (§6o #2). |
+| 6 | Workstream 1 (prompt-floor sweep) | Eng | Still pending. |
 
 ---
 
@@ -2320,35 +2016,3 @@ This pattern is used by `TenFrame`, `CountingBoard`, `NumberLine`, `FunctionMach
 
 ---
 
-## 10. Success Criteria
-
-| Test | Criteria | Verification |
-|------|----------|--------------|
-| **Instance floor** | Every K-3 math primitive produces ≥3 distinct problem instances when pinned to a single eval mode | Automated audit script: render each primitive in each eval mode, count instances |
-| **Variance** | Within a single-mode session, instance #1 and instance #4 differ in surface details (different numbers, different word-problem contexts) | Manual inspection across 5+ generations per primitive |
-| **Mastery signal density** | Pulse runs show ≥3× the IRT updates per student-minute compared to pre-PRD baseline | `/pulse-agent` comparison report |
-| **Time-on-task** | Single-mode sessions take 3-5 minutes (up from 30-60 seconds for Bucket A) | Manual timing across primitives |
-| **No regression** | All previously passing `/eval-test` runs still pass | Test sweep |
-| **No cost blow-up** | **Pool-service primitives** within 2× previous (factor-tree, place-value-chart, area-model). **Orchestrator primitives** within N× where N = `instanceCount` (4× default) — accepted trade-off for content-bearing variance per §6a #2. Bar-model precedent. | Cost report per primitive |
-
----
-
-## 11. What This PRD Does NOT Cover
-
-- **Cross-mode mixing within a session.** That responsibility belongs to the engine's auto-mode (manifest layer), not the primitive. Explicitly retracted from earlier discussion.
-- **Eval mode densification (β gaps).** Covered by [PRD_K3_CONTENT_DENSITY](PRD_K3_CONTENT_DENSITY.md). This PRD is complementary, not a replacement — but may obviate some of K3's proposed inserts (see §2).
-- **Generator quality (challenge variety beyond rootValue selection).** Within an eval mode, the generator should produce *meaningfully different* problems, not just different numbers. Out of scope here; revisit if §10's "variance" criterion fails.
-- **Backend calibration changes.** Beta priors in `problem_type_registry.py` are mode-level, not instance-level. No backend changes needed.
-- **Non-math primitives.** The pattern generalizes to physics, biology, chemistry primitives — but those are out of scope here. Apply opportunistically.
-
----
-
-## 12. Open Questions
-
-1. **Session length cap.** 3-phase primitives (`place-value-chart`) at 4 instances = 12 phases. Is that too long? Pilot with 3 instances and measure abandonment.
-2. **Variance enforcement.** ~~How strictly does the generator need to vary surface details across instances?~~ **Resolved by pilot:** for value-only data, deterministic pool selection with a "≥1 odd"-style variance guarantee beats anything prompt-based. Don't rely on Gemini for variance — structured output is convergent. For content-bearing data, the orchestrator pattern (one Gemini call per type) gives natural variance from independent generations.
-3. **Tester UI implications.** ~~The Lumina tester currently renders one configuration.~~ **Resolved by pilot:** the tester forwards generator output via structural typing and worked unchanged after factor-tree's shape change. Existing primitive-internal navigation (Next Challenge button + progress dots) is sufficient — no tester-side affordance needed.
-4. ~~**`function-machine`-specific design.** Is one rule with N inputs already a "multi-instance" session? Or should a single mode visit N rules? Discussion needed before refactor.~~ **Resolved (2026-05-19, §6f):** N rules per session of the SAME eval mode. "N inputs of one rule" was what the pre-refactor primitive already did — and that's what made it Bucket A. Dropped the in-component 4-phase navigator (eval mode === interaction shape) and the orphan chaining feature.
-5. ~~**`area-model` reality check.** Prompt at [gemini-area-model.ts:212](../service/math/gemini-area-model.ts#L212) mentions "6-10 number pairs for variety" — is this primitive already in Bucket B (just with weird wording), or is it generating 6-10 cells *within one* multiplication? Audit before scoping.~~ **Resolved (2026-05-19, §6e):** confirmed Bucket A. The "6-10 number pairs" was a prompt-level randomization seed for ONE Gemini call ([gemini-area-model.ts:212-220](../service/math/gemini-area-model.ts) pre-refactor) — Gemini still emitted one `factor1Parts`/`factor2Parts` pair per response. Component-side "Try Another Problem" reset local state without re-generating, replaying the same problem (user-observed bug). Refactored to pool-service multi-instance per §6e.
-6. ~~**K-3 only, or all-math sweep?**~~ **Resolved (2026-05-20, §3b):** static-scan across all 57 math generators confirmed the Bucket A pattern persists in upper grades (histogram, matrix, slope-triangle, systems-equations, two-way-table) and mid-elementary (function-sketch, balance-scale, measurement-tools). Workstream 1 prompt-floor updates apply across all math (and §3b added ten-frame / regrouping-workbench / equation-builder / number-bond to the §5 table). Workstream 3 schema refactors are prioritized K-3 first, mid-elementary second, upper-grade last — see §3b sequencing table. The "K-3 only" framing was a useful initial scope; the pattern itself isn't grade-band-specific.
-7. **(New, from pilot)** Should `selectFactorTreeRootValues` be generalized into the shared `numberPoolService` as a `createCandidateSetPool({ candidates, count, varianceGuarantees })` helper? Workstream 3 has two more value-only primitives (`place-value-chart`, `area-model`) — if their selection logic looks similar, generalize after the second use, not before.

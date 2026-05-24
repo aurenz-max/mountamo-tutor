@@ -346,6 +346,58 @@ function extractFeatures(data: Record<string, unknown>, count: number): FeatureM
   return features;
 }
 
+/**
+ * Drop any `maximum`/`minimum` feature that doesn't correspond to a real local
+ * extremum of the supplied curve. Linear/monotonic curves have NO extrema, so
+ * those tags are always rejected on monotonic curves. Prevents the generator
+ * from teaching that the endpoint of a line is a "maximum" (FS-1).
+ */
+function validateFeatureSemantics(
+  features: FeatureMarker[],
+  curve: CurvePoint[],
+): FeatureMarker[] {
+  if (curve.length < 3) return features;
+
+  // Detect strict monotonicity over the sampled curve.
+  let strictlyIncreasing = true;
+  let strictlyDecreasing = true;
+  for (let i = 1; i < curve.length; i++) {
+    if (curve[i].y <= curve[i - 1].y) strictlyIncreasing = false;
+    if (curve[i].y >= curve[i - 1].y) strictlyDecreasing = false;
+  }
+  const isMonotonic = strictlyIncreasing || strictlyDecreasing;
+
+  // Locate x-positions of local maxima and minima in the sampled series.
+  const localMaxX: number[] = [];
+  const localMinX: number[] = [];
+  for (let i = 1; i < curve.length - 1; i++) {
+    if (curve[i].y > curve[i - 1].y && curve[i].y > curve[i + 1].y) localMaxX.push(curve[i].x);
+    if (curve[i].y < curve[i - 1].y && curve[i].y < curve[i + 1].y) localMinX.push(curve[i].x);
+  }
+
+  const xRange = curve[curve.length - 1].x - curve[0].x;
+  const tolerance = Math.abs(xRange) * 0.1;
+
+  return features.filter(f => {
+    if (f.type !== 'maximum' && f.type !== 'minimum') return true;
+    if (isMonotonic) {
+      console.warn(`[FunctionSketch] Dropping ${f.type} on monotonic curve: "${f.label}"`);
+      return false;
+    }
+    const candidates = f.type === 'maximum' ? localMaxX : localMinX;
+    if (candidates.length === 0) {
+      console.warn(`[FunctionSketch] Dropping ${f.type} — no ${f.type} in curve: "${f.label}"`);
+      return false;
+    }
+    const nearMatch = candidates.some(cx => Math.abs(cx - f.x) <= tolerance);
+    if (!nearMatch) {
+      console.warn(`[FunctionSketch] Dropping ${f.type} — not near actual ${f.type}: "${f.label}" at x=${f.x}`);
+      return false;
+    }
+    return true;
+  });
+}
+
 function extractKeyFeatures(data: Record<string, unknown>, count: number): SketchKeyFeature[] {
   const features: SketchKeyFeature[] = [];
   const validTypes = new Set(['peak', 'zero', 'intercept', 'trend']);
@@ -385,20 +437,46 @@ interface SubGeneratorResult {
 // Sub-generators
 // ===========================================================================
 
-async function generateIdentifyFeatures(topic: string, gradeLevel: string): Promise<SubGeneratorResult> {
-  const prompt = `
+async function generateIdentifyFeatures(
+  topic: string,
+  gradeLevel: string,
+  attempt: number = 0,
+): Promise<SubGeneratorResult> {
+  const retryHint = attempt > 0
+    ? `\n\nIMPORTANT — RETRY: A previous attempt used a linear or monotonic function. You MUST choose a function with a real turning point this time. Use a quadratic, sinusoidal, or cubic-with-extrema.\n`
+    : '';
+  const prompt = `${retryHint}
 Create a function for a "${topic}" lesson (grade ${gradeLevel}) where the student must identify key features on the graph.
 
-${getFunctionGuidance(gradeLevel)}
+CRITICAL — FUNCTION FAMILY REQUIREMENT:
+This challenge mode tests identifying maxima, minima, roots, and intercepts. The function you choose MUST have at least one genuine turning point (a local maximum or minimum). DO NOT use linear functions (y = mx + b) — linear functions are strictly monotonic and have NO maximum and NO minimum. They are FORBIDDEN for this mode.
 
-RULES:
-- Choose a function with 2-4 clearly visible features (roots, maxima, minima, y-intercept, asymptote)
+REQUIRED function families (pick ONE):
+- Quadratics: y = a(x − h)² + k  → one vertex (max if a<0, min if a>0)
+- Negative quadratics: y = -ax² + bx + c → projectile-like arc with one maximum
+- Cubics with local extrema: y = x³ − 3x → one local max + one local min
+- Sinusoidal: y = A·sin(Bx) + k → alternating peaks and troughs
+- Absolute value: y = |x − h| + k → one cusp minimum
+- Piecewise functions that genuinely bend
+
+CRITICAL — MAXIMUM / MINIMUM RULES:
+- A "maximum" or "minimum" feature is a TURNING POINT — the curve must change direction (rise then fall, or fall then rise) at that x.
+- NEVER tag the endpoint of an interval as a "maximum" or "minimum" just because it has the largest/smallest y-value among the displayed points. An endpoint of a monotonic segment is not an extremum.
+- For any feature tagged "maximum": the y-values immediately before AND after the feature's x must be SMALLER than the feature's y.
+- For any feature tagged "minimum": the y-values immediately before AND after the feature's x must be LARGER than the feature's y.
+- If your function has no turning points, the function family is wrong — pick a different one from the REQUIRED list above.
+
+OTHER RULES:
+- Choose a function with 2-4 clearly visible features (at least ONE must be a maximum or minimum)
 - Provide 20 y-values at evenly spaced x positions from xMin to xMax — these define the curve
 - Each y-value must be a finite number within [yMin, yMax]
 - Features must have coordinates that actually lie on or very near the curve
 - featureCount = how many features you defined (2, 3, or 4)
 - Do NOT put the answer in the title or instruction
-- Use a real-world context related to "${topic}" where possible
+- Use a real-world context related to "${topic}" where possible (e.g., projectile arc, temperature cycle, profit curve, daylight hours)
+
+AXIS GUIDANCE (${gradeLevel}):
+${getFunctionGuidance(gradeLevel)}
 
 EXAMPLE (quadratic):
 {
@@ -432,11 +510,18 @@ EXAMPLE (quadratic):
   const yValues = extractYValues(data, 'curveY');
   if (yValues.length === 0) throw new Error('[FunctionSketch] Invalid curve y-values');
 
-  const featureCount = Math.min(4, Math.max(2, data.featureCount ?? 2));
-  const features = extractFeatures(data, featureCount);
-  if (features.length < 2) throw new Error('[FunctionSketch] Too few valid features');
-
   const curve = generateCurvePoints(data.xMin, data.xMax, 20, yValues);
+
+  const featureCount = Math.min(4, Math.max(2, data.featureCount ?? 2));
+  const rawFeatures = extractFeatures(data, featureCount);
+  const features = validateFeatureSemantics(rawFeatures, curve);
+  if (features.length < 2) {
+    if (attempt < 1) {
+      console.warn('[FunctionSketch] identify-features: retrying with stronger turning-point hint');
+      return generateIdentifyFeatures(topic, gradeLevel, attempt + 1);
+    }
+    throw new Error('[FunctionSketch] Too few valid features after semantic validation');
+  }
 
   return {
     title: data.title || topic,
@@ -675,39 +760,85 @@ EXAMPLE:
 }
 
 // ===========================================================================
-// Main generator — delegates to sub-generator based on eval mode
+// Main generator — fans out N parallel sub-generator calls for the pinned
+// eval mode (orchestrator-same-mode per PRD §6a #7).
 // ===========================================================================
+
+const DEFAULT_INSTANCE_COUNT = 4;
+const MAX_INSTANCE_COUNT = 6;
+
+type ChallengeType = FunctionSketchChallenge['type'];
+
+function subGeneratorFor(
+  type: ChallengeType,
+): (topic: string, gradeLevel: string) => Promise<SubGeneratorResult> {
+  switch (type) {
+    case 'classify-shape':    return generateClassifyShape;
+    case 'sketch-match':      return generateSketchMatch;
+    case 'compare-functions': return generateCompareFunctions;
+    case 'identify-features':
+    default:                  return generateIdentifyFeatures;
+  }
+}
 
 export const generateFunctionSketch = async (
   topic: string,
   gradeLevel: string,
-  config?: { targetEvalMode?: string },
+  config?: {
+    targetEvalMode?: string;
+    /** How many challenges in this session. Default 4, max 6. */
+    instanceCount?: number;
+  },
 ): Promise<FunctionSketchData> => {
   const evalConstraint = resolveEvalModeConstraint('function-sketch', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('FunctionSketch', config?.targetEvalMode, evalConstraint);
 
-  const challengeType = evalConstraint?.allowedTypes[0] || 'identify-features';
+  const challengeType = (evalConstraint?.allowedTypes[0] ?? 'identify-features') as ChallengeType;
+  const instanceCount = Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+  );
 
-  let result: SubGeneratorResult;
-  switch (challengeType) {
-    case 'classify-shape':
-      result = await generateClassifyShape(topic, gradeLevel);
-      break;
-    case 'sketch-match':
-      result = await generateSketchMatch(topic, gradeLevel);
-      break;
-    case 'compare-functions':
-      result = await generateCompareFunctions(topic, gradeLevel);
-      break;
-    case 'identify-features':
-    default:
-      result = await generateIdentifyFeatures(topic, gradeLevel);
-      break;
+  // Fan out N parallel calls of the same per-mode sub-generator. Variance
+  // comes from independent generations (per PRD §6a #2 — structured output
+  // converges per-call, not across independent calls). Use allSettled so
+  // one stochastic sub-call failure (e.g., semantic validation rejecting
+  // a Gemini fake-maximum on a linear function) doesn't kill the batch.
+  const runOne = subGeneratorFor(challengeType);
+  const settled = await Promise.allSettled(
+    Array.from({ length: instanceCount }, () => runOne(topic, gradeLevel)),
+  );
+  const subResults: SubGeneratorResult[] = settled
+    .filter((s): s is PromiseFulfilledResult<SubGeneratorResult> => s.status === 'fulfilled')
+    .map(s => s.value);
+  const rejected = settled.filter(s => s.status === 'rejected');
+  if (rejected.length > 0) {
+    console.warn(
+      `[FunctionSketch] ${rejected.length}/${instanceCount} sub-generators failed for ${challengeType}:`,
+      rejected.map(r => (r as PromiseRejectedResult).reason?.message ?? r),
+    );
+  }
+  if (subResults.length === 0) {
+    throw new Error(`[FunctionSketch] All ${instanceCount} sub-generators failed for ${challengeType}`);
   }
 
+  // First sub-result provides session-level title/context; both are
+  // topic-anchored across all calls so any of them works as the umbrella.
+  const head = subResults[0];
+  const challenges: FunctionSketchChallenge[] = subResults.map((r, idx) => ({
+    ...r.challenge,
+    id: `fs-${challengeType}-${idx + 1}`,
+  }));
+
+  console.log('✏️ Function Sketch generated:', {
+    topic,
+    challengeType,
+    instanceCount: challenges.length,
+  });
+
   return {
-    title: result.title,
-    context: result.context,
-    challenges: [result.challenge],
+    title: head.title,
+    context: head.context,
+    challenges,
   };
 };

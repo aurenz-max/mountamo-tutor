@@ -361,9 +361,35 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'double-number-line':
-      return <DoubleNumberLine data={data as Parameters<typeof DoubleNumberLine>[0]['data']} />;
+      // DoubleNumberLine produces multi-challenge ratio sessions (3-6 challenges of one mode).
+      // Evaluation flows through onEvaluationSubmit per PRD §6a #9.
+      return (
+        <DoubleNumberLine
+          data={{
+            ...(data as Parameters<typeof DoubleNumberLine>[0]['data']),
+            instanceId: `double-number-line-${Date.now()}`,
+            skillId: 'math-ratios',
+            subskillId: 'proportional-reasoning',
+            objectiveId: 'find-equivalent-ratios-on-double-number-line',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'percent-bar':
-      return <PercentBar data={data as Parameters<typeof PercentBar>[0]['data']} />;
+      // PercentBar produces multi-challenge sessions (3-6 percent problems of one mode).
+      // Evaluation flows through onEvaluationSubmit per PRD §6a #9.
+      return (
+        <PercentBar
+          data={{
+            ...(data as Parameters<typeof PercentBar>[0]['data']),
+            instanceId: `percent-bar-${Date.now()}`,
+            skillId: 'math-percents',
+            subskillId: 'percent-of-a-quantity',
+            objectiveId: 'visualize-percentages-on-a-bar',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'tape-diagram':
       // TapeDiagram supports evaluation - pass the props
       return (
@@ -379,7 +405,20 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'balance-scale':
-      return <BalanceScale data={data as Parameters<typeof BalanceScale>[0]['data']} />;
+      // BalanceScale produces multi-equation sessions (3-6 equations of one mode).
+      // Evaluation flows through onEvaluationSubmit per PRD §6a #9.
+      return (
+        <BalanceScale
+          data={{
+            ...(data as Parameters<typeof BalanceScale>[0]['data']),
+            instanceId: `balance-scale-${Date.now()}`,
+            skillId: 'math-equations',
+            subskillId: 'balance-scale-solving',
+            objectiveId: 'solve-equations-with-balance-scale',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'function-machine':
       // FunctionMachine produces multi-challenge sessions (3-6 rules of one mode).
       // Evaluation flows through onEvaluationSubmit per PRD §6a #9.
@@ -398,15 +437,61 @@ const PrimitiveRenderer: React.FC<{
     case 'coordinate-graph':
       return <CoordinateGraph data={data as CoordinateGraphData} />;
     case 'slope-triangle':
-      return <SlopeTriangle data={data as Parameters<typeof SlopeTriangle>[0]['data']} />;
+      // SlopeTriangle produces multi-challenge sessions (3-6 lines per mode).
+      // Evaluation flows through onEvaluationSubmit per PRD §6a #9.
+      return (
+        <SlopeTriangle
+          data={{
+            ...(data as Parameters<typeof SlopeTriangle>[0]['data']),
+            instanceId: `slope-triangle-${Date.now()}`,
+            skillId: 'math-linear-functions',
+            subskillId: 'slope-triangle-reading',
+            objectiveId: 'find-slope-from-triangle',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'systems-equations-visualizer':
-      return <SystemsEquationsVisualizer data={data as Parameters<typeof SystemsEquationsVisualizer>[0]['data']} />;
+      return (
+        <SystemsEquationsVisualizer
+          data={{
+            ...(data as Parameters<typeof SystemsEquationsVisualizer>[0]['data']),
+            instanceId: `systems-equations-${Date.now()}`,
+            skillId: 'math-linear-functions',
+            subskillId: 'systems-of-equations',
+            objectiveId: 'solve-systems-of-equations',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'matrix-display':
-      return <MatrixDisplay data={data as Parameters<typeof MatrixDisplay>[0]['data']} />;
+      return (
+        <MatrixDisplay
+          data={{
+            ...(data as Parameters<typeof MatrixDisplay>[0]['data']),
+            instanceId: `matrix-display-${Date.now()}`,
+            skillId: 'math-linear-algebra',
+            subskillId: 'matrix-operations',
+            objectiveId: 'compute-matrix-operations',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'dot-plot':
       return <DotPlot data={data as Parameters<typeof DotPlot>[0]['data']} />;
     case 'histogram':
-      return <Histogram data={data as Parameters<typeof Histogram>[0]['data']} />;
+      return (
+        <Histogram
+          data={{
+            ...(data as Parameters<typeof Histogram>[0]['data']),
+            instanceId: `histogram-${Date.now()}`,
+            skillId: 'math-statistics',
+            subskillId: 'histogram',
+            objectiveId: 'read-and-interpret-histograms',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'two-way-table':
       return <TwoWayTable data={data as Parameters<typeof TwoWayTable>[0]['data']} />;
     case 'ten-frame':
@@ -503,44 +588,12 @@ const PrimitiveRenderer: React.FC<{
       );
     case 'measurement-tools': {
       const measurementData: MeasurementToolsData = {
-        title: 'Measure the Shapes',
-        rulerLengthInches: 8,
-        unit: 'inches',
-        precision: 'half',
-        gradeBand: 'K-2',
-        shapes: [
-          {
-            id: 'shape-1',
-            type: 'rectangle',
-            widthInches: 4,
-            heightInches: 2,
-            color: '#60a5fa',
-            label: 'Blue Rectangle',
-            hint: 'Try lining up the ruler along the longer side.',
-          },
-          {
-            id: 'shape-2',
-            type: 'square',
-            widthInches: 3,
-            heightInches: 3,
-            color: '#f472b6',
-            label: 'Pink Square',
-            hint: 'All sides of a square are the same length!',
-          },
-          {
-            id: 'shape-3',
-            type: 'rectangle',
-            widthInches: 5.5,
-            heightInches: 1.5,
-            color: '#34d399',
-            label: 'Green Rectangle',
-            hint: 'Look carefully — this one is between two whole numbers.',
-          },
-        ],
+        ...(data as Parameters<typeof MeasurementTools>[0]['data']),
         instanceId: `measurement-tools-${Date.now()}`,
         skillId: 'math-measurement',
         subskillId: 'measurement-tools',
         objectiveId: 'measure-estimate-convert',
+        onEvaluationSubmit,
       };
       return <MeasurementTools data={measurementData} />;
     }
@@ -832,6 +885,7 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'math-function-sketch',
             subskillId: 'trigonometric-functions',
             objectiveId: 'sketch-and-classify-functions',
+            onEvaluationSubmit,
           }}
         />
       );
@@ -968,6 +1022,18 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Accuracy: {result.metrics.overallAccuracy}%</span>
                   </div>
                 )}
+                {/* Show DoubleNumberLine-specific metrics */}
+                {result.metrics.type === 'double-number-line' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
                 {/* Show TapeDiagram-specific metrics */}
                 {result.metrics.type === 'tape-diagram' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
@@ -1014,6 +1080,114 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
                     <span>Hints viewed: {result.metrics.hintsViewed}</span>
                     <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show FunctionSketch-specific metrics */}
+                {result.metrics.type === 'function-sketch' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show PercentBar-specific metrics */}
+                {result.metrics.type === 'percent-bar' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show BalanceScale-specific metrics */}
+                {result.metrics.type === 'balance-scale' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show MeasurementTools-specific metrics */}
+                {result.metrics.type === 'measurement-tools' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show Histogram-specific metrics */}
+                {result.metrics.type === 'histogram' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show MatrixDisplay-specific metrics */}
+                {result.metrics.type === 'matrix-display' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show SlopeTriangle-specific metrics */}
+                {result.metrics.type === 'slope-triangle' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show SystemsEquations-specific metrics */}
+                {result.metrics.type === 'systems-equations-visualizer' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show PatternBuilder-specific metrics */}
+                {result.metrics.type === 'pattern-builder' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.evalMode}</span>
+                    <span>Extensions: {result.metrics.extensionsCorrect} / {result.metrics.extensionsTotal}</span>
+                    <span>Core identified: {result.metrics.coreIdentifiedCorrectly ? 'yes' : 'no'}</span>
+                    <span>Rule articulated: {result.metrics.ruleArticulated ? 'yes' : 'no'}</span>
+                    <span>Pattern created: {result.metrics.patternCreated ? 'yes' : 'no'}</span>
+                    <span>Translation: {result.metrics.translationCorrect ? 'yes' : 'no'}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
                   </div>
                 )}
               </div>

@@ -1,37 +1,32 @@
 'use client';
 
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
   usePrimitiveEvaluation,
   type DoubleNumberLineMetrics,
+  type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import type { PhaseResult } from '../../../components/PhaseSummaryPanel';
 
 /**
- * Double Number Line - Interactive proportional reasoning tool for teaching ratio relationships
+ * Double Number Line — Multi-instance proportional reasoning primitive.
  *
- * K-8 Math Primitive for understanding:
- * - Equivalent ratios and proportional relationships (Grade 6-7)
- * - Unit rates and scaling (Grade 6-8)
- * - Visual representation of multiplicative thinking (Grade 5-7)
- * - Cross-quantity relationships (e.g., distance/time, cost/quantity)
+ * A single session walks the student through 3-6 ratio challenges that all
+ * share ONE ratio relationship (same topLabel / bottomLabel / unitRate) for
+ * context coherence. Each challenge highlights one target ask-point; the
+ * student enters the missing value, gets feedback, and advances.
  *
- * Real-world connections: recipes, unit pricing, speed/distance, currency conversion
- *
- * EDUCATIONAL DESIGN:
- * - Guided 3-phase learning: Explore → Practice → Apply
- * - Phase 1: Students discover the relationship by finding the unit rate
- * - Phase 2: Students scale up to find equivalent ratios
- * - Phase 3: Students apply understanding to solve the full problem
- * - Visual guides help students see the multiplicative relationship
- *
- * EVALUATION INTEGRATION:
- * - Tracks unit rate identification, scaling accuracy, and proportional reasoning
- * - Submits evaluation metrics when all target points are correctly identified
- * - Supports competency tracking via skillId/subskillId/objectiveId
+ * The 3-phase explore→practice→apply walk from the previous design was
+ * collapsed per PRD §5 rule 13: the IRT-pinned challengeType IS the phase.
  */
+
+export type DoubleNumberLineChallengeType =
+  | 'equivalent_ratios'
+  | 'find_missing'
+  | 'unit_rate';
 
 export interface LinkedPoint {
   topValue: number;
@@ -45,34 +40,38 @@ export interface ScaleConfig {
   interval: number;
 }
 
+export interface DoubleNumberLineChallenge {
+  id: string;
+  challengeType: DoubleNumberLineChallengeType;
+  prompt: string;
+  hint: string;
+  givenPoints: LinkedPoint[];
+  targetPoints: LinkedPoint[];
+  topScale: ScaleConfig;
+  bottomScale: ScaleConfig;
+}
+
 export interface DoubleNumberLineData {
   title: string;
   description: string;
   topLabel: string;
   bottomLabel: string;
-  topScale: ScaleConfig;
-  bottomScale: ScaleConfig;
+  unitRate: number;
+  contextQuestion: string;
+  /** 3-6 challenges. Required. Walked sequentially. */
+  challenges: DoubleNumberLineChallenge[];
 
-  // Problem-solving: Points student must discover
-  targetPoints: LinkedPoint[];
-
-  // Optional hints shown to help students
-  givenPoints?: LinkedPoint[];
-  showUnitRate?: boolean; // Whether to highlight unit rate in hints
   showVerticalGuides?: boolean;
+  showUnitRate?: boolean;
 
-  // Educational scaffolding
-  contextQuestion?: string; // Real-world question to frame the problem
-  unitRateQuestion?: string; // Question to guide finding unit rate
-
-  // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
   onEvaluationSubmit?: (
-    result: import('../../../evaluation').PrimitiveEvaluationResult<DoubleNumberLineMetrics>
+    result: PrimitiveEvaluationResult<DoubleNumberLineMetrics>
   ) => void;
 }
 
@@ -81,14 +80,9 @@ interface DoubleNumberLineProps {
   className?: string;
 }
 
-interface StudentPoint {
-  topValue: string; // Input as string
-  bottomValue: string; // Input as string
-  topCorrect: boolean;
-  bottomCorrect: boolean;
-}
-
-type LearningPhase = 'explore' | 'practice' | 'apply';
+// ---------------------------------------------------------------------------
+// Number stepper input
+// ---------------------------------------------------------------------------
 
 interface LuminaNumberStepperProps {
   value: string;
@@ -157,19 +151,31 @@ const LuminaNumberStepper: React.FC<LuminaNumberStepperProps> = ({
   );
 };
 
+// ---------------------------------------------------------------------------
+// Phase config (one phase — every challenge in a session shares challengeType)
+// ---------------------------------------------------------------------------
+
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  equivalent_ratios: { label: 'Equivalent Ratios', icon: '⚖️', accentColor: 'purple' },
+  find_missing: { label: 'Find Missing', icon: '🔍', accentColor: 'amber' },
+  unit_rate: { label: 'Unit Rate', icon: '🎯', accentColor: 'emerald' },
+};
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
 const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) => {
   const {
+    title,
+    description,
     topLabel,
     bottomLabel,
-    topScale,
-    bottomScale,
-    targetPoints,
-    givenPoints = [],
-    showUnitRate = false,
-    showVerticalGuides = true,
+    unitRate,
     contextQuestion,
-    unitRateQuestion,
-    // Evaluation props
+    challenges = [],
+    showVerticalGuides = true,
+    showUnitRate = true,
     instanceId,
     skillId,
     subskillId,
@@ -178,332 +184,286 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     onEvaluationSubmit,
   } = data;
 
-  // Learning phases
-  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
-  const [unitRateFound, setUnitRateFound] = useState(false);
-  const [studentUnitRate, setStudentUnitRate] = useState('');
+  const stableInstanceIdRef = useRef(instanceId || `double-number-line-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
-  const [studentPoints, setStudentPoints] = useState<StudentPoint[]>(
-    targetPoints.map(() => ({ topValue: '', bottomValue: '', topCorrect: false, bottomCorrect: false }))
-  );
-  const [attemptCount, setAttemptCount] = useState(0);
-  const [showHints, setShowHints] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'hint' | null>(null);
-  const [showExplanation, setShowExplanation] = useState(false);
+  // ── Challenge progress (shared hooks) ──────────────────────────────────────
+  const {
+    currentIndex,
+    currentAttempts,
+    results,
+    isComplete,
+    recordResult,
+    incrementAttempts,
+    advance,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (c) => c.id,
+  });
 
-  // Evaluation hook
+  const phaseResults = usePhaseResults({
+    challenges,
+    results,
+    isComplete,
+    getChallengeType: (c) => c.challengeType,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
+  // ── Evaluation hook ───────────────────────────────────────────────────────
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
-    resetAttempt: resetEvaluationAttempt,
     submittedResult,
     elapsedMs,
   } = usePrimitiveEvaluation<DoubleNumberLineMetrics>({
     primitiveType: 'double-number-line',
-    instanceId: instanceId || `double-number-line-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
-    onSubmit: onEvaluationSubmit as
-      | ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void)
-      | undefined,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // AI tutoring integration
+  const currentChallenge = challenges[currentIndex] ?? null;
+
+  // ── Per-challenge interaction state ────────────────────────────────────────
+  // One input string per target point in the current challenge.
+  const [studentValues, setStudentValues] = useState<string[]>(
+    () => (currentChallenge?.targetPoints ?? []).map(() => ''),
+  );
+  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [showHint, setShowHint] = useState(false);
+
+  const recordedRef = useRef(false);
+  const sessionCompleteFiredRef = useRef(false);
+
+  // Reset per-challenge state when the active challenge changes.
+  useEffect(() => {
+    if (!currentChallenge) return;
+    setStudentValues(currentChallenge.targetPoints.map(() => ''));
+    setFeedback(null);
+    setShowHint(false);
+    recordedRef.current = false;
+  }, [currentChallenge?.id]);
+
+  // ── AI tutoring ────────────────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
+    title,
     topLabel,
     bottomLabel,
-    currentPhase,
-    unitRateFound,
-    targetPointCount: targetPoints.length,
-    correctCount: studentPoints.filter((p, i) => {
-      const target = targetPoints[i];
-      const bv = parseFloat(p.bottomValue);
-      return !isNaN(bv) && Math.abs(bv - target.bottomValue) < 0.1;
-    }).length,
-    attemptCount,
-  }), [topLabel, bottomLabel, currentPhase, unitRateFound, targetPoints, studentPoints, attemptCount]);
+    unitRate,
+    currentChallengeIndex: currentIndex,
+    totalChallenges: challenges.length,
+    challengeType: currentChallenge?.challengeType,
+    currentPrompt: currentChallenge?.prompt,
+    targetTopValue: currentChallenge?.targetPoints[0]?.topValue,
+    targetBottomValue: currentChallenge?.targetPoints[0]?.bottomValue,
+    attemptNumber: currentAttempts,
+  }), [
+    title, topLabel, bottomLabel, unitRate, currentIndex,
+    challenges.length, currentChallenge, currentAttempts,
+  ]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'double-number-line',
-    instanceId: instanceId || `double-number-line-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'Grade 6',
   });
 
+  // Session intro — once, on the first challenge
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current) return;
+    if (challenges.length === 0 || !currentChallenge) return;
     hasIntroducedRef.current = true;
     sendText(
-      `[ACTIVITY_START] Double number line: ${topLabel} vs ${bottomLabel}. ${targetPoints.length} target points to find. `
+      `[ACTIVITY_START] Double number line: ${topLabel} vs ${bottomLabel}. `
+      + `${challenges.length} ratio challenges in this session (mode: ${currentChallenge.challengeType}). `
       + `${contextQuestion ? `Context: "${contextQuestion}". ` : ''}`
-      + `Guide the student to find the unit rate first.`,
-      { silent: true }
+      + `First challenge: ${currentChallenge.prompt}`,
+      { silent: true },
     );
-  }, [isConnected, topLabel, bottomLabel, targetPoints.length, contextQuestion, sendText]);
+  }, [
+    isConnected, challenges.length, currentChallenge, topLabel, bottomLabel,
+    contextQuestion, sendText,
+  ]);
 
-  // Helper: check if value is within tolerance
-  const isWithinTolerance = (student: number, target: number, tolerance = 0.1): boolean => {
-    return Math.abs(student - target) <= tolerance;
-  };
-
-  // Helper: calculate ratio from first given point or first target point
-  const calculateRatio = (): string => {
-    const point = givenPoints[0] || targetPoints[0];
-    if (!point || point.topValue === 0) return '1:1';
-    const ratio = point.bottomValue / point.topValue;
-    return `1:${ratio.toFixed(2)}`;
-  };
-
-  // Find the unit rate point (where top value = 1) from given or target points
-  const findUnitRatePoint = (): LinkedPoint | null => {
-    const allPoints = [...givenPoints, ...targetPoints];
-    return allPoints.find(p => Math.abs(p.topValue - 1) < 0.01) || null;
-  };
-
-  // Check if student found the unit rate
-  const handleCheckUnitRate = () => {
-    const unitRatePoint = findUnitRatePoint();
-    if (!unitRatePoint) {
-      setFeedback('This problem doesn\'t have a unit rate point to find. Moving to practice phase!');
-      setFeedbackType('hint');
-      setUnitRateFound(true);
-      setCurrentPhase('practice');
+  // Per-challenge handoff (skips the first because intro covers it)
+  const lastAnnouncedIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isConnected || !currentChallenge) return;
+    if (!hasIntroducedRef.current) return;
+    if (lastAnnouncedIdRef.current === null) {
+      lastAnnouncedIdRef.current = currentChallenge.id;
       return;
     }
+    if (lastAnnouncedIdRef.current === currentChallenge.id) return;
+    lastAnnouncedIdRef.current = currentChallenge.id;
+    sendText(
+      `[CHALLENGE_START] Challenge ${currentIndex + 1} of ${challenges.length}. ${currentChallenge.prompt}`,
+      { silent: true },
+    );
+  }, [currentChallenge, currentIndex, challenges.length, isConnected, sendText]);
 
-    const bottomValue = parseFloat(studentUnitRate);
+  // ── Session complete: evaluation submit ────────────────────────────────────
+  useEffect(() => {
+    if (!isComplete) return;
+    if (sessionCompleteFiredRef.current) return;
+    if (challenges.length === 0) return;
+    sessionCompleteFiredRef.current = true;
 
-    // We automatically know the top value is 1 (that's what we're asking)
-    const bottomCorrect = !isNaN(bottomValue) && isWithinTolerance(bottomValue, unitRatePoint.bottomValue);
+    const totalAttempts = results.reduce((s, r) => s + r.attempts, 0);
+    const correctCount = results.filter((r) => r.correct).length;
+    const firstTryCount = results.filter((r) => r.attempts === 1 && r.correct).length;
+    const hintsViewed = results.filter((r) => r.attempts > 1).length;
+    const perChallengeScore = (r: typeof results[number]) =>
+      r.correct ? Math.max(20, 100 - (r.attempts - 1) * 20) : 0;
+    const overallAccuracy = Math.round(
+      results.reduce((s, r) => s + perChallengeScore(r), 0) / Math.max(1, results.length),
+    );
+    const averageAttemptsPerChallenge =
+      Math.round((totalAttempts / Math.max(1, results.length)) * 10) / 10;
 
-    if (bottomCorrect) {
-      setFeedback(`Perfect! You found the unit rate: 1 ${topLabel.toLowerCase()} = ${unitRatePoint.bottomValue} ${bottomLabel.toLowerCase()}. This is the key to solving the whole problem!`);
-      setFeedbackType('success');
-      setUnitRateFound(true);
-      sendText('[PHASE_TRANSITION] Student found unit rate. Moving to practice phase.', { silent: true });
-      setTimeout(() => setCurrentPhase('practice'), 2000);
-    } else {
-      const hint = unitRatePoint.bottomValue < 10
-        ? `Hint: Look at the number lines carefully. When ${topLabel} = 1, what value on the ${bottomLabel} line matches up?`
-        : `Hint: Think about the relationship shown in the context question above.`;
-      setFeedback(hint);
-      setFeedbackType('error');
+    const sessionMode = challenges[0].challengeType;
+    const metrics: DoubleNumberLineMetrics = {
+      type: 'double-number-line',
+      challengeType: sessionMode,
+      totalChallenges: challenges.length,
+      correctCount,
+      attemptsCount: totalAttempts,
+      firstTryCount,
+      hintsViewed,
+      overallAccuracy,
+      averageAttemptsPerChallenge,
+    };
+
+    const phaseStr = phaseResults
+      .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+      .join(', ');
+    sendText(
+      `[ALL_COMPLETE] Phase scores: ${phaseStr}. Overall: ${overallAccuracy}%. `
+      + `Celebrate completion of the ${challenges.length}-challenge ratio session.`,
+      { silent: true },
+    );
+
+    if (!hasSubmittedEvaluation) {
+      const goalMet = correctCount === challenges.length;
+      submitEvaluation(goalMet, overallAccuracy, metrics, {
+        studentWork: {
+          challengeCount: challenges.length,
+          challengeType: sessionMode,
+          prompts: challenges.map((c) => c.prompt),
+          attemptsPerChallenge: challenges.map((c) => {
+            const r = results.find((rr) => rr.challengeId === c.id);
+            return r?.attempts ?? 0;
+          }),
+        },
+      });
     }
-  };
+  }, [
+    isComplete, results, phaseResults, challenges,
+    sendText, submitEvaluation, hasSubmittedEvaluation,
+  ]);
 
-  // Handle input changes
-  const handleInputChange = (index: number, field: 'topValue' | 'bottomValue', value: string) => {
-    if (hasSubmittedEvaluation) return;
+  // ── Submit handler ─────────────────────────────────────────────────────────
+  const isWithinTolerance = (student: number, target: number, tolerance = 0.1): boolean =>
+    Math.abs(student - target) <= tolerance;
 
-    const newPoints = [...studentPoints];
-    newPoints[index] = { ...newPoints[index], [field]: value };
-    setStudentPoints(newPoints);
-    setFeedback(null);
-  };
+  const handleCheckAnswers = useCallback(() => {
+    if (!currentChallenge || feedback === 'correct' || isComplete) return;
 
-  // Check answers
-  const handleCheckAnswers = () => {
-    if (hasSubmittedEvaluation) return;
+    // Stale-state guard: setStudentValues from the reset effect is async — on
+    // the render immediately after advance(), `studentValues` still holds the
+    // previous challenge's values while `currentChallenge` has already moved
+    // on. Only proceed when the slot count matches.
+    if (studentValues.length !== currentChallenge.targetPoints.length) return;
 
-    setAttemptCount(prev => prev + 1);
-    const newPoints = [...studentPoints];
+    incrementAttempts();
+
     let allCorrect = true;
-    let correctCount = 0;
-
-    for (let i = 0; i < targetPoints.length; i++) {
-      const target = targetPoints[i];
-      const studentBottom = parseFloat(newPoints[i].bottomValue);
-
-      // Students are only entering bottom values (top values are given)
-      const bottomCorrect = !isNaN(studentBottom) && isWithinTolerance(studentBottom, target.bottomValue);
-
-      // Mark top as automatically correct since it's given
-      newPoints[i].topCorrect = true;
-      newPoints[i].bottomCorrect = bottomCorrect;
-
-      if (bottomCorrect) {
-        correctCount++;
-      } else {
+    for (let i = 0; i < currentChallenge.targetPoints.length; i++) {
+      const target = currentChallenge.targetPoints[i];
+      const studentBottom = parseFloat(studentValues[i]);
+      if (isNaN(studentBottom) || !isWithinTolerance(studentBottom, target.bottomValue)) {
         allCorrect = false;
+        break;
       }
     }
 
-    setStudentPoints(newPoints);
-
     if (allCorrect) {
-      setFeedback('Perfect! All points are correctly placed on both number lines!');
-      setFeedbackType('success');
-      handleSubmit(newPoints);
+      setFeedback('correct');
+      if (!recordedRef.current) {
+        recordedRef.current = true;
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+        });
+        sendText(
+          `[PHASE_COMPLETE] Challenge ${currentIndex + 1}/${challenges.length} solved on attempt ${currentAttempts + 1}.`,
+          { silent: true },
+        );
+      }
     } else {
-      setFeedback(`${correctCount} of ${targetPoints.length} points correct. Check your work and try again!`);
-      setFeedbackType('error');
+      setFeedback('incorrect');
+      setShowHint(true);
     }
+  }, [
+    currentChallenge, feedback, isComplete, studentValues,
+    incrementAttempts, recordResult, currentAttempts,
+    sendText, currentIndex, challenges.length,
+  ]);
+
+  const handleAdvance = () => {
+    advance();
   };
 
-  // Submit evaluation
-  const handleSubmit = (finalPoints: StudentPoint[]) => {
-    if (hasSubmittedEvaluation) return;
-
-    // Calculate metrics
-    const pointResults = targetPoints.map((target, i) => {
-      const studentTop = parseFloat(finalPoints[i].topValue);
-      const studentBottom = parseFloat(finalPoints[i].bottomValue);
-      return {
-        index: i,
-        targetTop: target.topValue,
-        targetBottom: target.bottomValue,
-        studentTop: isNaN(studentTop) ? null : studentTop,
-        studentBottom: isNaN(studentBottom) ? null : studentBottom,
-        topCorrect: finalPoints[i].topCorrect,
-        bottomCorrect: finalPoints[i].bottomCorrect,
-        bothCorrect: finalPoints[i].topCorrect && finalPoints[i].bottomCorrect,
-      };
-    });
-
-    const correctPoints = pointResults.filter(p => p.bothCorrect).length;
-    const allPointsCorrect = correctPoints === targetPoints.length;
-    const topCorrect = pointResults.filter(p => p.topCorrect).length;
-    const bottomCorrect = pointResults.filter(p => p.bottomCorrect).length;
-
-    // Check if unit rate was identified (top = 1)
-    const unitRateIdentified = pointResults.some(p =>
-      Math.abs(p.targetTop - 1) < 0.01 && p.bothCorrect
-    );
-
-    const metrics: DoubleNumberLineMetrics = {
-      type: 'double-number-line',
-      totalTargetPoints: targetPoints.length,
-      correctPoints,
-      allPointsCorrect,
-      unitRateIdentified,
-      correctRatio: calculateRatio(),
-      pointResults,
-      attemptsCount: attemptCount,
-      hintsUsed: showHints ? 1 : 0,
-      usedGivenPoints: givenPoints.length > 0,
-      topValueAccuracy: (topCorrect / targetPoints.length) * 100,
-      bottomValueAccuracy: (bottomCorrect / targetPoints.length) * 100,
-      overallAccuracy: (correctPoints / targetPoints.length) * 100,
-    };
-
-    const score = (correctPoints / targetPoints.length) * 100;
-
-    sendText('[ALL_COMPLETE] All points correct! Celebrate.', { silent: true });
-
-    submitEvaluation(allPointsCorrect, score, metrics, {
-      studentWork: { studentPoints: finalPoints },
-    });
-  };
-
-  // Reset and try again
-  const handleReset = () => {
-    setStudentPoints(targetPoints.map(() => ({ topValue: '', bottomValue: '', topCorrect: false, bottomCorrect: false })));
-    setAttemptCount(0);
-    setShowHints(false);
-    setFeedback(null);
-    setFeedbackType(null);
-    setCurrentPhase('explore');
-    setUnitRateFound(false);
-    setStudentUnitRate('');
-    setShowExplanation(false);
-    resetEvaluationAttempt();
-  };
-
-  // Calculate positions for tick marks
-  const topTickCount = Math.floor((topScale.max - topScale.min) / topScale.interval) + 1;
-  const bottomTickCount = Math.floor((bottomScale.max - bottomScale.min) / bottomScale.interval) + 1;
+  // ── Position helpers (per current challenge's scales) ──────────────────────
+  const topScale = currentChallenge?.topScale;
+  const bottomScale = currentChallenge?.bottomScale;
 
   const getTopPosition = (value: number): number => {
-    return ((value - topScale.min) / (topScale.max - topScale.min)) * 100;
+    if (!topScale) return 0;
+    return ((value - topScale.min) / Math.max(0.0001, topScale.max - topScale.min)) * 100;
   };
-
   const getBottomPosition = (value: number): number => {
-    return ((value - bottomScale.min) / (bottomScale.max - bottomScale.min)) * 100;
+    if (!bottomScale) return 0;
+    return ((value - bottomScale.min) / Math.max(0.0001, bottomScale.max - bottomScale.min)) * 100;
   };
 
-  // Generate tick marks for top line
-  const topTicks = Array.from({ length: topTickCount }, (_, i) => {
-    const value = topScale.min + i * topScale.interval;
-    const position = getTopPosition(value);
-    return { value, position };
-  });
-
-  // Generate tick marks for bottom line
-  const bottomTicks = Array.from({ length: bottomTickCount }, (_, i) => {
-    const value = bottomScale.min + i * bottomScale.interval;
-    const position = getBottomPosition(value);
-    return { value, position };
-  });
-
-  // Phase summary for evaluation results
-  const phaseResults = useMemo((): PhaseResult[] => {
-    if (!hasSubmittedEvaluation) return [];
-    const results: PhaseResult[] = [];
-
-    // Explore phase
-    results.push({
-      label: 'Find Unit Rate',
-      score: unitRateFound ? 100 : 0,
-      attempts: 1,
-      firstTry: unitRateFound,
-      icon: '🔍',
-      accentColor: 'blue',
+  const topTicks = useMemo(() => {
+    if (!topScale) return [];
+    const count = Math.floor((topScale.max - topScale.min) / topScale.interval) + 1;
+    return Array.from({ length: count }, (_, i) => {
+      const value = topScale.min + i * topScale.interval;
+      return { value: Math.round(value * 100) / 100, position: getTopPosition(value) };
     });
+  }, [topScale]);
 
-    // Practice phase (first 2 points)
-    const practicePoints = studentPoints.slice(0, 2);
-    const practiceCorrect = practicePoints.filter((p, i) => {
-      const target = targetPoints[i];
-      if (!target) return false;
-      const bv = parseFloat(p.bottomValue);
-      return !isNaN(bv) && Math.abs(bv - target.bottomValue) < 0.1;
-    }).length;
-    results.push({
-      label: 'Practice Scaling',
-      score: practicePoints.length > 0 ? Math.round((practiceCorrect / practicePoints.length) * 100) : 0,
-      attempts: attemptCount,
-      firstTry: practiceCorrect === practicePoints.length && attemptCount <= 1,
-      icon: '📐',
-      accentColor: 'amber',
+  const bottomTicks = useMemo(() => {
+    if (!bottomScale) return [];
+    const count = Math.floor((bottomScale.max - bottomScale.min) / bottomScale.interval) + 1;
+    return Array.from({ length: count }, (_, i) => {
+      const value = bottomScale.min + i * bottomScale.interval;
+      return { value: Math.round(value * 100) / 100, position: getBottomPosition(value) };
     });
+  }, [bottomScale]);
 
-    // Apply phase (all points)
-    const allCorrect = studentPoints.filter((p, i) => {
-      const target = targetPoints[i];
-      if (!target) return false;
-      const bv = parseFloat(p.bottomValue);
-      return !isNaN(bv) && Math.abs(bv - target.bottomValue) < 0.1;
-    }).length;
-    results.push({
-      label: 'Apply Understanding',
-      score: targetPoints.length > 0 ? Math.round((allCorrect / targetPoints.length) * 100) : 0,
-      attempts: attemptCount,
-      firstTry: allCorrect === targetPoints.length && attemptCount <= 1,
-      icon: '🎯',
-      accentColor: 'emerald',
-    });
+  // ── Empty state ────────────────────────────────────────────────────────────
+  if (challenges.length === 0) {
+    return (
+      <div className={`w-full max-w-5xl mx-auto my-12 ${className || ''}`}>
+        <div className="backdrop-blur-xl bg-slate-900/40 rounded-3xl border border-white/10 p-6 text-center">
+          <p className="text-slate-300">No double-number-line challenges available.</p>
+        </div>
+      </div>
+    );
+  }
 
-    return results;
-  }, [hasSubmittedEvaluation, unitRateFound, studentPoints, targetPoints, attemptCount]);
-
-  const localOverallScore = useMemo(() => {
-    if (!hasSubmittedEvaluation) return 0;
-    const correct = studentPoints.filter((p, i) => {
-      const target = targetPoints[i];
-      if (!target) return false;
-      const bv = parseFloat(p.bottomValue);
-      return !isNaN(bv) && Math.abs(bv - target.bottomValue) < 0.1;
-    }).length;
-    return Math.round((correct / targetPoints.length) * 100);
-  }, [hasSubmittedEvaluation, studentPoints, targetPoints]);
-
-  // Display points are the given hints
-  const displayPoints = givenPoints;
+  const allInputsFilled =
+    !!currentChallenge && studentValues.every((v) => v !== '' && !isNaN(parseFloat(v)));
 
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
@@ -518,466 +478,313 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
           <h2 className="text-2xl font-bold text-white tracking-tight">Double Number Line</h2>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
-            <p className="text-xs text-purple-400 font-mono uppercase tracking-wider">Proportional Reasoning</p>
+            <p className="text-xs text-purple-400 font-mono uppercase tracking-wider">
+              {currentChallenge ? currentChallenge.challengeType.replace(/_/g, ' ') : 'Proportional Reasoning'}
+            </p>
           </div>
         </div>
       </div>
 
       <div className="glass-panel p-8 md:p-16 rounded-3xl border border-purple-500/20 relative overflow-hidden">
-        {/* Background Texture */}
-        <div className="absolute inset-0 opacity-10"
+        <div className="absolute inset-0 opacity-10 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(#a855f7 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-        ></div>
+        />
 
         <div className="relative z-10">
-          {/* Phase Progress Indicator */}
-          <div className="mb-8 flex justify-center">
-            <div className="flex items-center gap-2 bg-slate-800/60 px-6 py-3 rounded-full border border-slate-700/50">
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full transition-all ${currentPhase === 'explore' ? 'bg-blue-500/20 border border-blue-500/50' : 'opacity-50'}`}>
-                <span className={`w-2 h-2 rounded-full ${currentPhase === 'explore' ? 'bg-blue-400' : 'bg-slate-500'}`}></span>
-                <span className="text-xs font-semibold">1. Explore</span>
-              </div>
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full transition-all ${currentPhase === 'practice' ? 'bg-yellow-500/20 border border-yellow-500/50' : 'opacity-50'}`}>
-                <span className={`w-2 h-2 rounded-full ${currentPhase === 'practice' ? 'bg-yellow-400' : 'bg-slate-500'}`}></span>
-                <span className="text-xs font-semibold">2. Practice</span>
-              </div>
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full transition-all ${currentPhase === 'apply' ? 'bg-green-500/20 border border-green-500/50' : 'opacity-50'}`}>
-                <span className={`w-2 h-2 rounded-full ${currentPhase === 'apply' ? 'bg-green-400' : 'bg-slate-500'}`}></span>
-                <span className="text-xs font-semibold">3. Apply</span>
-              </div>
-            </div>
-          </div>
+          {/* Title + description */}
+          <div className="mb-8 text-center max-w-2xl mx-auto">
+            <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
+            <p className="text-slate-300 font-light">{description}</p>
 
-          <div className="mb-12 text-center max-w-2xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-2">{data.title}</h3>
-            <p className="text-slate-300 font-light">{data.description}</p>
-
-            {/* Context Question */}
+            {/* Umbrella context — shared across all challenges */}
             {contextQuestion && (
               <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <p className="text-sm text-blue-200 font-medium">
-                  {contextQuestion}
-                </p>
-              </div>
-            )}
-
-            {/* Phase-specific instructions */}
-            {currentPhase === 'explore' && (
-              <div className="mt-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-                <p className="text-sm text-purple-200">
-                  <strong>Step 1: Find the Unit Rate</strong><br />
-                  {unitRateQuestion || `Look at the number lines. Find where ${topLabel} = 1, and see what ${bottomLabel} value lines up with it. This is the "unit rate" - the key to solving the whole problem!`}
-                </p>
-                <button
-                  onClick={() => setShowExplanation(!showExplanation)}
-                  className="mt-2 text-xs text-purple-400 hover:text-purple-300 underline"
-                >
-                  {showExplanation ? 'Hide' : 'Show'} What is a unit rate?
-                </button>
-                {showExplanation && (
-                  <div className="mt-3 p-3 bg-slate-900/50 rounded text-left">
-                    <p className="text-xs text-slate-300">
-                      A <strong>unit rate</strong> tells you how much of one quantity corresponds to exactly <strong>1 unit</strong> of another.
-                      For example, "3 cups of yogurt per 1 banana" is a unit rate. Once you know this, you can multiply to find any amount!
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {currentPhase === 'practice' && (
-              <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-sm text-yellow-200">
-                  <strong>Step 2: Practice Scaling</strong><br />
-                  Great! Now use the unit rate to find the other missing values. Multiply the unit rate by the {topLabel} value to get the {bottomLabel} value.
-                </p>
-              </div>
-            )}
-
-            {currentPhase === 'apply' && (
-              <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                <p className="text-sm text-green-200">
-                  <strong>Step 3: Apply Your Understanding</strong><br />
-                  You've got the pattern! Now find all the remaining values using the relationship you discovered.
-                </p>
+                <p className="text-sm text-blue-200 font-medium">{contextQuestion}</p>
               </div>
             )}
           </div>
 
-          {/* Double Number Line Visualization */}
-          <div className="w-full max-w-3xl mx-auto px-8 py-12 space-y-24">
-            {/* Top Number Line */}
-            <div className="relative">
-              {/* Label */}
-              <div className="absolute -top-8 left-0 text-sm font-semibold text-purple-300 uppercase tracking-wide">
-                {topLabel}
-              </div>
-
-              {/* Line */}
-              <div className="relative h-1 bg-slate-600 rounded-full">
-                {/* Ticks */}
-                {topTicks.map((tick, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-px h-4 bg-slate-500 top-full mt-1 flex flex-col items-center -translate-x-1/2"
-                    style={{ left: `${tick.position}%` }}
-                  >
-                    <span className="mt-2 text-sm text-slate-400 font-mono font-semibold">
-                      {tick.value}
-                    </span>
-                  </div>
-                ))}
-
-                {/* Only show given hint points (not target points the student needs to find) */}
-                {displayPoints.map((point, i) => {
-                  const position = getTopPosition(point.topValue);
-                  const isHovered = hoveredPoint === i;
-                  const isUnitRate = showUnitRate && Math.abs(point.topValue - 1) < 0.01;
+          {/* Progress dots */}
+          {!isComplete && challenges.length > 1 && (
+            <div className="mb-8 flex items-center justify-center gap-3 text-xs text-purple-300 font-mono uppercase tracking-wider">
+              <span>Challenge {Math.min(currentIndex + 1, challenges.length)} of {challenges.length}</span>
+              <div className="flex gap-1.5">
+                {challenges.map((ch, idx) => {
+                  const done = results.some((r) => r.challengeId === ch.id);
+                  const isCurrent = idx === currentIndex && !isComplete;
                   return (
                     <div
-                      key={`display-${i}`}
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
-                      style={{ left: `${position}%` }}
-                      onMouseEnter={() => setHoveredPoint(i)}
-                      onMouseLeave={() => setHoveredPoint(null)}
-                    >
-                      <div className={`w-4 h-4 rounded-full ${isUnitRate ? 'bg-yellow-500' : 'bg-purple-500'} border-2 border-white shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all duration-300 cursor-help ${isHovered ? 'scale-150' : ''}`}></div>
-                      {(point.label || isUnitRate) && (
-                        <div className={`absolute bottom-full mb-3 px-3 py-1 ${isUnitRate ? 'bg-yellow-600' : 'bg-purple-600'} text-white text-xs rounded transition-opacity whitespace-nowrap pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-                          {isUnitRate ? 'Unit Rate' : point.label}
-                        </div>
-                      )}
-                    </div>
+                      key={ch.id}
+                      className={`w-2.5 h-2.5 rounded-full border ${
+                        done
+                          ? 'bg-green-400/70 border-green-300/80 shadow-[0_0_8px_rgba(34,197,94,0.5)]'
+                          : isCurrent
+                          ? 'bg-purple-400/70 border-purple-300/80 shadow-[0_0_8px_rgba(168,85,247,0.5)]'
+                          : 'bg-slate-700/40 border-slate-600/50'
+                      }`}
+                    />
                   );
                 })}
+              </div>
+            </div>
+          )}
 
-                {/* Show target points ONLY after student has entered values in practice/apply phase */}
-                {(currentPhase === 'practice' || currentPhase === 'apply') && targetPoints.map((point, i) => {
-                  // In practice phase, only show first 2 points
-                  if (currentPhase === 'practice' && i >= 2) return null;
+          {/* Per-challenge prompt */}
+          {!isComplete && currentChallenge && (
+            <div className="mb-8 rounded-xl border border-purple-400/30 bg-purple-500/10 px-4 py-3 text-center max-w-2xl mx-auto">
+              <p className="text-purple-100 text-base font-medium">{currentChallenge.prompt}</p>
+            </div>
+          )}
 
-                  const position = getTopPosition(point.topValue);
-                  const studentValue = parseFloat(studentPoints[i].topValue);
-                  const hasValue = !isNaN(studentValue) && studentPoints[i].topValue !== '';
-                  const isCorrect = studentPoints[i].topCorrect && attemptCount > 0;
+          {/* Double Number Line Visualization */}
+          {!isComplete && currentChallenge && topScale && bottomScale && (
+            <div className="w-full max-w-3xl mx-auto px-8 py-12 space-y-24">
+              {/* Top Number Line */}
+              <div className="relative">
+                <div className="absolute -top-8 left-0 text-sm font-semibold text-purple-300 uppercase tracking-wide">
+                  {topLabel}
+                </div>
+                <div className="relative h-1 bg-slate-600 rounded-full">
+                  {/* Ticks */}
+                  {topTicks.map((tick, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-px h-4 bg-slate-500 top-full mt-1 flex flex-col items-center -translate-x-1/2"
+                      style={{ left: `${tick.position}%` }}
+                    >
+                      <span className="mt-2 text-sm text-slate-400 font-mono font-semibold">
+                        {tick.value}
+                      </span>
+                    </div>
+                  ))}
 
-                  // Only show if student has entered a value OR after checking
-                  if (!hasValue && attemptCount === 0) {
-                    // Show empty placeholder dot
+                  {/* Given (hint) points */}
+                  {currentChallenge.givenPoints.map((point, i) => {
+                    const position = getTopPosition(point.topValue);
+                    const isUnitRate = showUnitRate && Math.abs(point.topValue - 1) < 0.01;
+                    return (
+                      <div
+                        key={`given-top-${i}`}
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
+                        style={{ left: `${position}%` }}
+                      >
+                        <div className={`w-4 h-4 rounded-full ${isUnitRate ? 'bg-yellow-500' : 'bg-purple-500'} border-2 border-white shadow-[0_0_15px_rgba(168,85,247,0.5)]`} />
+                        {point.label && (
+                          <div className={`absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs rounded whitespace-nowrap ${isUnitRate ? 'bg-yellow-600 text-white' : 'bg-purple-600 text-white'}`}>
+                            {isUnitRate ? 'Unit Rate' : point.label}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Target points — show top value (always given to student) */}
+                  {currentChallenge.targetPoints.map((point, i) => {
+                    const position = getTopPosition(point.topValue);
                     return (
                       <div
                         key={`target-top-${i}`}
                         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
                         style={{ left: `${position}%` }}
                       >
-                        <div className="w-3 h-3 rounded-full border-2 border-slate-600 bg-slate-800/50 transition-all duration-300"></div>
-                        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-slate-500 font-semibold whitespace-nowrap">
-                          Point {i + 1}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div
-                      key={`target-top-${i}`}
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
-                      style={{ left: `${position}%` }}
-                    >
-                      <div className={`w-3 h-3 rounded-full border-2 ${isCorrect ? 'bg-green-500 border-green-300' : hasValue ? 'bg-blue-400 border-blue-300' : 'bg-slate-700 border-slate-500'} transition-all duration-300`}></div>
-                      {hasValue && (
+                        <div className="w-3 h-3 rounded-full bg-blue-400 border-2 border-blue-300" />
                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold text-white bg-slate-800/90 px-2 py-1 rounded whitespace-nowrap">
-                          {studentValue}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Vertical Alignment Guides - only show for given points */}
-            {showVerticalGuides && displayPoints.map((point, i) => {
-              const topPosition = getTopPosition(point.topValue);
-              const isHovered = hoveredPoint === i;
-              return (
-                <div
-                  key={`guide-${i}`}
-                  className={`absolute h-24 w-px -mt-12 transition-all duration-300 pointer-events-none ${isHovered ? 'bg-purple-400/60' : 'bg-purple-400/20'}`}
-                  style={{ left: `${topPosition}%`, transform: 'translateX(-50%)' }}
-                >
-                  <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-px transition-all duration-300 ${isHovered ? 'bg-purple-400/60' : 'bg-purple-400/20'}`}></div>
-                </div>
-              );
-            })}
-
-            {/* Bottom Number Line */}
-            <div className="relative">
-              {/* Label */}
-              <div className="absolute -top-8 left-0 text-sm font-semibold text-purple-300 uppercase tracking-wide">
-                {bottomLabel}
-              </div>
-
-              {/* Line */}
-              <div className="relative h-1 bg-slate-600 rounded-full">
-                {/* Ticks */}
-                {bottomTicks.map((tick, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-px h-4 bg-slate-500 top-full mt-1 flex flex-col items-center -translate-x-1/2"
-                    style={{ left: `${tick.position}%` }}
-                  >
-                    <span className="mt-2 text-sm text-slate-400 font-mono font-semibold">
-                      {tick.value}
-                    </span>
-                  </div>
-                ))}
-
-                {/* Display Points on Bottom Line - only given hints */}
-                {displayPoints.map((point, i) => {
-                  const position = getBottomPosition(point.bottomValue);
-                  const isHovered = hoveredPoint === i;
-                  return (
-                    <div
-                      key={`display-bottom-${i}`}
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
-                      style={{ left: `${position}%` }}
-                      onMouseEnter={() => setHoveredPoint(i)}
-                      onMouseLeave={() => setHoveredPoint(null)}
-                    >
-                      <div className={`w-4 h-4 rounded-full bg-purple-500 border-2 border-white shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all duration-300 cursor-help ${isHovered ? 'scale-150' : ''}`}></div>
-                    </div>
-                  );
-                })}
-
-                {/* Student Target Points on Bottom - only in practice/apply phase */}
-                {(currentPhase === 'practice' || currentPhase === 'apply') && targetPoints.map((point, i) => {
-                  // In practice phase, only show first 2 points
-                  if (currentPhase === 'practice' && i >= 2) return null;
-
-                  const position = getBottomPosition(point.bottomValue);
-                  const studentValue = parseFloat(studentPoints[i].bottomValue);
-                  const hasValue = !isNaN(studentValue) && studentPoints[i].bottomValue !== '';
-                  const isCorrect = studentPoints[i].bottomCorrect && attemptCount > 0;
-
-                  // Only show if student has entered a value OR after checking
-                  if (!hasValue && attemptCount === 0) {
-                    return (
-                      <div
-                        key={`target-bottom-${i}`}
-                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
-                        style={{ left: `${position}%` }}
-                      >
-                        <div className="w-3 h-3 rounded-full border-2 border-slate-600 bg-slate-800/50 transition-all duration-300"></div>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div
-                      key={`target-bottom-${i}`}
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
-                      style={{ left: `${position}%` }}
-                    >
-                      <div className={`w-3 h-3 rounded-full border-2 ${isCorrect ? 'bg-green-500 border-green-300' : hasValue ? 'bg-blue-400 border-blue-300' : 'bg-slate-700 border-slate-500'} transition-all duration-300`}></div>
-                      {hasValue && (
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold text-white bg-slate-800/90 px-2 py-1 rounded whitespace-nowrap">
-                          {studentValue}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Input Section */}
-          <div className="mt-12 space-y-6">
-            {/* Phase 1: Explore - Find Unit Rate */}
-            {currentPhase === 'explore' && !unitRateFound && (
-              <div className="max-w-md mx-auto">
-                <h4 className="text-lg font-semibold text-white text-center mb-4">Find the Unit Rate</h4>
-                <div className="p-6 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-blue-200 block mb-4 text-center">
-                        When {topLabel} = <span className="text-lg font-bold text-white">{findUnitRatePoint()?.topValue || 1}</span>, what is {bottomLabel}?
-                      </label>
-                      <div className="max-w-xs mx-auto">
-                        <label className="text-xs text-slate-400 block mb-2">{bottomLabel}:</label>
-                        <LuminaNumberStepper
-                          value={studentUnitRate}
-                          onChange={setStudentUnitRate}
-                          step={0.5}
-                          autoFocus
-                        />
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleCheckUnitRate}
-                      className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
-                    >
-                      Check Unit Rate
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Phase 2 & 3: Practice and Apply - Find all points */}
-            {(currentPhase === 'practice' || currentPhase === 'apply' || unitRateFound) && (
-              <>
-                <h4 className="text-lg font-semibold text-white text-center mb-2">
-                  {currentPhase === 'practice' ? 'Practice with a Few Points' : 'Find All Missing Values'}
-                </h4>
-                <p className="text-sm text-slate-400 text-center mb-6">
-                  {currentPhase === 'practice'
-                    ? 'Fill in the values below, and they will appear on the number lines above.'
-                    : 'Use what you learned to find all the remaining points on the number lines.'}
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                  {targetPoints.map((target, i) => {
-                    // In practice phase, only show first 2 points
-                    if (currentPhase === 'practice' && i >= 2) return null;
-
-                    const topFilled = studentPoints[i].topValue !== '';
-                    const bottomFilled = studentPoints[i].bottomValue !== '';
-                    const bothFilled = topFilled && bottomFilled;
-
-                    return (
-                      <div
-                        key={i}
-                        className={`p-5 rounded-xl border-2 transition-all ${
-                          bothFilled && attemptCount > 0 && studentPoints[i].topCorrect && studentPoints[i].bottomCorrect
-                            ? 'bg-green-500/10 border-green-500/50'
-                            : bothFilled
-                            ? 'bg-blue-500/10 border-blue-500/50'
-                            : 'bg-slate-800/40 border-slate-700/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                            bothFilled && attemptCount > 0 && studentPoints[i].topCorrect && studentPoints[i].bottomCorrect
-                              ? 'bg-green-500 text-white'
-                              : bothFilled
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-slate-700 text-slate-400'
-                          }`}>
-                            {i + 1}
-                          </div>
-                          <span className="text-sm font-semibold text-white">
-                            Point {i + 1}
-                            {bothFilled && attemptCount > 0 && studentPoints[i].topCorrect && studentPoints[i].bottomCorrect &&
-                              <span className="ml-2 text-green-400">✓</span>
-                            }
-                          </span>
-                        </div>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="text-xs text-slate-400 block mb-1.5 font-medium">
-                              {topLabel} = <span className="text-purple-300">{target.topValue}</span>
-                            </label>
-                            <div className="text-xs text-slate-500 mb-1">What is {bottomLabel}?</div>
-                            <LuminaNumberStepper
-                              value={studentPoints[i].bottomValue}
-                              onChange={(val) => handleInputChange(i, 'bottomValue', val)}
-                              step={1}
-                              disabled={hasSubmittedEvaluation}
-                              borderColor={
-                                studentPoints[i].bottomCorrect && attemptCount > 0
-                                  ? 'border-green-500'
-                                  : studentPoints[i].bottomValue && attemptCount > 0 && !studentPoints[i].bottomCorrect
-                                  ? 'border-red-500'
-                                  : 'border-slate-600'
-                              }
-                            />
-                          </div>
+                          {point.topValue}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              </>
-            )}
+              </div>
+
+              {/* Vertical Alignment Guides for given points */}
+              {showVerticalGuides && currentChallenge.givenPoints.map((point, i) => {
+                const topPosition = getTopPosition(point.topValue);
+                return (
+                  <div
+                    key={`guide-${i}`}
+                    className="absolute h-24 w-px -mt-12 bg-purple-400/20 pointer-events-none"
+                    style={{ left: `${topPosition}%`, transform: 'translateX(-50%)' }}
+                  />
+                );
+              })}
+
+              {/* Bottom Number Line */}
+              <div className="relative">
+                <div className="absolute -top-8 left-0 text-sm font-semibold text-purple-300 uppercase tracking-wide">
+                  {bottomLabel}
+                </div>
+                <div className="relative h-1 bg-slate-600 rounded-full">
+                  {/* Ticks */}
+                  {bottomTicks.map((tick, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-px h-4 bg-slate-500 top-full mt-1 flex flex-col items-center -translate-x-1/2"
+                      style={{ left: `${tick.position}%` }}
+                    >
+                      <span className="mt-2 text-sm text-slate-400 font-mono font-semibold">
+                        {tick.value}
+                      </span>
+                    </div>
+                  ))}
+
+                  {/* Given (hint) points on bottom */}
+                  {currentChallenge.givenPoints.map((point, i) => {
+                    const position = getBottomPosition(point.bottomValue);
+                    return (
+                      <div
+                        key={`given-bottom-${i}`}
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
+                        style={{ left: `${position}%` }}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-purple-500 border-2 border-white shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
+                        <div className="absolute top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-white bg-slate-800/90 px-2 py-1 rounded whitespace-nowrap">
+                          {point.bottomValue}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Student-entered values on bottom */}
+                  {currentChallenge.targetPoints.map((point, i) => {
+                    const position = getBottomPosition(point.bottomValue);
+                    const studentValue = parseFloat(studentValues[i] ?? '');
+                    const hasValue = !isNaN(studentValue);
+                    const studentPosition = hasValue ? getBottomPosition(studentValue) : position;
+                    return (
+                      <div
+                        key={`target-bottom-${i}`}
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
+                        style={{ left: `${hasValue && feedback !== 'correct' ? studentPosition : position}%` }}
+                      >
+                        <div className={`w-3 h-3 rounded-full border-2 ${
+                          feedback === 'correct'
+                            ? 'bg-green-500 border-green-300'
+                            : hasValue
+                            ? 'bg-blue-400 border-blue-300'
+                            : 'bg-slate-700 border-slate-500'
+                        }`} />
+                        {hasValue && (
+                          <div className="absolute top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-white bg-slate-800/90 px-2 py-1 rounded whitespace-nowrap">
+                            {studentValue}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Input section */}
+          {!isComplete && currentChallenge && (
+            <div className="mt-12 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                {currentChallenge.targetPoints.map((target, i) => {
+                  const studentVal = parseFloat(studentValues[i] ?? '');
+                  const filled = !isNaN(studentVal);
+                  const correctClass = feedback === 'correct'
+                    ? 'bg-green-500/10 border-green-500/50'
+                    : feedback === 'incorrect' && filled
+                    ? 'bg-red-500/10 border-red-500/50'
+                    : filled
+                    ? 'bg-blue-500/10 border-blue-500/50'
+                    : 'bg-slate-800/40 border-slate-700/50';
+                  return (
+                    <div
+                      key={i}
+                      className={`p-5 rounded-xl border-2 transition-all ${correctClass}`}
+                    >
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-slate-400 block mb-1.5 font-medium">
+                            {topLabel} = <span className="text-purple-300">{target.topValue}</span>
+                          </label>
+                          <div className="text-xs text-slate-500 mb-1">What is {bottomLabel}?</div>
+                          <LuminaNumberStepper
+                            value={studentValues[i] ?? ''}
+                            onChange={(val) => {
+                              if (feedback === 'correct') return;
+                              setStudentValues((prev) => {
+                                const next = [...prev];
+                                next[i] = val;
+                                return next;
+                              });
+                              setFeedback(null);
+                            }}
+                            step={1}
+                            autoFocus={i === 0}
+                            disabled={feedback === 'correct'}
+                            borderColor={
+                              feedback === 'correct'
+                                ? 'border-green-500'
+                                : feedback === 'incorrect' && filled
+                                ? 'border-red-500'
+                                : 'border-slate-600'
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
               {/* Feedback */}
               {feedback && (
-                <div className={`p-4 rounded-lg border ${feedbackType === 'success' ? 'bg-green-500/10 border-green-500/30' : feedbackType === 'error' ? 'bg-red-500/10 border-red-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
-                  <p className={`text-sm ${feedbackType === 'success' ? 'text-green-200' : feedbackType === 'error' ? 'text-red-200' : 'text-blue-200'}`}>
-                    {feedback}
+                <div className={`p-4 rounded-lg border max-w-2xl mx-auto ${
+                  feedback === 'correct'
+                    ? 'bg-green-500/10 border-green-500/30'
+                    : 'bg-red-500/10 border-red-500/30'
+                }`}>
+                  <p className={`text-sm ${feedback === 'correct' ? 'text-green-200' : 'text-red-200'}`}>
+                    {feedback === 'correct'
+                      ? `Correct! ${currentIndex + 1 < challenges.length ? 'Ready for the next one?' : 'Last challenge complete!'}`
+                      : 'Not quite — check your work and try again.'}
                   </p>
+                  {feedback === 'incorrect' && showHint && currentChallenge.hint && (
+                    <p className="text-xs text-red-100/80 mt-2 font-light">
+                      Hint: {currentChallenge.hint}
+                    </p>
+                  )}
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Action buttons */}
               <div className="flex gap-4 justify-center flex-wrap">
-                {!hasSubmittedEvaluation && currentPhase !== 'explore' && (
-                  <>
-                    <button
-                      onClick={() => {
-                        if (currentPhase === 'practice') {
-                          // Check first 2 points only (students only enter bottom values)
-                          const practiceCorrect = studentPoints.slice(0, 2).every((p, i) => {
-                            const target = targetPoints[i];
-                            const bottomVal = parseFloat(p.bottomValue);
-                            return !isNaN(bottomVal) && isWithinTolerance(bottomVal, target.bottomValue);
-                          });
-
-                          if (practiceCorrect) {
-                            setFeedback('Excellent! You\'ve got the pattern. Now try finding all the remaining points!');
-                            setFeedbackType('success');
-                            sendText('[PHASE_TRANSITION] Practice complete. Moving to apply phase.', { silent: true });
-                            setCurrentPhase('apply');
-                          } else {
-                            handleCheckAnswers();
-                          }
-                        } else {
-                          handleCheckAnswers();
-                        }
-                      }}
-                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors"
-                    >
-                      {currentPhase === 'practice' ? 'Check Practice Points' : 'Check Answers'}
-                    </button>
-                    {givenPoints.length > 0 && (
-                      <button
-                        onClick={() => setShowHints(!showHints)}
-                        className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-semibold transition-colors"
-                      >
-                        {showHints ? 'Hide' : 'Show'} Hint Points
-                      </button>
-                    )}
-                    {currentPhase === 'practice' && (
-                      <button
-                        onClick={() => setCurrentPhase('apply')}
-                        className="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-semibold transition-colors"
-                      >
-                        Skip to Apply Phase →
-                      </button>
-                    )}
-                  </>
-                )}
-                {hasSubmittedEvaluation && phaseResults.length > 0 && (
-                  <PhaseSummaryPanel
-                    phases={phaseResults}
-                    overallScore={submittedResult?.score ?? localOverallScore}
-                    durationMs={elapsedMs}
-                    heading="Challenge Complete!"
-                    celebrationMessage={`You found all ${targetPoints.length} proportional relationships!`}
-                    className="mt-4"
-                  />
-                )}
-                {hasSubmittedEvaluation && (
+                {feedback !== 'correct' && (
                   <button
-                    onClick={handleReset}
-                    className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-semibold transition-colors"
+                    onClick={handleCheckAnswers}
+                    disabled={!allInputsFilled}
+                    className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors"
                   >
-                    Try Again
+                    Check Answer
+                  </button>
+                )}
+                {feedback === 'correct' && (
+                  <button
+                    onClick={handleAdvance}
+                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors"
+                  >
+                    {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
                   </button>
                 )}
               </div>
             </div>
+          )}
+
+          {/* Session-complete summary panel */}
+          {isComplete && phaseResults.length > 0 && (
+            <PhaseSummaryPanel
+              phases={phaseResults}
+              overallScore={submittedResult?.score}
+              durationMs={elapsedMs}
+              heading="Ratio Session Complete!"
+              celebrationMessage={`You worked through ${challenges.length} proportional reasoning ${challenges.length === 1 ? 'challenge' : 'challenges'}!`}
+              className="mt-4"
+            />
+          )}
         </div>
       </div>
     </div>

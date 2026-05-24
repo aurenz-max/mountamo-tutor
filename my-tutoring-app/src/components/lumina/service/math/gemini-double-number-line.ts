@@ -1,5 +1,26 @@
+/**
+ * Double Number Line Generator — IRT-aware proportional-reasoning generator.
+ *
+ * Multi-instance schema: a single session walks the student through 3-6 ratio
+ * challenges of the same eval mode. Every challenge shares ONE ratio
+ * relationship (e.g. all flour→cookies, all dollars→hours) for context
+ * coherence — only the target ask-points vary per challenge.
+ *
+ * Generation strategy (Fork B / hybrid — per PRD §4 A2):
+ *   - ONE Gemini call establishes the session-level scenario: topLabel,
+ *     bottomLabel, unitRate (= unitRateOutput), the umbrella contextQuestion,
+ *     plus a pool of candidate target inputs.
+ *   - Locally build N challenges by sampling distinct target inputs from the
+ *     pool. Per-challenge `givenPoints` / `targetPoints` / `prompt` are
+ *     derived deterministically based on the active challengeType.
+ *
+ * Why hybrid: per-challenge per-input fan-out (N Gemini calls) costs N× tokens
+ * for what is essentially a number-pool refresh on a shared scenario. Single-
+ * call wrapper + local construction keeps the cost flat while still producing
+ * 3-6 distinct ratio challenges with shared topLabel/bottomLabel coherence.
+ */
+
 import { Type, Schema } from "@google/genai";
-import { DoubleNumberLineData } from "../../primitives/visual-primitives/math/DoubleNumberLine";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
@@ -10,170 +31,327 @@ import {
 } from "../evalMode";
 
 // ---------------------------------------------------------------------------
+// Public types (mirrored by the component)
+// ---------------------------------------------------------------------------
+
+export type DoubleNumberLineChallengeType =
+  | 'equivalent_ratios'
+  | 'find_missing'
+  | 'unit_rate';
+
+export interface LinkedPoint {
+  topValue: number;
+  bottomValue: number;
+  label?: string;
+}
+
+export interface ScaleConfig {
+  min: number;
+  max: number;
+  interval: number;
+}
+
+/**
+ * One ratio challenge. Shares session-level topLabel/bottomLabel/unitRate
+ * with siblings — only the target ask-points vary.
+ */
+export interface DoubleNumberLineChallenge {
+  id: string;
+  challengeType: DoubleNumberLineChallengeType;
+  prompt: string;
+  hint: string;
+  givenPoints: LinkedPoint[];
+  targetPoints: LinkedPoint[];
+  topScale: ScaleConfig;
+  bottomScale: ScaleConfig;
+}
+
+export interface DoubleNumberLineData {
+  title: string;
+  description: string;
+  topLabel: string;
+  bottomLabel: string;
+  /** Bottom value when top = 1. Session-level for tutor context. */
+  unitRate: number;
+  contextQuestion: string;
+  /** 3-6 challenges. Required. Walked sequentially by the component. */
+  challenges: DoubleNumberLineChallenge[];
+
+  showVerticalGuides?: boolean;
+  showUnitRate?: boolean;
+
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (
+    result: import('../../evaluation/types').PrimitiveEvaluationResult<
+      import('../../evaluation/types').DoubleNumberLineMetrics
+    >
+  ) => void;
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   equivalent_ratios: {
     promptDoc:
-      `"equivalent_ratios": The unit rate is GIVEN (shown as a given point). `
-      + `Students multiply to find equivalent ratio pairs on the double number line. `
-      + `Easiest mode — just scaling. `
-      + `Include the unit rate point in givenPoints, not targetPoints. `
-      + `targetInputs should be 3-4 multiples of the unit rate input. `
-      + `contextQuestion should state the unit rate explicitly. `
-      + `IMPORTANT: The stated unit rate direction in contextQuestion MUST match topLabel→bottomLabel. `
-      + `If context says "1 X makes 3 Y", topLabel must be X and bottomLabel must be Y (unitRateOutput=3), never inverted.`,
+      `"equivalent_ratios": The unit rate is GIVEN (shown as a labeled given point). `
+      + `Students multiply to find equivalent ratio pairs. Easiest mode — pure scaling. `
+      + `Each per-session challenge asks for ONE multiple of the unit rate.`,
     schemaDescription: "'equivalent_ratios' (scale given unit rate)",
   },
   find_missing: {
     promptDoc:
-      `"find_missing": Some points are given, but one or two values are missing. `
-      + `Students must use the proportional relationship to find the missing values. `
-      + `Intermediate difficulty — requires identifying the relationship. `
-      + `Give 1-2 complete points as givenPoints, then ask for 2-3 target points. `
-      + `contextQuestion should describe the relationship without explicitly stating the unit rate.`,
+      `"find_missing": A non-unit ratio pair is given. Students use it to find missing values. `
+      + `Intermediate — requires identifying the relationship. `
+      + `Each per-session challenge asks for ONE missing value.`,
     schemaDescription: "'find_missing' (find missing values in ratio table)",
   },
   unit_rate: {
     promptDoc:
-      `"unit_rate": Students must DISCOVER the unit rate from a non-unit ratio pair. `
-      + `Hardest mode — requires division to find per-unit value. `
-      + `Give a non-unit pair (e.g., 3 cups → 9 cookies, NOT 1 cup → 3 cookies). `
-      + `The givenPoints should include only the origin and a non-unit pair. `
-      + `Phase 1 becomes: find when input=1, what is the output? `
-      + `contextQuestion should present the non-unit relationship.`,
+      `"unit_rate": A non-unit pair is given. Students must DISCOVER the unit rate via division. `
+      + `Hardest mode — first challenge often asks for the unit rate itself. `
+      + `Each per-session challenge asks for ONE specific value.`,
     schemaDescription: "'unit_rate' (discover unit rate from non-unit pair)",
   },
 };
 
 // ---------------------------------------------------------------------------
-// Base schema
+// Constants
 // ---------------------------------------------------------------------------
 
-const doubleNumberLineSchema: Schema = {
+const DEFAULT_INSTANCE_COUNT = 4;
+const MAX_INSTANCE_COUNT = 6;
+const MIN_INSTANCE_COUNT = 3;
+const MODEL = "gemini-flash-lite-latest";
+
+// ---------------------------------------------------------------------------
+// Session-wrapper schema
+// ---------------------------------------------------------------------------
+
+const sessionWrapperSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     title: {
       type: Type.STRING,
-      description: "Short title describing the relationship (e.g., 'Flour to Cookies')"
+      description: "Short title describing the relationship (e.g., 'Flour to Cookies')",
     },
     description: {
       type: Type.STRING,
-      description: "One sentence explaining what students will learn"
+      description: "One sentence explaining what students will practice across the session",
     },
     challengeType: {
       type: Type.STRING,
       enum: ["equivalent_ratios", "find_missing", "unit_rate"],
-      description: "Challenge type: 'equivalent_ratios' (scale given unit rate), 'find_missing' (find missing values), 'unit_rate' (discover unit rate from non-unit pair)"
+      description: "Challenge type for every challenge in this session",
     },
     contextQuestion: {
       type: Type.STRING,
-      description: "Real-world problem setup (e.g., '1 cup of flour makes 3 cookies. How many cookies can you make with different amounts of flour?')"
+      description:
+        "Umbrella real-world setup that applies to ALL challenges in this session "
+        + "(e.g., '1 cup of flour makes 3 cookies. Use this rate to answer each question.'). "
+        + "Should explicitly state the unit rate when challengeType is equivalent_ratios.",
     },
     topLabel: {
       type: Type.STRING,
-      description: "Name of input quantity (e.g., 'Cups of Flour', 'Hours')"
+      description: "Name of input quantity (e.g., 'Cups of Flour', 'Hours')",
     },
     bottomLabel: {
       type: Type.STRING,
-      description: "Name of output quantity (e.g., 'Cookies Made', 'Miles')"
-    },
-    unitRateInput: {
-      type: Type.NUMBER,
-      description: "The INPUT value for the unit rate question. MUST be 1. Students will find the corresponding output."
+      description: "Name of output quantity (e.g., 'Cookies Made', 'Miles')",
     },
     unitRateOutput: {
       type: Type.NUMBER,
-      description: "The OUTPUT value when input = unitRateInput. This is the answer students must discover. (e.g., 3 cookies when input is 1 cup)"
+      description:
+        "OUTPUT when input = 1. The shared unit rate for the whole session. "
+        + "Pick a whole number or simple decimal (e.g., 3, 4, 0.5, 60).",
     },
     maxInput: {
       type: Type.NUMBER,
-      description: "Maximum value for input scale (top line). Should be 5-10 for simple problems."
+      description: "Maximum input value for the number line (5-10 for simple problems).",
     },
-    targetInputs: {
+    askInputs: {
       type: Type.ARRAY,
       items: { type: Type.NUMBER },
-      description: "3-5 input values students must find outputs for (e.g., [2, 3, 5, 7]). Should NOT include unitRateInput since that's phase 1."
-    }
+      description:
+        "Pool of 5-7 DISTINCT input values for individual challenges to draw from. "
+        + "Should NOT include 1 (unit rate). Spread across 2..maxInput. "
+        + "These become the per-challenge target ask-points.",
+    },
   },
-  required: ["title", "description", "challengeType", "contextQuestion", "topLabel", "bottomLabel", "unitRateInput", "unitRateOutput", "maxInput", "targetInputs"]
+  required: [
+    "title", "description", "challengeType", "contextQuestion",
+    "topLabel", "bottomLabel", "unitRateOutput", "maxInput", "askInputs",
+  ],
 };
 
-type Point = { topValue: number; bottomValue: number; label?: string };
+// ---------------------------------------------------------------------------
+// Per-challenge builders (local — pool-style)
+// ---------------------------------------------------------------------------
 
-/**
- * Build givenPoints and targetPoints based on challenge type.
- *
- * - equivalent_ratios: origin + unit rate are GIVEN; students scale to find targets
- * - find_missing: origin + one non-unit pair GIVEN; students find the rest (including unit rate)
- * - unit_rate / default: only origin given; students discover unit rate then find targets
- */
-function buildPointsByMode(
-  challengeType: string,
-  unitRateInput: number,
-  unitRateOutput: number,
-  unitRate: number,
-  targetInputs: number[],
-): { givenPoints: Point[]; targetPoints: Point[] } {
-  const origin: Point = { topValue: 0, bottomValue: 0, label: 'Start' };
-  const unitRatePoint: Point = { topValue: unitRateInput, bottomValue: unitRateOutput, label: 'Unit Rate' };
-  const additionalPoints: Point[] = targetInputs.map((input: number, i: number) => ({
-    topValue: input,
-    bottomValue: input * unitRate,
-    label: `Point ${i + 2}`,
-  }));
+const ORIGIN: LinkedPoint = { topValue: 0, bottomValue: 0, label: 'Start' };
 
-  if (challengeType === 'equivalent_ratios') {
-    // Unit rate is given — students just scale
-    return {
-      givenPoints: [origin, unitRatePoint],
-      targetPoints: additionalPoints,
-    };
-  }
+interface SessionContext {
+  topLabel: string;
+  bottomLabel: string;
+  unitRate: number;             // bottom when top = 1
+  topScale: ScaleConfig;
+  bottomScale: ScaleConfig;
+}
 
-  if (challengeType === 'find_missing') {
-    // Give one non-unit ratio pair as a clue; students find unit rate + remaining points
-    // Pick the first additional point as the given clue
-    const [cluePoint, ...remainingPoints] = additionalPoints;
-    if (cluePoint) {
-      return {
-        givenPoints: [origin, { ...cluePoint, label: 'Given' }],
-        targetPoints: [unitRatePoint, ...remainingPoints],
-      };
-    }
-    // Fallback if no additional points (shouldn't happen)
-    return {
-      givenPoints: [origin],
-      targetPoints: [unitRatePoint, ...additionalPoints],
-    };
-  }
+/** Pick a non-unit pair (top ≠ 1, top ≥ 2) to use as the "given" reference. */
+function pickNonUnitGiven(askInputs: number[], unitRate: number): LinkedPoint {
+  const candidates = askInputs.filter((n) => n !== 1 && n >= 2);
+  const top = candidates[0] ?? 2;
+  return { topValue: top, bottomValue: top * unitRate, label: 'Given' };
+}
 
-  // unit_rate or default: only origin given, students discover everything
+function buildEquivalentRatiosChallenge(
+  ctx: SessionContext,
+  askInput: number,
+): Pick<DoubleNumberLineChallenge, 'givenPoints' | 'targetPoints' | 'prompt' | 'hint'> {
+  const unitRatePoint: LinkedPoint = {
+    topValue: 1,
+    bottomValue: ctx.unitRate,
+    label: 'Unit Rate',
+  };
+  const target: LinkedPoint = {
+    topValue: askInput,
+    bottomValue: askInput * ctx.unitRate,
+    label: `Find for ${askInput}`,
+  };
   return {
-    givenPoints: [origin],
-    targetPoints: [unitRatePoint, ...additionalPoints],
+    givenPoints: [ORIGIN, unitRatePoint],
+    targetPoints: [target],
+    prompt: `Use the unit rate to find ${ctx.bottomLabel} when ${ctx.topLabel} = ${askInput}.`,
+    hint: `Multiply ${askInput} × ${ctx.unitRate} (the unit rate).`,
   };
 }
 
+function buildFindMissingChallenge(
+  ctx: SessionContext,
+  askInput: number,
+  givenReference: LinkedPoint,
+): Pick<DoubleNumberLineChallenge, 'givenPoints' | 'targetPoints' | 'prompt' | 'hint'> {
+  const target: LinkedPoint = {
+    topValue: askInput,
+    bottomValue: askInput * ctx.unitRate,
+    label: `Find for ${askInput}`,
+  };
+  return {
+    givenPoints: [ORIGIN, givenReference],
+    targetPoints: [target],
+    prompt:
+      `Given ${givenReference.topValue} ${ctx.topLabel} = ${givenReference.bottomValue} ${ctx.bottomLabel}, `
+      + `find ${ctx.bottomLabel} when ${ctx.topLabel} = ${askInput}.`,
+    hint:
+      `First find the unit rate: ${givenReference.bottomValue} ÷ ${givenReference.topValue} = ${ctx.unitRate}. `
+      + `Then multiply by ${askInput}.`,
+  };
+}
+
+function buildUnitRateChallenge(
+  ctx: SessionContext,
+  askInput: number,
+  givenReference: LinkedPoint,
+  isFirstChallenge: boolean,
+): Pick<DoubleNumberLineChallenge, 'givenPoints' | 'targetPoints' | 'prompt' | 'hint'> {
+  if (isFirstChallenge) {
+    // First challenge: derive the unit rate explicitly
+    const unitRatePoint: LinkedPoint = {
+      topValue: 1,
+      bottomValue: ctx.unitRate,
+      label: 'Unit Rate',
+    };
+    return {
+      givenPoints: [ORIGIN, givenReference],
+      targetPoints: [unitRatePoint],
+      prompt: `Find the unit rate: when ${ctx.topLabel} = 1, what is ${ctx.bottomLabel}?`,
+      hint: `Divide: ${givenReference.bottomValue} ÷ ${givenReference.topValue}.`,
+    };
+  }
+  // Subsequent challenges: use the unit rate to find arbitrary values
+  const target: LinkedPoint = {
+    topValue: askInput,
+    bottomValue: askInput * ctx.unitRate,
+    label: `Find for ${askInput}`,
+  };
+  return {
+    givenPoints: [ORIGIN, givenReference],
+    targetPoints: [target],
+    prompt: `Now find ${ctx.bottomLabel} when ${ctx.topLabel} = ${askInput}.`,
+    hint:
+      `Unit rate is ${ctx.unitRate} (from ${givenReference.bottomValue} ÷ ${givenReference.topValue}). `
+      + `Multiply by ${askInput}.`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Scale helpers
+// ---------------------------------------------------------------------------
+
+function buildScales(maxInput: number, unitRate: number): {
+  topScale: ScaleConfig;
+  bottomScale: ScaleConfig;
+} {
+  const maxOutput = maxInput * unitRate;
+  const topInterval = maxInput <= 10 ? 1 : Math.ceil(maxInput / 10);
+  const bottomInterval = maxOutput <= 20
+    ? (unitRate <= 5 ? unitRate : 1)
+    : Math.ceil(maxOutput / 10);
+  return {
+    topScale: { min: 0, max: maxInput, interval: Math.max(1, topInterval) },
+    bottomScale: { min: 0, max: maxOutput, interval: Math.max(0.5, bottomInterval) },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Ratio-direction validator
+// ---------------------------------------------------------------------------
+
 /**
- * Generate double number line data for visualization
+ * Detects when Gemini emits an inverted unit rate. If the context states a
+ * specific rate ("1 X = N Y") but unitRateOutput came back as 1/N, fix it.
  */
+function correctInvertedRatio(contextQuestion: string, unitRateOutput: number): number {
+  const ctxLower = (contextQuestion || '').toLowerCase();
+  const ratioMatch = ctxLower.match(/\b1\b[^.]*?\b(\d+(?:\.\d+)?)\b/);
+  if (!ratioMatch) return unitRateOutput;
+  const statedValue = parseFloat(ratioMatch[1]);
+  if (statedValue > 1 && Math.abs(unitRateOutput - 1 / statedValue) < 0.01) {
+    console.warn(
+      `[DoubleNumberLine] Ratio direction mismatch: context states rate ~${statedValue} `
+      + `but unitRateOutput=${unitRateOutput}. Correcting to ${statedValue}.`,
+    );
+    return statedValue;
+  }
+  return unitRateOutput;
+}
+
+// ---------------------------------------------------------------------------
+// Orchestrator
+// ---------------------------------------------------------------------------
+
 export const generateDoubleNumberLine = async (
   topic: string,
   gradeLevel: string,
   config?: {
     topLabel?: string;
     bottomLabel?: string;
-    topScale?: { min: number; max: number; interval: number };
-    bottomScale?: { min: number; max: number; interval: number };
-    targetPoints?: Array<{ topValue: number; bottomValue: number; label?: string }>;
-    givenPoints?: Array<{ topValue: number; bottomValue: number; label?: string }>;
+    topScale?: ScaleConfig;
+    bottomScale?: ScaleConfig;
     showUnitRate?: boolean;
     showVerticalGuides?: boolean;
+    /** How many challenges in this session. Default 4, clamped to [3, 6]. */
+    instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
-  }
+  },
 ): Promise<DoubleNumberLineData> => {
   // Resolve eval mode from catalog (single source of truth)
   const evalConstraint = resolveEvalModeConstraint(
@@ -183,58 +361,57 @@ export const generateDoubleNumberLine = async (
   );
   logEvalModeResolution('DoubleNumberLine', config?.targetEvalMode, evalConstraint);
 
-  // Constrain schema when eval mode is active (challengeType at root level)
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(doubleNumberLineSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+    ? constrainChallengeTypeEnum(sessionWrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
         fieldName: 'challengeType',
         rootLevel: true,
       })
-    : doubleNumberLineSchema;
+    : sessionWrapperSchema;
 
-  // Build challenge type prompt section
   const challengeTypeSection = buildChallengeTypePromptSection(
     evalConstraint,
     CHALLENGE_TYPE_DOCS,
   );
 
+  const instanceCount = Math.min(
+    MAX_INSTANCE_COUNT,
+    Math.max(MIN_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+  );
+
   const prompt = `
-Create a double number line problem for "${topic}" (${gradeLevel}).
+Create a multi-challenge double number line session for "${topic}" (${gradeLevel}).
+
+This session contains ${instanceCount} ratio challenges that all share ONE proportional
+relationship (e.g., all flour→cookies, all dollars→hours). Per-challenge target ask-points
+will be derived locally — your job is to set up the SHARED session context.
 
 ${challengeTypeSection}
 
-${!evalConstraint ? `
-The problem has 3 learning phases:
-1. Students find the UNIT RATE (when input = 1, what's the output?)
-2. Students practice with 2-3 points
-3. Students find all remaining points
-` : ''}
-
 WHAT YOU NEED TO CREATE:
-- title: Short, clear title (e.g., "Baking Cookies: Relating Flour to Cookies Made")
-- description: One sentence about what they'll learn
+- title: Short, clear title (e.g., "Baking Cookies: Flour to Cookies")
+- description: One sentence describing what students will practice across all ${instanceCount} challenges
 - challengeType: Must match the constrained type${evalConstraint ? ` (${evalConstraint.allowedTypes.join(' or ')})` : ''}
-- contextQuestion: Real-world setup
+- contextQuestion: Umbrella real-world setup that applies to EVERY challenge in this session
 - topLabel: Input quantity name (e.g., "Cups of Flour")
 - bottomLabel: Output quantity name (e.g., "Cookies Made")
-- unitRateInput: ALWAYS set to 1
-- unitRateOutput: The answer when input = 1 (e.g., 3 cookies per 1 cup)
-- maxInput: Maximum input value (keep 5-10)
-- targetInputs: Array of 3-4 OTHER input values students solve (do NOT include 1)
+- unitRateOutput: bottomLabel value when topLabel = 1. The shared unit rate.
+- maxInput: Maximum input value (5-10)
+- askInputs: 5-7 DISTINCT input values for individual challenges (NOT 1; spread across 2..maxInput)
 
 RULES:
-- unitRateInput: MUST always be 1
-- unitRateOutput: Should be a nice whole number or simple decimal (e.g., 3, 0.5, 1.5, 60)
-- targetInputs: Should NOT include 1 (that's phase 1). Use 3-4 other values spread out.
-- maxInput should be 5-10 to keep it manageable
-- Use concrete, relatable contexts for the grade level
-- contextQuestion should clearly present the proportional relationship
-- CRITICAL — RATIO DIRECTION: topLabel is the INPUT (independent variable) and bottomLabel is the OUTPUT (dependent variable). The unit rate means "1 unit of topLabel = unitRateOutput units of bottomLabel". The contextQuestion MUST describe the same direction. For example, if contextQuestion says "1 can of paint covers 4 feet", then topLabel MUST be "Cans of Paint" and bottomLabel MUST be "Feet", with unitRateOutput = 4. NEVER invert the relationship — if the context says "A covers B units of C", then A's quantity is the top (input) and C is the bottom (output).
+- unitRateOutput: Nice whole number or simple decimal (e.g., 3, 4, 0.5, 60)
+- askInputs: All > 1, all ≤ maxInput, all distinct. Aim for at least 6 entries so we can pick ${instanceCount} distinct asks.
+- All ${instanceCount} challenges in this session share topLabel/bottomLabel/unitRateOutput. Pick ONE coherent context.
+- Use concrete, relatable contexts for the grade level.
+- CRITICAL — RATIO DIRECTION: topLabel is INPUT, bottomLabel is OUTPUT. unitRateOutput is bottomLabel per 1 topLabel.
+  If context says "1 can of paint covers 4 feet", topLabel="Cans of Paint", bottomLabel="Feet", unitRateOutput=4.
+  NEVER invert.
 
-Return the problem data.
+Return the session setup. Per-challenge ask-points are derived locally from askInputs.
 `;
 
   const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
+    model: MODEL,
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -242,79 +419,118 @@ Return the problem data.
     },
   });
 
-  const geminiData = result.text ? JSON.parse(result.text) : null;
-
-  if (!geminiData) {
-    throw new Error('No valid double number line data returned from Gemini API');
+  const raw = result.text ? JSON.parse(result.text) : null;
+  if (!raw) {
+    throw new Error('No valid double number line session data returned from Gemini API');
   }
 
-  // Extract values from Gemini's response
-  const unitRateInput = geminiData.unitRateInput || 1;
-  let unitRateOutput = geminiData.unitRateOutput || 1;
-  const maxInput = geminiData.maxInput || 10;
-  const targetInputs = geminiData.targetInputs || [2, 3, 5];
+  // ---- Normalize session-level fields ----
+  const title = String(raw.title ?? 'Double Number Line');
+  const description = String(raw.description ?? 'Find proportional relationships.');
+  const challengeType = (raw.challengeType ?? 'equivalent_ratios') as DoubleNumberLineChallengeType;
+  const contextQuestion = String(raw.contextQuestion ?? '');
+  const topLabel = String(raw.topLabel ?? 'Input');
+  const bottomLabel = String(raw.bottomLabel ?? 'Output');
+  let unitRate = Number(raw.unitRateOutput ?? 1);
+  if (!Number.isFinite(unitRate) || unitRate <= 0) unitRate = 1;
+  unitRate = correctInvertedRatio(contextQuestion, unitRate);
 
-  // Validate ratio direction: if contextQuestion states "1 X = N Y" but unitRateOutput
-  // is 1/N (inverted), fix it. We detect this by checking if the context mentions a
-  // specific number that equals 1/unitRateOutput, suggesting the ratio was flipped.
-  const contextQ = (geminiData.contextQuestion || '').toLowerCase();
+  const maxInput = Math.max(5, Math.min(20, Math.round(Number(raw.maxInput ?? 10))));
 
-  // Look for patterns like "1 <word> covers/makes/equals N <word>"
-  // and verify unitRateOutput matches N, not 1/N
-  const ratioMatch = contextQ.match(/\b1\b[^.]*?\b(\d+(?:\.\d+)?)\b/);
-  if (ratioMatch) {
-    const statedValue = parseFloat(ratioMatch[1]);
-    // If context says the rate is N but unitRateOutput is 1/N, the ratio was inverted
-    if (statedValue > 1 && Math.abs(unitRateOutput - 1 / statedValue) < 0.01) {
-      console.warn(
-        `[DoubleNumberLine] Ratio direction mismatch detected: context states rate ~${statedValue} but unitRateOutput=${unitRateOutput}. Correcting to ${statedValue}.`
-      );
-      unitRateOutput = statedValue;
+  const askInputsRaw = Array.isArray(raw.askInputs) ? raw.askInputs : [2, 3, 4, 5, 6];
+  // Dedupe, drop 1, drop non-positive, drop > maxInput, round to whole numbers
+  const seen = new Set<number>();
+  const askInputs: number[] = [];
+  for (const n of askInputsRaw) {
+    const v = Math.round(Number(n));
+    if (!Number.isFinite(v) || v <= 1 || v > maxInput) continue;
+    if (seen.has(v)) continue;
+    seen.add(v);
+    askInputs.push(v);
+  }
+  // Backfill if Gemini gave too few
+  let fillCandidate = 2;
+  while (askInputs.length < instanceCount + 1 && fillCandidate <= maxInput) {
+    if (!seen.has(fillCandidate) && fillCandidate > 1) {
+      seen.add(fillCandidate);
+      askInputs.push(fillCandidate);
     }
+    fillCandidate++;
   }
 
-  // Calculate the unit rate for scaling
-  const unitRate = unitRateOutput / unitRateInput;
-
-  // Calculate scales automatically
-  const maxOutput = maxInput * unitRate;
-
-  // Smart interval calculation
-  const topInterval = maxInput <= 10 ? 1 : Math.ceil(maxInput / 10);
-  const bottomInterval = maxOutput <= 20 ? (unitRateOutput <= 5 ? unitRateOutput : 1) : Math.ceil(maxOutput / 10);
-
-  const data: DoubleNumberLineData = {
-    title: geminiData.title,
-    description: geminiData.description,
-    contextQuestion: geminiData.contextQuestion,
-    topLabel: geminiData.topLabel,
-    bottomLabel: geminiData.bottomLabel,
-
-    // Auto-generated scales
-    topScale: { min: 0, max: maxInput, interval: topInterval },
-    bottomScale: { min: 0, max: maxOutput, interval: bottomInterval },
-
-    // Given / target points vary by challenge type
-    ...buildPointsByMode(
-      geminiData.challengeType,
-      unitRateInput,
-      unitRateOutput,
-      unitRate,
-      targetInputs,
-    ),
-
-    showVerticalGuides: true,
-    showUnitRate: true
+  // ---- Build session context ----
+  const { topScale, bottomScale } = buildScales(maxInput, unitRate);
+  const ctx: SessionContext = {
+    topLabel,
+    bottomLabel,
+    unitRate,
+    topScale,
+    bottomScale,
   };
 
-  // Apply config overrides if provided
+  // ---- Build N challenges ----
+  // For find_missing / unit_rate modes, the "given" reference pair is shared
+  // across all challenges in the session so the visual stays consistent.
+  const givenReference = pickNonUnitGiven(askInputs, unitRate);
+  // Asks used for ask-points exclude the value used as the given reference.
+  const challengeAsks = askInputs.filter((n) => n !== givenReference.topValue).slice(0, instanceCount);
+  // If we still don't have enough, fall back to any from the pool
+  while (challengeAsks.length < instanceCount) {
+    const next = askInputs.find((n) => !challengeAsks.includes(n));
+    if (next === undefined) break;
+    challengeAsks.push(next);
+  }
+
+  const challenges: DoubleNumberLineChallenge[] = [];
+  for (let i = 0; i < instanceCount; i++) {
+    const askInput = challengeAsks[i] ?? challengeAsks[challengeAsks.length - 1] ?? 2;
+    let core: Pick<DoubleNumberLineChallenge, 'givenPoints' | 'targetPoints' | 'prompt' | 'hint'>;
+    switch (challengeType) {
+      case 'find_missing':
+        core = buildFindMissingChallenge(ctx, askInput, givenReference);
+        break;
+      case 'unit_rate':
+        core = buildUnitRateChallenge(ctx, askInput, givenReference, i === 0);
+        break;
+      case 'equivalent_ratios':
+      default:
+        core = buildEquivalentRatiosChallenge(ctx, askInput);
+        break;
+    }
+    challenges.push({
+      id: `dnl-${i + 1}`,
+      challengeType,
+      ...core,
+      topScale,
+      bottomScale,
+    });
+  }
+
+  console.log('📈 Double Number Line generated:', {
+    topic,
+    mode: challengeType,
+    instanceCount: challenges.length,
+    unitRate,
+    topLabel,
+    bottomLabel,
+    challengeAsks,
+  });
+
+  const data: DoubleNumberLineData = {
+    title,
+    description,
+    topLabel,
+    bottomLabel,
+    unitRate,
+    contextQuestion,
+    challenges,
+    showVerticalGuides: config?.showVerticalGuides ?? true,
+    showUnitRate: config?.showUnitRate ?? true,
+  };
+
+  // Apply config overrides (kept for backwards-compat with manifest payloads)
   if (config?.topLabel) data.topLabel = config.topLabel;
   if (config?.bottomLabel) data.bottomLabel = config.bottomLabel;
-  if (config?.topScale) data.topScale = config.topScale;
-  if (config?.bottomScale) data.bottomScale = config.bottomScale;
-  if (config?.targetPoints) data.targetPoints = config.targetPoints;
-  if (config?.givenPoints) data.givenPoints = config.givenPoints;
-  if (config?.showVerticalGuides !== undefined) data.showVerticalGuides = config.showVerticalGuides;
 
   return data;
 };

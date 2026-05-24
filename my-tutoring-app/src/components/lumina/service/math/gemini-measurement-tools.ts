@@ -1,5 +1,8 @@
 import { Type, Schema } from "@google/genai";
-import { MeasurementToolsData, MeasurementShape } from "../../primitives/visual-primitives/math/MeasurementTools";
+import {
+  MeasurementToolsData,
+  MeasurementToolsChallenge,
+} from "../../primitives/visual-primitives/math/MeasurementTools";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
@@ -10,103 +13,245 @@ import {
 } from "../evalMode";
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const DEFAULT_INSTANCE_COUNT = 4;
+const MAX_INSTANCE_COUNT = 6;
+
+type ChallengeType = 'measure' | 'compare' | 'estimate' | 'convert';
+type ShapeType = 'rectangle' | 'square';
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   measure: {
     promptDoc:
-      `"measure": Student uses ruler to measure shapes accurately. `
-      + `Direct measurement — drag shape onto ruler and read the width. `
-      + `Standard drag-to-ruler interaction. Grades 1-3.`,
+      `"measure": Direct measurement — student drags each shape onto the ruler `
+      + `and reads its width in whole units. Grades 1-3.`,
     schemaDescription: "'measure' (direct measurement with ruler)",
   },
   compare: {
     promptDoc:
-      `"compare": Student measures multiple shapes then orders them from shortest to longest. `
-      + `Generate shapes with similar but distinct widths so comparison is meaningful. `
-      + `Shapes should NOT be pre-sorted by width. Grades 2-3.`,
+      `"compare": Student measures every shape, then orders them shortest to `
+      + `longest. Shapes share a similar but distinct width range so the ordering `
+      + `task is meaningful. Grades 2-3.`,
     schemaDescription: "'compare' (measure and compare objects)",
   },
   estimate: {
     promptDoc:
-      `"estimate": Student measures shapes with half-inch precision. `
-      + `Generate shapes with widths at 0.5 increments (e.g., 2.5, 3.5, 4.0, 5.5). `
-      + `Student must read between tick marks on the ruler. `
-      + `precision="half", gradeBand="3-5". Grades 2-3.`,
+      `"estimate": Half-inch precision — widths land on 0.5 increments and the `
+      + `student must read between tick marks on the ruler. Grades 2-3.`,
     schemaDescription: "'estimate' (half-inch precision measurement)",
   },
   convert: {
     promptDoc:
-      `"convert": Student measures shapes in one unit then converts to another unit. `
-      + `Generate shapes with widths that convert to relatively clean numbers `
-      + `(e.g., 2 inches ≈ 5 cm, 4 inches ≈ 10 cm). Grades 3-4.`,
+      `"convert": Student measures each shape in one unit, then converts the `
+      + `value to the other unit. Widths are chosen so the conversion lands on `
+      + `clean numbers. Grades 3-4.`,
     schemaDescription: "'convert' (measure and convert between units)",
   },
 };
 
+// ---------------------------------------------------------------------------
+// Pool service — deterministic per-mode challenge selection
+// ---------------------------------------------------------------------------
+
+const COLOR_POOL: readonly string[] = [
+  'rgba(99,102,241,0.35)',   // indigo
+  'rgba(239,68,68,0.35)',    // red
+  'rgba(16,185,129,0.35)',   // emerald
+  'rgba(168,85,247,0.35)',   // purple
+  'rgba(245,158,11,0.35)',   // amber
+  'rgba(14,165,233,0.35)',   // sky
+];
+
+const LABEL_PREFIX: Record<string, string> = {
+  'rgba(99,102,241,0.35)': 'Blue',
+  'rgba(239,68,68,0.35)': 'Red',
+  'rgba(16,185,129,0.35)': 'Green',
+  'rgba(168,85,247,0.35)': 'Purple',
+  'rgba(245,158,11,0.35)': 'Amber',
+  'rgba(14,165,233,0.35)': 'Sky',
+};
+
+const HINT_POOL: readonly string[] = [
+  'Look where the right edge of the shape lines up on the ruler.',
+  'Count the big tick marks from 0 to the edge of the shape.',
+  'Find the number on the ruler where the shape ends.',
+  'Line the left edge up with 0, then read where the right edge lands.',
+  'The small marks between the numbers are halves. Count carefully.',
+  'Measure from 0, not from 1. Where does the shape end?',
+];
+
+interface PoolConfig {
+  /** Allowed widths in inches, before shuffling/dedup. */
+  widthCandidates: number[];
+  /** Step size for precision alignment (0.5 for estimate, 1 elsewhere). */
+  precisionStep: 0.5 | 1;
+  /** Grade band for the mode. */
+  gradeBand: 'K-2' | '3-5';
+}
+
+const widthRange = (min: number, max: number, step: number): number[] => {
+  const out: number[] = [];
+  for (let v = min; v <= max + 1e-9; v += step) {
+    out.push(Math.round(v / step) * step);
+  }
+  return out;
+};
+
+const poolConfigFor = (mode: ChallengeType, gradeBandHint?: 'K-2' | '3-5'): PoolConfig => {
+  switch (mode) {
+    case 'measure': {
+      const gradeBand = gradeBandHint ?? 'K-2';
+      const widths = gradeBand === 'K-2'
+        ? widthRange(1, 8, 1)
+        : widthRange(2, 10, 1);
+      return { widthCandidates: widths, precisionStep: 1, gradeBand };
+    }
+    case 'compare': {
+      const gradeBand = gradeBandHint ?? '3-5';
+      // Widths close together so ordering is meaningful but distinct.
+      const widths = gradeBand === 'K-2'
+        ? widthRange(2, 8, 1)
+        : widthRange(3, 9, 1);
+      return { widthCandidates: widths, precisionStep: 1, gradeBand };
+    }
+    case 'estimate': {
+      // Half-inch precision — widths between tick marks.
+      const widths = widthRange(2, 10, 0.5).filter((w) => w % 1 !== 0);
+      return { widthCandidates: widths, precisionStep: 0.5, gradeBand: '3-5' };
+    }
+    case 'convert': {
+      // Widths chosen so inches↔cm conversion is clean.
+      const widths = [2, 3, 4, 5, 6, 8, 10];
+      return { widthCandidates: widths, precisionStep: 1, gradeBand: '3-5' };
+    }
+  }
+};
+
+const randInt = (min: number, max: number): number =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+const shuffle = <T,>(arr: readonly T[]): T[] => {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+};
+
+const pickDistinctWidths = (pool: number[], count: number): number[] => {
+  const unique = Array.from(new Set(pool));
+  const shuffled = shuffle(unique);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+};
+
+const pickShapeType = (idx: number): ShapeType => {
+  // ~30% squares, 70% rectangles. Deterministic by index for stable mix.
+  return idx % 3 === 1 ? 'square' : 'rectangle';
+};
+
 /**
- * Gemini schema for the new MeasurementTools shape-based interface.
- * 2 types (outer object + shape array item) to stay within Gemini's
- * reliable JSON generation limits.
+ * Deterministically select N measurement challenges for the given mode.
+ *
+ * Guarantees:
+ * - All widths are distinct (no duplicate sizes per session).
+ * - Widths fall within the mode's pedagogical range.
+ * - Shapes are ordered smallest → largest for ruler workflow consistency.
+ * - Colors cycle through the pool, no repeats within a session up to its size.
  */
+const selectMeasurementChallenges = (
+  mode: ChallengeType,
+  count: number,
+  gradeBandHint?: 'K-2' | '3-5',
+): MeasurementToolsChallenge[] => {
+  const target = Math.min(Math.max(count, 3), MAX_INSTANCE_COUNT);
+  const config = poolConfigFor(mode, gradeBandHint);
+
+  let widths = pickDistinctWidths(config.widthCandidates, target);
+  // Fallback: if pool was too small, repeat the smallest with offset (rare).
+  if (widths.length < target) {
+    const extra = widths.length === 0 ? config.precisionStep : widths[widths.length - 1];
+    while (widths.length < target) {
+      widths.push(extra + config.precisionStep * widths.length);
+    }
+  }
+  widths.sort((a, b) => a - b);
+
+  const colors = shuffle(COLOR_POOL).slice(0, target);
+  const hints = shuffle(HINT_POOL);
+
+  return widths.map((w, idx) => {
+    const shapeType = pickShapeType(idx);
+    const widthInches = Math.round(w / config.precisionStep) * config.precisionStep;
+    const color = colors[idx] ?? COLOR_POOL[idx % COLOR_POOL.length];
+    const colorName = LABEL_PREFIX[color] ?? 'Blue';
+    const heightInches = shapeType === 'square'
+      ? widthInches
+      : 1 + (idx % 2) * 0.5; // 1.0 or 1.5 for rectangles, deterministic per index
+
+    return {
+      id: `mt-${idx + 1}`,
+      shapeType,
+      widthInches,
+      heightInches,
+      color,
+      label: `${colorName} ${shapeType === 'square' ? 'Square' : 'Rectangle'}`,
+      hint: hints[idx % hints.length],
+    };
+  });
+};
+
+// ---------------------------------------------------------------------------
+// Gemini wrapper schema — title + description + session-level mode flags only.
+// Per-challenge data is built locally from the pool service.
+// ---------------------------------------------------------------------------
+
 const measurementToolsSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     challengeType: {
       type: Type.STRING,
-      description: "Challenge type: 'measure' (direct measurement), 'compare' (measure and compare), 'convert' (measure and convert units)",
+      description: "Challenge type: 'measure', 'compare', 'estimate', or 'convert'.",
       enum: ["measure", "compare", "estimate", "convert"],
     },
     title: {
       type: Type.STRING,
-      description: "Short activity title, e.g. 'Measure the Shapes'",
+      description: "Short activity title, e.g. 'Measure the Shapes'.",
     },
-    rulerLengthInches: {
-      type: Type.NUMBER,
-      description: "Total ruler length in inches (must be >= largest shape width). Typically 12.",
+    description: {
+      type: Type.STRING,
+      description: "One-sentence student-facing description of the session.",
     },
     unit: {
       type: Type.STRING,
-      description: "One of: 'inches', 'centimeters'",
-    },
-    convertToUnit: {
-      type: Type.STRING,
-      description: "Target unit for conversion in 'convert' mode. One of: 'inches', 'centimeters'. Should be different from 'unit'.",
-    },
-    precision: {
-      type: Type.STRING,
-      description: "One of: 'whole', 'half'",
+      description: "One of: 'inches', 'centimeters'.",
     },
     gradeBand: {
       type: Type.STRING,
-      description: "One of: 'K-2', '3-5'",
-    },
-    shapes: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: { type: Type.STRING, description: "Unique ID, e.g. 's1', 's2'" },
-          type: { type: Type.STRING, description: "One of: 'rectangle', 'square'" },
-          widthInches: { type: Type.NUMBER, description: "Width of the shape in inches (the measurement the student must find)" },
-          heightInches: { type: Type.NUMBER, description: "Visual height in inches (1-2, just for display)" },
-          color: { type: Type.STRING, description: "Fill color in rgba format, e.g. 'rgba(99,102,241,0.35)'" },
-          label: { type: Type.STRING, description: "Descriptive label, e.g. 'Blue Rectangle', 'Red Square'" },
-          hint: { type: Type.STRING, description: "Helpful hint that guides without revealing the answer" },
-        },
-        required: ["id", "type", "widthInches", "heightInches", "color", "label", "hint"],
-      },
-      description: "Array of 3-5 shapes to measure",
+      description: "One of: 'K-2', '3-5'.",
     },
   },
-  required: ["challengeType", "title", "rulerLengthInches", "unit", "precision", "gradeBand", "shapes"],
+  required: ["challengeType", "title", "description", "unit", "gradeBand"],
 };
 
+// ---------------------------------------------------------------------------
+// Public generator
+// ---------------------------------------------------------------------------
+
 /**
- * Generate measurement tools data for interactive ruler-based measurement.
+ * Generate measurement tools data for an interactive ruler-based measurement
+ * SESSION (3-6 distinct shapes, walked sequentially).
  *
- * Students drag colored shapes onto a ruler and read the width.
+ * Pool-service multi-instance pattern per PRD_WITHIN_MODE_INSTANCE_DENSITY §6a #1:
+ * - Gemini emits only the wrapper (title, description, mode flags).
+ * - `selectMeasurementChallenges` deterministically picks N distinct shapes.
+ * - Per-mode width pools enforce pedagogical range + precision invariants.
  */
 export const generateMeasurementTools = async (
   topic: string,
@@ -115,6 +260,7 @@ export const generateMeasurementTools = async (
     unit?: 'inches' | 'centimeters';
     precision?: 'whole' | 'half';
     gradeBand?: 'K-2' | '3-5';
+    instanceCount?: number;
     targetEvalMode?: string;
   },
 ): Promise<MeasurementToolsData> => {
@@ -128,74 +274,45 @@ export const generateMeasurementTools = async (
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(measurementToolsSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
+    ? constrainChallengeTypeEnum(
+        measurementToolsSchema,
+        evalConstraint.allowedTypes,
+        CHALLENGE_TYPE_DOCS,
+        { fieldName: 'challengeType', rootLevel: true },
+      )
     : measurementToolsSchema;
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create a measurement activity for teaching "${topic}" to ${gradeLevel} students.
+Create a measurement SESSION for teaching "${topic}" to ${gradeLevel} students.
 
 THE STUDENT EXPERIENCE:
-- Students see colored shapes (rectangles and squares) in a holding area.
-- They drag each shape onto a horizontal ruler that starts at 0.
-- The shape's LEFT edge aligns with 0 on the ruler.
-- They read where the RIGHT edge falls on the ruler to determine the width.
-- They type their answer (in the specified unit).
+- The student walks through ${DEFAULT_INSTANCE_COUNT} distinct shapes one at a time.
+- For each shape they drag it onto a ruler, align the left edge to 0, and read
+  where the right edge falls.
+- They type their answer and advance to the next shape.
 
 ${challengeTypeSection}
 
-SHAPE REQUIREMENTS:
-- Generate 3 to 5 shapes (mix of 'rectangle' and 'square' types).
-- Each shape needs a unique widthInches — this is the measurement the student must find.
-- heightInches should be small (1 to 2 inches) — it's only for visual display height.
-- For squares, widthInches and heightInches should be equal.
-- Each shape must have a DIFFERENT color using rgba format (e.g. 'rgba(99,102,241,0.35)').
-- Each shape needs a descriptive label like "Blue Rectangle" or "Red Square".
-- Each shape needs a hint that helps the student read the ruler without revealing the answer.
-
-COMPARE MODE SPECIFICS:
-- For "compare" challenges, generate shapes with similar but distinct widths (e.g., 3, 4, 5 — not 1, 5, 10).
-- Do NOT sort shapes by width — randomize the order so comparison is non-trivial.
-
-CONVERT MODE SPECIFICS:
-- For "convert" challenges, set convertToUnit to the opposite of unit (inches→centimeters or centimeters→inches).
-- Choose shape widths that produce relatively clean conversion values.
-- For inches→cm: prefer widths like 2, 4, 5, 8, 10 (multiply by 2.54 gives round-ish numbers).
+YOUR JOB:
+- Pick the session's mode flags ONLY (challengeType, unit, gradeBand) and write
+  a short title + one-sentence description.
+- The component supplies the individual shapes, widths, colors, labels, and
+  hints from a deterministic pool service. DO NOT invent shape data here.
 
 GRADE GUIDELINES:
 ${config?.gradeBand === '3-5' || (!config?.gradeBand && !gradeLevel.toLowerCase().includes('kinder') && !gradeLevel.includes('1') && !gradeLevel.includes('2')) ? `
-- Grades 3-5 (gradeBand "3-5"):
-  - precision: "half" — widths can be multiples of 0.5 (e.g. 2.5, 3.0, 4.5, 7.0)
-  - Use widths from 2 to 10 inches
-  - More varied shape names
+- Grades 3-5 (gradeBand "3-5"): half-precision allowed; widths run 2-10.
 ` : `
-- Grades K-2 (gradeBand "K-2"):
-  - precision: "whole" — widths must be whole numbers only (e.g. 2, 3, 5, 8)
-  - Use widths from 1 to 8 inches
-  - Simple, friendly shape names
+- Grades K-2 (gradeBand "K-2"): whole-number widths only; range 1-8.
 `}
 
-RULER:
-- rulerLengthInches should be large enough to fit the widest shape. Use 12 for most cases.
+UNIT:
+- Use ${config?.unit ?? 'inches'} unless the topic clearly calls for centimeters.
 
-CRITICAL RULES:
-1. Each shape must have a DIFFERENT widthInches — no two shapes should be the same width.
-2. widthInches must match the precision: whole numbers only for "whole", multiples of 0.5 for "half".
-3. widthInches must be LESS THAN rulerLengthInches.
-4. Use 5 distinct rgba colors (vary hue: blue, red, green, purple, amber, teal, etc.).
-5. Hints should reference the ruler (e.g. "Count the tick marks carefully") without giving the number.
-6. Order shapes from smallest width to largest.
-
-${config ? `
-CONFIGURATION:
-${config.unit ? `- Unit: ${config.unit}` : ''}
-${config.precision ? `- Precision: ${config.precision}` : ''}
-${config.gradeBand ? `- Grade band: ${config.gradeBand}` : ''}
-` : ''}
-
-Return the complete measurement tools configuration.
+Return only the session wrapper.
 `;
 
   const result = await ai.models.generateContent({
@@ -207,129 +324,74 @@ Return the complete measurement tools configuration.
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
-
-  if (!data) {
-    throw new Error('No valid measurement tools data returned from Gemini API');
+  const wrapper = result.text ? JSON.parse(result.text) : null;
+  if (!wrapper) {
+    throw new Error('No valid measurement tools wrapper returned from Gemini API');
   }
 
-  // ── Validation & sanitization ──────────────────────────────────
+  // ── Sanitize wrapper ──────────────────────────────────────────────
 
-  // Challenge type
-  const validChallengeTypes = ['measure', 'compare', 'estimate', 'convert'];
-  if (!validChallengeTypes.includes(data.challengeType)) {
-    data.challengeType = evalConstraint?.allowedTypes[0] ?? 'measure';
+  const validChallengeTypes: ChallengeType[] = ['measure', 'compare', 'estimate', 'convert'];
+  let challengeType: ChallengeType =
+    validChallengeTypes.includes(wrapper.challengeType)
+      ? wrapper.challengeType
+      : ((evalConstraint?.allowedTypes[0] as ChallengeType | undefined) ?? 'measure');
+
+  // estimate implies half precision
+  const derivedPrecision: 'whole' | 'half' =
+    challengeType === 'estimate'
+      ? 'half'
+      : (config?.precision ?? 'whole');
+
+  let gradeBand: 'K-2' | '3-5' = wrapper.gradeBand === '3-5' || wrapper.gradeBand === 'K-2'
+    ? wrapper.gradeBand
+    : (gradeLevel.toLowerCase().includes('kinder') || gradeLevel.includes('1') || gradeLevel.includes('2')
+        ? 'K-2'
+        : '3-5');
+  if (config?.gradeBand) gradeBand = config.gradeBand;
+  if (challengeType === 'estimate' || challengeType === 'convert') {
+    gradeBand = '3-5';
   }
 
-  // Grade band
-  if (data.gradeBand !== 'K-2' && data.gradeBand !== '3-5') {
-    data.gradeBand = gradeLevel.toLowerCase().includes('kinder') || gradeLevel.includes('1') || gradeLevel.includes('2')
-      ? 'K-2' : '3-5';
-  }
+  let unit: 'inches' | 'centimeters' = wrapper.unit === 'centimeters' ? 'centimeters' : 'inches';
+  if (config?.unit) unit = config.unit;
 
-  // Precision
-  if (data.precision !== 'whole' && data.precision !== 'half') {
-    data.precision = data.gradeBand === 'K-2' ? 'whole' : 'half';
-  }
+  const convertToUnit: 'inches' | 'centimeters' =
+    unit === 'inches' ? 'centimeters' : 'inches';
 
-  // Unit
-  if (data.unit !== 'inches' && data.unit !== 'centimeters') {
-    data.unit = 'inches';
-  }
+  const title = typeof wrapper.title === 'string' && wrapper.title.trim().length > 0
+    ? wrapper.title
+    : 'Measure the Shapes';
+  const description = typeof wrapper.description === 'string' && wrapper.description.trim().length > 0
+    ? wrapper.description
+    : `Walk through ${DEFAULT_INSTANCE_COUNT} shapes — measure each one with the ruler.`;
 
-  // Convert-to unit (for convert mode)
-  if (data.challengeType === 'convert') {
-    if (data.convertToUnit !== 'inches' && data.convertToUnit !== 'centimeters') {
-      data.convertToUnit = data.unit === 'inches' ? 'centimeters' : 'inches';
-    }
-    // Ensure convertToUnit differs from unit
-    if (data.convertToUnit === data.unit) {
-      data.convertToUnit = data.unit === 'inches' ? 'centimeters' : 'inches';
-    }
-  }
+  // ── Build challenges from the pool service ────────────────────────
 
-  // Precision step for value alignment
-  const precisionStep = data.precision === 'whole' ? 1 : 0.5;
+  const instanceCount = Math.min(
+    Math.max(config?.instanceCount ?? DEFAULT_INSTANCE_COUNT, 3),
+    MAX_INSTANCE_COUNT,
+  );
+  const challenges = selectMeasurementChallenges(challengeType, instanceCount, gradeBand);
 
-  // Title fallback
-  if (!data.title || typeof data.title !== 'string') {
-    data.title = 'Measure the Shapes';
-  }
+  // Ruler length: large enough for the widest shape plus headroom.
+  const maxWidth = Math.max(...challenges.map((c) => c.widthInches));
+  const rulerLengthInches = Math.max(12, Math.ceil(maxWidth + 2));
 
-  // Ensure shapes array exists and has valid entries
-  const validShapeTypes = ['rectangle', 'square'];
-  data.shapes = (data.shapes || []).filter(
-    (s: MeasurementShape) => validShapeTypes.includes(s.type),
+  const labels = challenges.map((c) => `${c.label} (${c.widthInches} in)`).join(', ');
+  console.log(
+    `[MeasurementTools] ${challengeType} session: ${challenges.length} challenges → [${labels}]`,
   );
 
-  // Fallback shapes if Gemini returned too few
-  if (data.shapes.length < 3) {
-    data.shapes = [
-      {
-        id: 's1', type: 'rectangle' as const, widthInches: 3, heightInches: 1.5,
-        color: 'rgba(99,102,241,0.35)', label: 'Blue Rectangle',
-        hint: 'Look where the right edge of the shape lines up on the ruler.',
-      },
-      {
-        id: 's2', type: 'square' as const, widthInches: 2, heightInches: 2,
-        color: 'rgba(239,68,68,0.35)', label: 'Red Square',
-        hint: 'Count the big tick marks from 0 to the edge.',
-      },
-      {
-        id: 's3', type: 'rectangle' as const, widthInches: 5, heightInches: 1,
-        color: 'rgba(16,185,129,0.35)', label: 'Green Rectangle',
-        hint: 'Find the number on the ruler where the shape ends.',
-      },
-    ] satisfies MeasurementShape[];
-  }
-
-  // Sanitize each shape
-  for (const shape of data.shapes as MeasurementShape[]) {
-    // Ensure type is valid
-    if (!validShapeTypes.includes(shape.type)) {
-      shape.type = 'rectangle';
-    }
-
-    // Align widthInches to precision step
-    shape.widthInches = Math.round(shape.widthInches / precisionStep) * precisionStep;
-    if (shape.widthInches <= 0) shape.widthInches = precisionStep;
-
-    // Clamp heightInches to 1-2 range
-    if (typeof shape.heightInches !== 'number' || shape.heightInches <= 0) {
-      shape.heightInches = shape.type === 'square' ? shape.widthInches : 1.5;
-    }
-    if (shape.type === 'square') {
-      shape.heightInches = shape.widthInches;
-    } else {
-      shape.heightInches = Math.max(1, Math.min(2, shape.heightInches));
-    }
-
-    // Ensure color is an rgba string
-    if (!shape.color || typeof shape.color !== 'string' || !shape.color.startsWith('rgba')) {
-      shape.color = 'rgba(99,102,241,0.35)';
-    }
-
-    // Ensure label and hint
-    if (!shape.label) shape.label = shape.type === 'square' ? 'Square' : 'Rectangle';
-    if (!shape.hint) shape.hint = 'Look carefully at the ruler markings.';
-  }
-
-  // Ensure rulerLengthInches is large enough
-  const maxWidth = Math.max(...(data.shapes as MeasurementShape[]).map((s: MeasurementShape) => s.widthInches));
-  if (typeof data.rulerLengthInches !== 'number' || data.rulerLengthInches <= maxWidth) {
-    data.rulerLengthInches = Math.max(12, Math.ceil(maxWidth + 2));
-  }
-
-  // Apply explicit config overrides
-  if (config) {
-    if (config.unit) data.unit = config.unit;
-    if (config.precision) data.precision = config.precision;
-    if (config.gradeBand) data.gradeBand = config.gradeBand;
-  }
-
-  // Final summary log (matches pattern from other generators)
-  const challengeTypes = (data.shapes as MeasurementShape[]).map((s: MeasurementShape) => s.label || s.type).join(', ');
-  console.log(`[MeasurementTools] Final: ${(data.shapes as MeasurementShape[]).length} shape(s) → [${challengeTypes}]`);
-
-  return data as MeasurementToolsData;
+  return {
+    title,
+    description,
+    challengeType,
+    challenges,
+    rulerLengthInches,
+    unit,
+    precision: derivedPrecision,
+    gradeBand,
+    convertToUnit,
+  };
 };

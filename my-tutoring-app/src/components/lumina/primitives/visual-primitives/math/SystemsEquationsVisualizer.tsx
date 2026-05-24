@@ -1,44 +1,84 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  usePrimitiveEvaluation,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
+import type { SystemsEquationsMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+
+// ============================================================================
+// Data Types (Single Source of Truth — mirrored in gemini-systems-equations.ts)
+// ============================================================================
+
+export type SystemsEquationsChallengeType =
+  | 'graph'
+  | 'substitution'
+  | 'elimination';
 
 export interface SystemEquation {
-  expression: string; // e.g., "y = 2x + 1"
+  display: string;
+  slope: number;
+  yIntercept: number;
+  a?: number;
+  b?: number;
+  c?: number;
   color?: string;
   label?: string;
-  slope?: number;
-  yIntercept?: number;
 }
 
-export interface IntersectionPoint {
-  x: number;
-  y: number;
-  label?: string;
-}
-
-export interface AlgebraicStep {
-  method: 'substitution' | 'elimination' | 'graphing';
-  stepNumber: number;
-  description: string;
-  equation?: string;
+export interface SystemsEquationsChallenge {
+  id: string;
+  type: SystemsEquationsChallengeType;
+  systemForm: 'slope-intercept' | 'standard';
+  equationA: SystemEquation;
+  equationB: SystemEquation;
+  expectedX: number;
+  expectedY: number;
+  instruction: string;
+  hint: string;
 }
 
 export interface SystemsEquationsVisualizerData {
   title: string;
   description: string;
-  equations: SystemEquation[];
   xRange: [number, number];
   yRange: [number, number];
   gridSpacing?: { x: number; y: number };
-  showGraph?: boolean;
-  showAlgebraic?: boolean;
-  solutionMethod?: 'graphing' | 'substitution' | 'elimination';
-  highlightIntersection?: boolean;
-  stepByStep?: boolean;
-  intersectionPoint?: IntersectionPoint;
-  algebraicSteps?: AlgebraicStep[];
-  systemType?: 'one-solution' | 'no-solution' | 'infinite-solutions';
+  showGrid?: boolean;
+  showAxes?: boolean;
+  gradeBand?: '7-8' | 'algebra-1' | 'algebra-2';
+  challenges: SystemsEquationsChallenge[];
+
+  // Evaluation props
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<SystemsEquationsMetrics>) => void;
 }
+
+// ============================================================================
+// Phase Summary Config
+// ============================================================================
+
+const PHASE_CONFIG_BY_TYPE: Record<SystemsEquationsChallengeType, PhaseConfig> = {
+  graph:        { label: 'Graphing',     icon: '📈', accentColor: 'cyan' },
+  substitution: { label: 'Substitution', icon: '🔁', accentColor: 'purple' },
+  elimination:  { label: 'Elimination',  icon: '➖', accentColor: 'emerald' },
+};
+
+// ============================================================================
+// Component
+// ============================================================================
 
 interface SystemsEquationsVisualizerProps {
   data: SystemsEquationsVisualizerData;
@@ -49,443 +89,648 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
   const {
     title,
     description,
-    equations,
     xRange,
     yRange,
     gridSpacing = { x: 1, y: 1 },
-    showGraph = true,
-    showAlgebraic = true,
-    solutionMethod = 'graphing',
-    highlightIntersection = true,
-    stepByStep = false,
-    intersectionPoint,
-    algebraicSteps = [],
-    systemType = 'one-solution',
+    showAxes = true,
+    showGrid = true,
+    gradeBand = 'algebra-1',
+    challenges,
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [showingSolution, setShowingSolution] = useState(!stepByStep);
-  const [hoveredEquation, setHoveredEquation] = useState<number | null>(null);
+  // -------------------------------------------------------------------------
+  // Multi-challenge state
+  // -------------------------------------------------------------------------
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
 
+  const currentChallenge = challenges[currentChallengeIndex] || null;
+  const challengeType = currentChallenge?.type ?? 'graph';
+
+  // -------------------------------------------------------------------------
+  // Per-challenge UI state (reset on advance)
+  // -------------------------------------------------------------------------
+  const [xInput, setXInput] = useState('');
+  const [yInput, setYInput] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
+  const [showHint, setShowHint] = useState(false);
+  const [revealLines, setRevealLines] = useState(false); // for non-graph modes, lines hide until correct
+
+  // Refs
+  const stableInstanceIdRef = useRef(instanceId || `systems-equations-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const recordedRef = useRef(false);
+  const hintViewedRef = useRef(false);
+  const hintsViewedRef = useRef(0);
+  const submittedRef = useRef(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Canvas constants
   const padding = 50;
   const canvasWidth = 600;
-  const canvasHeight = 600;
+  const canvasHeight = 540;
 
-  // Helper function to convert graph coordinates to canvas coordinates
-  const graphToCanvas = (x: number, y: number) => {
-    const xScale = (canvasWidth - 2 * padding) / (xRange[1] - xRange[0]);
-    const yScale = (canvasHeight - 2 * padding) / (yRange[1] - yRange[0]);
+  // -------------------------------------------------------------------------
+  // Per-challenge reset — fires whenever advance() flips currentChallenge.id.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!currentChallenge) return;
+    setXInput('');
+    setYInput('');
+    setFeedback('');
+    setFeedbackType('');
+    setShowHint(false);
+    setRevealLines(currentChallenge.type === 'graph');
+    recordedRef.current = false;
+    hintViewedRef.current = false;
+  }, [currentChallenge?.id, currentChallenge]);
 
-    const canvasX = padding + (x - xRange[0]) * xScale;
-    const canvasY = canvasHeight - padding - (y - yRange[0]) * yScale;
-
+  // -------------------------------------------------------------------------
+  // Coordinate helpers
+  // -------------------------------------------------------------------------
+  const graphToCanvas = useCallback((x: number, y: number): { x: number; y: number } => {
+    const graphWidth = xRange[1] - xRange[0];
+    const graphHeight = yRange[1] - yRange[0];
+    const effectiveWidth = canvasWidth - 2 * padding;
+    const effectiveHeight = canvasHeight - 2 * padding;
+    const canvasX = padding + ((x - xRange[0]) / graphWidth) * effectiveWidth;
+    const canvasY = canvasHeight - padding - ((y - yRange[0]) / graphHeight) * effectiveHeight;
     return { x: canvasX, y: canvasY };
-  };
+  }, [xRange, yRange]);
 
-  // Evaluate equation at a given x value
-  const evaluateEquation = (expression: string, x: number): number | null => {
-    try {
-      // Parse simple linear equations: y = mx + b
-      const match = expression.match(/y\s*=\s*([+-]?\d*\.?\d*)\s*\*?\s*x\s*([+-]\s*\d+\.?\d*)?/i);
-      if (match) {
-        const m = match[1] === '' || match[1] === '+' ? 1 : match[1] === '-' ? -1 : parseFloat(match[1]);
-        const b = match[2] ? parseFloat(match[2].replace(/\s/g, '')) : 0;
-        return m * x + b;
-      }
-
-      // Try to evaluate as JavaScript expression (sanitized)
-      const sanitized = expression
-        .replace(/y\s*=\s*/i, '')
-        .replace(/\^/g, '**')
-        .replace(/x/gi, `(${x})`);
-
-      return eval(sanitized);
-    } catch (error) {
-      console.error('Error evaluating equation:', expression, error);
-      return null;
-    }
-  };
-
-  // Draw the graph
+  // -------------------------------------------------------------------------
+  // Canvas draw
+  // -------------------------------------------------------------------------
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-
+    if (!canvas || !currentChallenge) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    // Draw grid
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-
-    for (let x = Math.ceil(xRange[0] / gridSpacing.x) * gridSpacing.x; x <= xRange[1]; x += gridSpacing.x) {
-      const canvasPos = graphToCanvas(x, 0);
-      ctx.beginPath();
-      ctx.moveTo(canvasPos.x, padding);
-      ctx.lineTo(canvasPos.x, canvasHeight - padding);
-      ctx.stroke();
-    }
-
-    for (let y = Math.ceil(yRange[0] / gridSpacing.y) * gridSpacing.y; y <= yRange[1]; y += gridSpacing.y) {
-      const canvasPos = graphToCanvas(0, y);
-      ctx.beginPath();
-      ctx.moveTo(padding, canvasPos.y);
-      ctx.lineTo(canvasWidth - padding, canvasPos.y);
-      ctx.stroke();
-    }
-
-    // Draw axes
-    ctx.strokeStyle = '#374151';
-    ctx.lineWidth = 2;
-
-    // X-axis
-    const xAxisY = graphToCanvas(0, 0).y;
-    ctx.beginPath();
-    ctx.moveTo(padding, xAxisY);
-    ctx.lineTo(canvasWidth - padding, xAxisY);
-    ctx.stroke();
-
-    // Y-axis
-    const yAxisX = graphToCanvas(0, 0).x;
-    ctx.beginPath();
-    ctx.moveTo(yAxisX, padding);
-    ctx.lineTo(yAxisX, canvasHeight - padding);
-    ctx.stroke();
-
-    // Draw axis labels
-    ctx.fillStyle = '#374151';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center';
-
-    // X-axis labels
-    for (let x = Math.ceil(xRange[0]); x <= xRange[1]; x += gridSpacing.x) {
-      if (x === 0) continue;
-      const pos = graphToCanvas(x, 0);
-      ctx.fillText(x.toString(), pos.x, pos.y + 20);
-    }
-
-    // Y-axis labels
-    ctx.textAlign = 'right';
-    for (let y = Math.ceil(yRange[0]); y <= yRange[1]; y += gridSpacing.y) {
-      if (y === 0) continue;
-      const pos = graphToCanvas(0, y);
-      ctx.fillText(y.toString(), pos.x - 10, pos.y + 4);
-    }
-
-    // Draw equations
-    equations.forEach((equation, index) => {
-      const isHovered = hoveredEquation === index;
-      const color = equation.color || ['#3b82f6', '#10b981', '#f59e0b'][index % 3];
-
-      ctx.strokeStyle = color;
-      ctx.lineWidth = isHovered ? 4 : 3;
-      ctx.beginPath();
-
-      let firstPoint = true;
-      for (let x = xRange[0]; x <= xRange[1]; x += 0.1) {
-        const y = evaluateEquation(equation.expression, x);
-        if (y !== null && y >= yRange[0] && y <= yRange[1]) {
-          const canvasPos = graphToCanvas(x, y);
-          if (firstPoint) {
-            ctx.moveTo(canvasPos.x, canvasPos.y);
-            firstPoint = false;
-          } else {
-            ctx.lineTo(canvasPos.x, canvasPos.y);
-          }
-        }
+    // Grid
+    if (showGrid) {
+      ctx.strokeStyle = 'rgba(100, 116, 139, 0.3)';
+      ctx.lineWidth = 0.5;
+      for (let x = Math.ceil(xRange[0] / gridSpacing.x) * gridSpacing.x; x <= xRange[1]; x += gridSpacing.x) {
+        const { x: cx } = graphToCanvas(x, 0);
+        ctx.beginPath();
+        ctx.moveTo(cx, padding);
+        ctx.lineTo(cx, canvasHeight - padding);
+        ctx.stroke();
       }
+      for (let y = Math.ceil(yRange[0] / gridSpacing.y) * gridSpacing.y; y <= yRange[1]; y += gridSpacing.y) {
+        const { y: cy } = graphToCanvas(0, y);
+        ctx.beginPath();
+        ctx.moveTo(padding, cy);
+        ctx.lineTo(canvasWidth - padding, cy);
+        ctx.stroke();
+      }
+    }
+
+    // Axes
+    if (showAxes) {
+      ctx.strokeStyle = 'rgba(226, 232, 240, 0.8)';
+      ctx.lineWidth = 2;
+      const { y: xAxisY } = graphToCanvas(0, 0);
+      ctx.beginPath();
+      ctx.moveTo(padding, xAxisY);
+      ctx.lineTo(canvasWidth - padding, xAxisY);
+      ctx.stroke();
+      const { x: yAxisX } = graphToCanvas(0, 0);
+      ctx.beginPath();
+      ctx.moveTo(yAxisX, padding);
+      ctx.lineTo(yAxisX, canvasHeight - padding);
       ctx.stroke();
 
-      // Draw equation label
-      if (equation.label) {
-        const labelX = xRange[1] - 1;
-        const labelY = evaluateEquation(equation.expression, labelX);
-        if (labelY !== null) {
-          const labelPos = graphToCanvas(labelX, labelY);
-          ctx.fillStyle = color;
-          ctx.font = 'bold 14px sans-serif';
-          ctx.textAlign = 'left';
-          ctx.fillText(equation.label, labelPos.x + 10, labelPos.y);
-        }
-      }
-    });
-
-    // Draw intersection point
-    if (highlightIntersection && intersectionPoint && showingSolution) {
-      const pos = graphToCanvas(intersectionPoint.x, intersectionPoint.y);
-
-      // Draw outer circle
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Draw inner circle
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 4, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Draw label
-      ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 14px sans-serif';
+      ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
+      ctx.font = '12px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(
-        intersectionPoint.label || `(${intersectionPoint.x.toFixed(1)}, ${intersectionPoint.y.toFixed(1)})`,
-        pos.x,
-        pos.y - 15
+      ctx.textBaseline = 'middle';
+      for (let x = Math.ceil(xRange[0]); x <= xRange[1]; x += gridSpacing.x) {
+        if (x === 0) continue;
+        const { x: cx, y: cy } = graphToCanvas(x, 0);
+        ctx.fillText(x.toString(), cx, cy + 16);
+      }
+      for (let y = Math.ceil(yRange[0]); y <= yRange[1]; y += gridSpacing.y) {
+        if (y === 0) continue;
+        const { x: cx, y: cy } = graphToCanvas(0, y);
+        ctx.fillText(y.toString(), cx - 18, cy);
+      }
+    }
+
+    // Lines — both A and B
+    if (revealLines) {
+      const drawLine = (slope: number, yIntercept: number, color: string) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        let firstPoint = true;
+        const step = (xRange[1] - xRange[0]) / 400;
+        for (let x = xRange[0]; x <= xRange[1]; x += step) {
+          const y = slope * x + yIntercept;
+          if (y < yRange[0] || y > yRange[1]) {
+            firstPoint = true;
+            continue;
+          }
+          const { x: cx, y: cy } = graphToCanvas(x, y);
+          if (firstPoint) { ctx.moveTo(cx, cy); firstPoint = false; }
+          else ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+      };
+
+      drawLine(currentChallenge.equationA.slope, currentChallenge.equationA.yIntercept, currentChallenge.equationA.color || '#3b82f6');
+      drawLine(currentChallenge.equationB.slope, currentChallenge.equationB.yIntercept, currentChallenge.equationB.color || '#10b981');
+
+      // Intersection marker — shown only once correct (post-correct reveal per §6m #4).
+      if (recordedRef.current) {
+        const pos = graphToCanvas(currentChallenge.expectedX, currentChallenge.expectedY);
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#fca5a5';
+        ctx.font = 'bold 13px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`(${currentChallenge.expectedX}, ${currentChallenge.expectedY})`, pos.x, pos.y - 14);
+      }
+    } else {
+      // Lines hidden — show a "Verify on graph" placeholder for substitution/elimination modes.
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Solve algebraically — the graph reveals after you check.', canvasWidth / 2, canvasHeight / 2);
+    }
+  }, [
+    currentChallenge,
+    xRange,
+    yRange,
+    gridSpacing,
+    showAxes,
+    showGrid,
+    revealLines,
+    graphToCanvas,
+    // recordedRef.current isn't reactive, but we redraw on feedbackType change which gates on it.
+    feedbackType,
+  ]);
+
+  // -------------------------------------------------------------------------
+  // Evaluation Hook
+  // -------------------------------------------------------------------------
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_CONFIG_BY_TYPE,
+    getScore: (rs) =>
+      Math.round(
+        rs.reduce(
+          (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+          0,
+        ) / Math.max(rs.length, 1),
+      ),
+  });
+
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
+  } = usePrimitiveEvaluation<SystemsEquationsMetrics>({
+    primitiveType: 'systems-equations-visualizer',
+    instanceId: resolvedInstanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  // -------------------------------------------------------------------------
+  // AI Tutoring
+  // -------------------------------------------------------------------------
+  const aiPrimitiveData = useMemo(() => ({
+    challengeType,
+    currentChallengeIndex: currentChallengeIndex + 1,
+    totalChallenges: challenges.length,
+    equationA: currentChallenge?.equationA.display ?? '',
+    equationB: currentChallenge?.equationB.display ?? '',
+    expectedX: currentChallenge?.expectedX ?? 0,
+    expectedY: currentChallenge?.expectedY ?? 0,
+    systemForm: currentChallenge?.systemForm ?? 'slope-intercept',
+    gradeBand,
+    attemptNumber: currentAttempts + 1,
+  }), [
+    challengeType,
+    currentChallengeIndex,
+    challenges.length,
+    currentChallenge,
+    gradeBand,
+    currentAttempts,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'systems-equations-visualizer',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel:
+      gradeBand === '7-8' ? 'Grade 8' : gradeBand === 'algebra-1' ? 'Algebra 1' : 'Algebra 2',
+  });
+
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
+    const totalCh = challenges.length;
+    sendText(
+      `[ACTIVITY_START] Systems-of-equations session: ${totalCh > 1 ? `${totalCh} systems` : 'one system'}. `
+      + `Mode: ${challengeType}. Grade band: ${gradeBand}. `
+      + `Introduce briefly: "Each system has two equations and one (x, y) solution — find it using ${challengeType}."`,
+      { silent: true }
+    );
+  }, [isConnected, challenges.length, challengeType, gradeBand, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Submit handler (single, used by all 3 modes — answer is always (x, y))
+  // -------------------------------------------------------------------------
+
+  const completeChallenge = useCallback((correct: boolean) => {
+    if (!currentChallenge) return;
+    if (recordedRef.current) return; // stale-state guard
+    incrementAttempts();
+    const attempts = currentAttempts + 1;
+
+    if (correct) {
+      const score = Math.max(20, 100 - (attempts - 1) * 20);
+      recordedRef.current = true;
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts,
+        score,
+      });
+    }
+  }, [currentChallenge, currentAttempts, incrementAttempts, recordResult]);
+
+  const handleCheck = useCallback(() => {
+    if (!currentChallenge || hasSubmittedEvaluation) return;
+    const trimmedX = xInput.trim();
+    const trimmedY = yInput.trim();
+    if (!trimmedX || !trimmedY) {
+      setFeedback('Enter both x and y values.');
+      setFeedbackType('error');
+      return;
+    }
+    const xVal = parseFloat(trimmedX);
+    const yVal = parseFloat(trimmedY);
+    if (!Number.isFinite(xVal) || !Number.isFinite(yVal)) {
+      setFeedback('Enter numbers for x and y.');
+      setFeedbackType('error');
+      return;
+    }
+    const correct =
+      Math.abs(xVal - currentChallenge.expectedX) < 0.01 &&
+      Math.abs(yVal - currentChallenge.expectedY) < 0.01;
+    if (correct) {
+      setFeedback(`Correct! The solution is (${currentChallenge.expectedX}, ${currentChallenge.expectedY}).`);
+      setFeedbackType('success');
+      setRevealLines(true);
+      sendText(
+        `[ANSWER_CORRECT] Student solved system via ${challengeType}. `
+        + `Celebrate briefly and emphasize verification: "Plug into both equations to confirm."`,
+        { silent: true },
+      );
+      completeChallenge(true);
+    } else {
+      setFeedback(`Not quite. Check both equations carefully.`);
+      setFeedbackType('error');
+      incrementAttempts();
+      sendText(
+        `[ANSWER_INCORRECT] Student tried (${xVal}, ${yVal}) for ${challengeType} mode. `
+        + `Actual: (${currentChallenge.expectedX}, ${currentChallenge.expectedY}). Coach the method without giving the answer.`,
+        { silent: true },
       );
     }
-  }, [equations, xRange, yRange, gridSpacing, hoveredEquation, highlightIntersection, intersectionPoint, showingSolution]);
+  }, [
+    currentChallenge,
+    hasSubmittedEvaluation,
+    xInput,
+    yInput,
+    challengeType,
+    completeChallenge,
+    incrementAttempts,
+    sendText,
+  ]);
 
-  const getSystemTypeText = () => {
-    switch (systemType) {
-      case 'one-solution':
-        return 'This system has one unique solution (the lines intersect at one point).';
-      case 'no-solution':
-        return 'This system has no solution (the lines are parallel and never intersect).';
-      case 'infinite-solutions':
-        return 'This system has infinitely many solutions (the lines are identical).';
-      default:
-        return '';
+  const handleShowHint = useCallback(() => {
+    if (showHint) return;
+    setShowHint(true);
+    if (!hintViewedRef.current) {
+      hintViewedRef.current = true;
+      hintsViewedRef.current += 1;
     }
-  };
+  }, [showHint]);
+
+  const advanceChallenge = useCallback(() => {
+    if (advanceProgress()) {
+      const nextIdx = currentChallengeIndex + 1;
+      const next = challenges[nextIdx];
+      sendText(
+        `[NEXT_ITEM] System ${nextIdx + 1} of ${challenges.length}: "${next?.equationA.display}" and "${next?.equationB.display}". `
+        + `Introduce briefly: "Here's the next system. Same method, different numbers."`,
+        { silent: true },
+      );
+    }
+  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Session-complete: build metrics and submit exactly once.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+
+    const total = challenges.length;
+    const correctCount = challengeResults.filter((r) => r.correct).length;
+    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
+    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
+    const avgScore = Math.round(
+      challengeResults.reduce(
+        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+        0,
+      ) / Math.max(challengeResults.length, 1),
+    );
+
+    const metrics: SystemsEquationsMetrics = {
+      type: 'systems-equations-visualizer',
+      challengeType: (currentChallenge?.type ?? challenges[0]?.type ?? 'graph') as SystemsEquationsMetrics['challengeType'],
+      totalChallenges: total,
+      correctCount,
+      attemptsCount,
+      firstTryCount,
+      hintsViewed: hintsViewedRef.current,
+      overallAccuracy: avgScore,
+      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
+    };
+
+    const goalMet = correctCount === total;
+    submitEvaluation(goalMet, avgScore, metrics, { challengeResults });
+
+    sendText(
+      `[ALL_COMPLETE] All ${total} systems done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give encouraging summary.`,
+      { silent: true },
+    );
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Derived UI state
+  // -------------------------------------------------------------------------
+  const isCurrentComplete =
+    challenges.length > 0 &&
+    challengeResults.length > currentChallengeIndex &&
+    challengeResults[currentChallengeIndex]?.correct;
+
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challengeResults.length === 0) return 0;
+    return Math.round(
+      challengeResults.reduce(
+        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+        0,
+      ) / challengeResults.length,
+    );
+  }, [allChallengesComplete, challengeResults]);
+
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
+  if (!currentChallenge) {
+    return (
+      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
+        <CardContent className="p-6 text-center text-slate-400">
+          No systems-of-equations challenges in this session.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const modeLabel =
+    challengeType === 'graph' ? 'Graphing'
+    : challengeType === 'substitution' ? 'Substitution'
+    : 'Elimination';
 
   return (
-    <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8 justify-center">
-        <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center border border-blue-500/30 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
-          </svg>
-        </div>
-        <div className="text-left">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Systems of Equations</h2>
+    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-            <p className="text-xs text-blue-400 font-mono uppercase tracking-wider">Graphical & Algebraic Solutions</p>
+            <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">{modeLabel}</Badge>
+            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">{gradeBand}</Badge>
+            <span className="text-slate-500 text-xs">
+              {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
+            </span>
           </div>
         </div>
-      </div>
+        <p className="text-slate-400 text-sm mt-1">
+          {currentChallenge.instruction}
+        </p>
+        {description && (
+          <p className="text-slate-500 text-xs mt-0.5">{description}</p>
+        )}
+      </CardHeader>
 
-      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-blue-500/20 relative overflow-hidden">
-        {/* Background Texture */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-        ></div>
-
-        <div className="relative z-10 w-full">
-          <div className="mb-8 text-center max-w-3xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-            <p className="text-slate-300 font-light">{description}</p>
+      <CardContent className="space-y-4">
+        {/* Equation banners */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-blue-500/30">
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: currentChallenge.equationA.color || '#3b82f6' }}
+            />
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">{currentChallenge.equationA.label || 'A'}</span>
+            <span className="text-base font-mono font-bold text-blue-300">{currentChallenge.equationA.display}</span>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Graph Panel */}
-            {showGraph && (
-              <div className="p-6 bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-600/50 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent pointer-events-none"></div>
-                <div className="relative z-10">
-                  <h4 className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-5 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    Graphical Solution
-                  </h4>
-                  <div className="mb-6 p-4 bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-blue-500/20 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent pointer-events-none rounded-2xl"></div>
-                    <div className="relative z-10 flex justify-center">
-                      <canvas
-                        ref={canvasRef}
-                        width={canvasWidth}
-                        height={canvasHeight}
-                        className="rounded-lg w-full"
-                        style={{ maxWidth: '100%', height: 'auto', backgroundColor: 'rgba(15, 23, 42, 0.6)' }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Equation Legend */}
-                  <div className="space-y-2 mb-4">
-                    {equations.map((eq, index) => (
-                      <div
-                        key={index}
-                        className={`group relative flex items-center gap-3 p-3 rounded-xl transition-all duration-300 border-2 cursor-pointer ${
-                          hoveredEquation === index
-                            ? 'bg-gradient-to-br from-blue-500/25 via-blue-500/15 to-transparent border-blue-400/60 shadow-[0_0_30px_rgba(59,130,246,0.3)] scale-[1.02]'
-                            : 'bg-slate-800/30 border-slate-600/40 hover:border-slate-500/60 hover:bg-slate-700/40'
-                        }`}
-                        onMouseEnter={() => setHoveredEquation(index)}
-                        onMouseLeave={() => setHoveredEquation(null)}
-                      >
-                        {/* Glow Effect */}
-                        {hoveredEquation === index && (
-                          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-transparent rounded-xl blur-xl"></div>
-                        )}
-                        <div className="relative z-10 flex items-center gap-3 w-full">
-                          <div
-                            className={`w-5 h-5 rounded-full flex-shrink-0 ring-2 ring-offset-2 ring-offset-slate-800 transition-all ${
-                              hoveredEquation === index ? 'ring-blue-400/60 scale-110' : 'ring-transparent'
-                            }`}
-                            style={{ backgroundColor: eq.color || ['#3b82f6', '#10b981', '#f59e0b'][index % 3] }}
-                          />
-                          <span className="text-sm font-mono text-white">{eq.expression}</span>
-                          {eq.label && <span className="text-xs text-slate-400 ml-auto">{eq.label}</span>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* System Type Information */}
-                  <div className="p-4 bg-gradient-to-br from-slate-900/60 to-slate-800/40 rounded-xl border border-slate-600/30 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
-                    <div className="relative z-10">
-                      <p className="text-sm text-slate-300">{getSystemTypeText()}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Algebraic Solution Panel */}
-            {showAlgebraic && (
-              <div className="p-6 bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-600/50 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent pointer-events-none"></div>
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-5">
-                    <h4 className="text-sm font-mono uppercase tracking-wider text-green-400 flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                      </svg>
-                      Algebraic Solution ({solutionMethod})
-                    </h4>
-                    {stepByStep && (
-                      <button
-                        onClick={() => setShowingSolution(!showingSolution)}
-                        className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-xs font-mono rounded-lg transition-all border border-blue-500/30 hover:border-blue-400/50"
-                      >
-                        {showingSolution ? 'Reset' : 'Show Solution'}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Method Selector */}
-                  <div className="mb-4 flex gap-2">
-                    {['graphing', 'substitution', 'elimination'].map((method) => (
-                      <button
-                        key={method}
-                        className={`px-3 py-2 rounded-lg text-xs font-mono transition-all ${
-                          solutionMethod === method
-                            ? 'bg-blue-500/30 text-blue-300 border border-blue-400/50'
-                            : 'bg-slate-800/50 text-slate-400 border border-slate-600/40 hover:border-slate-500/60'
-                        }`}
-                      >
-                        {method.charAt(0).toUpperCase() + method.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Solution Steps */}
-                  <div className="space-y-3">
-                    {algebraicSteps.length > 0 ? (
-                      algebraicSteps.map((step, index) => (
-                        <div
-                          key={index}
-                          className={`p-4 rounded-xl border-2 transition-all ${
-                            !stepByStep || index <= currentStep
-                              ? 'bg-slate-900/40 border-slate-600/40 opacity-100'
-                              : 'bg-slate-800/20 border-slate-700/30 opacity-50'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-7 h-7 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
-                              {step.stepNumber}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-slate-300 mb-2">{step.description}</p>
-                              {step.equation && (
-                                <code className="text-sm font-mono text-blue-300 bg-slate-900/60 px-3 py-1.5 rounded-lg inline-block border border-blue-500/30">
-                                  {step.equation}
-                                </code>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-                        <p className="text-sm text-amber-300">
-                          Use the graph to find the intersection point, or select a method above to see algebraic steps.
-                        </p>
-                      </div>
-                    )}
-
-                    {stepByStep && currentStep < algebraicSteps.length - 1 && (
-                      <button
-                        onClick={() => setCurrentStep(currentStep + 1)}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 font-medium shadow-lg transition-all"
-                      >
-                        Next Step
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Final Solution */}
-                  {showingSolution && intersectionPoint && (
-                    <div className="mt-4 p-5 bg-gradient-to-br from-green-500/20 to-green-600/10 border-2 border-green-500/50 rounded-xl overflow-hidden relative">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/20 rounded-full blur-3xl"></div>
-                      <div className="relative z-10">
-                        <h5 className="font-bold text-green-400 mb-3 text-sm uppercase tracking-wider flex items-center gap-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                          </svg>
-                          Solution
-                        </h5>
-                        <p className="text-slate-200 mb-2">
-                          The lines intersect at point{' '}
-                          <span className="font-mono font-bold text-white bg-slate-900/50 px-2 py-1 rounded border border-green-500/30">
-                            ({intersectionPoint.x.toFixed(2)}, {intersectionPoint.y.toFixed(2)})
-                          </span>
-                        </p>
-                        <p className="text-sm text-slate-400">
-                          This means x = {intersectionPoint.x.toFixed(2)} and y = {intersectionPoint.y.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+          <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-emerald-500/30">
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: currentChallenge.equationB.color || '#10b981' }}
+            />
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">{currentChallenge.equationB.label || 'B'}</span>
+            <span className="text-base font-mono font-bold text-emerald-300">{currentChallenge.equationB.display}</span>
           </div>
+        </div>
 
-          {/* Educational Context */}
-          {systemType === 'one-solution' && intersectionPoint && (
-            <div className="mt-6 p-6 bg-purple-500/10 border border-purple-500/30 rounded-xl relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl"></div>
-              <div className="relative z-10">
-                <h5 className="font-semibold text-purple-400 mb-3 text-sm uppercase tracking-wider flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                  </svg>
-                  Understanding the Solution
-                </h5>
-                <p className="text-sm text-slate-300">
-                  The intersection point represents values of x and y that satisfy <strong className="text-white">both</strong> equations
-                  simultaneously. You can verify this by substituting x = {intersectionPoint.x.toFixed(2)} and
-                  y = {intersectionPoint.y.toFixed(2)} into each original equation.
-                </p>
-              </div>
+        {/* Progress dots */}
+        <div className="flex items-center justify-center gap-1.5">
+          {challenges.map((ch, idx) => {
+            const result = challengeResults.find((r) => r.challengeId === ch.id);
+            const isActive = idx === currentChallengeIndex;
+            const isDone = !!result?.correct;
+            return (
+              <div
+                key={ch.id}
+                className={`h-2 rounded-full transition-all ${
+                  isDone
+                    ? 'w-6 bg-emerald-400/80'
+                    : isActive
+                    ? 'w-8 bg-blue-400/80'
+                    : 'w-2 bg-slate-600/60'
+                }`}
+              />
+            );
+          })}
+        </div>
+
+        {/* Canvas */}
+        <div className="p-3 bg-slate-800/30 rounded-2xl border border-blue-500/20">
+          <canvas
+            ref={canvasRef}
+            width={canvasWidth}
+            height={canvasHeight}
+            className="rounded-lg w-full"
+            style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}`, backgroundColor: 'rgba(15, 23, 42, 0.6)' }}
+          />
+          {!revealLines && challengeType !== 'graph' && (
+            <div className="mt-2 flex justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 text-xs"
+                onClick={() => setRevealLines(true)}
+              >
+                Peek at the graph
+              </Button>
             </div>
           )}
         </div>
-      </div>
-    </div>
+
+        {/* Answer panel */}
+        {!isCurrentComplete && !allChallengesComplete && (
+          <div className="bg-slate-800/20 rounded-lg p-4 border border-white/5 space-y-3">
+            <p className="text-slate-300 text-sm font-medium text-center">
+              {challengeType === 'graph'
+                ? 'Enter the intersection coordinates:'
+                : challengeType === 'substitution'
+                ? 'Solve by substitution and enter (x, y):'
+                : 'Solve by elimination and enter (x, y):'}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <label className="flex items-center gap-2 text-slate-300 text-sm">
+                <span className="text-blue-300 font-mono">x =</span>
+                <input
+                  type="number"
+                  value={xInput}
+                  onChange={(e) => setXInput(e.target.value)}
+                  className="w-20 px-2 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-blue-400/50"
+                  placeholder="?"
+                  onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
+                />
+              </label>
+              <label className="flex items-center gap-2 text-slate-300 text-sm">
+                <span className="text-emerald-300 font-mono">y =</span>
+                <input
+                  type="number"
+                  value={yInput}
+                  onChange={(e) => setYInput(e.target.value)}
+                  className="w-20 px-2 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-emerald-400/50"
+                  placeholder="?"
+                  onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
+                />
+              </label>
+              <Button
+                variant="ghost"
+                className="bg-blue-500/10 border border-blue-400/30 text-blue-300"
+                onClick={handleCheck}
+              >
+                Check
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Feedback */}
+        {feedback && (
+          <div className={`text-center text-sm font-medium ${
+            feedbackType === 'success' ? 'text-emerald-400' :
+            feedbackType === 'error' ? 'text-red-400' :
+            'text-slate-300'
+          }`}>
+            {feedback}
+          </div>
+        )}
+
+        {/* Hint */}
+        {showHint && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+            <p className="text-amber-200 text-sm">
+              <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
+              {currentChallenge.hint}
+            </p>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex justify-center gap-2 flex-wrap">
+          {isCurrentComplete && !allChallengesComplete && (
+            <Button
+              variant="ghost"
+              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              onClick={advanceChallenge}
+            >
+              Next System →
+            </Button>
+          )}
+          {!isCurrentComplete && !allChallengesComplete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
+              onClick={handleShowHint}
+              disabled={showHint}
+            >
+              {showHint ? 'Hint shown' : 'Show hint'}
+            </Button>
+          )}
+        </div>
+
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="All Systems Solved!"
+            celebrationMessage={`You completed all ${challenges.length} systems-of-equations challenges.`}
+            className="mt-4"
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

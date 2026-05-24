@@ -200,10 +200,6 @@ function TenFrameViz({ operand1, operand2 }: { operand1: number; operand2: numbe
           </g>
         );
       })}
-      {/* Labels */}
-      <text x={SVG_W / 2} y={startY + rows * (cellH + gap) + 20} textAnchor="middle" fontSize={12} fill="rgba(255,255,255,0.7)">
-        {operand1} + {operand2} = {total}
-      </text>
     </svg>
   );
 }
@@ -266,10 +262,6 @@ function DoublesViz({ operand1, operand2, isNearDoubles }: {
           stroke="#f472b6"
         />
       )}
-      {/* Label */}
-      <text x={SVG_W / 2} y={SVG_H - 8} textAnchor="middle" fontSize={12} fill="rgba(255,255,255,0.7)">
-        {isNearDoubles ? `${base} + ${base} + ${extra}` : `${base} + ${base}`} = {operand1 + operand2}
-      </text>
     </svg>
   );
 }
@@ -319,9 +311,6 @@ function TallyViz({ total }: { total: number }) {
   return (
     <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="max-w-full h-auto">
       {elements}
-      <text x={SVG_W / 2} y={SVG_H - 10} textAnchor="middle" fontSize={12} fill="rgba(255,255,255,0.7)">
-        {total} total
-      </text>
     </svg>
   );
 }
@@ -352,9 +341,6 @@ function DrawObjectsViz({ total }: { total: number }) {
           />
         );
       })}
-      <text x={SVG_W / 2} y={SVG_H - 10} textAnchor="middle" fontSize={12} fill="rgba(255,255,255,0.7)">
-        {total} objects
-      </text>
     </svg>
   );
 }

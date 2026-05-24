@@ -1,6 +1,22 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  usePrimitiveEvaluation,
+  type PrimitiveEvaluationResult,
+} from '../../../evaluation';
+import type { SlopeTriangleMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+
+// ============================================================================
+// Data Types (Single Source of Truth)
+// ============================================================================
 
 export interface Point {
   x: number;
@@ -9,34 +25,74 @@ export interface Point {
 }
 
 export interface SlopeTriangleConfig {
-  position: Point; // Triangle location (base point)
-  size: number; // Scale of triangle (run distance)
-  showMeasurements: boolean; // Display rise/run values
-  showSlope: boolean; // Display calculated ratio
-  showAngle: boolean; // Display angle measurement
-  notation: 'riseRun' | 'deltaNotation'; // Display format
-  color?: string; // Triangle color
+  position: Point;
+  size: number;
+  showMeasurements: boolean;
+  showSlope: boolean;
+  showAngle: boolean;
+  notation: 'riseRun' | 'deltaNotation';
+  color?: string;
 }
 
 export interface AttachedLine {
-  equation: string; // Line equation (e.g., "y = 2*x + 1")
-  color?: string; // Line color
-  label?: string; // Line label
+  equation: string;
+  slope: number;
+  yIntercept: number;
+  color?: string;
+  label?: string;
+}
+
+export type SlopeTriangleChallengeType =
+  | 'identify_slope'
+  | 'calculate'
+  | 'draw_triangle';
+
+export interface SlopeTriangleChallenge {
+  id: string;
+  type: SlopeTriangleChallengeType;
+  attachedLine: AttachedLine;
+  triangle: SlopeTriangleConfig;
+  expectedRise: number;
+  expectedRun: number;
+  expectedSlope: number;
+  instruction: string;
+  hint: string;
 }
 
 export interface SlopeTriangleData {
   title: string;
   description: string;
-  xRange: [number, number]; // [min, max]
-  yRange: [number, number]; // [min, max]
+  xRange: [number, number];
+  yRange: [number, number];
   gridSpacing?: { x: number; y: number };
   showAxes?: boolean;
   showGrid?: boolean;
-  attachedLine: AttachedLine; // Line to attach triangle to
-  triangles: SlopeTriangleConfig[]; // Multiple triangles can be shown
-  allowDrag?: boolean; // Allow dragging triangles
-  allowResize?: boolean; // Allow resizing triangles
+  notation?: 'riseRun' | 'deltaNotation';
+  gradeBand?: '7-8' | 'algebra-1' | 'algebra-2';
+  challenges: SlopeTriangleChallenge[];
+
+  // Evaluation props
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<SlopeTriangleMetrics>) => void;
 }
+
+// ============================================================================
+// Phase Summary Config
+// ============================================================================
+
+const PHASE_CONFIG_BY_TYPE: Record<SlopeTriangleChallengeType, PhaseConfig> = {
+  identify_slope: { label: 'Identify Slope', icon: '📐', accentColor: 'cyan' },
+  calculate:      { label: 'Calculate',      icon: '🧮', accentColor: 'purple' },
+  draw_triangle:  { label: 'Draw Triangle',  icon: '✏️', accentColor: 'emerald' },
+};
+
+// ============================================================================
+// Component
+// ============================================================================
 
 interface SlopeTriangleProps {
   data: SlopeTriangleData;
@@ -45,718 +101,818 @@ interface SlopeTriangleProps {
 
 const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
   const {
+    title,
+    description,
     xRange,
     yRange,
     gridSpacing = { x: 1, y: 1 },
     showAxes = true,
     showGrid = true,
-    attachedLine,
-    allowDrag = true,
-    allowResize = true,
+    gradeBand = 'algebra-1',
+    challenges,
+    instanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onEvaluationSubmit,
   } = data;
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [triangles, setTriangles] = useState<SlopeTriangleConfig[]>(data.triangles);
-  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
-  const [resizingIndex, setResizingIndex] = useState<number | null>(null);
+  // -------------------------------------------------------------------------
+  // Multi-challenge state
+  // -------------------------------------------------------------------------
+  const {
+    currentIndex: currentChallengeIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+  });
+
+  const currentChallenge = challenges[currentChallengeIndex] || null;
+  const challengeType = currentChallenge?.type ?? 'identify_slope';
+
+  // -------------------------------------------------------------------------
+  // Per-challenge UI state (reset on advance)
+  // -------------------------------------------------------------------------
+  const [trianglePos, setTrianglePos] = useState<{ x: number; size: number }>(() => ({
+    x: currentChallenge?.triangle.position.x ?? 0,
+    size: currentChallenge?.triangle.size ?? 1,
+  }));
+  const [riseInput, setRiseInput] = useState('');
+  const [runInput, setRunInput] = useState('');
+  const [slopeInput, setSlopeInput] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
+  const [showHint, setShowHint] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [draggingHandle, setDraggingHandle] = useState<'base' | 'right' | null>(null);
 
+  // Refs
+  const stableInstanceIdRef = useRef(instanceId || `slope-triangle-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const recordedRef = useRef(false);
+  const hintViewedRef = useRef(false);
+  const hintsViewedRef = useRef(0);
+  const submittedRef = useRef(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Canvas constants
   const padding = 50;
-  const canvasWidth = 800;
-  const canvasHeight = 600;
+  const canvasWidth = 720;
+  const canvasHeight = 540;
 
-  // Convert graph coordinates to canvas coordinates
-  const graphToCanvas = (x: number, y: number): { x: number; y: number } => {
+  // -------------------------------------------------------------------------
+  // Per-challenge reset — fires whenever advance() flips currentChallenge.id.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!currentChallenge) return;
+    setTrianglePos({
+      x: currentChallenge.triangle.position.x,
+      size: currentChallenge.triangle.size,
+    });
+    setRiseInput('');
+    setRunInput('');
+    setSlopeInput('');
+    setFeedback('');
+    setFeedbackType('');
+    setShowHint(false);
+    recordedRef.current = false;
+    hintViewedRef.current = false;
+  }, [currentChallenge?.id, currentChallenge]);
+
+  // -------------------------------------------------------------------------
+  // Coordinate helpers
+  // -------------------------------------------------------------------------
+  const graphToCanvas = useCallback((x: number, y: number): { x: number; y: number } => {
     const graphWidth = xRange[1] - xRange[0];
     const graphHeight = yRange[1] - yRange[0];
     const effectiveWidth = canvasWidth - 2 * padding;
     const effectiveHeight = canvasHeight - 2 * padding;
-
     const canvasX = padding + ((x - xRange[0]) / graphWidth) * effectiveWidth;
     const canvasY = canvasHeight - padding - ((y - yRange[0]) / graphHeight) * effectiveHeight;
-
     return { x: canvasX, y: canvasY };
-  };
+  }, [xRange, yRange]);
 
-  // Convert canvas coordinates to graph coordinates
-  const canvasToGraph = (canvasX: number, canvasY: number): { x: number; y: number } => {
+  const canvasToGraph = useCallback((cx: number, cy: number): { x: number; y: number } => {
     const graphWidth = xRange[1] - xRange[0];
     const graphHeight = yRange[1] - yRange[0];
     const effectiveWidth = canvasWidth - 2 * padding;
     const effectiveHeight = canvasHeight - 2 * padding;
-
-    const x = xRange[0] + ((canvasX - padding) / effectiveWidth) * graphWidth;
-    const y = yRange[0] + ((canvasHeight - padding - canvasY) / effectiveHeight) * graphHeight;
-
+    const x = xRange[0] + ((cx - padding) / effectiveWidth) * graphWidth;
+    const y = yRange[0] + ((canvasHeight - padding - cy) / effectiveHeight) * graphHeight;
     return { x, y };
-  };
+  }, [xRange, yRange]);
 
-  // Evaluate equation at x
-  const evaluateEquation = (equation: string, x: number): number | null => {
-    try {
-      let expr = equation
-        .replace(/\s/g, '')
-        .replace(/\^/g, '**')
-        .replace(/y=/gi, '')
-        .replace(/x/g, `(${x})`);
+  const evaluateLine = useCallback((slope: number, yIntercept: number, x: number): number => {
+    return slope * x + yIntercept;
+  }, []);
 
-      if (!/^[\d\s\+\-\*\/\.\(\)]+$/.test(expr)) {
-        return null;
-      }
-
-      return eval(expr);
-    } catch {
-      return null;
-    }
-  };
-
-  // Calculate slope from equation or two points
-  const calculateSlope = (x1: number, x2: number): number | null => {
-    const y1 = evaluateEquation(attachedLine.equation, x1);
-    const y2 = evaluateEquation(attachedLine.equation, x2);
-
-    if (y1 === null || y2 === null) return null;
-
-    const rise = y2 - y1;
-    const run = x2 - x1;
-
-    return run !== 0 ? rise / run : null;
-  };
-
-  // Calculate angle from slope (in degrees)
-  const calculateAngle = (slope: number): number => {
-    return Math.atan(slope) * (180 / Math.PI);
-  };
-
-  // Draw the graph
+  // -------------------------------------------------------------------------
+  // Canvas draw
+  // -------------------------------------------------------------------------
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-
+    if (!canvas || !currentChallenge) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
+    const { attachedLine, triangle } = currentChallenge;
+    const slope = attachedLine.slope;
+    const yIntercept = attachedLine.yIntercept;
+
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    // Draw grid
+    // Grid
     if (showGrid) {
       ctx.strokeStyle = 'rgba(100, 116, 139, 0.3)';
       ctx.lineWidth = 0.5;
-
-      // Vertical grid lines
       for (let x = Math.ceil(xRange[0] / gridSpacing.x) * gridSpacing.x; x <= xRange[1]; x += gridSpacing.x) {
-        const { x: canvasX } = graphToCanvas(x, 0);
+        const { x: cx } = graphToCanvas(x, 0);
         ctx.beginPath();
-        ctx.moveTo(canvasX, padding);
-        ctx.lineTo(canvasX, canvasHeight - padding);
+        ctx.moveTo(cx, padding);
+        ctx.lineTo(cx, canvasHeight - padding);
         ctx.stroke();
       }
-
-      // Horizontal grid lines
       for (let y = Math.ceil(yRange[0] / gridSpacing.y) * gridSpacing.y; y <= yRange[1]; y += gridSpacing.y) {
-        const { y: canvasY } = graphToCanvas(0, y);
+        const { y: cy } = graphToCanvas(0, y);
         ctx.beginPath();
-        ctx.moveTo(padding, canvasY);
-        ctx.lineTo(canvasWidth - padding, canvasY);
+        ctx.moveTo(padding, cy);
+        ctx.lineTo(canvasWidth - padding, cy);
         ctx.stroke();
       }
     }
 
-    // Draw axes
+    // Axes
     if (showAxes) {
       ctx.strokeStyle = 'rgba(226, 232, 240, 0.8)';
       ctx.lineWidth = 2;
-
-      // X-axis
       const { y: xAxisY } = graphToCanvas(0, 0);
       ctx.beginPath();
       ctx.moveTo(padding, xAxisY);
       ctx.lineTo(canvasWidth - padding, xAxisY);
       ctx.stroke();
-
-      // Y-axis
       const { x: yAxisX } = graphToCanvas(0, 0);
       ctx.beginPath();
       ctx.moveTo(yAxisX, padding);
       ctx.lineTo(yAxisX, canvasHeight - padding);
       ctx.stroke();
 
-      // Axis labels
       ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
-      ctx.font = '14px monospace';
+      ctx.font = '12px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-
-      // X-axis numbers
       for (let x = Math.ceil(xRange[0]); x <= xRange[1]; x += gridSpacing.x) {
         if (x === 0) continue;
-        const { x: canvasX, y: canvasY } = graphToCanvas(x, 0);
-        ctx.fillText(x.toString(), canvasX, canvasY + 20);
+        const { x: cx, y: cy } = graphToCanvas(x, 0);
+        ctx.fillText(x.toString(), cx, cy + 16);
       }
-
-      // Y-axis numbers
       for (let y = Math.ceil(yRange[0]); y <= yRange[1]; y += gridSpacing.y) {
         if (y === 0) continue;
-        const { x: canvasX, y: canvasY } = graphToCanvas(0, y);
-        ctx.fillText(y.toString(), canvasX - 25, canvasY);
+        const { x: cx, y: cy } = graphToCanvas(0, y);
+        ctx.fillText(y.toString(), cx - 18, cy);
       }
-
-      // Origin
-      ctx.fillText('0', yAxisX - 15, xAxisY + 20);
     }
 
-    // Draw the attached line
+    // Line
     ctx.strokeStyle = attachedLine.color || '#3b82f6';
     ctx.lineWidth = 3;
     ctx.beginPath();
-
     let firstPoint = true;
-    const step = (xRange[1] - xRange[0]) / 500;
-
+    const step = (xRange[1] - xRange[0]) / 400;
     for (let x = xRange[0]; x <= xRange[1]; x += step) {
-      const y = evaluateEquation(attachedLine.equation, x);
-      if (y === null || y < yRange[0] || y > yRange[1]) continue;
-
-      const { x: canvasX, y: canvasY } = graphToCanvas(x, y);
-
-      if (firstPoint) {
-        ctx.moveTo(canvasX, canvasY);
-        firstPoint = false;
-      } else {
-        ctx.lineTo(canvasX, canvasY);
+      const y = evaluateLine(slope, yIntercept, x);
+      if (y < yRange[0] || y > yRange[1]) {
+        firstPoint = true;
+        continue;
       }
+      const { x: cx, y: cy } = graphToCanvas(x, y);
+      if (firstPoint) { ctx.moveTo(cx, cy); firstPoint = false; }
+      else ctx.lineTo(cx, cy);
     }
-
     ctx.stroke();
 
-    // Draw slope triangles
-    triangles.forEach((triangle, index) => {
-      const { position, size, showMeasurements, showSlope, showAngle, notation, color } = triangle;
+    // Triangle
+    const x1 = trianglePos.x;
+    const x2 = trianglePos.x + trianglePos.size;
+    const y1 = evaluateLine(slope, yIntercept, x1);
+    const y2 = evaluateLine(slope, yIntercept, x2);
+    const basePoint = graphToCanvas(x1, y1);
+    const topPoint = graphToCanvas(x2, y2);
+    const rightPoint = graphToCanvas(x2, y1);
+    const triangleColor = triangle.color || '#10b981';
 
-      const x1 = position.x;
-      const x2 = position.x + size;
-      const y1 = evaluateEquation(attachedLine.equation, x1);
-      const y2 = evaluateEquation(attachedLine.equation, x2);
+    ctx.strokeStyle = triangleColor;
+    ctx.fillStyle = `${triangleColor}33`;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(basePoint.x, basePoint.y);
+    ctx.lineTo(rightPoint.x, rightPoint.y);
+    ctx.lineTo(topPoint.x, topPoint.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
 
-      if (y1 === null || y2 === null) return;
+    // Right angle marker
+    const angleSize = 10;
+    const yDir = y2 >= y1 ? -1 : 1;
+    ctx.beginPath();
+    ctx.moveTo(rightPoint.x - angleSize, rightPoint.y);
+    ctx.lineTo(rightPoint.x - angleSize, rightPoint.y + yDir * angleSize);
+    ctx.lineTo(rightPoint.x, rightPoint.y + yDir * angleSize);
+    ctx.stroke();
 
+    // Measurements (rise / run labels — shown for identify_slope and calculate,
+    // hidden for draw_triangle so the student has to read them off the grid).
+    const showMeasurements = triangle.showMeasurements;
+    if (showMeasurements) {
       const rise = y2 - y1;
-      const run = size;
+      const run = trianglePos.size;
+      const notation = triangle.notation || 'riseRun';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const runLabel = notation === 'deltaNotation' ? `Δx = ${run}` : `run = ${run}`;
+      const riseLabel = notation === 'deltaNotation' ? `Δy = ${rise}` : `rise = ${rise}`;
+      ctx.fillText(runLabel, (basePoint.x + rightPoint.x) / 2, rightPoint.y + (yDir > 0 ? -18 : 18));
+      ctx.save();
+      ctx.translate(rightPoint.x + 28, (rightPoint.y + topPoint.y) / 2);
+      ctx.fillText(riseLabel, 0, 0);
+      ctx.restore();
+    }
 
-      // Convert to canvas coordinates
-      const basePoint = graphToCanvas(x1, y1);
-      const topPoint = graphToCanvas(x2, y2);
-      const rightPoint = graphToCanvas(x2, y1);
-
-      const isHovered = hoveredIndex === index;
-      const triangleColor = color || '#10b981';
-
-      // Draw triangle
-      ctx.strokeStyle = triangleColor;
-      ctx.fillStyle = isHovered ? `${triangleColor}33` : `${triangleColor}22`;
-      ctx.lineWidth = isHovered ? 3 : 2;
-
-      ctx.beginPath();
-      ctx.moveTo(basePoint.x, basePoint.y);
-      ctx.lineTo(rightPoint.x, rightPoint.y);
-      ctx.lineTo(topPoint.x, topPoint.y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw right angle indicator
-      const angleSize = 12;
-      ctx.strokeStyle = triangleColor;
+    // Drag handles (always — but only the right handle is draggable in draw_triangle,
+    // and both are draggable in draw_triangle).
+    const showHandles = challengeType === 'draw_triangle';
+    if (showHandles) {
+      ctx.fillStyle = triangleColor;
+      ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(rightPoint.x - angleSize, rightPoint.y);
-      ctx.lineTo(rightPoint.x - angleSize, rightPoint.y - angleSize);
-      ctx.lineTo(rightPoint.x, rightPoint.y - angleSize);
+      ctx.arc(basePoint.x, basePoint.y, 7, 0, 2 * Math.PI);
+      ctx.fill();
       ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(rightPoint.x, rightPoint.y, 7, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    }
+  }, [
+    currentChallenge,
+    trianglePos,
+    xRange,
+    yRange,
+    gridSpacing,
+    showAxes,
+    showGrid,
+    challengeType,
+    evaluateLine,
+    graphToCanvas,
+  ]);
 
-      // Draw measurements
-      if (showMeasurements) {
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '14px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        // Run label (horizontal)
-        const runLabel = notation === 'deltaNotation' ? `Δx = ${run.toFixed(1)}` : `run = ${run.toFixed(1)}`;
-        ctx.fillText(runLabel, (basePoint.x + rightPoint.x) / 2, rightPoint.y + 20);
-
-        // Rise label (vertical)
-        const riseLabel = notation === 'deltaNotation' ? `Δy = ${rise.toFixed(1)}` : `rise = ${rise.toFixed(1)}`;
-        ctx.save();
-        ctx.translate(rightPoint.x + 30, (rightPoint.y + topPoint.y) / 2);
-        ctx.fillText(riseLabel, 0, 0);
-        ctx.restore();
-      }
-
-      // Draw slope calculation
-      if (showSlope) {
-        const slope = calculateSlope(x1, x2);
-        if (slope !== null) {
-          const slopeText = `m = ${slope.toFixed(2)}`;
-
-          // Draw background box
-          ctx.font = '16px monospace';
-          const metrics = ctx.measureText(slopeText);
-          const boxWidth = metrics.width + 20;
-          const boxHeight = 30;
-          const boxX = (basePoint.x + topPoint.x) / 2 - boxWidth / 2;
-          const boxY = Math.min(basePoint.y, topPoint.y) - 40;
-
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-          ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-
-          ctx.strokeStyle = triangleColor;
-          ctx.lineWidth = 2;
-          ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-
-          ctx.fillStyle = '#ffffff';
-          ctx.textAlign = 'center';
-          ctx.fillText(slopeText, boxX + boxWidth / 2, boxY + boxHeight / 2);
-        }
-      }
-
-      // Draw angle arc and measurement
-      if (showAngle) {
-        const slope = calculateSlope(x1, x2);
-        if (slope !== null) {
-          const angle = calculateAngle(slope);
-          const angleRad = Math.atan(slope);
-
-          // Draw angle arc
-          const arcRadius = 30;
-          ctx.strokeStyle = triangleColor;
-          ctx.fillStyle = `${triangleColor}22`;
-          ctx.lineWidth = 2;
-
-          ctx.beginPath();
-          ctx.moveTo(basePoint.x, basePoint.y);
-          ctx.arc(basePoint.x, basePoint.y, arcRadius, 0, -angleRad, true);
-          ctx.lineTo(basePoint.x, basePoint.y);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-
-          // Draw angle label
-          const labelAngle = -angleRad / 2;
-          const labelRadius = arcRadius + 20;
-          const labelX = basePoint.x + labelRadius * Math.cos(labelAngle);
-          const labelY = basePoint.y - labelRadius * Math.sin(labelAngle);
-
-          const angleText = `${Math.abs(angle).toFixed(1)}°`;
-          ctx.font = '14px monospace';
-          const angleMetrics = ctx.measureText(angleText);
-          const angleBoxWidth = angleMetrics.width + 12;
-          const angleBoxHeight = 24;
-
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-          ctx.fillRect(labelX - angleBoxWidth / 2, labelY - angleBoxHeight / 2, angleBoxWidth, angleBoxHeight);
-
-          ctx.strokeStyle = triangleColor;
-          ctx.lineWidth = 1;
-          ctx.strokeRect(labelX - angleBoxWidth / 2, labelY - angleBoxHeight / 2, angleBoxWidth, angleBoxHeight);
-
-          ctx.fillStyle = '#ffffff';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(angleText, labelX, labelY);
-        }
-      }
-
-      // Draw drag handle if dragging is enabled
-      if (allowDrag) {
-        ctx.fillStyle = isHovered ? triangleColor : `${triangleColor}88`;
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(basePoint.x, basePoint.y, 6, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-      }
-
-      // Draw resize handle if resizing is enabled
-      if (allowResize) {
-        ctx.fillStyle = isHovered ? triangleColor : `${triangleColor}88`;
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(rightPoint.x, rightPoint.y, 6, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-      }
-    });
-  }, [triangles, hoveredIndex, xRange, yRange, gridSpacing, showAxes, showGrid, attachedLine]);
-
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // -------------------------------------------------------------------------
+  // Mouse handlers (only meaningful for draw_triangle)
+  // -------------------------------------------------------------------------
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (challengeType !== 'draw_triangle' || !currentChallenge) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const rect = canvas.getBoundingClientRect();
-    const canvasX = e.clientX - rect.left;
-    const canvasY = e.clientY - rect.top;
-    const graphCoords = canvasToGraph(canvasX, canvasY);
+    const cx = (e.clientX - rect.left) * (canvasWidth / rect.width);
+    const cy = (e.clientY - rect.top) * (canvasHeight / rect.height);
+    const slope = currentChallenge.attachedLine.slope;
+    const yIntercept = currentChallenge.attachedLine.yIntercept;
+    const x1 = trianglePos.x;
+    const x2 = trianglePos.x + trianglePos.size;
+    const y1 = evaluateLine(slope, yIntercept, x1);
+    const base = graphToCanvas(x1, y1);
+    const right = graphToCanvas(x2, y1);
+    const distBase = Math.hypot(cx - base.x, cy - base.y);
+    const distRight = Math.hypot(cx - right.x, cy - right.y);
+    if (distBase < 18) setDraggingHandle('base');
+    else if (distRight < 18) setDraggingHandle('right');
+  };
 
-    // Check if clicking on a triangle's drag or resize handle
-    for (let i = 0; i < triangles.length; i++) {
-      const triangle = triangles[i];
-      const { position, size } = triangle;
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!draggingHandle || !currentChallenge) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) * (canvasWidth / rect.width);
+    const cy = (e.clientY - rect.top) * (canvasHeight / rect.height);
+    const graph = canvasToGraph(cx, cy);
+    const roundedX = Math.round(graph.x);
+    if (draggingHandle === 'base') {
+      // Drag the whole triangle along x; keep size fixed.
+      const newX = Math.max(xRange[0], Math.min(xRange[1] - trianglePos.size, roundedX));
+      setTrianglePos((prev) => ({ ...prev, x: newX }));
+    } else if (draggingHandle === 'right') {
+      const newSize = Math.max(1, Math.min(8, roundedX - trianglePos.x));
+      setTrianglePos((prev) => ({ ...prev, size: newSize }));
+    }
+  };
 
-      // Check drag handle (base point)
-      const distToDrag = Math.sqrt(
-        (graphCoords.x - position.x) ** 2 +
-        (graphCoords.y - (evaluateEquation(attachedLine.equation, position.x) || 0)) ** 2
+  const handleMouseUp = () => setDraggingHandle(null);
+  const handleMouseLeave = () => setDraggingHandle(null);
+
+  // -------------------------------------------------------------------------
+  // Evaluation Hook
+  // -------------------------------------------------------------------------
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_CONFIG_BY_TYPE,
+    getScore: (rs) =>
+      Math.round(
+        rs.reduce(
+          (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+          0,
+        ) / Math.max(rs.length, 1),
+      ),
+  });
+
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
+  } = usePrimitiveEvaluation<SlopeTriangleMetrics>({
+    primitiveType: 'slope-triangle',
+    instanceId: resolvedInstanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  // -------------------------------------------------------------------------
+  // AI Tutoring
+  // -------------------------------------------------------------------------
+  const aiPrimitiveData = useMemo(() => ({
+    challengeType,
+    currentChallengeIndex: currentChallengeIndex + 1,
+    totalChallenges: challenges.length,
+    equation: currentChallenge?.attachedLine.label ?? '',
+    slope: currentChallenge?.attachedLine.slope ?? 0,
+    expectedRise: currentChallenge?.expectedRise ?? 0,
+    expectedRun: currentChallenge?.expectedRun ?? 0,
+    expectedSlope: currentChallenge?.expectedSlope ?? 0,
+    gradeBand,
+    attemptNumber: currentAttempts + 1,
+    notation: currentChallenge?.triangle.notation ?? 'riseRun',
+  }), [
+    challengeType,
+    currentChallengeIndex,
+    challenges.length,
+    currentChallenge,
+    gradeBand,
+    currentAttempts,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'slope-triangle',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel:
+      gradeBand === '7-8' ? 'Grade 8' : gradeBand === 'algebra-1' ? 'Algebra 1' : 'Algebra 2',
+  });
+
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
+    const totalCh = challenges.length;
+    sendText(
+      `[ACTIVITY_START] Slope triangle session: ${totalCh > 1 ? `${totalCh} lines` : 'one line'}. `
+      + `Mode: ${challengeType}. Grade band: ${gradeBand}. `
+      + `Introduce briefly: "Each line has a slope triangle — read or build it to find the slope."`,
+      { silent: true }
+    );
+  }, [isConnected, challenges.length, challengeType, gradeBand, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Submit handlers (handler-driven with stale-state guard per §6a #8)
+  // -------------------------------------------------------------------------
+
+  const completeChallenge = useCallback((correct: boolean) => {
+    if (!currentChallenge) return;
+    if (recordedRef.current) return; // stale-state guard
+    incrementAttempts();
+    const attempts = currentAttempts + 1;
+
+    if (correct) {
+      // Standard per-challenge score (PRD §6a #11): 100 first try, -20 per extra, floor 20.
+      const score = Math.max(20, 100 - (attempts - 1) * 20);
+      recordedRef.current = true;
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts,
+        score,
+      });
+    } else {
+      // Don't record yet — let them retry.
+    }
+  }, [currentChallenge, currentAttempts, incrementAttempts, recordResult]);
+
+  const handleSubmitIdentifySlope = useCallback(() => {
+    if (!currentChallenge || hasSubmittedEvaluation) return;
+    const rise = parseFloat(riseInput);
+    const run = parseFloat(runInput);
+    if (!Number.isFinite(rise) || !Number.isFinite(run)) {
+      setFeedback('Enter both rise and run.');
+      setFeedbackType('error');
+      return;
+    }
+    const correct =
+      Math.abs(rise - currentChallenge.expectedRise) < 0.01 &&
+      Math.abs(run - currentChallenge.expectedRun) < 0.01;
+    if (correct) {
+      setFeedback(`Correct! Rise = ${currentChallenge.expectedRise}, Run = ${currentChallenge.expectedRun}.`);
+      setFeedbackType('success');
+      sendText(`[ANSWER_CORRECT] Student identified rise/run. Celebrate briefly.`, { silent: true });
+      completeChallenge(true);
+    } else {
+      setFeedback(`Not quite. Count the grid units carefully.`);
+      setFeedbackType('error');
+      incrementAttempts();
+      sendText(
+        `[ANSWER_INCORRECT] Student answered rise=${rise}, run=${run}. Hint: "Count up from the base point for rise, across for run."`,
+        { silent: true }
       );
-
-      if (allowDrag && distToDrag < 0.5) {
-        setDraggingIndex(i);
-        return;
-      }
-
-      // Check resize handle (right point)
-      const x2 = position.x + size;
-      const y1 = evaluateEquation(attachedLine.equation, position.x) || 0;
-      const distToResize = Math.sqrt((graphCoords.x - x2) ** 2 + (graphCoords.y - y1) ** 2);
-
-      if (allowResize && distToResize < 0.5) {
-        setResizingIndex(i);
-        return;
-      }
     }
-  };
+  }, [currentChallenge, hasSubmittedEvaluation, riseInput, runInput, completeChallenge, incrementAttempts, sendText]);
 
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const canvasX = e.clientX - rect.left;
-    const canvasY = e.clientY - rect.top;
-    const graphCoords = canvasToGraph(canvasX, canvasY);
-
-    // Handle dragging
-    if (draggingIndex !== null) {
-      const newTriangles = [...triangles];
-      const roundedX = Math.round(graphCoords.x / gridSpacing.x) * gridSpacing.x;
-      newTriangles[draggingIndex] = {
-        ...newTriangles[draggingIndex],
-        position: { x: roundedX, y: 0 }, // y is calculated from line
-      };
-      setTriangles(newTriangles);
+  const handleSubmitCalculate = useCallback(() => {
+    if (!currentChallenge || hasSubmittedEvaluation) return;
+    const trimmed = slopeInput.trim();
+    if (!trimmed) {
+      setFeedback('Enter the slope value.');
+      setFeedbackType('error');
       return;
     }
-
-    // Handle resizing
-    if (resizingIndex !== null) {
-      const newTriangles = [...triangles];
-      const triangle = newTriangles[resizingIndex];
-      const newSize = Math.max(1, graphCoords.x - triangle.position.x);
-      const roundedSize = Math.round(newSize / gridSpacing.x) * gridSpacing.x;
-      newTriangles[resizingIndex] = {
-        ...newTriangles[resizingIndex],
-        size: roundedSize,
-      };
-      setTriangles(newTriangles);
+    let parsed: number;
+    if (trimmed.includes('/')) {
+      const [num, den] = trimmed.split('/').map((s) => parseFloat(s.trim()));
+      parsed = (Number.isFinite(num) && Number.isFinite(den) && den !== 0) ? num / den : NaN;
+    } else {
+      parsed = parseFloat(trimmed);
+    }
+    if (!Number.isFinite(parsed)) {
+      setFeedback('Enter a number or fraction (e.g. 2 or 2/3).');
+      setFeedbackType('error');
       return;
     }
-
-    // Check for hover
-    let foundHover = false;
-    for (let i = 0; i < triangles.length; i++) {
-      const triangle = triangles[i];
-      const { position, size } = triangle;
-      const x1 = position.x;
-      const x2 = position.x + size;
-      const y1 = evaluateEquation(attachedLine.equation, x1) || 0;
-
-      // Check if mouse is near the triangle
-      if (graphCoords.x >= x1 - 0.5 && graphCoords.x <= x2 + 0.5) {
-        const lineY = evaluateEquation(attachedLine.equation, graphCoords.x) || 0;
-        if (Math.abs(graphCoords.y - lineY) < 2 || Math.abs(graphCoords.y - y1) < 0.5) {
-          setHoveredIndex(i);
-          foundHover = true;
-          break;
-        }
-      }
+    const correct = Math.abs(parsed - currentChallenge.expectedSlope) < 0.01;
+    if (correct) {
+      setFeedback(`Correct! Slope = ${currentChallenge.expectedSlope}.`);
+      setFeedbackType('success');
+      sendText(`[ANSWER_CORRECT] Student calculated slope. Reinforce rise/run formula.`, { silent: true });
+      completeChallenge(true);
+    } else {
+      setFeedback(`Not quite. Slope = rise ÷ run.`);
+      setFeedbackType('error');
+      incrementAttempts();
+      sendText(
+        `[ANSWER_INCORRECT] Student said slope=${parsed}, actual ${currentChallenge.expectedSlope}. Hint: "Divide rise by run; watch the sign."`,
+        { silent: true }
+      );
     }
+  }, [currentChallenge, hasSubmittedEvaluation, slopeInput, completeChallenge, incrementAttempts, sendText]);
 
-    if (!foundHover) {
-      setHoveredIndex(null);
+  const handleSubmitDrawTriangle = useCallback(() => {
+    if (!currentChallenge || hasSubmittedEvaluation) return;
+    // Triangle is correct if its run matches expectedRun AND it sits on the line
+    // (rise will follow automatically because base-y is evaluated from the line).
+    const sizeMatches = Math.abs(trianglePos.size - currentChallenge.expectedRun) < 0.01;
+    // Position-on-line is implicit because we compute basePoint from the line equation.
+    if (sizeMatches) {
+      setFeedback(
+        `Triangle confirmed. Run = ${currentChallenge.expectedRun}, Rise = ${currentChallenge.expectedRise}, Slope = ${currentChallenge.expectedSlope}.`
+      );
+      setFeedbackType('success');
+      sendText(`[ANSWER_CORRECT] Student built a slope triangle. Reinforce slope constancy.`, { silent: true });
+      completeChallenge(true);
+    } else {
+      setFeedback(`Make the run = ${currentChallenge.expectedRun}. Drag the right corner.`);
+      setFeedbackType('error');
+      incrementAttempts();
+      sendText(
+        `[ANSWER_INCORRECT] Student's run=${trianglePos.size}, target run=${currentChallenge.expectedRun}. Coach to drag right handle.`,
+        { silent: true }
+      );
     }
-  };
+  }, [currentChallenge, hasSubmittedEvaluation, trianglePos.size, completeChallenge, incrementAttempts, sendText]);
 
-  const handleCanvasMouseUp = () => {
-    setDraggingIndex(null);
-    setResizingIndex(null);
-  };
+  const handleShowHint = useCallback(() => {
+    if (showHint) return;
+    setShowHint(true);
+    if (!hintViewedRef.current) {
+      hintViewedRef.current = true;
+      hintsViewedRef.current += 1;
+    }
+  }, [showHint]);
 
-  const handleCanvasMouseLeave = () => {
-    setDraggingIndex(null);
-    setResizingIndex(null);
-    setHoveredIndex(null);
-  };
+  const advanceChallenge = useCallback(() => {
+    if (advanceProgress()) {
+      const nextIdx = currentChallengeIndex + 1;
+      const next = challenges[nextIdx];
+      sendText(
+        `[NEXT_ITEM] Line ${nextIdx + 1} of ${challenges.length}: "${next?.attachedLine.label}". `
+        + `Introduce briefly: "Here's the next line. Read the triangle to find the slope."`,
+        { silent: true },
+      );
+    }
+  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
 
-  const toggleNotation = (index: number) => {
-    const newTriangles = [...triangles];
-    newTriangles[index] = {
-      ...newTriangles[index],
-      notation: newTriangles[index].notation === 'riseRun' ? 'deltaNotation' : 'riseRun',
+  // -------------------------------------------------------------------------
+  // Session-complete: build metrics and submit exactly once.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+
+    const total = challenges.length;
+    const correctCount = challengeResults.filter((r) => r.correct).length;
+    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
+    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
+    const avgScore = Math.round(
+      challengeResults.reduce(
+        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+        0,
+      ) / Math.max(challengeResults.length, 1),
+    );
+
+    const metrics: SlopeTriangleMetrics = {
+      type: 'slope-triangle',
+      challengeType: (currentChallenge?.type ?? challenges[0]?.type ?? 'identify_slope') as SlopeTriangleMetrics['challengeType'],
+      totalChallenges: total,
+      correctCount,
+      attemptsCount,
+      firstTryCount,
+      hintsViewed: hintsViewedRef.current,
+      overallAccuracy: avgScore,
+      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
     };
-    setTriangles(newTriangles);
-  };
+
+    const goalMet = correctCount === total;
+    submitEvaluation(goalMet, avgScore, metrics, { challengeResults });
+
+    sendText(
+      `[ALL_COMPLETE] All ${total} slope triangles done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give encouraging summary.`,
+      { silent: true },
+    );
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Derived UI state
+  // -------------------------------------------------------------------------
+  const isCurrentComplete =
+    challenges.length > 0 &&
+    challengeResults.length > currentChallengeIndex &&
+    challengeResults[currentChallengeIndex]?.correct;
+
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challengeResults.length === 0) return 0;
+    return Math.round(
+      challengeResults.reduce(
+        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+        0,
+      ) / challengeResults.length,
+    );
+  }, [allChallengesComplete, challengeResults]);
+
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
+  if (!currentChallenge) {
+    return (
+      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
+        <CardContent className="p-6 text-center text-slate-400">
+          No slope-triangle challenges in this session.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const notation = currentChallenge.triangle.notation;
 
   return (
-    <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8 justify-center">
-        <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center border border-green-500/30 text-green-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-          </svg>
-        </div>
-        <div className="text-left">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Slope Triangle</h2>
+    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-            <p className="text-xs text-green-400 font-mono uppercase tracking-wider">Rise over Run Visualizer</p>
+            <Badge className="bg-slate-800/50 border-slate-700/50 text-green-300 text-xs">{gradeBand}</Badge>
+            <span className="text-slate-500 text-xs">
+              {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
+            </span>
           </div>
         </div>
-      </div>
+        <p className="text-slate-400 text-sm mt-1">
+          {currentChallenge.instruction}
+        </p>
+      </CardHeader>
 
-      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-green-500/20 relative overflow-hidden">
-        {/* Background Texture */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(#10b981 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-        ></div>
+      <CardContent className="space-y-4">
+        {/* Equation banner */}
+        <div className="flex items-center justify-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-white/5">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Line</span>
+          <span className="text-lg font-mono font-bold text-blue-300">{currentChallenge.attachedLine.label}</span>
+        </div>
 
-        <div className="relative z-10 w-full">
-          <div className="mb-8 text-center max-w-3xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-2">{data.title}</h3>
-            <p className="text-slate-300 font-light">{data.description}</p>
-          </div>
-
-          {/* Canvas */}
-          <div className="mb-6 p-4 bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-green-500/20 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent pointer-events-none rounded-2xl"></div>
-            <div className="relative z-10 flex justify-center">
-              <canvas
-                ref={canvasRef}
-                width={canvasWidth}
-                height={canvasHeight}
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onMouseLeave={handleCanvasMouseLeave}
-                className="rounded-lg cursor-move"
-                style={{ maxWidth: '100%', height: 'auto' }}
+        {/* Progress dots */}
+        <div className="flex items-center justify-center gap-1.5">
+          {challenges.map((ch, idx) => {
+            const result = challengeResults.find((r) => r.challengeId === ch.id);
+            const isActive = idx === currentChallengeIndex;
+            const isDone = !!result?.correct;
+            return (
+              <div
+                key={ch.id}
+                className={`h-2 rounded-full transition-all ${
+                  isDone
+                    ? 'w-6 bg-emerald-400/80'
+                    : isActive
+                    ? 'w-8 bg-green-400/80'
+                    : 'w-2 bg-slate-600/60'
+                }`}
               />
-            </div>
-          </div>
-
-          {/* Triangle Controls */}
-          {triangles.length > 0 && (
-            <div className="mb-4">
-              <div className="p-6 bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-600/50 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
-                <div className="relative z-10">
-                  <h4 className="text-sm font-mono uppercase tracking-wider text-green-400 mb-5 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    Slope Triangles
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {triangles.map((triangle, idx) => {
-                      const slope = calculateSlope(triangle.position.x, triangle.position.x + triangle.size);
-                      const rise = slope !== null ? slope * triangle.size : 0;
-                      const run = triangle.size;
-
-                      // Calculate triangle corners
-                      const x1 = triangle.position.x;
-                      const x2 = triangle.position.x + triangle.size;
-                      const y1 = evaluateEquation(attachedLine.equation, x1) || 0;
-                      const y2 = evaluateEquation(attachedLine.equation, x2) || 0;
-
-                      const basePoint = { x: x1, y: y1 };
-                      const rightPoint = { x: x2, y: y1 };
-                      const topPoint = { x: x2, y: y2 };
-
-                      return (
-                        <div
-                          key={idx}
-                          onMouseEnter={() => setHoveredIndex(idx)}
-                          onMouseLeave={() => setHoveredIndex(null)}
-                          className={`group relative w-full p-5 rounded-2xl transition-all duration-300 border-2 cursor-pointer ${
-                            hoveredIndex === idx
-                              ? 'bg-gradient-to-br from-green-500/25 via-green-500/15 to-transparent border-green-400/60 shadow-[0_0_30px_rgba(16,185,129,0.3)] scale-[1.02]'
-                              : 'bg-slate-800/30 border-slate-600/40 hover:border-slate-500/60 hover:bg-slate-700/40'
-                          }`}
-                        >
-                          {/* Glow Effect */}
-                          {hoveredIndex === idx && (
-                            <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-transparent rounded-2xl blur-xl"></div>
-                          )}
-
-                          <div className="relative z-10">
-                            {/* Header */}
-                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-600/30">
-                              <div className="flex items-center gap-3">
-                                <div
-                                  className={`w-5 h-5 rounded-full flex-shrink-0 ring-2 ring-offset-2 ring-offset-slate-800 transition-all ${
-                                    hoveredIndex === idx ? 'ring-green-400/60 scale-110' : 'ring-transparent'
-                                  }`}
-                                  style={{ backgroundColor: triangle.color || '#10b981' }}
-                                ></div>
-                                <span className="font-mono font-bold text-lg text-white">
-                                  Triangle {idx + 1}
-                                </span>
-                              </div>
-                              <button
-                                onClick={() => toggleNotation(idx)}
-                                className="px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-mono rounded-lg transition-all border border-green-500/30 hover:border-green-400/50"
-                              >
-                                {triangle.notation === 'riseRun' ? 'rise/run' : 'Δy/Δx'}
-                              </button>
-                            </div>
-
-                            {slope !== null && (
-                              <div className="space-y-3">
-                                {/* Main Slope Display */}
-                                <div className="relative p-4 bg-gradient-to-br from-slate-900/60 to-slate-800/40 rounded-xl border border-slate-600/30 overflow-hidden">
-                                  <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl"></div>
-                                  <div className="relative z-10 text-center">
-                                    <div className="text-xs font-mono text-green-400 mb-1 uppercase tracking-wider">Slope</div>
-                                    <div className="text-3xl font-bold text-white mb-1">{slope.toFixed(2)}</div>
-                                    <div className="text-xs text-slate-400 font-mono">
-                                      {triangle.notation === 'riseRun' ? 'rise/run' : 'Δy/Δx'}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Rise and Run Metrics */}
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-600/20">
-                                    <div className="text-xs font-mono text-green-300 mb-1 uppercase tracking-wide">
-                                      {triangle.notation === 'riseRun' ? 'Rise' : 'Δy'}
-                                    </div>
-                                    <div className="text-xl font-bold text-white">{rise.toFixed(1)}</div>
-                                  </div>
-                                  <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-600/20">
-                                    <div className="text-xs font-mono text-green-300 mb-1 uppercase tracking-wide">
-                                      {triangle.notation === 'riseRun' ? 'Run' : 'Δx'}
-                                    </div>
-                                    <div className="text-xl font-bold text-white">{run.toFixed(1)}</div>
-                                  </div>
-                                </div>
-
-                                {/* Angle Display */}
-                                {triangle.showAngle && (
-                                  <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-600/20">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-baseline gap-2">
-                                        <span className="text-xs font-mono text-green-300 uppercase tracking-wide">Angle:</span>
-                                        <span className="text-lg font-bold text-white">{Math.abs(calculateAngle(slope)).toFixed(1)}°</span>
-                                      </div>
-                                      <svg className="w-5 h-5 text-green-400/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                                      </svg>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Triangle Coordinates */}
-                                <div className="space-y-2">
-                                  <div className="text-xs font-mono text-green-300 mb-2 uppercase tracking-wide">Triangle Corners</div>
-                                  <div className="grid grid-cols-3 gap-2">
-                                    {/* Base Point */}
-                                    <div className="relative p-2.5 bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-lg border border-blue-400/30 overflow-hidden group/corner hover:border-blue-400/60 transition-all">
-                                      <div className="absolute top-0 left-0 w-8 h-8 bg-blue-400/20 rounded-full blur-lg"></div>
-                                      <div className="relative z-10">
-                                        <div className="text-[10px] font-mono text-blue-300 mb-0.5 uppercase tracking-wide">Base</div>
-                                        <div className="text-xs font-bold text-white font-mono">
-                                          ({basePoint.x.toFixed(1)}, {basePoint.y.toFixed(1)})
-                                        </div>
-                                      </div>
-                                      {/* Corner indicator */}
-                                      <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                                    </div>
-
-                                    {/* Right Point */}
-                                    <div className="relative p-2.5 bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 rounded-lg border border-yellow-400/30 overflow-hidden group/corner hover:border-yellow-400/60 transition-all">
-                                      <div className="absolute top-0 left-0 w-8 h-8 bg-yellow-400/20 rounded-full blur-lg"></div>
-                                      <div className="relative z-10">
-                                        <div className="text-[10px] font-mono text-yellow-300 mb-0.5 uppercase tracking-wide">Right</div>
-                                        <div className="text-xs font-bold text-white font-mono">
-                                          ({rightPoint.x.toFixed(1)}, {rightPoint.y.toFixed(1)})
-                                        </div>
-                                      </div>
-                                      {/* Corner indicator */}
-                                      <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
-                                    </div>
-
-                                    {/* Top Point */}
-                                    <div className="relative p-2.5 bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-lg border border-purple-400/30 overflow-hidden group/corner hover:border-purple-400/60 transition-all">
-                                      <div className="absolute top-0 left-0 w-8 h-8 bg-purple-400/20 rounded-full blur-lg"></div>
-                                      <div className="relative z-10">
-                                        <div className="text-[10px] font-mono text-purple-300 mb-0.5 uppercase tracking-wide">Top</div>
-                                        <div className="text-xs font-bold text-white font-mono">
-                                          ({topPoint.x.toFixed(1)}, {topPoint.y.toFixed(1)})
-                                        </div>
-                                      </div>
-                                      {/* Corner indicator */}
-                                      <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Instructions */}
-          <div className="mt-4 p-6 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-600/50 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
-            <div className="relative z-10">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-green-400 mb-4">How to Use</h4>
-              <ul className="text-sm text-slate-200 space-y-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                {allowDrag && (
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">▸</span>
-                    <span>Drag the base point to reposition triangle along the line</span>
-                  </li>
-                )}
-                {allowResize && (
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">▸</span>
-                    <span>Drag the right corner to resize the triangle</span>
-                  </li>
-                )}
-                <li className="flex items-start gap-2">
-                  <span className="text-green-400 mt-1">▸</span>
-                  <span>Click notation toggle to switch between rise/run and Δy/Δx</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-400 mt-1">▸</span>
-                  <span>Hover over triangles to highlight them</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+            );
+          })}
         </div>
-      </div>
-    </div>
+
+        {/* Canvas */}
+        <div className="p-3 bg-slate-800/30 rounded-2xl border border-green-500/20">
+          <canvas
+            ref={canvasRef}
+            width={canvasWidth}
+            height={canvasHeight}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+            className={`rounded-lg w-full ${challengeType === 'draw_triangle' ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}` }}
+          />
+        </div>
+
+        {/* Answer panel — varies by challenge type */}
+        {!isCurrentComplete && !allChallengesComplete && (
+          <div className="bg-slate-800/20 rounded-lg p-4 border border-white/5 space-y-3">
+            {challengeType === 'identify_slope' && (
+              <>
+                <p className="text-slate-300 text-sm font-medium">
+                  Read the triangle off the grid:
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <label className="flex items-center gap-2 text-slate-300 text-sm">
+                    <span className="text-green-300 font-mono">{notation === 'deltaNotation' ? 'Δy =' : 'rise ='}</span>
+                    <input
+                      type="number"
+                      value={riseInput}
+                      onChange={(e) => setRiseInput(e.target.value)}
+                      className="w-20 px-2 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-green-400/50"
+                      placeholder="?"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-slate-300 text-sm">
+                    <span className="text-green-300 font-mono">{notation === 'deltaNotation' ? 'Δx =' : 'run ='}</span>
+                    <input
+                      type="number"
+                      value={runInput}
+                      onChange={(e) => setRunInput(e.target.value)}
+                      className="w-20 px-2 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-green-400/50"
+                      placeholder="?"
+                    />
+                  </label>
+                  <Button
+                    variant="ghost"
+                    className="bg-green-500/10 border border-green-400/30 text-green-300"
+                    onClick={handleSubmitIdentifySlope}
+                  >
+                    Check
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {challengeType === 'calculate' && (
+              <>
+                <p className="text-slate-300 text-sm font-medium">
+                  Slope = rise ÷ run. What is the slope?
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <span className="text-purple-300 font-mono font-bold">m =</span>
+                  <input
+                    type="text"
+                    value={slopeInput}
+                    onChange={(e) => setSlopeInput(e.target.value)}
+                    className="w-28 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-green-400/50"
+                    placeholder="e.g. 2/3"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSubmitCalculate()}
+                  />
+                  <Button
+                    variant="ghost"
+                    className="bg-green-500/10 border border-green-400/30 text-green-300"
+                    onClick={handleSubmitCalculate}
+                  >
+                    Check
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {challengeType === 'draw_triangle' && (
+              <>
+                <p className="text-slate-300 text-sm font-medium">
+                  Build a triangle with run = <span className="text-green-300 font-mono">{currentChallenge.expectedRun}</span>. Drag the base point to position it, drag the right corner to size it.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
+                  <span className="text-slate-400">Current:</span>
+                  <span className="text-green-300 font-mono">run = {trianglePos.size}</span>
+                  <span className="text-slate-400">·</span>
+                  <span className="text-cyan-300 font-mono">base x = {trianglePos.x}</span>
+                  <Button
+                    variant="ghost"
+                    className="bg-green-500/10 border border-green-400/30 text-green-300"
+                    onClick={handleSubmitDrawTriangle}
+                  >
+                    Check
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Feedback */}
+        {feedback && (
+          <div className={`text-center text-sm font-medium ${
+            feedbackType === 'success' ? 'text-emerald-400' :
+            feedbackType === 'error' ? 'text-red-400' :
+            'text-slate-300'
+          }`}>
+            {feedback}
+          </div>
+        )}
+
+        {/* Hint */}
+        {showHint && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+            <p className="text-amber-200 text-sm">
+              <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
+              {currentChallenge.hint}
+            </p>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex justify-center gap-2 flex-wrap">
+          {isCurrentComplete && !allChallengesComplete && (
+            <Button
+              variant="ghost"
+              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              onClick={advanceChallenge}
+            >
+              Next Triangle →
+            </Button>
+          )}
+          {!isCurrentComplete && !allChallengesComplete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
+              onClick={handleShowHint}
+              disabled={showHint}
+            >
+              {showHint ? 'Hint shown' : 'Show hint'}
+            </Button>
+          )}
+        </div>
+
+        {allChallengesComplete && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score ?? localOverallScore}
+            durationMs={elapsedMs}
+            heading="All Slope Triangles Done!"
+            celebrationMessage={`You completed all ${challenges.length} slope-triangle challenges.`}
+            className="mt-4"
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

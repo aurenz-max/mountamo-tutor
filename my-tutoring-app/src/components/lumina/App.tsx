@@ -34,6 +34,7 @@ import PracticeProblemTester from './components/PracticeProblemTester';
 import DistributionExplorerTester from './components/DistributionExplorerTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
 import CalibrationSimulator from './components/CalibrationSimulator';
+import AtomRegistry from './components/AtomRegistry';
 import { PulseAdaptiveSession } from './pulse/PulseAdaptiveSession';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
@@ -582,6 +583,14 @@ export default function App() {
           <div className="flex-1 animate-fade-in">
             <CalibrationSimulator onBack={() => setActivePanel(null)} />
           </div>
+        )}
+
+        {/* ATOM REGISTRY STATE */}
+        {phase === GameState.IDLE && activePanel === 'atom-registry' && (
+          <AtomRegistry
+            onBack={() => setActivePanel(null)}
+            onOpenTester={(panel) => setActivePanel(panel)}
+          />
         )}
 
         {/* LUMINA TUTOR TESTER STATE */}

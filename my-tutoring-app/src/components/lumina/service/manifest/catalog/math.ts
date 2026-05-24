@@ -610,8 +610,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'double-number-line',
-    description: 'INTERACTIVE PROBLEM-SOLVING PRIMITIVE: Students find missing values on two parallel number lines by calculating proportional relationships. Perfect for teaching ratios, unit rates, proportional relationships, measurement conversions, percent problems, and speed/distance relationships through active problem-solving. Students enter values in input fields and receive immediate feedback. Critical bridge from additive to multiplicative reasoning. ESSENTIAL for grades 5-8 ratios and proportions practice.',
-    constraints: 'Requires two quantity labels and proportional relationship. Automatically generates 2-4 target points for students to solve. Supports equivalent_ratios, find_missing, and unit_rate challenge types.',
+    description: 'Multi-challenge double-number-line session: students walk through 3-6 ratio challenges that all share ONE proportional relationship (same topLabel/bottomLabel/unitRate) for context coherence. Each challenge highlights one target ask-point on parallel number lines and the student enters the missing value. Critical bridge from additive to multiplicative reasoning. ESSENTIAL for grades 5-8 ratios and proportions practice.',
+    constraints: 'Session-level configuration. The generator produces 3-6 ratio challenges per session sharing one scenario, so do NOT supply specific target points, given points, or per-challenge prompts from the manifest — they are derived from the eval mode + generated unit rate. Supports equivalent_ratios, find_missing, and unit_rate challenge types.',
     evalModes: [
       {
         evalMode: 'equivalent_ratios',
@@ -639,12 +639,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
     tutoring: {
-      taskDescription: 'Find proportional relationships between {{topLabel}} and {{bottomLabel}}. Unit rate: 1 {{topLabel}} = {{unitRate}} {{bottomLabel}}. Phase: {{currentPhase}}.',
-      contextKeys: ['topLabel', 'bottomLabel', 'currentPhase', 'unitRateFound', 'correctPoints', 'totalTargetPoints'],
+      taskDescription: 'Walk through {{totalChallenges}} ratio challenges in {{challengeType}} mode (current: challenge {{currentChallengeIndex}} of {{totalChallenges}}). Shared relationship: 1 {{topLabel}} = {{unitRate}} {{bottomLabel}}. Current prompt: {{currentPrompt}}.',
+      contextKeys: ['topLabel', 'bottomLabel', 'unitRate', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'currentPrompt', 'targetTopValue', 'attemptNumber'],
       scaffoldingLevels: {
-        level1: '"What is the relationship between {{topLabel}} and {{bottomLabel}}? Look at the given point."',
-        level2: '"When {{topLabel}} = 1, what is {{bottomLabel}}? That is the unit rate — the key to everything."',
-        level3: '"Multiply the {{topLabel}} value by the unit rate to get the {{bottomLabel}} value. {{topLabel}} × {{unitRate}} = {{bottomLabel}}."',
+        level1: '"What is the relationship between {{topLabel}} and {{bottomLabel}}? Look at the given point on the number lines."',
+        level2: '"When {{topLabel}} = 1, what is {{bottomLabel}}? That is the unit rate — the key to every challenge in this session."',
+        level3: '"Multiply the {{topLabel}} value by the unit rate to get the {{bottomLabel}} value. {{targetTopValue}} × {{unitRate}} = answer."',
       },
       commonStruggles: [
         { pattern: 'Adding instead of multiplying', response: '"Ratios use multiplication, not addition. If 1 costs $3, then 4 costs 4 × $3, not 1 + $3."' },
@@ -652,6 +652,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Scaling errors', response: '"Check: does your answer make sense? More {{topLabel}} should mean more {{bottomLabel}}."' },
       ],
       aiDirectives: [
+        {
+          title: 'MULTI-RATIO PACING',
+          instruction:
+            'This session contains {{totalChallenges}} ratio challenges that all share ONE proportional relationship. '
+            + 'After each correct answer the student advances to the next challenge with a new ask-point on the same number lines. '
+            + 'Briefly acknowledge each correct answer and preview the next challenge — do not re-explain the unit rate after challenge 1 unless the student gets stuck. '
+            + 'The single-mode session is the IRT signal: do not skip ahead or change the relationship across challenges.',
+        },
         {
           title: 'PROPORTIONAL REASONING COACHING',
           instruction:
@@ -862,8 +870,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'percent-bar',
-    description: 'Horizontal bar model with percentage markings showing the relationship between a part and whole. Perfect for teaching percentages, percent of a quantity, discounts, tax, tips, percent increase/decrease, and part-to-whole relationships. Visual representation with 0% to 100% scale. ESSENTIAL for grades 6-8 percent concepts.',
-    constraints: 'Requires a percent value and context (total amount). Best for concrete percent problems with real-world applications. Supports direct, subtraction, addition, and comparison challenge types.',
+    description: 'Multi-challenge percent-bar session (3-6 percent problems of the same difficulty tier). Each challenge gives a scenario (test score, discount, tax, comparison) and the student drags the bar to the target percent. The generator pre-builds each scenario deterministically; the catalog must NOT supply specific numbers or scenarios. Grade 5-8 percent concepts.',
+    constraints: 'The generator pre-selects every scenario (wholeValue, question, targetPercent, hint) per session — the manifest must NOT supply specific numbers, scenarios, questions, or target percents. The manifest may set instanceCount (default 4, max 6), showPercentLabels, showValueLabels, benchmarkLines, doubleBar, and the targetEvalMode.',
     evalModes: [
       {
         evalMode: 'identify_percent',
@@ -871,23 +879,23 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['direct'],
-        description: 'Find a percentage of a number — benchmark percents, test scores.',
+        description: 'Place a benchmark percent on the bar — test scores, parts of a quantity.',
       },
       {
         evalMode: 'find_part',
-        label: 'Find Part / Discount (Tier 3)',
+        label: 'Find Remaining / Discount (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['subtraction'],
-        description: 'Calculate what remains after removing a percentage (discounts, decreases).',
+        description: 'Compute 100 - discount to find the percent of original price that remains.',
       },
       {
         evalMode: 'find_whole',
-        label: 'Find Whole / Tax (Tier 4)',
+        label: 'Identify Added Rate / Tax (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['addition'],
-        description: 'Calculate total after adding a percentage (tax, tip, markup).',
+        description: 'Identify the percent being added — tax, tip, markup.',
       },
       {
         evalMode: 'convert',
@@ -895,29 +903,50 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['comparison'],
-        description: 'Compare percentages across different contexts.',
+        description: 'Compare two percents and place the larger one.',
       },
     ],
     tutoring: {
-      taskDescription: 'Find {{currentPhaseTarget}}% of {{wholeValue}} ({{wholeValueLabel}}). Scenario: {{scenario}}. Phase: {{currentPhase}}.',
-      contextKeys: ['wholeValue', 'wholeValueLabel', 'currentPhase', 'currentPercent', 'scenario'],
+      taskDescription: 'Percent bar session: {{title}}. Mode: {{challengeType}}. Challenge {{currentChallengeIndex}} of {{totalChallenges}}. Scenario: {{scenario}}. Question: {{question}}. Whole: {{wholeValue}} ({{wholeValueLabel}}). Current placement: {{currentPercent}}%. Target: {{targetPercent}}%.',
+      contextKeys: [
+        'challengeType',
+        'currentChallengeIndex',
+        'totalChallenges',
+        'scenario',
+        'wholeValue',
+        'wholeValueLabel',
+        'question',
+        'targetPercent',
+        'currentPercent',
+        'currentValue',
+        'attemptNumber',
+      ],
       scaffoldingLevels: {
         level1: '"What benchmark percentage is closest — 25%, 50%, or 75%? Start there."',
         level2: '"{{targetPercent}}% means {{targetPercent}} out of 100. What is {{targetPercent}}/100 × {{wholeValue}}?"',
-        level3: '"Convert the percent to a decimal: {{targetPercent}}% = {{decimalValue}}. Multiply: {{decimalValue}} × {{wholeValue}} = {{result}}."',
+        level3: '"Convert the percent to a decimal: {{targetPercent}}% = {{targetPercent}}/100. Multiply: that × {{wholeValue}} gives the part."',
       },
       commonStruggles: [
         { pattern: 'Not connecting percent to fraction', response: '"Percent means per hundred. 25% = 25/100 = 1/4 of the whole."' },
         { pattern: 'Confusing part and whole', response: '"The whole (100%) is {{wholeValue}}. You are finding a part of it."' },
         { pattern: 'Difficulty with non-benchmark percents', response: '"Break it down: find 10% first (divide by 10), then scale up."' },
+        { pattern: 'Subtraction-mode answer = rate, not 100 - rate', response: '"Discount mode: a {{targetPercent}}% discount means 100% - that = what you still pay. Subtract from 100."' },
       ],
       aiDirectives: [
         {
-          title: 'PHASE-AWARE GUIDANCE',
+          title: 'MODE-AWARE GUIDANCE',
           instruction:
-            'In Phase 1 (Explore), help the student discover the concept through the bar. '
-            + 'In Phase 2 (Practice), reinforce the calculation method. '
-            + 'In Phase 3 (Apply), encourage solving the real-world problem independently.',
+            'For DIRECT mode: the answer is the percent given in the scenario — student just places it. '
+            + 'For SUBTRACTION (discount) mode: answer = 100 - the discount rate. Coach the subtraction explicitly. '
+            + 'For ADDITION (tax/tip) mode: answer = the rate stated in the scenario. The bar only accepts percentages — never ask for dollar totals. '
+            + 'For COMPARISON mode: answer = the larger of the two stated percents.',
+        },
+        {
+          title: 'MULTI-PERCENT PACING',
+          instruction:
+            'After each challenge is solved, give a brief celebration and frame the next one as a fresh scenario. '
+            + 'Reference progress ("Challenge {{currentChallengeIndex}} of {{totalChallenges}}") when natural. '
+            + 'Do not re-introduce the percent-bar metaphor each time — once is enough.',
         },
       ],
     },
@@ -925,11 +954,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'balance-scale',
-    description: 'Interactive balance scale with phase-based equation solving (Explore → Solve → Verify). Students click blocks to remove from both sides, drag blocks from palette, or use operations panel. Rich step tracking with justifications. Grade-banded: K-2 (concrete, mystery number), 3-4 (one-step x equations), 5 (two-step, variables on both sides). ESSENTIAL for pre-algebra and algebra.',
-    constraints: 'Requires equation with leftSide, rightSide, and variableValue. Grade band controls complexity. Challenges array for multi-problem sets.',
+    description: 'Multi-equation balance scale session (3-6 equations of the same difficulty tier). Each equation uses Explore → Solve → Verify pacing; students click blocks to remove from both sides, drag blocks from palette, or use operations panel. The generator pre-builds each equation deterministically; the catalog must NOT supply specific numbers. Grade-banded: K-2 (concrete, mystery number), 3-4 (one-step x equations), 5 (two-step). ESSENTIAL for pre-algebra and algebra.',
+    constraints: 'The generator pre-selects every equation (leftSide, rightSide, variableValue) per session — the manifest must NOT supply specific numbers, sides, or solutions. The manifest may set instanceCount (default 4, max 6), showTilt, and the targetEvalMode.',
     tutoring: {
-      taskDescription: 'Solve the equation {{targetEquation}} using the balance scale. Phase: {{phase}}. Steps taken: {{stepCount}}.',
-      contextKeys: ['targetEquation', 'currentEquation', 'variableValue', 'gradeBand', 'phase', 'stepCount', 'isSolved', 'isBalanced', 'attemptNumber', 'leftSide', 'rightSide'],
+      taskDescription: 'Balance scale session: {{title}}. Mode: {{challengeType}}. Equation {{currentChallengeIndex}} of {{totalChallenges}}. Current: {{currentEquation}}. Phase: {{phase}}. Steps taken: {{stepCount}}.',
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetEquation', 'currentEquation', 'variableValue', 'gradeBand', 'phase', 'stepCount', 'isSolved', 'isBalanced', 'attemptNumber'],
       scaffoldingLevels: {
         level1: '"What do you notice about the two sides of the scale?"',
         level2: '"Look for a number that appears on the same side as x. Can you remove it from both sides?"',
@@ -948,7 +977,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             'In EXPLORE phase: let the student click and play freely. Ask: "What happens when you add to one side? Does the scale stay balanced?" '
             + 'In SOLVE phase: guide one step at a time. Never solve multiple steps at once. '
             + 'Ask: "What should we remove first?" After each step, pause and let the student observe the scale. '
-            + 'In VERIFY phase: guide substitution — "Replace x with your answer. Does 3 + {{variableValue}} really equal {{rightSide}}?"',
+            + 'In VERIFY phase: guide substitution — "Replace x with your answer. Does it balance?"',
         },
         {
           title: 'GRADE-BAND ADAPTATION',
@@ -956,6 +985,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             'For K-2: use concrete "mystery number" language — "What number is hiding under the box?" Avoid "x" and "equation." '
             + 'For grades 3-4: introduce "equation" and "x" but tie to the concrete scale — "x is the mystery number on the scale." '
             + 'For grade 5: use algebraic language — "Isolate the variable by performing inverse operations on both sides."',
+        },
+        {
+          title: 'MULTI-EQUATION PACING',
+          instruction:
+            'After each equation is solved, give a brief celebration and frame the next one as a fresh puzzle. '
+            + 'Reference progress ("Equation {{currentChallengeIndex}} of {{totalChallenges}}") when natural. '
+            + 'Do not re-introduce the balance metaphor each time — once is enough.',
         },
       ],
     },
@@ -1146,76 +1182,136 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'slope-triangle',
-    description: 'Interactive right triangle overlay on a linear graph showing rise and run for slope visualization. Perfect for teaching slope concept, rise over run, Δy/Δx notation, rate of change, angle of inclination, and connecting slope to trigonometry. Students can drag triangles along the line, resize them to see different rise/run pairs, toggle between rise/run and delta notation, and view angle measurements. Shows that different-sized triangles on the same line always yield the same slope. ESSENTIAL for grades 7-8 (slope introduction), Algebra 1 (slope calculation, linear equations), Geometry (parallel/perpendicular lines, angles), and Precalculus (connecting slope to tangent).',
-    constraints: 'Requires a linear equation to attach triangles to. Equations must use y= format with * for multiplication (e.g., "y = 2*x + 1"). Best for linear functions with clear, visible slopes. Can show 1-3 triangles at different positions or sizes.',
+    description: 'Multi-challenge slope triangle session (3-6 distinct lines of the same challenge type). Each challenge shows a line on a coordinate grid with a right triangle illustrating rise and run; the student reads or constructs the triangle to find slope. ESSENTIAL for grades 7-8 (slope introduction), Algebra 1 (slope calculation, linear equations), Geometry (parallel/perpendicular lines, angles), and Precalculus (connecting slope to tangent). Supports rise/run notation for younger students and Δy/Δx notation for older ones. The system pre-builds the line equations and triangle positions per challenge — the manifest must NOT specify equations, slopes, or triangle dimensions.',
+    constraints: 'The manifest must NOT supply equations, slopes, or triangle positions/sizes — these are built per challenge by the pool service. Provide only topic + grade-level context and (optionally) instanceCount and targetEvalMode.',
+    evalModes: [
+      {
+        evalMode: 'identify_slope',
+        label: 'Identify Rise & Run (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['identify_slope'],
+        description: 'Read rise and run off a pre-drawn slope triangle. Integer slopes, rise/run notation.',
+      },
+      {
+        evalMode: 'calculate',
+        label: 'Calculate Slope (Tier 5)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['calculate'],
+        description: 'Compute slope = rise ÷ run from a drawn triangle. Mix of integer and fractional slopes.',
+      },
+      {
+        evalMode: 'draw_triangle',
+        label: 'Construct Triangle (Tier 6)',
+        beta: 6.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['draw_triangle'],
+        description: 'Position and size a slope triangle on a given line to match a target run. Δy/Δx notation.',
+      },
+    ],
     tutoring: {
-      taskDescription: 'Explore slope using rise/run triangles on the line {{equation}}. Slope = {{slope}}.',
-      contextKeys: ['attachedLine', 'slope', 'rise', 'run', 'allowDrag', 'allowResize'],
+      taskDescription: 'Multi-line slope triangle session. Mode: {{challengeType}}. Line {{currentChallengeIndex}} of {{totalChallenges}}: {{equation}}. Expected slope = {{expectedSlope}} (rise {{expectedRise}} over run {{expectedRun}}).',
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'equation', 'slope', 'expectedRise', 'expectedRun', 'expectedSlope', 'notation', 'gradeBand', 'attemptNumber'],
       scaffoldingLevels: {
         level1: '"How steep is this line? Does it go uphill or downhill?"',
         level2: '"Count the rise (vertical change) and the run (horizontal change). Divide rise by run."',
-        level3: '"Rise = {{rise}}, Run = {{run}}. Slope = rise ÷ run = {{rise}} ÷ {{run}} = {{slope}}."',
+        level3: '"Rise = {{expectedRise}}, Run = {{expectedRun}}. Slope = rise ÷ run = {{expectedRise}} ÷ {{expectedRun}} = {{expectedSlope}}."',
       },
       commonStruggles: [
         { pattern: 'Confusing rise and run', response: '"Rise is vertical (up/down). Run is horizontal (left/right). Rise over run."' },
-        { pattern: 'Negative slope confusion', response: '"If the line goes downhill (left to right), the slope is negative."' },
-        { pattern: 'Thinking slope changes with triangle size', response: '"Drag the triangle to a different spot. The slope stays the same! The ratio rise/run is constant."' },
+        { pattern: 'Negative slope confusion', response: '"If the line goes downhill (left to right), the rise is negative. The slope is negative."' },
+        { pattern: 'Thinking slope changes with triangle size', response: '"Even a bigger triangle gives the same slope. The ratio rise/run is constant along a line."' },
+        { pattern: 'Forgetting to simplify a fractional slope', response: '"Reduce the fraction. 4/6 = 2/3."' },
       ],
       aiDirectives: [
         {
+          title: 'MULTI-LINE PACING',
+          instruction:
+            'The session walks through several distinct lines of the same challenge type. '
+            + 'After each correct answer, briefly celebrate, then point forward: "Now look at the next line — same idea, different numbers." '
+            + 'Do NOT re-introduce the concept from scratch on every line; the second through Nth challenges should feel like fluency practice, not lesson restarts.',
+        },
+        {
           title: 'SLOPE CONSTANCY DISCOVERY',
           instruction:
-            'The most important insight is that slope is CONSTANT along a line. '
-            + 'When the student resizes the triangle: "The triangle is bigger now, but rise/run is STILL {{slope}}. '
-            + 'Slope does not change — that is what makes it a straight line!" '
-            + 'When the student drags the triangle: "Same slope at every point. That is the defining property of a line." '
-            + 'Connect to rate of change: "Slope = how much y changes for every 1 unit of x. '
-            + 'A slope of 2 means y goes up 2 for every 1 step to the right."',
+            'Across the multi-line session, reinforce that slope is CONSTANT along each individual line. '
+            + 'On any line, dragging or resizing the triangle does not change rise ÷ run. '
+            + 'Across lines, different equations give different slopes — that is the point of practicing multiple. '
+            + 'Connect to rate of change: a slope of 2 means y goes up 2 for every 1 step right; a slope of -1/3 means y goes down 1 for every 3 steps right.',
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'systems-equations-visualizer',
-    description: 'Comprehensive systems of linear equations visualizer combining graphical and algebraic solution methods. Perfect for teaching solving systems by graphing, substitution, and elimination methods. Displays 2-3 equations graphed simultaneously with intersection points highlighted. Side-by-side panels show graphical solution and step-by-step algebraic work. Students can toggle between solution methods, view animated step-by-step solutions, and understand system classification (one solution, no solution, infinite solutions). ESSENTIAL for grade 8 (systems introduction), Algebra 1 (solving systems, graphing method), and Algebra 2 (complex systems, choosing efficient methods).',
-    constraints: 'Requires 2-3 linear equations in y = mx + b format. Equations must use * for multiplication (e.g., "y = 2*x + 1"). Include intersection point for systems with one solution. Provide step-by-step algebraic solution based on chosen method (graphing, substitution, or elimination). Best for integer or simple decimal solutions at grades 8-Algebra 1.',
+    description: 'Multi-challenge systems-of-equations session (3-6 distinct systems of the same solution method, surfaced sequentially). Per challenge, students see two linear equations and one integer (x, y) solution, then type the answer for immediate judgment. Wrong answers prompt a hint; correct answers reveal the intersection on the graph and advance. Supports graphing (slope-intercept lines drawn for visual reading), substitution (equations in y = mx + b form, graph hidden until correct), and elimination (equations in a·x + b·y = c form, graph hidden until correct). ESSENTIAL for grade 8 (systems introduction via graphing), Algebra 1 (substitution + elimination), and Algebra 2 (efficient method selection).',
+    constraints: 'Manifest must NOT supply specific equations, slopes, intercepts, or solutions — the pool service builds 3-6 distinct systems deterministically from the eval mode and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape: graph uses integer slopes (m ∈ {±1, ±2, ±3, ±1/2}) and integer intersections in [-4, 4]; substitution uses the same slope-intercept form with mixed integer/fractional slopes; elimination uses small integer coefficients (a, b ∈ {±1, ±2, ±3}) with integer solutions and a·x + b·y = c display form.',
+    evalModes: [
+      {
+        evalMode: 'graph',
+        label: 'Graph (Tier 1)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['graph'],
+        description: 'Read the intersection of two lines from a drawn graph. Both lines visible; student types (x, y). CCSS 8.EE.C.8. Grade 8.',
+      },
+      {
+        evalMode: 'substitution',
+        label: 'Substitution (Tier 2)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['substitution'],
+        description: 'Solve algebraically by setting two y = mx + b equations equal. Graph hidden until correct. CCSS A-REI.C.6. Algebra 1.',
+      },
+      {
+        evalMode: 'elimination',
+        label: 'Elimination (Tier 3)',
+        beta: 6.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['elimination'],
+        description: 'Solve a·x + b·y = c systems by adding or scaling. Graph hidden until correct. CCSS A-REI.C.5. Algebra 1 / 2.',
+      },
+    ],
     tutoring: {
-      taskDescription: 'Solve the system of equations: {{equations}}. Method: {{solutionMethod}}. System type: {{systemType}}.',
-      contextKeys: ['equations', 'solutionMethod', 'systemType', 'intersectionPoint'],
+      taskDescription: 'Multi-system practice session. Method: {{challengeType}}. System {{currentChallengeIndex}} of {{totalChallenges}}. Equations: {{equationA}} and {{equationB}}.',
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'equationA', 'equationB', 'systemForm', 'gradeBand'],
       scaffoldingLevels: {
-        level1: '"Look at the graph. Do the lines cross? How many times?"',
-        level2: '"If the lines intersect, the crossing point is the solution. What are its coordinates?"',
-        level3: '"The lines meet at ({{x}}, {{y}}). Verify: plug x={{x}} into both equations. Do you get y={{y}} both times?"',
+        level1: '"Two equations, one (x, y) that satisfies BOTH. What method are you using?"',
+        level2: '"Walk through the method one step at a time. For substitution: set the two y-expressions equal. For elimination: line up x or y columns."',
+        level3: '"Plug a candidate solution into both equations — it must work in both. Verify before you commit."',
       },
       commonStruggles: [
-        { pattern: 'Cannot find intersection visually', response: '"Trace each line carefully. Where do they share the same point?"' },
-        { pattern: 'Confusing no solution and infinite solutions', response: '"Parallel lines (same slope, different y-intercept) = no solution. Same line = infinite solutions."' },
-        { pattern: 'Algebraic method errors', response: '"Check each step. Did you distribute correctly? Did you combine like terms?"' },
+        { pattern: 'Reading intersection off the graph wrong', response: '"Trace each line carefully. The intersection is the single point both lines share — read x first, then y."' },
+        { pattern: 'Substitution: forgot to back-substitute', response: '"You found x. Now plug that x into either equation to find y."' },
+        { pattern: 'Elimination: signs not lined up', response: '"To cancel a variable, the coefficients must be opposites. Multiply one equation by -1 if needed."' },
       ],
       aiDirectives: [
         {
           title: 'METHOD-AWARE COACHING',
           instruction:
-            'For GRAPHING method: guide visual inspection — "Look where the two lines cross. That point satisfies both equations." '
-            + 'For SUBSTITUTION method: guide isolating y — "One equation already says y = ... Plug that into the other equation." '
-            + 'For ELIMINATION method: guide coefficient alignment — "Can you multiply one equation so the x-coefficients match? Then subtract!" '
-            + 'Always end with verification: "Plug your answer into BOTH equations. It must work in both."',
+            'For GRAPH mode: guide visual inspection — "Trace each line to where they cross. That point is the solution." '
+            + 'For SUBSTITUTION mode: guide setting equations equal — "Both are solved for y, so set them equal and solve for x. Then back-substitute." '
+            + 'For ELIMINATION mode: guide coefficient alignment — "Can you add or subtract the equations so one variable cancels? Multiply if the coefficients don\'t match yet." '
+            + 'Always end with verification: "Plug (x, y) into BOTH equations. It must work in both."',
         },
         {
-          title: 'SYSTEM CLASSIFICATION',
+          title: 'MULTI-SYSTEM PACING',
           instruction:
-            'When lines are parallel: "Same slope but different y-intercepts means the lines never meet. There is NO solution." '
-            + 'When lines overlap: "Same slope AND same y-intercept means they are the same line! There are INFINITE solutions." '
-            + 'When lines intersect: "Different slopes mean exactly ONE crossing point — that is the unique solution." '
-            + 'Help students see how the visual connects to the algebra.',
+            'This is a {{totalChallenges}}-system session. After each correct answer the student clicks "Next System →". '
+            + 'Encourage progression: "Nice — on to system {{currentChallengeIndex}}!" '
+            + 'After a wrong attempt, point at the specific step (set-equal, distribute, eliminate) that needs another look — '
+            + 'do NOT just repeat the whole method.',
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'matrix-display',
-    description: 'Interactive m×n matrix display and editor with comprehensive step-by-step operations including determinant calculation, matrix inverse, transpose, multiplication, addition, row operations, and augmented matrix solving. Perfect for teaching matrix concepts, organizing data in rows and columns, matrix arithmetic, determinants, inverse matrices, geometric transformations, and solving systems of linear equations using matrices. Features detailed animated explanations for each operation step, highlighting cells involved in calculations, displaying intermediate results, and providing educational context. Shows formulas, calculations, and WHY each step is performed. Supports 2×2 to 4×4 matrices with optional cell editing, operation buttons, and augmented matrix display for system solving. ESSENTIAL for grade 7-8 (data organization in matrices), Algebra 2 (matrix operations, determinants, solving systems with matrices), Precalculus (matrix transformations, inverses), and Linear Algebra (all matrix operations, eigenvalues).',
-    constraints: 'Matrix dimensions typically 2×2 to 4×4 (or 2×3 to 3×4 for augmented). Use simple integers for elementary/middle school, include fractions/decimals for advanced topics. For determinant visualization, show step-by-step calculation with cell highlighting. For inverse, show method (adjugate for 2×2, Gaussian elimination for 3×3+). For row operations, label each operation clearly (e.g., "R₂ - 2R₁ → R₂"). Supports transpose, add, subtract, multiply, determinant, and inverse operation types.',
+    description: 'Multi-challenge matrix practice session (3-6 matrix problems of the same operation, surfaced sequentially). Per challenge, students see Matrix A (and Matrix B for binary operations), enter the result in editable cells (or a single number for determinant), and click "Check Answer" for immediate judgment. Wrong answers prompt hint / "Show steps" walkthrough; correct answers advance to the next matrix. Supports transpose, add, subtract, multiply (row-by-column), determinant (2×2 and 3×3), and inverse (2×2 with det = ±1 so entries stay integer). ESSENTIAL for grade 7-8 (intro to matrix arithmetic), Algebra 2 (operations + determinant), Precalculus (inverses + multiplication), and Linear Algebra (all operations).',
+    constraints: 'Manifest must NOT supply specific matrix values, dimensions, or per-challenge content — the pool service builds 3-6 distinct challenges deterministically from the eval-mode operation and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape constraints: transpose alternates 2×3/3×2; add/subtract uses 2×2 or 2×3 same-shape; multiply alternates 2×2 × 2×2 and 2×3 × 3×2; determinant uses 2×2 (grade 7-8) or 2×2/3×3 (algebra2+); inverse is always 2×2 with det ∈ {±1} so A⁻¹ entries are clean integers.',
     evalModes: [
       {
         evalMode: 'transpose',
@@ -1251,17 +1347,18 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
     tutoring: {
-      taskDescription: 'Perform matrix operations. Matrix: {{rows}}×{{columns}}. Operation: {{operationType}}.',
-      contextKeys: ['rows', 'columns', 'operationType', 'values'],
+      taskDescription: 'Multi-matrix practice session. Operation: {{challengeType}}. Matrix {{currentChallengeIndex}} of {{totalChallenges}}.',
+      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'gradeBand'],
       scaffoldingLevels: {
-        level1: '"What operation are we performing? What does it do to the matrix?"',
-        level2: '"For {{operationType}}: follow the highlighted cells. What values are being combined?"',
-        level3: '"Step through the calculation: multiply the highlighted values, then add/subtract as shown in the formula."',
+        level1: '"What does {{challengeType}} do to a matrix? Describe the operation in your own words."',
+        level2: '"For {{challengeType}}, walk through ONE entry at a time. Start with the top-left position."',
+        level3: '"Use the formula directly: substitute the numbers from Matrix A (and Matrix B if there is one), then compute."',
       },
       commonStruggles: [
-        { pattern: 'Wrong determinant formula', response: '"For a 2×2 matrix [[a,b],[c,d]], the determinant = ad - bc. Cross-multiply diagonals."' },
-        { pattern: 'Matrix multiplication order', response: '"Row from the first matrix × column from the second matrix. Multiply corresponding entries and add."' },
-        { pattern: 'Row operation errors', response: '"Write out the operation before applying it: R₂ → R₂ - 2R₁ means replace each entry in row 2."' },
+        { pattern: 'Wrong determinant formula', response: '"For a 2×2 [[a,b],[c,d]], det = ad − bc. Cross-multiply diagonals."' },
+        { pattern: 'Matrix multiplication order', response: '"Row from A × column from B. Multiply corresponding entries and sum them."' },
+        { pattern: 'Inverse confusion', response: '"For [[a,b],[c,d]] with det = d, A⁻¹ = (1/det) · [[d, −b], [−c, a]]. Swap the diagonal, negate the off-diagonal."' },
+        { pattern: 'Transpose dimensions wrong', response: '"The transpose of an m×n matrix is n×m. Row i becomes column i."' },
       ],
       aiDirectives: [
         {
@@ -1270,17 +1367,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             'For DETERMINANT: walk through the cross-multiplication pattern — "Multiply a×d, then subtract b×c." '
             + 'For MULTIPLICATION: guide row-by-column — "Take row 1 of matrix A and column 1 of matrix B. '
             + 'Multiply matching entries and add: (a₁₁×b₁₁) + (a₁₂×b₂₁)." '
-            + 'For ROW OPERATIONS: narrate each step — "We are doing R₂ - 2R₁. Take each entry in row 1, '
-            + 'multiply by 2, then subtract from row 2." '
-            + 'For INVERSE: emphasize the identity check — "Multiply A × A⁻¹. You should get the identity matrix!"',
+            + 'For INVERSE: emphasize the swap-and-negate pattern — "Swap a and d, negate b and c, then divide by det." '
+            + 'For TRANSPOSE: emphasize the shape change — "Each row becomes a column. A 2×3 becomes a 3×2."',
         },
         {
-          title: 'STEP-BY-STEP PACING',
+          title: 'MULTI-MATRIX PACING',
           instruction:
-            'Matrix operations have many steps. Guide ONE cell or ONE row at a time. '
-            + 'After each step, pause: "Good — now let\'s do the next entry." '
-            + 'Never rush through multiple calculations at once. '
-            + 'Use the highlighted cells as visual anchors: "See the yellow cells? Those are the values you are combining right now."',
+            'This is a {{totalChallenges}}-matrix session. After each correct answer, the student clicks "Next Matrix →". '
+            + 'Encourage progression: "Nice — on to matrix {{currentChallengeIndex}}!" '
+            + 'After a wrong attempt, point at the specific column or row that needs another look — '
+            + 'do NOT just repeat the formula.',
         },
       ],
     },
@@ -1370,35 +1466,80 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'histogram',
-    description: 'Interactive histogram (bar chart showing frequency distribution) with adjustable bin widths. Perfect for teaching grouped data, distribution shapes (normal, skewed, bimodal), data analysis, and statistics. Students can adjust bin width to see how distribution shape changes, add/remove data points, and optionally overlay a normal curve. Shows frequency labels on bars and calculates statistics (mean, standard deviation, min, max, skewness). ESSENTIAL for grades 6-7 (grouped data, distribution shape), grades 7-Statistics (comparing distributions), and Statistics courses (normal distribution, data analysis).',
-    constraints: 'Requires data array with 15-50 numeric values. binWidth and binStart define the histogram bins. For younger grades (6-7), use showFrequency: true and showCurve: false. For statistics lessons about normal distribution, enable showCurve: true. Set editable: true to allow students to explore bin width adjustments.',
+    description: 'Multi-histogram analysis session (3-6 distinct histograms of the same challenge type) for grades 6-8 statistics. Each challenge presents its own dataset with a real-world context (test scores, heights, temperatures, etc.) and a single mode-specific prompt: identify the distribution shape (symmetric, skewed, bimodal, uniform), find the modal bin, read a specific bin frequency, or estimate the mean/median from the visual. Pool-service generator: bin widths, datasets, and answer keys are built deterministically per mode. ESSENTIAL for 6.SP (statistical questions, shape & center), 7.SP (comparing populations from displays).',
+    constraints: 'Multi-instance: a session walks the student through 3-6 challenges of the same eval mode, each with its own dataset, bin width, and prompt. The manifest MUST NOT supply specific data arrays, bin widths, bin starts, contexts, or answer keys — the generator builds every challenge deterministically from the eval mode + topic via the pool service. Stats panel is auto-hidden in estimate_center mode to prevent the student from reading the mean/median directly off the UI.',
+    evalModes: [
+      {
+        evalMode: 'identify_shape',
+        label: 'Identify Shape (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['identify_shape'],
+        description: 'Pick the distribution shape (symmetric / right-skewed / left-skewed / bimodal / uniform) from a histogram. Visual recognition, no calculation. CCSS 6.SP.A.2. Grades 6-7.',
+      },
+      {
+        evalMode: 'find_modal_bin',
+        label: 'Find Modal Bin (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['find_modal_bin'],
+        description: 'Click the tallest bar to identify the bin range with the highest frequency. CCSS 6.SP.B.4. Grades 6-7.',
+      },
+      {
+        evalMode: 'read_frequency',
+        label: 'Read Frequency (Tier 2+)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['read_frequency'],
+        description: 'Read the frequency (count) of a specific bin from a histogram. Numeric entry. CCSS 6.SP.B.4. Grades 6-8.',
+      },
+      {
+        evalMode: 'estimate_center',
+        label: 'Estimate Center (Tier 3)',
+        beta: 4.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['estimate_center'],
+        description: 'Estimate the mean or median from a histogram visual. Stats panel is hidden so the answer is not given. Numeric entry with tolerance ±1 bin width. CCSS 6.SP.B.5, 7.SP.B. Grades 7-8.',
+      },
+    ],
     tutoring: {
-      taskDescription: 'Analyze data distribution using a histogram. Data points: {{dataCount}}. Bin width: {{binWidth}}.',
-      contextKeys: ['data', 'binWidth', 'showCurve', 'mean', 'standardDeviation', 'skewness'],
+      taskDescription: 'Work through {{totalChallenges}} histograms. Mode: {{challengeType}}. Currently on histogram {{currentChallengeIndex}} of {{totalChallenges}} — {{contextTitle}}. Prompt: {{prompt}}.',
+      contextKeys: [
+        'challengeType',
+        'currentChallengeIndex',
+        'totalChallenges',
+        'contextTitle',
+        'prompt',
+        'xAxisLabel',
+        'binWidth',
+        'binStart',
+        'attempts',
+        'gradeBand',
+      ],
       scaffoldingLevels: {
         level1: '"What is the overall shape of the histogram? Is it symmetric, skewed, or bimodal?"',
         level2: '"Which bin has the tallest bar? That is where most data values fall."',
-        level3: '"The mean is {{mean}} and the data spreads about {{standardDeviation}} units from the mean. A wider spread means more variability."',
+        level3: '"The mean is the balance point. Find where the bars would balance like a seesaw."',
       },
       commonStruggles: [
         { pattern: 'Confusing histogram with bar chart', response: '"Histograms show ranges of continuous data (bins). Bar charts show separate categories."' },
-        { pattern: 'Ignoring bin width effects', response: '"Try changing the bin width. Notice how the shape changes? Wider bins smooth out the data."' },
+        { pattern: 'Reading bin edges off-by-one', response: '"Each bar covers the range [start, end). The left edge is included; the right edge is not."' },
         { pattern: 'Misidentifying skewness', response: '"The tail tells the skew direction. Long tail on the right = right-skewed."' },
       ],
       aiDirectives: [
         {
-          title: 'DISTRIBUTION SHAPE COACHING',
+          title: 'MULTI-HISTOGRAM PACING',
           instruction:
-            'Start with the big picture before any calculations: "First, describe what you SEE. Is the data piled up in the middle? '
-            + 'Does it have one peak or two? Is one side stretched out?" '
-            + 'Teach the vocabulary through observation: "One peak in the middle = unimodal. Two peaks = bimodal. '
-            + 'Symmetric = mirror image. A long tail = skewed toward that tail." '
-            + 'For bin width exploration: "Watch what happens when you widen the bins — the bars get taller but you lose detail. '
-            + 'Narrow bins show more detail but can look noisy." '
-            + 'Connect shape to statistics: "A right-skewed distribution pulls the mean to the RIGHT of the median."',
+            'Each session walks through {{totalChallenges}} distinct histograms. After each correct answer the next histogram appears with a fresh dataset and context. '
+            + 'When introducing a new histogram, name the context ("Math quiz scores", "Heights of seventh graders") so the student grounds the data in something real. '
+            + 'For identify_shape: start with the big picture — "Where are the bars tallest? Are the tails balanced?" '
+            + 'For find_modal_bin: "Scan left to right. Which bar is the tallest? What range does that bar cover?" '
+            + 'For read_frequency: "Find the bar covering that range. Count up the y-axis to read its height." '
+            + 'For estimate_center: "The stats panel is hidden on purpose — use the bars themselves. The mean balances the histogram like a seesaw; the median splits the data into equal halves."',
         },
       ],
     },
+    supportsEvaluation: true,
   },
   {
     id: 'two-way-table',
@@ -1636,8 +1777,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'Interactive pattern recognition, extension, and creation for K-3 algebraic thinking. Students build, extend, identify cores, translate, and create repeating patterns (AB, AAB, ABC), growing patterns (1,3,5,7), and number patterns. Supports color tokens, shape tokens, and numbers. Progressive phases: Copy → Identify → Create → Translate. Connects pattern skills to skip counting, multiplication foundations, and early algebra. ESSENTIAL for grades K-3 algebraic thinking, pattern recognition, and early algebra foundations.',
     constraints: 'Best for grades K-3. K-1: repeating patterns with colors/shapes only (AB, AAB, ABB). Grades 2-3: growing and number patterns, translation and creation challenges.',
     tutoring: {
-      taskDescription: 'Student is working with patterns. Pattern type: {{patternType}}. Challenge: {{instruction}}. Given sequence: {{givenSequence}}. Core unit: {{coreUnit}}. Rule: {{rule}}. Student extension: {{studentExtension}}. Attempt: {{attemptNumber}}.',
-      contextKeys: ['patternType', 'instruction', 'givenSequence', 'hiddenSequence', 'coreUnit', 'rule', 'challengeType', 'attemptNumber', 'currentPhase', 'studentExtension', 'studentCreation'],
+      taskDescription: 'Student is working through {{totalChallenges}} pattern challenges (currently {{currentChallengeIndex}}). Pattern type: {{patternType}}. Challenge: {{instruction}}. Given sequence: {{givenSequence}}. Core unit: {{coreUnit}}. Rule: {{rule}}. Student extension: {{studentExtension}}. Attempt: {{attemptNumber}}.',
+      contextKeys: ['patternType', 'instruction', 'givenSequence', 'hiddenSequence', 'coreUnit', 'rule', 'challengeType', 'attemptNumber', 'currentPhase', 'studentExtension', 'studentCreation', 'currentChallengeIndex', 'totalChallenges'],
       scaffoldingLevels: {
         level1: '"Look at the pattern: {{givenSequence}}. Can you see what repeats? What comes next?"',
         level2: '"Let me help. The repeating part is: {{coreUnit}}. Now that you know the core, what should come next?"',
@@ -1992,11 +2133,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'measurement-tools',
-    description: 'Drag-to-ruler measurement activity where students drag shapes (rectangles and squares) onto a visual ruler, read where the shape ends, and type the measurement. Teaches length measurement, comparison, and unit conversion. Grades 1-2 use whole-number precision; grades 3-5 add half precision and unit conversion. ESSENTIAL for grades 1-5 measurement and data standards.',
-    constraints: 'Ruler-based length measurement for grades 1-5. Grades 1-2 use whole-number precision. Grades 3-5 add half precision and unit conversion.',
+    description: 'Multi-shape ruler measurement session (3-6 distinct shapes of the same challenge type). Pool-service pattern: the generator picks the mode and unit, the component supplies the shapes deterministically from per-mode width pools. Students walk through each shape sequentially, dragging it onto a ruler and reading the measurement. Modes: measure (whole units, grades 1-3), compare (measure all, then order shortest-to-longest, grades 2-3), estimate (half-inch precision between tick marks, grades 2-3), convert (measure then convert between inches and centimeters, grades 3-4). ESSENTIAL for grades 1-5 measurement and data standards.',
+    constraints: 'Ruler-based length measurement session. The manifest must NOT supply specific shape widths, colors, labels, or hints — those are built deterministically from the in-generator pool service. Grades 1-2 use whole-number precision; grades 3-5 add half precision and unit conversion.',
     tutoring: {
-      taskDescription: 'Measurement activity where the student drags shapes onto a ruler and reads the measurement. Current shape: {{currentShape}}. Shape width: {{shapeWidth}} {{unit}}. On ruler: {{isOnRuler}}. Precision: {{precision}}. Attempt: {{currentAttempts}}.',
-      contextKeys: ['unit', 'precision', 'currentShape', 'shapeWidth', 'isOnRuler', 'currentAttempts'],
+      taskDescription: 'Multi-shape measurement session. Mode: {{challengeType}}. Shape {{currentChallengeIndex}} of {{totalChallenges}}: {{currentShape}} (width: {{shapeWidth}} {{unit}}). On ruler: {{isOnRuler}}. Precision: {{precision}}.',
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'currentShape', 'shapeWidth', 'unit', 'precision', 'isOnRuler'],
       scaffoldingLevels: {
         level1: '"Count the marks on the ruler starting from 0. Each mark is one unit. How many marks does the shape cover?"',
         level2: '"Look where the right edge of the shape ends on the ruler. What number is it pointing to?"',
@@ -2022,6 +2163,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             'Reinforce that measurement means finding how many units fit along the object. '
             + 'For whole numbers: "Count the spaces between 0 and where the shape ends." '
             + 'For fractional precision: "Look at the small marks between the numbers. If there are 2 marks between each number, each mark is a half."',
+        },
+        {
+          title: 'MULTI-SHAPE PACING',
+          instruction:
+            'This is a session of {{totalChallenges}} distinct shapes, not a single measurement. '
+            + 'Keep coaching tight per shape: introduce, prompt for the measurement, react to feedback, then transition to the next shape. '
+            + 'Track which shape number you are on ({{currentChallengeIndex}} of {{totalChallenges}}) so reminders stay accurate.',
         },
       ],
     },
@@ -3577,8 +3725,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'function-sketch',
-    description: 'Qualitative function reasoning primitive for grades 9-12. Students analyze function behavior by shape, key features, and family — without computing exact values. Supports four challenge types: classify-shape (linear/quadratic/exponential/periodic), identify-features (roots, extrema, intercepts, asymptotes), compare-functions (two curves, match to description), and sketch-match (place control points to sketch a described function). Pedagogical moments: FEATURE_FOUND, ANSWER_CORRECT, ANSWER_INCORRECT, NEXT_ITEM, ALL_COMPLETE. ESSENTIAL for Algebra 2, Precalculus, and AP Calculus qualitative reasoning.',
-    constraints: 'Best for grades 9-12. Requires a title and context string. Each challenge specifies a type (classify-shape | identify-features | compare-functions | sketch-match) and an instruction. Sketch-match requires control-point placement UI; identify-features requires annotatable curve with clickable feature markers.',
+    description: 'Multi-challenge qualitative function reasoning primitive for grades 9-12. Each session walks the student through 3-6 distinct functions in the same eval mode (orchestrator-same-mode pattern). Students analyze function behavior by shape, key features, and family — without computing exact values. Supports four challenge types: classify-shape (linear/quadratic/exponential/periodic), identify-features (roots, extrema, intercepts, asymptotes), compare-functions (two curves, match to description), and sketch-match (place control points to sketch a described function). Pedagogical moments: FEATURE_FOUND, ANSWER_CORRECT, ANSWER_INCORRECT, NEXT_ITEM, ALL_COMPLETE. ESSENTIAL for Algebra 2, Precalculus, and AP Calculus qualitative reasoning.',
+    constraints: 'Best for grades 9-12. The manifest must NOT supply specific functions, expressions, curves, or features — the generator picks 3-6 distinct functions locally per the selected eval mode via N parallel Gemini sub-generator calls. Requires only a title and context string at the session level. Sketch-match requires control-point placement UI; identify-features requires annotatable curve with clickable feature markers.',
     evalModes: [
       {
         evalMode: 'classify-shape',
@@ -3614,8 +3762,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
     tutoring: {
-      taskDescription: 'Student is analyzing function behavior in "{{title}}" — {{context}}. Challenge type: {{type}}, instruction: "{{instruction}}".',
-      contextKeys: ['title', 'context', 'challenges'],
+      taskDescription: 'Function-sketch session: {{challengeType}}, {{totalChallenges}} functions. Currently on function {{currentChallengeIndex}}/{{totalChallenges}} in "{{title}}" — {{context}}.',
+      contextKeys: ['title', 'context', 'challengeType', 'currentChallengeIndex', 'totalChallenges'],
       scaffoldingLevels: {
         level1: '"What do you notice about the shape of this function? What familiar patterns do you see?"',
         level2: '"Look at where the function crosses the x-axis — those are roots. Where does it reach its highest/lowest points? Use {{context}} to guide your thinking."',
@@ -3625,6 +3773,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Confuses roots with extrema', response: 'Roots are where the curve crosses the x-axis (y=0). Extrema are the peaks and valleys of the curve.' },
         { pattern: 'Places control points too close together', response: 'Try spreading your points across the full x-range. Focus on getting the key features (peaks, zeros, intercepts) in roughly the right positions.' },
         { pattern: 'Cannot distinguish function families', response: 'Linear = straight line. Quadratic = single U or arch. Exponential = starts slow then grows fast (or decays). Periodic = repeats.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'MULTI-FUNCTION PACING',
+          instruction:
+            'This is a multi-function session — the student is on function {{currentChallengeIndex}} of {{totalChallenges}}. '
+            + 'Each function is fresh content (different family, expression, or curve pair). Do not re-explain the strategy from scratch every time — '
+            + 'scaffold on function 1, encourage independence on function 2+, and celebrate cross-function patterns (e.g. "you spotted the parabola again — what gives it away?").',
+        },
       ],
     },
     supportsEvaluation: true,

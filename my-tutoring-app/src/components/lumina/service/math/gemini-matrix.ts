@@ -11,17 +11,25 @@ import {
 /**
  * Matrix Display Data Interface
  *
- * This matches the MatrixDisplayData interface in the component
+ * Multi-instance schema (PRD §6l): a session walks the student through 3-6 matrix
+ * problems of the same eval mode, surfaced sequentially with judgment per challenge.
+ * Per-challenge data (rows, columns, values, secondMatrix) is pre-selected by the local
+ * pool service — Gemini structured output converges per-call, so it cannot deliver
+ * variance. Gemini contributes only session-level wrapper metadata.
  */
-export interface MatrixOperation {
-  type: 'determinant' | 'inverse' | 'transpose' | 'multiply' | 'add' | 'subtract' | 'rowOperation';
-  label: string;
-  description?: string;
-}
 
-export interface MatrixDisplayData {
-  title: string;
-  description: string;
+export type MatrixChallengeType =
+  | 'transpose'
+  | 'add'
+  | 'subtract'
+  | 'multiply'
+  | 'determinant'
+  | 'inverse';
+
+export interface MatrixDisplayChallenge {
+  id: string;
+  challengeType: MatrixChallengeType;
+  instruction: string;
   rows: number;
   columns: number;
   values: number[][];
@@ -31,67 +39,31 @@ export interface MatrixDisplayData {
     values: number[][];
     label?: string;
   };
-  operationType?: 'add' | 'subtract' | 'multiply' | 'determinant' | 'transpose' | 'inverse';
-  editable?: boolean;
-  showOperations?: MatrixOperation[];
-  augmented?: boolean;
-  highlightCells?: { row: number; col: number; color?: string; label?: string }[];
-  resultMatrix?: {
-    label: string;
-    values: number[][];
-    explanation?: string;
-  };
-  educationalContext?: string;
-  determinantVisualization?: {
-    show: boolean;
-    steps?: {
-      stepNumber: number;
-      description: string;
-      formula: string;
-      calculation: string;
-      result: number;
-    }[];
-  };
-  inverseVisualization?: {
-    show: boolean;
-    method: 'adjugate' | 'gaussian' | 'cofactor';
-    steps?: {
-      stepNumber: number;
-      description: string;
-      intermediateMatrix?: number[][];
-      explanation: string;
-    }[];
-  };
-  multiplicationVisualization?: {
-    show: boolean;
-    steps?: {
-      stepNumber: number;
-      resultRow: number;
-      resultCol: number;
-      description: string;
-      calculation: string;
-      result: number;
-    }[];
-  };
+  /** Pre-computed correct result. Single number for determinant; matrix for others. */
+  expectedScalar?: number;
+  expectedMatrix?: number[][];
+  hint: string;
 }
 
-/**
- * Core Matrix Data (Stage 1 Output)
- */
-interface CoreMatrixData {
+export interface MatrixDisplayData {
   title: string;
   description: string;
-  rows: number;
-  columns: number;
-  values: number[][];
-  operationType: 'determinant' | 'inverse' | 'transpose' | 'add' | 'subtract' | 'multiply';
+  /** 3-6 challenges. Required. Built in-generator from the local pool service. */
+  challenges: MatrixDisplayChallenge[];
+  /** Session-level challenge type for AI tutor context. */
+  challengeType: MatrixChallengeType;
+  /** Educational context narrative, session-level. */
   educationalContext?: string;
-  secondMatrix?: {
-    rows: number;
-    columns: number;
-    values: number[][];
-    label: string;
-  };
+  gradeBand?: '7-8' | 'algebra2' | 'precalculus' | 'advanced';
+
+  // Evaluation props (auto-injected by ManifestOrderRenderer / tester)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEvaluationSubmit?: (result: any) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,394 +73,526 @@ interface CoreMatrixData {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   transpose: {
     promptDoc:
-      `"transpose": Swap rows and columns of the matrix. `
-      + `The simplest operation — row i becomes column i. `
-      + `Good for introducing matrix operations. Use 2×3 or 3×2 matrices so the shape change is visible.`,
+      `"transpose": Swap rows and columns. Simplest operation. `
+      + `Use 2×3 or 3×2 matrices so the shape change is visible to the student.`,
     schemaDescription: "'transpose' (swap rows and columns)",
   },
   add: {
     promptDoc:
-      `"add": Add two matrices element-by-element. `
-      + `Both matrices MUST have the same dimensions. `
-      + `MUST include secondMatrix field. Use simple integers.`,
+      `"add": Element-wise addition of same-dimension matrices. Use small integers.`,
     schemaDescription: "'add' (element-wise addition)",
   },
   subtract: {
     promptDoc:
-      `"subtract": Subtract two matrices element-by-element. `
-      + `Both matrices MUST have the same dimensions. `
-      + `MUST include secondMatrix field. Can result in negative values.`,
+      `"subtract": Element-wise subtraction. Result can be negative.`,
     schemaDescription: "'subtract' (element-wise subtraction)",
   },
   multiply: {
     promptDoc:
-      `"multiply": Multiply two matrices using row-by-column dot products. `
-      + `Matrix A columns MUST equal Matrix B rows. `
-      + `MUST include secondMatrix field. Use small integers to keep calculations manageable. `
-      + `Typical: 2×2 × 2×2 or 2×3 × 3×2.`,
+      `"multiply": Row-by-column dot products. Matrix A columns must equal Matrix B rows. `
+      + `Use small integers to keep dot-product sums manageable.`,
     schemaDescription: "'multiply' (matrix multiplication)",
   },
   determinant: {
     promptDoc:
-      `"determinant": Calculate the determinant of a square matrix. `
-      + `Matrix MUST be square (rows = columns). `
-      + `DO NOT include secondMatrix. Use integers that produce clean determinant values (not zero unless teaching singular matrices). `
-      + `2×2: det = ad - bc. 3×3: cofactor expansion.`,
+      `"determinant": Calculate det(A) for a square matrix. Use integers that produce clean, `
+      + `non-zero determinants. 2×2: det = ad − bc. 3×3: rule of Sarrus.`,
     schemaDescription: "'determinant' (calculate determinant)",
   },
   inverse: {
     promptDoc:
-      `"inverse": Find the inverse of a square matrix. `
-      + `Matrix MUST be square with non-zero determinant. `
-      + `DO NOT include secondMatrix. Use integers that produce a clean inverse (e.g., det = ±1, ±2). `
-      + `2×2: use adjugate method. 3×3: Gaussian elimination.`,
+      `"inverse": Find A⁻¹ for a 2×2 square matrix with det = ±1 so entries are clean integers. `
+      + `A⁻¹ = (1/det) · [[d, −b], [−c, a]].`,
     schemaDescription: "'inverse' (find inverse matrix)",
   },
 };
 
-// ============================================================================
-// STAGE 1: Core Matrix Generation
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Pool builders (one per challenge type)
+// ---------------------------------------------------------------------------
 
-const coreMatrixSchema: Schema = {
+const DEFAULT_INSTANCE_COUNT = 3;
+const MAX_INSTANCE_COUNT = 6;
+
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function randInRange(min: number, max: number, excludeZero = false): number {
+  let v = randInt(min, max);
+  if (excludeZero && v === 0) v = v === 0 ? randInt(1, max) : v;
+  return v;
+}
+
+function makeMatrix(rows: number, cols: number, min: number, max: number, excludeZero = false): number[][] {
+  const m: number[][] = [];
+  for (let i = 0; i < rows; i++) {
+    const row: number[] = [];
+    for (let j = 0; j < cols; j++) row.push(randInRange(min, max, excludeZero));
+    m.push(row);
+  }
+  return m;
+}
+
+function transposeMatrix(m: number[][]): number[][] {
+  const rows = m.length;
+  const cols = m[0]?.length ?? 0;
+  const out: number[][] = [];
+  for (let j = 0; j < cols; j++) {
+    out.push([]);
+    for (let i = 0; i < rows; i++) out[j].push(m[i][j]);
+  }
+  return out;
+}
+
+function addMatrices(a: number[][], b: number[][]): number[][] {
+  return a.map((row, i) => row.map((v, j) => v + b[i][j]));
+}
+
+function subtractMatrices(a: number[][], b: number[][]): number[][] {
+  return a.map((row, i) => row.map((v, j) => v - b[i][j]));
+}
+
+function multiplyMatrices(a: number[][], b: number[][]): number[][] {
+  const ar = a.length;
+  const ac = a[0].length;
+  const bc = b[0].length;
+  const out: number[][] = [];
+  for (let i = 0; i < ar; i++) {
+    const row: number[] = [];
+    for (let j = 0; j < bc; j++) {
+      let s = 0;
+      for (let k = 0; k < ac; k++) s += a[i][k] * b[k][j];
+      row.push(s);
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+function determinant2x2(m: number[][]): number {
+  return m[0][0] * m[1][1] - m[0][1] * m[1][0];
+}
+
+function determinant3x3(m: number[][]): number {
+  const [a, b, c] = m[0];
+  const [d, e, f] = m[1];
+  const [g, h, i] = m[2];
+  return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+}
+
+function determinantOf(m: number[][]): number {
+  if (m.length === 2) return determinant2x2(m);
+  if (m.length === 3) return determinant3x3(m);
+  return 0;
+}
+
+/** Inverse of a 2×2 matrix with non-zero determinant. Returns integer-valued matrix when det = ±1. */
+function inverse2x2(m: number[][]): number[][] {
+  const det = determinant2x2(m);
+  if (det === 0) throw new Error('Matrix is singular');
+  const [a, b] = m[0];
+  const [c, d] = m[1];
+  return [
+    [d / det, -b / det],
+    [-c / det, a / det],
+  ];
+}
+
+// ----- Per-type builders ----------------------------------------------------
+
+interface BuildContext {
+  gradeBand: '7-8' | 'algebra2' | 'precalculus' | 'advanced';
+}
+
+function rangeForGrade(gradeBand: BuildContext['gradeBand']): [number, number] {
+  switch (gradeBand) {
+    case '7-8': return [1, 9];
+    case 'algebra2': return [-9, 9];
+    case 'precalculus': return [-10, 10];
+    case 'advanced': return [-12, 12];
+  }
+}
+
+function buildTransposeChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
+  const [min, max] = rangeForGrade(ctx.gradeBand);
+  // Alternate 2×3 / 3×2 across the session so the shape change is visible.
+  const isWide = idx % 2 === 0;
+  const rows = isWide ? 2 : 3;
+  const cols = isWide ? 3 : 2;
+  const values = makeMatrix(rows, cols, min, max);
+  const expectedMatrix = transposeMatrix(values);
+  return {
+    id: `matrix-${idx + 1}`,
+    challengeType: 'transpose',
+    instruction: `Transpose the ${rows}×${cols} matrix. Enter each entry of the resulting ${cols}×${rows} matrix.`,
+    rows,
+    columns: cols,
+    values,
+    expectedMatrix,
+    hint: `Row i of A becomes column i of Aᵀ. The transpose of a ${rows}×${cols} matrix is a ${cols}×${rows} matrix.`,
+  };
+}
+
+function buildAddSubtractChallenge(
+  ctx: BuildContext,
+  operation: 'add' | 'subtract',
+  idx: number,
+): MatrixDisplayChallenge {
+  const [min, max] = rangeForGrade(ctx.gradeBand);
+  // 2×2 or 2×3 — keep both matrices the same size.
+  const useThreeCols = idx % 2 === 1;
+  const rows = 2;
+  const cols = useThreeCols ? 3 : 2;
+  const a = makeMatrix(rows, cols, min, max);
+  const b = makeMatrix(rows, cols, min, max);
+  const expectedMatrix = operation === 'add' ? addMatrices(a, b) : subtractMatrices(a, b);
+  return {
+    id: `matrix-${idx + 1}`,
+    challengeType: operation,
+    instruction: operation === 'add'
+      ? `Add Matrix A and Matrix B element-by-element. Enter each entry of the result.`
+      : `Subtract Matrix B from Matrix A element-by-element. Enter each entry of the result.`,
+    rows,
+    columns: cols,
+    values: a,
+    secondMatrix: { rows, columns: cols, values: b, label: 'Matrix B' },
+    expectedMatrix,
+    hint: operation === 'add'
+      ? `Add corresponding entries: result[i][j] = A[i][j] + B[i][j].`
+      : `Subtract corresponding entries: result[i][j] = A[i][j] − B[i][j].`,
+  };
+}
+
+function buildMultiplyChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
+  const [min, max] = ctx.gradeBand === '7-8' ? [1, 6] : ctx.gradeBand === 'algebra2' ? [-6, 6] : rangeForGrade(ctx.gradeBand);
+  // Alternate 2×2 × 2×2 and 2×3 × 3×2 so dimensions vary.
+  const shape = idx % 2 === 0;
+  const aRows = 2;
+  const aCols = shape ? 2 : 3;
+  const bRows = aCols;
+  const bCols = 2;
+  const a = makeMatrix(aRows, aCols, min, max);
+  const b = makeMatrix(bRows, bCols, min, max);
+  const expectedMatrix = multiplyMatrices(a, b);
+  return {
+    id: `matrix-${idx + 1}`,
+    challengeType: 'multiply',
+    instruction: `Multiply A (${aRows}×${aCols}) by B (${bRows}×${bCols}). Enter each entry of the ${aRows}×${bCols} result.`,
+    rows: aRows,
+    columns: aCols,
+    values: a,
+    secondMatrix: { rows: bRows, columns: bCols, values: b, label: 'Matrix B' },
+    expectedMatrix,
+    hint: `Result[i][j] = row i of A · column j of B = Σ A[i][k] × B[k][j].`,
+  };
+}
+
+function buildDeterminantChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
+  const [min, max] = rangeForGrade(ctx.gradeBand);
+  // 7-8 → only 2×2; algebra2+ → alternate 2×2 and 3×3.
+  const allow3x3 = ctx.gradeBand !== '7-8';
+  const size = allow3x3 && idx % 2 === 1 ? 3 : 2;
+  // Retry up to 12× to avoid det = 0.
+  let m: number[][] = [];
+  let det = 0;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    m = makeMatrix(size, size, min, max);
+    det = determinantOf(m);
+    if (det !== 0) break;
+  }
+  if (det === 0) {
+    // Last-resort fallback: bump m[0][0] until non-singular.
+    m[0][0] = m[0][0] + 1;
+    det = determinantOf(m);
+  }
+  return {
+    id: `matrix-${idx + 1}`,
+    challengeType: 'determinant',
+    instruction: `Calculate the determinant of this ${size}×${size} matrix. Enter the integer value.`,
+    rows: size,
+    columns: size,
+    values: m,
+    expectedScalar: det,
+    hint: size === 2
+      ? `For [[a, b], [c, d]], det = ad − bc.`
+      : `For a 3×3, use the Rule of Sarrus or cofactor expansion along the first row.`,
+  };
+}
+
+function buildInverseChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
+  // Always 2×2 with det = ±1 so the inverse has integer entries.
+  void ctx;
+  // Generate (a, b, c, d) integers with ad − bc ∈ {±1}.
+  // Strategy: pick a, b, c freely; solve for d so ad − bc = ±1; reject if d not integer.
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const a = randInt(-5, 5);
+    const b = randInt(-5, 5);
+    const c = randInt(-5, 5);
+    const targetDet = Math.random() < 0.5 ? 1 : -1;
+    // ad − bc = targetDet → d = (targetDet + bc) / a
+    if (a === 0) continue;
+    const numerator = targetDet + b * c;
+    if (numerator % a !== 0) continue;
+    const d = numerator / a;
+    if (d < -7 || d > 7) continue;
+    if (a === 1 && b === 0 && c === 0 && d === 1) continue;     // skip identity
+    if (a === -1 && b === 0 && c === 0 && d === -1) continue;   // skip negative identity
+    const values: number[][] = [[a, b], [c, d]];
+    const expectedMatrix = inverse2x2(values);
+    return {
+      id: `matrix-${idx + 1}`,
+      challengeType: 'inverse',
+      instruction: `Find the inverse of this 2×2 matrix. Enter each entry of A⁻¹.`,
+      rows: 2,
+      columns: 2,
+      values,
+      expectedMatrix,
+      hint: `For [[a, b], [c, d]] with det = ad − bc, A⁻¹ = (1/det) · [[d, −b], [−c, a]].`,
+    };
+  }
+  // Fallback to a known clean matrix.
+  const values: number[][] = [[2, 1], [3, 2]]; // det = 1
+  return {
+    id: `matrix-${idx + 1}`,
+    challengeType: 'inverse',
+    instruction: `Find the inverse of this 2×2 matrix. Enter each entry of A⁻¹.`,
+    rows: 2,
+    columns: 2,
+    values,
+    expectedMatrix: inverse2x2(values),
+    hint: `For [[a, b], [c, d]] with det = ad − bc, A⁻¹ = (1/det) · [[d, −b], [−c, a]].`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Canonical-key dedup + selection
+// ---------------------------------------------------------------------------
+
+function canonKey(ch: MatrixDisplayChallenge): string {
+  const a = ch.values.map((row) => row.join(',')).join('|');
+  const b = ch.secondMatrix ? ch.secondMatrix.values.map((row) => row.join(',')).join('|') : '';
+  return `${ch.challengeType}#${ch.rows}x${ch.columns}#${a}#${b}`;
+}
+
+export interface SelectMatrixChallengesOptions {
+  count?: number;
+  gradeBand?: '7-8' | 'algebra2' | 'precalculus' | 'advanced';
+}
+
+function buildChallengeOfType(
+  type: MatrixChallengeType,
+  ctx: BuildContext,
+  idx: number,
+): MatrixDisplayChallenge {
+  switch (type) {
+    case 'transpose': return buildTransposeChallenge(ctx, idx);
+    case 'add': return buildAddSubtractChallenge(ctx, 'add', idx);
+    case 'subtract': return buildAddSubtractChallenge(ctx, 'subtract', idx);
+    case 'multiply': return buildMultiplyChallenge(ctx, idx);
+    case 'determinant': return buildDeterminantChallenge(ctx, idx);
+    case 'inverse': return buildInverseChallenge(ctx, idx);
+  }
+}
+
+export function selectMatrixChallenges(
+  challengeTypes: MatrixChallengeType | MatrixChallengeType[],
+  options: SelectMatrixChallengesOptions = {},
+): MatrixDisplayChallenge[] {
+  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, options.count ?? DEFAULT_INSTANCE_COUNT));
+  const ctx: BuildContext = { gradeBand: options.gradeBand ?? 'algebra2' };
+
+  const allowedTypes: MatrixChallengeType[] = Array.isArray(challengeTypes)
+    ? (challengeTypes.length > 0 ? challengeTypes : ['determinant'])
+    : [challengeTypes];
+
+  // For bundled modes, interleave the allowed types across the session so every advertised
+  // type is surfaced. Shuffle once per session so order varies session-to-session (e.g.
+  // [add, subtract, add] one time, [subtract, add, subtract] the next).
+  const sessionOrder = allowedTypes.length > 1 ? shuffle(allowedTypes) : allowedTypes;
+  const pickType = (idx: number): MatrixChallengeType => sessionOrder[idx % sessionOrder.length];
+
+  const seen = new Set<string>();
+  const out: MatrixDisplayChallenge[] = [];
+
+  let attempts = 0;
+  while (out.length < target && attempts < target * 8) {
+    const idx = out.length;
+    const ch = buildChallengeOfType(pickType(idx), ctx, idx);
+    const key = canonKey(ch);
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(ch);
+    }
+    attempts++;
+  }
+
+  // If dedup was too aggressive, fill remainder with duplicates rather than blocking.
+  while (out.length < target) {
+    const idx = out.length;
+    out.push(buildChallengeOfType(pickType(idx), ctx, idx));
+  }
+
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Schema (wrapper metadata only — Gemini does NOT emit per-challenge data)
+// ---------------------------------------------------------------------------
+
+const wrapperSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     title: {
       type: Type.STRING,
-      description: "Title for the matrix operation"
+      description: "Session title. Do NOT mention specific matrices — the session walks through several.",
     },
     description: {
       type: Type.STRING,
-      description: "Educational description"
+      description: "1-2 sentence educational description of what students will practice across the session.",
     },
-    rows: {
-      type: Type.NUMBER,
-      description: "Number of rows in the matrix"
-    },
-    columns: {
-      type: Type.NUMBER,
-      description: "Number of columns in the matrix"
-    },
-    values: {
-      type: Type.ARRAY,
-      description: "2D array of matrix values (Matrix A for binary operations)",
-      items: {
-        type: Type.ARRAY,
-        items: { type: Type.NUMBER }
-      }
-    },
-    operationType: {
+    challengeType: {
       type: Type.STRING,
-      enum: ["determinant", "inverse", "transpose", "add", "subtract", "multiply"],
-      description: "Operation type: 'determinant', 'inverse', 'transpose', 'add', 'subtract', 'multiply'"
+      enum: ['transpose', 'add', 'subtract', 'multiply', 'determinant', 'inverse'],
+      description: "Challenge type for the session. All challenges share this type.",
     },
     educationalContext: {
       type: Type.STRING,
-      description: "Educational context about matrices"
+      description: "Optional short context paragraph explaining when/why this operation matters.",
     },
-    secondMatrix: {
-      type: Type.OBJECT,
-      description: "ONLY for binary operations (add, subtract, multiply). Do NOT include for determinant, inverse, or transpose.",
-      properties: {
-        rows: { type: Type.NUMBER },
-        columns: { type: Type.NUMBER },
-        values: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.ARRAY,
-            items: { type: Type.NUMBER }
-          }
-        },
-        label: { type: Type.STRING, description: "e.g., 'Matrix B'" }
-      },
-      required: ["rows", "columns", "values", "label"]
-    }
+    gradeBand: {
+      type: Type.STRING,
+      enum: ['7-8', 'algebra2', 'precalculus', 'advanced'],
+      description: "Grade band — drives number-size pool selection.",
+    },
   },
-  required: ["title", "description", "rows", "columns", "values", "operationType"]
+  required: ["title", "description", "challengeType"],
 };
 
-async function generateCoreMatrix(
-  topic: string,
-  gradeLevel: string,
-  config: {
-    operation: 'determinant' | 'inverse' | 'transpose' | 'add' | 'subtract' | 'multiply';
-    rows?: number;
-    columns?: number;
-  },
-  activeSchema: Schema,
-  challengeTypeSection: string,
-): Promise<CoreMatrixData> {
-  const { operation } = config;
-  const isBinaryOp = ['add', 'subtract', 'multiply'].includes(operation);
+// ---------------------------------------------------------------------------
+// Grade-band inference
+// ---------------------------------------------------------------------------
 
-  const prompt = `
-Create a matrix for teaching "${topic}" to ${gradeLevel} students.
-
-OPERATION: ${operation}
-
-${challengeTypeSection}
-
-CRITICAL REQUIREMENTS:
-${isBinaryOp ? `
-- This is a BINARY operation (${operation}), so you MUST include a "secondMatrix" field
-- For ${operation === 'multiply' ? 'multiplication: Matrix A columns MUST equal Matrix B rows' : 'addition/subtraction: Both matrices MUST have the same dimensions'}
-` : `
-- This is a UNARY operation (${operation}), so DO NOT include a "secondMatrix" field
-`}
-
-GRADE LEVEL GUIDELINES:
-- Grade 7-8: Use single-digit integers (1-9), 2×2 or 2×3 matrices
-- Algebra 2: Use integers from -10 to 10, 2×2 or 3×3 matrices
-- Precalculus: Any integers, 2×2 to 4×4 matrices
-- Advanced: Any real numbers, any size
-
-NUMBER SELECTION:
-- For determinant: Use integers that result in clean determinant values (not zero unless demonstrating singular matrices)
-- For multiply: Ensure dimensions are compatible (A.columns = B.rows)
-- For add/subtract: Ensure same dimensions
-- Choose numbers that make calculations educational but not tedious
-
-${config.rows ? `Required rows: ${config.rows}` : ''}
-${config.columns ? `Required columns: ${config.columns}` : ''}
-
-Return ONLY the core matrix data with appropriate values for the grade level.
-`;
-
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-
-  if (!data) {
-    throw new Error('No valid core matrix data returned from Gemini API');
-  }
-
-  return validateCoreMatrix(data);
+function inferGradeBand(gradeLevel: string): '7-8' | 'algebra2' | 'precalculus' | 'advanced' {
+  const g = gradeLevel.toLowerCase();
+  if (g.includes('precalc') || g.includes('11') || g.includes('12')) return 'precalculus';
+  if (g.includes('linear algebra') || g.includes('advanced') || g.includes('college')) return 'advanced';
+  if (g.includes('algebra 2') || g.includes('algebra ii') || g.includes('10') || g.includes('9')) return 'algebra2';
+  return '7-8';
 }
 
-function validateCoreMatrix(data: CoreMatrixData): CoreMatrixData {
-  console.log('[Matrix Gen] Stage 1 - Validating core matrix:', { operationType: data.operationType, rows: data.rows, columns: data.columns });
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
 
-  // Ensure dimensions match values
-  if (data.values.length !== data.rows) {
-    console.warn(`Matrix rows mismatch. Expected ${data.rows}, got ${data.values.length}`);
-    data.rows = data.values.length;
-  }
-
-  if (data.values[0] && data.values[0].length !== data.columns) {
-    console.warn(`Matrix columns mismatch. Expected ${data.columns}, got ${data.values[0].length}`);
-    data.columns = data.values[0].length;
-  }
-
-  // For binary operations, secondMatrix is REQUIRED
-  if (['add', 'subtract', 'multiply'].includes(data.operationType)) {
-    if (!data.secondMatrix) {
-      throw new Error(`${data.operationType} requires secondMatrix, but it was not provided`);
-    }
-
-    // Validate dimensions
-    if (data.operationType === 'multiply') {
-      if (data.columns !== data.secondMatrix.rows) {
-        throw new Error(`Matrix multiplication dimension mismatch: A is ${data.rows}×${data.columns}, B is ${data.secondMatrix.rows}×${data.secondMatrix.columns}. A.columns must equal B.rows.`);
-      }
-    } else { // add/subtract
-      if (data.rows !== data.secondMatrix.rows || data.columns !== data.secondMatrix.columns) {
-        throw new Error(`Matrix ${data.operationType} requires same dimensions. A is ${data.rows}×${data.columns}, B is ${data.secondMatrix.rows}×${data.secondMatrix.columns}.`);
-      }
-    }
-
-    console.log('[Matrix Gen] Stage 1 - Binary operation validated:', {
-      matrixA: `${data.rows}×${data.columns}`,
-      matrixB: `${data.secondMatrix.rows}×${data.secondMatrix.columns}`
-    });
-  }
-
-  // For unary operations, secondMatrix should NOT exist
-  if (['determinant', 'inverse', 'transpose'].includes(data.operationType)) {
-    if (data.secondMatrix) {
-      console.warn(`Unary operation ${data.operationType} should not have secondMatrix. Removing it.`);
-      delete data.secondMatrix;
-    }
-  }
-
-  return data;
-}
-
-
-// ============================================================================
-// STAGE 3: Assembly & Final Validation
-// ============================================================================
-
-function generateAvailableOperations(currentOperation: string): MatrixOperation[] {
-  const operations: MatrixOperation[] = [];
-
-  // For binary operations (multiply, add, subtract), don't show additional operations
-  // as they already have the operation displayed
-  if (['multiply', 'add', 'subtract'].includes(currentOperation)) {
-    return operations;
-  }
-
-  // For unary operations, show related operations
-  const allOperations: MatrixOperation[] = [
-    {
-      type: 'determinant',
-      label: 'Calculate Determinant',
-      description: 'Find the determinant of the matrix'
-    },
-    {
-      type: 'transpose',
-      label: 'Transpose Matrix',
-      description: 'Swap rows and columns'
-    },
-    {
-      type: 'inverse',
-      label: 'Find Inverse',
-      description: 'Calculate the inverse matrix'
-    }
-  ];
-
-  // Filter out the current operation and return the rest
-  return allOperations.filter(op => op.type !== currentOperation);
-}
-
-function validateFinalMatrix(data: MatrixDisplayData): MatrixDisplayData {
-  console.log('[Matrix Gen] Final validation');
-
-  // Ensure defaults
-  if (data.highlightCells === undefined) data.highlightCells = [];
-  if (data.showOperations === undefined) data.showOperations = [];
-  if (data.augmented === undefined) data.augmented = false;
-
-  console.log('[Matrix Gen] Assembly complete:', {
-    title: data.title,
-    operationType: data.operationType,
-    hasSecondMatrix: !!data.secondMatrix,
-    hasResult: !!data.resultMatrix
-  });
-
-  return data;
-}
-
-// ============================================================================
-// MAIN ORCHESTRATOR
-// ============================================================================
-
-/**
- * Infer the operation type from the topic name
- */
-function inferOperationFromTopic(topic: string): 'determinant' | 'inverse' | 'transpose' | 'add' | 'subtract' | 'multiply' {
-  const topicLower = topic.toLowerCase();
-
-  if (topicLower.includes('multipl') || topicLower.includes('product')) return 'multiply';
-  if (topicLower.includes('add') || topicLower.includes('sum')) return 'add';
-  if (topicLower.includes('subtract') || topicLower.includes('difference')) return 'subtract';
-  if (topicLower.includes('transpose')) return 'transpose';
-  if (topicLower.includes('inverse')) return 'inverse';
-  if (topicLower.includes('determinant')) return 'determinant';
-
-  return 'determinant';
-}
-
-/**
- * Generate matrix display data
- *
- * Generates the core matrix with appropriate operations available.
- * The component itself handles determinant and transpose visualizations.
- */
 export const generateMatrix = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    rows?: number;
-    columns?: number;
+    /** Legacy single-operation override (ignored if targetEvalMode is set). */
     operation?: 'determinant' | 'inverse' | 'transpose' | 'multiply' | 'add' | 'subtract' | 'rowOperation' | 'solve';
-    augmented?: boolean;
-    editable?: boolean;
+    /** How many matrix challenges per session. Default 3, max 6. */
+    instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
   }
 ): Promise<MatrixDisplayData> => {
   console.log('[Matrix Gen] Starting generation:', { topic, gradeLevel, config });
 
-  // Resolve eval mode from catalog (single source of truth)
-  const evalConstraint = resolveEvalModeConstraint(
-    'matrix-display',
-    config?.targetEvalMode,
-    CHALLENGE_TYPE_DOCS,
-  );
+  const evalConstraint = resolveEvalModeConstraint('matrix-display', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('Matrix', config?.targetEvalMode, evalConstraint);
 
-  // Constrain schema when eval mode is active (operationType is at root level)
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(coreMatrixSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
-        fieldName: 'operationType',
+    ? constrainChallengeTypeEnum(wrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'challengeType',
         rootLevel: true,
       })
-    : coreMatrixSchema;
+    : wrapperSchema;
 
-  // Build challenge type prompt section
-  const challengeTypeSection = buildChallengeTypePromptSection(
-    evalConstraint,
-    CHALLENGE_TYPE_DOCS,
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
+  const prompt = `
+Create the wrapper metadata for a multi-challenge matrix practice session on "${topic}" for ${gradeLevel} students.
+
+CONTEXT:
+- A matrix session contains 3-6 separate problems of the same matrix operation, surfaced sequentially.
+- The system has ALREADY pre-selected the matrix values for each challenge; you do NOT pick numbers, dimensions, or any per-challenge data.
+- Your job is ONLY to write the session-level title, description, and choose the challenge type.
+
+${challengeTypeSection}
+
+REQUIREMENTS:
+1. Write a clear, student-friendly title for the whole session. Do NOT name any specific matrix — the session walks through several.
+2. Provide a 1-2 sentence educational description of what students will practice.
+3. Set challengeType to the correct operation.
+4. Optionally provide a short educational context paragraph.
+
+Return ONLY the wrapper fields described above.
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      temperature: 0.9,
+      topP: 0.95,
+      responseMimeType: "application/json",
+      responseSchema: activeSchema,
+    },
+  });
+
+  const wrapper = result.text ? JSON.parse(result.text) : null;
+  if (!wrapper) {
+    throw new Error('No valid matrix wrapper returned from Gemini API');
+  }
+
+  // ── Determine allowed challenge types for the session ────────────
+  // For bundled eval modes (e.g., add_subtract, determinant_inverse) the constraint carries
+  // multiple allowed types; selectMatrixChallenges interleaves them across the session so
+  // every advertised type is surfaced (SP-18 fix).
+  const validTypes: MatrixChallengeType[] = ['transpose', 'add', 'subtract', 'multiply', 'determinant', 'inverse'];
+  let allowedChallengeTypes: MatrixChallengeType[];
+  if (evalConstraint && evalConstraint.allowedTypes.length > 0) {
+    allowedChallengeTypes = evalConstraint.allowedTypes as MatrixChallengeType[];
+  } else if (wrapper.challengeType && validTypes.includes(wrapper.challengeType)) {
+    allowedChallengeTypes = [wrapper.challengeType as MatrixChallengeType];
+  } else if (config?.operation && validTypes.includes(config.operation as MatrixChallengeType)) {
+    allowedChallengeTypes = [config.operation as MatrixChallengeType];
+  } else {
+    allowedChallengeTypes = ['determinant'];
+  }
+  // Session-level challengeType reported on the wrapper — uses the first allowed type as a
+  // representative descriptor. Per-challenge rendering reads `ch.challengeType` and handles
+  // every type in the bundle.
+  const sessionChallengeType: MatrixChallengeType = allowedChallengeTypes[0];
+
+  const gradeBand = (wrapper.gradeBand as '7-8' | 'algebra2' | 'precalculus' | 'advanced' | undefined) ?? inferGradeBand(gradeLevel);
+
+  // ── Pre-select challenges (local, deterministic-variance) ────────
+  const challenges = selectMatrixChallenges(allowedChallengeTypes, {
+    count: config?.instanceCount,
+    gradeBand,
+  });
+
+  console.log(
+    `[Matrix Gen] Final: allowedTypes=[${allowedChallengeTypes.join(',')}], instances=${challenges.length}, surfaced=[${challenges.map(c => c.challengeType).join(',')}], gradeBand=${gradeBand}`
   );
 
-  try {
-    // Determine operation: eval mode constraint > explicit config > topic inference
-    let operation: 'determinant' | 'inverse' | 'transpose' | 'add' | 'subtract' | 'multiply';
-
-    if (evalConstraint) {
-      // Pick the first allowed type from the eval constraint
-      operation = evalConstraint.allowedTypes[0] as typeof operation;
-      console.log(`[Matrix Gen] Eval mode constraining operation to '${operation}'`);
-    } else {
-      const inferredOperation = inferOperationFromTopic(topic);
-      const configOp = config?.operation;
-      operation = (configOp && configOp !== 'solve' && configOp !== 'rowOperation')
-        ? configOp as typeof operation
-        : inferredOperation;
-
-      if (!configOp) {
-        console.log(`[Matrix Gen] No operation specified, inferred '${inferredOperation}' from topic: "${topic}"`);
-      }
-    }
-
-    const coreMatrix = await generateCoreMatrix(topic, gradeLevel, {
-      operation,
-      rows: config?.rows,
-      columns: config?.columns
-    }, activeSchema, challengeTypeSection);
-
-    console.log('[Matrix Gen] Core matrix generated:', {
-      rows: coreMatrix.rows,
-      columns: coreMatrix.columns,
-      operationType: coreMatrix.operationType,
-      hasSecondMatrix: !!coreMatrix.secondMatrix
-    });
-
-    // Assemble final result
-    const finalData: MatrixDisplayData = {
-      ...coreMatrix,
-      editable: config?.editable ?? false,
-      showOperations: generateAvailableOperations(coreMatrix.operationType),
-      augmented: config?.augmented ?? false,
-      highlightCells: [],
-      // For determinant operations, enable the built-in visualization
-      determinantVisualization: coreMatrix.operationType === 'determinant' ? { show: true } : undefined,
-      // For multiplication operations, enable the built-in visualization
-      multiplicationVisualization: coreMatrix.operationType === 'multiply' ? { show: true } : undefined,
-    };
-
-    // Final validation
-    return validateFinalMatrix(finalData);
-
-  } catch (error) {
-    console.error('[Matrix Gen] Error in generation:', error);
-    throw error;
-  }
+  return {
+    title: wrapper.title,
+    description: wrapper.description,
+    challenges,
+    challengeType: sessionChallengeType,
+    educationalContext: wrapper.educationalContext,
+    gradeBand,
+  };
 };

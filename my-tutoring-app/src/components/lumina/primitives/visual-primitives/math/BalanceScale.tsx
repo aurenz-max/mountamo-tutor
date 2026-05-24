@@ -24,8 +24,16 @@ export interface BalanceScaleObject {
   isVariable?: boolean;
 }
 
+export type BalanceScaleChallengeType =
+  | 'equality'
+  | 'equality_hard'
+  | 'one_step'
+  | 'one_step_hard'
+  | 'two_step_intro'
+  | 'two_step';
+
 export interface BalanceScaleChallenge {
-  type: 'equality' | 'one_step' | 'two_step';
+  type: BalanceScaleChallengeType;
   instruction: string;
   leftSide: BalanceScaleObject[];
   rightSide: BalanceScaleObject[];
@@ -74,14 +82,75 @@ interface StepEntry {
   rightSnapshot: BalanceScaleObject[];
 }
 
+// Whole-side multiply: replicate each variable k times, multiply constants by k.
+function multiplySide(side: BalanceScaleObject[], k: number): BalanceScaleObject[] {
+  const out: BalanceScaleObject[] = [];
+  for (const obj of side) {
+    if (obj.isVariable) {
+      for (let i = 0; i < k; i++) out.push({ ...obj });
+    } else {
+      const v = obj.value * k;
+      out.push({ ...obj, value: v, label: String(v) });
+    }
+  }
+  return out;
+}
+
+// Whole-side divide: collapse like-labeled variable groups to count/k copies;
+// divide each constant value by k. Caller must check isSideDivisibleBy first.
+function divideSide(side: BalanceScaleObject[], k: number): BalanceScaleObject[] {
+  const varGroups = new Map<string, BalanceScaleObject>();
+  const varCounts = new Map<string, number>();
+  const out: BalanceScaleObject[] = [];
+  for (const obj of side) {
+    if (obj.isVariable) {
+      const key = obj.label || 'x';
+      if (!varGroups.has(key)) varGroups.set(key, obj);
+      varCounts.set(key, (varCounts.get(key) || 0) + 1);
+    } else {
+      const v = obj.value / k;
+      out.push({ ...obj, value: v, label: String(v) });
+    }
+  }
+  varCounts.forEach((count, key) => {
+    const proto = varGroups.get(key)!;
+    const newCount = count / k;
+    for (let i = 0; i < newCount; i++) out.push({ ...proto });
+  });
+  return out;
+}
+
+// Divisibility check: every constant's value and every variable group's count
+// must be cleanly divisible by k.
+function isSideDivisibleBy(side: BalanceScaleObject[], k: number): boolean {
+  if (k <= 0) return false;
+  const counts = new Map<string, number>();
+  for (const obj of side) {
+    if (obj.isVariable) {
+      const key = obj.label || 'x';
+      counts.set(key, (counts.get(key) || 0) + 1);
+    } else {
+      if (obj.value % k !== 0) return false;
+    }
+  }
+  let allDivisible = true;
+  counts.forEach((count) => {
+    if (count % k !== 0) allDivisible = false;
+  });
+  return allDivisible;
+}
+
 // ============================================================================
 // Phase Summary Config
 // ============================================================================
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  equality:  { label: 'Equality',  icon: '⚖️', accentColor: 'cyan' },
-  one_step:  { label: 'One-Step',  icon: '🔢', accentColor: 'purple' },
-  two_step:  { label: 'Two-Step',  icon: '🧮', accentColor: 'emerald' },
+  equality:       { label: 'Equality',        icon: '⚖️', accentColor: 'cyan' },
+  equality_hard:  { label: 'Equality Hard',   icon: '⚖️', accentColor: 'cyan' },
+  one_step:       { label: 'One-Step',        icon: '🔢', accentColor: 'purple' },
+  one_step_hard:  { label: 'One-Step Hard',   icon: '✖️', accentColor: 'purple' },
+  two_step_intro: { label: 'Two-Step Intro',  icon: '🧮', accentColor: 'emerald' },
+  two_step:       { label: 'Two-Step',        icon: '🧮', accentColor: 'emerald' },
 };
 
 // ============================================================================
@@ -115,8 +184,14 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
-  const [currentLeft, setCurrentLeft] = useState<BalanceScaleObject[]>(initialLeft);
-  const [currentRight, setCurrentRight] = useState<BalanceScaleObject[]>(initialRight);
+  // Initial sides come from challenge #0 when available, falling back to root-level
+  // data for single-instance / manifest-config paths.
+  const firstChallenge = challenges[0];
+  const initialChallengeLeft = firstChallenge?.leftSide ?? initialLeft;
+  const initialChallengeRight = firstChallenge?.rightSide ?? initialRight;
+
+  const [currentLeft, setCurrentLeft] = useState<BalanceScaleObject[]>(initialChallengeLeft);
+  const [currentRight, setCurrentRight] = useState<BalanceScaleObject[]>(initialChallengeRight);
   const [phase, setPhase] = useState<Phase>('explore');
   const [userSteps, setUserSteps] = useState<StepEntry[]>([]);
   const [showSolution, setShowSolution] = useState(false);
@@ -137,7 +212,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     advance: advanceProgress,
   } = useChallengeProgress({
     challenges,
-    getChallengeId: (ch) => ch.type + '-' + challenges.indexOf(ch),
+    getChallengeId: (ch) => `bs-${challenges.indexOf(ch) + 1}`,
   });
 
   // Drag state
@@ -147,9 +222,13 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `balance-scale-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const recordedRef = useRef(false);
+  const hintViewedRef = useRef(false);
+  const hintsViewedRef = useRef(0);
 
   // Computed
   const currentChallenge = challenges[currentChallengeIndex] || null;
+  const currentChallengeId = currentChallenge ? `bs-${currentChallengeIndex + 1}` : null;
   const activeVariableValue = currentChallenge?.variableValue ?? variableValue;
 
   const calcSideValue = useCallback((side: BalanceScaleObject[]): number => {
@@ -178,12 +257,21 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
+  // Standard per-challenge score (per PRD §6a #11): 100 first try, -20 per extra
+  // attempt, floored at 20, zero on incorrect. Stored on ChallengeResult.score.
   const phaseResults = usePhaseResults({
     challenges,
     results: challengeResults,
     isComplete: allChallengesComplete,
     getChallengeType: (ch) => ch.type,
     phaseConfig: PHASE_TYPE_CONFIG,
+    getScore: (rs) =>
+      Math.round(
+        rs.reduce(
+          (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+          0,
+        ) / Math.max(rs.length, 1),
+      ),
   });
 
   const {
@@ -204,8 +292,14 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // AI Tutoring
   // -------------------------------------------------------------------------
+  const challengeType = currentChallenge?.type ?? 'one_step';
   const aiPrimitiveData = useMemo(() => ({
-    targetEquation: formatEquation(initialLeft, initialRight),
+    challengeType,
+    currentChallengeIndex: currentChallengeIndex + 1,
+    totalChallenges: challenges.length,
+    targetEquation: currentChallenge
+      ? formatEquation(currentChallenge.leftSide, currentChallenge.rightSide)
+      : formatEquation(initialLeft, initialRight),
     currentEquation: formatEquation(currentLeft, currentRight),
     variableValue: activeVariableValue,
     gradeBand,
@@ -214,9 +308,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     isSolved,
     isBalanced,
     attemptNumber: currentAttempts + 1,
-    leftSide: currentLeft.map(formatObj),
-    rightSide: currentRight.map(formatObj),
-  }), [initialLeft, initialRight, currentLeft, currentRight, activeVariableValue, gradeBand, phase, userSteps.length, isSolved, isBalanced, currentAttempts]);
+  }), [challengeType, currentChallengeIndex, challenges.length, currentChallenge, initialLeft, initialRight, currentLeft, currentRight, activeVariableValue, gradeBand, phase, userSteps.length, isSolved, isBalanced, currentAttempts]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'balance-scale',
@@ -230,14 +322,32 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current) return;
     hasIntroducedRef.current = true;
-    const eq = formatEquation(initialLeft, initialRight);
+    const totalCh = challenges.length;
     sendText(
-      `[ACTIVITY_START] Balance scale equation: ${eq}. Grade band: ${gradeBand}. `
+      `[ACTIVITY_START] Balance scale session: ${totalCh > 1 ? `${totalCh} equations` : 'one equation'}. Grade band: ${gradeBand}. `
       + `${gradeBand === 'K-2' ? 'Use concrete language — "mystery number" not "variable".' : ''} `
       + `Introduce: "Look at this balance scale! Can you find the mystery number?"`,
       { silent: true }
     );
-  }, [isConnected, initialLeft, initialRight, gradeBand, sendText]);
+  }, [isConnected, challenges.length, gradeBand, sendText]);
+
+  // Per-challenge reset — fires whenever advance() flips currentChallengeId.
+  // Resets every per-challenge UI slot so the next equation starts clean.
+  useEffect(() => {
+    if (!currentChallenge) return;
+    setCurrentLeft(currentChallenge.leftSide);
+    setCurrentRight(currentChallenge.rightSide);
+    setPhase('explore');
+    setUserSteps([]);
+    setFeedback('');
+    setFeedbackType('');
+    setVerifyInput('');
+    setShowSolution(false);
+    setSelectedOp(null);
+    setOpValue('');
+    recordedRef.current = false;
+    hintViewedRef.current = false;
+  }, [currentChallengeId, currentChallenge]);
 
   // Phase transitions
   useEffect(() => {
@@ -337,12 +447,27 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
       newRight.splice(rightIdx, 1);
       desc = `Subtracted ${value} from both sides`;
     } else if (selectedOp === 'multiply') {
-      newLeft = newLeft.map(o => ({ ...o, value: o.value * value, label: o.isVariable ? `${value}${o.label || 'x'}` : String(o.value * value) }));
-      newRight = newRight.map(o => ({ ...o, value: o.value * value, label: o.isVariable ? `${value}${o.label || 'x'}` : String(o.value * value) }));
+      if (!Number.isInteger(value)) {
+        setFeedback('Multiplier must be a whole number.');
+        setFeedbackType('error');
+        return;
+      }
+      newLeft = multiplySide(newLeft, value);
+      newRight = multiplySide(newRight, value);
       desc = `Multiplied both sides by ${value}`;
     } else if (selectedOp === 'divide') {
-      newLeft = newLeft.map(o => ({ ...o, value: o.value / value, label: o.isVariable ? `${o.label || 'x'}/${value}` : String(o.value / value) }));
-      newRight = newRight.map(o => ({ ...o, value: o.value / value, label: o.isVariable ? `${o.label || 'x'}/${value}` : String(o.value / value) }));
+      if (!Number.isInteger(value)) {
+        setFeedback('Divisor must be a whole number.');
+        setFeedbackType('error');
+        return;
+      }
+      if (!isSideDivisibleBy(newLeft, value) || !isSideDivisibleBy(newRight, value)) {
+        setFeedback(`Cannot divide both sides evenly by ${value}.`);
+        setFeedbackType('error');
+        return;
+      }
+      newLeft = divideSide(newLeft, value);
+      newRight = divideSide(newRight, value);
       desc = `Divided both sides by ${value}`;
     }
 
@@ -377,43 +502,34 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
 
   // Verify
   const handleVerify = useCallback(() => {
+    if (recordedRef.current) return; // stale-state guard — already recorded for this challenge
     const answer = parseFloat(verifyInput);
+    if (Number.isNaN(answer)) {
+      setFeedback('Enter a number to check your answer.');
+      setFeedbackType('error');
+      return;
+    }
     const correct = Math.abs(answer - activeVariableValue) < 0.01;
     incrementAttempts();
+    const attempts = currentAttempts + 1;
 
     if (correct) {
       setFeedback(`Correct! x = ${activeVariableValue}`);
       setFeedbackType('success');
       sendText(`[ANSWER_CORRECT] Student verified x = ${activeVariableValue}. Celebrate!`, { silent: true });
 
-      if (challenges.length > 0) {
+      // Standard per-challenge score (PRD §6a #11): 100 first try, -20 per extra, floor 20.
+      const score = correct ? Math.max(20, 100 - (attempts - 1) * 20) : 0;
+      recordedRef.current = true;
+
+      if (challenges.length > 0 && currentChallenge) {
         recordResult({
-          challengeId: currentChallenge!.type + '-' + currentChallengeIndex,
+          challengeId: `bs-${currentChallengeIndex + 1}`,
           correct: true,
-          attempts: currentAttempts + 1,
+          attempts,
+          score,
           steps: userSteps.length,
         });
-      } else if (!hasSubmittedEvaluation) {
-        const eq = formatEquation(initialLeft, initialRight);
-        const metrics: BalanceScaleMetrics = {
-          type: 'balance-scale',
-          evalMode: 'default',
-          targetEquation: eq,
-          solutionFound: true,
-          solutionValue: activeVariableValue,
-          operationsPerformed: userSteps.map(s => ({
-            operation: 'subtract' as const,
-            value: 0,
-            side: 'both' as const,
-          })),
-          stepsToSolve: userSteps.length,
-          optimalSteps: (data.stepHistory?.length ?? 3) - 1,
-          efficiency: Math.min(1, ((data.stepHistory?.length ?? 3) - 1) / Math.max(userSteps.length, 1)),
-          phaseProgression: ['explore', 'solve', 'verify'],
-          balanceMaintained: true,
-          attemptsCount: currentAttempts + 1,
-        };
-        submitEvaluation(true, 100, metrics, { steps: userSteps });
       }
     } else {
       setFeedback(`${answer} is not correct. Check your work!`);
@@ -424,57 +540,54 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, hasSubmittedEvaluation, initialLeft, initialRight, userSteps, data.stepHistory, submitEvaluation, sendText]);
+  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, incrementAttempts, sendText]);
 
-  // Challenge advance
+  // Challenge advance — per-challenge UI reset is handled by the reset useEffect.
   const advanceChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All challenges done — submit evaluation with phase scores
-      const phaseScoreStr = phaseResults
-        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const correctCount = challengeResults.filter(r => r.correct).length;
-      const overallPct = Math.round((correctCount / challenges.length) * 100);
-
+    if (advanceProgress()) {
+      const nextIdx = currentChallengeIndex + 1;
       sendText(
-        `[ALL_COMPLETE] All ${challenges.length} equations solved! Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback.`,
-        { silent: true }
+        `[NEXT_ITEM] Equation ${nextIdx + 1} of ${challenges.length}: "${challenges[nextIdx]?.instruction}". Introduce briefly.`,
+        { silent: true },
       );
+    }
+  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
 
-      if (!hasSubmittedEvaluation) {
-        const metrics: BalanceScaleMetrics = {
-          type: 'balance-scale',
-          evalMode: 'default',
-          targetEquation: formatEquation(initialLeft, initialRight),
-          solutionFound: true,
-          solutionValue: activeVariableValue,
-          operationsPerformed: [],
-          stepsToSolve: 0,
-          optimalSteps: 2,
-          efficiency: 1,
-          phaseProgression: ['explore', 'solve', 'verify'],
-          balanceMaintained: true,
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-        submitEvaluation(correctCount === challenges.length, overallPct, metrics, { challengeResults });
-      }
-      return;
-    }
-    // Advanced to next challenge — reset domain state
-    const next = challenges[currentChallengeIndex + 1];
-    if (next) {
-      setCurrentLeft(next.leftSide);
-      setCurrentRight(next.rightSide);
-    }
-    setPhase('explore');
-    setUserSteps([]);
-    setFeedback('');
-    setFeedbackType('');
-    setVerifyInput('');
-    setShowSolution(false);
-    sendText(`[NEXT_ITEM] Challenge ${currentChallengeIndex + 2}: "${challenges[currentChallengeIndex + 1]?.instruction}". Introduce the equation.`, { silent: true });
-  }, [advanceProgress, phaseResults, challengeResults, challenges, currentChallengeIndex, hasSubmittedEvaluation, initialLeft, initialRight, activeVariableValue, submitEvaluation, sendText]);
+  // Session-complete: build flattened metrics and submit exactly once.
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+
+    const total = challenges.length;
+    const correctCount = challengeResults.filter((r) => r.correct).length;
+    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
+    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
+    const avgScore = Math.round(
+      challengeResults.reduce(
+        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+        0,
+      ) / Math.max(challengeResults.length, 1),
+    );
+
+    const metrics: BalanceScaleMetrics = {
+      type: 'balance-scale',
+      challengeType: (currentChallenge?.type ?? challenges[0]?.type ?? 'one_step') as BalanceScaleMetrics['challengeType'],
+      totalChallenges: total,
+      correctCount,
+      attemptsCount,
+      firstTryCount,
+      hintsViewed: hintsViewedRef.current,
+      overallAccuracy: avgScore,
+      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
+    };
+
+    const goalMet = correctCount === total;
+    submitEvaluation(goalMet, avgScore, metrics, { challengeResults });
+
+    sendText(
+      `[ALL_COMPLETE] All ${total} equations done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give encouraging summary.`,
+      { silent: true },
+    );
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
 
   const handleReset = useCallback(() => {
     const left = currentChallenge?.leftSide ?? initialLeft;
@@ -491,13 +604,28 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     setOpValue('');
   }, [currentChallenge, initialLeft, initialRight]);
 
+  const toggleShowSolution = useCallback(() => {
+    setShowSolution((prev) => {
+      const next = !prev;
+      if (next && !hintViewedRef.current) {
+        hintViewedRef.current = true;
+        hintsViewedRef.current += 1;
+      }
+      return next;
+    });
+  }, []);
+
   const isCurrentComplete = challenges.length > 0 && challengeResults.length > currentChallengeIndex && challengeResults[currentChallengeIndex]?.correct;
 
   const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    const correct = challengeResults.filter(r => r.correct).length;
-    return Math.round((correct / challenges.length) * 100);
-  }, [allChallengesComplete, challenges, challengeResults]);
+    if (!allChallengesComplete || challengeResults.length === 0) return 0;
+    return Math.round(
+      challengeResults.reduce(
+        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+        0,
+      ) / challengeResults.length,
+    );
+  }, [allChallengesComplete, challengeResults]);
 
   // Block palette
   const availableBlocks: BalanceScaleObject[] = [
@@ -742,7 +870,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
               variant="ghost"
               size="sm"
               className="bg-purple-500/10 border border-purple-400/30 text-purple-300 text-xs"
-              onClick={() => setShowSolution(!showSolution)}
+              onClick={toggleShowSolution}
             >
               {showSolution ? 'Hide' : 'Show'} Answer
             </Button>
@@ -784,7 +912,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
               className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
               onClick={advanceChallenge}
             >
-              Next Challenge
+              Next Equation →
             </Button>
           )}
           <Button

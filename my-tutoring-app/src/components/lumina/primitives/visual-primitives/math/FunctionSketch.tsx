@@ -213,9 +213,10 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
 
   const startTimeRef = useRef(Date.now());
+  const recordedRef = useRef(false);
   const [submittedResult, setSubmittedResult] = useState<PrimitiveEvaluationResult<FunctionSketchMetrics> | null>(null);
 
-  // Reset state on challenge change
+  // Reset state on challenge change (keyed on challenge.id per PRD §7 #5).
   useEffect(() => {
     setHitFeatures(new Set());
     setSelectedOption(null);
@@ -223,8 +224,9 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
     setShowReveal(false);
     setSelectedCurve(null);
     setFeedback(null);
+    recordedRef.current = false;
     startTimeRef.current = Date.now();
-  }, [currentIndex]);
+  }, [challenge?.id]);
 
   // ── Canvas drawing ─────────────────────────────────────────────
   const splinePoints = useMemo(
@@ -333,6 +335,9 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
   // ── Check answer ───────────────────────────────────────────────
   const handleCheck = useCallback(() => {
     if (!challenge) return;
+    // Stale-state guard (PRD §6a #8): user could (in principle) click Check Answer
+    // a second time before the reset effect for the next challenge runs.
+    if (recordedRef.current) return;
     incrementAttempts();
     const type = challenge.type;
     let correct = false;
@@ -410,6 +415,7 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
       { silent: true },
     );
 
+    recordedRef.current = true;
     recordResult({
       challengeId: challenge.id,
       correct,
@@ -426,47 +432,44 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
   // ── Advance ────────────────────────────────────────────────────
   const handleNext = useCallback(() => {
     if (!advanceProgress()) {
-      // All done — submit evaluation
-      const elapsed = Date.now() - startTimeRef.current;
-      const totalScore = challengeResults.length > 0
-        ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? 0), 0) / challengeResults.length)
+      // All done — submit aggregate evaluation (PRD §6a #11 flattened shape).
+      const totalChallenges = challengeResults.length;
+      const overallAccuracy = totalChallenges > 0
+        ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? 0), 0) / totalChallenges)
         : 0;
-      const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
+      const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
       const correctCount = challengeResults.filter(r => r.correct).length;
-
-      const featuresFound = challengeResults
-        .filter(r => r.type === 'identify-features')
-        .reduce((s, r) => s + ((r.score as number) ?? 0), 0);
-      const sketchAccuracy = challengeResults
-        .filter(r => r.type === 'sketch-match')
-        .reduce((s, r) => s + ((r.score as number) ?? 0), 0);
-      const sketchCount = challengeResults.filter(r => r.type === 'sketch-match').length;
+      const firstTryCount = challengeResults.filter(r => r.correct && r.attempts === 1).length;
+      const hintsViewed = challengeResults.filter(r => r.attempts > 1).length;
+      const averageAttemptsPerChallenge = totalChallenges > 0
+        ? Math.round((attemptsCount / totalChallenges) * 10) / 10
+        : 0;
 
       const result = submitResult(
-        totalScore >= 60,
-        totalScore,
+        overallAccuracy >= 60,
+        overallAccuracy,
         {
           type: 'function-sketch',
-          evalMode: challenges[0]?.type ?? 'identify-features',
-          featuresCorrect: correctCount,
-          featuresTotal: challenges.length,
-          sketchAccuracy: sketchCount > 0 ? Math.round(sketchAccuracy / sketchCount) : 0,
-          classificationCorrect: challengeResults.some(r => r.type === 'classify-shape' && r.correct),
-          controlPointsPlaced: controlPoints.length,
-          completionTime: Math.round(elapsed / 1000),
-          totalAttempts,
+          challengeType: (challenges[0]?.type ?? 'identify-features') as FunctionSketchMetrics['challengeType'],
+          totalChallenges,
+          correctCount,
+          attemptsCount,
+          firstTryCount,
+          hintsViewed,
+          overallAccuracy,
+          averageAttemptsPerChallenge,
         },
       );
 
       setSubmittedResult(result);
 
       const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-      sendText(`[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${totalScore}%. Give encouraging phase-specific feedback.`, { silent: true });
+      sendText(`[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallAccuracy}%. Give encouraging phase-specific feedback.`, { silent: true });
     } else {
       sendText(`[NEXT_ITEM] Moving to challenge ${currentIndex + 2} of ${challenges.length}. Introduce it briefly.`, { silent: true });
     }
   }, [
-    advanceProgress, challengeResults, challenges, controlPoints.length,
+    advanceProgress, challengeResults, challenges,
     currentIndex, phaseResults, sendText, submitResult,
   ]);
 

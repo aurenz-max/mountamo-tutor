@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
+  type PatternBuilderMetrics,
 } from '../../../evaluation';
-import type { PatternBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';

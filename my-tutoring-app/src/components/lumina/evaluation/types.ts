@@ -631,24 +631,14 @@ export interface FeatureExhibitMetrics extends BasePrimitiveMetrics {
 
 export interface BalanceScaleMetrics extends BasePrimitiveMetrics {
   type: 'balance-scale';
-
-  targetEquation: string;       // e.g., "2x + 3 = 7"
-  solutionFound: boolean;
-  solutionValue: number;
-
-  operationsPerformed: Array<{
-    operation: 'add' | 'subtract' | 'multiply' | 'divide';
-    value: number;
-    side: 'left' | 'right' | 'both';
-  }>;
-
-  stepsToSolve: number;
-  optimalSteps: number;
-  efficiency: number;           // optimalSteps / stepsToSolve
-
-  phaseProgression: string[];       // Phases completed: ['explore', 'solve', 'verify']
-  balanceMaintained: boolean;       // Whether student always kept scale balanced
-  attemptsCount: number;
+  challengeType: 'equality' | 'equality_hard' | 'one_step' | 'one_step_hard' | 'two_step_intro' | 'two_step';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where student viewed the answer
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 
 export interface BaseTenBlocksMetrics extends BasePrimitiveMetrics {
@@ -712,78 +702,26 @@ export interface NumberLineMetrics extends BasePrimitiveMetrics {
 
 export interface DoubleNumberLineMetrics extends BasePrimitiveMetrics {
   type: 'double-number-line';
-
-  // Goal achievement
-  totalTargetPoints: number;      // Number of points student must find
-  correctPoints: number;          // Number of points student got right
-  allPointsCorrect: boolean;      // All target points found correctly
-
-  // Proportional reasoning
-  unitRateIdentified: boolean;    // Did they find the unit rate (top=1)?
-  correctRatio: string;           // The ratio relationship (e.g., "1:4")
-
-  // Per-point accuracy
-  pointResults: Array<{
-    index: number;
-    targetTop: number;
-    targetBottom: number;
-    studentTop: number | null;
-    studentBottom: number | null;
-    topCorrect: boolean;
-    bottomCorrect: boolean;
-    bothCorrect: boolean;
-  }>;
-
-  // Problem-solving approach
-  attemptsCount: number;          // Total value entries made
-  hintsUsed: number;              // Number of hints requested
-  usedGivenPoints: boolean;       // Whether they used hint points to solve
-
-  // Accuracy metrics
-  topValueAccuracy: number;       // 0-100: correct top values / total points
-  bottomValueAccuracy: number;    // 0-100: correct bottom values / total points
-  overallAccuracy: number;        // 0-100: both correct / total points
+  challengeType: 'equivalent_ratios' | 'find_missing' | 'unit_rate';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where the student opened a hint
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 
 export interface PercentBarMetrics extends BasePrimitiveMetrics {
   type: 'percent-bar';
-
-  // Goal achievement
-  allPhasesCompleted: boolean;      // Did student complete all three phases
-  finalSuccess: boolean;            // Did they successfully complete the main problem
-
-  // Phase completion
-  explorePhaseCompleted: boolean;   // Phase 1: Discovery completed
-  practicePhaseCompleted: boolean;  // Phase 2: Practice completed
-  applyPhaseCompleted: boolean;     // Phase 3: Main problem completed
-
-  // Per-phase performance
-  exploreAccuracy: number;          // 0-100: How close to target in explore phase
-  exploreAttempts: number;          // Number of tries in explore phase
-  exploreHintsUsed: number;         // Hints requested in explore
-
-  practiceQuestionsCorrect: number; // Number of practice questions answered correctly
-  practiceTotalQuestions: number;   // Total practice questions
-  practiceAttempts: number;         // Total attempts across all practice questions
-  practiceHintsUsed: number;        // Hints requested in practice
-
-  mainProblemAccuracy: number;      // 0-100: How close to target in main problem
-  mainProblemAttempts: number;      // Number of tries on main problem
-  mainProblemHintsUsed: number;     // Hints requested on main problem
-
-  // Overall performance
-  totalAttempts: number;            // Total attempts across all phases
-  totalHintsUsed: number;           // Total hints requested
-  averageAccuracy: number;          // 0-100: Average accuracy across all attempts
-
-  // Precision analysis
-  targetPercent: number;            // The final target percentage
-  finalStudentPercent: number;      // Student's final answer
-  percentageError: number;          // Absolute difference from target
-
-  // Efficiency
-  solvedWithoutHints: boolean;      // Completed without using any hints
-  firstAttemptSuccess: boolean;     // Got main problem right on first try
+  challengeType: 'direct' | 'subtraction' | 'addition' | 'comparison';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct within tolerance)
+  hintsViewed: number;            // Challenges where the student opened a hint
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 
 export interface FractionBarMetrics extends BasePrimitiveMetrics {
@@ -976,13 +914,14 @@ export interface EquationWorkspaceMetrics extends BasePrimitiveMetrics {
 
 export interface FunctionSketchMetrics extends BasePrimitiveMetrics {
   type: 'function-sketch';
-  featuresCorrect: number;
-  featuresTotal: number;
-  sketchAccuracy: number;
-  classificationCorrect: boolean;
-  controlPointsPlaced: number;
-  completionTime: number;
-  totalAttempts: number;
+  challengeType: 'identify-features' | 'classify-shape' | 'sketch-match' | 'compare-functions';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // attempts === 1 && correct
+  hintsViewed: number;            // attempts > 1 (saw a wrong-answer hint)
+  overallAccuracy: number;        // 0-100, decayed by attempts
+  averageAttemptsPerChallenge: number;
 }
 
 export interface PracticeProblemMetrics extends BasePrimitiveMetrics {
@@ -2603,14 +2542,62 @@ export interface CountingBoardMetrics extends BasePrimitiveMetrics {
 
 export interface MeasurementToolsMetrics extends BasePrimitiveMetrics {
   type: 'measurement-tools';
+  challengeType: 'measure' | 'compare' | 'estimate' | 'convert';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges (+ compare attempts in compare mode)
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where the student opened the hint panel
+  overallAccuracy: number;        // 0-100, average per-challenge score (60/40 blended with comparison in compare mode)
+  averageAttemptsPerChallenge: number;
+}
 
-  measureCorrect: number;
-  measureTotal: number;
-  compareCorrect: number;
-  compareTotal: number;
-  convertCorrect: number;
-  convertTotal: number;
+export interface HistogramMetrics extends BasePrimitiveMetrics {
+  type: 'histogram';
+  challengeType: 'identify_shape' | 'find_modal_bin' | 'read_frequency' | 'estimate_center';
+  totalChallenges: number;
+  correctCount: number;
   attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
+export interface SlopeTriangleMetrics extends BasePrimitiveMetrics {
+  type: 'slope-triangle';
+  challengeType: 'identify_slope' | 'calculate' | 'draw_triangle';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where the student opened the hint panel
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
+export interface MatrixDisplayMetrics extends BasePrimitiveMetrics {
+  type: 'matrix-display';
+  challengeType: 'transpose' | 'add' | 'subtract' | 'multiply' | 'determinant' | 'inverse';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where the student opened the steps panel
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
+export interface SystemsEquationsMetrics extends BasePrimitiveMetrics {
+  type: 'systems-equations-visualizer';
+  challengeType: 'graph' | 'substitution' | 'elimination';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where the student opened the hint panel
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 
 export interface LengthLabMetrics extends BasePrimitiveMetrics {
@@ -3231,6 +3218,10 @@ export type PrimitiveMetrics =
   | RegroupingWorkbenchMetrics
   | MultiplicationExplorerMetrics
   | MeasurementToolsMetrics
+  | HistogramMetrics
+  | MatrixDisplayMetrics
+  | SlopeTriangleMetrics
+  | SystemsEquationsMetrics
   | LengthLabMetrics
   | ShapeBuilderMetrics
   | NumberSequencerMetrics

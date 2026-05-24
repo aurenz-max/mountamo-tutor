@@ -4,6 +4,12 @@ All primitive code lives under `my-tutoring-app/src/components/lumina/`. Do NOT 
 
 All paths below are relative to `my-tutoring-app/src/components/`.
 
+## Design contract — multi-instance is the default
+
+Every evaluable primitive built with this skill ships as multi-instance from day one, following the canonical schema in [PRD_WITHIN_MODE_INSTANCE_DENSITY.md §4](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern). The PRD's §5 playbook rules are the authoritative source for every decision this skill makes — pool service vs orchestrator, stale-state guards, answer-leak gating, metrics shape. Read it once before your first primitive build; reference it when an edge case comes up.
+
+**Why this matters:** singular-schema primitives are Bucket A by definition. They produce one binary signal per session, fail to demonstrate mastery, and require an expensive refactor later. The 16 Workstream 3 ships in [SHIPPED_LOG.md](../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md) each averaged ~2 hours to densify. Don't create new debt — get the schema right at creation.
+
 ## Architecture: Sequential Focused Agents
 
 This skill uses **sequential agent phases** to maximize quality at each step. The main agent handles creative work (component design), then hands off to focused agents with tight mandates:
@@ -58,22 +64,36 @@ Pick one from the same domain:
 
 Create: `lumina/primitives/visual-primitives/<domain>/<Name>.tsx`
 
-**Must follow these patterns:**
+**The data interface MUST follow the canonical multi-instance shape from [PRD §4](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern).** Singular schemas (one problem per session, no `challenges[]` array) are Bucket A by definition and require an immediate multi-instance refactor — don't create new ones.
 
 ```tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../evaluation';
-import type { <Name>Metrics } from '../../evaluation/types';
+import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
+import type { <Name>Metrics } from '../../../evaluation/types';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
-// EXPORT the data interface — this is the single source of truth
+// EXPORT the challenge interface — the per-instance problem data
+export interface <Name>Challenge {
+  id: string;
+  // ... per-challenge problem data (e.g., targetValue, prompt, expectedAnswer) ...
+}
+
+// EXPORT the data interface — single source of truth for the session shape
 export interface <Name>Data {
   title: string;
   description: string;
-  // ... domain-specific fields ...
+  /** 3-6 challenges. REQUIRED. Built by the generator's pool service or orchestrator. */
+  challenges: <Name>Challenge[];
 
-  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  // Session-level config — keep flat. Per-challenge overrides are YAGNI.
+  challengeType: '<modeA>' | '<modeB>'; // matches catalog evalMode challengeTypes
+  // ... other session-wide flags ...
+
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -82,6 +102,19 @@ export interface <Name>Data {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<<Name>Metrics>) => void;
 }
 ```
+
+**`challenges` is required, not optional.** Optional `challenges?` fields are a smell — they create the latent gap where the generator never populates the array and the multi-instance code path is dead. See [SHIPPED_LOG §6j #1](../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md) (balance-scale post-mortem).
+
+**Schema decision — pool service vs orchestrator (REQUIRED before Phase 4):**
+
+Classify the per-challenge data BEFORE designing the schema. This determines whether the generator uses Fork A (pool service) or Fork B (orchestrator) per [PRD §4](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#generator-pick-a-fork):
+
+| Per-challenge data | Fork | Examples |
+|---|---|---|
+| **Value-only** (a number, coordinate, target, matrix values) | **A: Pool service** — Gemini emits wrapper only; local code picks N values | `factor-tree`, `place-value-chart`, `area-model`, `matrix-display`, `slope-triangle`, `histogram`, `systems-equations` |
+| **Content-bearing** (word problem text, scenario context, label sets) | **B: Orchestrator** — N parallel Gemini calls; results merged | `bar-model`, `tape-diagram`, `coin-counter` |
+
+Document the choice in the Required Fields Manifest in Phase 2c so the Phase 4 Generator Agent knows which fork to build.
 
 **UI rules:**
 - Use shadcn/ui components (Card, Button, Badge, Accordion, etc.)
@@ -112,19 +145,13 @@ sendText('[ALL_COMPLETE] Student finished all items! Celebrate.', { silent: true
 - Include context (student answer, correct answer, attempt count)
 - Only trigger at moments where a human tutor would speak
 
-**RECOMMENDED: Use shared hooks + `PhaseSummaryPanel` for multi-phase primitives.**
-
-If the primitive has 2+ phases with sequential challenges, use the shared hooks to eliminate boilerplate:
+**REQUIRED: `useChallengeProgress` + `usePhaseResults` + `PhaseSummaryPanel`** for every evaluable primitive. These hooks are the canonical multi-instance wiring — skipping them produces Bucket A primitives that need an immediate refactor. Only display-only primitives (no scoring, no IRT routing) may skip.
 
 ```tsx
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-
-// Module-level phase config
+// Module-level phase config (one entry per challengeType; single-mode sessions get one entry)
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  build:    { label: 'Build',    icon: '🧱', accentColor: 'purple' },
-  subitize: { label: 'Subitize', icon: '👁️', accentColor: 'blue' },
+  '<modeA>': { label: 'Mode A', icon: '🧱', accentColor: 'purple' },
+  '<modeB>': { label: 'Mode B', icon: '👁️', accentColor: 'blue' },
 };
 
 // Inside the component — replaces ~100 lines of manual state + useMemo:
@@ -136,19 +163,64 @@ const {
   recordResult,       // replaces setChallengeResults(prev => [...prev, {...}])
   incrementAttempts,  // replaces setCurrentAttempts(a => a + 1)
   advance: advanceProgress,  // replaces setIndex(i+1); setAttempts(0)
-} = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+} = useChallengeProgress({ challenges: data.challenges, getChallengeId: (ch) => ch.id });
+
+const currentChallenge = data.challenges[currentChallengeIndex] ?? null;
 
 const phaseResults = usePhaseResults({
-  challenges, results: challengeResults, isComplete: allChallengesComplete,
-  getChallengeType: (ch) => ch.type,
+  challenges: data.challenges, results: challengeResults, isComplete: allChallengesComplete,
+  getChallengeType: (ch) => ch.type ?? data.challengeType,
   phaseConfig: PHASE_TYPE_CONFIG,
-  // Optional: custom scoring (default: correct/total * 100)
+  // Custom getScore for primitives with within-challenge sub-phases (place-value-chart, area-model):
   // getScore: (rs) => Math.round(rs.reduce((s, r) => s + (r.score ?? 0), 0) / rs.length),
 });
+
+// REQUIRED — per-challenge reset useEffect (PRD §5 rule 8).
+// Enumerate EVERY useState slot that depends on the active challenge.
+// Grep for every useState and ask "would this be wrong for the next challenge?"
+useEffect(() => {
+  if (!currentChallenge) return;
+  setMyInteractionState(initial(currentChallenge));
+  setFeedback('');
+  setFeedbackType('');
+  setAttempts(0);
+  recordedRef.current = false;
+}, [currentChallenge?.id]);
+
+// REQUIRED — stale-state guard (PRD §5 rule 9). Two variants:
+// HANDLER-DRIVEN (button submit — most common): use recordedRef.current at top of submit handler.
+const recordedRef = useRef(false);
+const completeCurrentChallenge = (correct: boolean, extras = {}) => {
+  if (!currentChallenge) return;
+  if (recordedRef.current) return; // already recorded for this challenge
+  recordedRef.current = true;
+  recordResult({ challengeId: currentChallenge.id, correct, attempts, score, ...extras });
+};
+
+// EFFECT-DRIVEN (passive completion-detect, e.g. factor-tree's "all leaves prime"):
+// useEffect(() => {
+//   if (!currentChallenge) return;
+//   if (!stateLooksComplete) return;
+//   if (recordedRef.current) return;
+//   if (!stateMatchesChallenge(currentChallenge)) return;  // content-match guard
+//   recordedRef.current = true;
+//   recordResult({ ... });
+// }, [stateLooksComplete, currentChallenge, /* ... */]);
 ```
 
-In check functions use `incrementAttempts()`. In handleCheckAnswer use `recordResult({...})`.
-In advanceToNextChallenge: `if (!advanceProgress()) { /* all done — submit eval */ return; }` then reset domain-specific state.
+In check functions use `incrementAttempts()`. In submit handlers call `completeCurrentChallenge(correct)`.
+In advance handler: `if (!advanceProgress()) { /* all done — session-complete useEffect fires submit */ return; }`.
+
+**REQUIRED — answer-leak gating audit (PRD §5 rule 7).** Before declaring the component done, walk every label, tooltip, panel, stats display, frequency label, and default value in the rendered UI. Ask: *does this disclose the current mode's correct answer?* Labels correct as defaults are assessment-defeating as challenges. Examples:
+- `histogram` hides the stats panel (`showStatistics: false`) in `estimate_center` mode — the mean was printed in plain text otherwise.
+- `histogram` hides bar frequency labels in `find_modal_bin` / `read_frequency` — the height number above each bar IS the answer.
+- `strategy-picker`'s `TallyViz` originally printed `"{total} total"` underneath the SVG — student read the answer instead of computing it.
+
+Mode-specific visibility flips live in the component, reading `currentChallenge.challengeType` to decide what's hidden.
+
+**REQUIRED — no in-component phase navigator on a single problem (PRD §5 rule 13).** If you find yourself building `setPhase('explore' | 'practice' | 'apply')` UI that walks the student through multiple interaction shapes on ONE problem, STOP. Eval-mode pinning makes the phase walk redundant — each of those phases is a different challenge in the session, not stages within one. See `function-machine` (§6f #1) and `percent-bar` (PRD §6 backlog) for the anti-pattern.
+
+**Between-challenge interstitial** ("Next Number →", "Next Problem →"): when the final phase's celebration message would otherwise disappear instantly on advance, add a brief interstitial card with a "Next X →" button. The student needs ~2 seconds to read the success state. Reference: `PlaceValueChart.tsx` (`'challenge-done'` pseudo-phase).
 
 Render the summary:
 ```tsx
@@ -170,7 +242,7 @@ const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempt
 sendText(`[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. Give encouraging phase-specific feedback.`, { silent: true });
 ```
 
-**Skip shared hooks** for single-phase primitives or non-evaluable display components. Reference: `TenFrame.tsx`, `CountingBoard.tsx`.
+**Display-only primitives may skip these hooks.** Reference: components without scoring, no IRT routing, no `usePrimitiveEvaluation`.
 
 ### 2c. Identify outputs for subagents
 
@@ -277,8 +349,13 @@ Tasks:
      ],
      <if interactive, add tutoring field:>
      tutoring: {
-       taskDescription: '<What the student is doing. Use {{key}} for runtime values.>',
-       contextKeys: [<list of primitive_data keys the AI needs>],
+       taskDescription: '<Multi-X session — describe the per-challenge work>. Currently on {{challengeType}} challenge {{currentChallengeIndex}} of {{totalChallenges}}.',
+       contextKeys: [
+         'challengeType',
+         'currentChallengeIndex',
+         'totalChallenges',
+         // ... scalar active-challenge fields (no per-challenge arrays — PRD §5 rule 15)
+       ],
        scaffoldingLevels: {
          level1: '"<Gentle nudge — ask a question>"',
          level2: '"<Specific guidance — break into steps, use {{key}}>"',
@@ -287,49 +364,115 @@ Tasks:
        commonStruggles: [
          { pattern: '<Observable behavior>', response: '<Actionable tutor response>' },
        ],
+       aiDirectives: [
+         {
+           title: 'MULTI-<X> PACING',
+           instruction:
+             'This is a {{totalChallenges}}-challenge session. After each correct answer the student clicks "Next <X> →". '
+             + 'Encourage progression: "Nice — on to <x> {{currentChallengeIndex}}!" '
+             + 'After a wrong attempt, point at the specific step that needs another look — do NOT just repeat the whole method.',
+         },
+       ],
      },
      supportsEvaluation: true,
    },
    ```
 
 Rules for tutoring field:
-- taskDescription describes WHAT the student is doing, not what AI should say
+- taskDescription describes WHAT the student is doing across the SESSION, not a single problem. ALWAYS template `{{totalChallenges}}` and `{{currentChallengeIndex}}` so the tutor knows it's a multi-problem session.
+- `contextKeys` MUST be scalar session-level or active-challenge fields only. NEVER include per-challenge array fields (`challenges`, full `equations`, dataset arrays) — they flood the tutor prompt with hundreds of fields per turn (PRD §5 rule 15). The student sees the work; the tutor sees the pacing.
 - Use {{key}} for runtime primitive_data values
 - Never give the answer at any scaffolding level
 - commonStruggles describe OBSERVABLE behavior, not vague labels
+- Add a `MULTI-<X> PACING` aiDirective (canonical pattern across all multi-instance primitives — see `MULTI-EQUATION PACING` in balance-scale, `MULTI-FUNCTION PACING` in function-sketch, `MULTI-HISTOGRAM PACING` in histogram).
+- `constraints` MUST clarify the manifest must NOT supply specific per-challenge values — the pool service or orchestrator builds challenges deterministically from the eval mode.
 ```
 
 ### Subagent C: "Evaluation types & tester"
 
 Prompt template (only if interactive):
 ```
-Add evaluation metrics and tester entry for a new Lumina primitive.
+Add evaluation metrics and tester entry for a new Lumina primitive following the canonical 9-field flattened shape from PRD §4.
 
 Component ID: `<id>`
 Component name: `<Name>`
 Domain: `<domain>`
 Data interface: `<Name>Data`
+Challenge types (eval mode keys): <list, e.g. 'modeA' | 'modeB'>
 
 Tasks:
+
 1. Read `my-tutoring-app/src/components/lumina/evaluation/types.ts`
-   - Add metrics interface:
+   - Add metrics interface using the canonical 9-field shape (PRD §4):
      ```typescript
      export interface <Name>Metrics extends BasePrimitiveMetrics {
        type: '<id>';
-       // Add domain-specific metrics (accuracy, goalMet, attempts, etc.)
+       challengeType: '<modeA>' | '<modeB>' | /* ... */;
+       totalChallenges: number;
+       correctCount: number;
+       attemptsCount: number;          // total tries across all challenges
+       firstTryCount: number;          // challenges scoring 100 (first-try correct)
+       hintsViewed: number;
+       overallAccuracy: number;        // 0-100, average per-challenge score
+       averageAttemptsPerChallenge: number;
      }
      ```
-   - Add to `PrimitiveMetrics` union type
+   - Add `<Name>Metrics` to the `AnyPrimitiveMetrics` union type.
+   - DO NOT add per-challenge tautological fields (currentInput, phaseStep, mode-specific per-instance state) — they measure the LAST challenge, not the session (PRD §5 rule 18). If the primitive has genuine session-level signal not captured by the 9 canonical fields, justify it before adding.
 
 2. Read `my-tutoring-app/src/components/lumina/evaluation/index.ts`
-   - Add `<Name>Metrics` to the type exports
+   - Re-export `<Name>Metrics` (add to the math-phase-2 export block or appropriate domain block).
 
-3. Read `my-tutoring-app/src/components/lumina/components/<Domain>PrimitivesTester.tsx`
-   - Add import for the component
-   - Add to PrimitiveType union
-   - Add to PRIMITIVE_OPTIONS array with appropriate icon and topic
-   - Add render case in the component (follow existing pattern — do NOT pass onEvaluationSubmit to avoid double submission)
+3. Read `my-tutoring-app/src/components/lumina/components/<Domain>PrimitivesTester.tsx` and apply the 5-edit checklist (PRD §5 rule 17):
+
+   **Edit 1 — Import the component:**
+   ```tsx
+   import <Name> from '../primitives/visual-primitives/<domain>/<Name>';
+   ```
+
+   **Edit 2 — Add to `PrimitiveType` union:**
+   ```tsx
+   type PrimitiveType = '...' | '<id>';
+   ```
+
+   **Edit 3 — Add to `PRIMITIVE_OPTIONS`:**
+   ```tsx
+   { value: '<id>', label: '<Display Name>', icon: '<emoji>', topic: '<short topic>' },
+   ```
+
+   **Edit 4 — Add render case (PASS evaluation props — DO NOT omit `onEvaluationSubmit`):**
+   ```tsx
+   case '<id>':
+     return (
+       <<Name>
+         {...(data as Parameters<typeof <Name>>[0]['data'])}
+         instanceId={instanceId}
+         skillId={skillId}
+         subskillId={subskillId}
+         objectiveId={objectiveId}
+         onEvaluationSubmit={handleEvaluationSubmit}
+       />
+     );
+   ```
+   **HARDCODED MOCK FIXTURES ARE A BUG.** If you find yourself constructing a `<Name>Data` object with literal field values in the render case, STOP — that masks all generator changes from the tester preview (the measurement-tools fixture-bug, SHIPPED_LOG §6k #4). Always spread the generator's `data` via `...(data as Parameters<...>[0]['data'])`.
+
+   **Edit 5 — Add metrics breakdown block in the results panel:**
+   ```tsx
+   {result.metrics.type === '<id>' && (
+     <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+       <span>Mode: {result.metrics.challengeType}</span>
+       <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+       <span>First try: {result.metrics.firstTryCount}</span>
+       <span>Attempts: {result.metrics.attemptsCount}</span>
+       <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+       <span>Hints viewed: {result.metrics.hintsViewed}</span>
+       <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+     </div>
+   )}
+   ```
 ```
+
+**Why `onEvaluationSubmit` MUST be passed:** Every recent multi-instance ship (function-sketch, balance-scale, measurement-tools, slope-triangle, matrix-display, histogram, systems-equations) passes `onEvaluationSubmit`. The old "do NOT pass onEvaluationSubmit to avoid double submission" guidance was wrong — `usePrimitiveEvaluation` guards via `submittedRef` against double submission, and omitting the prop silently suppresses ALL metrics submission from the tester (function-sketch §6i had this gap; matrix-display §6m had this gap). Always pass it.
 
 ### Subagent D: "Backend problem type registry" (only if eval modes)
 
@@ -398,28 +541,103 @@ The component READS these fields — if any are missing, the challenge renders b
 
 ### Task 2: Design the schema
 
-Design a Gemini JSON schema that reliably produces valid data.
+Design a Gemini schema that reliably produces multi-instance valid data. **Read [PRD §4 + §5](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md) before designing anything — the schema decision is upstream of the schema text.**
 
 **CRITICAL SCHEMA RULES:**
 
-1. **Decide: single-type sub-generators vs multi-type schema.**
-   - If 3+ challenge types: USE the orchestrator pattern (one Gemini call per type).
-     Each sub-generator has a simpler schema with NO nullable fields. See `gemini-tape-diagram.ts`.
-   - If 1-2 challenge types: a single schema is OK, but minimize nullable fields.
+1. **Pick the fork from Phase 2c (PRD §5 rule 1).** The per-challenge data classification was made in Phase 2c. Now build the corresponding generator shape:
 
-2. **Flatten arrays inside challenge objects** to avoid malformed LLM JSON:
+   **Fork A — Pool service (value-only per-challenge data).** Gemini emits ONLY the session wrapper (title, description, challengeType, mode flags). The N challenges are built deterministically in local code.
+
+   ```typescript
+   // Schema: wrapper metadata only — Gemini does NOT emit per-challenge data
+   const wrapperSchema: Schema = {
+     type: Type.OBJECT,
+     properties: {
+       title: { type: Type.STRING, description: 'Session title (do NOT name specific problems)' },
+       description: { type: Type.STRING },
+       challengeType: { type: Type.STRING, enum: [...] },
+       gradeBand: { type: Type.STRING },
+     },
+     required: ['title', 'description', 'challengeType'],
+   };
+
+   // Local pool service builds N challenges deterministically:
+   const challenges = selectFooChallenges(challengeType, { count: 4 });
+
+   return { ...wrapper, challenges };
+   ```
+
+   Reference: [gemini-factor-tree.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-factor-tree.ts), [gemini-balance-scale.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-balance-scale.ts), [gemini-histogram.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-histogram.ts), [gemini-systems-equations.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-systems-equations.ts).
+
+   **Fork B — Orchestrator (content-bearing per-challenge data).** N parallel Gemini calls (Promise.all) of a per-mode sub-generator; results merged into `challenges[]`. Use **orchestrator-same-mode** (one call shape, N copies) when the session pins to a single eval mode (the common case). Use **orchestrator-mixed-type** only when one render spans multiple challenge types.
+
+   ```typescript
+   const subGenerator = subGeneratorFor(challengeType);
+   const results = await Promise.all(
+     Array.from({ length: DEFAULT_INSTANCE_COUNT }, () => subGenerator(topic, gradeLevel))
+   );
+   const challenges = results.map((r, i) => ({ ...r.challenge, id: `foo-${i + 1}` }));
+   return { ...firstResult.wrapper, challenges };
+   ```
+
+   Reference: [gemini-bar-model.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-bar-model.ts), [gemini-tape-diagram.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-tape-diagram.ts), [gemini-function-sketch.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-function-sketch.ts).
+
+2. **Structured-output Gemini is CONVERGENT on values (PRD §5 rule 2).** With `responseMimeType: "application/json"` + `responseSchema`, Gemini IGNORES temperature for numeric/categorical values — same composites, same coordinates, same scenarios on every call, even at temperature 0.9. This is documented in [NUMBER_POOL_SERVICE.md](../../my-tutoring-app/src/components/lumina/service/math/NUMBER_POOL_SERVICE.md).
+
+   **Implication:** if you put per-challenge value fields in the Gemini schema and rely on temperature for variance, the N challenges will be near-identical. ALWAYS pre-randomize value-only fields in code (Fork A) or use N independent parallel calls so independent draws produce variance (Fork B). NEVER rely on prompt-level "spread coverage" instructions to Gemini — they don't work.
+
+3. **Pool-service variance enforcement (PRD §5 rule 3).** When the pool has structural categories beyond a single binary (odd/even, easy/hard, operation-family, distribution-shape), enforce one-per-category before back-filling. Standard pattern:
+
+   ```typescript
+   const families = new Set<string>();
+   const selected: Challenge[] = [];
+   for (const candidate of shuffled) {
+     if (selected.length >= target) break;
+     if (!families.has(family(candidate))) {
+       selected.push(candidate);
+       families.add(family(candidate));
+     }
+   }
+   // back-fill remaining slots; force-swap if monoculture survived
+   ```
+
+   See factor-tree's "≥1 odd composite" guarantee, function-machine's operation-family rotation, histogram's shape rotation.
+
+4. **Pre-compute expected answers in the generator (PRD §5 rule 4).** For deterministic-answer challenges, store `expectedScalar` / `expectedMatrix` / `expectedX,Y` / `targetAnswer` on the challenge object. Submit-time scoring becomes `parseFloat(input) === expected`. NEVER re-derive at submit — that's a class of stale-state bugs the multi-instance refactor exists to eliminate.
+
+5. **Back-solve from the integer answer when constraints depend on it (PRD §5 rule 5).** Don't forward-search for integer solutions; pick `(x₀, y₀)` freely, then derive equation parameters that make both lines pass through it. Acceptance rate goes from ~5% to ~95%. Reference: `buildSlopeInterceptChallenge` in [gemini-systems-equations.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-systems-equations.ts).
+
+6. **Canonical-key dedup** prevents duplicate challenges within a session:
+
+   ```typescript
+   const canonKey = (ch: Challenge) => `${ch.foo}|${ch.bar}|${ch.expectedX},${ch.expectedY}`;
+   const seen = new Set<string>();
+   while (challenges.length < target && attempts++ < target * 20) {
+     const ch = builder(...);
+     if (seen.has(canonKey(ch))) continue;
+     seen.add(canonKey(ch));
+     challenges.push(ch);
+   }
+   // fallback: accept duplicates if the candidate space was too narrow
+   ```
+
+7. **Index-derived challenge IDs, not `Date.now()`.** When using parallel orchestrator calls, all N resolve in the same millisecond and collide. Assign IDs from index AFTER Promise.all returns:
+
+   ```typescript
+   const challenges = results.map((r, i) => ({ ...r.challenge, id: `foo-${i + 1}` }));
+   ```
+
+   `useChallengeProgress` uses these IDs as React keys and the reset useEffect's dependency — collisions silently break the per-challenge state reset.
+
+8. **Flatten arrays inside challenge objects** to avoid malformed LLM JSON (Fork B only, since Fork A doesn't emit per-challenge data from Gemini):
    - `options: string[]` → `option0`, `option1`, `option2`, `option3`
    - `coins: {type, count}[]` → `coin0Type`/`coin0Count` through `coin3Type`/`coin3Count`
    - After Gemini call, reconstruct arrays from flat fields.
 
-3. **NEVER make a field nullable if the component reads it without a fallback.**
-   Cross-check against the Required Fields Contract above. If the component's render function
-   reads `challenge.displayedCoins` and renders it directly, then `displayedCoin0Type` must NOT
-   be nullable — it must be required for that challenge type.
+9. **NEVER make a field nullable if the component reads it without a fallback.** Cross-check against the Required Fields Contract.
 
-4. **If using multi-type schema with nullable fields:** After flat-field reconstruction,
-   VALIDATE that each challenge has all required fields for its type. REJECT (return null)
-   any challenge missing critical data. NEVER silently fall back to a default value.
+10. **If using multi-type schema with nullable fields:** After flat-field reconstruction, VALIDATE that each challenge has all required fields for its type. REJECT (return null) any challenge missing critical data. NEVER silently fall back to a default value.
 
 ### Task 3: Write the generator
 
@@ -664,16 +882,23 @@ When adding a **new domain** (not new primitive in existing domain), also update
 ## Key Rules
 
 1. **Single source of truth**: Data interface defined and exported ONLY in the component file. Generator imports it.
-2. **No double evaluation submission**: Tester does NOT pass `onEvaluationSubmit` — the `usePrimitiveEvaluation` hook handles context submission.
-3. **Use shadcn/ui**: Cards, Buttons, Badges, Accordions — never custom div-based UI patterns.
-4. **Write complete component files**: Use Write tool, not incremental edits, to prevent broken JSX.
-5. **Required Fields Manifest**: Always create one in Phase 2c and pass it to Phases 4 and 6.
-6. **Generator rejects, never silently falls back**: Missing visual data = reject challenge + log. Never `?? defaultValue` for fields the component renders.
-7. **Orchestrator pattern for 3+ challenge types**: One Gemini call per type, simpler schemas, no nullable fields.
+2. **Pass `onEvaluationSubmit` in the tester**: `usePrimitiveEvaluation` guards against double submission via `submittedRef`. Omitting the prop silently suppresses ALL metrics submission from the tester (function-sketch and matrix-display both had this silent gap before the multi-instance refactors). **Always pass it.**
+3. **Multi-instance is the default**: Every new evaluable primitive ships with `challenges: <Name>Challenge[]` and `useChallengeProgress`. Singular `<Name>Data` shapes are Bucket A by definition — don't create new ones. See [PRD §4](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern).
+4. **Use shadcn/ui**: Cards, Buttons, Badges, Accordions — never custom div-based UI patterns.
+5. **Write complete component files**: Use Write tool, not incremental edits, to prevent broken JSX.
+6. **Required Fields Manifest**: Always create one in Phase 2c (includes the Fork A vs Fork B decision from PRD §5 rule 1) and pass it to Phases 4 and 6.
+7. **Generator rejects, never silently falls back**: Missing visual data = reject challenge + log. Never `?? defaultValue` for fields the component renders.
+8. **Fork A (pool service) vs Fork B (orchestrator) — decision is value-only vs content-bearing, NOT by challenge-type count**. Value-only data (numbers, coordinates, matrix values) → pool service even with N challenge types. Content-bearing data (word problems, scenarios) → orchestrator. See [PRD §5 rule 1](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
+9. **Mode-specific answer-leak audit before declaring done**: walk every label, tooltip, panel, stats display in the rendered UI — would it disclose the current mode's correct answer? Fix by gating visibility on `currentChallenge.challengeType`. See [PRD §5 rule 7](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
+10. **No hardcoded mock fixtures in the tester** — they mask all generator changes. Always spread the generator's `data` via `...(data as Parameters<...>[0]['data'])`. See [SHIPPED_LOG §6k #4](../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md).
 
 ## PRD Reference
 
-Primitive specs and requirements are documented in:
+This skill's design contract is defined by:
+- **[PRD_WITHIN_MODE_INSTANCE_DENSITY.md](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md)** — canonical multi-instance schema (§4), refactor playbook rules (§5), current backlog (§6). READ THIS BEFORE building any new primitive — the patterns this skill enforces are documented there.
+- **[SHIPPED_LOG.md](../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md)** — per-primitive post-mortems for 16 shipped primitives. Useful as worked examples when you hit an unusual case.
+
+Domain-specific PRDs:
 - `lumina/docs/space-primitives-prd.md` — Astronomy/space primitives
 - `lumina/docs/lumina_difficulty_calibration_prd.md` — IRT calibration PRD (section 5.3 prior difficulty table for beta values)
 - `lumina/docs/ADDING_EVAL_MODES.md` — Full eval modes implementation guide

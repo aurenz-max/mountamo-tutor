@@ -18,15 +18,22 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 // Data Types (Single Source of Truth)
 // ============================================================================
 
+export type PercentBarChallengeType = 'direct' | 'subtraction' | 'addition' | 'comparison';
+
 export interface PercentContext {
-  problemType: 'addition' | 'subtraction' | 'direct' | 'comparison';
+  problemType: PercentBarChallengeType;
   initialValue: number;
   changeRate: number;
   discountFactor: number;
   finalValue: number;
 }
 
-export interface PracticeQuestion {
+export interface PercentBarChallenge {
+  id: string;
+  type: PercentBarChallengeType;
+  scenario: string;
+  wholeValue: number;
+  wholeValueLabel: string;
   question: string;
   targetPercent: number;
   hint: string;
@@ -36,27 +43,10 @@ export interface PracticeQuestion {
 export interface PercentBarData {
   title: string;
   description: string;
-  scenario: string;
+  /** 3-6 challenges. Required. */
+  challenges: PercentBarChallenge[];
 
-  wholeValue: number;
-  wholeValueLabel: string;
-
-  // Phase 1: Explore
-  exploreQuestion: string;
-  exploreTargetPercent: number;
-  exploreHint: string;
-  exploreContext: PercentContext;
-
-  // Phase 2: Practice (2-3 questions)
-  practiceQuestions: PracticeQuestion[];
-
-  // Phase 3: Apply (main problem)
-  mainQuestion: string;
-  mainTargetPercent: number;
-  mainHint: string;
-  mainContext: PercentContext;
-
-  // Visual configuration
+  // Session-level visual config
   showPercentLabels?: boolean;
   showValueLabels?: boolean;
   benchmarkLines?: number[];
@@ -72,26 +62,21 @@ export interface PercentBarData {
 }
 
 // ============================================================================
-// Internal challenge type for shared hooks
-// ============================================================================
-
-interface PercentChallenge {
-  id: string;
-  type: 'explore' | 'practice' | 'apply';
-  question: string;
-  targetPercent: number;
-  hint: string;
-  context: PercentContext;
-}
-
-// ============================================================================
 // Constants
 // ============================================================================
 
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  explore: { label: 'Explore', icon: '\uD83D\uDD0D', accentColor: 'cyan' },
-  practice: { label: 'Practice', icon: '\uD83D\uDCDD', accentColor: 'purple' },
-  apply: { label: 'Apply', icon: '\uD83C\uDFAF', accentColor: 'emerald' },
+const CHALLENGE_TYPE_LABEL: Record<PercentBarChallengeType, string> = {
+  direct: 'Direct',
+  subtraction: 'Discount',
+  addition: 'Tax / Tip',
+  comparison: 'Compare',
+};
+
+const PHASE_CONFIG: Record<PercentBarChallengeType, PhaseConfig> = {
+  direct: { label: 'Direct', icon: '📊', accentColor: 'emerald' },
+  subtraction: { label: 'Discount', icon: '🏷️', accentColor: 'purple' },
+  addition: { label: 'Tax / Tip', icon: '💰', accentColor: 'cyan' },
+  comparison: { label: 'Compare', icon: '⚖️', accentColor: 'amber' },
 };
 
 const TOLERANCE = 2; // ±2% for accepting answers
@@ -113,18 +98,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   const {
     title,
     description,
-    scenario,
-    wholeValue,
-    wholeValueLabel,
-    exploreQuestion,
-    exploreTargetPercent,
-    exploreHint,
-    exploreContext,
-    practiceQuestions = [],
-    mainQuestion,
-    mainTargetPercent,
-    mainHint,
-    mainContext,
+    challenges,
     showPercentLabels = true,
     showValueLabels = true,
     benchmarkLines = [25, 50, 75],
@@ -138,47 +112,6 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   } = data;
 
   // -------------------------------------------------------------------------
-  // Build unified challenges array
-  // -------------------------------------------------------------------------
-  const challenges = useMemo((): PercentChallenge[] => {
-    const items: PercentChallenge[] = [
-      {
-        id: 'explore-0',
-        type: 'explore',
-        question: exploreQuestion,
-        targetPercent: exploreTargetPercent,
-        hint: exploreHint,
-        context: exploreContext,
-      },
-    ];
-
-    practiceQuestions.forEach((pq, i) => {
-      items.push({
-        id: `practice-${i}`,
-        type: 'practice',
-        question: pq.question,
-        targetPercent: pq.targetPercent,
-        hint: pq.hint,
-        context: pq.context,
-      });
-    });
-
-    items.push({
-      id: 'apply-0',
-      type: 'apply',
-      question: mainQuestion,
-      targetPercent: mainTargetPercent,
-      hint: mainHint,
-      context: mainContext,
-    });
-
-    return items;
-  }, [
-    exploreQuestion, exploreTargetPercent, exploreHint, exploreContext,
-    practiceQuestions, mainQuestion, mainTargetPercent, mainHint, mainContext,
-  ]);
-
-  // -------------------------------------------------------------------------
   // Shared hooks for challenge progression
   // -------------------------------------------------------------------------
   const {
@@ -189,7 +122,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
+  } = useChallengeProgress<PercentBarChallenge>({
     challenges,
     getChallengeId: (ch) => ch.id,
   });
@@ -199,13 +132,18 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     results: challengeResults,
     isComplete: allChallengesComplete,
     getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
+    phaseConfig: PHASE_CONFIG,
     getScore: (rs) =>
-      Math.round(rs.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / rs.length),
+      Math.round(
+        rs.reduce(
+          (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+          0,
+        ) / Math.max(rs.length, 1),
+      ),
   });
 
   // -------------------------------------------------------------------------
-  // Local state
+  // Local state (per-challenge)
   // -------------------------------------------------------------------------
   const [currentPercent, setCurrentPercent] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
@@ -214,29 +152,23 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   const [showHint, setShowHint] = useState(false);
   const [hoveredBenchmark, setHoveredBenchmark] = useState<number | null>(null);
 
-  // Hint tracking per phase
-  const [exploreHintsUsed, setExploreHintsUsed] = useState(0);
-  const [practiceHintsUsed, setPracticeHintsUsed] = useState(0);
-  const [mainHintsUsed, setMainHintsUsed] = useState(0);
-
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `percent-bar-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const recordedRef = useRef(false);
+  const hintViewedRef = useRef(false);
+  const hintsViewedRef = useRef(0);
 
   // -------------------------------------------------------------------------
   // Derived state
   // -------------------------------------------------------------------------
   const currentChallenge = challenges[currentChallengeIndex] ?? null;
-  const currentPhase = currentChallenge?.type ?? 'explore';
+  const challengeType = currentChallenge?.type ?? challenges[0]?.type ?? 'direct';
+  const wholeValue = currentChallenge?.wholeValue ?? 100;
+  const wholeValueLabel = currentChallenge?.wholeValueLabel ?? 'Total';
   const currentValue = (currentPercent / 100) * wholeValue;
-
-  const practiceTotal = practiceQuestions.length;
-  const currentPracticeIndex = currentPhase === 'practice'
-    ? currentChallengeIndex - 1 // subtract explore challenge
-    : 0;
-
   const isCurrentChallengeComplete = challengeResults.some(
-    r => r.challengeId === currentChallenge?.id && r.correct,
+    (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
 
   // -------------------------------------------------------------------------
@@ -258,23 +190,23 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring Integration
+  // AI Tutoring Integration (scalar session-level + active-challenge fields)
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
+    challengeType,
+    currentChallengeIndex: currentChallengeIndex + 1,
+    totalChallenges: challenges.length,
+    scenario: currentChallenge?.scenario ?? '',
     wholeValue,
     wholeValueLabel,
-    currentPercent,
-    currentValue: (currentPercent / 100) * wholeValue,
-    currentPhase,
     question: currentChallenge?.question ?? '',
     targetPercent: currentChallenge?.targetPercent ?? 0,
-    context: currentChallenge?.context,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
+    currentPercent,
+    currentValue,
     attemptNumber: currentAttempts + 1,
   }), [
-    wholeValue, wholeValueLabel, currentPercent, currentPhase,
-    currentChallenge, challenges.length, currentChallengeIndex, currentAttempts,
+    challengeType, currentChallengeIndex, challenges.length, currentChallenge,
+    wholeValue, wholeValueLabel, currentPercent, currentValue, currentAttempts,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -284,21 +216,34 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     gradeLevel: 'Grade 5-8',
   });
 
-  // Activity introduction
+  // Activity introduction (fires once on connect)
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
-
+    const first = challenges[0];
     sendText(
-      `[ACTIVITY_START] This is a percent bar activity about "${title}". `
-      + `Scenario: "${scenario}". The whole value is ${wholeValue} (${wholeValueLabel}). `
-      + `${challenges.length} challenges across 3 phases: Explore, Practice (${practiceTotal} problems), Apply. `
-      + `First challenge: "${currentChallenge?.question}". `
-      + `Introduce the activity warmly and read the first question.`,
+      `[ACTIVITY_START] Percent bar session: ${challenges.length} ${CHALLENGE_TYPE_LABEL[challengeType]} problems. `
+      + `Title: "${title}". First scenario: "${first.scenario}" — "${first.question}". `
+      + `Introduce warmly and read the first question.`,
       { silent: true },
     );
-  }, [isConnected, challenges.length, title, scenario, wholeValue, wholeValueLabel, practiceTotal, currentChallenge, sendText]);
+  }, [isConnected, challenges, challengeType, title, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Per-challenge reset — fires whenever advance() flips currentChallenge.id
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!currentChallenge) return;
+    setCurrentPercent(50);
+    setFeedback('');
+    setFeedbackType('');
+    setShowHint(false);
+    setIsDragging(false);
+    setHoveredBenchmark(null);
+    recordedRef.current = false;
+    hintViewedRef.current = false;
+  }, [currentChallenge?.id]);
 
   // -------------------------------------------------------------------------
   // Helpers
@@ -317,7 +262,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   // Bar interaction handlers
   // -------------------------------------------------------------------------
   const handleBarInteraction = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (allChallengesComplete || hasSubmittedEvaluation) return;
+    if (allChallengesComplete || hasSubmittedEvaluation || isCurrentChallengeComplete) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
@@ -331,14 +276,15 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   };
 
   const handleShowHint = () => {
+    if (!currentChallenge) return;
     setShowHint(true);
-    if (currentPhase === 'explore') setExploreHintsUsed(prev => prev + 1);
-    else if (currentPhase === 'practice') setPracticeHintsUsed(prev => prev + 1);
-    else if (currentPhase === 'apply') setMainHintsUsed(prev => prev + 1);
-
+    if (!hintViewedRef.current) {
+      hintViewedRef.current = true;
+      hintsViewedRef.current += 1;
+    }
     sendText(
-      `[HINT_REQUESTED] Student requested a hint for: "${currentChallenge?.question}". `
-      + `Hint shown: "${currentChallenge?.hint}". Current percent: ${currentPercent}%, target: ${currentChallenge?.targetPercent}%. `
+      `[HINT_REQUESTED] Student requested a hint for: "${currentChallenge.question}". `
+      + `Hint shown: "${currentChallenge.hint}". Current percent: ${currentPercent}%, target: ${currentChallenge.targetPercent}%. `
       + `Provide additional encouragement without revealing the answer.`,
       { silent: true },
     );
@@ -349,28 +295,34 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const handleCheckAnswer = useCallback(() => {
     if (!currentChallenge) return;
+    if (recordedRef.current) return; // stale-state guard
 
     incrementAttempts();
+    const attempts = currentAttempts + 1;
     const target = currentChallenge.targetPercent;
     const correct = isWithinTolerance(currentPercent, target);
     const accuracy = getAccuracyScore(currentPercent, target);
 
     if (correct) {
-      const partValue = ((target / 100) * wholeValue).toFixed(2);
-      setFeedback(`${target}% of ${wholeValue} = ${partValue}!`);
+      const partValue = ((target / 100) * currentChallenge.wholeValue).toFixed(2);
+      setFeedback(`${target}% of ${currentChallenge.wholeValue} = ${partValue}.`);
       setFeedbackType('success');
 
+      // Standard per-challenge score (PRD §5 rule 11): 100 first try, -20 per extra, floor 20.
+      const score = Math.max(20, 100 - (attempts - 1) * 20);
+      recordedRef.current = true;
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
-        attempts: currentAttempts + 1,
-        score: accuracy,
+        attempts,
+        score,
+        accuracy: Math.round(accuracy),
       });
 
       sendText(
-        `[ANSWER_CORRECT] Student set ${currentPercent}% (target: ${target}%). `
-        + `Phase: ${currentPhase}. Accuracy: ${accuracy.toFixed(0)}%. Attempts: ${currentAttempts + 1}. `
-        + `Congratulate briefly and explain: ${target}% of ${wholeValue} = ${partValue}.`,
+        `[ANSWER_CORRECT] Student placed ${currentPercent}% (target: ${target}%). `
+        + `Accuracy: ${accuracy.toFixed(0)}%. Attempts: ${attempts}. `
+        + `Congratulate briefly and explain: ${target}% of ${currentChallenge.wholeValue} = ${partValue}.`,
         { silent: true },
       );
     } else {
@@ -387,126 +339,88 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
       }
 
       sendText(
-        `[ANSWER_INCORRECT] Student set ${currentPercent}% but target is ${target}%. `
-        + `Difference: ${Math.abs(diff)}%. Attempt ${currentAttempts + 1}. Phase: ${currentPhase}. `
+        `[ANSWER_INCORRECT] Student placed ${currentPercent}% but target is ${target}%. `
+        + `Difference: ${Math.abs(diff)}%. Attempt ${attempts}. `
         + `Give a directional hint without revealing the exact answer.`,
         { silent: true },
       );
     }
-  }, [currentChallenge, currentPercent, currentAttempts, wholeValue, currentPhase,
-      incrementAttempts, recordResult, sendText]);
+  }, [
+    currentChallenge, currentPercent, currentAttempts,
+    incrementAttempts, recordResult, sendText,
+  ]);
 
   // -------------------------------------------------------------------------
   // Advance to next challenge
   // -------------------------------------------------------------------------
   const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All challenges complete — compute and submit evaluation
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / challenges.length,
-      );
-
+    if (!advanceProgress()) return;
+    const nextIdx = currentChallengeIndex + 1;
+    const next = challenges[nextIdx];
+    if (next) {
       sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their percent problem-solving!`,
+        `[NEXT_ITEM] Moving to challenge ${nextIdx + 1} of ${challenges.length}. `
+        + `Scenario: "${next.scenario}". Question: "${next.question}". `
+        + `Target: ${next.targetPercent}%. Read the question to the student.`,
         { silent: true },
       );
-
-      if (!hasSubmittedEvaluation) {
-        const exploreResults = challengeResults.filter(r => r.challengeId.startsWith('explore'));
-        const practiceResults = challengeResults.filter(r => r.challengeId.startsWith('practice'));
-        const applyResults = challengeResults.filter(r => r.challengeId.startsWith('apply'));
-
-        const exploreAccuracy = exploreResults.length > 0
-          ? Math.round(exploreResults.reduce((s, r) => s + (r.score ?? 0), 0) / exploreResults.length) : 0;
-        const practiceCorrect = practiceResults.filter(r => r.correct).length;
-        const mainAccuracy = applyResults.length > 0
-          ? Math.round(applyResults.reduce((s, r) => s + (r.score ?? 0), 0) / applyResults.length) : 0;
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-        const totalHints = exploreHintsUsed + practiceHintsUsed + mainHintsUsed;
-        const averageAccuracy = Math.round(
-          challengeResults.reduce((s, r) => s + (r.score ?? 0), 0) / challenges.length,
-        );
-
-        const metrics: PercentBarMetrics = {
-          type: 'percent-bar',
-          allPhasesCompleted: true,
-          finalSuccess: applyResults.every(r => r.correct),
-          explorePhaseCompleted: exploreResults.every(r => r.correct),
-          practicePhaseCompleted: practiceResults.every(r => r.correct),
-          applyPhaseCompleted: applyResults.every(r => r.correct),
-          exploreAccuracy,
-          exploreAttempts: exploreResults.reduce((s, r) => s + r.attempts, 0),
-          exploreHintsUsed,
-          practiceQuestionsCorrect: practiceCorrect,
-          practiceTotalQuestions: practiceTotal,
-          practiceAttempts: practiceResults.reduce((s, r) => s + r.attempts, 0),
-          practiceHintsUsed,
-          mainProblemAccuracy: mainAccuracy,
-          mainProblemAttempts: applyResults.reduce((s, r) => s + r.attempts, 0),
-          mainProblemHintsUsed: mainHintsUsed,
-          totalAttempts,
-          totalHintsUsed: totalHints,
-          averageAccuracy,
-          targetPercent: mainTargetPercent,
-          finalStudentPercent: currentPercent,
-          percentageError: Math.abs(currentPercent - mainTargetPercent),
-          solvedWithoutHints: totalHints === 0,
-          firstAttemptSuccess: applyResults.length > 0 && applyResults[0].attempts === 1,
-        };
-
-        submitEvaluation(
-          applyResults.every(r => r.correct),
-          averageAccuracy,
-          metrics,
-          { challengeResults },
-        );
-      }
-      return;
     }
+  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
 
-    // Reset for next challenge
-    setCurrentPercent(50);
-    setFeedback('');
-    setFeedbackType('');
-    setShowHint(false);
+  // -------------------------------------------------------------------------
+  // Session-complete: build canonical 9-field metrics and submit exactly once.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
 
-    const nextChallenge = challenges[currentChallengeIndex + 1];
+    const total = challenges.length;
+    const correctCount = challengeResults.filter((r) => r.correct).length;
+    const attemptsCount = challengeResults.reduce((s, r) => s + r.attempts, 0);
+    const firstTryCount = challengeResults.filter((r) => r.correct && r.attempts === 1).length;
+    const avgScore = Math.round(
+      challengeResults.reduce(
+        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+        0,
+      ) / Math.max(challengeResults.length, 1),
+    );
+
+    const metrics: PercentBarMetrics = {
+      type: 'percent-bar',
+      challengeType,
+      totalChallenges: total,
+      correctCount,
+      attemptsCount,
+      firstTryCount,
+      hintsViewed: hintsViewedRef.current,
+      overallAccuracy: avgScore,
+      averageAttemptsPerChallenge: Math.round((attemptsCount / total) * 10) / 10,
+    };
+
+    const goalMet = correctCount === total;
+    submitEvaluation(goalMet, avgScore, metrics, { challengeResults });
+
     sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
-      + `Phase: ${nextChallenge.type}. Question: "${nextChallenge.question}". `
-      + `Target: ${nextChallenge.targetPercent}%. Read the question to the student.`,
+      `[ALL_COMPLETE] All ${total} percent problems done. Correct: ${correctCount}/${total}. `
+      + `First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give an encouraging summary.`,
       { silent: true },
     );
   }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, currentChallengeIndex, currentPercent, mainTargetPercent,
-    exploreHintsUsed, practiceHintsUsed, mainHintsUsed, practiceTotal, submitEvaluation,
+    allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults,
+    challengeType, submitEvaluation, sendText,
   ]);
 
   // -------------------------------------------------------------------------
-  // Auto-submit when all challenges complete
-  // -------------------------------------------------------------------------
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
-
-  // -------------------------------------------------------------------------
-  // Overall score
+  // Overall score (for local display when evaluation hook hasn't settled yet)
   // -------------------------------------------------------------------------
   const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
+    if (!allChallengesComplete || challengeResults.length === 0) return 0;
     return Math.round(
-      challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / challenges.length,
+      challengeResults.reduce(
+        (s, r) => s + (typeof r.score === 'number' ? r.score : r.correct ? 100 : 0),
+        0,
+      ) / challengeResults.length,
     );
-  }, [allChallengesComplete, challenges, challengeResults]);
+  }, [allChallengesComplete, challengeResults]);
 
   // -------------------------------------------------------------------------
   // Render
@@ -518,8 +432,13 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
           <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
           <div className="flex items-center gap-2">
             <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
-              Percent
+              {CHALLENGE_TYPE_LABEL[challengeType]}
             </Badge>
+            {challenges.length > 0 && (
+              <span className="text-slate-500 text-xs">
+                {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
+              </span>
+            )}
           </div>
         </div>
         {description && (
@@ -529,42 +448,9 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
 
       <CardContent className="space-y-4">
         {/* Scenario */}
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-          <p className="text-blue-200 text-sm italic">{scenario}</p>
-        </div>
-
-        {/* Phase Progress Tabs */}
-        {challenges.length > 0 && !allChallengesComplete && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {(['explore', 'practice', 'apply'] as const).map((phase) => {
-              const isActive = currentPhase === phase;
-              const isDone = phase === 'explore'
-                ? currentChallengeIndex > 0
-                : phase === 'practice'
-                ? currentChallengeIndex > practiceTotal
-                : false;
-
-              return (
-                <Badge
-                  key={phase}
-                  className={`text-xs ${
-                    isActive
-                      ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
-                      : isDone
-                      ? 'bg-emerald-500/10 border-emerald-400/20 text-emerald-400/60'
-                      : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                  }`}
-                >
-                  {PHASE_TYPE_CONFIG[phase].icon}{' '}
-                  {phase === 'practice'
-                    ? `Practice (${Math.min(currentPracticeIndex + 1, practiceTotal)}/${practiceTotal})`
-                    : PHASE_TYPE_CONFIG[phase].label}
-                </Badge>
-              );
-            })}
-            <span className="text-slate-500 text-xs ml-auto">
-              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
-            </span>
+        {currentChallenge && !allChallengesComplete && (
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+            <p className="text-blue-200 text-sm italic">{currentChallenge.scenario}</p>
           </div>
         )}
 
@@ -602,7 +488,6 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
         {/* Percent Bar Visualization */}
         {!allChallengesComplete && (
           <div className="w-full max-w-3xl mx-auto px-4 py-6 space-y-6">
-            {/* Main Percent Bar */}
             <div className="relative">
               {showPercentLabels && (
                 <div className="text-xs font-semibold text-emerald-300 uppercase tracking-wide mb-2">
@@ -618,13 +503,11 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
                 onMouseUp={() => setIsDragging(false)}
                 onMouseLeave={() => setIsDragging(false)}
               >
-                {/* Shaded portion */}
                 <div
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-150 rounded-l-xl"
                   style={{ width: `${currentPercent}%` }}
                 />
 
-                {/* Benchmark lines */}
                 {benchmarkLines.map((benchmark, i) => (
                   <div
                     key={i}
@@ -648,7 +531,6 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
                   </div>
                 ))}
 
-                {/* End labels */}
                 {showPercentLabels && (
                   <>
                     <div className="absolute -bottom-6 left-0 text-xs text-slate-500 font-mono">0%</div>
@@ -729,15 +611,11 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
             {!isCurrentChallengeComplete && (
               <Button
                 variant="ghost"
-                className={`border ${
-                  currentPhase === 'apply'
-                    ? 'bg-emerald-500/10 border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300'
-                    : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
-                }`}
+                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
                 onClick={handleCheckAnswer}
                 disabled={hasSubmittedEvaluation}
               >
-                {currentPhase === 'apply' ? 'Submit Final Answer' : 'Check Answer'}
+                Check Answer
               </Button>
             )}
             {isCurrentChallengeComplete && (
@@ -746,7 +624,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
                 className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
                 onClick={advanceToNextChallenge}
               >
-                {currentPhase === 'apply' ? 'See Results' : 'Next Challenge'}
+                {currentChallengeIndex + 1 >= challenges.length ? 'See Results' : 'Next Challenge'}
               </Button>
             )}
           </div>
@@ -756,7 +634,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
         {!allChallengesComplete && currentChallenge && (
           <div className="flex flex-col items-center gap-2">
             {!showHint ? (
-              currentAttempts >= 1 && (
+              currentAttempts >= 1 && !isCurrentChallengeComplete && (
                 <Button
                   variant="ghost"
                   className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 text-xs"
@@ -782,26 +660,14 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* All complete summary */}
-        {allChallengesComplete && (
-          <div className="text-center">
-            <p className="text-emerald-400 text-sm font-medium mb-1">
-              All challenges complete!
-            </p>
-            <p className="text-slate-400 text-xs">
-              {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-            </p>
-          </div>
-        )}
-
         {/* Phase Summary */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={submittedResult?.score ?? localOverallScore}
             durationMs={elapsedMs}
-            heading="Challenge Complete!"
-            celebrationMessage={`You completed all phases of this percent problem!`}
+            heading="Session Complete!"
+            celebrationMessage={`You completed all ${challenges.length} percent problems.`}
             className="mt-4"
           />
         )}

@@ -10,7 +10,7 @@ import {
 } from '../../../evaluation';
 import type { MeasurementToolsMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 
@@ -18,9 +18,11 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 // Data Interface (Single Source of Truth)
 // =============================================================================
 
-export interface MeasurementShape {
+export type MeasurementToolsChallengeType = 'measure' | 'compare' | 'estimate' | 'convert';
+
+export interface MeasurementToolsChallenge {
   id: string;
-  type: 'rectangle' | 'square';
+  shapeType: 'rectangle' | 'square';
   widthInches: number;
   heightInches: number;
   color: string;
@@ -30,15 +32,14 @@ export interface MeasurementShape {
 
 export interface MeasurementToolsData {
   primitiveType?: string;
-  challengeType?: 'measure' | 'compare' | 'convert';
-  title?: string;
+  title: string;
+  description?: string;
+  challengeType: MeasurementToolsChallengeType;
+  challenges: MeasurementToolsChallenge[];
   rulerLengthInches: number;
   unit: 'inches' | 'centimeters';
   precision: 'whole' | 'half';
   gradeBand: 'K-2' | '3-5';
-  shapes: MeasurementShape[];
-
-  /** Target unit for convert mode (defaults to opposite of unit) */
   convertToUnit?: 'inches' | 'centimeters';
 
   // Evaluation props
@@ -68,24 +69,28 @@ const BOTTOM_PAD = 20;
 const INCH_TO_CM = 2.54;
 
 const PHASE_CONFIG: Record<string, PhaseConfig> = {
-  measure: { label: 'Measure', icon: '\uD83D\uDCCF', accentColor: 'blue' },
-  convert: { label: 'Convert', icon: '\uD83D\uDD04', accentColor: 'amber' },
+  measure: { label: 'Measure', icon: '📏', accentColor: 'blue' },
+  compare: { label: 'Compare', icon: '⚖️', accentColor: 'purple' },
+  estimate: { label: 'Estimate', icon: '📐', accentColor: 'cyan' },
+  convert: { label: 'Convert', icon: '🔄', accentColor: 'amber' },
 };
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-function convertValue(value: number, fromUnit: string, toUnit: string): number {
+const phaseScore = (attempts: number): number =>
+  Math.max(20, 100 - Math.max(0, attempts - 1) * 20);
+
+const convertValue = (value: number, fromUnit: string, toUnit: string): number => {
   if (fromUnit === toUnit) return value;
   if (fromUnit === 'inches' && toUnit === 'centimeters') return value * INCH_TO_CM;
   if (fromUnit === 'centimeters' && toUnit === 'inches') return value / INCH_TO_CM;
   return value;
-}
+};
 
-function getCorrectOrder(shapes: MeasurementShape[]): string[] {
-  return [...shapes].sort((a, b) => a.widthInches - b.widthInches).map((s) => s.id);
-}
+const getCorrectOrder = (challenges: MeasurementToolsChallenge[]): string[] =>
+  [...challenges].sort((a, b) => a.widthInches - b.widthInches).map((c) => c.id);
 
 // =============================================================================
 // Ruler Component (SVG)
@@ -107,7 +112,6 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
 
   return (
     <g>
-      {/* Ruler body */}
       <rect
         x={leftPad}
         y={rulerY}
@@ -118,8 +122,6 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
         stroke="rgba(200,160,80,0.5)"
         strokeWidth={1.5}
       />
-
-      {/* Tick marks and labels */}
       {Array.from({ length: tickCount + 1 }, (_, i) => {
         const tickValue = i * step;
         if (tickValue > lengthInches) return null;
@@ -152,8 +154,6 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
           </g>
         );
       })}
-
-      {/* Unit label */}
       <text
         x={leftPad + totalWidth + 8}
         y={rulerY + 38}
@@ -168,11 +168,11 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
 };
 
 // =============================================================================
-// Draggable Shape Component (SVG)
+// Draggable Shape (SVG)
 // =============================================================================
 
 interface DraggableShapeProps {
-  shape: MeasurementShape;
+  challenge: MeasurementToolsChallenge;
   pixelsPerUnit: number;
   isOnRuler: boolean;
   position: { x: number; y: number };
@@ -183,7 +183,7 @@ interface DraggableShapeProps {
 }
 
 const DraggableShape: React.FC<DraggableShapeProps> = ({
-  shape,
+  challenge,
   pixelsPerUnit,
   isOnRuler,
   position,
@@ -192,12 +192,12 @@ const DraggableShape: React.FC<DraggableShapeProps> = ({
   isActive,
   isCompleted,
 }) => {
-  const w = shape.widthInches * pixelsPerUnit;
-  const h = Math.max(shape.heightInches * pixelsPerUnit, 36);
+  const w = challenge.widthInches * pixelsPerUnit;
+  const h = Math.max(challenge.heightInches * pixelsPerUnit, 36);
 
   const fillColor = isCompleted
     ? 'rgba(52,211,153,0.25)'
-    : shape.color || 'rgba(99,102,241,0.35)';
+    : challenge.color || 'rgba(99,102,241,0.35)';
   const strokeColor = isCompleted
     ? 'rgba(52,211,153,0.6)'
     : isDragging
@@ -211,14 +211,13 @@ const DraggableShape: React.FC<DraggableShapeProps> = ({
       onPointerDown={isCompleted ? undefined : onDragStart}
       style={{ cursor: isCompleted ? 'default' : isDragging ? 'grabbing' : 'grab' }}
     >
-      {/* Drop shadow when dragging */}
       {isDragging && (
         <rect
           x={position.x + 3}
           y={position.y + 3}
           width={w}
           height={h}
-          rx={shape.type === 'square' ? 4 : 6}
+          rx={challenge.shapeType === 'square' ? 4 : 6}
           fill="rgba(0,0,0,0.3)"
         />
       )}
@@ -228,14 +227,13 @@ const DraggableShape: React.FC<DraggableShapeProps> = ({
         y={position.y}
         width={w}
         height={h}
-        rx={shape.type === 'square' ? 4 : 6}
+        rx={challenge.shapeType === 'square' ? 4 : 6}
         fill={fillColor}
         stroke={strokeColor}
         strokeWidth={isDragging ? 2.5 : 2}
         className="transition-colors duration-150"
       />
 
-      {/* Label */}
       <text
         x={position.x + w / 2}
         y={position.y + h / 2}
@@ -246,10 +244,9 @@ const DraggableShape: React.FC<DraggableShapeProps> = ({
         fontWeight="500"
         className="select-none pointer-events-none"
       >
-        {shape.label}
+        {challenge.label}
       </text>
 
-      {/* Completed checkmark */}
       {isCompleted && (
         <text
           x={position.x + w - 10}
@@ -263,7 +260,6 @@ const DraggableShape: React.FC<DraggableShapeProps> = ({
         </text>
       )}
 
-      {/* "Drag me" hint for active shape not yet on ruler */}
       {isActive && !isOnRuler && !isDragging && !isCompleted && (
         <text
           x={position.x + w / 2}
@@ -305,18 +301,61 @@ const SnapZone: React.FC<{ leftPad: number; totalWidth: number; active: boolean;
 );
 
 // =============================================================================
+// Compare-Phase Shape Preview
+// =============================================================================
+// Renders each shape at its measured width on a shared scale so students can
+// visually compare lengths during the comparison phase. Width is the variable
+// being compared (the dimension measured on the ruler) — heights are capped to
+// a uniform band so the comparison stays width-focused.
+
+const COMPARE_PX_PER_INCH = 22;
+const COMPARE_ROW_HEIGHT = 40;
+const COMPARE_MAX_SHAPE_HEIGHT = 32;
+
+const ShapePreview: React.FC<{
+  challenge: MeasurementToolsChallenge;
+  interactive?: boolean;
+}> = ({ challenge, interactive }) => {
+  const w = Math.max(challenge.widthInches * COMPARE_PX_PER_INCH, 16);
+  const h = Math.min(
+    Math.max(challenge.heightInches * COMPARE_PX_PER_INCH, 18),
+    COMPARE_MAX_SHAPE_HEIGHT,
+  );
+  return (
+    <svg
+      width={w}
+      height={COMPARE_ROW_HEIGHT}
+      viewBox={`0 0 ${w} ${COMPARE_ROW_HEIGHT}`}
+      className="flex-shrink-0 pointer-events-none"
+      aria-hidden="true"
+    >
+      <rect
+        x={0.75}
+        y={(COMPARE_ROW_HEIGHT - h) / 2}
+        width={w - 1.5}
+        height={h}
+        rx={challenge.shapeType === 'square' ? 3 : 5}
+        fill={challenge.color}
+        stroke={interactive ? 'rgba(168,85,247,0.55)' : 'rgba(168,85,247,0.4)'}
+        strokeWidth={1.5}
+      />
+    </svg>
+  );
+};
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
 const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) => {
   const {
     title,
-    challengeType = 'measure',
+    challengeType,
+    challenges,
     rulerLengthInches,
     unit,
     precision,
     gradeBand,
-    shapes,
     instanceId,
     skillId,
     subskillId,
@@ -326,43 +365,53 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   } = data;
 
   const effectiveConvertToUnit = data.convertToUnit || (unit === 'inches' ? 'centimeters' : 'inches');
-  const resolvedInstanceId = instanceId || `measurement-tools-${Date.now()}`;
+  const stableInstanceIdRef = useRef<string>(instanceId || `measurement-tools-${Date.now()}`);
+  const resolvedInstanceId = stableInstanceIdRef.current;
+
   const pixelsPerUnit = Math.min(
     (CANVAS_WIDTH - RULER_LEFT_PAD - 40) / rulerLengthInches,
     60,
   );
   const rulerTotalWidth = rulerLengthInches * pixelsPerUnit;
 
-  // Compute tallest shape height to size the canvas dynamically
   const maxShapeH = useMemo(() => {
-    return Math.max(...shapes.map((s) => Math.max(s.heightInches * pixelsPerUnit, 36)), 60);
-  }, [shapes, pixelsPerUnit]);
+    return Math.max(
+      ...challenges.map((c) => Math.max(c.heightInches * pixelsPerUnit, 36)),
+      60,
+    );
+  }, [challenges, pixelsPerUnit]);
 
-  // Dynamic layout: shape area → gap → ruler → bottom padding
   const rulerY = SHAPE_AREA_Y + maxShapeH + SHAPE_RULER_GAP + 50;
   const canvasHeight = rulerY + RULER_HEIGHT + BOTTOM_PAD;
 
   // -- Shared hooks ---------------------------------------------------------
   const {
     currentIndex,
-    currentAttempts,
     results: challengeResults,
     isComplete: measureComplete,
     recordResult,
-    incrementAttempts,
     advance,
     reset,
   } = useChallengeProgress({
-    challenges: shapes,
-    getChallengeId: (s) => s.id,
+    challenges,
+    getChallengeId: (c) => c.id,
   });
 
+  // Each challenge's effective phase label (used by PhaseSummaryPanel).
+  // For a single-mode session this is always the same key, which renders as
+  // one aggregate row — same shape as factor-tree (§6a #4).
   const phaseResults = usePhaseResults({
-    challenges: shapes,
+    challenges,
     results: challengeResults,
     isComplete: measureComplete,
-    getChallengeType: () => (challengeType === 'convert' ? 'convert' : 'measure'),
+    getChallengeType: () => challengeType,
     phaseConfig: PHASE_CONFIG,
+    getScore: (rs: ChallengeResult[]) =>
+      rs.length === 0
+        ? 0
+        : Math.round(
+            rs.reduce((s, r) => s + (typeof r.score === 'number' ? r.score : (r.correct ? 100 : 0)), 0) / rs.length,
+          ),
   });
 
   const {
@@ -381,10 +430,14 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -- Measure state --------------------------------------------------------
+  // -- Per-challenge state --------------------------------------------------
   const [answerInput, setAnswerInput] = useState('');
   const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [measureAttempts, setMeasureAttempts] = useState(0);
+  const measureAttemptsRef = useRef(0);
+  const hintViewedRef = useRef(false);
+  const recordedRef = useRef(false);
   const hasIntroducedRef = useRef(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -394,21 +447,24 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   const [shapePositions, setShapePositions] = useState<Record<string, { x: number; y: number }>>({});
   const [onRuler, setOnRuler] = useState<Record<string, boolean>>({});
 
-  // -- Convert mode state ---------------------------------------------------
+  // Convert mode per-challenge state
   const [convertStep, setConvertStep] = useState(false);
   const [convertInput, setConvertInput] = useState('');
   const [convertFeedback, setConvertFeedback] = useState<{ message: string; correct: boolean } | null>(null);
   const [measuredValue, setMeasuredValue] = useState(0);
-  const convertCorrectCountRef = useRef(0);
+  const [convertAttempts, setConvertAttempts] = useState(0);
+  const convertAttemptsRef = useRef(0);
 
-  // -- Compare mode state ---------------------------------------------------
+  // Compare mode session-level state
   const [selectedOrder, setSelectedOrder] = useState<string[]>([]);
   const [compareFeedback, setCompareFeedback] = useState<{ message: string; correct: boolean } | null>(null);
   const [comparisonDone, setComparisonDone] = useState(false);
   const [compareAttempts, setCompareAttempts] = useState(0);
+  const [hintsViewedSession, setHintsViewedSession] = useState(0);
 
   // -- Derived state --------------------------------------------------------
-  const currentShape = shapes[currentIndex] ?? null;
+  const currentChallenge = challenges[currentIndex] ?? null;
+  const currentChallengeId = currentChallenge?.id ?? null;
 
   const isFullyComplete = useMemo(() => {
     if (!measureComplete) return false;
@@ -416,36 +472,63 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     return true;
   }, [measureComplete, challengeType, comparisonDone]);
 
-  // Initialize shape positions
+  // -- Per-challenge reset (canonical pattern, §6c) -------------------------
+  // Runs whenever advance() flips the index — resets every per-challenge slot.
+  useEffect(() => {
+    if (!currentChallenge) return;
+    setAnswerInput('');
+    setFeedback(null);
+    setShowHint(false);
+    setMeasureAttempts(0);
+    measureAttemptsRef.current = 0;
+    setConvertStep(false);
+    setConvertInput('');
+    setConvertFeedback(null);
+    setMeasuredValue(0);
+    setConvertAttempts(0);
+    convertAttemptsRef.current = 0;
+    hintViewedRef.current = false;
+    recordedRef.current = false;
+
+    const w = currentChallenge.widthInches * pixelsPerUnit;
+    setShapePositions((prev) => ({
+      ...prev,
+      [currentChallenge.id]: { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y },
+    }));
+    setOnRuler((prev) => ({ ...prev, [currentChallenge.id]: false }));
+  }, [currentChallengeId, pixelsPerUnit]);
+
+  // Initialize shape positions for all challenges on mount / data swap
   useEffect(() => {
     const positions: Record<string, { x: number; y: number }> = {};
-    shapes.forEach((shape) => {
-      const w = shape.widthInches * pixelsPerUnit;
-      positions[shape.id] = {
-        x: CANVAS_WIDTH / 2 - w / 2,
-        y: SHAPE_AREA_Y,
-      };
+    challenges.forEach((c) => {
+      const w = c.widthInches * pixelsPerUnit;
+      positions[c.id] = { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y };
     });
     setShapePositions(positions);
     setOnRuler({});
-  }, [shapes, pixelsPerUnit]);
+  }, [challenges, pixelsPerUnit]);
 
   // -- AI Tutoring ----------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     challengeType,
+    currentChallengeIndex: currentIndex,
+    totalChallenges: challenges.length,
+    currentShape: currentChallenge?.label,
+    shapeWidth: currentChallenge?.widthInches,
     unit,
     precision,
     gradeBand,
-    currentShapeIndex: currentIndex,
-    totalShapes: shapes.length,
-    currentShape: currentShape?.label,
-    shapeWidth: currentShape?.widthInches,
-    isOnRuler: currentShape ? !!onRuler[currentShape.id] : false,
-    currentAttempts,
+    isOnRuler: currentChallenge ? !!onRuler[currentChallenge.id] : false,
+    currentAttempts: measureAttempts + convertAttempts,
     convertStep,
     convertToUnit: effectiveConvertToUnit,
     comparePhase: measureComplete && challengeType === 'compare' && !comparisonDone,
-  }), [challengeType, unit, precision, gradeBand, currentIndex, shapes.length, currentShape, onRuler, currentAttempts, convertStep, effectiveConvertToUnit, measureComplete, comparisonDone]);
+  }), [
+    challengeType, currentIndex, challenges.length, currentChallenge, unit, precision,
+    gradeBand, onRuler, measureAttempts, convertAttempts, convertStep,
+    effectiveConvertToUnit, measureComplete, comparisonDone,
+  ]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'measurement-tools',
@@ -454,25 +537,24 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     gradeLevel: gradeBand === 'K-2' ? '1st Grade' : '3rd Grade',
   });
 
-  // Introduction
+  // Introduction (session-level)
   useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || !currentShape) return;
+    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
     hasIntroducedRef.current = true;
 
     const modeDesc =
       challengeType === 'compare'
-        ? `Measure all ${shapes.length} shapes, then compare them by ordering shortest to longest.`
+        ? `Measure all ${challenges.length} shapes, then compare them by ordering shortest to longest.`
         : challengeType === 'convert'
           ? `Measure each shape in ${unit}, then convert the measurement to ${effectiveConvertToUnit}.`
-          : `Drag shapes onto a ruler to measure them. ${shapes.length} shapes to measure in ${unit}.`;
+          : `${challenges.length} shapes to measure in ${unit}. Drag each onto the ruler.`;
 
     sendText(
-      `[ACTIVITY_START] Measurement activity! ${modeDesc} ` +
-      `First shape: "${currentShape.label}" (${currentShape.type}). ` +
-      `Introduce warmly.`,
+      `[ACTIVITY_START] Measurement session! ${modeDesc} ` +
+      `First shape: "${currentChallenge.label}". Introduce warmly.`,
       { silent: true },
     );
-  }, [isConnected, currentShape, shapes.length, unit, effectiveConvertToUnit, challengeType, sendText]);
+  }, [isConnected, currentChallenge, challenges.length, unit, effectiveConvertToUnit, challengeType, sendText]);
 
   // -- Drag handlers --------------------------------------------------------
   const getSVGPoint = useCallback((clientX: number, clientY: number) => {
@@ -488,71 +570,100 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   }, []);
 
   const handleDragStart = useCallback((e: React.PointerEvent) => {
-    if (!currentShape || hasSubmitted || convertStep) return;
+    if (!currentChallenge || hasSubmitted || convertStep) return;
     e.preventDefault();
     const svgPt = getSVGPoint(e.clientX, e.clientY);
-    const pos = shapePositions[currentShape.id];
+    const pos = shapePositions[currentChallenge.id];
     if (!pos) return;
-
     setDragOffset({ x: svgPt.x - pos.x, y: svgPt.y - pos.y });
     setIsDragging(true);
     (e.target as SVGElement).setPointerCapture?.(e.pointerId);
-  }, [currentShape, hasSubmitted, convertStep, getSVGPoint, shapePositions]);
+  }, [currentChallenge, hasSubmitted, convertStep, getSVGPoint, shapePositions]);
 
   const handleDragMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging || !currentShape) return;
+    if (!isDragging || !currentChallenge) return;
     e.preventDefault();
     const svgPt = getSVGPoint(e.clientX, e.clientY);
     setShapePositions((prev) => ({
       ...prev,
-      [currentShape.id]: {
+      [currentChallenge.id]: {
         x: svgPt.x - dragOffset.x,
         y: svgPt.y - dragOffset.y,
       },
     }));
-  }, [isDragging, currentShape, getSVGPoint, dragOffset]);
+  }, [isDragging, currentChallenge, getSVGPoint, dragOffset]);
 
   const handleDragEnd = useCallback((e: React.PointerEvent) => {
-    if (!isDragging || !currentShape) return;
+    if (!isDragging || !currentChallenge) return;
     e.preventDefault();
     setIsDragging(false);
 
-    const pos = shapePositions[currentShape.id];
+    const pos = shapePositions[currentChallenge.id];
     if (!pos) return;
 
-    const shapeH = Math.max(currentShape.heightInches * pixelsPerUnit, 36);
+    const shapeH = Math.max(currentChallenge.heightInches * pixelsPerUnit, 36);
     const shapeBottom = pos.y + shapeH;
     const snapZoneTop = rulerY - 50;
 
-    // Check if shape is in the snap zone (above the ruler)
     if (shapeBottom >= snapZoneTop && pos.y < rulerY) {
       const snappedY = rulerY - shapeH - 2;
       setShapePositions((prev) => ({
         ...prev,
-        [currentShape.id]: { x: RULER_LEFT_PAD, y: snappedY },
+        [currentChallenge.id]: { x: RULER_LEFT_PAD, y: snappedY },
       }));
-      setOnRuler((prev) => ({ ...prev, [currentShape.id]: true }));
+      setOnRuler((prev) => ({ ...prev, [currentChallenge.id]: true }));
 
-      if (!onRuler[currentShape.id]) {
+      if (!onRuler[currentChallenge.id]) {
         sendText(
-          `[SHAPE_PLACED] Student placed "${currentShape.label}" on the ruler. ` +
-          `Ask: "Now look at the ruler — how many ${unit} long is this shape?"`,
+          `[SHAPE_PLACED] Student placed "${currentChallenge.label}" on the ruler. ` +
+          `Ask: "How many ${unit} long is this shape?"`,
           { silent: true },
         );
       }
     } else if (pos.y >= rulerY + RULER_HEIGHT) {
-      const w = currentShape.widthInches * pixelsPerUnit;
+      const w = currentChallenge.widthInches * pixelsPerUnit;
       setShapePositions((prev) => ({
         ...prev,
-        [currentShape.id]: { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y },
+        [currentChallenge.id]: { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y },
       }));
-      setOnRuler((prev) => ({ ...prev, [currentShape.id]: false }));
+      setOnRuler((prev) => ({ ...prev, [currentChallenge.id]: false }));
     }
-  }, [isDragging, currentShape, shapePositions, pixelsPerUnit, rulerY, onRuler, sendText, unit]);
+  }, [isDragging, currentChallenge, shapePositions, pixelsPerUnit, rulerY, onRuler, sendText, unit]);
 
-  // -- Answer checking (measure step) --------------------------------------
+  // -- Helpers --------------------------------------------------------------
+  /**
+   * Compute and record the final per-challenge score, then advance.
+   * Stale-state guard (§6a #8): bail if already recorded for this challenge.
+   */
+  const completeChallenge = useCallback((opts: { correct: boolean; studentMeasure: number }) => {
+    if (!currentChallenge) return;
+    if (recordedRef.current) return;
+    recordedRef.current = true;
+
+    const mAttempts = Math.max(1, measureAttemptsRef.current);
+    let score: number;
+    if (challengeType === 'convert') {
+      const cAttempts = Math.max(1, convertAttemptsRef.current);
+      score = opts.correct
+        ? Math.round(phaseScore(mAttempts) * 0.5 + phaseScore(cAttempts) * 0.5)
+        : 0;
+    } else {
+      score = opts.correct ? phaseScore(mAttempts) : 0;
+    }
+
+    recordResult({
+      challengeId: currentChallenge.id,
+      correct: opts.correct,
+      attempts: mAttempts + (challengeType === 'convert' ? convertAttemptsRef.current : 0),
+      score,
+      studentAnswer: opts.studentMeasure,
+      targetAnswer: currentChallenge.widthInches,
+    });
+  }, [currentChallenge, challengeType, recordResult]);
+
+  // -- Answer checking (measure phase) --------------------------------------
   const checkAnswer = useCallback(() => {
-    if (!currentShape) return;
+    if (!currentChallenge) return;
 
     const studentNum = parseFloat(answerInput);
     if (isNaN(studentNum)) {
@@ -560,21 +671,23 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       return;
     }
 
-    incrementAttempts();
+    const nextAttempts = measureAttemptsRef.current + 1;
+    measureAttemptsRef.current = nextAttempts;
+    setMeasureAttempts(nextAttempts);
+
     const tolerance = precision === 'half' ? 0.25 : 0.5;
-    const isCorrect = Math.abs(studentNum - currentShape.widthInches) <= tolerance;
+    const isCorrect = Math.abs(studentNum - currentChallenge.widthInches) <= tolerance;
 
     if (challengeType === 'convert' && isCorrect) {
-      // Correct measurement in convert mode → switch to convert step
-      setMeasuredValue(currentShape.widthInches);
+      // Correct measurement → switch to convert step (per-challenge multi-step)
+      setMeasuredValue(currentChallenge.widthInches);
       setFeedback({
-        message: `Yes! The ${currentShape.label} is ${currentShape.widthInches} ${unit} long. Now convert it!`,
+        message: `Yes! The ${currentChallenge.label} is ${currentChallenge.widthInches} ${unit} long. Now convert it!`,
         correct: true,
       });
       sendText(
-        `[MEASURE_CORRECT] Student measured "${currentShape.label}" as ${studentNum} ${unit}. ` +
-        `Correct: ${currentShape.widthInches} ${unit}. ` +
-        `Now they need to convert to ${effectiveConvertToUnit}. Encourage them.`,
+        `[MEASURE_CORRECT] Student measured "${currentChallenge.label}" as ${studentNum} ${unit}. ` +
+        `Now convert to ${effectiveConvertToUnit}. Encourage them.`,
         { silent: true },
       );
       setTimeout(() => {
@@ -586,86 +699,57 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       return;
     }
 
-    // Standard measure/compare mode, or incorrect answer
     if (isCorrect) {
-      recordResult({
-        challengeId: currentShape.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        score: 100,
-        studentAnswer: studentNum,
-        targetAnswer: currentShape.widthInches,
-      });
-
+      completeChallenge({ correct: true, studentMeasure: studentNum });
       setFeedback({
-        message: `Yes! The ${currentShape.label} is ${currentShape.widthInches} ${unit} long!`,
+        message: `Yes! The ${currentChallenge.label} is ${currentChallenge.widthInches} ${unit} long!`,
         correct: true,
       });
-
       sendText(
-        `[ANSWER_CORRECT] Student measured "${currentShape.label}" as ${studentNum} ${unit}. ` +
-        `Correct: ${currentShape.widthInches} ${unit}. Attempts: ${currentAttempts + 1}. ` +
-        `Congratulate briefly.`,
+        `[ANSWER_CORRECT] Student measured "${currentChallenge.label}" as ${studentNum} ${unit}. ` +
+        `Correct: ${currentChallenge.widthInches} ${unit}. Attempts: ${nextAttempts}. Brief celebration.`,
         { silent: true },
       );
 
       setTimeout(() => {
-        setFeedback(null);
-        setAnswerInput('');
-        setShowHint(false);
         const advanced = advance();
         if (advanced) {
-          const nextShape = shapes[currentIndex + 1];
-          if (nextShape) {
-            const w = nextShape.widthInches * pixelsPerUnit;
-            setShapePositions((prev) => ({
-              ...prev,
-              [nextShape.id]: { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y },
-            }));
-            setOnRuler((prev) => ({ ...prev, [nextShape.id]: false }));
-
+          const nextIdx = currentIndex + 1;
+          const nextChallenge = challenges[nextIdx];
+          if (nextChallenge) {
             sendText(
-              `[NEXT_ITEM] Shape ${currentIndex + 2} of ${shapes.length}: ` +
-              `"${nextShape.label}" (${nextShape.type}). ` +
+              `[NEXT_ITEM] Shape ${nextIdx + 1} of ${challenges.length}: "${nextChallenge.label}". ` +
               `Say: "Next shape! Drag it onto the ruler to measure."`,
               { silent: true },
             );
           }
         } else if (challengeType === 'compare') {
           sendText(
-            `[MEASURE_PHASE_DONE] All shapes measured! Now the student must order them from shortest to longest. ` +
-            `Explain: "Great measuring! Now let's compare — click the shapes in order from shortest to longest."`,
+            `[MEASURE_PHASE_DONE] All shapes measured. Comparison phase begins. ` +
+            `Explain: "Great measuring! Now order the shapes shortest to longest."`,
             { silent: true },
           );
         }
-      }, 1400);
+      }, 1100);
     } else {
-      recordResult({
-        challengeId: currentShape.id,
-        correct: false,
-        attempts: currentAttempts + 1,
-        score: 0,
-        studentAnswer: studentNum,
-        targetAnswer: currentShape.widthInches,
-      });
-
       setFeedback({
         message: 'Not quite — look at the ruler more carefully!',
         correct: false,
       });
-
       sendText(
-        `[ANSWER_INCORRECT] Student guessed ${studentNum} ${unit} for "${currentShape.label}" ` +
-        `(actual: ${currentShape.widthInches} ${unit}). Attempt: ${currentAttempts + 1}. ` +
-        `Give a hint without revealing the answer.`,
+        `[ANSWER_INCORRECT] Student guessed ${studentNum} ${unit} for "${currentChallenge.label}" ` +
+        `(actual: ${currentChallenge.widthInches} ${unit}). Attempt ${nextAttempts}. Give a hint.`,
         { silent: true },
       );
     }
-  }, [currentShape, answerInput, currentAttempts, precision, unit, challengeType, effectiveConvertToUnit, incrementAttempts, recordResult, advance, currentIndex, shapes, pixelsPerUnit, sendText]);
+  }, [
+    currentChallenge, answerInput, precision, unit, challengeType, effectiveConvertToUnit,
+    completeChallenge, advance, currentIndex, challenges, sendText,
+  ]);
 
   // -- Conversion checking (convert mode) -----------------------------------
   const checkConversion = useCallback(() => {
-    if (!currentShape) return;
+    if (!currentChallenge) return;
 
     const studentNum = parseFloat(convertInput);
     if (isNaN(studentNum)) {
@@ -673,65 +757,40 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       return;
     }
 
-    incrementAttempts();
+    const nextAttempts = convertAttemptsRef.current + 1;
+    convertAttemptsRef.current = nextAttempts;
+    setConvertAttempts(nextAttempts);
+
     const correctConverted = convertValue(measuredValue, unit, effectiveConvertToUnit);
     const tolerance = Math.max(0.5, correctConverted * 0.1);
     const isCorrect = Math.abs(studentNum - correctConverted) <= tolerance;
 
     if (isCorrect) {
-      convertCorrectCountRef.current += 1;
-      const measureScore = 50;
-      const convertScore = 50;
-
-      recordResult({
-        challengeId: currentShape.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        score: measureScore + convertScore,
-        studentAnswer: studentNum,
-        targetAnswer: correctConverted,
-        measuredValue,
-        convertedValue: studentNum,
-      });
-
+      completeChallenge({ correct: true, studentMeasure: measuredValue });
       setConvertFeedback({
         message: `Correct! ${measuredValue} ${unit} = ${Math.round(correctConverted * 10) / 10} ${effectiveConvertToUnit}!`,
         correct: true,
       });
-
       sendText(
         `[CONVERT_CORRECT] Student converted ${measuredValue} ${unit} to ${studentNum} ${effectiveConvertToUnit}. ` +
-        `Correct: ~${Math.round(correctConverted * 10) / 10}. Congratulate briefly.`,
+        `Brief celebration.`,
         { silent: true },
       );
 
       setTimeout(() => {
-        setConvertStep(false);
-        setConvertInput('');
-        setConvertFeedback(null);
-        setFeedback(null);
-        setAnswerInput('');
-        setShowHint(false);
-
         const advanced = advance();
         if (advanced) {
-          const nextShape = shapes[currentIndex + 1];
-          if (nextShape) {
-            const w = nextShape.widthInches * pixelsPerUnit;
-            setShapePositions((prev) => ({
-              ...prev,
-              [nextShape.id]: { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y },
-            }));
-            setOnRuler((prev) => ({ ...prev, [nextShape.id]: false }));
-
+          const nextIdx = currentIndex + 1;
+          const nextChallenge = challenges[nextIdx];
+          if (nextChallenge) {
             sendText(
-              `[NEXT_ITEM] Shape ${currentIndex + 2} of ${shapes.length}: ` +
-              `"${nextShape.label}". Measure it and convert!`,
+              `[NEXT_ITEM] Shape ${nextIdx + 1} of ${challenges.length}: "${nextChallenge.label}". ` +
+              `Measure it and convert!`,
               { silent: true },
             );
           }
         }
-      }, 1400);
+      }, 1100);
     } else {
       setConvertFeedback({
         message: effectiveConvertToUnit === 'centimeters'
@@ -739,179 +798,202 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
           : `Not quite. Remember: 1 inch = ${INCH_TO_CM} centimeters. Try dividing!`,
         correct: false,
       });
-
       sendText(
         `[CONVERT_INCORRECT] Student tried ${studentNum} ${effectiveConvertToUnit} ` +
-        `(correct: ~${Math.round(correctConverted * 10) / 10}). ` +
-        `Help them with the conversion without giving the answer.`,
+        `(correct: ~${Math.round(correctConverted * 10) / 10}). Attempt ${nextAttempts}. Help without revealing.`,
         { silent: true },
       );
     }
-  }, [currentShape, convertInput, measuredValue, unit, effectiveConvertToUnit, currentAttempts, incrementAttempts, recordResult, advance, currentIndex, shapes, pixelsPerUnit, sendText]);
+  }, [
+    currentChallenge, convertInput, measuredValue, unit, effectiveConvertToUnit,
+    completeChallenge, advance, currentIndex, challenges, sendText,
+  ]);
 
-  // -- Comparison checking (compare mode) -----------------------------------
+  // -- Comparison checking (compare mode session-level) ---------------------
   const handleComparisonCheck = useCallback(() => {
-    const correctOrder = getCorrectOrder(shapes);
+    const correctOrder = getCorrectOrder(challenges);
     const isCorrect = selectedOrder.every((id, i) => id === correctOrder[i]);
     setCompareAttempts((a) => a + 1);
 
     if (isCorrect) {
-      setCompareFeedback({ message: 'Perfect! You ordered them correctly from shortest to longest!', correct: true });
+      setCompareFeedback({ message: 'Perfect! You ordered them shortest to longest!', correct: true });
       setComparisonDone(true);
-
-      const orderLabels = selectedOrder.map((id) => shapes.find((s) => s.id === id)?.label).join(' → ');
+      const orderLabels = selectedOrder.map((id) => challenges.find((c) => c.id === id)?.label).join(' → ');
       sendText(
-        `[COMPARE_CORRECT] Student correctly ordered shapes from shortest to longest: ${orderLabels}. ` +
-        `Celebrate their comparison skills!`,
+        `[COMPARE_CORRECT] Student ordered shapes correctly: ${orderLabels}. Celebrate!`,
         { silent: true },
       );
     } else {
-      setCompareFeedback({ message: 'Not quite! Think about which shapes were shorter when you measured them.', correct: false });
+      setCompareFeedback({ message: 'Not quite! Think back to which shapes were shorter.', correct: false });
       setSelectedOrder([]);
-
       sendText(
-        `[COMPARE_INCORRECT] Student ordered shapes incorrectly. Attempt: ${compareAttempts + 1}. ` +
-        `Hint: remind them of their measurements without giving the order.`,
+        `[COMPARE_INCORRECT] Student ordered incorrectly. Attempt ${compareAttempts + 1}. Remind without revealing.`,
         { silent: true },
       );
     }
-  }, [shapes, selectedOrder, compareAttempts, sendText]);
+  }, [challenges, selectedOrder, compareAttempts, sendText]);
+
+  // -- Hint tracking --------------------------------------------------------
+  const showHintHandler = useCallback(() => {
+    setShowHint(true);
+    if (!hintViewedRef.current) {
+      hintViewedRef.current = true;
+      setHintsViewedSession((n) => n + 1);
+    }
+  }, []);
 
   // -- Evaluation on completion ---------------------------------------------
+  const submittedRef = useRef(false);
   useEffect(() => {
-    if (!isFullyComplete || hasSubmitted) return;
+    if (!isFullyComplete || hasSubmitted || submittedRef.current) return;
+    submittedRef.current = true;
 
-    const totalMeasureCorrect = challengeResults.filter((r) => r.correct).length;
-    let overallScore: number;
+    const totalChallenges = challenges.length;
+    const correctCount = challengeResults.filter((r) => r.correct).length;
+    const attemptsCount =
+      challengeResults.reduce((s, r) => s + r.attempts, 0)
+      + (challengeType === 'compare' ? compareAttempts : 0);
+    const firstTryCount = challengeResults.filter((r) => r.correct && (r.score ?? 0) >= 100).length;
+
+    const challengeScoreAvg = totalChallenges > 0
+      ? Math.round(
+          challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / totalChallenges,
+        )
+      : 0;
+
+    let overallAccuracy: number;
+    if (challengeType === 'compare') {
+      const compareScore = comparisonDone ? Math.max(20, 100 - (compareAttempts - 1) * 20) : 0;
+      overallAccuracy = Math.round(challengeScoreAvg * 0.6 + compareScore * 0.4);
+    } else {
+      overallAccuracy = challengeScoreAvg;
+    }
+
+    const averageAttemptsPerChallenge = totalChallenges > 0
+      ? Math.round((attemptsCount / totalChallenges) * 10) / 10
+      : 0;
 
     const metrics: MeasurementToolsMetrics = {
       type: 'measurement-tools',
-      measureCorrect: totalMeasureCorrect,
-      measureTotal: shapes.length,
-      compareCorrect: 0,
-      compareTotal: 0,
-      convertCorrect: 0,
-      convertTotal: 0,
-      attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
+      challengeType,
+      totalChallenges,
+      correctCount,
+      attemptsCount,
+      firstTryCount,
+      hintsViewed: hintsViewedSession,
+      overallAccuracy,
+      averageAttemptsPerChallenge,
     };
 
-    if (challengeType === 'compare') {
-      const compareScore = comparisonDone ? 100 : 0;
-      const measureScore = Math.round((totalMeasureCorrect / shapes.length) * 100);
-      overallScore = Math.round(measureScore * 0.6 + compareScore * 0.4);
-      metrics.compareCorrect = comparisonDone ? 1 : 0;
-      metrics.compareTotal = 1;
-      metrics.attemptsCount += compareAttempts;
-    } else if (challengeType === 'convert') {
-      metrics.convertCorrect = convertCorrectCountRef.current;
-      metrics.convertTotal = shapes.length;
-      overallScore = Math.round((challengeResults.reduce((s, r) => s + (r.score ?? 0), 0)) / shapes.length);
-    } else {
-      overallScore = Math.round((totalMeasureCorrect / shapes.length) * 100);
-    }
-
     submitResult(
-      overallScore >= 70,
-      overallScore,
+      overallAccuracy >= 70,
+      overallAccuracy,
       metrics,
       { challengeResults, compareAttempts: challengeType === 'compare' ? compareAttempts : undefined },
     );
 
     const phaseScoreStr = phaseResults.map((p) => `${p.label} ${p.score}%`).join(', ');
     sendText(
-      `[ALL_COMPLETE] Student finished all shapes! Mode: ${challengeType}. ` +
-      `Score: ${overallScore}%. ${phaseScoreStr}. Celebrate!`,
+      `[ALL_COMPLETE] Session finished! Mode: ${challengeType}. Score: ${overallAccuracy}%. ${phaseScoreStr}. Celebrate!`,
       { silent: true },
     );
-  }, [isFullyComplete, hasSubmitted, challengeResults, shapes, challengeType, comparisonDone, compareAttempts, submitResult, phaseResults, sendText]);
+  }, [
+    isFullyComplete, hasSubmitted, challengeResults, challenges.length, challengeType,
+    comparisonDone, compareAttempts, hintsViewedSession, submitResult, phaseResults, sendText,
+  ]);
 
   // -- Reset ----------------------------------------------------------------
   const handleReset = () => {
     reset();
     resetAttempt();
+    submittedRef.current = false;
     setAnswerInput('');
     setFeedback(null);
     setShowHint(false);
+    setMeasureAttempts(0);
+    measureAttemptsRef.current = 0;
     setConvertStep(false);
     setConvertInput('');
     setConvertFeedback(null);
     setMeasuredValue(0);
-    convertCorrectCountRef.current = 0;
+    setConvertAttempts(0);
+    convertAttemptsRef.current = 0;
     setSelectedOrder([]);
     setCompareFeedback(null);
     setComparisonDone(false);
     setCompareAttempts(0);
+    setHintsViewedSession(0);
+    hintViewedRef.current = false;
+    recordedRef.current = false;
     hasIntroducedRef.current = false;
     const positions: Record<string, { x: number; y: number }> = {};
-    shapes.forEach((shape) => {
-      const w = shape.widthInches * pixelsPerUnit;
-      positions[shape.id] = {
-        x: CANVAS_WIDTH / 2 - w / 2,
-        y: SHAPE_AREA_Y,
-      };
+    challenges.forEach((c) => {
+      const w = c.widthInches * pixelsPerUnit;
+      positions[c.id] = { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y };
     });
     setShapePositions(positions);
     setOnRuler({});
   };
 
-  // -- Completed shape IDs --------------------------------------------------
+  // -- Completed IDs --------------------------------------------------------
   const completedIds = useMemo(
     () => new Set(challengeResults.filter((r) => r.correct).map((r) => r.challengeId)),
     [challengeResults],
   );
 
   const localOverallScore = useMemo(() => {
-    if (!isFullyComplete || shapes.length === 0) return 0;
-    const totalCorrect = challengeResults.filter((r) => r.correct).length;
+    if (!isFullyComplete || challenges.length === 0) return 0;
+    const challengeScoreAvg = Math.round(
+      challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / challenges.length,
+    );
     if (challengeType === 'compare') {
-      const measureScore = Math.round((totalCorrect / shapes.length) * 100);
-      return Math.round(measureScore * 0.6 + (comparisonDone ? 40 : 0));
+      const compareScore = comparisonDone ? Math.max(20, 100 - (compareAttempts - 1) * 20) : 0;
+      return Math.round(challengeScoreAvg * 0.6 + compareScore * 0.4);
     }
-    if (challengeType === 'convert') {
-      return Math.round(challengeResults.reduce((s, r) => s + (r.score ?? 0), 0) / shapes.length);
-    }
-    return Math.round((totalCorrect / shapes.length) * 100);
-  }, [isFullyComplete, shapes, challengeResults, challengeType, comparisonDone]);
+    return challengeScoreAvg;
+  }, [isFullyComplete, challenges.length, challengeResults, challengeType, comparisonDone, compareAttempts]);
 
-  // -- Instruction text per mode --------------------------------------------
-  const getInstructionText = () => {
-    if (!currentShape) return '';
+  // -- Mode-specific copy ---------------------------------------------------
+  const getInstructionText = (): string => {
+    if (!currentChallenge) return '';
     if (challengeType === 'compare') {
       return `Measure each shape by dragging it onto the ruler. After measuring all shapes, you'll compare them!`;
     }
     if (challengeType === 'convert') {
-      if (convertStep) return `Convert your measurement of the ${currentShape.label} from ${unit} to ${effectiveConvertToUnit}.`;
-      return `Drag the ${currentShape.label} onto the ruler and measure it in ${unit}.`;
+      if (convertStep) return `Convert your measurement of the ${currentChallenge.label} from ${unit} to ${effectiveConvertToUnit}.`;
+      return `Drag the ${currentChallenge.label} onto the ruler and measure it in ${unit}.`;
     }
-    return `Drag the ${currentShape.label} onto the ruler, then tell me how many ${unit} long it is.`;
+    return `Drag the ${currentChallenge.label} onto the ruler, then tell me how many ${unit} long it is.`;
   };
 
-  const getSubtitle = () => {
+  const getSubtitle = (): string => {
     if (isFullyComplete) return 'Complete!';
     if (challengeType === 'compare' && measureComplete && !comparisonDone) return 'Order the shapes from shortest to longest';
     if (challengeType === 'convert' && convertStep) return 'Convert your measurement';
     return 'Drag the shape onto the ruler to measure it';
   };
 
-  const getModeIcon = () => {
-    if (challengeType === 'compare') return '\u2696\uFE0F';
-    if (challengeType === 'convert') return '\uD83D\uDD04';
-    return '\uD83D\uDCCF';
+  const getModeIcon = (): string => {
+    if (challengeType === 'compare') return '⚖️';
+    if (challengeType === 'convert') return '🔄';
+    if (challengeType === 'estimate') return '📐';
+    return '📏';
   };
 
-  const getHeading = () => {
+  const getHeading = (): string => {
     if (challengeType === 'compare') return 'Comparison Complete!';
     if (challengeType === 'convert') return 'Conversion Complete!';
+    if (challengeType === 'estimate') return 'Estimation Complete!';
     return 'Measurement Complete!';
   };
 
-  const getCelebration = () => {
+  const getCelebration = (): string => {
     if (challengeType === 'compare') return 'Great job measuring and comparing the shapes!';
     if (challengeType === 'convert') return 'Great job measuring and converting!';
+    if (challengeType === 'estimate') return 'Great job reading between the marks!';
     return 'Great job measuring all the shapes!';
   };
 
-  // Stepper helpers
   const measureStep = precision === 'half' ? 0.5 : 1;
   const convertStepSize = 0.5;
 
@@ -946,11 +1028,11 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
         {/* Progress dots */}
         <div className="flex items-center gap-2 mt-4">
-          {shapes.map((shape, i) => (
+          {challenges.map((c, i) => (
             <div
-              key={shape.id}
+              key={c.id}
               className={`h-2 flex-1 rounded-full transition-all ${
-                completedIds.has(shape.id)
+                completedIds.has(c.id)
                   ? 'bg-emerald-500'
                   : i === currentIndex && !measureComplete
                     ? 'bg-blue-500'
@@ -985,48 +1067,63 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
           />
         )}
 
-        {/* ================================================================
-            COMPARE MODE — Comparison Phase (after all shapes measured)
-            ================================================================ */}
+        {/* COMPARE — Comparison phase (after all shapes measured) */}
         {challengeType === 'compare' && measureComplete && !comparisonDone && !isFullyComplete && (
           <div className="space-y-4">
             <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
               <p className="text-purple-200 font-medium mb-1">Order the shapes from shortest to longest</p>
-              <p className="text-slate-400 text-sm">Click each shape in order, starting with the shortest one.</p>
+              <p className="text-slate-400 text-sm">
+                Each shape is shown at the size you measured. Click the shortest first, then the next shortest, and so on.
+              </p>
             </div>
 
-            {/* Selected order display */}
             {selectedOrder.length > 0 && (
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-slate-500 text-xs mr-1">Your order:</span>
-                {selectedOrder.map((id, i) => {
-                  const shape = shapes.find((s) => s.id === id);
-                  return shape ? (
-                    <Badge key={id} className="bg-purple-500/15 border-purple-400/30 text-purple-200">
-                      {i + 1}. {shape.label}
-                    </Badge>
-                  ) : null;
-                })}
+              <div className="space-y-1.5">
+                <span className="text-slate-500 text-xs">Your order (shortest → longest):</span>
+                <div className="space-y-1.5">
+                  {selectedOrder.map((id, i) => {
+                    const c = challenges.find((c) => c.id === id);
+                    if (!c) return null;
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-center gap-3 bg-purple-500/10 border border-purple-400/30 rounded-lg pl-3 pr-4 py-1.5"
+                      >
+                        <span className="text-purple-300 text-sm font-bold w-5 flex-shrink-0">{i + 1}.</span>
+                        <ShapePreview challenge={c} />
+                        <span className="text-slate-200 text-sm">{c.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
-            {/* Available shapes to pick */}
-            <div className="flex flex-wrap gap-2">
-              {shapes
-                .filter((s) => !selectedOrder.includes(s.id))
-                .map((shape) => (
-                  <Button
-                    key={shape.id}
-                    variant="ghost"
-                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                    onClick={() => setSelectedOrder((prev) => [...prev, shape.id])}
-                  >
-                    {shape.label}
-                  </Button>
-                ))}
-            </div>
+            {challenges.some((c) => !selectedOrder.includes(c.id)) && (
+              <div className="space-y-1.5">
+                <span className="text-slate-500 text-xs">
+                  {selectedOrder.length === 0
+                    ? 'Click the shortest shape first:'
+                    : 'Click the next shortest:'}
+                </span>
+                <div className="space-y-1.5">
+                  {challenges
+                    .filter((c) => !selectedOrder.includes(c.id))
+                    .map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setSelectedOrder((prev) => [...prev, c.id])}
+                        className="w-full flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/20 hover:border-purple-400/40 rounded-lg pl-3 pr-4 py-1.5 text-left transition-colors"
+                      >
+                        <ShapePreview challenge={c} interactive />
+                        <span className="text-slate-200 text-sm">{c.label}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
 
-            {/* Actions */}
             <div className="flex gap-2 justify-center">
               {selectedOrder.length > 0 && (
                 <Button
@@ -1037,7 +1134,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   Reset Order
                 </Button>
               )}
-              {selectedOrder.length === shapes.length && (
+              {selectedOrder.length === challenges.length && (
                 <Button
                   variant="ghost"
                   className="bg-purple-500/10 border border-purple-400/30 hover:bg-purple-500/20 text-purple-300"
@@ -1048,7 +1145,6 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
               )}
             </div>
 
-            {/* Comparison feedback */}
             {compareFeedback && (
               <div
                 className={`rounded-lg p-3 border ${
@@ -1065,20 +1161,16 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
           </div>
         )}
 
-        {/* ================================================================
-            ACTIVE WORKSPACE — Measure phase (all modes)
-            ================================================================ */}
-        {currentShape && !measureComplete && (
+        {/* ACTIVE WORKSPACE — Measure phase (all modes) */}
+        {currentChallenge && !measureComplete && (
           <>
-            {/* Instruction */}
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
               <p className="text-blue-200 text-sm font-medium">
-                Shape {currentIndex + 1} of {shapes.length}
+                Shape {currentIndex + 1} of {challenges.length}
               </p>
               <p className="text-slate-200 mt-1">{getInstructionText()}</p>
             </div>
 
-            {/* SVG Workspace (hidden during convert step) */}
             {!convertStep && (
               <div className="flex justify-center">
                 <svg
@@ -1119,12 +1211,12 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                     rulerY={rulerY}
                   />
 
-                  {shapePositions[currentShape.id] && (
+                  {shapePositions[currentChallenge.id] && (
                     <DraggableShape
-                      shape={currentShape}
+                      challenge={currentChallenge}
                       pixelsPerUnit={pixelsPerUnit}
-                      isOnRuler={!!onRuler[currentShape.id]}
-                      position={shapePositions[currentShape.id]}
+                      isOnRuler={!!onRuler[currentChallenge.id]}
+                      position={shapePositions[currentChallenge.id]}
                       onDragStart={handleDragStart}
                       isDragging={isDragging}
                       isActive={true}
@@ -1135,8 +1227,8 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
               </div>
             )}
 
-            {/* Measure answer input (when shape is on ruler and NOT in convert step) */}
-            {onRuler[currentShape.id] && !convertStep && (
+            {/* Measure stepper (shape on ruler, not in convert step) */}
+            {onRuler[currentChallenge.id] && !convertStep && (
               <div className="space-y-3">
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-slate-300 text-sm">How many {unit} long?</span>
@@ -1177,7 +1269,6 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   </Button>
                 </div>
 
-                {/* Feedback */}
                 {feedback && (
                   <div
                     className={`rounded-lg p-3 border ${
@@ -1192,19 +1283,18 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   </div>
                 )}
 
-                {/* Hint */}
                 {showHint && (
                   <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                    <p className="text-amber-200 text-sm">{currentShape.hint}</p>
+                    <p className="text-amber-200 text-sm">{currentChallenge.hint}</p>
                   </div>
                 )}
 
-                {!feedback?.correct && currentAttempts >= 2 && !showHint && (
+                {!feedback?.correct && measureAttempts >= 2 && !showHint && (
                   <div className="flex justify-center">
                     <Button
                       variant="ghost"
                       className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-                      onClick={() => setShowHint(true)}
+                      onClick={showHintHandler}
                     >
                       Need a Hint?
                     </Button>
@@ -1213,15 +1303,13 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
               </div>
             )}
 
-            {/* ============================================================
-                CONVERT STEP — shown after correct measurement in convert mode
-                ============================================================ */}
-            {convertStep && currentShape && (
+            {/* CONVERT step (after correct measurement in convert mode) */}
+            {convertStep && currentChallenge && (
               <div className="space-y-3">
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
                   <p className="text-amber-200 font-medium mb-1">Convert your measurement!</p>
                   <p className="text-slate-200 mt-1">
-                    The <span className="text-amber-300 font-medium">{currentShape.label}</span> is{' '}
+                    The <span className="text-amber-300 font-medium">{currentChallenge.label}</span> is{' '}
                     <span className="text-blue-300 font-bold">{measuredValue} {unit}</span>.{' '}
                     How many <span className="text-amber-300 font-medium">{effectiveConvertToUnit}</span> is that?
                   </p>
@@ -1270,7 +1358,6 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   </Button>
                 </div>
 
-                {/* Conversion feedback */}
                 {convertFeedback && (
                   <div
                     className={`rounded-lg p-3 border ${
@@ -1289,7 +1376,6 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
           </>
         )}
 
-        {/* Reset after full completion */}
         {isFullyComplete && (
           <div className="flex justify-center">
             <Button

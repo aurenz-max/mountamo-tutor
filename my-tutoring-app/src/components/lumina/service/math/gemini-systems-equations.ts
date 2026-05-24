@@ -1,432 +1,558 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 
-/**
- * Systems of Equations Data Interface
- *
- * This matches the SystemsEquationsVisualizerData interface in the component
- */
+// ---------------------------------------------------------------------------
+// Data Types (single source of truth for SystemsEquationsVisualizer.tsx)
+// ---------------------------------------------------------------------------
+
+export type SystemsEquationsChallengeType =
+  | 'graph'
+  | 'substitution'
+  | 'elimination';
+
 export interface SystemEquation {
-  expression: string;
+  /** Display string the student reads (e.g. "y = 2x - 1" or "3x + y = 5"). */
+  display: string;
+  /** Slope of the line in y = m·x + b form. Used by the canvas evaluator. */
+  slope: number;
+  /** y-intercept of the line in y = m·x + b form. */
+  yIntercept: number;
+  /** Standard-form coefficients (only present when systemForm === 'standard'). */
+  a?: number;
+  b?: number;
+  c?: number;
   color?: string;
   label?: string;
-  slope?: number;
-  yIntercept?: number;
 }
 
-export interface IntersectionPoint {
-  x: number;
-  y: number;
-  label?: string;
-}
-
-export interface AlgebraicStep {
-  method: 'substitution' | 'elimination' | 'graphing';
-  stepNumber: number;
-  description: string;
-  equation?: string;
+export interface SystemsEquationsChallenge {
+  id: string;
+  type: SystemsEquationsChallengeType;
+  /** 'slope-intercept' for graph/substitution; 'standard' for elimination. */
+  systemForm: 'slope-intercept' | 'standard';
+  equationA: SystemEquation;
+  equationB: SystemEquation;
+  /** Pre-computed integer solution. Submit-time scoring compares to these. */
+  expectedX: number;
+  expectedY: number;
+  instruction: string;
+  hint: string;
 }
 
 export interface SystemsEquationsVisualizerData {
   title: string;
   description: string;
-  equations: SystemEquation[];
   xRange: [number, number];
   yRange: [number, number];
   gridSpacing?: { x: number; y: number };
-  showGraph?: boolean;
-  showAlgebraic?: boolean;
-  solutionMethod?: 'graphing' | 'substitution' | 'elimination';
-  highlightIntersection?: boolean;
-  stepByStep?: boolean;
-  intersectionPoint?: IntersectionPoint;
-  algebraicSteps?: AlgebraicStep[];
-  systemType?: 'one-solution' | 'no-solution' | 'infinite-solutions';
+  showGrid?: boolean;
+  showAxes?: boolean;
+  gradeBand?: '7-8' | 'algebra-1' | 'algebra-2';
+  /** 3-6 challenges per session. Required. Built in-generator from the pool service. */
+  challenges: SystemsEquationsChallenge[];
+}
+
+// ---------------------------------------------------------------------------
+// Challenge type docs
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  graph: {
+    promptDoc:
+      `"graph": Grade 8 / Algebra-1 intro. Two lines are drawn on the same coordinate plane. `
+      + `The student reads the intersection point off the graph and types (x, y). Integer slopes (m ∈ {±1, ±2, ±3}), `
+      + `integer intersection points in [-5, 5]. Equations rendered in slope-intercept form (y = m·x + b).`,
+    schemaDescription: "'graph' (read intersection from a drawn system)",
+  },
+  substitution: {
+    promptDoc:
+      `"substitution": Algebra-1. Two equations in slope-intercept form. The student solves algebraically by setting `
+      + `m₁x + b₁ = m₂x + b₂ (since both are solved for y already) and types (x, y). Integer solutions; mix of integer `
+      + `and small-fraction slopes (m ∈ {±1, ±2, ±3, ±1/2}).`,
+    schemaDescription: "'substitution' (solve algebraically; equations in y = m·x + b form)",
+  },
+  elimination: {
+    promptDoc:
+      `"elimination": Algebra-1 / Algebra-2. Two equations in standard form (a·x + b·y = c) with small integer `
+      + `coefficients. The student multiplies / adds to eliminate one variable, then types (x, y). Integer solutions; `
+      + `coefficients chosen so addition or simple scaling clears one variable.`,
+    schemaDescription: "'elimination' (solve via add / scale; equations in a·x + b·y = c form)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Pool service (deterministic, per-challenge values built locally)
+// ---------------------------------------------------------------------------
+
+const DEFAULT_INSTANCE_COUNT = 4;
+const MAX_INSTANCE_COUNT = 6;
+
+const COLOR_A = '#3b82f6'; // blue
+const COLOR_B = '#10b981'; // emerald
+
+const randInt = (min: number, max: number): number =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Slope candidate pools (as rise/run integer pairs) per mode. */
+const SLOPE_POOL_BY_TYPE: Record<SystemsEquationsChallengeType, Array<[rise: number, run: number]>> = {
+  graph: [
+    [1, 1], [2, 1], [3, 1],
+    [-1, 1], [-2, 1], [-3, 1],
+    [1, 2], [-1, 2],
+  ],
+  substitution: [
+    [1, 1], [2, 1], [3, 1],
+    [-1, 1], [-2, 1], [-3, 1],
+    [1, 2], [-1, 2], [3, 2], [-3, 2],
+  ],
+  elimination: [
+    // For elimination the "slope" is derived from a/b — we pick (a, b) directly below.
+    [1, 1],
+  ],
+};
+
+/** Small-integer coefficient pool for elimination mode (a, b) — keeps elimination clean. */
+const ELIM_COEF_POOL: number[] = [-3, -2, -1, 1, 2, 3];
+
+function formatSlopeIntercept(slope: number, yIntercept: number): string {
+  const slopeStr = slope === 1
+    ? 'x'
+    : slope === -1
+    ? '-x'
+    : Number.isInteger(slope)
+    ? `${slope}x`
+    : `${slope.toFixed(2).replace(/\.?0+$/, '')}x`;
+  if (yIntercept === 0) return `y = ${slopeStr}`;
+  if (yIntercept > 0) return `y = ${slopeStr} + ${yIntercept}`;
+  return `y = ${slopeStr} - ${Math.abs(yIntercept)}`;
+}
+
+function formatStandard(a: number, b: number, c: number): string {
+  // Render a·x + b·y = c with sign-aware spacing.
+  const aTerm = a === 1 ? 'x' : a === -1 ? '-x' : `${a}x`;
+  const bAbs = Math.abs(b);
+  const bTerm = bAbs === 1 ? 'y' : `${bAbs}y`;
+  const sign = b >= 0 ? '+' : '-';
+  return `${aTerm} ${sign} ${bTerm} = ${c}`;
+}
+
+function instructionFor(type: SystemsEquationsChallengeType): string {
+  switch (type) {
+    case 'graph':
+      return `Look at the two lines on the graph. Find the intersection point and enter (x, y).`;
+    case 'substitution':
+      return `Both equations are solved for y. Set them equal, solve for x, then find y. Enter (x, y).`;
+    case 'elimination':
+      return `Use elimination — add or scale equations so one variable cancels. Then solve and enter (x, y).`;
+  }
+}
+
+function hintFor(type: SystemsEquationsChallengeType, x: number, y: number): string {
+  switch (type) {
+    case 'graph':
+      return `Trace each line to where they cross. The crossing point's x-coordinate is ${x} and y-coordinate is ${y}.`;
+    case 'substitution':
+      return `Set m₁·x + b₁ = m₂·x + b₂. Solve for x first (you should get ${x}), then plug back to find y = ${y}.`;
+    case 'elimination':
+      return `Multiply one or both equations so a column matches; add or subtract to cancel that variable. The answer is (${x}, ${y}).`;
+  }
+}
+
+/** Canonical key for de-duplicating challenges within a session. */
+function challengeKey(spec: {
+  slopeA: number; yInterceptA: number;
+  slopeB: number; yInterceptB: number;
+  x: number; y: number;
+}): string {
+  return `mA=${spec.slopeA}|bA=${spec.yInterceptA}|mB=${spec.slopeB}|bB=${spec.yInterceptB}|sol=${spec.x},${spec.y}`;
+}
+
+function inViewport(slope: number, yIntercept: number, xRange: [number, number], yRange: [number, number]): boolean {
+  // Both endpoints of the line over xRange should keep some portion of the line visible.
+  const yLeft = slope * xRange[0] + yIntercept;
+  const yRight = slope * xRange[1] + yIntercept;
+  // Reject lines that are wholly outside the y range on both ends.
+  if (yLeft < yRange[0] - 2 && yRight < yRange[0] - 2) return false;
+  if (yLeft > yRange[1] + 2 && yRight > yRange[1] + 2) return false;
+  return true;
 }
 
 /**
- * Schema definition for Systems of Equations Visualizer
- *
- * This schema defines the structure for visualizing and solving systems of linear equations
+ * Build one slope-intercept-form challenge: pick two distinct slopes + an integer
+ * intersection (x0, y0), then back-solve y-intercepts so both lines pass through it.
  */
+function buildSlopeInterceptChallenge(
+  type: SystemsEquationsChallengeType,
+  xRange: [number, number],
+  yRange: [number, number],
+): SystemsEquationsChallenge {
+  const slopePool = SLOPE_POOL_BY_TYPE[type];
+  for (let attempt = 0; attempt < 60; attempt++) {
+    // Pick distinct slope candidates.
+    const [riseA, runA] = slopePool[randInt(0, slopePool.length - 1)];
+    let [riseB, runB] = slopePool[randInt(0, slopePool.length - 1)];
+    if (riseA * runB === riseB * runA) {
+      // Parallel — pick again.
+      [riseB, runB] = slopePool[(slopePool.indexOf([riseA, runA] as [number, number]) + 3) % slopePool.length];
+    }
+    const slopeA = riseA / runA;
+    const slopeB = riseB / runB;
+    if (slopeA === slopeB) continue;
+
+    // Pick an integer intersection point in a safe interior band.
+    const x0 = randInt(-4, 4);
+    const y0 = randInt(-4, 4);
+
+    // Back-solve y-intercepts: b = y0 - m·x0.
+    const yInterceptA = y0 - slopeA * x0;
+    const yInterceptB = y0 - slopeB * x0;
+
+    // Need integer y-intercepts for clean equations.
+    if (!Number.isInteger(yInterceptA) || !Number.isInteger(yInterceptB)) continue;
+    if (Math.abs(yInterceptA) > 9 || Math.abs(yInterceptB) > 9) continue;
+    if (!inViewport(slopeA, yInterceptA, xRange, yRange)) continue;
+    if (!inViewport(slopeB, yInterceptB, xRange, yRange)) continue;
+
+    return {
+      id: `se-${Date.now().toString(36)}-${attempt}`,
+      type,
+      systemForm: 'slope-intercept',
+      equationA: {
+        display: formatSlopeIntercept(slopeA, yInterceptA),
+        slope: slopeA,
+        yIntercept: yInterceptA,
+        color: COLOR_A,
+        label: 'Line A',
+      },
+      equationB: {
+        display: formatSlopeIntercept(slopeB, yInterceptB),
+        slope: slopeB,
+        yIntercept: yInterceptB,
+        color: COLOR_B,
+        label: 'Line B',
+      },
+      expectedX: x0,
+      expectedY: y0,
+      instruction: instructionFor(type),
+      hint: hintFor(type, x0, y0),
+    };
+  }
+  // Fallback — guaranteed safe pick.
+  const slopeA = 2;
+  const slopeB = -1;
+  const x0 = 1;
+  const y0 = 3;
+  return {
+    id: `se-fb-${Date.now().toString(36)}`,
+    type,
+    systemForm: 'slope-intercept',
+    equationA: {
+      display: formatSlopeIntercept(slopeA, y0 - slopeA * x0),
+      slope: slopeA,
+      yIntercept: y0 - slopeA * x0,
+      color: COLOR_A,
+      label: 'Line A',
+    },
+    equationB: {
+      display: formatSlopeIntercept(slopeB, y0 - slopeB * x0),
+      slope: slopeB,
+      yIntercept: y0 - slopeB * x0,
+      color: COLOR_B,
+      label: 'Line B',
+    },
+    expectedX: x0,
+    expectedY: y0,
+    instruction: instructionFor(type),
+    hint: hintFor(type, x0, y0),
+  };
+}
+
+/**
+ * Build one elimination-form challenge: pick small integer (a, b) coefficients for
+ * both equations and an integer (x0, y0) solution; compute c = a·x0 + b·y0.
+ */
+function buildEliminationChallenge(
+  xRange: [number, number],
+  yRange: [number, number],
+): SystemsEquationsChallenge {
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const aA = ELIM_COEF_POOL[randInt(0, ELIM_COEF_POOL.length - 1)];
+    let bA = ELIM_COEF_POOL[randInt(0, ELIM_COEF_POOL.length - 1)];
+    if (bA === 0) bA = 1;
+
+    const aB = ELIM_COEF_POOL[randInt(0, ELIM_COEF_POOL.length - 1)];
+    let bB = ELIM_COEF_POOL[randInt(0, ELIM_COEF_POOL.length - 1)];
+    if (bB === 0) bB = 1;
+
+    // Require equations not be proportional (otherwise same line — infinite solutions).
+    const det = aA * bB - aB * bA;
+    if (det === 0) continue;
+
+    const x0 = randInt(-4, 4);
+    const y0 = randInt(-4, 4);
+    const cA = aA * x0 + bA * y0;
+    const cB = aB * x0 + bB * y0;
+
+    // Keep right-hand sides reasonable for student arithmetic.
+    if (Math.abs(cA) > 18 || Math.abs(cB) > 18) continue;
+
+    // Compute slope-intercept equivalents for canvas drawing.
+    const slopeA = -aA / bA;
+    const slopeB = -aB / bB;
+    const yInterceptA = cA / bA;
+    const yInterceptB = cB / bB;
+    if (!inViewport(slopeA, yInterceptA, xRange, yRange)) continue;
+    if (!inViewport(slopeB, yInterceptB, xRange, yRange)) continue;
+
+    return {
+      id: `se-elim-${Date.now().toString(36)}-${attempt}`,
+      type: 'elimination',
+      systemForm: 'standard',
+      equationA: {
+        display: formatStandard(aA, bA, cA),
+        slope: slopeA,
+        yIntercept: yInterceptA,
+        a: aA,
+        b: bA,
+        c: cA,
+        color: COLOR_A,
+        label: 'Eq. A',
+      },
+      equationB: {
+        display: formatStandard(aB, bB, cB),
+        slope: slopeB,
+        yIntercept: yInterceptB,
+        a: aB,
+        b: bB,
+        c: cB,
+        color: COLOR_B,
+        label: 'Eq. B',
+      },
+      expectedX: x0,
+      expectedY: y0,
+      instruction: instructionFor('elimination'),
+      hint: hintFor('elimination', x0, y0),
+    };
+  }
+  // Fallback — guaranteed safe (2x + y = 5, x - y = 1; solution (2, 1)).
+  return {
+    id: `se-elim-fb-${Date.now().toString(36)}`,
+    type: 'elimination',
+    systemForm: 'standard',
+    equationA: {
+      display: formatStandard(2, 1, 5),
+      slope: -2,
+      yIntercept: 5,
+      a: 2, b: 1, c: 5,
+      color: COLOR_A,
+      label: 'Eq. A',
+    },
+    equationB: {
+      display: formatStandard(1, -1, 1),
+      slope: 1,
+      yIntercept: -1,
+      a: 1, b: -1, c: 1,
+      color: COLOR_B,
+      label: 'Eq. B',
+    },
+    expectedX: 2,
+    expectedY: 1,
+    instruction: instructionFor('elimination'),
+    hint: hintFor('elimination', 2, 1),
+  };
+}
+
+/** Build N distinct challenges for a session of one challenge type. */
+export function selectSystemsEquationsChallenges(
+  challengeType: SystemsEquationsChallengeType,
+  count: number = DEFAULT_INSTANCE_COUNT,
+  xRange: [number, number] = [-10, 10],
+  yRange: [number, number] = [-10, 10],
+): SystemsEquationsChallenge[] {
+  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, count));
+  const seen = new Set<string>();
+  const challenges: SystemsEquationsChallenge[] = [];
+
+  for (let attempt = 0; attempt < target * 10 && challenges.length < target; attempt++) {
+    const ch = challengeType === 'elimination'
+      ? buildEliminationChallenge(xRange, yRange)
+      : buildSlopeInterceptChallenge(challengeType, xRange, yRange);
+
+    const key = challengeKey({
+      slopeA: ch.equationA.slope,
+      yInterceptA: ch.equationA.yIntercept,
+      slopeB: ch.equationB.slope,
+      yInterceptB: ch.equationB.yIntercept,
+      x: ch.expectedX,
+      y: ch.expectedY,
+    });
+    if (seen.has(key)) continue;
+    seen.add(key);
+    challenges.push({ ...ch, id: `se-${challenges.length + 1}` });
+  }
+
+  // Fallback — accept duplicates if the candidate space was too narrow.
+  while (challenges.length < target) {
+    const ch = challengeType === 'elimination'
+      ? buildEliminationChallenge(xRange, yRange)
+      : buildSlopeInterceptChallenge(challengeType, xRange, yRange);
+    challenges.push({ ...ch, id: `se-${challenges.length + 1}` });
+  }
+
+  // Gentler systems first (by absolute magnitude of the solution coordinates).
+  return shuffle(challenges).sort(
+    (a, b) => Math.abs(a.expectedX) + Math.abs(a.expectedY) - (Math.abs(b.expectedX) + Math.abs(b.expectedY)),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Schema (wrapper metadata only — Gemini does NOT emit per-challenge data)
+// ---------------------------------------------------------------------------
+
 const systemsEquationsSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     title: {
       type: Type.STRING,
-      description: "Title for the system of equations (e.g., 'Solving Systems by Graphing', 'Substitution Method')"
+      description:
+        "Title for the multi-challenge systems of equations session (e.g., 'Solving Systems by Graphing'). Do NOT name specific equations — the session walks through several systems.",
     },
     description: {
       type: Type.STRING,
-      description: "Educational description explaining what students will learn"
+      description:
+        "1-2 sentence educational description of what students will practice across the session.",
     },
-    equations: {
-      type: Type.ARRAY,
-      description: "Array of 2-3 linear equations in the system. Use y = mx + b format.",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          expression: {
-            type: Type.STRING,
-            description: "The equation in y = mx + b format (e.g., 'y = 2*x + 1')"
-          },
-          color: {
-            type: Type.STRING,
-            description: "Hex color for the line (e.g., '#3b82f6', '#10b981')"
-          },
-          label: {
-            type: Type.STRING,
-            description: "Label for the equation (e.g., 'Equation 1', 'Line A')"
-          },
-          slope: {
-            type: Type.NUMBER,
-            description: "The slope of the line"
-          },
-          yIntercept: {
-            type: Type.NUMBER,
-            description: "The y-intercept of the line"
-          }
-        },
-        required: ["expression"]
-      }
-    },
-    xRange: {
-      type: Type.ARRAY,
-      description: "X-axis bounds [min, max]. Typically [-10, 10]",
-      items: { type: Type.NUMBER }
-    },
-    yRange: {
-      type: Type.ARRAY,
-      description: "Y-axis bounds [min, max]. Typically [-10, 10]",
-      items: { type: Type.NUMBER }
-    },
-    gridSpacing: {
-      type: Type.OBJECT,
-      description: "Grid line spacing. Default: {x: 1, y: 1}",
-      properties: {
-        x: { type: Type.NUMBER },
-        y: { type: Type.NUMBER }
-      }
-    },
-    showGraph: {
-      type: Type.BOOLEAN,
-      description: "Display the graphical representation. Default: true"
-    },
-    showAlgebraic: {
-      type: Type.BOOLEAN,
-      description: "Show algebraic solution panel. Default: true"
-    },
-    solutionMethod: {
+    challengeType: {
       type: Type.STRING,
-      description: "Primary solution method: 'graphing', 'substitution', or 'elimination'"
+      enum: ["graph", "substitution", "elimination"],
+      description: "Solution method tier. The system uses this to build the per-challenge equation pool.",
     },
-    highlightIntersection: {
-      type: Type.BOOLEAN,
-      description: "Mark the intersection point(s). Default: true"
-    },
-    stepByStep: {
-      type: Type.BOOLEAN,
-      description: "Show solution steps incrementally. Default: false"
-    },
-    intersectionPoint: {
-      type: Type.OBJECT,
-      description: "The solution point where lines intersect",
-      properties: {
-        x: { type: Type.NUMBER, description: "X-coordinate of intersection" },
-        y: { type: Type.NUMBER, description: "Y-coordinate of intersection" },
-        label: { type: Type.STRING, description: "Optional label for the point" }
-      }
-    },
-    algebraicSteps: {
-      type: Type.ARRAY,
-      description: "Step-by-step solution process",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          method: {
-            type: Type.STRING,
-            description: "Solution method: 'substitution', 'elimination', or 'graphing'"
-          },
-          stepNumber: {
-            type: Type.NUMBER,
-            description: "Step number in the sequence"
-          },
-          description: {
-            type: Type.STRING,
-            description: "Student-friendly description of this step"
-          },
-          equation: {
-            type: Type.STRING,
-            description: "The equation or expression at this step"
-          }
-        },
-        required: ["method", "stepNumber", "description"]
-      }
-    },
-    systemType: {
+    gradeBand: {
       type: Type.STRING,
-      description: "Type of system: 'one-solution' (intersecting lines), 'no-solution' (parallel lines), or 'infinite-solutions' (same line)"
-    }
+      enum: ["7-8", "algebra-1", "algebra-2"],
+      description: "Target grade band. Should align with challengeType.",
+    },
   },
-  required: ["title", "description", "equations", "xRange", "yRange"]
+  required: ["title", "description", "challengeType"],
 };
 
-/**
- * Generate systems of equations visualizer data
- *
- * This function creates a complete system of equations visualization including:
- * - 2-3 linear equations
- * - Graphical representation
- * - Algebraic solution steps
- * - Intersection point(s)
- * - Educational context
- *
- * @param topic - The math topic or concept to teach
- * @param gradeLevel - Grade level for age-appropriate content
- * @param config - Optional configuration hints from the manifest
- * @returns SystemsEquationsVisualizerData with complete configuration
- */
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
 export const generateSystemsEquations = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    equations?: SystemEquation[];
-    solutionMethod?: 'graphing' | 'substitution' | 'elimination';
-    showAlgebraic?: boolean;
-    stepByStep?: boolean;
+    /** How many systems-of-equations challenges in this session. Default 4, max 6. */
+    instanceCount?: number;
+    /** Target eval mode from the IRT calibration system. */
+    targetEvalMode?: string;
+    /** Optional axis range overrides. */
+    xRange?: [number, number];
+    yRange?: [number, number];
   }
 ): Promise<SystemsEquationsVisualizerData> => {
+  const evalConstraint = resolveEvalModeConstraint(
+    'systems-equations-visualizer',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(systemsEquationsSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'challengeType',
+        rootLevel: true,
+      })
+    : systemsEquationsSchema;
+
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
   const prompt = `
-Create an educational systems of equations visualization for teaching "${topic}" to ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge systems-of-equations session on "${topic}" for ${gradeLevel} students.
 
 CONTEXT:
-- A system of equations is a set of two or more equations with the same variables
-- The solution is the point(s) where all equations are true simultaneously
-- For linear systems, this is where the lines intersect on a graph
-- Three types of systems:
-  1. One solution: Lines intersect at exactly one point
-  2. No solution: Lines are parallel (never intersect)
-  3. Infinite solutions: Lines are identical (same line)
+- A session contains 3-6 separate systems, each with two linear equations and one integer (x, y) solution.
+- The system has ALREADY pre-built each pair of equations and its solution — you do NOT pick equations, slopes, or solutions.
+- Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
 
-GRADE LEVEL GUIDELINES:
-
-**Grade 8**:
-- Simple systems with integer solutions
-- Focus on graphing method
-- Solutions visible within [-10, 10] range
-- Example: y = 2*x + 1 and y = -x + 4 (intersect at (1, 3))
-
-**Algebra I**:
-- Systems with integer or simple decimal solutions
-- All three methods: graphing, substitution, elimination
-- Include real-world context
-- Example: y = 0.5*x + 2 and y = -x + 5
-
-**Algebra II**:
-- May include fractions or more complex solutions
-- Emphasis on choosing efficient methods
-- Include parallel and coincident lines
-- May have 3 equations (rare, for advanced students)
-
-SOLUTION METHODS:
-
-**Graphing Method**:
-- Plot both equations on the same coordinate plane
-- Find the intersection point visually
-- Verify by substitution
-- Steps:
-  1. Graph the first equation
-  2. Graph the second equation on the same axes
-  3. Identify the intersection point
-  4. Check the solution in both equations
-
-**Substitution Method**:
-- Solve one equation for one variable
-- Substitute into the other equation
-- Solve for the remaining variable
-- Back-substitute to find the other variable
-- Steps example for y = 2*x + 1 and y = -x + 4:
-  1. Both equations already solved for y
-  2. Set them equal: 2*x + 1 = -x + 4
-  3. Solve for x: 3*x = 3, so x = 1
-  4. Substitute back: y = 2(1) + 1 = 3
-  5. Solution: (1, 3)
-
-**Elimination Method**:
-- Multiply equations to make coefficients opposite
-- Add equations to eliminate one variable
-- Solve for remaining variable
-- Back-substitute to find the other variable
-- Steps example for 2*x + y = 5 and x - y = 1:
-  1. Notice y and -y are already opposites
-  2. Add equations: (2*x + y) + (x - y) = 5 + 1
-  3. Simplify: 3*x = 6, so x = 2
-  4. Substitute: 2(2) + y = 5, so y = 1
-  5. Solution: (2, 1)
-
-EQUATION FORMAT:
-- Use standard form: y = mx + b
-- Always use * for multiplication
-- Examples:
-  - y = 2*x + 1
-  - y = -0.5*x + 3
-  - y = x - 2
-
-COLOR SCHEME:
-- First equation: '#3b82f6' (blue)
-- Second equation: '#10b981' (green)
-- Third equation: '#f59e0b' (amber)
-
-CREATING EDUCATIONAL SYSTEMS:
-
-**For Graphing Method**:
-- Choose equations with clear, distinct slopes
-- Ensure intersection point is within the viewing window
-- Use integer solutions when possible for grade 8
-- Example: y = 2*x - 1 and y = -x + 5 (intersect at (2, 3))
-
-**For Substitution Method**:
-- At least one equation should be solved for y (or easily solvable)
-- Choose numbers that work out nicely
-- Example: y = 3*x - 2 and y = x + 4
-
-**For Elimination Method**:
-- May need to provide equations in standard form
-- Choose coefficients that eliminate easily
-- Example: 2*x + y = 7 and x - y = 2
-
-**No Solution Example**:
-- y = 2*x + 1 and y = 2*x - 3 (same slope, different intercepts)
-- systemType: 'no-solution'
-- Don't provide intersectionPoint
-
-**Infinite Solutions Example**:
-- y = 2*x + 1 and y = 2*x + 1 (identical equations)
-- systemType: 'infinite-solutions'
-- Every point on the line is a solution
-
-ALGEBRAIC STEPS FORMAT:
-
-For each step, provide:
-- stepNumber: Sequential number (1, 2, 3, ...)
-- description: Clear explanation of what's happening
-- equation: The equation at this stage (optional but helpful)
-- method: The solution method being used
-
-Example substitution steps:
-[
-  {
-    "method": "substitution",
-    "stepNumber": 1,
-    "description": "Write both original equations",
-    "equation": "y = 2*x + 1 and y = -x + 4"
-  },
-  {
-    "method": "substitution",
-    "stepNumber": 2,
-    "description": "Since both are solved for y, set them equal",
-    "equation": "2*x + 1 = -x + 4"
-  },
-  {
-    "method": "substitution",
-    "stepNumber": 3,
-    "description": "Add x to both sides",
-    "equation": "3*x + 1 = 4"
-  },
-  {
-    "method": "substitution",
-    "stepNumber": 4,
-    "description": "Subtract 1 from both sides",
-    "equation": "3*x = 3"
-  },
-  {
-    "method": "substitution",
-    "stepNumber": 5,
-    "description": "Divide both sides by 3",
-    "equation": "x = 1"
-  },
-  {
-    "method": "substitution",
-    "stepNumber": 6,
-    "description": "Substitute x = 1 into the first equation",
-    "equation": "y = 2(1) + 1 = 3"
-  },
-  {
-    "method": "substitution",
-    "stepNumber": 7,
-    "description": "The solution is the point (1, 3)",
-    "equation": "(x, y) = (1, 3)"
-  }
-]
-
-${config ? `
-CONFIGURATION HINTS:
-${config.solutionMethod ? `- Solution Method: ${config.solutionMethod}` : ''}
-${config.showAlgebraic !== undefined ? `- Show Algebraic: ${config.showAlgebraic}` : ''}
-${config.stepByStep !== undefined ? `- Step by Step: ${config.stepByStep}` : ''}
-${config.equations ? `- Number of equations: ${config.equations.length}` : ''}
-` : ''}
+${challengeTypeSection}
 
 REQUIREMENTS:
-1. Create 2-3 linear equations appropriate for the grade level
-2. Calculate the intersection point (if it exists)
-3. Set appropriate xRange and yRange (typically [-10, 10])
-4. Provide complete algebraic steps for the specified method
-5. Set correct systemType based on the equations
-6. Include colors and labels for each equation
-7. Make solutions educational and clear
-8. Ensure numbers are student-friendly (prefer integers or simple decimals)
+1. Write a clear, student-friendly title for the whole session. Do NOT name any specific equation or solution — the session walks through several systems.
+2. Provide a 1-2 sentence educational description of what students will practice across the session.
+3. Set challengeType to the correct solution-method tier (matches the eval mode constraint above).
+4. Set gradeBand consistent with challengeType (graph → 7-8, substitution → algebra-1, elimination → algebra-1 or algebra-2).
 
-Return the complete systems of equations configuration.
+Return ONLY the wrapper fields described above.
 `;
+
+  logEvalModeResolution('SystemsEquations', config?.targetEvalMode, evalConstraint);
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
+      temperature: 0.9,
+      topP: 0.95,
       responseMimeType: "application/json",
-      responseSchema: systemsEquationsSchema
+      responseSchema: activeSchema,
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
-
-  if (!data) {
-    throw new Error('No valid systems equations data returned from Gemini API');
+  const wrapper = result.text ? JSON.parse(result.text) : null;
+  if (!wrapper) {
+    throw new Error('No valid systems-equations wrapper returned from Gemini API');
   }
 
-  // Validation: ensure we have at least 2 equations
-  if (!data.equations || data.equations.length < 2) {
-    throw new Error('System must have at least 2 equations');
-  }
+  const validTypes: SystemsEquationsChallengeType[] = ['graph', 'substitution', 'elimination'];
+  let challengeType: SystemsEquationsChallengeType = validTypes.includes(wrapper.challengeType as SystemsEquationsChallengeType)
+    ? (wrapper.challengeType as SystemsEquationsChallengeType)
+    : (evalConstraint?.allowedTypes[0] as SystemsEquationsChallengeType) ?? 'graph';
+  if (!validTypes.includes(challengeType)) challengeType = 'graph';
 
-  // Validation: ensure ranges are valid
-  if (data.xRange[0] >= data.xRange[1]) {
-    console.warn('Invalid xRange. Using default [-10, 10]');
-    data.xRange = [-10, 10];
-  }
+  const xRange: [number, number] = config?.xRange ?? [-10, 10];
+  const yRange: [number, number] = config?.yRange ?? [-10, 10];
 
-  if (data.yRange[0] >= data.yRange[1]) {
-    console.warn('Invalid yRange. Using default [-10, 10]');
-    data.yRange = [-10, 10];
-  }
+  const challenges = selectSystemsEquationsChallenges(challengeType, config?.instanceCount, xRange, yRange);
 
-  // Apply config overrides from manifest
-  if (config) {
-    if (config.solutionMethod) data.solutionMethod = config.solutionMethod;
-    if (config.showAlgebraic !== undefined) data.showAlgebraic = config.showAlgebraic;
-    if (config.stepByStep !== undefined) data.stepByStep = config.stepByStep;
-    if (config.equations) data.equations = config.equations;
-  }
+  const data: SystemsEquationsVisualizerData = {
+    title: wrapper.title,
+    description: wrapper.description,
+    xRange,
+    yRange,
+    gridSpacing: { x: 1, y: 1 },
+    showAxes: true,
+    showGrid: true,
+    gradeBand:
+      challengeType === 'graph'
+        ? '7-8'
+        : challengeType === 'substitution'
+        ? 'algebra-1'
+        : 'algebra-2',
+    challenges,
+  };
 
-  // Set defaults
-  if (data.gridSpacing === undefined) data.gridSpacing = { x: 1, y: 1 };
-  if (data.showGraph === undefined) data.showGraph = true;
-  if (data.showAlgebraic === undefined) data.showAlgebraic = true;
-  if (data.solutionMethod === undefined) data.solutionMethod = 'graphing';
-  if (data.highlightIntersection === undefined) data.highlightIntersection = true;
-  if (data.stepByStep === undefined) data.stepByStep = false;
-  if (data.systemType === undefined) data.systemType = 'one-solution';
+  const summary = challenges
+    .map((c) => `${c.equationA.display} & ${c.equationB.display} → (${c.expectedX},${c.expectedY})`)
+    .join(' | ');
+  console.log(`[SystemsEquations] Final: challengeType=${challengeType}, instances=${challenges.length} [${summary}]`);
 
   return data;
 };

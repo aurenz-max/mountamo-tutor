@@ -18,179 +18,343 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"equality": K-2 missing addend problems. Use □ or "mystery number" — no variable notation. `
       + `Simple addition equations: □ + 3 = 7 or 5 + □ = 8. `
-      + `Use only positive integers under 20. `
-      + `leftSide: [{value: 1, isVariable: true}, {value: 3}], rightSide: [{value: 7}], variableValue: 4. `
-      + `allowOperations: ['add', 'subtract']. gradeBand: 'K-2'. Focus on "what number makes this true?"`,
-    schemaDescription: "'equality' (balance = equal)",
-  },
-  one_step: {
-    promptDoc:
-      `"one_step": Grades 3-4 one-step equations with x notation. `
-      + `Examples: x + 5 = 12, x - 3 = 7. Use positive integers under 50. `
-      + `One operation needed to solve. `
-      + `leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 5}], rightSide: [{value: 12}], variableValue: 7. `
-      + `allowOperations: ['add', 'subtract']. gradeBand: '3-4'. `
-      + `Include step history: ["Start with x + 5 = 12", "Subtract 5 from both sides", "x = 7"].`,
-    schemaDescription: "'one_step' (single-operation equation)",
-  },
-  two_step: {
-    promptDoc:
-      `"two_step": Grade 5+ two-step equations with coefficients. `
-      + `Examples: 2x + 3 = 11, 3x - 4 = 14. Use integers (including negatives for advanced). `
-      + `Two operations needed. Represent coefficients with multiple variable objects. `
-      + `leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}, {value: 3}], rightSide: [{value: 11}], variableValue: 4. `
-      + `allowOperations: ['add', 'subtract', 'multiply', 'divide']. gradeBand: '5'. `
-      + `Detailed step history showing each operation.`,
-    schemaDescription: "'two_step' (multi-step equation)",
+      + `Positive integers under 20. allowOperations: ['add', 'subtract']. gradeBand: 'K-2'.`,
+    schemaDescription: "'equality' (balance = equal, missing addend)",
   },
   equality_hard: {
     promptDoc:
       `"equality_hard": K-2 harder missing-addend problems with subtraction and larger numbers. `
-      + `Include SUBTRACTION equations: 12 - □ = 7, □ - 3 = 5. `
-      + `Use sums/differences in the range 10-20. Mix addition and subtraction. `
-      + `Still use □ or "mystery number" — no x notation. `
-      + `leftSide: [{value: 1, isVariable: true}, {value: 7}], rightSide: [{value: 12}], variableValue: 5. `
-      + `allowOperations: ['add', 'subtract']. gradeBand: 'K-2'. `
-      + `Focus on subtraction as "undoing" addition.`,
+      + `Subtraction equations: 12 - □ = 7 or □ - 3 = 5. Sums/differences 10-20. `
+      + `Still □ or "mystery number" — no x. allowOperations: ['add', 'subtract']. gradeBand: 'K-2'.`,
     schemaDescription: "'equality_hard' (harder missing addend with subtraction)",
+  },
+  one_step: {
+    promptDoc:
+      `"one_step": Grades 3-4 one-step equations with x notation. `
+      + `Examples: x + 5 = 12, x - 3 = 7. Positive integers under 50. `
+      + `allowOperations: ['add', 'subtract']. gradeBand: '3-4'.`,
+    schemaDescription: "'one_step' (single-operation x equation)",
   },
   one_step_hard: {
     promptDoc:
       `"one_step_hard": Grades 3-4 one-step equations using multiplication or division. `
-      + `Examples: 3x = 12, x ÷ 2 = 5, 4x = 20. Use positive integers. `
-      + `Products under 50. Divisors 2-10. `
-      + `For multiplication: leftSide has multiple variable objects. 3x = 12 → leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}], rightSide: [{value: 12}], variableValue: 4. `
-      + `allowOperations: ['multiply', 'divide']. gradeBand: '3-4'. `
-      + `Step history should mention "divide both sides" or "how many groups of x make the total?"`,
+      + `Examples: 3x = 12, x ÷ 2 = 5. Products under 50, divisors 2-10. `
+      + `Coefficients shown as multiple variable objects. `
+      + `allowOperations: ['multiply', 'divide']. gradeBand: '3-4'.`,
     schemaDescription: "'one_step_hard' (multiply/divide one-step equation)",
   },
   two_step_intro: {
     promptDoc:
-      `"two_step_intro": Grades 4-5 simple two-step equations with small positive coefficients. `
-      + `Examples: 2x + 1 = 7, 3x - 2 = 10. Coefficients 2-4 only. `
-      + `All values positive. Results under 30. `
-      + `Two operations needed but keep numbers small and friendly. `
-      + `leftSide: [{value: 1, label: 'x', isVariable: true}, {value: 1, label: 'x', isVariable: true}, {value: 1}], rightSide: [{value: 7}], variableValue: 3. `
-      + `allowOperations: ['add', 'subtract', 'multiply', 'divide']. gradeBand: '3-4'. `
-      + `Step history: first undo addition/subtraction, then undo multiplication.`,
+      `"two_step_intro": Grades 4-5 simple two-step equations with small coefficients. `
+      + `Examples: 2x + 1 = 7, 3x - 2 = 10. Coefficients 2-4, results under 30. `
+      + `All values positive. allowOperations: ['add', 'subtract', 'multiply', 'divide']. gradeBand: '3-4'.`,
     schemaDescription: "'two_step_intro' (simple two-step, small coefficients)",
   },
+  two_step: {
+    promptDoc:
+      `"two_step": Grade 5+ two-step equations with coefficients. `
+      + `Examples: 2x + 3 = 11, 3x - 4 = 14. Coefficients 2-6, results under 50. `
+      + `allowOperations: ['add', 'subtract', 'multiply', 'divide']. gradeBand: '5'.`,
+    schemaDescription: "'two_step' (multi-step equation)",
+  },
 };
 
 // ---------------------------------------------------------------------------
-// Schema definitions
+// Equation pool service (deterministic, per-challenge values built locally)
 // ---------------------------------------------------------------------------
 
-const balanceScaleObjectSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    value: {
-      type: Type.NUMBER,
-      description: "Numeric value of the object. For variables, this is the coefficient (default 1 for 'x'). For constants, this is the actual value."
-    },
-    label: {
-      type: Type.STRING,
-      description: "Display label for the object (e.g., 'x', '3', '5'). Optional - defaults to the value.",
-      nullable: true
-    },
-    isVariable: {
-      type: Type.BOOLEAN,
-      description: "True if this represents a variable (x), false for constants. Default: false"
-    }
-  },
-  required: ["value"]
+const DEFAULT_INSTANCE_COUNT = 4;
+const MAX_INSTANCE_COUNT = 6;
+
+type ChallengeType = BalanceScaleChallenge['type'];
+
+interface EquationSpec {
+  leftSide: BalanceScaleObject[];
+  rightSide: BalanceScaleObject[];
+  variableValue: number;
+  instruction: string;
+  hint: string;
+}
+
+const randInt = (min: number, max: number): number =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Equation builders — all equations use DECOMPOSED RHS so the click-to-remove
+// interaction in BalanceScale.tsx can actually isolate the variable. The
+// generic pattern is `LHS = answerBlock + sharedConstants`, where every
+// non-variable constant on LHS appears as a literal block on RHS too. The
+// student then clicks shared blocks to remove from both sides until only the
+// variable remains opposite the answer block.
+// ---------------------------------------------------------------------------
+
+const VAR_BLOCK = (label = 'x'): BalanceScaleObject => ({
+  value: 1,
+  label,
+  isVariable: true,
+});
+
+const CONST_BLOCK = (n: number): BalanceScaleObject => ({
+  value: n,
+  label: String(n),
+});
+
+/** K-2 missing-addend addition: □ + b = c, shown as □ + b = answer + b. */
+function buildEquality(): EquationSpec {
+  const x = randInt(1, 12);
+  const b = randInt(1, 12);
+  const varLabel = '?';
+  const xFirst = Math.random() < 0.5;
+  const leftSide: BalanceScaleObject[] = xFirst
+    ? [VAR_BLOCK(varLabel), CONST_BLOCK(b)]
+    : [CONST_BLOCK(b), VAR_BLOCK(varLabel)];
+  return {
+    leftSide,
+    // RHS decomposed: [answer, b] so student can click `b` off both sides.
+    rightSide: [CONST_BLOCK(x), CONST_BLOCK(b)],
+    variableValue: x,
+    instruction: `Find the mystery number that makes both sides balance.`,
+    hint: `Remove the ${b} block from both sides. What is left on each side?`,
+  };
+}
+
+/** K-2 harder: missing addend with larger numbers, decomposed form. */
+function buildEqualityHard(): EquationSpec {
+  const useFirstSlot = Math.random() < 0.5;
+  const varLabel = '?';
+  if (useFirstSlot) {
+    // c + ? = c + answer (shown as [c, ?] = [c, answer])
+    const x = randInt(1, 9);
+    const c = randInt(5, 12);
+    return {
+      leftSide: [CONST_BLOCK(c), VAR_BLOCK(varLabel)],
+      rightSide: [CONST_BLOCK(c), CONST_BLOCK(x)],
+      variableValue: x,
+      instruction: `Find the mystery number that keeps the scale balanced.`,
+      hint: `Remove the ${c} block from both sides. The mystery number must equal what is left.`,
+    };
+  }
+  // [?] = [c, b]  — variable already isolated; student computes c + b.
+  // This branch teaches "read the equation form" rather than removal.
+  const x = randInt(8, 20);
+  const b = randInt(1, Math.min(x - 1, 9));
+  const c = x - b;
+  return {
+    leftSide: [VAR_BLOCK(varLabel)],
+    rightSide: [CONST_BLOCK(c), CONST_BLOCK(b)],
+    variableValue: x,
+    instruction: `The mystery number is already alone. What value balances the scale?`,
+    hint: `Add the blocks on the right side. ${c} + ${b} = ?`,
+  };
+}
+
+/** Grades 3-4: x + b = c, shown as decomposed [x, b] = [answer, b]. */
+function buildOneStep(): EquationSpec {
+  const isolatedForm = Math.random() < 0.35;
+  if (isolatedForm) {
+    // x = c + b  — variable pre-isolated. Student computes the sum.
+    const x = randInt(8, 30);
+    const b = randInt(1, Math.min(x - 1, 15));
+    const c = x - b;
+    return {
+      leftSide: [VAR_BLOCK('x')],
+      rightSide: [CONST_BLOCK(c), CONST_BLOCK(b)],
+      variableValue: x,
+      instruction: `Solve for x. The variable is already isolated.`,
+      hint: `Add the right side: ${c} + ${b} = ?`,
+    };
+  }
+  // x + b = c  →  [x, b] = [answer, b]. Student clicks b off both sides.
+  const x = randInt(1, 25);
+  const b = randInt(1, 20);
+  return {
+    leftSide: [VAR_BLOCK('x'), CONST_BLOCK(b)],
+    rightSide: [CONST_BLOCK(x), CONST_BLOCK(b)],
+    variableValue: x,
+    instruction: `Solve for x.`,
+    hint: `Remove ${b} from both sides to isolate x.`,
+  };
+}
+
+/** Grades 3-4: kx = c (k copies of x on left, c on right). Solved via divide. */
+function buildOneStepHard(): EquationSpec {
+  const k = randInt(2, 5);
+  const x = randInt(2, 9);
+  const c = k * x;
+  const leftSide: BalanceScaleObject[] = Array.from({ length: k }, () => VAR_BLOCK('x'));
+  return {
+    leftSide,
+    rightSide: [CONST_BLOCK(c)],
+    variableValue: x,
+    instruction: `Solve for x. ${k} copies of x equal ${c}.`,
+    hint: `Divide both sides by ${k} to find x.`,
+  };
+}
+
+/** Grades 4-5: kx + b = c, shown as [x..., b] = [k·answer, b]. */
+function buildTwoStepIntro(): EquationSpec {
+  const k = randInt(2, 4);
+  const x = randInt(2, 6);
+  const b = randInt(1, 5);
+  const leftSide: BalanceScaleObject[] = [
+    ...Array.from({ length: k }, () => VAR_BLOCK('x')),
+    CONST_BLOCK(b),
+  ];
+  return {
+    leftSide,
+    rightSide: [CONST_BLOCK(k * x), CONST_BLOCK(b)],
+    variableValue: x,
+    instruction: `Solve for x. First remove the constant, then divide.`,
+    hint: `Remove ${b} from both sides, then divide by ${k}.`,
+  };
+}
+
+/** Grade 5+: kx + b = c, shown as [x..., b] = [k·answer, b]. Always addition form. */
+function buildTwoStep(): EquationSpec {
+  const k = randInt(2, 6);
+  const x = randInt(2, 8);
+  const b = randInt(1, 10);
+  const leftSide: BalanceScaleObject[] = [
+    ...Array.from({ length: k }, () => VAR_BLOCK('x')),
+    CONST_BLOCK(b),
+  ];
+  return {
+    leftSide,
+    rightSide: [CONST_BLOCK(k * x), CONST_BLOCK(b)],
+    variableValue: x,
+    instruction: `Solve for x.`,
+    hint: `Remove ${b} from both sides, then divide by ${k}.`,
+  };
+}
+
+const BUILDERS: Record<ChallengeType, () => EquationSpec> = {
+  equality: buildEquality,
+  equality_hard: buildEqualityHard,
+  one_step: buildOneStep,
+  one_step_hard: buildOneStepHard,
+  two_step_intro: buildTwoStepIntro,
+  two_step: buildTwoStep,
 };
 
-const balanceScaleChallengeSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    type: {
-      type: Type.STRING,
-      enum: ["equality", "equality_hard", "one_step", "one_step_hard", "two_step_intro", "two_step"],
-      description: "Difficulty tier of the challenge"
-    },
-    instruction: {
-      type: Type.STRING,
-      description: "Clear instruction telling the student what to solve"
-    },
-    leftSide: {
-      type: Type.ARRAY,
-      items: balanceScaleObjectSchema,
-      description: "Objects on the left pan for this challenge"
-    },
-    rightSide: {
-      type: Type.ARRAY,
-      items: balanceScaleObjectSchema,
-      description: "Objects on the right pan for this challenge"
-    },
-    variableValue: {
-      type: Type.NUMBER,
-      description: "The solution value for x in this challenge"
-    },
-    hint: {
-      type: Type.STRING,
-      description: "A helpful hint shown after multiple failed attempts"
-    }
-  },
-  required: ["type", "instruction", "leftSide", "rightSide", "variableValue", "hint"]
+const ALLOW_OPS_BY_TYPE: Record<ChallengeType, ('add' | 'subtract' | 'multiply' | 'divide')[]> = {
+  equality: ['add', 'subtract'],
+  equality_hard: ['add', 'subtract'],
+  one_step: ['add', 'subtract'],
+  one_step_hard: ['multiply', 'divide'],
+  two_step_intro: ['add', 'subtract', 'multiply', 'divide'],
+  two_step: ['add', 'subtract', 'multiply', 'divide'],
 };
+
+const GRADE_BAND_BY_TYPE: Record<ChallengeType, 'K-2' | '3-4' | '5'> = {
+  equality: 'K-2',
+  equality_hard: 'K-2',
+  one_step: '3-4',
+  one_step_hard: '3-4',
+  two_step_intro: '3-4',
+  two_step: '5',
+};
+
+/** Canonical key for de-duplicating equations within a session. */
+function equationKey(spec: EquationSpec): string {
+  const sideKey = (side: BalanceScaleObject[]) =>
+    side
+      .map((o) => (o.isVariable ? `v${o.value}` : `c${o.value}`))
+      .sort()
+      .join('|');
+  return `${sideKey(spec.leftSide)}=${sideKey(spec.rightSide)}|x=${spec.variableValue}`;
+}
+
+/**
+ * Build N distinct equations for a session of one challenge type. Retries on
+ * collisions; falls back to the last attempt if the candidate space is too narrow.
+ */
+export function selectBalanceScaleChallenges(
+  challengeType: ChallengeType,
+  count: number = DEFAULT_INSTANCE_COUNT,
+): BalanceScaleChallenge[] {
+  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, count));
+  const builder = BUILDERS[challengeType];
+  const seen = new Set<string>();
+  const challenges: BalanceScaleChallenge[] = [];
+
+  for (let i = 0; i < target * 6 && challenges.length < target; i++) {
+    const spec = builder();
+    const key = equationKey(spec);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    challenges.push({
+      type: challengeType,
+      instruction: spec.instruction,
+      leftSide: spec.leftSide,
+      rightSide: spec.rightSide,
+      variableValue: spec.variableValue,
+      hint: spec.hint,
+    });
+  }
+
+  // Fallback — if we couldn't fill the target with distinct equations, accept duplicates.
+  while (challenges.length < target) {
+    const spec = builder();
+    challenges.push({
+      type: challengeType,
+      instruction: spec.instruction,
+      leftSide: spec.leftSide,
+      rightSide: spec.rightSide,
+      variableValue: spec.variableValue,
+      hint: spec.hint,
+    });
+  }
+
+  // Easier-to-harder by sum of constants on the right (proxy for magnitude).
+  return shuffle(challenges).sort((a, b) => {
+    const sa = a.rightSide.reduce((s, o) => s + (o.isVariable ? 0 : o.value), 0);
+    const sb = b.rightSide.reduce((s, o) => s + (o.isVariable ? 0 : o.value), 0);
+    return sa - sb;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Schema (wrapper metadata only — Gemini does NOT emit per-challenge equations)
+// ---------------------------------------------------------------------------
 
 const balanceScaleSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     title: {
       type: Type.STRING,
-      description: "Title for the balance scale problem (e.g., 'Solving x + 3 = 7')"
+      description:
+        "Title for the multi-equation session (e.g., 'Solving One-Step Equations'). Do NOT name specific numbers — the session walks through several equations.",
     },
     description: {
       type: Type.STRING,
-      description: "Educational description explaining the equation and solving strategy"
+      description:
+        "1-2 sentence educational description of what students will practice across the session.",
     },
-    leftSide: {
-      type: Type.ARRAY,
-      items: balanceScaleObjectSchema,
-      description: "Array of objects on the left pan. Each object has a value and optional label. Variables have isVariable: true."
-    },
-    rightSide: {
-      type: Type.ARRAY,
-      items: balanceScaleObjectSchema,
-      description: "Array of objects on the right pan. Each object has a value and optional label."
-    },
-    variableValue: {
-      type: Type.NUMBER,
-      description: "The hidden solution value for the variable x. This is what students should solve for."
-    },
-    showTilt: {
-      type: Type.BOOLEAN,
-      description: "Whether to animate the scale tilting when imbalanced. Helpful for visual learners. Default: true"
-    },
-    allowOperations: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.STRING,
-        enum: ["add", "subtract", "multiply", "divide"]
-      },
-      description: "Operations students can use to solve. For simple equations use ['add', 'subtract']. For complex use all four."
-    },
-    stepHistory: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.STRING
-      },
-      description: "Array of solution step descriptions to guide students through the solving process. Each step explains one operation."
+    challengeType: {
+      type: Type.STRING,
+      enum: ["equality", "equality_hard", "one_step", "one_step_hard", "two_step_intro", "two_step"],
+      description: "Difficulty tier of the session. The system uses this to build the equations.",
     },
     gradeBand: {
       type: Type.STRING,
       enum: ["K-2", "3-4", "5"],
-      description: "Target grade band for difficulty calibration. Default: '3-4'"
+      description: "Target grade band. Should align with challengeType. Default: '3-4'.",
     },
-    challenges: {
-      type: Type.ARRAY,
-      items: balanceScaleChallengeSchema,
-      description: "Array of sequential equation challenges for the student to complete"
-    }
+    showTilt: {
+      type: Type.BOOLEAN,
+      description: "Whether to animate the scale tilting when imbalanced. Default: true.",
+    },
   },
-  required: ["title", "description", "leftSide", "rightSide", "variableValue"]
+  required: ["title", "description", "challengeType"],
 };
 
 // ---------------------------------------------------------------------------
@@ -201,12 +365,9 @@ export const generateBalanceScale = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    leftSide?: BalanceScaleObject[];
-    rightSide?: BalanceScaleObject[];
-    variableValue?: number;
+    /** How many equations in this session. Default 4, max 6. */
+    instanceCount?: number;
     showTilt?: boolean;
-    allowOperations?: ('add' | 'subtract' | 'multiply' | 'divide')[];
-    stepHistory?: string[];
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
   }
@@ -220,128 +381,32 @@ export const generateBalanceScale = async (
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(balanceScaleSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    ? constrainChallengeTypeEnum(balanceScaleSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'challengeType',
+        rootLevel: true,
+      })
     : balanceScaleSchema;
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
-  // Generate random equations for variety
-  const numEquations = 6 + Math.floor(Math.random() * 5); // 6-10 examples
-  const randomEquations: string[] = [];
-
-  for (let i = 0; i < numEquations; i++) {
-    const x = Math.floor(Math.random() * 20) + 1;
-    const constant = Math.floor(Math.random() * 15) + 1;
-    const operation = Math.random() > 0.5 ? '+' : '-';
-    const result = operation === '+' ? x + constant : x - constant;
-    randomEquations.push(`x ${operation} ${constant} = ${result}`);
-  }
-
   const prompt = `
-Create an educational balance scale visualization for teaching "${topic}" to ${gradeLevel} students.
-
-RANDOMIZATION GUIDANCE: Consider these diverse equations for variety: ${randomEquations.join(', ')}
-IMPORTANT: Generate DIFFERENT and VARIED problems each time. Vary the operations, coefficients, and constants.
+Create the wrapper metadata for a multi-equation balance scale session on "${topic}" for ${gradeLevel} students.
 
 CONTEXT:
-- Balance scales represent equations as physical equilibrium
-- Objects on each pan must have equal total value
-- Students solve by performing same operation on both sides
-- Variables (x) are shown as special objects different from constants
-- The scale tilts when sides are unequal, balances when equal
-- Goal is to isolate the variable to find its value
+- A balance scale session contains 3-6 separate equations of the same difficulty tier.
+- The system has ALREADY pre-built each equation (leftSide, rightSide, variableValue) — you do NOT pick numbers.
+- Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
 
 ${challengeTypeSection}
 
-${!evalConstraint ? `
-GUIDELINES FOR GRADE LEVELS:
-
-Grades 1-2: Equality Concepts & Missing Addends
-- Simple addition equations: □ + 3 = 7 or 5 + □ = 8
-- Use only positive integers under 20
-- No variable notation yet - use □ or "mystery number"
-- leftSide: [{value: 1, isVariable: true}, {value: 3}]
-- rightSide: [{value: 7}]
-- variableValue: 4
-- allowOperations: ['add', 'subtract']
-- gradeBand: 'K-2'
-- Focus on "what number makes this true?"
-
-Grades 3-5: One-Step Equations
-- Simple one-step equations: x + 5 = 12, x - 3 = 7
-- Introduce x notation
-- Use positive integers under 50
-- One operation needed to solve
-- allowOperations: ['add', 'subtract']
-- gradeBand: '3-4'
-- Include step history
-
-Grades 5+: Two-Step Equations & Coefficients
-- Two-step equations: 2x + 3 = 11, 3x - 4 = 14
-- Introduce coefficients (multiple x blocks)
-- Use integers (including negatives for advanced)
-- Two operations needed
-- allowOperations: ['add', 'subtract', 'multiply', 'divide']
-- gradeBand: '5'
-- Detailed step history showing each operation
-` : ''}
-
-EQUATION STRUCTURE:
-
-For variable objects (isVariable: true):
-- value: The coefficient (usually 1 for single x, 2 for 2x, etc.)
-- label: 'x' or '2x' or similar
-- isVariable: true
-
-For constant objects (isVariable: false or undefined):
-- value: The actual numeric value
-- label: String representation (optional, defaults to value)
-- isVariable: false (or omitted)
-
-IMPORTANT RULES:
-1. The equation MUST be balanced (leftSide sum = rightSide sum when x = variableValue)
-2. Variables use isVariable: true, constants use isVariable: false or omit it
-3. For coefficients > 1, include multiple variable objects OR use value = coefficient
-4. Keep object counts reasonable (max 5-6 objects per side)
-5. Always include step history for educational value
-6. Title should describe the equation being solved
-7. Description should explain the strategy and learning goal
-8. Set gradeBand based on the grade level context
-
-STEP HISTORY GUIDELINES:
-- Start with the original equation
-- Describe each operation performed on both sides
-- End with the solution (x = value)
-- Use student-friendly language
-
-${config ? `
-CONFIGURATION HINTS:
-${config.leftSide ? `- Left side objects: ${JSON.stringify(config.leftSide)}` : ''}
-${config.rightSide ? `- Right side objects: ${JSON.stringify(config.rightSide)}` : ''}
-${config.variableValue !== undefined ? `- Variable value: ${config.variableValue}` : ''}
-${config.showTilt !== undefined ? `- Show tilt animation: ${config.showTilt}` : ''}
-${config.allowOperations ? `- Allowed operations: ${config.allowOperations.join(', ')}` : ''}
-${config.stepHistory ? `- Solution steps: ${JSON.stringify(config.stepHistory)}` : ''}
-` : ''}
-
 REQUIREMENTS:
-1. Create an equation appropriate for the grade level and topic
-2. Ensure mathematical correctness: sum(leftSide values) = sum(rightSide values) when x = variableValue
-3. Provide clear, age-appropriate title and description
-4. Structure objects correctly with value, optional label, and isVariable flag
-5. Include comprehensive step history showing the solving process
-6. Set appropriate allowOperations based on complexity
-7. Use showTilt: true for engaging visual feedback
-8. Keep the number of objects manageable (3-6 per side)
-9. Set gradeBand appropriately based on grade level
+1. Write a clear, student-friendly title for the whole session. Do NOT name any specific equation — the session walks through several.
+2. Provide a 1-2 sentence educational description of what students will practice across the session.
+3. Set challengeType to the correct difficulty tier (matches the eval mode constraint above).
+4. Set gradeBand consistent with challengeType.
 
-VALIDATION:
-- Verify that substituting variableValue for x makes the equation true
-- Ensure step history is complete and pedagogically sound
-- Check that operations in stepHistory match allowOperations
-
-Return the complete balance scale configuration.
+Return ONLY the wrapper fields described above.
 `;
 
   logEvalModeResolution('BalanceScale', config?.targetEvalMode, evalConstraint);
@@ -350,122 +415,54 @@ Return the complete balance scale configuration.
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
+      temperature: 0.9,
+      topP: 0.95,
       responseMimeType: "application/json",
       responseSchema: activeSchema,
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  const wrapper = result.text ? JSON.parse(result.text) : null;
 
-  if (!data) {
-    throw new Error('No valid balance scale data returned from Gemini API');
+  if (!wrapper) {
+    throw new Error('No valid balance scale wrapper returned from Gemini API');
   }
 
-  // Validation: ensure arrays are not empty
-  if (!data.leftSide || data.leftSide.length === 0) {
-    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'one_step';
-    const fallbacks: Record<string, { leftSide: BalanceScaleObject[]; rightSide: BalanceScaleObject[]; variableValue: number }> = {
-      equality: {
-        leftSide: [{ value: 1, isVariable: true }, { value: 3 }],
-        rightSide: [{ value: 7 }],
-        variableValue: 4,
-      },
-      one_step: {
-        leftSide: [{ value: 1, label: 'x', isVariable: true }, { value: 5 }],
-        rightSide: [{ value: 12 }],
-        variableValue: 7,
-      },
-      two_step: {
-        leftSide: [{ value: 1, label: 'x', isVariable: true }, { value: 1, label: 'x', isVariable: true }, { value: 3 }],
-        rightSide: [{ value: 11 }],
-        variableValue: 4,
-      },
-      equality_hard: {
-        leftSide: [{ value: 1, isVariable: true }, { value: 7 }],
-        rightSide: [{ value: 12 }],
-        variableValue: 5,
-      },
-      one_step_hard: {
-        leftSide: [{ value: 1, label: 'x', isVariable: true }, { value: 1, label: 'x', isVariable: true }, { value: 1, label: 'x', isVariable: true }],
-        rightSide: [{ value: 12 }],
-        variableValue: 4,
-      },
-      two_step_intro: {
-        leftSide: [{ value: 1, label: 'x', isVariable: true }, { value: 1, label: 'x', isVariable: true }, { value: 1 }],
-        rightSide: [{ value: 7 }],
-        variableValue: 3,
-      },
-    };
-    const fb = fallbacks[fallbackType] ?? fallbacks.one_step;
-    console.warn(`[BalanceScale] Invalid leftSide — using ${fallbackType} fallback`);
-    data.leftSide = fb.leftSide;
-    data.rightSide = fb.rightSide;
-    data.variableValue = fb.variableValue;
-  }
+  // ── Validate challengeType ──
+  const validTypes: ChallengeType[] = ['equality', 'equality_hard', 'one_step', 'one_step_hard', 'two_step_intro', 'two_step'];
+  let challengeType: ChallengeType = validTypes.includes(wrapper.challengeType as ChallengeType)
+    ? (wrapper.challengeType as ChallengeType)
+    : (evalConstraint?.allowedTypes[0] as ChallengeType) ?? 'one_step';
+  if (!validTypes.includes(challengeType)) challengeType = 'one_step';
 
-  if (!data.rightSide || data.rightSide.length === 0) {
-    console.warn('Invalid balance scale: rightSide is empty. Setting default.');
-    data.rightSide = [{ value: 7 }];
-  }
+  // ── Build the per-challenge equation pool locally ──
+  const challenges = selectBalanceScaleChallenges(challengeType, config?.instanceCount);
 
-  if (data.variableValue === undefined || data.variableValue === null) {
-    console.warn('Invalid balance scale: variableValue is missing. Setting default.');
-    data.variableValue = 4;
-  }
+  const gradeBand = GRADE_BAND_BY_TYPE[challengeType];
+  const allowOperations = ALLOW_OPS_BY_TYPE[challengeType];
+  const showTilt = config?.showTilt ?? wrapper.showTilt ?? true;
 
-  // Validation: ensure equation is balanced
-  const leftSum = data.leftSide.reduce((sum: number, obj: BalanceScaleObject) => {
-    const value = obj.isVariable ? data.variableValue * (obj.value || 1) : obj.value;
-    return sum + value;
-  }, 0);
+  // First challenge populates the legacy session-level leftSide/rightSide/variableValue
+  // fields so the component's initial render has data before the per-challenge reset
+  // effect runs. The component reads from challenges[currentIndex] thereafter.
+  const first = challenges[0];
 
-  const rightSum = data.rightSide.reduce((sum: number, obj: BalanceScaleObject) => {
-    const value = obj.isVariable ? data.variableValue * (obj.value || 1) : obj.value;
-    return sum + value;
-  }, 0);
+  const data: BalanceScaleData = {
+    title: wrapper.title,
+    description: wrapper.description,
+    leftSide: first.leftSide,
+    rightSide: first.rightSide,
+    variableValue: first.variableValue,
+    showTilt,
+    allowOperations,
+    gradeBand,
+    challenges,
+  };
 
-  if (Math.abs(leftSum - rightSum) > 0.01) {
-    console.warn(`Balance scale equation is not balanced! Left: ${leftSum}, Right: ${rightSum}. Adjusting...`);
-    // Try to fix by adjusting the variable value
-    const leftVarCoeff = data.leftSide.reduce((sum: number, obj: BalanceScaleObject) =>
-      sum + (obj.isVariable ? (obj.value || 1) : 0), 0);
-    const rightVarCoeff = data.rightSide.reduce((sum: number, obj: BalanceScaleObject) =>
-      sum + (obj.isVariable ? (obj.value || 1) : 0), 0);
-    const leftConst = data.leftSide.reduce((sum: number, obj: BalanceScaleObject) =>
-      sum + (obj.isVariable ? 0 : obj.value), 0);
-    const rightConst = data.rightSide.reduce((sum: number, obj: BalanceScaleObject) =>
-      sum + (obj.isVariable ? 0 : obj.value), 0);
-
-    const varCoeffDiff = leftVarCoeff - rightVarCoeff;
-    if (varCoeffDiff !== 0) {
-      data.variableValue = (rightConst - leftConst) / varCoeffDiff;
-    }
-  }
-
-  // Apply any explicit config overrides from manifest
-  if (config) {
-    if (config.leftSide) data.leftSide = config.leftSide;
-    if (config.rightSide) data.rightSide = config.rightSide;
-    if (config.variableValue !== undefined) data.variableValue = config.variableValue;
-    if (config.showTilt !== undefined) data.showTilt = config.showTilt;
-    if (config.allowOperations) data.allowOperations = config.allowOperations;
-    if (config.stepHistory) data.stepHistory = config.stepHistory;
-  }
-
-  // Set defaults for optional fields if not present
-  if (data.showTilt === undefined) data.showTilt = true;
-  if (!data.allowOperations || data.allowOperations.length === 0) {
-    data.allowOperations = ['add', 'subtract'];
-  }
-  if (!data.stepHistory || data.stepHistory.length === 0) {
-    data.stepHistory = ['Solve the equation by performing the same operation on both sides'];
-  }
-  data.gradeBand = data.gradeBand || '3-4';
-  data.challenges = data.challenges || [];
-
-  // Final summary log
-  const challengeTypes = (data.challenges as BalanceScaleChallenge[]).map((c) => c.type).join(', ');
-  console.log(`[BalanceScale] Final: ${data.challenges.length} challenge(s) → [${challengeTypes}]`);
+  const typeSummary = challenges
+    .map((c) => `${c.leftSide.map((o) => (o.isVariable ? (o.label || 'x') : o.value)).join('+')}=${c.rightSide.map((o) => (o.isVariable ? (o.label || 'x') : o.value)).join('+')}`)
+    .join(', ');
+  console.log(`[BalanceScale] Final: challengeType=${challengeType}, instances=${challenges.length} [${typeSummary}], allowOps=[${allowOperations.join(',')}]`);
 
   return data;
 };
