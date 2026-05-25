@@ -87,22 +87,14 @@ Out of scope for this PRD. The patterns from [SHIPPED_LOG.md](./SHIPPED_LOG.md) 
 - Manual UI walk per mode — confirm 4 distinct scenarios and correct mode framings (especially `find_part` where `target = 100 - rate`).
 - Cost spot-check (wrapper schema dropped from 15 nested required fields to 3 scalar fields).
 
-### A2. `double-number-line` (5-7 grade) — ~2-3 hours
+### A2. `double-number-line` (5-7 grade) — ✅ SHIPPED 2026-05-23 — see [SHIPPED_LOG §6r](./SHIPPED_LOG.md#6r-double-number-line-post-mortem-workstream-3-entry-18--mid-grade-bucket-a--shipped-2026-05-23)
 
-**Current state:** Singular schema (no `challenges[]` array). Single `contextQuestion` + given/target points per session.
+**What shipped:** Hybrid (single-Gemini-wrapper + local pool construction). One Gemini call returns the session-level scenario (`topLabel`, `bottomLabel`, `unitRateOutput`, umbrella `contextQuestion`, pool of `askInputs[]`); locally we build N `DoubleNumberLineChallenge[]` with shared scales + ratio context + per-mode `givenPoints` / `targetPoints` / `prompt` / `hint`. All N challenges in a session share the same ratio relationship (context coherence enforced by construction — never flour→cookies followed by cars→hours). Component drops the explore→practice→apply phase navigator (rule 13 anti-pattern), wires `useChallengeProgress` + `usePhaseResults` + `PhaseSummaryPanel`, and submits the canonical 9-field metrics shape once at session-end.
 
-**Design challenge — context coherence:** Each of N challenges should share ONE ratio relationship within a session (all flour→cookies, all dollars→hours, etc.), but vary the scenario phrasing per challenge. This is the orchestrator-mixed-type case with the added constraint that `topLabel`/`bottomLabel` must stay consistent within a session even though individual question phrasings vary.
-
-**Refactor target:**
-- **Fork:** Fork A (pool service) is feasible — scenarios are templatable from `(topLabel, bottomLabel, ratio, contextScenarios[])` tuples per `challengeType`. Pre-author scenarios that all map to one ratio relationship; sample N from a per-ratio pool.
-- **Alternative — Fork B (orchestrator-mixed-type):** pick ONE Gemini-generated ratio relationship + context (single call), then locally build N variations with different ask points / question phrasings. Avoids the pool-authoring upfront but adds one LLM call.
-- **Schema:** `challenges: DoubleNumberLineChallenge[]` with shared session-level `topLabel`/`bottomLabel`/`ratio` and per-challenge `id`, `contextQuestion`, `givenValue`, `givenPosition`, `targetValue`, `targetPosition`, `expectedAnswer`, `hint`.
-
-**Files to touch:** same shape as A1.
-
-**Validation:** same as A1, plus manual walk to confirm context coherence (no flour→cookies followed by cars→hours within one session).
-
-**Reference post-mortems:** [bar-model §6b](./SHIPPED_LOG.md) (orchestrator-same-mode), [tape-diagram §6c](./SHIPPED_LOG.md) (multi-mode orchestrator with per-mode dispatch).
+**Validation still owed** (per §6r validation table):
+- `/eval-test double-number-line` across all 3 eval modes (`equivalent_ratios`, `find_missing`, `unit_rate`).
+- Manual UI walk per mode — confirm 4 distinct ask-points within a coherent shared ratio context, and that the `unit_rate` mode's first challenge asks for the unit rate itself before subsequent challenges ask for arbitrary values.
+- Cost spot-check (1× per-session Gemini call, wrapper-only).
 
 ### A3. `two-way-table` (7-8 grade) — deferred, ~2 hours when prioritized
 
@@ -205,17 +197,18 @@ Week 1 — Bucket B sweep (lowest friction, highest immediate ROI)
 
 Week 2 — Bucket A schema refactors
   Day 1-2: percent-bar (A1) ✅ SHIPPED 2026-05-23 (~1.5h actual — under estimate; SHIPPED_LOG §6q)
-  Day 3-4: double-number-line (A2) — context-coherence design + refactor, validation
+  Day 3-4: double-number-line (A2) ✅ SHIPPED 2026-05-23 (hybrid 1-call wrapper + local pool; SHIPPED_LOG §6r)
   Day 5: Deferred two-way-table (A3) — start scoping; reuse MatrixInput
 
-After Week 2: declare math complete except deferred two-way-table.
+After Week 2: math is complete except deferred two-way-table. Both K-3-adjacent Bucket A entries
+are ✅ shipped on 2026-05-23.
 ```
 
 ### Parallelization
 
 - All Bucket B prompt-bump entries are independent → one engineer can ship 2-3 per day.
 - Bucket B audit-only entries are independent from prompt-bump entries → can be split to a second engineer or done as a Day 3 cleanup pass.
-- Bucket A refactors (A1, A2) are independent → can run in parallel by two engineers if available.
+- ~~Bucket A refactors (A1, A2) are independent → can run in parallel by two engineers if available.~~ Both shipped 2026-05-23. A3 (`two-way-table`) is deferred.
 
 ### Effort estimates (refined)
 
@@ -224,9 +217,9 @@ After Week 2: declare math complete except deferred two-way-table.
 | Bucket B prompt-bump (11) | ~3 hours | ~2.5 hours (`/eval-test` + UI walks) | ~5.5 hours |
 | Bucket B audit-only (5) | ~1.5 hours | ~1 hour | ~2.5 hours |
 | ~~Bucket A: percent-bar~~ ✅ SHIPPED 2026-05-23 | ~~~2 hours~~ ~1.5h actual | ⏳ ~30 min owed | ~~~2.5 hours~~ ~2h actual |
-| Bucket A: double-number-line | ~2 hours | ~30 min | ~2.5 hours |
+| ~~Bucket A: double-number-line~~ ✅ SHIPPED 2026-05-23 | ~~~2 hours~~ ~1.5h actual | ⏳ ~30 min owed | ~~~2.5 hours~~ ~2h actual |
 | Deferred: two-way-table | ~1.5 hours | ~30 min | ~2 hours |
-| **Remaining** | **~8 hours** | **~4.5 hours** | **~12.5 hours** (~2 weeks calendar) |
+| **Remaining** | **~6 hours** | **~4 hours** | **~10 hours** (~1.5 weeks calendar) |
 
 ---
 
@@ -258,7 +251,7 @@ Math counts as ✅ Done when:
 - [ ] All 11 Bucket B prompt-bump entries shipped and validated.
 - [ ] All 5 Bucket B audit-only entries shipped and validated.
 - [x] `percent-bar` shipped per A1 spec. ✅ 2026-05-23 ([SHIPPED_LOG §6q](./SHIPPED_LOG.md#6q-percent-bar-post-mortem-workstream-3-entry-17--mid-grade-bucket-a--shipped-2026-05-23)). `/eval-test` validation still owed.
-- [ ] `double-number-line` shipped per A2 spec.
+- [x] `double-number-line` shipped per A2 spec. ✅ 2026-05-23 (see SHIPPED_LOG §6r). Validation still owed per §6r table.
 - [ ] CI automated audit script in place (see Open Question #2 below): runs `/eval-test` per primitive per single-mode tier, asserts `validation.challengeCount >= 3`.
 - [ ] (Optional but recommended) `two-way-table` shipped per A3 spec — declares "math fully complete" rather than "math complete except deferred."
 
@@ -276,7 +269,7 @@ Math counts as ✅ Done when:
 |---|---|---|---|
 | **Bucket B prompt bump produces malformed JSON for some primitives** (Gemini hits schema limits at higher N) | Low | Medium | Validate per primitive with `/eval-test`. If schema fails, drop to N=4 floor or switch generator to Fork A (pool service). |
 | **percent-bar refactor breaks deployed lessons** (any existing lesson tied to the old `exploreQuestion`/`practiceQuestions`/`mainQuestion` shape) | Medium | Medium | Audit the catalog for lessons that reference percent-bar specifically; check whether manifest payloads currently inject those fields. Backwards-compatibility shim during transition if needed. |
-| **double-number-line context coherence is hard to enforce in Fork A** (per-challenge scenarios may drift to different ratio relationships) | Medium | Low | Use Fork B (orchestrator) and pin the `(topLabel, bottomLabel, ratio)` triple at session level; vary only per-challenge ask points. |
+| ~~**double-number-line context coherence is hard to enforce in Fork A**~~ Resolved 2026-05-23 by shipping a hybrid 1-call wrapper + local pool construction: the single Gemini call pins `(topLabel, bottomLabel, unitRate, contextQuestion)` at session level; per-challenge construction varies only ask-points + per-mode given/target derivation. See SHIPPED_LOG §6r. | ~~Medium~~ | ~~Low~~ | Mitigation realized — see §6r #1. |
 | **Bucket B audit-only sweep surfaces undocumented evaluation gaps** (e.g. `onEvaluationSubmit` missing from a tester case) | High | Low | Expected — that's exactly what the §6n audit caught for pattern-builder. Fix as part of the sweep; document any pattern that recurs. |
 | **CI audit script reveals previously-"healthy" primitives drift below 3 challenges** | Low | Medium | Add the CI check (Open Question #2) BEFORE shipping the Bucket B sweep — catches regressions immediately. |
 
@@ -299,7 +292,7 @@ Math counts as ✅ Done when:
 ## 11. References
 
 - [PRD_WITHIN_MODE_INSTANCE_DENSITY.md](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md) — design (§4 canonical schema) + playbook (§5 refactor rules). This is the design contract.
-- [SHIPPED_LOG.md](./SHIPPED_LOG.md) — per-primitive post-mortems for the 16 shipped Workstream 2/3 entries. Reference for worked examples.
+- [SHIPPED_LOG.md](./SHIPPED_LOG.md) — per-primitive post-mortems for the 18 shipped Workstream 2/3 entries. Reference for worked examples.
 - [ADDING_PRIMITIVES.md](./ADDING_PRIMITIVES.md) — new-primitive checklist (now defaults to multi-instance per the `/primitive` skill update).
 - [`.claude/skills/primitive/SKILL.md`](../../../../.claude/skills/primitive/SKILL.md) — `/primitive` skill, updated 2026-05-23 to bake the canonical multi-instance pattern into create-from-scratch.
 - [`.claude/skills/lumina-densify-primitives/SKILL.md`](../../../../.claude/skills/lumina-densify-primitives/SKILL.md) — `/lumina-densify-primitives` skill for legacy-backfill refactors. Use this for the 2-3 remaining Bucket A entries.
@@ -310,9 +303,9 @@ Math counts as ✅ Done when:
 
 The complete classification of all 60 audited math primitives — for transparency on what's done, what's healthy, and what's left.
 
-### ✅ Shipped (17 — Workstream 2/3)
+### ✅ Shipped (18 — Workstream 2/3)
 
-factor-tree, bar-model, tape-diagram, place-value-chart, area-model, function-machine, ordinal-line, array-grid, function-sketch, balance-scale, measurement-tools, slope-triangle, matrix-display, pattern-builder (§6n audit), histogram, systems-equations, **percent-bar (§6q, 2026-05-23)**.
+factor-tree, bar-model, tape-diagram, place-value-chart, area-model, function-machine, ordinal-line, array-grid, function-sketch, balance-scale, measurement-tools, slope-triangle, matrix-display, pattern-builder (§6n audit), histogram, systems-equations, **percent-bar (§6q, 2026-05-23)**, **double-number-line (§6r, 2026-05-23)**.
 
 ### ✅ Already healthy — no work needed (23)
 
@@ -326,9 +319,9 @@ See §5 above.
 
 See §6 above.
 
-### 🔴 Bucket A — schema refactor (1 remaining + 1 deferred; 1 shipped)
+### 🔴 Bucket A — schema refactor (0 remaining + 1 deferred; 2 shipped)
 
-See §4 above. Shipped: `percent-bar` (A1, 2026-05-23). Pending: `double-number-line` (A2). Deferred: `two-way-table` (A3).
+See §4 above. Shipped: `percent-bar` (A1, 2026-05-23, §6q), `double-number-line` (A2, 2026-05-23, §6r). Deferred: `two-way-table` (A3).
 
 ### ⚪ Out of scope (2)
 

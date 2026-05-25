@@ -1543,35 +1543,73 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'two-way-table',
-    description: 'Interactive two-way table (contingency table) for categorical data with convertible Venn diagram view. Perfect for teaching categorical data organization, joint and marginal frequencies, conditional probability, set relationships (union, intersection), and independence testing. Students can click cells to see joint, marginal, and conditional probabilities. Supports table view, Venn diagram view, or both. Venn diagram circles dynamically size based on set proportions and intersection. Toggle between frequencies and relative frequencies (probabilities). ESSENTIAL for grade 7 (categorical data, set relationships), grade 7-Statistics (joint probability, conditional probability), and Statistics courses (independence testing, contingency tables).',
-    constraints: 'Requires rowCategories and columnCategories arrays (2-4 categories each), and 2D frequencies array matching dimensions. For Venn diagram view, use 2x2 tables. For grade 7, use displayMode: "both" to show table and Venn. For Statistics, use showProbabilities toggle. Set editable: true for exploration, false for assessment. Include questionPrompt for guided probability questions.',
+    description: 'Multi-challenge two-way table (contingency table) probability practice session (3-6 problems of the same probability concept, surfaced sequentially). Per challenge, students see a real-world scenario (pet preference by gender, sport by grade, transportation by distance, etc.), a frequency table, and a question — they enter a probability as a decimal and click "Check Answer" for immediate judgment. Wrong answers show a hint; correct answers advance to the next table. Supports joint probability, marginal distribution, conditional probability, and the independence test. Mode-specific UI gating: marginal/conditional modes hide row/column totals so the student must compute them; joint/independence modes show totals to support the calculation. ESSENTIAL for grade 7 (categorical data, joint probability), grade 7-Statistics (conditional probability), and Statistics courses (independence testing).',
+    constraints: 'Manifest must NOT supply specific scenarios, categories, or per-challenge frequencies — the pool service builds 3-6 distinct contingency-table problems deterministically from the eval-mode concept. Manifest may supply instanceCount only. Per-mode shape: joint/independence modes use 2×2 frequency tables with totals visible; marginal/conditional modes use 2×2 tables with totals hidden to prevent answer leak.',
+    evalModes: [
+      {
+        evalMode: 'joint_probability',
+        label: 'Joint probability (Tier 4)',
+        beta: 4.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['joint_probability'],
+        description: 'Compute P(A AND B) — joint cell divided by grand total. Totals visible.',
+      },
+      {
+        evalMode: 'marginal_distribution',
+        label: 'Marginal distribution (Tier 4)',
+        beta: 4.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['marginal_distribution'],
+        description: 'Compute P(A) by summing across rows or columns. Totals hidden — must derive marginal sum.',
+      },
+      {
+        evalMode: 'conditional_probability',
+        label: 'Conditional probability (Tier 5)',
+        beta: 5.0,
+        scaffoldingMode: 5,
+        challengeTypes: ['conditional_probability'],
+        description: 'Compute P(A|B) — joint cell divided by B marginal. Totals hidden so student must derive the conditioning marginal.',
+      },
+      {
+        evalMode: 'independence_test',
+        label: 'Independence test (Tier 5)',
+        beta: 5.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['independence_test'],
+        description: 'Compute expected joint under independence: P(A) × P(B). Compare to observed P(A∩B). Totals visible.',
+      },
+    ],
     tutoring: {
-      taskDescription: 'Analyze categorical data in a two-way table. Categories: {{rowCategories}} × {{columnCategories}}.',
-      contextKeys: ['rowCategories', 'columnCategories', 'frequencies', 'displayMode', 'showProbabilities'],
+      taskDescription: 'Multi-table probability session. Concept: {{challengeType}}. Table {{currentChallengeIndex}} of {{totalChallenges}}.',
+      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'gradeBand'],
       scaffoldingLevels: {
         level1: '"What two categories does each cell represent? Look at the row and column headers."',
-        level2: '"The row total tells you how many are in that category overall. The cell tells you the joint count."',
-        level3: '"P(A and B) = joint count ÷ grand total. P(A given B) = joint count ÷ B total."',
+        level2: '"For joint, divide the cell by the grand total. For conditional, divide the cell by ONLY the row or column total of the condition."',
+        level3: '"P(A and B) = joint count ÷ grand total. P(A|B) = joint count ÷ B total. P(A)·P(B) = (row total ÷ N) × (column total ÷ N)."',
       },
       commonStruggles: [
         { pattern: 'Confusing joint and marginal', response: '"Joint = inside the table (both categories). Marginal = totals on the edges (one category)."' },
         { pattern: 'Conditional probability errors', response: '"Given B means you only look at column B. Divide the cell by the column total, not the grand total."' },
         { pattern: 'Independence misconception', response: '"Independent means P(A and B) = P(A) × P(B). Multiply the marginal probabilities and compare to the joint."' },
+        { pattern: 'Decimal vs percentage confusion', response: '"Both work — 0.25 and 25% are the same answer. Just be sure the decimal matches the fraction you computed."' },
       ],
       aiDirectives: [
         {
-          title: 'PROBABILITY REASONING COACHING',
+          title: 'CONCEPT-AWARE COACHING',
           instruction:
-            'Build from concrete to abstract: start with frequencies ("How many students like BOTH pizza AND sports?"), '
-            + 'then move to probabilities ("What fraction of ALL students is that?"). '
-            + 'For conditional probability, physically narrow the focus: "Given that we only look at students who play sports '
-            + '(this column), what fraction likes pizza?" '
-            + 'For the Venn diagram view, connect regions to table cells: "The overlap region matches this cell in the table." '
-            + 'For independence: use the "expected vs observed" frame — "If these were independent, we would EXPECT this value. '
-            + 'The actual value is different, so they are NOT independent."',
+            'For JOINT: start with the cell, then divide by grand total — "Which cell has BOTH the row category AND the column category? Now divide by the total people." '
+            + 'For MARGINAL: walk through summing a row or column FIRST — "Add the counts across that row to get the marginal, THEN divide by the grand total." '
+            + 'For CONDITIONAL: narrow the focus physically — "Given B, we only look at column B. Divide the cell by THAT column total, not the grand total." '
+            + 'For INDEPENDENCE: use the expected-vs-observed frame — "If these were independent, P(A∩B) would equal P(A) × P(B). Compute P(A)·P(B) and we will compare."',
+        },
+        {
+          title: 'MULTI-PROBABILITY PACING',
+          instruction:
+            'This is a {{totalChallenges}}-table session. After each correct answer, the student clicks "Next Table →". Encourage progression: "Nice — on to table {{currentChallengeIndex}}!" After a wrong attempt, point at the specific cell or total that needs another look — do NOT just repeat the formula.',
         },
       ],
     },
+    supportsEvaluation: true,
   },
   // Math Phase 2 Primitives (K-5 Foundations)
   {

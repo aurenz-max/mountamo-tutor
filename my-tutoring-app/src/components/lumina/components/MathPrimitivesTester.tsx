@@ -493,7 +493,18 @@ const PrimitiveRenderer: React.FC<{
         />
       );
     case 'two-way-table':
-      return <TwoWayTable data={data as Parameters<typeof TwoWayTable>[0]['data']} />;
+      return (
+        <TwoWayTable
+          data={{
+            ...(data as Parameters<typeof TwoWayTable>[0]['data']),
+            instanceId: `two-way-table-${Date.now()}`,
+            skillId: 'math-statistics',
+            subskillId: 'two-way-table',
+            objectiveId: 'compute-probabilities-from-contingency-tables',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'ten-frame':
       return (
         <TenFrame
@@ -1144,6 +1155,18 @@ const EvaluationResultsPanel: React.FC = () => {
                 )}
                 {/* Show MatrixDisplay-specific metrics */}
                 {result.metrics.type === 'matrix-display' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show TwoWayTable-specific metrics */}
+                {result.metrics.type === 'two-way-table' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
                     <span>Mode: {result.metrics.challengeType}</span>
                     <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>

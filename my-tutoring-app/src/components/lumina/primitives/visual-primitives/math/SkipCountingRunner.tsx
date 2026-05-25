@@ -211,6 +211,32 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
   const stableInstanceIdRef = useRef(instanceId || `skip-counting-runner-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const autoPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Jump animation timer (performJump's 400ms position update) and the predict
+  // auto-advance timer (checkPrediction's 800ms wrapper that calls performJump).
+  // Both must be cleared when the student advances early, otherwise the stale
+  // closure fires after advanceToNextChallenge and overwrites the new challenge's
+  // currentPosition/landingSpots with the previous challenge's values (SCR-1).
+  const jumpAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const predictAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPendingJumpTimers = useCallback(() => {
+    if (predictAdvanceTimerRef.current) {
+      clearTimeout(predictAdvanceTimerRef.current);
+      predictAdvanceTimerRef.current = null;
+    }
+    if (jumpAnimationTimerRef.current) {
+      clearTimeout(jumpAnimationTimerRef.current);
+      jumpAnimationTimerRef.current = null;
+    }
+    setIsAnimating(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (predictAdvanceTimerRef.current) clearTimeout(predictAdvanceTimerRef.current);
+      if (jumpAnimationTimerRef.current) clearTimeout(jumpAnimationTimerRef.current);
+    };
+  }, []);
 
   const currentChallenge = challenges[currentChallengeIndex] || null;
 
@@ -332,7 +358,9 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     setIsAnimating(true);
 
     // Animate jump
-    setTimeout(() => {
+    if (jumpAnimationTimerRef.current) clearTimeout(jumpAnimationTimerRef.current);
+    jumpAnimationTimerRef.current = setTimeout(() => {
+      jumpAnimationTimerRef.current = null;
       setCurrentPosition(nextExpectedPosition);
       setLandingSpots(prev => [...prev, nextExpectedPosition]);
       setIsAnimating(false);
@@ -400,7 +428,9 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
         { silent: true }
       );
       // Auto-advance the jump after correct prediction
-      setTimeout(() => {
+      if (predictAdvanceTimerRef.current) clearTimeout(predictAdvanceTimerRef.current);
+      predictAdvanceTimerRef.current = setTimeout(() => {
+        predictAdvanceTimerRef.current = null;
         performJump();
         setPredictionInput('');
         setPredictedPosition(null);
@@ -560,6 +590,10 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
   ]);
 
   const advanceToNextChallenge = useCallback(() => {
+    // Cancel any in-flight jump/predict-advance timers so their stale closures
+    // can't overwrite the next challenge's state (SCR-1).
+    clearPendingJumpTimers();
+
     if (!advanceProgress()) {
       // All challenges complete — build phase score string for AI
       const phaseScoreStr = phaseResults
@@ -655,6 +689,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     jumpCount, longestStreak, hasSubmittedEvaluation, skipValuesExplored,
     backwardCountingAttempted, multiplicationConnectionMade, patternIdentified,
     submitEvaluation, startFrom, currentChallengeIndex, direction,
+    clearPendingJumpTimers,
   ]);
 
   // -------------------------------------------------------------------------

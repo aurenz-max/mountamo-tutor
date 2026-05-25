@@ -390,7 +390,7 @@ export function selectTwoWayTableChallenges(
   options: SelectTwoWayTableChallengesOptions = {},
 ): TwoWayTableChallenge[] {
   const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, options.count ?? DEFAULT_INSTANCE_COUNT));
-  const allowed = Array.isArray(challengeTypes)
+  const allowed: TwoWayTableChallengeType[] = Array.isArray(challengeTypes)
     ? (challengeTypes.length > 0 ? challengeTypes : ['joint_probability'])
     : [challengeTypes];
 

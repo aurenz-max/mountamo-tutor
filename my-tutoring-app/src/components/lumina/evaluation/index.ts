@@ -107,6 +107,7 @@ export type {
   MeasurementToolsMetrics,
   HistogramMetrics,
   MatrixDisplayMetrics,
+  TwoWayTableMetrics,
   SlopeTriangleMetrics,
   SystemsEquationsMetrics,
   LengthLabMetrics,

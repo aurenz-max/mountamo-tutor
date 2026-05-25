@@ -445,23 +445,19 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   const handlePickTile = useCallback((poolIndex: number) => {
     if (hasSubmittedEvaluation || challengeSolved) return;
-    setPoolTiles(prev => {
-      const tile = prev[poolIndex];
-      if (!tile) return prev;
-      setWorkspaceSlots(ws => [...ws, tile]);
-      return prev.filter((_, i) => i !== poolIndex);
-    });
-  }, [hasSubmittedEvaluation, challengeSolved]);
+    const tile = poolTiles[poolIndex];
+    if (!tile) return;
+    setPoolTiles(prev => prev.filter((_, i) => i !== poolIndex));
+    setWorkspaceSlots(prev => [...prev, tile]);
+  }, [hasSubmittedEvaluation, challengeSolved, poolTiles]);
 
   const handleRemoveSlot = useCallback((slotIndex: number) => {
     if (hasSubmittedEvaluation || challengeSolved) return;
-    setWorkspaceSlots(prev => {
-      const tile = prev[slotIndex];
-      if (!tile) return prev;
-      setPoolTiles(p => [...p, tile]);
-      return prev.filter((_, i) => i !== slotIndex);
-    });
-  }, [hasSubmittedEvaluation, challengeSolved]);
+    const tile = workspaceSlots[slotIndex];
+    if (!tile) return;
+    setWorkspaceSlots(prev => prev.filter((_, i) => i !== slotIndex));
+    setPoolTiles(prev => [...prev, tile]);
+  }, [hasSubmittedEvaluation, challengeSolved, workspaceSlots]);
 
   const handleClearWorkspace = useCallback(() => {
     if (hasSubmittedEvaluation || challengeSolved) return;

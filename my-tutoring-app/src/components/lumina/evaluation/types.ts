@@ -2588,6 +2588,22 @@ export interface MatrixDisplayMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface TwoWayTableMetrics extends BasePrimitiveMetrics {
+  type: 'two-way-table';
+  challengeType:
+    | 'joint_probability'
+    | 'marginal_distribution'
+    | 'conditional_probability'
+    | 'independence_test';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where the student opened the hint panel
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
 export interface SystemsEquationsMetrics extends BasePrimitiveMetrics {
   type: 'systems-equations-visualizer';
   challengeType: 'graph' | 'substitution' | 'elimination';
@@ -3220,6 +3236,7 @@ export type PrimitiveMetrics =
   | MeasurementToolsMetrics
   | HistogramMetrics
   | MatrixDisplayMetrics
+  | TwoWayTableMetrics
   | SlopeTriangleMetrics
   | SystemsEquationsMetrics
   | LengthLabMetrics

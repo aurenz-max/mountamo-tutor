@@ -40,6 +40,7 @@
 - §6o. Histogram ✅ 2026-05-22
 - §6p. Systems-equations ✅ 2026-05-23
 - §6q. Percent-bar ✅ 2026-05-23
+- §6r. Double-number-line ✅ 2026-05-23
 
 ### Historical Execution Plan
 - §9. Week-by-week execution plan (now historical; refer to current backlog in main PRD)
@@ -58,7 +59,7 @@ The generator's data type has no `challenges: ChallengeDef[]` field. The shape c
 |-----------|-----------|----------------|------------|
 | `factor-tree` | [gemini-factor-tree.ts:100](../service/math/gemini-factor-tree.ts#L100) | `rootValue: number` | 3-7 |
 | ~~`percent-bar`~~ ✅ SHIPPED 2026-05-23 (§6q) | ~~[gemini-percent-bar.ts](../service/math/gemini-percent-bar.ts)~~ Pool-service per-mode scenario builders | ~~single `scenario` + `challengeType` (plus an in-component `explore → practice → apply` phase walk on one shared scenario per rule 13 anti-pattern)~~ Fixed | 5-8 |
-| `double-number-line` | [gemini-double-number-line.ts](../service/math/gemini-double-number-line.ts) | single `contextQuestion`, given/target points | 5-7 |
+| ~~`double-number-line`~~ ✅ SHIPPED 2026-05-23 (§6r) | ~~[gemini-double-number-line.ts](../service/math/gemini-double-number-line.ts)~~ Hybrid 1-call wrapper + local pool construction | ~~single `contextQuestion`, given/target points (3-phase explore→practice→apply walk per rule 13 anti-pattern)~~ Fixed | 5-7 |
 | `tape-diagram` | [gemini-tape-diagram.ts](../service/math/gemini-tape-diagram.ts) | single `wordProblem` + part1/2/3 fields | 2-5 |
 | `bar-model` | [gemini-bar-model.ts:67](../service/math/gemini-bar-model.ts#L67) | `challenge?: BarModelChallenge` (singular) | 2-5 |
 | `place-value-chart` | [gemini-place-value.ts](../service/math/gemini-place-value.ts) | `targetNumber` (singular, multi-phase on one number) | K-5 |
@@ -1962,9 +1963,124 @@ The pre-refactor `PercentBarMetrics` had `exploreAccuracy`, `explorePhaseComplet
 | 1 | **`/eval-test percent-bar`** across all 4 eval modes | Eng | Per §6q validation table. Each single-mode tier should return `validation.challengeCount >= 4` and 4 distinct (template, rate, base) tuples. |
 | 2 | **Manual UI walks** for all 4 modes | Eng | Per §6q validation table. `find_part` (subtraction) walk is the most pedagogically important — confirm the question asks for the remaining percent and the bar's correct answer is `100 - rate`, not `rate`. |
 | 3 | **Cost spot-check** for percent-bar (wrapper-only Gemini call) | Eng | Per §10. Expect significant savings vs pre-refactor since the wrapper schema dropped from 15 required fields (with nested `practiceQuestions[]` array of objects) to 3 scalar fields. |
-| 4 | Workstream 3: `double-number-line` refactor | Eng | **Now the only remaining mid-grade Bucket A entry.** Context-coherence design challenge per [PRD §A2](./PRD_MATH_PRIMITIVE_COMPLETION.md#a2-double-number-line-5-7-grade--2-3-hours). |
+| 4 | ~~Workstream 3: `double-number-line` refactor~~ ✅ SHIPPED 2026-05-23 | Eng | See §6r below. Context coherence enforced by construction — all N challenges in a session share `(topLabel, bottomLabel, unitRate)` from one Gemini call. |
 | 5 | Workstream 3: `two-way-table` refactor (deferred) | Eng | Last upper-grade Bucket A. Pool-service value-only; reuses `MatrixInput` (§6m #3) + histogram UI gating (§6o #2). |
 | 6 | Workstream 1 (prompt-floor sweep) | Eng | Still pending. |
+
+---
+
+## 6r. Double-number-line Post-Mortem (Workstream 3 entry #18 / mid-grade Bucket A) ✅ SHIPPED 2026-05-23
+
+### Why double-number-line next
+
+Per [PRD_MATH_PRIMITIVE_COMPLETION §A2](./PRD_MATH_PRIMITIVE_COMPLETION.md#a2-double-number-line-5-7-grade--2-3-hours), double-number-line was the *only* remaining K-3-adjacent Bucket A entry after `percent-bar` (A1) shipped earlier in the day. Triggering symptom (per the user report): "the student can do all the problems but it doesn't indicate completion — it's pedagogically appropriate as is but not conforming to the challenge modes." Translation: the existing 3-phase `explore → practice → apply` walk on ONE shared problem produced one binary signal per session, the canonical Bucket A failure mode. Same anti-pattern shape as `percent-bar`'s pre-refactor `explore → practice → apply` walk ([PRD §5 rule 13](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules)).
+
+The PRD A2 design called out **context coherence** as the design challenge: each of N challenges should share ONE ratio relationship (all flour→cookies, all dollars→hours) — never flour→cookies followed by cars→hours within one session. Pure Fork B (per-challenge Gemini calls) would have struggled to enforce this without pinning the session-level scenario somewhere. The post-mortem documents the hybrid approach we used to make context coherence cheap to enforce.
+
+### What shipped (vs the §A2 spec)
+
+| Plan (§A2 spec) | What shipped | Why the deviation |
+|---|---|---|
+| Generation pattern: **Fork A (pool service)** OR **Fork B (orchestrator-mixed-type)** | **Hybrid: single Gemini wrapper call + local pool construction.** One Gemini call returns the session-level scenario (`title`, `description`, `challengeType`, `contextQuestion`, `topLabel`, `bottomLabel`, `unitRateOutput`, `maxInput`, `askInputs[]`). The wrapper produces a *pool of candidate target inputs* — locally we then build N `DoubleNumberLineChallenge[]` by sampling distinct `askInput` values and constructing per-mode `givenPoints` / `targetPoints` / `prompt` / `hint` deterministically. | Pure Fork A required pre-authoring scenarios (high upfront cost for a 3-mode primitive). Pure Fork B required N Gemini calls per session (4× cost for what is essentially numeric variance on a shared scenario). The hybrid keeps the 1× LLM call cost while still letting Gemini choose the relatable scenario per session. **New pattern variant** — see §6r #1 below. |
+| `challenges: DoubleNumberLineChallenge[]` (each owns `id`, `contextQuestion`, `givenValue`, `givenPosition`, `targetValue`, `targetPosition`, `expectedAnswer`, `hint`) | `challenges: DoubleNumberLineChallenge[]` (default 4, max 6). Each challenge owns `id`, `challengeType`, `prompt`, `hint`, `givenPoints: LinkedPoint[]`, `targetPoints: LinkedPoint[]`, `topScale`, `bottomScale`. Session-level holds `title`, `description`, `topLabel`, `bottomLabel`, `unitRate`, `contextQuestion` (all shared across challenges). | The original spec's per-challenge `contextQuestion` was redundant — the *umbrella* context applies to all N challenges in a session by design (context coherence). Replaced per-challenge `contextQuestion` with `prompt` + `hint` that vary by ask-point but not by scenario. |
+| Drop `setPhase('explore'\|'practice'\|'apply')` navigator | Dropped. Removed: `currentPhase` state, three-pill phase-progress indicator, three phase-specific instruction panels, separate "Find Unit Rate" UI block, "Skip to Apply Phase" button. Each of N challenges is now an independent ratio problem of the pinned `challengeType` — the eval mode IS the session shape. | Per [PRD §5 rule 13](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules) — the *third* Workstream 3 entry where the rule cited the exact case (function-machine §6f, percent-bar §6q, double-number-line §6r). |
+| Per-challenge reset useEffect keyed on `currentChallenge?.id`; stale-state guard | Per-challenge reset enumerates `studentValues[]`, `feedback`, `showHint`, `recordedRef.current`. Stale-state guard via `studentValues.length !== currentChallenge.targetPoints.length` content match at the top of `handleCheckAnswers` — only proceeds when the input slot count lines up with the active challenge. Plus `recordedRef.current` flag at the top of the same handler. | **Handler-driven** guard plus a content-match precondition. The combo is belt-and-braces (recordedRef alone would suffice in most cases) — added the slot-count match because the variable-length `studentValues[]` could theoretically lag behind a fresh challenge with a different target-point count, and the explicit check is cheap. |
+| `DoubleNumberLineMetrics` canonical 9-field shape | Yes — replaced the pre-refactor 13-field per-point shape (`totalTargetPoints`, `correctPoints`, `allPointsCorrect`, `unitRateIdentified`, `correctRatio`, `pointResults: [...]`, `attemptsCount`, `hintsUsed`, `usedGivenPoints`, `topValueAccuracy`, `bottomValueAccuracy`, `overallAccuracy`) with the canonical 9 (`challengeType`, `totalChallenges`, `correctCount`, `attemptsCount`, `firstTryCount`, `hintsViewed`, `overallAccuracy`, `averageAttemptsPerChallenge`). The `pointResults[]` array was a per-instance state dump that measured the LAST challenge — pure deadweight per [PRD §5 rule 18](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules). | Same shape as percent-bar's collapse (§6q #4). |
+| Catalog `taskDescription` / `contextKeys` / aiDirectives | `taskDescription` now templates `{{totalChallenges}}`, `{{challengeType}}`, `{{currentChallengeIndex}}`, `{{topLabel}}`, `{{bottomLabel}}`, `{{unitRate}}`, `{{currentPrompt}}`. `contextKeys` lists those plus `targetTopValue`, `attemptNumber` (all scalar — no per-challenge arrays per [PRD §5 rule 15](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules)). Added `MULTI-RATIO PACING` aiDirective explaining the sequential per-challenge flow + the "don't re-explain the unit rate after challenge 1" rule. Kept `PROPORTIONAL REASONING COACHING` + `REAL-WORLD CONNECTION` directives. `constraints` rewritten to forbid the manifest supplying specific target points, given points, or per-challenge prompts. | Same shape as the catalog updates for percent-bar (§6q), balance-scale (§6j), systems-equations (§6p). |
+| Tester wiring | Render case spreads `data` with `instanceId` / `skillId` / `subskillId` / `objectiveId` / `onEvaluationSubmit` (was bare `<DoubleNumberLine data={...} />` pre-refactor — never wired to evaluation despite catalog `supportsEvaluation: true`). Added `result.metrics.type === 'double-number-line'` breakdown block with the 7-stat layout matching bar-model / percent-bar. | Per [PRD §5 rule 17](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules). **The pre-refactor tester case was a classic [PRD §5 rule 21](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules) finding** — catalog claimed `supportsEvaluation: true` but the tester case didn't pass `onEvaluationSubmit`, so the IRT engine collected zero signal from this primitive in tester runs. Likely also true in some manifest contexts pre-refactor; worth a follow-up audit of other tester cases. |
+
+### Files changed
+
+- [gemini-double-number-line.ts](../service/math/gemini-double-number-line.ts) — full rewrite (320 → 410 lines). Slim wrapper schema (Gemini emits the session-level setup only — 9 scalar fields including `askInputs: number[]`). Three local per-mode challenge builders (`buildEquivalentRatiosChallenge`, `buildFindMissingChallenge`, `buildUnitRateChallenge`) compose `givenPoints` / `targetPoints` / `prompt` / `hint` deterministically from `(challengeType, askInput, ctx, givenReference)`. Orchestrator: pick a shared `givenReference` from the pool (for find_missing / unit_rate modes), then build N challenges in sequence. Includes the pre-existing `correctInvertedRatio` validator (catches Gemini emitting `unitRateOutput=1/N` when context states rate ~N) plus a new dedupe-and-clamp pass on `askInputs[]`.
+- [DoubleNumberLine.tsx](../primitives/visual-primitives/math/DoubleNumberLine.tsx) — full rewrite (988 → 590 lines, **40% reduction**). Data interface flattened to `challenges: DoubleNumberLineChallenge[]` (required) + session-level visual config + evaluation props. Dropped: 3-phase navigator (~80 lines), separate "Find Unit Rate" sub-UI (~60 lines), three separate `phaseResults` accumulators at session-end, three-pill phase indicator render. Added: per-challenge reset useEffect keyed on `currentChallenge?.id`, content-match + handler-driven dual stale-state guard, single canonical 9-field metrics submission at `isComplete`, progress dots, "Next Challenge →" interstitial button per [PRD §5 rule 14](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules). `PhaseSummaryPanel` config keys on `challengeType` (single-mode → one row).
+- [evaluation/types.ts](../evaluation/types.ts) — `DoubleNumberLineMetrics` collapsed from 13 fields (with nested `pointResults[]` array) to canonical 9 (`type`, `challengeType`, `totalChallenges`, `correctCount`, `attemptsCount`, `firstTryCount`, `hintsViewed`, `overallAccuracy`, `averageAttemptsPerChallenge`). Already in `AnyPrimitiveMetrics` union; already re-exported from `evaluation/index.ts` (pre-existing barrel export — one less §6n audit item).
+- [catalog/math.ts](../service/manifest/catalog/math.ts) — `description` rewritten to lead with "Multi-challenge double-number-line session"; `constraints` rewritten to forbid the manifest supplying specific target points / given points / per-challenge prompts; multi-challenge `taskDescription` + `contextKeys`; new `MULTI-RATIO PACING` aiDirective. Updated `scaffoldingLevels` (templates `{{targetTopValue}}` instead of the deprecated `{{currentPhase}}`).
+- [MathPrimitivesTester.tsx](../components/MathPrimitivesTester.tsx) — render case spreads evaluation props (was bare pre-refactor — see §6r notes above); added `result.metrics.type === 'double-number-line'` metrics-breakdown block.
+
+### DoubleNumberLineMetrics shipped
+
+```ts
+export interface DoubleNumberLineMetrics extends BasePrimitiveMetrics {
+  type: 'double-number-line';
+  challengeType: 'equivalent_ratios' | 'find_missing' | 'unit_rate';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // Total tries across all challenges
+  firstTryCount: number;          // Challenges scoring 100 (first-try correct)
+  hintsViewed: number;            // Challenges where the student opened a hint
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+```
+
+### Lessons (additions to §6a)
+
+#### §6r #1. The hybrid "1-call wrapper + local pool construction" generator pattern
+
+`double-number-line` introduced a third generator pattern alongside pure pool-service (Fork A) and orchestrator-fan-out (Fork B). The hybrid:
+
+1. **One Gemini call** returns the session-level scenario AND a pool of candidate per-challenge inputs (here: `unitRateOutput` + `askInputs: number[]`).
+2. **Local code** builds the N challenges by sampling distinct values from the pool and composing per-mode `givenPoints` / `targetPoints` / `prompt` / `hint` deterministically.
+
+Cost profile: 1× LLM call per session (matching pool-service) with the variance of "Gemini picks the scenario each session" (matching orchestrator). Sweet spot for primitives where:
+- The per-challenge content is **mostly numeric** (different ask-points on the same scale) → can be derived locally.
+- The session-level scenario needs **LLM-quality variation** (different recipes, vehicles, currencies each session) → still need one Gemini call.
+- All N challenges in a session need to **share the scenario** (context coherence) → enforced by construction; impossible to drift mid-session.
+
+**Generalization:** for content-bearing primitives where the per-challenge ask is a numeric/categorical pick from a session-level scenario, the hybrid is cheaper than pure Fork B and easier-to-author than pure Fork A. The constraint that gates this pattern is **content uniformity within a session**: if challenges 1-N need *different* scenarios (e.g. tape-diagram's per-challenge word problems), the hybrid doesn't apply — back to orchestrator.
+
+The pattern extends the §6q #3 pool-variance hierarchy: numeric-value pools (factor-tree) → operation-family pools (function-machine) → distribution-shape pools (histogram) → template-bearing scenario pools (percent-bar) → **LLM-supplied scenario + locally-derived ask-point pools (double-number-line)**.
+
+#### §6r #2. Context coherence is enforced by construction, not by prompt rules
+
+Pre-refactor, the original `double-number-line` schema allowed Gemini to emit one self-contained problem per session. There was no risk of mid-session scenario drift because there was no "mid-session" — the schema only held one scenario.
+
+Post-refactor, with N challenges per session, scenario drift would have been a real risk if we'd fanned out N independent Gemini calls (orchestrator-fan-out): each call would have picked a fresh `topLabel` / `bottomLabel` independently. The hybrid pattern dodges this entirely by *not letting Gemini choose more than once per session* — the labels and unit rate are pinned at the session wrapper level, and per-challenge construction is deterministic.
+
+**Generalization:** when a refactor introduces a new dimension where data could vary (e.g. "now per-challenge" instead of "now per-session"), audit whether the new dimension WANTS to vary or MUST stay coherent. If it must stay coherent, the architecture that disallows the variance (pin at session level, derive locally) is structurally safer than the architecture that allows variance and then tries to enforce coherence via prompts ("all challenges must use the same labels"). The structural fix is cheaper than the prompt-based fix and never fails.
+
+Same shape as §6m #2 (back-solve from the integer answer when constraints depend on it) and §6q #1 (per-mode `targetPercent` derived in code, not by Gemini) — these are all variants of "use code where Gemini's free choice would create a constraint violation."
+
+#### §6r #3. The `pointResults[]` per-instance array was peak pre-canonical metrics noise
+
+The pre-refactor `DoubleNumberLineMetrics` had a `pointResults: Array<{ index, targetTop, targetBottom, studentTop, studentBottom, topCorrect, bottomCorrect, bothCorrect }>` field — eight nested fields × N target points (typically 3-4) = ~24-32 fields of student-input state being submitted as session-end metrics. At session-end, this array described what the student typed for the LAST challenge's target points. The IRT engine consumes scalar metrics (`overallAccuracy`, `correctCount`); it has no use for the per-cell input log.
+
+Per [PRD §5 rule 18](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules) this is tautological state. The canonical 9-field shape replaces all of it with `correctCount` (rolled-up across all N challenges, not the last one) and `overallAccuracy` (a single 0-100 aggregate).
+
+**Audit hook (extension of §6m #1 / §6q #4):** when refactoring a pre-existing primitive, count the metric fields that are arrays of per-instance state. If > 0, the metrics interface almost certainly thinks one render = one instance. Replace per-instance arrays with session aggregates. Same instinct as collapsing a multi-phase navigator down to a single-mode session — both stem from "the schema thinks it's holding multiple things but the session only delivers one of each."
+
+#### §6r #4. Pre-existing tester gap: `supportsEvaluation: true` with bare render case
+
+The pre-refactor tester case was `case 'double-number-line': return <DoubleNumberLine data={data as ...} />;` — no evaluation props, no `onEvaluationSubmit`. Meanwhile the catalog set `supportsEvaluation: true`. This is the exact [PRD §5 rule 21](./PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules) failure mode: catalog claims evaluation; component code is wired for it; tester case doesn't pass the callback through, so any `/eval-test double-number-line` run pre-refactor would have collected zero metrics — masking the very fact that the primitive needed a refactor.
+
+**Audit hook:** grep every `MathPrimitivesTester` render case for `onEvaluationSubmit`. Cases that read `data` but don't spread evaluation props are §6n-audit candidates regardless of whether the underlying primitive needs a schema refactor. Worth a Bucket B-style sweep across the tester to catch any other bare cases.
+
+### Validation status
+
+| Step | Status |
+|---|---|
+| `npx tsc --noEmit` on touched files | ✅ Clean. (DoubleNumberLine joins the same scratch-pad `PrimitiveRenderer` variance noise list as all 22 primitives per §6e — pre-existing, not introduced.) |
+| `/eval-test double-number-line` across all 3 eval modes (`equivalent_ratios` / `find_missing` / `unit_rate`) | ⏳ Owed |
+| Manual UI walk: pin `equivalent_ratios`, finish 4 distinct ratio asks on one shared scenario, observe `PhaseSummaryPanel` + tester metrics breakdown | ⏳ Owed |
+| Manual UI walk: pin `find_missing`, verify the given (non-unit) reference stays consistent across all 4 challenges | ⏳ Owed |
+| Manual UI walk: pin `unit_rate`, verify challenge 1 asks for the unit rate itself and challenges 2-4 ask for arbitrary values using the discovered rate | ⏳ Owed |
+| Cost spot-check (1× per-session Gemini call — wrapper only, 9 scalar fields) | ⏳ Owed |
+| Backend calibration | ✅ No changes needed (mode-level beta priors). |
+
+### Actual effort
+
+~1.5 hours total: scope audit + reference reading (percent-bar §6q post-mortem, bar-model component as orchestrator-same-mode reference, useChallengeProgress + usePhaseResults hook signatures) ~20 min, generator rewrite (sessionWrapperSchema + 3 per-mode challenge builders + ratio-direction validator + dedupe/clamp pass on askInputs) ~25 min, component rewrite (drop 3-phase navigator + multi-challenge shell + per-challenge reset + dual stale-state guard + canonical 9-field metrics submission + progress dots + position helpers) ~30 min, types collapse (13-field per-point → 9-field canonical) ~5 min, catalog updates (taskDescription + contextKeys + MULTI-RATIO PACING + scaffolding levels nudge + constraints rewrite) ~10 min, tester wiring (render-case spread + metrics breakdown block) ~5 min, type-check + doc updates ~15 min. Came in well under the §A2 estimate (~2-3 hours) because (a) percent-bar §6q established the same shape earlier in the day, (b) the hybrid pattern was a cleaner fit than the spec's pure Fork A/B alternatives.
+
+### Next steps (double-number-line + Workstream 3 carry-forward)
+
+| # | Item | Owner | Notes |
+|---|------|-------|-------|
+| 1 | **`/eval-test double-number-line`** across all 3 eval modes | Eng | Per §6r validation table. Each single-mode tier should return `validation.challengeCount >= 4` and 4 distinct ask-points sharing one scenario. |
+| 2 | **Manual UI walks** for all 3 modes | Eng | Per §6r validation table. `unit_rate` walk is the most pedagogically important — confirm challenge 1 asks for the unit rate itself before subsequent challenges use the discovered rate. |
+| 3 | **Cost spot-check** for double-number-line (wrapper-only Gemini call) | Eng | Expect roughly flat vs pre-refactor (still 1 Gemini call per session — the wrapper schema grew by `askInputs[]` array but dropped by losing the nested per-phase fields). |
+| 4 | **Tester audit for §6r #4 gap** — grep `MathPrimitivesTester` for render cases that read `data` but don't pass `onEvaluationSubmit` | Eng | Sweep job — find any other bare cases that mask evaluation wiring like the pre-refactor `double-number-line` case did. |
+| 5 | Workstream 3: `two-way-table` refactor (deferred) | Eng | **Now the only remaining Bucket A entry (upper-grade, deferred).** Pool-service value-only; reuses `MatrixInput` (§6m #3) + histogram UI gating (§6o #2). |
+| 6 | Workstream 1 (prompt-floor sweep) | Eng | Still pending — 11 prompt-bumps + 5 audit-only. Now the highest-impact remaining queue. |
 
 ---
 

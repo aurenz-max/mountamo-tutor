@@ -39,6 +39,8 @@ export interface CompareObjectsChallenge {
   // non_standard fields
   unitName?: string;
   unitCount?: number;
+  // weight order_three: unit shown on each scale readout (e.g. 'lbs', 'kg')
+  weightUnit?: string;
 }
 
 export interface CompareObjectsData {
@@ -127,7 +129,9 @@ function renderWeightObject(obj: CompareObject, _index: number, objects: Compare
   const diff = leftObj.actualValue - rightObj.actualValue;
   const maxDiff = Math.max(leftObj.actualValue, rightObj.actualValue);
   const tiltDeg = maxDiff > 0 ? Math.min(12, (Math.abs(diff) / maxDiff) * 15) : 0;
-  const tiltDirection = diff > 0 ? 1 : diff < 0 ? -1 : 0;
+  // SVG positive rotation = clockwise → left side goes UP. Heavier left needs
+  // CCW (negative) so the heavier side sinks. Invert sign of diff.
+  const tiltDirection = diff > 0 ? -1 : diff < 0 ? 1 : 0;
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
@@ -150,6 +154,56 @@ function renderWeightObject(obj: CompareObject, _index: number, objects: Compare
           <circle cx="235" cy="55" r={Math.max(8, (rightObj.visualSize / 100) * 18)} fill="rgb(244,114,182)" opacity="0.6" />
         </g>
       </svg>
+    </div>
+  );
+}
+
+function renderThreeScaleWeights(objects: CompareObject[], weightUnit: string) {
+  // Three platform scales side-by-side. Each object sinks the platform by
+  // visualSize (heavier = bigger drop), and the readout below shows the weight.
+  const platformColors = [
+    'from-amber-300 to-amber-500',
+    'from-rose-300 to-rose-500',
+    'from-emerald-300 to-emerald-500',
+  ];
+  const maxDropPx = 22;
+
+  return (
+    <div className="flex items-end justify-center gap-4 w-full pt-6">
+      {objects.map((obj, i) => {
+        const dropPx = (obj.visualSize / 100) * maxDropPx;
+        // Display weight derived from visualSize (1-9 range) — visualSize 10..90 maps to 1..9
+        const displayWeight = Math.max(1, Math.round(obj.visualSize / 10));
+        return (
+          <div key={obj.name} className="flex flex-col items-center gap-0">
+            {/* Object label sitting on the platform */}
+            <div
+              className={`px-3 py-1.5 rounded-lg bg-gradient-to-br ${platformColors[i % platformColors.length]} border border-white/30 shadow-md text-slate-900 text-xs font-semibold whitespace-nowrap min-w-[78px] text-center`}
+              style={{ transform: `translateY(${dropPx}px)`, transition: 'transform 0.4s' }}
+            >
+              {obj.name}
+            </div>
+            {/* Platform */}
+            <div
+              className="w-24 h-2 mt-1 bg-gradient-to-b from-slate-300 to-slate-500 rounded-full shadow-md border border-white/10"
+              style={{ transform: `translateY(${dropPx}px)`, transition: 'transform 0.4s' }}
+            />
+            {/* Spring/post — visually compresses (shrinks) for heavier loads */}
+            <div
+              className="w-3 bg-slate-500/70 border-x border-slate-400/60"
+              style={{ height: `${Math.max(4, 24 - dropPx)}px`, transition: 'height 0.4s' }}
+            />
+            {/* Scale body with digital readout */}
+            <div className="w-28 h-12 bg-slate-700 rounded-md border border-slate-500 flex items-center justify-center shadow-md">
+              <div className="bg-black/70 px-2 py-0.5 rounded font-mono text-amber-300 text-sm font-bold border border-amber-400/30">
+                {displayWeight} {weightUnit}
+              </div>
+            </div>
+            {/* Base */}
+            <div className="w-28 h-1.5 bg-slate-900 rounded-b shadow" />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -572,9 +626,13 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
       );
     }
 
-    // Weight: seesaw (renders both objects together)
-    if (attribute === 'weight' && objects.length >= 2) {
+    // Weight: 2-pan seesaw for exactly 2 objects (compare_two), 3-platform scales
+    // for 3+ objects (order_three). A seesaw can't meaningfully render 3 weights.
+    if (attribute === 'weight' && objects.length === 2) {
       return renderWeightObject(objects[0], 0, objects);
+    }
+    if (attribute === 'weight' && objects.length >= 3) {
+      return renderThreeScaleWeights(objects, currentChallenge.weightUnit ?? 'lbs');
     }
 
     switch (attribute) {

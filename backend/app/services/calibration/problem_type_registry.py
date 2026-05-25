@@ -270,6 +270,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "multiply":            PriorConfig(4.5, "Transitional: row-by-column multiplication"),
         "determinant_inverse": PriorConfig(5.5, "Symbolic: determinant and inverse"),
     },
+    "two-way-table": {
+        "joint_probability":       PriorConfig(4.0, "Transitional: P(A and B) from joint cell / grand total"),
+        "marginal_distribution":   PriorConfig(4.5, "Transitional: P(A) from row/column sum / grand total, totals hidden"),
+        "conditional_probability": PriorConfig(5.0, "Symbolic: P(A|B) from joint / conditioning marginal, totals hidden"),
+        "independence_test":       PriorConfig(5.5, "Symbolic: expected joint P(A)·P(B) vs observed P(A∩B)"),
+    },
     "double-number-line": {
         "equivalent_ratios": PriorConfig(2.5, "Pictorial: scale given unit rate to find pairs"),
         "find_missing":      PriorConfig(3.5, "Pictorial: find missing values in ratio"),

@@ -154,7 +154,6 @@ function buildOrderThreeSchema(): Schema {
           type: Type.OBJECT,
           properties: {
             id: { type: Type.STRING, description: "Unique ID (e.g. 'ot1')" },
-            instruction: { type: Type.STRING, description: "Student instruction (e.g. 'Put these in order from shortest to tallest')" },
             attribute: { type: Type.STRING, description: "Attribute: 'length', 'height', 'weight', or 'capacity'" },
             comparisonWord: { type: Type.STRING, description: "Ordering direction: 'longer','shorter','taller','shorter_height','heavier','lighter','holds_more','holds_less'" },
             hint: { type: Type.STRING, description: "Hint for wrong answers" },
@@ -167,9 +166,10 @@ function buildOrderThreeSchema(): Schema {
             obj2Name: { type: Type.STRING, description: "Third object name" },
             obj2VisualSize: { type: Type.NUMBER, description: "Third object relative visual size 10-90" },
             obj2ActualValue: { type: Type.NUMBER, description: "Third object hidden measurement value" },
+            weightUnit: { type: Type.STRING, description: "Display unit shown on the scale readout for weight challenges (e.g. 'lbs', 'kg', 'stones', 'oz'). Required when attribute is 'weight'; ignored otherwise." },
           },
           required: [
-            "id", "instruction", "attribute", "comparisonWord", "hint",
+            "id", "attribute", "comparisonWord", "hint",
             "obj0Name", "obj0VisualSize", "obj0ActualValue",
             "obj1Name", "obj1VisualSize", "obj1ActualValue",
             "obj2Name", "obj2VisualSize", "obj2ActualValue",
@@ -344,15 +344,16 @@ function reconstructCompareTwo(raw: RawCompareTwo, index: number): CompareObject
 }
 
 interface RawOrderThree {
-  id?: string; instruction?: string; attribute?: string;
+  id?: string; attribute?: string;
   comparisonWord?: string; hint?: string;
   obj0Name?: string; obj0VisualSize?: number; obj0ActualValue?: number;
   obj1Name?: string; obj1VisualSize?: number; obj1ActualValue?: number;
   obj2Name?: string; obj2VisualSize?: number; obj2ActualValue?: number;
+  weightUnit?: string;
 }
 
 function reconstructOrderThree(raw: RawOrderThree, index: number): CompareObjectsChallenge | null {
-  if (!raw.id || !raw.instruction || !raw.attribute || !raw.comparisonWord || !raw.hint) {
+  if (!raw.id || !raw.attribute || !raw.comparisonWord || !raw.hint) {
     console.log(`[CompareObjects] REJECT order_three #${index} — missing core fields`);
     return null;
   }
@@ -383,25 +384,60 @@ function reconstructOrderThree(raw: RawOrderThree, index: number): CompareObject
     return null;
   }
 
+  // Verify visualSize ranks consistent with actualValue. If they disagree the
+  // student's visual ordering (read from visualSize) would contradict the
+  // correctAnswer (computed from actualValue). Repair by snapping visualSize
+  // to actualValue ranks so display always matches the answer.
+  const byActualRank = [...objects].sort((a, b) => a.actualValue - b.actualValue);
+  const byVisualRank = [...objects].sort((a, b) => a.visualSize - b.visualSize);
+  const ranksMatch = byActualRank.every((o, i) => o.name === byVisualRank[i].name);
+  if (!ranksMatch) {
+    console.log(`[CompareObjects] order_three #${index} — repairing visualSize ranking to match actualValue ranking`);
+    // Reassign visualSize to evenly-spaced values matching actualValue ranks (20, 50, 80)
+    const targetSizes = [20, 50, 80];
+    for (let r = 0; r < byActualRank.length; r++) {
+      const target = byActualRank[r];
+      const objRef = objects.find(o => o.name === target.name);
+      if (objRef) objRef.visualSize = targetSizes[r];
+    }
+  }
+
   // Derive correctAnswer: sort objects by actualValue based on comparisonWord direction
   const isAscending = ['shorter', 'shorter_height', 'lighter', 'holds_less'].includes(raw.comparisonWord);
   const sorted = [...objects].sort((a, b) => isAscending ? a.actualValue - b.actualValue : b.actualValue - a.actualValue);
   const correctAnswer = sorted.map(o => o.name).join(', ');
+
+  // Shuffle the display order so it isn't already the correct (or reverse) order.
+  // correctAnswer is name-keyed so the shuffle doesn't change the ground truth.
+  const displayObjects = shuffleNonTrivial(objects);
 
   const validAttributes = ['length', 'height', 'weight', 'capacity'];
   const attribute = validAttributes.includes(raw.attribute)
     ? raw.attribute as CompareObjectsChallenge['attribute']
     : 'length' as CompareObjectsChallenge['attribute'];
 
+  // weightUnit only meaningful for weight challenges; default to 'lbs' if missing
+  const weightUnit = attribute === 'weight'
+    ? (typeof raw.weightUnit === 'string' && raw.weightUnit.trim() ? raw.weightUnit.trim() : 'lbs')
+    : undefined;
+
+  // SP-17: instruction is synthesized deterministically from comparisonWord+attribute so the
+  // prose direction can never disagree with `correctAnswer`. Same fix as hundreds-chart HC-1/2/3.
+  const instruction = buildOrderThreeInstruction(
+    raw.comparisonWord as CompareObjectsChallenge['comparisonWord'],
+    attribute,
+  );
+
   return {
     id: raw.id,
     type: 'order_three',
-    instruction: raw.instruction,
+    instruction,
     attribute,
-    objects,
+    objects: displayObjects,
     correctAnswer,
     comparisonWord: raw.comparisonWord as CompareObjectsChallenge['comparisonWord'],
     hint: raw.hint,
+    weightUnit,
   };
 }
 
@@ -456,6 +492,53 @@ function reconstructNonStandard(raw: RawNonStandard, index: number): CompareObje
 
 function clampVisualSize(v: number): number {
   return Math.max(5, Math.min(95, Math.round(v)));
+}
+
+// Synthesize the order_three instruction from comparisonWord+attribute so the
+// prose direction always matches the direction used to compute correctAnswer.
+// Removed `instruction` from the Gemini schema — see SP-17 (hundreds-chart fix).
+function buildOrderThreeInstruction(
+  comparisonWord: CompareObjectsChallenge['comparisonWord'],
+  attribute: CompareObjectsChallenge['attribute'],
+): string {
+  const ascendingWords: CompareObjectsChallenge['comparisonWord'][] =
+    ['shorter', 'shorter_height', 'lighter', 'holds_less'];
+  const isAscending = ascendingWords.includes(comparisonWord);
+
+  // [lowEnd, highEnd] for each attribute — kid-friendly superlatives
+  const endpoints: Record<CompareObjectsChallenge['attribute'], [string, string]> = {
+    length: ['shortest', 'longest'],
+    height: ['shortest', 'tallest'],
+    weight: ['lightest', 'heaviest'],
+    capacity: ['holds the least', 'holds the most'],
+  };
+
+  const [low, high] = endpoints[attribute];
+  return isAscending
+    ? `Put these in order from ${low} to ${high}.`
+    : `Put these in order from ${high} to ${low}.`;
+}
+
+// Shuffle an array of objects so the display order is neither the ascending
+// nor descending sort by `actualValue` — otherwise tap-in-display-order solves
+// any "put these in order" challenge trivially.
+function shuffleNonTrivial(objects: CompareObject[]): CompareObject[] {
+  if (objects.length < 2) return objects;
+  const asc = [...objects].sort((a, b) => a.actualValue - b.actualValue).map(o => o.name);
+  const desc = [...asc].reverse();
+  const shuffled = [...objects];
+  for (let attempt = 0; attempt < 10; attempt++) {
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const names = shuffled.map(o => o.name);
+    const matchesAsc = names.every((n, i) => n === asc[i]);
+    const matchesDesc = names.every((n, i) => n === desc[i]);
+    if (!matchesAsc && !matchesDesc) return shuffled;
+  }
+  // Fallback: deterministic non-trivial rotation [1, 2, 0] (works for n≥3).
+  return [objects[1], objects[2], objects[0]];
 }
 
 // ---------------------------------------------------------------------------
@@ -599,10 +682,12 @@ RULES:
    - height → 'taller' or 'shorter_height'
    - weight → 'heavier' or 'lighter'
    - capacity → 'holds_more' or 'holds_less'
-5. visualSize values (10-90) must reflect relative differences between the three objects
+5. visualSize values (10-90) must reflect relative differences between the three objects AND must rank consistently with actualValue (the object with the largest actualValue MUST have the largest visualSize, etc.)
 6. Objects should be concrete, kid-friendly items
 7. actualValues should be clearly separated (not too close together)
-8. Use warm, encouraging instructions
+8. For weight challenges (attribute='weight'), include weightUnit: a kid-friendly unit shown on the scale readout. Use 'lbs' for US-style (default), or 'kg' for metric, or 'oz' for very light things (feather, pencil). Choose the unit that fits the objects being compared. Omit weightUnit for non-weight challenges.
+
+Note: the student-facing instruction is synthesized from comparisonWord+attribute by the post-process — do NOT author it. Just pick the comparisonWord that fits the challenge.
 
 Return 4 challenges.
 `;
