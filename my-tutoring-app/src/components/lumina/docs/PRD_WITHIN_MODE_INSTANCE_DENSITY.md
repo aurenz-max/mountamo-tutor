@@ -276,7 +276,7 @@ Workstream 1 should ship before 2 and 3 because:
 
 ### Goal
 
-Every multi-instance generator produces **at least 4 instances** per single-mode session, **and** is wired through the §6a multi-instance checklist (catalog context keys, evaluation barrel re-export, tester metrics breakdown). The original "1-line prompt edit" framing was incomplete — pattern-builder's audit on 2026-05-23 (§6n) showed every Bucket B primitive needs the same surgical 3-point audit on top of the prompt bump.
+Every multi-instance generator produces **the count appropriate to its per-mode tier** (see [§5a](#5a-per-mode-instance-count-tiers)) per single-mode session, **and** is wired through the §6a multi-instance checklist (catalog context keys, evaluation barrel re-export, tester metrics breakdown). The original "1-line prompt edit" framing was incomplete — pattern-builder's audit on 2026-05-23 (§6n) showed every Bucket B primitive needs the same surgical 3-point audit on top of the prompt bump. **Update 2026-05-24:** the uniform "at least 4 instances" floor was replaced by a tiered system in §5a after the compare-objects `order_three` walk showed a ~5s tap interaction × 4 challenges = a 20-second session — still demo-shaped despite passing every prior validation gate.
 
 ### What "shipping a Workstream 1 entry" now means
 
@@ -358,6 +358,176 @@ Prompt floor bumped from stingy → 4-6 in earlier passes: pattern-builder, base
 3. Mid-elementary batch: skip-counting-runner, length-lab, shape-builder, 3d-shape-explorer.
 4. Mid-grade batch: equation-builder, ratio-table, parameter-explorer.
 5. §6n-only audits on already-shipped Bucket B primitives (5 quick passes).
+
+---
+
+## 5a. Per-mode instance-count tiers
+
+### Why this section exists
+
+The original PRD specified a uniform "3-6 instances per session" target, which in practice converged on `DEFAULT_INSTANCE_COUNT = 4` for every Bucket A refactor (and 3 only for primitives with within-challenge multi-phase nesting like `place-value-chart`). This was correct as a floor against the §1 Bucket A failure mode, but is wrong as a ceiling: it ignores per-mode interaction duration.
+
+The trigger was a compare-objects `order_three` walk on 2026-05-24. The interaction is "tap 3 objects in order" — ~5-10 seconds of active student time. Four challenges = ~30s. The student has barely sat down before the session ends. By contrast, a `tape-diagram.solve_part_whole` challenge is ~90s of reading + 3 nested phases; four challenges of that = a 6-minute session at the upper edge of attention.
+
+Calibrating both at 4 was wrong in opposite directions. The fix is to tier the count by per-challenge active time, target a stable 3-5 minute session, and let each mode pick its own count from the tier.
+
+### The four tiers
+
+Tier = (active student time per challenge) × (within-challenge phase count) × (cognitive load). Generation cost is a secondary constraint that gates the high-end picks for orchestrator-pattern primitives (see implementation notes below).
+
+| Tier | Per-challenge active time | Within-challenge shape | Recommended count | Hard max | Target session length |
+|---|---|---|---|---|---|
+| **T1 — Tap / pick / order** | 5-15s | Single discrete action | **6-8** | 10 | 1.5-3 min |
+| **T2 — Single-step compute or build** | 20-45s | One submit, one answer | **5** | 6 | 2-4 min |
+| **T3 — Word problem or multi-step compute** | 45-90s | One submit, heavy reading or 2-step | **4** | 5 | 3-5 min |
+| **T4 — Nested multi-phase per challenge** | 90-180s | 3+ within-challenge sub-phases | **3** | 4 | 4-7 min |
+
+**Decision rule:** when scoping a primitive (or per-mode count within a primitive), time the active interaction in the tester, then assign the tier. If a primitive straddles tiers across its modes — which is the common case — pick per mode, not per primitive.
+
+### Per-primitive / per-mode tier assignments
+
+The table below is the canonical assignment as of 2026-05-24. Rows are grouped by current `DEFAULT_INSTANCE_COUNT` so the delta is visible. Modes within one primitive may split tiers.
+
+#### Bump UP — currently 3-4, should be T1 (6-8)
+
+These are the fast-tap modes where the current default produces sub-30-second sessions.
+
+| Primitive | Mode(s) | Current | Recommended | Pattern | Cost note |
+|---|---|---|---|---|---|
+| `compare-objects` | `order_three`, `identify_attribute`, `compare_two`, `non_standard` | 4-5 (per-mode schema array) | **7** | Pool-service (schema array sizes) | 1 Gemini call — free |
+| `ordinal-line` | `identify`, `match`, `relative_position` | 4 | **7** | Pool-service | 1 Gemini call — free |
+| `array-grid` | `count_array`, `multiply_array` | 4 | **7** | Pool-service | 1 Gemini call — free |
+| `fraction-bar` | `identify` | 3 | **7** | Pool-service | 1 Gemini call — free |
+| `factor-tree` | `guided_small` | 4 | **7** | Pool-service | 1 Gemini call — free |
+| `hundreds-chart` | `highlight_sequence` | 4 (post-bump) | **7** | Pool-service | 1 Gemini call — free |
+| `number-line` | `identify` | 4 (post-bump) | **7** | Pool-service | 1 Gemini call — free |
+| `pattern-builder` | `extend` (continue-shape modes) | 4 (post-bump) | **6** | Pool-service | 1 Gemini call — free |
+| `skip-counting-runner` | `count_along`, `predict`, `fill_missing` | 3-5 (post §5 bump) | **6** | Pool-service | 1 Gemini call — free |
+| `ten-frame` | `build`, `count_shown`, `subitize` | 3-5 (post §5 bump) | **7** | Pool-service | 1 Gemini call — free |
+| `counting-board` | `count_all`, `subitize`, `subitize_perceptual` | 3-5 (post §5 bump) | **7** | Pool-service | 1 Gemini call — free |
+
+#### Hold at 4-5 — T2 (current default is right or needs +1)
+
+| Primitive | Mode(s) | Current | Recommended |
+|---|---|---|---|
+| `bar-model` | `compare_bars`, simple `count_object` | 4 | **5** |
+| `balance-scale` | `equality`, `equality_hard`, `one_step` | 4 | **5** |
+| `comparison-builder` | all | 4-6 (post-bump) | **5** |
+| `multiplication-explorer` | all | 3-6 | **5** |
+| `factor-tree` | `guided_medium`, `guided_large`, `open` | 4 | **5** |
+| `function-machine` | `observe`, `predict` | 3 | **5** |
+| `area-model` | `find_area`, `perimeter`, `factor` | 3 | **5** |
+| `histogram` | all | 4 | **5** |
+| `matrix` | all | 3 | **4** |
+| `slope-triangle` | all | 4 | **5** |
+| `equation-builder` | all | 3-5 (config default) | **5** |
+| `number-bond` | all | 3-5 (config default) | **5** |
+| `array-grid` | `build_array` | 4 | **5** |
+| `function-sketch` | `identify-features`, `classify-shape`, `compare-functions` | 4 | **5** |
+
+#### Hold at 3-4 — T3 (content-bearing or multi-step)
+
+These pay N× generation cost per session (orchestrator-pattern), so the count is also gated by token budget. Bumping past 4 typically requires explicit cost-budget approval per §10.
+
+| Primitive | Mode(s) | Current | Recommended |
+|---|---|---|---|
+| `tape-diagram` | `represent`, `solve_comparison` | 4 | **4** |
+| `bar-model` | `graph_word_problem` | 4 | **4** |
+| `percent-bar` | all | 4 | **4** |
+| `double-number-line` | all | 4 | **4** |
+| `function-machine` | `discover_rule`, `create_rule` | 3 | **4** |
+| `area-model` | `multiply`, `build_model` | 3 | **4** |
+| `systems-equations` | all | 4 | **4** |
+| `function-sketch` | `sketch-match` | 4 | **4** |
+| `balance-scale` | `two_step_intro`, `two_step` | 4 | **4** |
+| `ordinal-line` | `sequence_story` | 4 | **4** |
+
+#### Hold at 3 max — T4 (nested multi-phase)
+
+The within-challenge phase count is the binding constraint. Going above 3 puts these sessions past the 7-minute attention ceiling.
+
+| Primitive | Mode(s) | Current | Recommended | Phase count per challenge |
+|---|---|---|---|---|
+| `place-value-chart` | all | 3 | **3** | 3 (identify → value → build) |
+| `tape-diagram` | `solve_part_whole`, `multi_step` | 4 | **3** ↓ | 3 (explore → practice → apply) |
+| `area-model` | `multiply` when 3-part × 2-part | 3 | **3** | 2 (per-cell → sum) but high cell count |
+
+**Action item from this table:** `tape-diagram.solve_part_whole` and `solve_multi_step` should drop from 4→3 next pass — they're currently producing 5-7 minute sessions when paired with their nested phase flow. The other Bucket A pilots already shipped at 3 for the same reason; tape-diagram was sized before the within-challenge phase count became the binding constraint (it predates the §6c "enumerate every per-challenge state" lesson).
+
+### Implementation pattern: `COUNT_BY_MODE` next to `MODE_PROFILES`
+
+Today each generator has a single module-scoped `const DEFAULT_INSTANCE_COUNT = N`. Because the tier table above splits modes of the same primitive into different tiers, the count must be **per mode**, not per primitive. The cleanest shape is a small lookup table alongside the existing `MODE_PROFILES` pattern that `area-model`, `place-value-chart`, `function-machine`, and `balance-scale` already use:
+
+```ts
+// service/math/gemini-<primitive>.ts
+
+const DEFAULT_INSTANCE_COUNT = 5; // tier fallback for any mode not listed below
+const MAX_INSTANCE_COUNT = 8;     // hard ceiling; bump per tier table
+
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  identify:           7,  // T1
+  match:              7,  // T1
+  relative_position:  7,  // T1
+  sequence_story:     4,  // T3 (content-bearing)
+  build_sequence:     5,  // T2
+};
+
+// In the existing selection helper:
+const target = Math.max(
+  1,
+  Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? COUNT_BY_MODE[challengeType] ?? DEFAULT_INSTANCE_COUNT),
+);
+```
+
+`config?.instanceCount` still wins when set (manifest-side override path stays open). The per-mode table is the next fallback. `DEFAULT_INSTANCE_COUNT` is the last resort and should rarely be hit — it's there for an unforeseen mode added without a table entry.
+
+For Bucket B primitives whose count comes from in-prompt text (`Generate 4-6 challenges`), template the per-mode count into the prompt at build time instead of hardcoding a range string:
+
+```ts
+const count = COUNT_BY_MODE[challengeType] ?? DEFAULT_INSTANCE_COUNT;
+const prompt = `Generate exactly ${count} challenges...`;
+```
+
+This makes the prompt instruction unambiguous (Gemini sometimes treats "4-6" as a soft suggestion and returns 3) and keeps the source of truth in code.
+
+### Cost ceiling for T1 bumps on orchestrator-pattern modes
+
+The T1 bump from 4→7 is free for pool-service primitives (1 Gemini call regardless of N). It is **not** free for orchestrator-same-mode primitives — those pay one Gemini call per challenge, so 4→7 = 1.75× tokens per session.
+
+Today the only orchestrator-pattern primitives in the T1 table above are `pattern-builder.extend` (which is value-only enough that it could be moved to pool-service — separate audit) and `bar-model` modes (which sit in T2/T3, not T1). So in practice the T1 bumps in this PRD are mostly free. **Audit hook:** before bumping any T1 entry past 6, confirm it's pool-service. If it's orchestrator, either keep at 5 or migrate to pool-service first.
+
+The T2/T3 holds at 4-5 are sized partly with cost in mind — bumping `bar-model.graph_word_problem` from 4→6 would 1.5× the per-session token spend on the highest-volume word-problem primitive, which is the kind of decision that needs §10 cost-budget review, not a tier-table edit.
+
+### Validation per primitive
+
+In addition to the §5 4-touch checklist, the per-mode tiering ship adds two validation steps:
+
+1. **Time-the-walk:** for each eval mode, manually time one student-paced walk-through in the tester. Compare against the tier's "per-challenge active time" column. If a mode lands in the wrong tier (e.g., you guessed T2 but it actually plays at T1 speed), update the `COUNT_BY_MODE` entry, not the tier table.
+2. **Total session length:** end-to-end session time at the chosen count should land in the tier's "target session length" column. If it's significantly over (>1 min past the top of the range), drop the count by 1 and re-check.
+
+The §10 success criteria table is updated below.
+
+### Updated §10 row (replaces the uniform floor row)
+
+| Test | Criteria | Verification |
+|------|----------|--------------|
+| **Per-mode instance count** | Every K-3 math primitive's count is set per the §5a tier table; per-mode tier matches measured active-interaction time | `/eval-test` for the count + stopwatch walk-through for the tier classification |
+| **Session length** | Single-mode sessions land inside the tier's "target session length" band (T1: 1.5-3 min, T2: 2-4 min, T3: 3-5 min, T4: 4-7 min) | Manual stopwatch timing across primitives |
+
+The original §10 "instance floor ≥3" criterion is now satisfied by construction — T4's floor of 3 is the lowest tier, so any primitive in the tier table is ≥3 regardless.
+
+### Sequencing
+
+The tier-table application is a follow-up sweep across already-shipped primitives, **not** a workstream blocker for any new Bucket A refactor. New primitives should land directly on the tier table; existing ones can be swept opportunistically.
+
+Suggested order (highest impact first — these are the primitives where the current count is most wrong):
+
+1. **`compare-objects` (T1 bump 4-5 → 7)** — the trigger case; ship first to validate the framework.
+2. **`ordinal-line` identify/match/relative_position (T1 bump 4 → 7)** — pool-service, free, K-1 routing volume.
+3. **`array-grid` count/multiply (T1 bump 4 → 7)** — pool-service, free.
+4. **`fraction-bar.identify` (T1 bump 3 → 7)** — pool-service, free.
+5. **`tape-diagram` solve_part_whole / multi_step (T4 cut 4 → 3)** — drops session length back inside the 4-7 min band; the only "cut" in the sweep.
+6. Bulk sweep of remaining T1/T2 entries — 1-line edits per primitive.
 
 ---
 
@@ -2324,10 +2494,10 @@ This pattern is used by `TenFrame`, `CountingBoard`, `NumberLine`, `FunctionMach
 
 | Test | Criteria | Verification |
 |------|----------|--------------|
-| **Instance floor** | Every K-3 math primitive produces ≥3 distinct problem instances when pinned to a single eval mode | Automated audit script: render each primitive in each eval mode, count instances |
-| **Variance** | Within a single-mode session, instance #1 and instance #4 differ in surface details (different numbers, different word-problem contexts) | Manual inspection across 5+ generations per primitive |
+| **Per-mode instance count** | Every K-3 math primitive's count is set per the [§5a tier table](#5a-per-mode-instance-count-tiers); per-mode tier matches measured active-interaction time. (Supersedes the earlier "≥3 floor" criterion — T4 is 3, T1 is 6-8.) | `/eval-test` for the count + stopwatch walk-through for the tier classification |
+| **Variance** | Within a single-mode session, instance #1 and instance #N differ in surface details (different numbers, different word-problem contexts) | Manual inspection across 5+ generations per primitive |
 | **Mastery signal density** | Pulse runs show ≥3× the IRT updates per student-minute compared to pre-PRD baseline | `/pulse-agent` comparison report |
-| **Time-on-task** | Single-mode sessions take 3-5 minutes (up from 30-60 seconds for Bucket A) | Manual timing across primitives |
+| **Session length** | Single-mode sessions land inside the tier's target band: T1 1.5-3 min, T2 2-4 min, T3 3-5 min, T4 4-7 min | Manual stopwatch timing per primitive per mode |
 | **No regression** | All previously passing `/eval-test` runs still pass | Test sweep |
 | **No cost blow-up** | **Pool-service primitives** within 2× previous (factor-tree, place-value-chart, area-model). **Orchestrator primitives** within N× where N = `instanceCount` (4× default) — accepted trade-off for content-bearing variance per §6a #2. Bar-model precedent. | Cost report per primitive |
 
@@ -2345,7 +2515,7 @@ This pattern is used by `TenFrame`, `CountingBoard`, `NumberLine`, `FunctionMach
 
 ## 12. Open Questions
 
-1. **Session length cap.** 3-phase primitives (`place-value-chart`) at 4 instances = 12 phases. Is that too long? Pilot with 3 instances and measure abandonment.
+1. ~~**Session length cap.** 3-phase primitives (`place-value-chart`) at 4 instances = 12 phases. Is that too long? Pilot with 3 instances and measure abandonment.~~ **Resolved (2026-05-24, §5a):** the answer is to tier the count by per-challenge active time, not cap globally. T4 (nested multi-phase) holds at 3 — `place-value-chart` already shipped there, and `tape-diagram.solve_part_whole` / `solve_multi_step` should drop from 4→3 next pass. The other direction matters too — T1 (tap/pick/order) bumps up to 6-8 because the same uniform count produced sub-30-second sessions for fast-tap modes like `compare-objects.order_three`.
 2. **Variance enforcement.** ~~How strictly does the generator need to vary surface details across instances?~~ **Resolved by pilot:** for value-only data, deterministic pool selection with a "≥1 odd"-style variance guarantee beats anything prompt-based. Don't rely on Gemini for variance — structured output is convergent. For content-bearing data, the orchestrator pattern (one Gemini call per type) gives natural variance from independent generations.
 3. **Tester UI implications.** ~~The Lumina tester currently renders one configuration.~~ **Resolved by pilot:** the tester forwards generator output via structural typing and worked unchanged after factor-tree's shape change. Existing primitive-internal navigation (Next Challenge button + progress dots) is sufficient — no tester-side affordance needed.
 4. ~~**`function-machine`-specific design.** Is one rule with N inputs already a "multi-instance" session? Or should a single mode visit N rules? Discussion needed before refactor.~~ **Resolved (2026-05-19, §6f):** N rules per session of the SAME eval mode. "N inputs of one rule" was what the pre-refactor primitive already did — and that's what made it Bucket A. Dropped the in-component 4-phase navigator (eval mode === interaction shape) and the orphan chaining feature.

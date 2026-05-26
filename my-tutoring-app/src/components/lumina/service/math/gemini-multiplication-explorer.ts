@@ -63,6 +63,32 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// All multiplication-explorer modes are T2 in the §5a tier table. B4 sweep
+// replaces the prompt's "Generate 3-6" range with a templated per-mode count.
+
+type MultiplicationExplorerChallengeType =
+  | 'build'
+  | 'connect'
+  | 'commutative'
+  | 'distributive'
+  | 'missing_factor'
+  | 'fluency';
+
+const DEFAULT_INSTANCE_COUNT = 5; // T2 fallback
+const MAX_INSTANCE_COUNT = 6;
+
+const COUNT_BY_MODE: Record<MultiplicationExplorerChallengeType, number> = {
+  build: 5,            // T2 — B4 bump 3-6 → 5
+  connect: 5,          // T2 — B4 bump 3-6 → 5
+  commutative: 5,      // T2 — B4 bump 3-6 → 5
+  distributive: 5,     // T2 — B4 bump 3-6 → 5
+  missing_factor: 5,   // T2 — B4 bump 3-6 → 5
+  fluency: 5,          // T2 — B4 bump 3-6 → 5
+};
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -170,6 +196,8 @@ export const generateMultiplicationExplorer = async (
     targetEvalMode?: string;
     /** Intent or title from the manifest item. */
     intent?: string;
+    /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for all T2 modes). */
+    instanceCount?: number;
   }
 ): Promise<MultiplicationExplorerData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -177,6 +205,21 @@ export const generateMultiplicationExplorer = async (
     'multiplication-explorer',
     config?.targetEvalMode,
     CHALLENGE_TYPE_DOCS,
+  );
+
+  // ── Resolve per-mode instance count up-front ──
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as MultiplicationExplorerChallengeType)
+      : undefined;
+  const instanceCount = Math.max(
+    1,
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      config?.instanceCount ??
+        (pinnedType ? COUNT_BY_MODE[pinnedType] : undefined) ??
+        DEFAULT_INSTANCE_COUNT,
+    ),
   );
 
   // For config.challengeTypes without an eval mode, use them as a hint
@@ -243,7 +286,7 @@ ${(() => {
 REQUIREMENTS:
 1. Choose a concrete, kid-friendly context (packs of stickers, rows of desks, eggs in cartons, wheels on cars)
 2. product MUST equal factor1 × factor2 exactly
-3. Generate 3-6 challenges that progress in difficulty
+3. Generate EXACTLY ${instanceCount} challenges that progress in difficulty
 4. Start with easier challenges and progress to harder types
 5. For grade 2, keep factors ≤ 10 and use only ×2, ×5, ×10
 6. For grade 3-4, any facts through 12×12 are fine
@@ -293,6 +336,13 @@ Return the complete multiplication explorer configuration.
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
+
+  // Defensive count clamp — Gemini occasionally over-shoots even with an
+  // explicit count in the prompt. Trim to instanceCount when over; if under,
+  // accept the shorter list (fallback below handles the empty case).
+  if (data.challenges.length > instanceCount) {
+    data.challenges = data.challenges.slice(0, instanceCount);
+  }
 
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {

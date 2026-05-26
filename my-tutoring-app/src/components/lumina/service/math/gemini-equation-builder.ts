@@ -68,6 +68,31 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// All equation-builder modes are T2 in the §5a tier table. B4 sweep replaces
+// the prompt's "3-5" range with a templated per-mode count. The existing
+// `challengeCount` config still wins when set (manifest override path).
+
+type EquationBuilderChallengeType =
+  | 'build'
+  | 'missing-value'
+  | 'true-false'
+  | 'balance'
+  | 'rewrite';
+
+const DEFAULT_INSTANCE_COUNT = 5; // T2 fallback
+const MAX_INSTANCE_COUNT = 6;
+
+const COUNT_BY_MODE: Record<EquationBuilderChallengeType, number> = {
+  build: 5,            // T2 — B4 bump 3-5 → 5
+  'missing-value': 5,  // T2 — B4 bump 3-5 → 5
+  'true-false': 5,     // T2 — B4 bump 3-5 → 5
+  balance: 5,          // T2 — B4 bump 3-5 → 5
+  rewrite: 5,          // T2 — B4 bump 3-5 → 5
+};
+
+// ---------------------------------------------------------------------------
 // Per-type field relevance — controls which fields appear in the schema
 // ---------------------------------------------------------------------------
 
@@ -918,6 +943,21 @@ export const generateEquationBuilder = async (
 
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
 
+  // ── Resolve per-mode instance count up-front ──
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as EquationBuilderChallengeType)
+      : undefined;
+  const instanceCount = Math.max(
+    1,
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      config?.challengeCount ??
+        (pinnedType ? COUNT_BY_MODE[pinnedType] : undefined) ??
+        DEFAULT_INSTANCE_COUNT,
+    ),
+  );
+
   // ── Build mode-constrained schema ──
   const activeSchema = buildEquationBuilderSchema(evalConstraint?.allowedTypes ?? effectiveChallengeTypes);
 
@@ -959,12 +999,12 @@ ${(() => {
   const hints: string[] = [];
   if (config?.maxNumber) hints.push(`- Max number: ${config.maxNumber}`);
   if (effectiveChallengeTypes) hints.push(`- Challenge types: ${effectiveChallengeTypes.join(', ')}`);
-  if (config?.challengeCount) hints.push(`- Number of challenges: ${config.challengeCount}`);
+  hints.push(`- Number of challenges: ${instanceCount}`);
   return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
 })()}
 
 REQUIREMENTS:
-1. Generate ${config?.challengeCount || '3-5'} challenges that progress in difficulty
+1. Generate EXACTLY ${instanceCount} challenges that progress in difficulty
 2. Use warm, encouraging instruction text appropriate for young children
 3. For 'build': targetEquation must be mathematically true. Include all equation tokens PLUS 2-3 distractor tiles in tile0-tile6
 4. For 'missing-value': equation must have exactly one ?. Provide 4 multiple-choice options (option0-option3) including the correct answer
@@ -1038,6 +1078,13 @@ Return the complete equation builder configuration.
   } else {
     console.log(`[EquationBuilder] No valid challenges — using fallback`);
     data.challenges = getFallbackChallenges(config?.targetEvalMode, data.maxNumber, data.gradeBand);
+  }
+
+  // Defensive count clamp — even with an explicit count in the prompt, Gemini
+  // occasionally over-shoots. Trim to instanceCount when over; if under, the
+  // shorter list is accepted as-is.
+  if (data.challenges.length > instanceCount) {
+    data.challenges = data.challenges.slice(0, instanceCount);
   }
 
   // Apply explicit config overrides

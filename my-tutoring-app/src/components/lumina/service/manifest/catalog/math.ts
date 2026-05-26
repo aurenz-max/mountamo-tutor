@@ -357,7 +357,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['identify'],
-        description: 'Unit fractions with small denominators (1/2, 1/3, 1/4).',
+        description: 'CCSS 3.NF.A.1 unit fractions (1/2, 1/3, 1/4, 1/6, 1/8).',
       },
       {
         evalMode: 'build',

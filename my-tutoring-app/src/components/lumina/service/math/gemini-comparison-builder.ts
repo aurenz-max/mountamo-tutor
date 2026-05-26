@@ -55,6 +55,29 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// All comparison-builder modes are T2 in the §5a tier table (single-step
+// compare / pick). B4 sweep bumps the prompt's "Generate 4-6" range to a
+// templated per-mode count, so Gemini stops returning 3 when we want 5.
+
+type ComparisonBuilderChallengeType =
+  | 'compare-groups'
+  | 'compare-numbers'
+  | 'order'
+  | 'one-more-one-less';
+
+const DEFAULT_INSTANCE_COUNT = 5; // T2 fallback
+const MAX_INSTANCE_COUNT = 6;
+
+const COUNT_BY_MODE: Record<ComparisonBuilderChallengeType, number> = {
+  'compare-groups': 5,       // T2 — B4 bump 4-6 → 5
+  'compare-numbers': 5,      // T2 — B4 bump 4-6 → 5
+  'order': 5,                // T2 — B4 bump 4-6 → 5
+  'one-more-one-less': 5,    // T2 — B4 bump 4-6 → 5
+};
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -185,6 +208,8 @@ export const generateComparisonBuilder = async (
     description?: string;
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
+    /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for all T2 modes). */
+    instanceCount?: number;
   }
 ): Promise<ComparisonBuilderData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -198,6 +223,23 @@ export const generateComparisonBuilder = async (
   const activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(comparisonBuilderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
     : comparisonBuilderSchema;
+
+  // ── Resolve per-mode instance count up-front ──
+  // When pinned to a single eval mode, use the COUNT_BY_MODE table; otherwise
+  // fall back to the T2 default (5).
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ComparisonBuilderChallengeType)
+      : undefined;
+  const instanceCount = Math.max(
+    1,
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      config?.instanceCount ??
+        (pinnedType ? COUNT_BY_MODE[pinnedType] : undefined) ??
+        DEFAULT_INSTANCE_COUNT,
+    ),
+  );
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
@@ -246,7 +288,7 @@ ${(() => {
 })()}
 
 REQUIREMENTS:
-1. Generate 4-6 challenges that progress in difficulty
+1. Generate EXACTLY ${instanceCount} challenges that progress in difficulty
 2. Start with easier challenges and build up
 3. Use warm, encouraging instruction text for young children
 4. For compare-groups: use the same object type in both groups for fair comparison. The instruction MUST ask about the LEFT group (e.g. "Does the left group have more, fewer, or the same?")
@@ -298,6 +340,13 @@ Return the complete comparison builder configuration.
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validTypes.includes(c.type)
   );
+
+  // Defensive count clamp — Gemini occasionally over- or under-shoots even with
+  // an explicit count in the prompt. Trim to instanceCount when over; if under,
+  // accept the shorter list (fallback below handles the empty case).
+  if (data.challenges.length > instanceCount) {
+    data.challenges = data.challenges.slice(0, instanceCount);
+  }
 
   // Ensure unique IDs
   const seenIds = new Set<string>();

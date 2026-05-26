@@ -33,9 +33,9 @@ import {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   identify: {
     promptDoc:
-      `"identify": Unit fractions (1/2, 1/3, 1/4). Simple denominators 2-4. `
+      `"identify": Unit fractions (1/2, 1/3, 1/4, 1/6, 1/8) — the CCSS 3.NF.A.1 set. `
       + `Focus on naming the fraction. Grades 2-3. Concrete manipulative with full guidance.`,
-    schemaDescription: "'identify' (unit fractions with small denominators)",
+    schemaDescription: "'identify' (CCSS 3.NF.A.1 unit fractions: 1/2, 1/3, 1/4, 1/6, 1/8)",
   },
   build: {
     promptDoc:
@@ -99,10 +99,21 @@ const fractionBarWrapperSchema: Schema = {
 // Constants
 // ---------------------------------------------------------------------------
 
-const DEFAULT_INSTANCE_COUNT = 3;
-const MAX_INSTANCE_COUNT = 6;
-
 type ChallengeType = 'identify' | 'build' | 'compare' | 'add_subtract';
+
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a (T1 tier).
+// fraction-bar is pool-service (single Gemini wrapper call; per-challenge data is
+// built deterministically via selectFractionBarOperands), so bumping past 6 is
+// free token-wise. `identify` bumped 3 → 7 per B2 of PLAN_INSTANCE_COUNT_TIER_SWEEP.
+const DEFAULT_INSTANCE_COUNT = 7; // T1 tier fallback
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  identify: 7,
+  build: 3,
+  compare: 3,
+  add_subtract: 3,
+};
 
 // ---------------------------------------------------------------------------
 // Local randomness helpers (own the randomness — Gemini convergence per §6a #2)
@@ -135,15 +146,19 @@ function pairKey(p: FractionPair): string {
 // ---------------------------------------------------------------------------
 
 function identifyOperands(count: number): FractionPair[] {
-  // Unit fractions only (numerator = 1) with denominators 2-4.
-  // The candidate space is small (3 pairs), so we exhaust then pad with dupes.
+  // Unit fractions only (numerator = 1). Pool is the CCSS 3.NF.A.1 canonical
+  // set {1/2, 1/3, 1/4, 1/6, 1/8} — denominators that decompose into halves
+  // and quarters, matching how 3rd-grade textbooks cluster unit fractions.
+  // At T1 count=7 the pool cycles once (one fraction repeats), keeping any
+  // single value from dominating the IRT signal.
   const candidates: FractionPair[] = [
     { numerator: 1, denominator: 2 },
     { numerator: 1, denominator: 3 },
     { numerator: 1, denominator: 4 },
+    { numerator: 1, denominator: 6 },
+    { numerator: 1, denominator: 8 },
   ];
   const shuffled = shuffle(candidates);
-  // If the caller wants more than 3 instances, allow repeats by cycling.
   const out: FractionPair[] = [];
   for (let i = 0; i < count; i++) {
     out.push(shuffled[i % shuffled.length]);
@@ -299,9 +314,17 @@ export const generateFractionBar = async (
     : fractionBarWrapperSchema;
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // Resolve mode early when constrained, so per-mode count is correct.
+  // When unconstrained, fall back to DEFAULT_INSTANCE_COUNT until wrapper resolves.
+  const presumedMode = (evalConstraint?.allowedTypes[0] as ChallengeType | undefined);
   const instanceCount = Math.max(
     1,
-    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      config?.instanceCount
+        ?? (presumedMode ? COUNT_BY_MODE[presumedMode] : undefined)
+        ?? DEFAULT_INSTANCE_COUNT,
+    ),
   );
 
   // ── Gemini wrapper call (metadata only) ──────────────────────────

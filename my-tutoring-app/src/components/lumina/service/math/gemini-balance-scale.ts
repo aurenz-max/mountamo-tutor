@@ -63,10 +63,25 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // Equation pool service (deterministic, per-challenge values built locally)
 // ---------------------------------------------------------------------------
 
-const DEFAULT_INSTANCE_COUNT = 4;
+type ChallengeType = BalanceScaleChallenge['type'];
+
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// T2 modes bumped 4→5 in the B4 sweep (equality / equality_hard / one_step).
+// T3 modes hold at 4 (two_step_intro, two_step) — see B5 audit.
+
+const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any mode not listed
 const MAX_INSTANCE_COUNT = 6;
 
-type ChallengeType = BalanceScaleChallenge['type'];
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  equality: 5,         // T2 bump (was 4)
+  equality_hard: 5,    // T2 bump (was 4)
+  one_step: 5,         // T2 bump (was 4)
+  one_step_hard: 4,    // T3 hold
+  two_step_intro: 4,   // T3 hold
+  two_step: 4,         // T3 hold
+};
 
 interface EquationSpec {
   leftSide: BalanceScaleObject[];
@@ -279,9 +294,13 @@ function equationKey(spec: EquationSpec): string {
  */
 export function selectBalanceScaleChallenges(
   challengeType: ChallengeType,
-  count: number = DEFAULT_INSTANCE_COUNT,
+  count?: number,
 ): BalanceScaleChallenge[] {
-  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, count));
+  const modeCount = COUNT_BY_MODE[challengeType];
+  const target = Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, count ?? modeCount ?? DEFAULT_INSTANCE_COUNT),
+  );
   const builder = BUILDERS[challengeType];
   const seen = new Set<string>();
   const challenges: BalanceScaleChallenge[] = [];
@@ -365,7 +384,7 @@ export const generateBalanceScale = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    /** How many equations in this session. Default 4, max 6. */
+    /** How many equations in this session. Defaults from COUNT_BY_MODE (5 for T2 modes, 4 for T3). */
     instanceCount?: number;
     showTilt?: boolean;
     /** Target eval mode from the IRT calibration system. */

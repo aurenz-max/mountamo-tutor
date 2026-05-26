@@ -95,9 +95,16 @@ const arrayGridWrapperSchema: Schema = {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
 
-const DEFAULT_INSTANCE_COUNT = 4;
-const MAX_INSTANCE_COUNT = 6;
+const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1)
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<ArrayGridChallengeType, number> = {
+  build_array: 5,
+  count_array: 7,
+  multiply_array: 7,
+};
 
 // Component-side caps (the row/column button panels max out at these counts).
 const ROW_BUTTON_CAP = 6;
@@ -227,9 +234,22 @@ export const generateArrayGrid = async (
     CHALLENGE_TYPE_DOCS,
   );
 
+  // Derive the mode early so the per-mode instance count can drive the clamp.
+  // When the eval constraint pins a single allowed type, use it; otherwise the
+  // mode isn't known until Gemini responds, so fall back to DEFAULT.
+  const resolvedMode: ArrayGridChallengeType | undefined =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ArrayGridChallengeType)
+      : undefined;
+
   const instanceCount = Math.max(
     1,
-    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      config?.instanceCount
+        ?? (resolvedMode ? COUNT_BY_MODE[resolvedMode] : undefined)
+        ?? DEFAULT_INSTANCE_COUNT,
+    ),
   );
 
   // ── Gemini wrapper call (metadata only) ──────────────────────────

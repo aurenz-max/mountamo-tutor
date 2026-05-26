@@ -10,6 +10,36 @@ import {
 } from "../evalMode";
 
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+
+type ChallengeType = 'build' | 'subitize' | 'make_ten' | 'add' | 'subtract';
+
+const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1 — fast-tap K-1 number sense)
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  build: 7,        // T1 bump — fast-tap "place N counters"
+  subitize: 7,     // T1 bump — flash & identify
+  make_ten: 7,     // T1 bump — closest match to PRD "count_shown" (counters shown, find complement)
+  add: 5,          // hold at current (operate mode)
+  subtract: 5,     // hold at current (operate mode)
+};
+
+function resolveCount(allowedTypes?: string[]): number {
+  // Single-call generator: pick the count for the active eval mode's first allowed type.
+  // When no eval mode is active (mixed-mode session), fall back to DEFAULT_INSTANCE_COUNT.
+  if (allowedTypes && allowedTypes.length > 0) {
+    const firstType = allowedTypes[0] as ChallengeType;
+    const perMode = COUNT_BY_MODE[firstType];
+    if (perMode != null) {
+      return Math.max(1, Math.min(MAX_INSTANCE_COUNT, perMode));
+    }
+  }
+  return Math.max(1, Math.min(MAX_INSTANCE_COUNT, DEFAULT_INSTANCE_COUNT));
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 // Each entry provides:
@@ -65,7 +95,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
-const tenFrameSchema: Schema = {
+function buildTenFrameSchema(count: number): Schema {
+  return {
   type: Type.OBJECT,
   properties: {
     title: {
@@ -165,7 +196,7 @@ const tenFrameSchema: Schema = {
         },
         required: ["id", "type", "instruction", "targetCount", "hint", "narration"]
       },
-      description: "Array of 3-5 progressive challenges"
+      description: `Array of exactly ${count} progressive challenges`
     },
     showOptions: {
       type: Type.OBJECT,
@@ -195,7 +226,8 @@ const tenFrameSchema: Schema = {
     }
   },
   required: ["title", "description", "mode", "counters", "challenges", "showOptions", "gradeBand"]
-};
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Generator
@@ -224,12 +256,16 @@ export const generateTenFrame = async (
   // For config.challengeTypes without an eval mode, use them as a hint
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
 
+  // ── Resolve per-mode instance count (PRD §5a) ──
+  const count = resolveCount(evalConstraint?.allowedTypes);
+
   // ── Build mode-constrained schema ──
   // When an eval mode is active, the schema enum restricts challenge.type
   // so Gemini *cannot* produce disallowed types. No post-filtering needed.
+  const baseSchema = buildTenFrameSchema(count);
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(tenFrameSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
-    : tenFrameSchema;
+    ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : baseSchema;
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
@@ -288,7 +324,7 @@ The numbers in the instruction text MUST EXACTLY match the challenge's numeric f
 - add: instruction numbers MUST sum to targetCount
 
 REQUIREMENTS:
-1. Generate 3-5 challenges that progress in difficulty
+1. Generate exactly ${count} challenges that progress in difficulty
 2. Start with easier challenges and build up
 3. Use warm, encouraging instruction text appropriate for young children
 4. Set initial counter count and positions to 0/empty for build challenges
@@ -342,6 +378,11 @@ Return the complete ten frame configuration.
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validTypes.includes(c.type)
   );
+
+  // Clamp to the per-mode instance count (PRD §5a) — Gemini occasionally returns more.
+  if (Array.isArray(data.challenges) && data.challenges.length > count) {
+    data.challenges = data.challenges.slice(0, count);
+  }
 
   // ── Domain-specific validation ──
 

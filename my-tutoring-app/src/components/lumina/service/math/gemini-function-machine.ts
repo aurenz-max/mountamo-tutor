@@ -112,8 +112,28 @@ const MODE_PROFILES: Record<string, ModeProfile> = {
   create_rule:   { showRule: false, defaultComplexity: 'twoStep', inputQueue: [0, 1, 2, 3, 5], preferIncludeZero: true },
 };
 
-const DEFAULT_INSTANCE_COUNT = 3;
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// observe / predict are T2 (single-step compute), bumped 3 → 5 in the B4 sweep.
+// discover_rule / create_rule are T3 (content-bearing rule reasoning); held at
+// 4 per the B5 audit row.
+
+type FunctionMachineChallengeType =
+  | 'observe'
+  | 'predict'
+  | 'discover_rule'
+  | 'create_rule';
+
+const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any future mode not listed
 const MAX_INSTANCE_COUNT = 6;
+
+const COUNT_BY_MODE: Record<FunctionMachineChallengeType, number> = {
+  observe: 5,        // T2 — B4 bump 3 → 5
+  predict: 5,        // T2 — B4 bump 3 → 5
+  discover_rule: 4,  // T3 hold (B5)
+  create_rule: 4,    // T3 hold (B5)
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -192,7 +212,14 @@ export function selectFunctionMachineRules(
 ): string[] {
   const profile = MODE_PROFILES[challengeType] ?? MODE_PROFILES.observe;
   const complexity = options.complexity ?? profile.defaultComplexity;
-  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, options.count ?? DEFAULT_INSTANCE_COUNT));
+  const modeCount = (COUNT_BY_MODE as Record<string, number>)[challengeType];
+  const target = Math.max(
+    1,
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      options.count ?? modeCount ?? DEFAULT_INSTANCE_COUNT,
+    ),
+  );
 
   const pool = RULE_POOLS[complexity];
   // Filter: outputs must be clean integers under |100| for the standard inputs.
@@ -292,7 +319,7 @@ export const generateFunctionMachine = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    /** How many rules in this session. Default 3, max 6. */
+    /** How many rules in this session. Defaults from COUNT_BY_MODE (5 for T2 observe/predict, 4 for T3 discover/create_rule). */
     instanceCount?: number;
     ruleComplexity?: 'oneStep' | 'twoStep' | 'expression';
     gradeBand?: '3-4' | '5' | 'advanced';

@@ -13,6 +13,26 @@ import {
 } from "../evalMode";
 
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+
+type ChallengeType = 'identify_attribute' | 'compare_two' | 'order_three' | 'non_standard';
+
+const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1 — fast-tap K-1 measurement)
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  identify_attribute: 7,
+  compare_two: 7,
+  order_three: 7,
+  non_standard: 7,
+};
+
+function resolveCount(type: ChallengeType): number {
+  return Math.max(1, Math.min(MAX_INSTANCE_COUNT, COUNT_BY_MODE[type] ?? DEFAULT_INSTANCE_COUNT));
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
@@ -59,7 +79,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // Per-type schemas (flat fields, no arrays inside challenges)
 // ---------------------------------------------------------------------------
 
-function buildIdentifyAttributeSchema(): Schema {
+function buildIdentifyAttributeSchema(count: number): Schema {
   return {
     type: Type.OBJECT,
     properties: {
@@ -96,14 +116,14 @@ function buildIdentifyAttributeSchema(): Schema {
             "correctAttribute", "attrOption0", "attrOption1", "attrOption2",
           ],
         },
-        description: "Array of 4 identify_attribute challenges",
+        description: `Array of ${count} identify_attribute challenges`,
       },
     },
     required: ["title", "description", "gradeBand", "challenges"],
   };
 }
 
-function buildCompareTwoSchema(): Schema {
+function buildCompareTwoSchema(count: number): Schema {
   return {
     type: Type.OBJECT,
     properties: {
@@ -134,14 +154,14 @@ function buildCompareTwoSchema(): Schema {
             "obj1Name", "obj1VisualSize", "obj1ActualValue",
           ],
         },
-        description: "Array of 5 compare_two challenges",
+        description: `Array of ${count} compare_two challenges`,
       },
     },
     required: ["title", "description", "gradeBand", "challenges"],
   };
 }
 
-function buildOrderThreeSchema(): Schema {
+function buildOrderThreeSchema(count: number): Schema {
   return {
     type: Type.OBJECT,
     properties: {
@@ -175,14 +195,14 @@ function buildOrderThreeSchema(): Schema {
             "obj2Name", "obj2VisualSize", "obj2ActualValue",
           ],
         },
-        description: "Array of 4 order_three challenges",
+        description: `Array of ${count} order_three challenges`,
       },
     },
     required: ["title", "description", "gradeBand", "challenges"],
   };
 }
 
-function buildNonStandardSchema(): Schema {
+function buildNonStandardSchema(count: number): Schema {
   return {
     type: Type.OBJECT,
     properties: {
@@ -209,7 +229,7 @@ function buildNonStandardSchema(): Schema {
             "unitName", "unitCount",
           ],
         },
-        description: "Array of 4 non_standard measurement challenges",
+        description: `Array of ${count} non_standard measurement challenges`,
       },
     },
     required: ["title", "description", "gradeBand", "challenges"],
@@ -548,15 +568,16 @@ function shuffleNonTrivial(objects: CompareObject[]): CompareObject[] {
 async function generateIdentifyAttributeChallenges(
   topic: string,
   gradeLevel: string,
+  count: number,
 ): Promise<CompareObjectsChallenge[]> {
   const prompt = `
-Create 4 "identify the measurable attribute" challenges for teaching "${topic}" to ${gradeLevel} students.
+Create ${count} "identify the measurable attribute" challenges for teaching "${topic}" to ${gradeLevel} students.
 
 Each challenge shows two real-world objects side by side. The student must identify WHICH attribute
 (length, height, weight, or capacity) these objects can be compared by.
 
 RULES:
-1. Each challenge should focus on a DIFFERENT attribute (vary across length, height, weight, capacity)
+1. Vary the attribute across challenges (cover all 4 — length, height, weight, capacity — across the set)
 2. Objects must be concrete, kid-friendly items (pencil, book, water bottle, box, backpack, etc.)
 3. The two objects should differ clearly in the target attribute
 4. correctAttribute MUST equal the attribute field
@@ -566,7 +587,7 @@ RULES:
 8. obj0ActualValue and obj1ActualValue should be realistic measurements (different from each other)
 9. Vary the objects across challenges — don't reuse the same pair
 
-Return 4 challenges.
+Return exactly ${count} challenges.
 `;
 
   const result = await ai.models.generateContent({
@@ -574,7 +595,7 @@ Return 4 challenges.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: buildIdentifyAttributeSchema(),
+      responseSchema: buildIdentifyAttributeSchema(count),
     },
   });
 
@@ -586,7 +607,8 @@ Return 4 challenges.
 
   const valid: CompareObjectsChallenge[] = [];
   let rejected = 0;
-  for (let i = 0; i < data.challenges.length; i++) {
+  const limit = Math.min(count, data.challenges.length);
+  for (let i = 0; i < limit; i++) {
     const ch = reconstructIdentifyAttribute(data.challenges[i], i);
     if (ch) valid.push(ch);
     else rejected++;
@@ -600,6 +622,7 @@ Return 4 challenges.
 async function generateCompareTwoChallenges(
   topic: string,
   gradeLevel: string,
+  count: number,
   attribute?: string,
 ): Promise<CompareObjectsChallenge[]> {
   const attrHint = attribute
@@ -607,7 +630,7 @@ async function generateCompareTwoChallenges(
     : `Vary the attribute across challenges (use at least 2 different attributes from: length, height, weight, capacity).`;
 
   const prompt = `
-Create 5 "compare two objects" challenges for teaching "${topic}" to ${gradeLevel} students.
+Create ${count} "compare two objects" challenges for teaching "${topic}" to ${gradeLevel} students.
 
 Each challenge shows two objects. The student picks which object is longer/shorter/taller/heavier/etc.
 
@@ -626,7 +649,7 @@ RULES:
 8. visualSize values (10-90) should reflect the actual difference
 9. Use warm, encouraging language
 
-Return 5 challenges.
+Return exactly ${count} challenges.
 `;
 
   const result = await ai.models.generateContent({
@@ -634,7 +657,7 @@ Return 5 challenges.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: buildCompareTwoSchema(),
+      responseSchema: buildCompareTwoSchema(count),
     },
   });
 
@@ -646,7 +669,8 @@ Return 5 challenges.
 
   const valid: CompareObjectsChallenge[] = [];
   let rejected = 0;
-  for (let i = 0; i < data.challenges.length; i++) {
+  const limit = Math.min(count, data.challenges.length);
+  for (let i = 0; i < limit; i++) {
     const ch = reconstructCompareTwo(data.challenges[i], i);
     if (ch) valid.push(ch);
     else rejected++;
@@ -660,6 +684,7 @@ Return 5 challenges.
 async function generateOrderThreeChallenges(
   topic: string,
   gradeLevel: string,
+  count: number,
   attribute?: string,
 ): Promise<CompareObjectsChallenge[]> {
   const attrHint = attribute
@@ -667,7 +692,7 @@ async function generateOrderThreeChallenges(
     : `Vary the attribute across challenges (use at least 2 different attributes from: length, height, weight, capacity).`;
 
   const prompt = `
-Create 4 "order three objects" challenges for teaching "${topic}" to ${gradeLevel} students.
+Create ${count} "order three objects" challenges for teaching "${topic}" to ${gradeLevel} students.
 
 Each challenge shows three objects. The student orders them from smallest to largest (or largest to smallest).
 
@@ -689,7 +714,7 @@ RULES:
 
 Note: the student-facing instruction is synthesized from comparisonWord+attribute by the post-process — do NOT author it. Just pick the comparisonWord that fits the challenge.
 
-Return 4 challenges.
+Return exactly ${count} challenges.
 `;
 
   const result = await ai.models.generateContent({
@@ -697,7 +722,7 @@ Return 4 challenges.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: buildOrderThreeSchema(),
+      responseSchema: buildOrderThreeSchema(count),
     },
   });
 
@@ -709,7 +734,8 @@ Return 4 challenges.
 
   const valid: CompareObjectsChallenge[] = [];
   let rejected = 0;
-  for (let i = 0; i < data.challenges.length; i++) {
+  const limit = Math.min(count, data.challenges.length);
+  for (let i = 0; i < limit; i++) {
     const ch = reconstructOrderThree(data.challenges[i], i);
     if (ch) valid.push(ch);
     else rejected++;
@@ -723,12 +749,13 @@ Return 4 challenges.
 async function generateNonStandardChallenges(
   topic: string,
   gradeLevel: string,
+  count: number,
 ): Promise<CompareObjectsChallenge[]> {
   const isKinder = gradeLevel.toLowerCase().includes('kinder') || gradeLevel === 'K';
   const maxUnits = isKinder ? 5 : 10;
 
   const prompt = `
-Create 4 "non-standard measurement" challenges for teaching "${topic}" to ${gradeLevel} students.
+Create ${count} "non-standard measurement" challenges for teaching "${topic}" to ${gradeLevel} students.
 
 Each challenge shows ONE object and a row of non-standard units (paper clips, cubes, crayons, etc.)
 laid end-to-end below it. The student counts the units to determine the object's length.
@@ -741,9 +768,9 @@ RULES:
 5. obj0ActualValue should equal unitCount (the measurement in non-standard units)
 6. instruction should ask "How many [units] long is the [object]?" — do NOT reveal the answer
 7. Use warm, encouraging language for young children
-8. Vary the unitCount across challenges (don't use the same number twice)
+8. Vary the unitCount across challenges (don't use the same number twice unless the count requires it)
 
-Return 4 challenges.
+Return exactly ${count} challenges.
 `;
 
   const result = await ai.models.generateContent({
@@ -751,7 +778,7 @@ Return 4 challenges.
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: buildNonStandardSchema(),
+      responseSchema: buildNonStandardSchema(count),
     },
   });
 
@@ -763,7 +790,8 @@ Return 4 challenges.
 
   const valid: CompareObjectsChallenge[] = [];
   let rejected = 0;
-  for (let i = 0; i < data.challenges.length; i++) {
+  const limit = Math.min(count, data.challenges.length);
+  for (let i = 0; i < limit; i++) {
     const ch = reconstructNonStandard(data.challenges[i], i);
     if (ch) valid.push(ch);
     else rejected++;
@@ -807,16 +835,16 @@ export const generateCompareObjects = async (
   const generators: Promise<CompareObjectsChallenge[]>[] = [];
 
   if (allowedTypes.includes('identify_attribute')) {
-    generators.push(generateIdentifyAttributeChallenges(topic, gradeLevel));
+    generators.push(generateIdentifyAttributeChallenges(topic, gradeLevel, resolveCount('identify_attribute')));
   }
   if (allowedTypes.includes('compare_two')) {
-    generators.push(generateCompareTwoChallenges(topic, gradeLevel));
+    generators.push(generateCompareTwoChallenges(topic, gradeLevel, resolveCount('compare_two')));
   }
   if (allowedTypes.includes('order_three')) {
-    generators.push(generateOrderThreeChallenges(topic, gradeLevel));
+    generators.push(generateOrderThreeChallenges(topic, gradeLevel, resolveCount('order_three')));
   }
   if (allowedTypes.includes('non_standard')) {
-    generators.push(generateNonStandardChallenges(topic, gradeLevel));
+    generators.push(generateNonStandardChallenges(topic, gradeLevel, resolveCount('non_standard')));
   }
 
   const results = await Promise.all(generators);

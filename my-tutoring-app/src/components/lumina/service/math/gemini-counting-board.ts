@@ -10,6 +10,43 @@ import {
 } from "../evalMode";
 
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+
+type ChallengeType =
+  | 'count_all'
+  | 'subitize'
+  | 'subitize_perceptual'
+  | 'count_on'
+  | 'group_count'
+  | 'compare';
+
+const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1 — fast-tap K-1 counting)
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  count_all: 7,
+  subitize: 7,
+  subitize_perceptual: 7,
+  count_on: 5,
+  group_count: 5,
+  compare: 5,
+};
+
+function resolveCount(allowedTypes?: readonly string[]): number {
+  // Single-mode session: look up the per-mode count.
+  if (allowedTypes && allowedTypes.length === 1) {
+    const mode = allowedTypes[0] as ChallengeType;
+    const fromTable = COUNT_BY_MODE[mode];
+    if (fromTable != null) {
+      return Math.max(1, Math.min(MAX_INSTANCE_COUNT, fromTable));
+    }
+  }
+  // Mixed-mode (no eval mode) — fall back to the tier default.
+  return Math.max(1, Math.min(MAX_INSTANCE_COUNT, DEFAULT_INSTANCE_COUNT));
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 // Each entry provides:
@@ -73,7 +110,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
-const countingBoardSchema: Schema = {
+function buildCountingBoardSchema(count: number): Schema {
+  return {
   type: Type.OBJECT,
   properties: {
     title: {
@@ -142,7 +180,7 @@ const countingBoardSchema: Schema = {
         },
         required: ["id", "type", "instruction", "targetAnswer", "count", "arrangement", "hint", "narration"]
       },
-      description: "Array of 3-5 progressive challenges, each with its own count and arrangement"
+      description: `Array of exactly ${count} progressive challenges, each with its own count and arrangement`
     },
     showOptions: {
       type: Type.OBJECT,
@@ -172,7 +210,8 @@ const countingBoardSchema: Schema = {
     }
   },
   required: ["title", "description", "objects", "challenges", "showOptions", "gradeBand"]
-};
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Generator
@@ -213,10 +252,14 @@ export const generateCountingBoard = async (
   // For config.challengeTypes without an eval mode, use them as a hint
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
 
+  // ── Resolve per-mode instance count (§5a tier table) ──
+  const targetCount = resolveCount(evalConstraint?.allowedTypes);
+
   // ── Build mode-constrained schema ──
+  const baseSchema = buildCountingBoardSchema(targetCount);
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(countingBoardSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
-    : countingBoardSchema;
+    ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : baseSchema;
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
@@ -280,7 +323,7 @@ ${(() => {
 })()}
 
 REQUIREMENTS:
-1. Generate 3-5 challenges that progress in difficulty
+1. Generate exactly ${targetCount} challenges that progress in difficulty
 2. IMPORTANT: Each challenge has its own count and arrangement — vary them!
 3. Start the FIRST challenge with exactly ${randomStartCount} ${randomObject} in a ${randomArrangement} arrangement, then progress upward from there
 4. Use warm, encouraging instruction text for young children
@@ -335,6 +378,11 @@ Return the complete counting board configuration.
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
+
+  // Clamp to the per-mode target count (§5a) — Gemini may overshoot or undershoot.
+  if (Array.isArray(data.challenges) && data.challenges.length > targetCount) {
+    data.challenges = data.challenges.slice(0, targetCount);
+  }
 
   // ── Per-challenge validation ──
 

@@ -10,6 +10,28 @@ import {
 } from "../evalMode";
 
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+
+type ChallengeType = 'extend' | 'identify_core' | 'translate' | 'create' | 'find_rule';
+
+const DEFAULT_INSTANCE_COUNT = 6; // tier fallback (extend is largest mode; longer active time than fast-tap → capped at 6)
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  extend: 6,
+  identify_core: 5,
+  translate: 5,
+  create: 5,
+  find_rule: 5,
+};
+
+function resolveCount(mode: ChallengeType | undefined): number {
+  const fallback = mode && COUNT_BY_MODE[mode] != null ? COUNT_BY_MODE[mode] : DEFAULT_INSTANCE_COUNT;
+  return Math.max(1, Math.min(MAX_INSTANCE_COUNT, fallback));
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
@@ -67,8 +89,12 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
  *
  * This schema defines the structure for pattern challenges including
  * repeating, growing, and number patterns for K-3 algebraic thinking.
+ *
+ * The `count` parameter is templated into the challenges array description so
+ * Gemini receives an explicit target count rather than the legacy "3-5" range.
  */
-const patternBuilderSchema: Schema = {
+function buildPatternBuilderSchema(count: number): Schema {
+  return {
   type: Type.OBJECT,
   properties: {
     title: {
@@ -195,7 +221,7 @@ const patternBuilderSchema: Schema = {
         },
         required: ["id", "type", "instruction", "answer", "hint", "narration", "availableTokens"]
       },
-      description: "Array of 3-5 progressive challenges"
+      description: `Array of exactly ${count} progressive challenges`
     },
     showOptions: {
       type: Type.OBJECT,
@@ -254,8 +280,9 @@ const patternBuilderSchema: Schema = {
       description: "Grade band: 'K-1' for Kindergarten-Grade 1, '2-3' for Grades 2-3"
     }
   },
-  required: ["title", "description", "patternType", "sequence", "tokens", "challenges", "showOptions", "gradeBand"]
-};
+    required: ["title", "description", "patternType", "sequence", "tokens", "challenges", "showOptions", "gradeBand"]
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Generator
@@ -302,10 +329,19 @@ export const generatePatternBuilder = async (
   // For config.challengeTypes without an eval mode, use them as a hint
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
 
+  // ── Resolve per-mode instance count ──
+  // When a single-type eval mode is active, use that mode's COUNT_BY_MODE entry.
+  // Otherwise fall back to DEFAULT_INSTANCE_COUNT.
+  const singleMode = (evalConstraint && evalConstraint.allowedTypes.length === 1
+    ? (evalConstraint.allowedTypes[0] as ChallengeType)
+    : undefined);
+  const count = resolveCount(singleMode);
+
   // ── Build mode-constrained schema ──
+  const baseSchema = buildPatternBuilderSchema(count);
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(patternBuilderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
-    : patternBuilderSchema;
+    ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : baseSchema;
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
@@ -313,7 +349,7 @@ export const generatePatternBuilder = async (
   // Mode-aware requirements: single-type eval modes get focused instructions
   const requirementsSection = evalConstraint && evalConstraint.allowedTypes.length === 1
     ? `REQUIREMENTS (${evalConstraint.allowedTypes[0].toUpperCase()}-ONLY MODE):
-1. Generate 4-6 challenges, ALL of type '${evalConstraint.allowedTypes[0]}'
+1. Generate exactly ${count} challenges, ALL of type '${evalConstraint.allowedTypes[0]}'
 2. Each challenge MUST include its own 'sequence' field with DIFFERENT given/hidden/core arrays
 3. Progress in difficulty across challenges (each challenge has a DIFFERENT pattern). Use this progression — start simple and ratchet up:
    - For 'extend': simple AB core (e.g. R,B,R,B → R,B hidden) → AAB or ABB → ABC → AABB → longer cores (ABCD or AABBC)
@@ -330,7 +366,7 @@ export const generatePatternBuilder = async (
 10. Use warm, encouraging language appropriate for young children
 11. Include narration text for the AI tutor`
     : `REQUIREMENTS:
-1. Generate 4-6 challenges that progress in difficulty
+1. Generate exactly ${count} challenges that progress in difficulty
 2. Start with extend challenges, then move to identify_core, then create/translate
 3. The 'given' sequence must clearly show the pattern (at least 2 full repetitions)
 4. The 'hidden' sequence must be the natural continuation
@@ -453,6 +489,11 @@ Return the complete pattern builder configuration.
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
+
+  // Clamp to the resolved per-mode count so Gemini overproduction doesn't bloat the session.
+  if (Array.isArray(data.challenges) && data.challenges.length > count) {
+    data.challenges = data.challenges.slice(0, count);
+  }
 
   // Normalize challenge answers and ensure per-challenge availableTokens include correct answers.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

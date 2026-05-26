@@ -97,9 +97,30 @@ const CANDIDATE_POOLS: Record<string, number[]> = {
   assessment:      [40, 42, 48, 54, 56, 60, 63, 64, 70, 72, 75, 80, 84, 90, 96, 100],
 };
 
-/** Default selection size — single source of truth for instance density. */
-const DEFAULT_INSTANCE_COUNT = 4;
-const MAX_INSTANCE_COUNT = 6;
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+
+type FactorTreeChallengeType =
+  | 'guided_small'
+  | 'guided_medium'
+  | 'unguided'
+  | 'unguided_large'
+  | 'assessment_intro'
+  | 'assessment';
+
+/** Default selection size — tier fallback (T1 — fast-tap factorization). */
+const DEFAULT_INSTANCE_COUNT = 7;
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<FactorTreeChallengeType, number> = {
+  guided_small: 7,     // T1 (pool-service) — B2 bump 4 → 7
+  guided_medium: 5,    // T2 — B4 bump 4 → 5
+  unguided: 5,         // T2 — B4 bump 4 → 5
+  unguided_large: 5,   // T2 — B4 bump 4 → 5
+  assessment_intro: 5, // T2 — B4 bump 4 → 5
+  assessment: 5,       // T2 — B4 bump 4 → 5
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -149,7 +170,14 @@ export function selectFactorTreeRootValues(
   challengeType: string,
   options: SelectRootValuesOptions = {},
 ): number[] {
-  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, options.count ?? DEFAULT_INSTANCE_COUNT));
+  const modeCount = COUNT_BY_MODE[challengeType as FactorTreeChallengeType];
+  const target = Math.max(
+    1,
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      options.count ?? modeCount ?? DEFAULT_INSTANCE_COUNT,
+    ),
+  );
   const pool = CANDIDATE_POOLS[challengeType] ?? CANDIDATE_POOLS.guided_small;
 
   const shuffled = shuffle(pool);

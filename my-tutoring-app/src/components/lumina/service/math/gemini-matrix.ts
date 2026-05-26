@@ -111,8 +111,24 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // Pool builders (one per challenge type)
 // ---------------------------------------------------------------------------
 
-const DEFAULT_INSTANCE_COUNT = 3;
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// Matrix is T2, but per-mode interaction is heavier than other T2 entries —
+// the §5a table holds matrix at 4 (not the T2 default of 5). B4 sweep bumps
+// every mode 3 → 4.
+
+const DEFAULT_INSTANCE_COUNT = 4; // matrix-specific T2 fallback (see §5a note)
 const MAX_INSTANCE_COUNT = 6;
+
+const COUNT_BY_MODE: Record<MatrixChallengeType, number> = {
+  transpose: 4,    // T2 — B4 bump 3 → 4
+  add: 4,          // T2 — B4 bump 3 → 4
+  subtract: 4,     // T2 — B4 bump 3 → 4
+  multiply: 4,     // T2 — B4 bump 3 → 4
+  determinant: 4,  // T2 — B4 bump 3 → 4
+  inverse: 4,      // T2 — B4 bump 3 → 4
+};
 
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -408,12 +424,22 @@ export function selectMatrixChallenges(
   challengeTypes: MatrixChallengeType | MatrixChallengeType[],
   options: SelectMatrixChallengesOptions = {},
 ): MatrixDisplayChallenge[] {
-  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, options.count ?? DEFAULT_INSTANCE_COUNT));
-  const ctx: BuildContext = { gradeBand: options.gradeBand ?? 'algebra2' };
-
   const allowedTypes: MatrixChallengeType[] = Array.isArray(challengeTypes)
     ? (challengeTypes.length > 0 ? challengeTypes : ['determinant'])
     : [challengeTypes];
+
+  // Per-mode count applies when a session pins to a single type. Bundled
+  // sessions (multi-type) use the default fallback since interleaving across
+  // types changes the effective per-instance time.
+  const modeCount = allowedTypes.length === 1 ? COUNT_BY_MODE[allowedTypes[0]] : undefined;
+  const target = Math.max(
+    1,
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      options.count ?? modeCount ?? DEFAULT_INSTANCE_COUNT,
+    ),
+  );
+  const ctx: BuildContext = { gradeBand: options.gradeBand ?? 'algebra2' };
 
   // For bundled modes, interleave the allowed types across the session so every advertised
   // type is surfaced. Shuffle once per session so order varies session-to-session (e.g.
@@ -500,7 +526,7 @@ export const generateMatrix = async (
   config?: {
     /** Legacy single-operation override (ignored if targetEvalMode is set). */
     operation?: 'determinant' | 'inverse' | 'transpose' | 'multiply' | 'add' | 'subtract' | 'rowOperation' | 'solve';
-    /** How many matrix challenges per session. Default 3, max 6. */
+    /** How many matrix challenges per session. Defaults from COUNT_BY_MODE (4 per §5a T2 matrix-specific hold). */
     instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;

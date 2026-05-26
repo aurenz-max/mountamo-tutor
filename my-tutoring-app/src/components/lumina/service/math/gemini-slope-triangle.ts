@@ -96,8 +96,20 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // Line pool service (deterministic, per-challenge values built locally)
 // ---------------------------------------------------------------------------
 
-const DEFAULT_INSTANCE_COUNT = 4;
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// All slope-triangle modes are T2 in the §5a tier table (single-step
+// compute/build on a grid). B4 sweep bumps every mode 4 → 5.
+
+const DEFAULT_INSTANCE_COUNT = 5; // T2 fallback
 const MAX_INSTANCE_COUNT = 6;
+
+const COUNT_BY_MODE: Record<SlopeTriangleChallengeType, number> = {
+  identify_slope: 5,   // T2 — B4 bump 4 → 5
+  calculate: 5,        // T2 — B4 bump 4 → 5
+  draw_triangle: 5,    // T2 — B4 bump 4 → 5
+};
 
 const COLOR_POOL = ['#3b82f6', '#22d3ee', '#a855f7', '#ec4899', '#f97316', '#facc15'];
 
@@ -230,9 +242,13 @@ function labelEquation(slope: number, yIntercept: number): string {
  */
 export function selectSlopeTriangleChallenges(
   challengeType: SlopeTriangleChallengeType,
-  count: number = DEFAULT_INSTANCE_COUNT,
+  count?: number,
 ): SlopeTriangleChallenge[] {
-  const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, count));
+  const modeCount = COUNT_BY_MODE[challengeType];
+  const target = Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, count ?? modeCount ?? DEFAULT_INSTANCE_COUNT),
+  );
   const slopePool = SLOPE_POOL_BY_TYPE[challengeType];
   const runPool = RUN_POOL_BY_TYPE[challengeType];
   const notation = notationForType(challengeType);
@@ -372,7 +388,7 @@ export const generateSlopeTriangle = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    /** How many slope-triangle challenges in this session. Default 4, max 6. */
+    /** How many slope-triangle challenges in this session. Defaults from COUNT_BY_MODE (5 for all T2 modes). */
     instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;

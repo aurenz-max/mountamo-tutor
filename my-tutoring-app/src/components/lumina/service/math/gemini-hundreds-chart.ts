@@ -9,6 +9,33 @@ import {
 } from "../evalMode";
 
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// One Gemini call produces all challenges (pool-service), so bumping past 6
+// is safe for any mode resolved here.
+// ---------------------------------------------------------------------------
+
+type ChallengeType =
+  | 'highlight_sequence'
+  | 'complete_sequence'
+  | 'identify_pattern'
+  | 'find_skip_value';
+
+const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1)
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  highlight_sequence: 7,
+  complete_sequence: 5,
+  identify_pattern: 5,
+  find_skip_value: 5,
+};
+
+function resolveCount(mode: ChallengeType | undefined): number {
+  const base = mode != null ? COUNT_BY_MODE[mode] ?? DEFAULT_INSTANCE_COUNT : DEFAULT_INSTANCE_COUNT;
+  return Math.max(1, Math.min(MAX_INSTANCE_COUNT, base));
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
@@ -39,7 +66,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // claims about cells, so it stays LLM-generated.
 // ---------------------------------------------------------------------------
 
-const hundredsChartSchema: Schema = {
+function buildHundredsChartSchema(count: number): Schema {
+  return {
   type: Type.OBJECT,
   properties: {
     title: {
@@ -52,7 +80,7 @@ const hundredsChartSchema: Schema = {
     },
     challenges: {
       type: Type.ARRAY,
-      description: "4-6 challenges. IMPORTANT: vary skipValue across challenges for variety; repeats are allowed only if the grade-appropriate skip pool has fewer values than challenges.",
+      description: `Exactly ${count} challenges. IMPORTANT: vary skipValue across challenges for variety; repeats are allowed only if the grade-appropriate skip pool has fewer values than challenges.`,
       items: {
         type: Type.OBJECT,
         properties: {
@@ -74,7 +102,8 @@ const hundredsChartSchema: Schema = {
     },
   },
   required: ["title", "description", "challenges"],
-};
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Deterministic helpers — all math + instruction text computed here, never
@@ -239,6 +268,12 @@ export const generateHundredsChart = async (
   const gradeBand = config?.gradeBand ?? '2';
   const gradeSkips = GRADE_SKIP_VALUES[gradeBand] ?? GRADE_SKIP_VALUES['2'];
 
+  // ── Resolve per-mode instance count (only meaningful when an eval mode is pinned) ──
+  const singleMode = effectiveChallengeTypes && effectiveChallengeTypes.length === 1
+    ? (effectiveChallengeTypes[0] as ChallengeType)
+    : undefined;
+  const count = resolveCount(singleMode);
+
   // ── Build prompt — Gemini only picks types/skips and writes hints + topic flavor ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
@@ -258,7 +293,7 @@ PROGRESSION (use this order when no eval mode is specified):
 ` : ''}
 
 RULES:
-- Generate 4-6 challenges.
+- Generate exactly ${count} challenges.
 - Vary skipValue across challenges (choose from: ${gradeSkips.join(', ')}). Each skipValue from the pool should appear at least once before any repeats; if there are more challenges than skip values, you may reuse a skipValue but pair it with a different challenge type so the activity still feels varied.
 ${config?.skipValue ? `- At least one challenge must use skipValue=${config.skipValue}.` : ''}
 ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChallengeTypes.join(' or ')}.` : ''}
@@ -273,7 +308,7 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: hundredsChartSchema,
+      responseSchema: buildHundredsChartSchema(count),
     },
   });
 
@@ -287,9 +322,11 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
   // ── Build challenges deterministically; Gemini supplies only type/skip/hint ──
   const validTypes = new Set(['highlight_sequence', 'complete_sequence', 'identify_pattern', 'find_skip_value']);
 
-  const challenges: HundredsChartChallenge[] = (raw.challenges ?? [])
+  const rawChallenges = Array.isArray(raw.challenges) ? raw.challenges : [];
+  const challenges: HundredsChartChallenge[] = rawChallenges
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((c: any) => validTypes.has(c.type))
+    .slice(0, Math.min(count, rawChallenges.length))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((c: any, i: number) => {
       let sv: number = c.skipValue;

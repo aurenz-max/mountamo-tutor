@@ -85,8 +85,25 @@ interface SubGenResult {
   challenge: BarModelChallenge;
 }
 
-const DEFAULT_INSTANCE_COUNT = 4;
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// Bar-model modes split across tiers. Each challenge is an orchestrator-pattern
+// Gemini call, so the count gates per-session token spend (see PRD §5a cost
+// ceiling). The B4 sweep bumps only the named T2 mode (compare_bars); the T3
+// hold (graph_word_problem) needs §10 cost-budget review before any bump.
+
+const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any mode not in COUNT_BY_MODE
 const MAX_INSTANCE_COUNT = 6;
+
+const COUNT_BY_MODE: Record<BarModelEvalMode, number> = {
+  compare_bars: 5,         // T2 — B4 bump 4 → 5
+  read_scale: 4,           // hold (not classified in §5a)
+  picture_graph: 4,        // hold (not classified in §5a)
+  scaled_bar_graph: 4,     // hold (not classified in §5a)
+  graph_word_problem: 4,   // T3 hold (§10 cost budget gates any bump)
+  build_graph: 4,          // hold (not classified in §5a)
+};
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -669,7 +686,7 @@ export const generateBarModel = async (
   gradeContext: string,
   config?: {
     intent?: string;
-    /** How many challenges in this session. Default 4, max 6. */
+    /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for T2 compare_bars, 4 for T3/unclassified). */
     instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
@@ -684,9 +701,13 @@ export const generateBarModel = async (
 
   const mode = (evalConstraint?.allowedTypes[0] ?? 'compare_bars') as BarModelEvalMode;
   const intent = config?.intent || topic;
+  const modeCount = COUNT_BY_MODE[mode];
   const instanceCount = Math.max(
     1,
-    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      config?.instanceCount ?? modeCount ?? DEFAULT_INSTANCE_COUNT,
+    ),
   );
 
   // Fan out N parallel calls of the same per-mode sub-generator. Variance

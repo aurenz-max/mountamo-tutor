@@ -628,7 +628,36 @@ function fallbackBuild(setup: SetupResult) {
 // parallel Gemini calls with pre-randomized character orderings to force
 // variance (structured-output Gemini is convergent — see PRD §6a #2).
 
-const TARGET_INSTANCE_COUNT = 4;
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+
+type ChallengeType =
+  | 'identify'
+  | 'match'
+  | 'relative-position'
+  | 'sequence-story'
+  | 'build-sequence';
+
+const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1 — fast-tap K-1 ordinal)
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  identify: 7,
+  match: 7,
+  'relative-position': 7,
+  'sequence-story': 4, // T3 hold (orchestrator: N parallel Gemini calls per challenge)
+  'build-sequence': 4, // not in B2 scope — hold at current
+};
+
+function resolveCount(type: string): number {
+  const fromTable = (COUNT_BY_MODE as Record<string, number>)[type];
+  return Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, fromTable ?? DEFAULT_INSTANCE_COUNT),
+  );
+}
+
 const ORDINAL_WORDS = [
   'first', 'second', 'third', 'fourth', 'fifth',
   'sixth', 'seventh', 'eighth', 'ninth', 'tenth',
@@ -912,7 +941,7 @@ async function buildSingleModeChallenges(
   topic: string,
   gradeLevel: string,
 ): Promise<OrdinalLineChallenge[]> {
-  const count = TARGET_INSTANCE_COUNT;
+  const count = resolveCount(singleType);
   switch (singleType) {
     case 'identify':
       return buildIdentifyChallenges(setup, count);

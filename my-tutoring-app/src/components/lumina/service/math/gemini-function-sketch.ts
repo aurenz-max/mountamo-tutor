@@ -764,10 +764,25 @@ EXAMPLE:
 // eval mode (orchestrator-same-mode per PRD §6a #7).
 // ===========================================================================
 
-const DEFAULT_INSTANCE_COUNT = 4;
+type ChallengeType = FunctionSketchChallenge['type'];
+
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// T2 modes (identify-features, classify-shape, compare-functions) bumped
+// 4 → 5 in the B4 sweep. T3 mode (sketch-match) holds at 4 per B5 audit.
+// Each instance is one Gemini sub-call (orchestrator pattern), so the
+// 4 → 5 bump adds 25% token cost per session for the T2 modes.
+
+const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any mode not listed
 const MAX_INSTANCE_COUNT = 6;
 
-type ChallengeType = FunctionSketchChallenge['type'];
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  'identify-features': 5,    // T2 — B4 bump 4 → 5
+  'classify-shape': 5,       // T2 — B4 bump 4 → 5
+  'compare-functions': 5,    // T2 — B4 bump 4 → 5
+  'sketch-match': 4,         // T3 hold (B5)
+};
 
 function subGeneratorFor(
   type: ChallengeType,
@@ -786,7 +801,7 @@ export const generateFunctionSketch = async (
   gradeLevel: string,
   config?: {
     targetEvalMode?: string;
-    /** How many challenges in this session. Default 4, max 6. */
+    /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for T2 modes, 4 for T3 sketch-match). */
     instanceCount?: number;
   },
 ): Promise<FunctionSketchData> => {
@@ -794,9 +809,13 @@ export const generateFunctionSketch = async (
   logEvalModeResolution('FunctionSketch', config?.targetEvalMode, evalConstraint);
 
   const challengeType = (evalConstraint?.allowedTypes[0] ?? 'identify-features') as ChallengeType;
+  const modeCount = COUNT_BY_MODE[challengeType];
   const instanceCount = Math.max(
     1,
-    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      config?.instanceCount ?? modeCount ?? DEFAULT_INSTANCE_COUNT,
+    ),
   );
 
   // Fan out N parallel calls of the same per-mode sub-generator. Variance

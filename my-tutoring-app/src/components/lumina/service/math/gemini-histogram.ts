@@ -18,9 +18,24 @@ import {
 // Constants
 // ---------------------------------------------------------------------------
 
-const DEFAULT_INSTANCE_COUNT = 4;
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// All histogram modes are T2 (single-step visual read or estimate). B4 sweep
+// bumps every mode 4 → 5. Pool-service generation is free, so the bump is
+// no-cost. TOPIC_POOL has 6 entries, so a count of 5 cycles cleanly without
+// repeats per session.
+
+const DEFAULT_INSTANCE_COUNT = 5; // T2 fallback
 const MAX_INSTANCE_COUNT = 6;
 const MIN_INSTANCE_COUNT = 3;
+
+const COUNT_BY_MODE: Record<HistogramChallengeType, number> = {
+  identify_shape: 5,   // T2 — B4 bump 4 → 5
+  find_modal_bin: 5,   // T2 — B4 bump 4 → 5
+  read_frequency: 5,   // T2 — B4 bump 4 → 5
+  estimate_center: 5,  // T2 — B4 bump 4 → 5
+};
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -526,6 +541,17 @@ export const generateHistogram = async (
       )
     : histogramSchema;
 
+  // ── Resolve session instance count up-front so the prompt + description ──
+  // ── stay consistent with what the pool service ultimately builds. ──
+  const presumedChallengeType =
+    (evalConstraint?.allowedTypes[0] as HistogramChallengeType | undefined) ?? 'identify_shape';
+  const presumedModeCount = COUNT_BY_MODE[presumedChallengeType];
+  const instanceCount = clamp(
+    config?.instanceCount ?? presumedModeCount ?? DEFAULT_INSTANCE_COUNT,
+    MIN_INSTANCE_COUNT,
+    MAX_INSTANCE_COUNT,
+  );
+
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
@@ -533,7 +559,7 @@ export const generateHistogram = async (
 Create a histogram analysis SESSION for teaching "${topic}" to ${gradeLevel} students.
 
 THE STUDENT EXPERIENCE:
-- The student walks through ${DEFAULT_INSTANCE_COUNT} distinct histograms, one at a time.
+- The student walks through ${instanceCount} distinct histograms, one at a time.
 - Each histogram has its own dataset and context.
 - For each histogram the student answers a single prompt (multiple-choice or
   numeric entry depending on mode), then advances to the next.
@@ -588,15 +614,20 @@ Return only the session wrapper.
     : 'Reading Histograms';
   const description = typeof wrapper.description === 'string' && wrapper.description.trim().length > 0
     ? wrapper.description
-    : `Walk through ${DEFAULT_INSTANCE_COUNT} histograms — answer a question about each one.`;
+    : `Walk through ${instanceCount} histograms — answer a question about each one.`;
 
   // ── Build challenges from the pool service ──
-  const instanceCount = clamp(
-    config?.instanceCount ?? DEFAULT_INSTANCE_COUNT,
-    MIN_INSTANCE_COUNT,
-    MAX_INSTANCE_COUNT,
-  );
-  const challenges = selectHistogramChallenges(challengeType, instanceCount);
+  // Recompute the count in case the wrapper produced a different challengeType
+  // than the presumed one — keeps the count consistent with the actual mode.
+  const resolvedCount =
+    challengeType === presumedChallengeType
+      ? instanceCount
+      : clamp(
+          config?.instanceCount ?? COUNT_BY_MODE[challengeType] ?? DEFAULT_INSTANCE_COUNT,
+          MIN_INSTANCE_COUNT,
+          MAX_INSTANCE_COUNT,
+        );
+  const challenges = selectHistogramChallenges(challengeType, resolvedCount);
 
   // Mode-specific display flags: hide the stats panel in estimate_center mode
   // because the panel would literally print the answer.

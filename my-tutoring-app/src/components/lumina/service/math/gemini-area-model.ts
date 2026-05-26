@@ -102,10 +102,25 @@ const areaModelWrapperSchema: Schema = {
 // Constants
 // ---------------------------------------------------------------------------
 
-const DEFAULT_INSTANCE_COUNT = 3;
+type ChallengeType = 'build_model' | 'find_area' | 'perimeter' | 'multiply' | 'factor';
+
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+// T2 modes (find_area, perimeter, factor) bumped 3 → 5 in the B4 sweep.
+// T3 modes (multiply, build_model) hold at 4 per the B5 audit row — they
+// involve per-cell decomposition, so per-challenge time is closer to T3.
+
+const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any future mode not listed
 const MAX_INSTANCE_COUNT = 6;
 
-type ChallengeType = 'build_model' | 'find_area' | 'perimeter' | 'multiply' | 'factor';
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  build_model: 4,  // T3 hold (B5) — per-cell construction
+  find_area: 5,    // T2 — B4 bump 3 → 5
+  perimeter: 5,    // T2 — B4 bump 3 → 5
+  multiply: 4,     // T3 hold (B5) — full 2-digit × 2-digit per-cell + sum
+  factor: 5,       // T2 — B4 bump 3 → 5
+};
 
 // ---------------------------------------------------------------------------
 // Local randomness helpers (own the randomness — Gemini convergence per §6a #2)
@@ -310,9 +325,16 @@ export const generateAreaModel = async (
     : areaModelWrapperSchema;
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // Resolve session instance count up-front from the eval-mode constraint so
+  // the prompt + description stay consistent with what the pool builds.
+  const presumedChallengeType: ChallengeType =
+    (evalConstraint?.allowedTypes[0] as ChallengeType | undefined) ?? 'find_area';
   const instanceCount = Math.max(
     1,
-    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      config?.instanceCount ?? COUNT_BY_MODE[presumedChallengeType] ?? DEFAULT_INSTANCE_COUNT,
+    ),
   );
 
   // ── Gemini wrapper call (metadata only) ──────────────────────────

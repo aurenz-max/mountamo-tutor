@@ -78,8 +78,32 @@ interface SubGenResult {
   challenge: TapeDiagramChallenge;
 }
 
-const DEFAULT_INSTANCE_COUNT = 4;
-const MAX_INSTANCE_COUNT = 6;
+// ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+//
+// `solve_part_whole` and `multi_step` are T4 (3+ within-challenge sub-phases:
+// explore → practice → apply per challenge). At 4 challenges, sessions ran
+// ~6 min past the T4 7-min ceiling — cut to 3 per the B3 sweep.
+//
+// `represent` and `solve_comparison` are T3 (single-submit, content-bearing
+// word problems) — held at 4.
+
+type TapeDiagramChallengeType =
+  | 'represent'
+  | 'solve_part_whole'
+  | 'solve_comparison'
+  | 'multi_step';
+
+const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any future mode not listed
+const MAX_INSTANCE_COUNT = 5;     // T3 hard max; T4 modes are clamped via COUNT_BY_MODE
+
+const COUNT_BY_MODE: Record<TapeDiagramChallengeType, number> = {
+  represent: 4,         // T3
+  solve_comparison: 4,  // T3
+  solve_part_whole: 3,  // T4 cut (was 4)
+  multi_step: 3,        // T4 cut (was 4)
+};
 
 // ===========================================================================
 // Schema: Represent mode
@@ -504,7 +528,7 @@ export const generateTapeDiagram = async (
   gradeLevel: string,
   config?: {
     targetEvalMode?: string;
-    /** How many challenges in this session. Default 4, max 6. */
+    /** How many challenges in this session. Defaults from COUNT_BY_MODE (3 for T4, 4 for T3). */
     instanceCount?: number;
   }
 ): Promise<TapeDiagramData> => {
@@ -512,9 +536,13 @@ export const generateTapeDiagram = async (
   logEvalModeResolution('TapeDiagram', config?.targetEvalMode, evalConstraint);
 
   const challengeType = evalConstraint?.allowedTypes[0] || 'solve_part_whole';
+  const fromTable = (COUNT_BY_MODE as Record<string, number>)[challengeType];
   const instanceCount = Math.max(
     1,
-    Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
+    Math.min(
+      MAX_INSTANCE_COUNT,
+      config?.instanceCount ?? fromTable ?? DEFAULT_INSTANCE_COUNT,
+    ),
   );
 
   // Fan out N parallel calls of the same per-mode sub-generator. Variance

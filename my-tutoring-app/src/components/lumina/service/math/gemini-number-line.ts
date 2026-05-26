@@ -46,11 +46,30 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
-// Tuning
+// Tuning — per-mode instance counts (see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a)
 // ---------------------------------------------------------------------------
 
-/** Per-mode instance count. PRD §5 floor is 4. Picked here as the default. */
-const INSTANCES_PER_MODE = 4;
+type ChallengeType = 'plot_point' | 'show_jump' | 'order_values' | 'find_between';
+
+const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1)
+const MAX_INSTANCE_COUNT = 8;
+
+// NOTE: this primitive uses an orchestrator-per-challenge pattern — each
+// sub-generator fans out N parallel single-challenge Gemini calls. Per the
+// instance-count audit hook, orchestrator-per-challenge modes are capped at 5
+// (not the T1 fallback of 7) to keep cost/latency in check. `plot_point` covers
+// both the `plot` and `identify` eval modes; bumping it to 5 is the most we can
+// safely do without converting the sub-generator to pool-service.
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  plot_point: 5,
+  show_jump: 4,
+  order_values: 4,
+  find_between: 4,
+};
+
+function resolveCount(type: ChallengeType): number {
+  return Math.max(1, Math.min(MAX_INSTANCE_COUNT, COUNT_BY_MODE[type] ?? DEFAULT_INSTANCE_COUNT));
+}
 
 // ---------------------------------------------------------------------------
 // Shared single-challenge text schema (used by every per-mode sub-generator)
@@ -295,7 +314,7 @@ async function generatePlotPointChallenges(
   const poolNumbers = isIdentify
     ? uniqueIntegerPool(0, 10)
     : resolvedPoolNumbers(config, range);
-  const targets = selectPlotPointTargets(poolNumbers, INSTANCES_PER_MODE);
+  const targets = selectPlotPointTargets(poolNumbers, resolveCount('plot_point'));
   if (targets.length === 0) return emptySubResult('plot');
 
   const modeBanner = isIdentify
@@ -352,7 +371,7 @@ async function generateShowJumpChallenges(
 ): Promise<SubResult> {
   const gradeBand = resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
-  const tuples = selectShowJumpTuples(range, gradeBand, INSTANCES_PER_MODE);
+  const tuples = selectShowJumpTuples(range, gradeBand, resolveCount('show_jump'));
   if (tuples.length === 0) return emptySubResult('jump');
 
   const promptFor = (t: ShowJumpTuple, index: number) => `Create text for ONE Number Line JUMP challenge for "${topic}" (Grade ${gradeLevel}).
@@ -421,7 +440,7 @@ async function generateOrderValuesChallenges(
   const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
   const perSet = gradeBand === 'K-2' ? 3 : 4;
   const poolNumbers = resolvedPoolNumbers(config, range);
-  const sets = selectOrderValueSets(poolNumbers, INSTANCES_PER_MODE, perSet);
+  const sets = selectOrderValueSets(poolNumbers, resolveCount('order_values'), perSet);
   if (sets.length === 0) return emptySubResult('order');
 
   const promptFor = (values: number[], index: number) => `Create text for ONE Number Line ORDER challenge for "${topic}" (Grade ${gradeLevel}).
@@ -475,7 +494,7 @@ async function generateFindBetweenChallenges(
   const gradeBand = resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: 10 };
   const poolNumbers = resolvedPoolNumbers(config, range);
-  const pairs = selectFindBetweenPairs(poolNumbers, INSTANCES_PER_MODE);
+  const pairs = selectFindBetweenPairs(poolNumbers, resolveCount('find_between'));
   if (pairs.length === 0) return emptySubResult('compare');
 
   const promptFor = ([b0, b1]: [number, number], index: number) => `Create text for ONE Number Line FIND-BETWEEN challenge for "${topic}" (Grade ${gradeLevel}).

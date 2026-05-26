@@ -10,6 +10,31 @@ import {
 } from "../evalMode";
 
 // ---------------------------------------------------------------------------
+// Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
+// ---------------------------------------------------------------------------
+
+type ChallengeType = 'count_along' | 'predict' | 'fill_missing' | 'find_skip_value' | 'connect_multiplication';
+
+const DEFAULT_INSTANCE_COUNT = 6; // tier fallback (per-challenge active time longer than pure fast-tap)
+const MAX_INSTANCE_COUNT = 8;
+
+const COUNT_BY_MODE: Record<ChallengeType, number> = {
+  count_along: 6,        // B2 bump (was 3-5)
+  predict: 6,            // B2 bump (was 3-5)
+  fill_missing: 6,       // B2 bump (was 3-5)
+  find_skip_value: 5,    // hold at current upper-end of 3-5 range
+  connect_multiplication: 5, // hold at current upper-end of 3-5 range
+};
+
+function resolveCount(
+  type: ChallengeType | undefined,
+  override?: number,
+): number {
+  const fallback = type ? (COUNT_BY_MODE[type] ?? DEFAULT_INSTANCE_COUNT) : DEFAULT_INSTANCE_COUNT;
+  return Math.max(1, Math.min(MAX_INSTANCE_COUNT, override ?? fallback));
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
@@ -57,10 +82,11 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
-// Base schema (all challenge types)
+// Base schema (all challenge types) — count is templated at build time
 // ---------------------------------------------------------------------------
 
-const skipCountingRunnerSchema: Schema = {
+function buildSkipCountingRunnerSchema(count: number): Schema {
+  return {
   type: Type.OBJECT,
   properties: {
     title: {
@@ -142,7 +168,7 @@ const skipCountingRunnerSchema: Schema = {
         },
         required: ["id", "type", "instruction", "hint", "narration"]
       },
-      description: "Array of 3-5 progressive challenges"
+      description: `Array of exactly ${count} progressive challenges`
     },
     showOptions: {
       type: Type.OBJECT,
@@ -194,7 +220,8 @@ const skipCountingRunnerSchema: Schema = {
     }
   },
   required: ["title", "description", "skipValue", "startFrom", "endAt", "direction", "character", "challenges", "showOptions", "gradeBand"]
-};
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Generator
@@ -213,6 +240,8 @@ export const generateSkipCountingRunner = async (
     targetEvalMode?: string;
     /** Intent or title from the manifest item. */
     intent?: string;
+    /** Override for instance count (clamped to [1, MAX_INSTANCE_COUNT]). Falls back to COUNT_BY_MODE table. */
+    instanceCount?: number;
   }
 ): Promise<SkipCountingRunnerData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -225,10 +254,19 @@ export const generateSkipCountingRunner = async (
   // For config.challengeTypes without an eval mode, use them as a hint
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
 
-  // ── Build mode-constrained schema ──
+  // ── Resolve per-mode instance count (PRD_WITHIN_MODE_INSTANCE_DENSITY §5a) ──
+  // When constrained to a single eval mode, look up its tier count.
+  // Mixed-mode sessions (no eval mode) fall back to DEFAULT_INSTANCE_COUNT.
+  const singleMode = evalConstraint?.allowedTypes.length === 1
+    ? (evalConstraint.allowedTypes[0] as ChallengeType)
+    : undefined;
+  const targetCount = resolveCount(singleMode, config?.instanceCount);
+
+  // ── Build mode-constrained schema (count templated into description) ──
+  const baseSchema = buildSkipCountingRunnerSchema(targetCount);
   const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(skipCountingRunnerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
-    : skipCountingRunnerSchema;
+    ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+    : baseSchema;
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
@@ -295,7 +333,7 @@ ${(() => {
 })()}
 
 REQUIREMENTS:
-1. Generate 3-5 challenges that progress in difficulty
+1. Generate exactly ${targetCount} challenges that progress in difficulty
 2. The endAt should be a multiple of skipValue (from startFrom)
 3. Use rhythmic, encouraging narration that counts along: "5... 10... 15..."
 4. For predict challenges, set hiddenPositions to numbers the student must guess
@@ -377,6 +415,11 @@ Return the complete skip counting runner configuration.
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
+
+  // Clamp challenges to targetCount (PRD_WITHIN_MODE_INSTANCE_DENSITY §5a)
+  if (data.challenges.length > targetCount) {
+    data.challenges = data.challenges.slice(0, targetCount);
+  }
 
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {
