@@ -16,6 +16,7 @@ import FunctionMachine from '../primitives/visual-primitives/math/FunctionMachin
 import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGraph';
 import type { CoordinateGraphData } from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
+import PolygonAreaBuilder from '../primitives/visual-primitives/math/PolygonAreaBuilder';
 import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot from '../primitives/visual-primitives/math/DotPlot';
@@ -75,7 +76,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 type PrimitiveOption = { value: PrimitiveType; label: string; icon: string; topic: string };
@@ -173,6 +174,7 @@ const PRIMITIVE_GROUPS: Array<{ label: string; grade: string; items: PrimitiveOp
     items: [
       { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍', topic: 'Plotting ordered pairs' },
       { value: 'slope-triangle', label: 'Slope Triangle', icon: '📐', topic: 'Understanding slope with rise and run' },
+      { value: 'polygon-area-builder', label: 'Polygon Area Builder', icon: '📐', topic: 'Find polygon areas by composing and decomposing shapes' },
       { value: 'systems-equations-visualizer', label: 'Systems of Equations', icon: '📊', topic: 'Solving systems of equations' },
       { value: 'parameter-explorer', label: 'Parameter Explorer', icon: '🎛️', topic: 'Exploring how parameters affect functions and graphs' },
       { value: 'function-sketch', label: 'Function Sketch', icon: '✏️', topic: 'Trigonometric functions' },
@@ -447,6 +449,19 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'math-linear-functions',
             subskillId: 'slope-triangle-reading',
             objectiveId: 'find-slope-from-triangle',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'polygon-area-builder':
+      return (
+        <PolygonAreaBuilder
+          data={{
+            ...(data as Parameters<typeof PolygonAreaBuilder>[0]['data']),
+            instanceId: `polygon-area-builder-${Date.now()}`,
+            skillId: 'math-geometry-area',
+            subskillId: 'polygon-area',
+            objectiveId: 'find-polygon-area',
             onEvaluationSubmit,
           }}
         />
@@ -1179,6 +1194,18 @@ const EvaluationResultsPanel: React.FC = () => {
                 )}
                 {/* Show SlopeTriangle-specific metrics */}
                 {result.metrics.type === 'slope-triangle' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show PolygonAreaBuilder-specific metrics */}
+                {result.metrics.type === 'polygon-area-builder' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
                     <span>Mode: {result.metrics.challengeType}</span>
                     <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>

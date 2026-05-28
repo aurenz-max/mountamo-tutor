@@ -10,7 +10,6 @@ import { ManifestOrderRenderer } from './ManifestOrderRenderer';
 import { EvaluationProvider } from '../evaluation';
 import type { CompetencyUpdateSuggestion } from '../evaluation';
 import { EvaluationResultsIndicator } from './EvaluationResultsIndicator';
-import { CelebrationLayer } from './CelebrationLayer';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
@@ -120,7 +119,6 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
             />
 
             <EvaluationResultsIndicator />
-            <CelebrationLayer />
 
             {sessionReturn === 'daily-session' && sessionCurrentBlock && (
               <ExhibitCompleteFooter

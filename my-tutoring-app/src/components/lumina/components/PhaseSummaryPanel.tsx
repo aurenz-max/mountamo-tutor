@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SoundManager } from '../utils/SoundManager';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -126,6 +128,41 @@ function formatDuration(ms: number): string {
   return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
 }
 
+// ── Completion celebration (sound + confetti), tiered by score ────
+// Lives here because PhaseSummaryPanel is the screen the student lands on
+// when a primitive completes — it replaces the old global CelebrationLayer.
+
+function fireConfetti(tier: PerformanceTier) {
+  const base = { zIndex: 9999, disableForReducedMotion: true } as const;
+  if (tier === 'perfect') {
+    const total = 200;
+    const burst = (ratio: number, opts: confetti.Options) =>
+      confetti({ ...base, origin: { y: 0.7 }, ...opts, particleCount: Math.floor(total * ratio) });
+    burst(0.25, { spread: 26, startVelocity: 55, colors: ['#a78bfa', '#818cf8', '#6366f1'] });
+    burst(0.2, { spread: 60, colors: ['#34d399', '#10b981'] });
+    burst(0.35, { spread: 100, decay: 0.91, scalar: 0.8, colors: ['#fbbf24', '#f59e0b'] });
+    setTimeout(() => {
+      burst(0.15, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2, colors: ['#f472b6', '#ec4899'] });
+      burst(0.1, { spread: 120, startVelocity: 45, colors: ['#60a5fa', '#3b82f6'] });
+    }, 200);
+  } else if (tier === 'great') {
+    confetti({ ...base, origin: { y: 0.65 }, particleCount: 60, spread: 70, colors: ['#fbbf24', '#f59e0b', '#f97316', '#ef4444'] });
+    setTimeout(() => {
+      confetti({ ...base, origin: { y: 0.65 }, particleCount: 40, spread: 90, startVelocity: 35, colors: ['#fbbf24', '#f59e0b', '#f97316'] });
+    }, 150);
+  } else if (tier === 'good') {
+    confetti({ ...base, origin: { y: 0.7 }, particleCount: 40, spread: 55, colors: ['#34d399', '#60a5fa', '#a78bfa', '#fbbf24'] });
+  }
+  // needs-work: no confetti — the "Keep Practicing" message carries the moment.
+}
+
+function playCelebrationSound(tier: PerformanceTier) {
+  if (tier === 'perfect') SoundManager.playPerfect();
+  else if (tier === 'great') SoundManager.playStreak();
+  else if (tier === 'good') SoundManager.playCorrect();
+  // needs-work: silent.
+}
+
 // ── Component ────────────────────────────────────────────────────
 
 const PhaseSummaryPanel: React.FC<PhaseSummaryPanelProps> = ({
@@ -155,6 +192,33 @@ const PhaseSummaryPanel: React.FC<PhaseSummaryPanelProps> = ({
 
   const tier = getPerformanceTier(computedScore);
   const tierConfig = TIER_CONFIG[tier];
+
+  // Fire the completion celebration once, synced with the panel's entrance.
+  // NOTE: no clearTimeout cleanup on purpose. React 18 StrictMode (Next dev)
+  // mounts → unmounts → remounts; a cleanup would cancel the only scheduled
+  // timer while the celebratedRef guard blocks the remount from rescheduling,
+  // so the celebration would silently never fire in dev.
+  const celebratedRef = useRef(false);
+  useEffect(() => {
+    if (celebratedRef.current) return;
+    celebratedRef.current = true;
+    const delay = animate ? 450 : 0; // land roughly when the score ring fills
+    console.log('[PhaseSummaryPanel] celebration scheduled', {
+      computedScore,
+      tier,
+      animate,
+      delay,
+      soundEnabled: SoundManager.isEnabled(),
+      volume: SoundManager.getVolume(),
+    });
+    setTimeout(() => {
+      console.log('[PhaseSummaryPanel] celebration firing', { tier });
+      playCelebrationSound(tier);
+      fireConfetti(tier);
+    }, delay);
+    // Run only on mount — the panel renders once at completion with final results.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // SVG ring math
   const ringRadius = 52;

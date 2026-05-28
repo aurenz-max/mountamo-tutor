@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { SoundManager } from '../utils/SoundManager';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -108,6 +109,9 @@ export function useChallengeProgress<TChallenge>(
     if (nextIndex >= challenges.length) return false;
     setCurrentIndex(nextIndex);
     setCurrentAttempts(0);
+    // Single chokepoint: every multi-phase primitive's "next challenge"
+    // transition plays the navigate whoosh. Fires only on a real advance.
+    SoundManager.navigate();
     return true;
   }, [currentIndex, challenges.length]);
 

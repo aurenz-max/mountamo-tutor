@@ -35,6 +35,7 @@ import DistributionExplorerTester from './components/DistributionExplorerTester'
 import LuminaTutorTester from './components/LuminaTutorTester';
 import CalibrationSimulator from './components/CalibrationSimulator';
 import AtomRegistry from './components/AtomRegistry';
+import SoundLab from './components/SoundLab';
 import { PulseAdaptiveSession } from './pulse/PulseAdaptiveSession';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
@@ -591,6 +592,13 @@ export default function App() {
             onBack={() => setActivePanel(null)}
             onOpenTester={(panel) => setActivePanel(panel)}
           />
+        )}
+
+        {/* SOUND LAB STATE */}
+        {phase === GameState.IDLE && activePanel === 'sound-lab' && (
+          <div className="flex-1 animate-fade-in">
+            <SoundLab onBack={() => setActivePanel(null)} />
+          </div>
         )}
 
         {/* LUMINA TUTOR TESTER STATE */}

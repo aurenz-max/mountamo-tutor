@@ -157,6 +157,16 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "multiply":    PriorConfig(3.5, "Pictorial: multi-digit multiplication via model"),
         "factor":      PriorConfig(4.5, "Transitional: find factors from given area"),
     },
+    # -----------------------------------------------------------------
+    # Geometry — area primitives
+    # -----------------------------------------------------------------
+    "polygon-area-builder": {
+        "decompose":                       PriorConfig(1.5, "Rearrange a parallelogram into a rectangle; find base x height (conservation of area)."),
+        "find_area_triangle_parallelogram": PriorConfig(2.5, "Compute area of a triangle (1/2 * b * h) or parallelogram (b * h) from labels."),
+        "find_area_trapezoid":             PriorConfig(3.5, "Trapezoid area via average-of-bases 1/2 * (b1 + b2) * h."),
+        "composite_area":                  PriorConfig(4.5, "Decompose an irregular figure into known rectangles and sum."),
+        "coordinate_polygon":              PriorConfig(5.5, "Find a polygon's area from its vertex coordinates."),
+    },
     "comparison-builder": {
         "compare_groups":    PriorConfig(1.5, "Concrete: visual group comparison"),
         "one_more_less":     PriorConfig(2.5, "Pictorial: adjacent number reasoning"),

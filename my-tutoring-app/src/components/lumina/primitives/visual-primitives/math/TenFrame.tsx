@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -21,9 +22,13 @@ import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 export interface TenFrameChallenge {
   id: string;
   type: 'build' | 'subitize' | 'make_ten' | 'add' | 'subtract';
+  /** Student-facing prompt. Synthesized deterministically by the generator from the
+   *  numeric fields below — never authored by the LLM (see SP-17). */
   instruction: string;
   targetCount: number;
   startCount?: number; // for subtract: how many counters to pre-fill before removal
+  addend1?: number; // for add: first addend (addend1 + addend2 = targetCount)
+  addend2?: number; // for add: second addend
   flashDuration?: number | null; // ms, for subitize mode
   hint: string;
   narration: string;
@@ -288,6 +293,8 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     if (currentPhase === 'subitize' && !showCounters) return; // Can't click during subitize answer phase
     if (hasSubmittedEvaluation) return;
 
+    SoundManager.tap();
+
     setFilledCells(prev => {
       const next = new Set(prev);
       if (next.has(cellIndex)) {
@@ -489,7 +496,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         break;
     }
 
+    // Immediate per-challenge audio feedback (the end-of-primitive celebration
+    // is fired by PhaseSummaryPanel when the results screen appears).
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
@@ -497,6 +507,8 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         attempts: currentAttempts + 1,
         reflashes: currentChallenge.type === 'subitize' ? subitizeReflashes : 0,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [currentChallenge, currentAttempts, subitizeReflashes, checkBuildChallenge, checkSubitizeAnswer, checkMakeTenAnswer, recordResult]);
 
@@ -874,7 +886,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
               <Button
                 variant="ghost"
                 className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
-                onClick={() => setSubitizeInput(String(Math.max((parseInt(subitizeInput, 10) || 0) - 1, 0)))}
+                onClick={() => { SoundManager.tick(); setSubitizeInput(String(Math.max((parseInt(subitizeInput, 10) || 0) - 1, 0))); }}
                 disabled={(parseInt(subitizeInput, 10) || 0) <= 0}
               >
                 &minus;
@@ -887,7 +899,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
               <Button
                 variant="ghost"
                 className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
-                onClick={() => setSubitizeInput(String(Math.min((parseInt(subitizeInput, 10) || 0) + 1, totalCells)))}
+                onClick={() => { SoundManager.tick(); setSubitizeInput(String(Math.min((parseInt(subitizeInput, 10) || 0) + 1, totalCells))); }}
               >
                 +
               </Button>
@@ -913,7 +925,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
               <Button
                 variant="ghost"
                 className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
-                onClick={() => setMakeTenInput(String(Math.max((parseInt(makeTenInput, 10) || 0) - 1, 0)))}
+                onClick={() => { SoundManager.tick(); setMakeTenInput(String(Math.max((parseInt(makeTenInput, 10) || 0) - 1, 0))); }}
                 disabled={(parseInt(makeTenInput, 10) || 0) <= 0}
               >
                 &minus;
@@ -926,7 +938,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
               <Button
                 variant="ghost"
                 className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
-                onClick={() => setMakeTenInput(String(Math.min((parseInt(makeTenInput, 10) || 0) + 1, totalCells)))}
+                onClick={() => { SoundManager.tick(); setMakeTenInput(String(Math.min((parseInt(makeTenInput, 10) || 0) + 1, totalCells))); }}
               >
                 +
               </Button>

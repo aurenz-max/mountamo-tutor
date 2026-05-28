@@ -859,6 +859,17 @@ After QA passes, report to the user:
 
 ---
 
+## Phase 8: Wire Sound (Main Agent — recommended for interactive primitives)
+
+Once the primitive renders and QA passes, run the **`/add-sound`** skill to give the primitive interactive audio. You only wire the **interaction** sounds — the rest is already automatic:
+
+- **Automatic:** `navigate` on challenge advance (via `useChallengeProgress.advance()`), and `correct`/`incorrect`/`streak`/`perfect` on final submit (via `CelebrationLayer`).
+- **You wire (per-primitive):** tactile `SoundManager.tap()`/`select()`/`snap()`/`tick()` on manipulation handlers, and per-challenge `SoundManager.playCorrect()`/`playIncorrect()` at each "Check Answer" (intermediate checks are otherwise silent).
+
+Keep it sparse — 2–4 sound points. Skip entirely for display-only primitives. Full palette, integration mechanics, and checklist: `.claude/skills/add-sound/SKILL.md`.
+
+---
+
 ## Domain Directory Reference
 
 | Domain | Component Dir | Generator Dir | Catalog | Generator Registry | Tester |

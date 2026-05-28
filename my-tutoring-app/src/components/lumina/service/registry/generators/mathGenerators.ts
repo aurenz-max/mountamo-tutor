@@ -22,6 +22,7 @@ import { generateBalanceScale } from '../../math/gemini-balance-scale';
 import { generateFunctionMachine } from '../../math/gemini-function-machine';
 import { generateCoordinateGraph } from '../../math/gemini-coordinate-graph';
 import { generateSlopeTriangle } from '../../math/gemini-slope-triangle';
+import { generatePolygonAreaBuilder } from '../../math/gemini-polygon-area-builder';
 import { generateSystemsEquations } from '../../math/gemini-systems-equations';
 import { generateMatrix } from '../../math/gemini-matrix';
 import { generateDotPlot } from '../../math/gemini-dot-plot';
@@ -164,6 +165,13 @@ registerGenerator('slope-triangle', async (item, topic, gradeContext) => ({
   type: 'slope-triangle',
   instanceId: item.instanceId,
   data: await generateSlopeTriangle(topic, gradeContext, item.config),
+}));
+
+// Polygon Area Builder (6-7 area via composing/decomposing polygons)
+registerGenerator('polygon-area-builder', async (item, topic, gradeContext) => ({
+  type: 'polygon-area-builder',
+  instanceId: item.instanceId,
+  data: await generatePolygonAreaBuilder(topic, gradeContext, item.config),
 }));
 
 // Systems of Equations Visualizer

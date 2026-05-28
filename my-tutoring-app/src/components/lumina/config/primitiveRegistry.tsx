@@ -39,6 +39,7 @@ import OrdinalLine from '../primitives/visual-primitives/math/OrdinalLine';
 import SortingStation from '../primitives/visual-primitives/math/SortingStation';
 import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
+import PolygonAreaBuilder from '../primitives/visual-primitives/math/PolygonAreaBuilder';
 import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot from '../primitives/visual-primitives/math/DotPlot';
@@ -745,6 +746,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
+  },
+
+  'polygon-area-builder': {
+    component: PolygonAreaBuilder,
+    sectionTitle: 'Polygon Area Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
   },
 
   'systems-equations-visualizer': {

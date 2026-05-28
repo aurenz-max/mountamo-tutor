@@ -2542,6 +2542,18 @@ export interface SlopeTriangleMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface PolygonAreaBuilderMetrics extends BasePrimitiveMetrics {
+  type: 'polygon-area-builder';
+  challengeType: 'decompose' | 'find_area_triangle_parallelogram' | 'find_area_trapezoid' | 'composite_area' | 'coordinate_polygon';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface MatrixDisplayMetrics extends BasePrimitiveMetrics {
   type: 'matrix-display';
   challengeType: 'transpose' | 'add' | 'subtract' | 'multiply' | 'determinant' | 'inverse';
@@ -3204,6 +3216,7 @@ export type PrimitiveMetrics =
   | MatrixDisplayMetrics
   | TwoWayTableMetrics
   | SlopeTriangleMetrics
+  | PolygonAreaBuilderMetrics
   | SystemsEquationsMetrics
   | LengthLabMetrics
   | ShapeBuilderMetrics

@@ -1,5 +1,5 @@
 import { Type, Schema } from "@google/genai";
-import { TenFrameData } from "../../primitives/visual-primitives/math/TenFrame";
+import { TenFrameData, TenFrameChallenge } from "../../primitives/visual-primitives/math/TenFrame";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
@@ -74,11 +74,9 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   add: {
     promptDoc:
-      `"add": The frame starts EMPTY — no counters are pre-placed. `
-      + `Student places both addends themselves. targetCount = sum. startCount is NOT used for add. `
-      + `Instruction MUST tell the student to place both groups (e.g., "Place 8 counters, then add 5 more to show 13!"). `
-      + `Do NOT say counters are "already" on the frame — the student places everything. `
-      + `Use numbers that encourage the make-ten strategy (e.g., 8+5, 7+6).`,
+      `"add": The frame starts EMPTY — no counters are pre-placed; the student places both addends. `
+      + `Provide addend1 and addend2 (both > 0) and set targetCount = addend1 + addend2 (the sum). `
+      + `Use numbers that encourage the make-ten strategy (e.g., addend1=8, addend2=5; addend1=7, addend2=6).`,
     schemaDescription: "'add' (addition)",
   },
   subtract: {
@@ -86,10 +84,39 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"subtract": Student removes counters from a pre-filled frame. `
       + `MUST set startCount (counters shown initially) AND targetCount (counters remaining). `
       + `Example: startCount=7, targetCount=4 means "start with 7, take away 3, 4 remain". `
-      + `Instruction MUST name starting amount AND removal amount. Do NOT reveal the answer.`,
+      + `startCount MUST be greater than targetCount.`,
     schemaDescription: "'subtract' (subtraction)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Deterministic instruction synthesis (SP-17)
+// ---------------------------------------------------------------------------
+// The student-facing prompt is the one field whose numbers must match what the
+// frame renders and the component scores. The component owns those numbers
+// (targetCount, startCount, addends, frame capacity), so we synthesize the
+// instruction from them rather than asking the LLM for a parallel text that can
+// drift. Single source of truth → no consistency guard can ever false-negative.
+
+function buildInstruction(ch: TenFrameChallenge, mode: 'single' | 'double'): string {
+  const frameTarget = mode === 'double' ? 20 : 10;
+  switch (ch.type) {
+    case 'build':
+      return `Put ${ch.targetCount} counters on the ten frame!`;
+    case 'subitize':
+      return 'How many counters did you see?';
+    case 'make_ten':
+      return `There are ${ch.targetCount} counters on the frame. How many more do you need to make ${frameTarget}?`;
+    case 'add':
+      return `Show ${ch.addend1} + ${ch.addend2} on the frame!`;
+    case 'subtract': {
+      const remove = (ch.startCount ?? ch.targetCount) - ch.targetCount;
+      return `The frame starts with ${ch.startCount} counters. Take away ${remove}. How many are left?`;
+    }
+    default:
+      return `Build ${ch.targetCount} on the ten frame!`;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Base schema (all challenge types)
@@ -169,10 +196,6 @@ function buildTenFrameSchema(count: number): Schema {
             type: Type.STRING,
             description: "Challenge type: 'build' (place counters), 'subitize' (flash and identify count), 'make_ten' (find complement to 10), 'add' (addition), 'subtract' (subtraction)"
           },
-          instruction: {
-            type: Type.STRING,
-            description: "Student-facing instruction text, warm and encouraging (e.g., 'Put 7 counters on the frame!')"
-          },
           targetCount: {
             type: Type.NUMBER,
             description: "Target number for this challenge (0-10 for single, 0-20 for double)"
@@ -180,6 +203,14 @@ function buildTenFrameSchema(count: number): Schema {
           startCount: {
             type: Type.NUMBER,
             description: "For subtract challenges: how many counters are pre-filled on the frame before removal. E.g. startCount=7, targetCount=4 means 'start with 7, take away 3, 4 remain'."
+          },
+          addend1: {
+            type: Type.NUMBER,
+            description: "For 'add' challenges only: the first addend. Must be > 0 and addend1 + addend2 = targetCount (e.g., addend1=8, addend2=5, targetCount=13)."
+          },
+          addend2: {
+            type: Type.NUMBER,
+            description: "For 'add' challenges only: the second addend. Must be > 0 and addend1 + addend2 = targetCount."
           },
           flashDuration: {
             type: Type.NUMBER,
@@ -194,7 +225,7 @@ function buildTenFrameSchema(count: number): Schema {
             description: "AI narration for this challenge (used by the tutor to introduce the challenge)"
           }
         },
-        required: ["id", "type", "instruction", "targetCount", "hint", "narration"]
+        required: ["id", "type", "targetCount", "hint", "narration"]
       },
       description: `Array of exactly ${count} progressive challenges`
     },
@@ -303,8 +334,7 @@ GUIDELINES FOR GRADE LEVELS:
 SUBTRACTION GUIDELINES (if generating subtract challenges):
 - Always include startCount for subtract challenges (it controls how many counters appear)
 - Use numbers within 10 for single frame (startCount ≤ 10)
-- Instruction should name the starting amount AND the amount to remove, e.g. "There are 8 counters. Take away 5!"
-- Do NOT reveal the answer in the instruction — ask "How many are left?" without stating the result
+- startCount MUST be greater than targetCount (the student removes startCount − targetCount counters)
 
 ${(() => {
   const hints: string[] = [];
@@ -316,17 +346,16 @@ ${(() => {
   return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
 })()}
 
-CRITICAL — NUMERIC CONSISTENCY:
-The numbers in the instruction text MUST EXACTLY match the challenge's numeric fields. The UI displays counters based on the numeric fields, NOT the instruction text. If they disagree, students see a mismatch.
-- build: the number in instruction MUST equal targetCount (e.g., targetCount=5 → "Put 5 counters on the frame!")
-- subtract: instruction MUST mention startCount as the starting amount AND (startCount − targetCount) as the removal amount (e.g., startCount=8, targetCount=5 → "There are 8 counters. Take away 3.")
-- make_ten: instruction MUST mention targetCount as the number already on the frame. For single frame: "make 10". For double frame: "make 20". (e.g., single: targetCount=6 → "There are 6 counters. How many more to make 10?"; double: targetCount=12 → "There are 12 counters. How many more to make 20?")
-- add: instruction numbers MUST sum to targetCount
+IMPORTANT — NO INSTRUCTION TEXT:
+Do NOT write any student-facing instruction text. The app generates the on-screen prompt
+deterministically from the numeric fields (type, targetCount, startCount, addend1/addend2),
+so the displayed problem always matches what the frame shows. Your job is to choose
+pedagogically sound NUMBERS, not to phrase the question. Topic flavor lives in title/description.
 
 REQUIREMENTS:
 1. Generate exactly ${count} challenges that progress in difficulty
 2. Start with easier challenges and build up
-3. Use warm, encouraging instruction text appropriate for young children
+3. For 'add' challenges, provide addend1 and addend2 (both > 0) whose sum equals targetCount
 4. Set initial counter count and positions to 0/empty for build challenges
 5. For subitize challenges, use flashDuration between 1000-2000ms
 6. For make_ten challenges, targetCount should be the number of counters ALREADY on the frame (must be less than frame capacity: <10 for single, <20 for double)
@@ -373,6 +402,15 @@ Return the complete ten frame configuration.
     data.mode = 'single';
   }
 
+  // make_ten is pedagogically "complement to 10" — the catalog label/beta and the tutor
+  // scaffold all assume a single 10-frame. Pin it to single frame here (and again after
+  // config overrides). A double-frame "make 20" is a different skill → separate eval mode.
+  const isMakeTenEvalMode =
+    evalConstraint?.allowedTypes.length === 1 && evalConstraint.allowedTypes[0] === 'make_ten';
+  if (isMakeTenEvalMode) {
+    data.mode = 'single';
+  }
+
   // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
   const validTypes = ['build', 'subitize', 'make_ten', 'add', 'subtract'];
   data.challenges = (data.challenges || []).filter(
@@ -400,27 +438,31 @@ Return the complete ten frame configuration.
     }
   }
 
-  // Instruction ↔ numeric field consistency
-  const wordNum = (text: string, n: number): boolean =>
-    new RegExp(`\\b${n}\\b`).test(text);
+  // make_ten: keep targetCount within frame capacity so the pre-fill + complement are valid.
+  for (const ch of data.challenges as TenFrameChallenge[]) {
+    if (ch.type === 'make_ten') {
+      const frameTarget = data.mode === 'double' ? 20 : 10;
+      if (ch.targetCount < 0 || ch.targetCount >= frameTarget) {
+        ch.targetCount = Math.max(1, frameTarget - 3);
+      }
+    }
+  }
 
-  for (const ch of data.challenges as Array<{ type: string; startCount?: number; targetCount: number; instruction: string }>) {
-    if (ch.type === 'subtract' && ch.startCount != null) {
-      const removeCount = ch.startCount - ch.targetCount;
-      if (!wordNum(ch.instruction, ch.startCount) || !wordNum(ch.instruction, removeCount)) {
-        ch.instruction = `The frame starts with ${ch.startCount} counters. Take away ${removeCount}. How many are left?`;
-      }
-    } else if (ch.type === 'make_ten') {
-      const makeTenTarget = data.mode === 'double' ? 20 : 10;
-      if (ch.targetCount < 0 || ch.targetCount >= makeTenTarget) {
-        ch.targetCount = Math.max(1, makeTenTarget - 3);
-      }
-      if (!wordNum(ch.instruction, ch.targetCount)) {
-        ch.instruction = `There are ${ch.targetCount} counters on the frame. How many more do you need to make ${makeTenTarget}?`;
-      }
-    } else if (ch.type === 'build') {
-      if (!wordNum(ch.instruction, ch.targetCount)) {
-        ch.instruction = `Place ${ch.targetCount} counters on the ten frame!`;
+  // add: addends are the source of truth; derive targetCount from them. If Gemini
+  // omitted or gave inconsistent addends, derive a make-ten-friendly split.
+  for (const ch of data.challenges as TenFrameChallenge[]) {
+    if (ch.type === 'add') {
+      const maxCount = data.mode === 'double' ? 20 : 10;
+      const a1 = typeof ch.addend1 === 'number' && ch.addend1 > 0 ? ch.addend1 : null;
+      const a2 = typeof ch.addend2 === 'number' && ch.addend2 > 0 ? ch.addend2 : null;
+      if (a1 != null && a2 != null && a1 + a2 <= maxCount) {
+        ch.targetCount = a1 + a2;
+      } else {
+        const sum = Math.max(2, Math.min(ch.targetCount || 0, maxCount));
+        const second = Math.max(1, Math.min(5, sum - 1));
+        ch.addend2 = second;
+        ch.addend1 = sum - second;
+        ch.targetCount = sum;
       }
     }
   }
@@ -428,12 +470,13 @@ Return the complete ten frame configuration.
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'build';
-    const fallbacks: Record<string, { type: string; instruction: string; targetCount: number; hint: string; narration: string; flashDuration?: number; startCount?: number }> = {
-      build: { type: 'build', instruction: 'Put 5 counters on the ten frame!', targetCount: 5, hint: 'Fill up one whole row!', narration: "Let's start by building the number 5 on the ten frame." },
-      subitize: { type: 'subitize', instruction: 'How many counters did you see?', targetCount: 4, hint: 'Think about how many fit in one row.', narration: "Watch carefully — how many counters flash on the frame?", flashDuration: 1500 },
-      make_ten: { type: 'make_ten', instruction: 'There are 6 counters. How many more to make 10?', targetCount: 6, hint: 'Count the empty spaces!', narration: "Some counters are already here. How many more do we need?" },
-      add: { type: 'add', instruction: 'Show 3 + 4 on the frame!', targetCount: 7, hint: 'Place 3, then add 4 more.', narration: "Let's add these numbers using the ten frame." },
-      subtract: { type: 'subtract', instruction: 'The frame starts with 8 counters. Take away 3. How many are left?', targetCount: 5, hint: 'Click counters to remove them!', narration: "Let's practice taking away.", startCount: 8 },
+    // instruction is synthesized below — these objects only carry the numeric fields.
+    const fallbacks: Record<string, Omit<TenFrameChallenge, 'id' | 'instruction'>> = {
+      build: { type: 'build', targetCount: 5, hint: 'Fill up one whole row!', narration: "Let's start by building the number 5 on the ten frame." },
+      subitize: { type: 'subitize', targetCount: 4, hint: 'Think about how many fit in one row.', narration: "Watch carefully — how many counters flash on the frame?", flashDuration: 1500 },
+      make_ten: { type: 'make_ten', targetCount: 6, hint: 'Count the empty spaces!', narration: "Some counters are already here. How many more do we need?" },
+      add: { type: 'add', targetCount: 7, addend1: 3, addend2: 4, hint: 'Place 3, then add 4 more.', narration: "Let's add these numbers using the ten frame." },
+      subtract: { type: 'subtract', targetCount: 5, startCount: 8, hint: 'Click counters to remove them!', narration: "Let's practice taking away." },
     };
     console.log(`[TenFrame] No valid challenges — using ${fallbackType} fallback`);
     data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
@@ -456,6 +499,15 @@ Return the complete ten frame configuration.
     if (config.mode !== undefined) data.mode = config.mode;
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
     if (config.counterColor !== undefined) data.counters.color = config.counterColor;
+  }
+
+  // make_ten stays single-frame even if the manifest passed a double-frame override.
+  if (isMakeTenEvalMode) data.mode = 'single';
+
+  // Synthesize every instruction from the now-final numeric fields. Runs last so it
+  // reflects the settled frame mode — the on-screen prompt can never contradict the frame.
+  for (const ch of data.challenges as TenFrameChallenge[]) {
+    ch.instruction = buildInstruction(ch, data.mode);
   }
 
   return data;

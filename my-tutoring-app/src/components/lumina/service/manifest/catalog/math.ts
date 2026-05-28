@@ -1309,6 +1309,88 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
   },
   {
+    id: 'polygon-area-builder',
+    description: 'Multi-figure polygon-area session (3-6 distinct figures of the same eval mode, surfaced sequentially). Students derive and apply area formulas by composing and decomposing shapes on a canvas grid: rearrange a parallelogram into a rectangle by sliding the cut triangle (conservation of area), compute triangle / parallelogram / trapezoid areas from labeled dimensions, decompose composite figures into known rectangles and sum, and find the area of a polygon from its vertex coordinates. Canvas-based with five progressive difficulty tiers (decompose → triangle/parallelogram → trapezoid → composite → coordinate polygon). CCSS 6.G.A.1. Grades 6-7. The system pre-builds each figure (dimensions, coordinates, rectangle parts) deterministically per challenge — the manifest must NOT specify dimensions, coordinates, or areas.',
+    constraints: 'The manifest must NOT supply per-figure dimensions, coordinates, rectangle parts, or areas — the pool service builds 3-6 distinct figures deterministically from the selected eval mode and gradeBand. The manifest may supply gradeBand and instanceCount only (default 4, max 6). Each eval mode maps to exactly one challenge type of the same name.',
+    evalModes: [
+      {
+        evalMode: 'decompose',
+        label: 'Decompose to Rectangle (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['decompose'],
+        description: 'Rearrange a parallelogram into a rectangle by sliding the cut triangle, then find base × height. Conservation of area.',
+      },
+      {
+        evalMode: 'find_area_triangle_parallelogram',
+        label: 'Triangle & Parallelogram Area (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['find_area_triangle_parallelogram'],
+        description: 'Compute area of a labeled triangle (½·b·h) or parallelogram (b·h).',
+      },
+      {
+        evalMode: 'find_area_trapezoid',
+        label: 'Trapezoid Area (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['find_area_trapezoid'],
+        description: 'Trapezoid area using the average-of-bases method ½·(b1+b2)·h.',
+      },
+      {
+        evalMode: 'composite_area',
+        label: 'Composite Area (Tier 4)',
+        beta: 4.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['composite_area'],
+        description: 'Find the area of an irregular figure by decomposing it into known rectangles and summing.',
+      },
+      {
+        evalMode: 'coordinate_polygon',
+        label: 'Coordinate Polygon Area (Tier 5)',
+        beta: 5.5,
+        scaffoldingMode: 6,
+        challengeTypes: ['coordinate_polygon'],
+        description: 'Find the area of a polygon from its vertex coordinates on a grid.',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Multi-figure polygon-area session. Mode: {{challengeType}}. Figure {{currentChallengeIndex}} of {{totalChallenges}} ({{figureType}}). Expected area = {{expectedArea}} {{unitLabel}}².',
+      contextKeys: ['challengeType', 'figureType', 'currentChallengeIndex', 'totalChallenges', 'base', 'base2', 'height', 'expectedArea', 'unitLabel', 'gradeBand', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"What kind of shape is this? Can you see a rectangle hiding inside it, or a way to cut it into pieces you already know?"',
+        level2: '"Use the right formula for this figure: triangle = ½·b·h, parallelogram = b·h, trapezoid = ½·(b1+b2)·h, composite = decompose into rectangles and add, coordinate polygon = count the whole grid units inside."',
+        level3: '"This figure has base {{base}} and height {{height}}. Plug those into the formula for a {{figureType}}: the area works out to {{expectedArea}} {{unitLabel}}². Walk through each multiplication, then write the result."',
+      },
+      commonStruggles: [
+        { pattern: 'Forgetting the ½ for a triangle', response: '"A triangle is exactly HALF of a rectangle with the same base and height. After base × height, remember to take half."' },
+        { pattern: 'Using a slant side instead of the perpendicular height', response: '"Height must be perpendicular (straight up) from the base — not the slanted edge. Look for the right-angle mark."' },
+        { pattern: 'Adding the two trapezoid bases without halving', response: '"For a trapezoid, average the two bases first: (b1 + b2) ÷ 2, THEN multiply by the height."' },
+        { pattern: 'Double-counting the overlap in a composite figure', response: '"When you split into rectangles, make sure the pieces do not overlap. Each square of the figure should be counted exactly once."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'MULTI-FIGURE PACING',
+          instruction:
+            'The session walks through several distinct figures of the same eval mode. '
+            + 'After each correct answer, briefly celebrate, then point forward: "Now look at the next figure — same method, new shape." '
+            + 'Do NOT re-teach the formula from scratch on every figure; the second through Nth challenges should feel like fluency practice, not lesson restarts. '
+            + 'The student is on figure {{currentChallengeIndex}} of {{totalChallenges}}.',
+        },
+        {
+          title: 'FORMULA DERIVATION',
+          instruction:
+            'Reinforce that EVERY polygon area comes from base × height. '
+            + 'A triangle is half of a rectangle (½·b·h). A parallelogram rearranges into a rectangle of the same base and height (b·h) — that is the conservation-of-area idea from the decompose tier. '
+            + 'A trapezoid averages its two parallel bases, then multiplies by height (½·(b1+b2)·h). '
+            + 'A composite figure is just several rectangles added together, and a coordinate polygon decomposes into rectangles and triangles on the grid. '
+            + 'Keep returning to this through-line: students who see WHY the formula is base × height stop memorizing four disconnected rules.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
     id: 'matrix-display',
     description: 'Multi-challenge matrix practice session (3-6 matrix problems of the same operation, surfaced sequentially). Per challenge, students see Matrix A (and Matrix B for binary operations), enter the result in editable cells (or a single number for determinant), and click "Check Answer" for immediate judgment. Wrong answers prompt hint / "Show steps" walkthrough; correct answers advance to the next matrix. Supports transpose, add, subtract, multiply (row-by-column), determinant (2×2 and 3×3), and inverse (2×2 with det = ±1 so entries stay integer). ESSENTIAL for grade 7-8 (intro to matrix arithmetic), Algebra 2 (operations + determinant), Precalculus (inverses + multiplication), and Linear Algebra (all operations).',
     constraints: 'Manifest must NOT supply specific matrix values, dimensions, or per-challenge content — the pool service builds 3-6 distinct challenges deterministically from the eval-mode operation and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape constraints: transpose alternates 2×3/3×2; add/subtract uses 2×2 or 2×3 same-shape; multiply alternates 2×2 × 2×2 and 2×3 × 3×2; determinant uses 2×2 (grade 7-8) or 2×2/3×3 (algebra2+); inverse is always 2×2 with det ∈ {±1} so A⁻¹ entries are clean integers.',
