@@ -1090,15 +1090,6 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
 
   // ===== SPEAKING & LISTENING (SL) =====
   {
-    id: 'listen-and-respond',
-    description: 'Listening comprehension primitive where passage is delivered via TTS audio only (text hidden during listening). Students answer questions from literal recall to inference. Supports replay of specific segments. Text reveal after submission. Perfect for K-6 listening comprehension.',
-    constraints: 'Best for K-6. Passage text is hidden during listening phase.',
-    evalModes: [
-      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Audio-only listening comprehension with mixed question types.' },
-    ],
-    supportsEvaluation: true,
-  },
-  {
     id: 'read-aloud-studio',
     description: 'Fluency practice with three modes: Model (TTS with karaoke-style word highlighting), Practice (student records via microphone), Compare (side-by-side playback). Tracks WPM. Student self-assessment only, no AI speech grading. Perfect for grades 1-6 fluency.',
     constraints: 'Best for grades 1-6. Requires microphone for practice mode. No AI grading of speech.',

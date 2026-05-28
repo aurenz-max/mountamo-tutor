@@ -29,6 +29,7 @@ export interface PhonicsBlenderData {
       sound: string;                  // The phoneme display (e.g., "/k/", "/æ/", "/t/")
       letters: string;                // The letter(s) this phoneme maps to (e.g., "c", "a", "t")
     }>;
+    emoji?: string;                    // Single emoji visual hint for the word (e.g., "🐱" for cat)
     imageDescription?: string;         // Description of the target word for visual context
   }>;
 
@@ -516,6 +517,15 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     if (!currentWord) return null;
     return (
       <div className="space-y-4">
+        {/* Word visual hint */}
+        {currentWord.emoji && (
+          <div className="flex items-center justify-center rounded-xl bg-white/5 border border-white/10 px-5 py-4">
+            <span className="text-6xl" role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
+              {currentWord.emoji}
+            </span>
+          </div>
+        )}
+
         <div className="rounded-lg bg-white/5 border border-white/10 p-4 text-center">
           <p className="text-slate-400 text-sm mb-3">Tap each sound to hear it:</p>
           <div className="flex flex-wrap gap-3 justify-center">
@@ -568,6 +578,16 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-4">
+        {/* Word visual hint */}
+        {currentWord.emoji && (
+          <div className="flex items-center justify-center gap-3 rounded-lg bg-white/5 border border-white/10 px-4 py-2">
+            <span className="text-3xl" role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
+              {currentWord.emoji}
+            </span>
+            <span className="text-slate-400 text-xs italic">Build this word</span>
+          </div>
+        )}
+
         {/* Build area */}
         <div>
           <p className="text-xs text-slate-500 mb-2">Arrange the sounds to build the word:</p>
@@ -714,8 +734,17 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
             </span>
           </button>
 
-          {currentWord.imageDescription && (
-            <p className="text-slate-400 text-sm italic">{currentWord.imageDescription}</p>
+          {(currentWord.emoji || currentWord.imageDescription) && (
+            <div className="flex items-center justify-center gap-2 pt-1">
+              {currentWord.emoji && (
+                <span className="text-4xl" role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
+                  {currentWord.emoji}
+                </span>
+              )}
+              {currentWord.imageDescription && (
+                <p className="text-slate-400 text-sm italic">{currentWord.imageDescription}</p>
+              )}
+            </div>
           )}
         </div>
 

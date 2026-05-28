@@ -530,7 +530,6 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "genre-explorer":               {"default": PriorConfig(3.0, "Classify text excerpts by genre features")},
     "evidence-finder":              {"default": PriorConfig(3.5, "Find and highlight text evidence for claims")},
     "story-planner":                {"default": PriorConfig(3.0, "Pre-writing narrative planning with story arc")},
-    "listen-and-respond":           {"default": PriorConfig(3.0, "Audio-only listening comprehension")},
     # -----------------------------------------------------------------
     # Engineering primitives
     # -----------------------------------------------------------------

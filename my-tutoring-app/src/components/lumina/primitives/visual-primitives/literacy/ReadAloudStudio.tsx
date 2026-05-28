@@ -71,8 +71,10 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
 
   const [currentPhase, setCurrentPhase] = useState<StudioPhase>('listen');
   const [modelListened, setModelListened] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
+  // Bounded by the start/end timestamps of the most recent "Play Model" trigger.
+  // Used to slice transcript chunks from `conversation` for the karaoke view.
+  const [readSession, setReadSession] = useState<{ start: number; end: number | null }>({ start: 0, end: null });
   const [recordingMade, setRecordingMade] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -116,12 +118,45 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     passageWords.length,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, conversation } = useLuminaAI({
     primitiveType: 'read-aloud-studio',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel,
   });
+
+  // Transcript chunks streamed back from the live tutor during the current read-aloud.
+  // Bounded by readSession to exclude unrelated assistant messages (e.g. activity intro,
+  // phase-transition encouragements). We trust the transcript instead of the static
+  // passage so what's on screen matches what was actually spoken.
+  const liveTranscriptChunks = useMemo(() => {
+    if (readSession.start === 0) return [];
+    return conversation.filter(m =>
+      m.role === 'assistant' &&
+      m.isAudio === true &&
+      m.timestamp >= readSession.start &&
+      (readSession.end === null || m.timestamp <= readSession.end)
+    );
+  }, [conversation, readSession]);
+
+  // End-of-read detection by chunk idleness: when no new transcript chunks arrive
+  // for ~2s during an active read, the AI is done speaking. We don't use
+  // isAIResponding here because the context only flips it true on NON-silent
+  // sendText, and we use { silent: true } to keep the prompt out of the chat log.
+  useEffect(() => {
+    if (!isPlaying || liveTranscriptChunks.length === 0) return;
+    const timer = setTimeout(() => {
+      setIsPlaying(false);
+      setModelListened(true);
+      setReadSession(prev => ({ ...prev, end: Date.now() }));
+      sendText(
+        `[MODEL_LISTENED] The student finished listening to the model reading of "${title}". `
+        + `Encourage them to move to the Practice phase to try reading along with expression markers. One sentence.`,
+        { silent: true }
+      );
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [isPlaying, liveTranscriptChunks.length, sendText, title]);
 
   // ---------------------------------------------------------------------------
   // Activity introduction — fire once when the AI tutor connects
@@ -182,40 +217,20 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     if (idx > 0) setCurrentPhase(phases[idx - 1]);
   };
 
-  // Model reading — AI reads the passage aloud while we highlight words
+  // Trigger the AI tutor to read the passage aloud. The on-screen text is driven
+  // by the transcript chunks that stream back (see liveTranscriptChunks), not by a
+  // local timer, so the displayed words always match what the audio actually said.
   const playModel = useCallback(() => {
     if (isPlaying) return;
     setIsPlaying(true);
+    setReadSession({ start: Date.now(), end: null });
 
-    // Ask the AI tutor to read the passage aloud
     sendText(
       `[READ_PASSAGE] Read this passage aloud with clear expression at about ${Math.round(targetWPM * playbackSpeed)} WPM. `
       + `Pause briefly at | marks, emphasize bold words. Here is the passage:\n\n${passage}`,
       { silent: true }
     );
-
-    // Karaoke-style word highlighting in sync
-    const msPerWord = (60 * 1000) / (targetWPM * playbackSpeed);
-    let idx = 0;
-    const interval = setInterval(() => {
-      if (idx >= passageWords.length) {
-        clearInterval(interval);
-        setIsPlaying(false);
-        setHighlightIndex(-1);
-        setModelListened(true);
-
-        // After model finishes, encourage next step
-        sendText(
-          `[MODEL_LISTENED] The student finished listening to the model reading of "${title}". `
-          + `Encourage them to move to the Practice phase to try reading along with expression markers. One sentence.`,
-          { silent: true }
-        );
-        return;
-      }
-      setHighlightIndex(idx);
-      idx++;
-    }, msPerWord);
-  }, [isPlaying, targetWPM, playbackSpeed, passageWords.length, passage, title, sendText]);
+  }, [isPlaying, targetWPM, playbackSpeed, passage, sendText]);
 
   // Simulate recording
   const startRecording = useCallback(() => {
@@ -304,18 +319,15 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     );
   }, [hasSubmittedEvaluation, modelListened, recordingMade, recordingDuration, estimatedWPM, comparisonUsed, selfAssessment, targetWPM, lexileLevel, submitEvaluation, title, sendText]);
 
-  // Render passage with karaoke highlighting
+  // Static passage (used during Practice / Record so the student has something to read from).
   const renderPassage = (showMarkers: boolean) => (
     <div className="text-sm leading-relaxed">
       {passageWords.map((word, i) => {
         const marker = showMarkers ? expressionMarkers.find(m => m.wordIndex === i) : null;
-        const isHighlighted = i === highlightIndex;
         return (
           <React.Fragment key={i}>
             {marker?.type === 'pause' && <span className="text-amber-500 text-xs mx-1">|</span>}
-            <span className={`${isHighlighted ? 'bg-blue-500/40 text-white rounded px-0.5' : 'text-slate-200'} ${
-              marker?.type === 'emphasis' ? 'font-bold' : ''
-            }`}>
+            <span className={`text-slate-200 ${marker?.type === 'emphasis' ? 'font-bold' : ''}`}>
               {word}
             </span>
             {' '}
@@ -324,6 +336,36 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
       })}
     </div>
   );
+
+  // Transcript-driven view for the Listen phase — the chunks ARE the audio, so
+  // appending them as they arrive is naturally karaoke-timed. The most recent
+  // chunk gets a highlight while the AI is still speaking.
+  const renderLiveTranscript = () => {
+    if (liveTranscriptChunks.length === 0) {
+      return (
+        <p className="text-sm text-slate-500 italic">
+          {isPlaying ? 'Listening for the model reading…' : 'Press Play Model to hear the passage read aloud.'}
+        </p>
+      );
+    }
+    return (
+      <div className="text-sm leading-relaxed">
+        {liveTranscriptChunks.map((chunk, i) => {
+          const isLatest = i === liveTranscriptChunks.length - 1 && isPlaying;
+          return (
+            <span
+              key={`${chunk.timestamp}-${i}`}
+              className={isLatest
+                ? 'bg-blue-500/40 text-white rounded px-0.5'
+                : 'text-slate-200'}
+            >
+              {chunk.content}{' '}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
 
   // Render progress
   const renderProgress = () => (
@@ -369,9 +411,9 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
         {/* Phase 1: Listen */}
         {currentPhase === 'listen' && (
           <div className="space-y-3">
-            <p className="text-xs text-slate-500">Listen to the model reading. Watch how the words are highlighted:</p>
-            <div className="rounded-lg bg-white/5 border border-white/10 p-4">
-              {renderPassage(true)}
+            <p className="text-xs text-slate-500">Listen to the model reading. Words appear as the tutor speaks them:</p>
+            <div className="rounded-lg bg-white/5 border border-white/10 p-4 min-h-[8rem]">
+              {renderLiveTranscript()}
             </div>
             <div className="flex items-center gap-3">
               <Button variant="ghost" onClick={playModel} disabled={isPlaying}

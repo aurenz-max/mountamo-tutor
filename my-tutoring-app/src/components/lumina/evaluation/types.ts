@@ -2444,40 +2444,6 @@ export interface StoryMapMetrics extends BasePrimitiveMetrics {
   overallAccuracy: number;         // 0-100
 }
 
-export interface ListenAndRespondMetrics extends BasePrimitiveMetrics {
-  type: 'listen-and-respond';
-
-  // Listening comprehension
-  questionsCorrect: number;
-  questionsTotal: number;
-
-  // Replay behavior
-  replaysUsed: number;
-  answeredBeforeReplay: number;
-
-  // Passage info
-  passageType: 'narrative' | 'informational' | 'persuasive' | 'dialogue';
-  listeningDurationSeconds: number;
-  speedUsed: number;
-
-  // Per-question results
-  questionResults: Array<{
-    questionId: string;
-    difficulty: 'literal' | 'inferential' | 'evaluative';
-    isCorrect: boolean;
-    answeredBeforeReplay: boolean;
-  }>;
-
-  // Phases
-  listenPhaseCompleted: boolean;
-  respondPhaseCompleted: boolean;
-  reviewPhaseCompleted: boolean;
-
-  // Accuracy
-  accuracy: number;               // 0-100
-  attemptsCount: number;
-}
-
 export interface FlightForcesExplorerMetrics extends BasePrimitiveMetrics {
   type: 'flight-forces-explorer';
   flightStatesExplored: number;
@@ -3314,7 +3280,6 @@ export type PrimitiveMetrics =
   | ParagraphArchitectMetrics
   | SentenceBuilderMetrics
   | StoryMapMetrics
-  | ListenAndRespondMetrics
   // Literacy (Wave 2)
   | PhonemeExplorerMetrics
   | PhonicsBlenderMetrics

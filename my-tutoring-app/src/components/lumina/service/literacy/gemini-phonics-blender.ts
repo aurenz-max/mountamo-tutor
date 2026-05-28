@@ -116,12 +116,16 @@ const phonicsBlenderSchema: Schema = {
             },
             description: "Array of phonemes that make up this word, in correct blending order"
           },
+          emoji: {
+            type: Type.STRING,
+            description: "A single emoji that visually represents the word (e.g., '🐱' for cat, '🚌' for bus, '🎂' for cake). Must be exactly one emoji character."
+          },
           imageDescription: {
             type: Type.STRING,
             description: "Brief description of the word for visual context (e.g., 'a small furry cat')"
           }
         },
-        required: ["id", "targetWord", "phonemes", "imageDescription"]
+        required: ["id", "targetWord", "phonemes", "emoji", "imageDescription"]
       },
       description: "Array of 4-6 words to blend in this session"
     }
@@ -244,6 +248,11 @@ REQUIRED INFORMATION:
      - id: Unique phoneme ID (w1_p1, w1_p2, etc.)
      - sound: The phoneme in slash notation (e.g., /k/, /sh/, /ā/)
      - letters: The letter(s) this phoneme maps to in the written word
+   - emoji: A SINGLE emoji that clearly represents the word as a visual anchor for young readers
+     - Examples: cat → 🐱, dog → 🐶, sun → ☀️, bus → 🚌, hat → 🎩, cake → 🎂, ship → 🚢, frog → 🐸
+     - Must be exactly one emoji character
+     - Choose the most universally recognized emoji for the word
+     - Pick concrete, picturable words — if no clear emoji exists, choose a different word
    - imageDescription: Brief visual description of the word
 
    CRITICAL PHONEME RULES:

@@ -3761,15 +3761,6 @@
     "hasTutoring": false
   },
   {
-    "id": "listen-and-respond",
-    "domain": "literacy",
-    "description": "Listening comprehension primitive where passage is delivered via TTS audio only (text hidden during listening). Students answer questions from literal recall to inference. Supports replay of specific ",
-    "constraints": "Best for K-6. Passage text is hidden during listening phase.",
-    "supportsEvaluation": true,
-    "evalModes": [],
-    "hasTutoring": false
-  },
-  {
     "id": "read-aloud-studio",
     "domain": "literacy",
     "description": "Fluency practice with three modes: Model (TTS with karaoke-style word highlighting), Practice (student records via microphone), Compare (side-by-side playback). Tracks WPM. Student self-assessment onl",

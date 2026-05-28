@@ -165,7 +165,6 @@ import GravityDropTower from '../primitives/visual-primitives/physics/GravityDro
 import ParagraphArchitect from '../primitives/visual-primitives/literacy/ParagraphArchitect';
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
 import StoryMap from '../primitives/visual-primitives/literacy/StoryMap';
-import ListenAndRespond from '../primitives/visual-primitives/literacy/ListenAndRespond';
 import PhonicsBlender from '../primitives/visual-primitives/literacy/PhonicsBlender';
 import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
 import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
@@ -1810,16 +1809,6 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     dividerStyle: 'left',
     allowMultiple: true,
     containerClassName: 'max-w-6xl mx-auto mb-20',
-    supportsEvaluation: true,
-  },
-
-  'listen-and-respond': {
-    component: ListenAndRespond,
-    sectionTitle: 'Listening Comprehension',
-    showDivider: true,
-    dividerStyle: 'left',
-    allowMultiple: true,
-    containerClassName: 'max-w-5xl mx-auto mb-20',
     supportsEvaluation: true,
   },
 

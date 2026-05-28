@@ -24,7 +24,6 @@ import { registerGenerator } from '../contentRegistry';
 import { generateParagraphArchitect } from '../../literacy/gemini-paragraph-architect';
 import { generateSentenceBuilder } from '../../literacy/gemini-sentence-builder';
 import { generateStoryMap } from '../../literacy/gemini-story-map';
-import { generateListenAndRespond } from '../../literacy/gemini-listen-and-respond';
 
 // ============================================================================
 // Wave 2 Imports
@@ -186,17 +185,6 @@ registerGenerator('story-map', async (item, topic, gradeContext) => {
  * - Grade 3-4: Main idea, speaker's purpose
  * - Grade 5-6: Evaluate arguments, identify rhetorical techniques
  */
-registerGenerator('listen-and-respond', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const passageType = (config.passageType || 'narrative') as 'narrative' | 'informational' | 'persuasive' | 'dialogue';
-
-  return {
-    type: 'listen-and-respond',
-    instanceId: item.instanceId,
-    data: await generateListenAndRespond(topic, gradeContext, passageType, config),
-  };
-});
-
 // ============================================================================
 // Wave 2: Reading Foundational Skills — Phonics Blender
 // ============================================================================

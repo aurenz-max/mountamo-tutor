@@ -172,7 +172,6 @@ export type {
   ParagraphArchitectMetrics,
   SentenceBuilderMetrics,
   StoryMapMetrics,
-  ListenAndRespondMetrics,
   PhonemeExplorerMetrics,
   RhymeStudioMetrics,
   SyllableClapperMetrics,

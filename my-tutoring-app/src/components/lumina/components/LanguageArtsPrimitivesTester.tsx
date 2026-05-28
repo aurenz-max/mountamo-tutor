@@ -21,7 +21,6 @@ import StoryPlanner from '../primitives/visual-primitives/literacy/StoryPlanner'
 import OpinionBuilder from '../primitives/visual-primitives/literacy/OpinionBuilder';
 import RevisionWorkshop from '../primitives/visual-primitives/literacy/RevisionWorkshop';
 // SL: Speaking & Listening
-import ListenAndRespond from '../primitives/visual-primitives/literacy/ListenAndRespond';
 import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
 // L: Language
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
@@ -58,7 +57,7 @@ type PrimitiveType =
   | 'story-map' | 'character-web' | 'poetry-lab' | 'genre-explorer'
   | 'text-structure-analyzer' | 'evidence-finder'
   | 'paragraph-architect' | 'story-planner' | 'opinion-builder' | 'revision-workshop'
-  | 'listen-and-respond' | 'read-aloud-studio'
+  | 'read-aloud-studio'
   | 'sentence-builder' | 'context-clues-detective' | 'figurative-language-finder' | 'spelling-pattern-explorer'
   | 'rhyme-studio'
   | 'sound-swap' | 'phoneme-explorer' | 'syllable-clapper'
@@ -105,7 +104,6 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'opinion-builder', label: 'Opinion Builder', icon: '💬', topic: 'Should students have recess every day?', strand: 'W', wave: 3 },
   { value: 'revision-workshop', label: 'Revision Workshop', icon: '🔧', topic: 'Strengthening word choice in a draft', strand: 'W', wave: 4 },
   // ===== SL: Speaking & Listening =====
-  { value: 'listen-and-respond', label: 'Listen & Respond', icon: '🎧', topic: 'Listening comprehension of a story', strand: 'SL', wave: 1 },
   { value: 'read-aloud-studio', label: 'Read Aloud Studio', icon: '🎙️', topic: 'Fluency practice with model reading', strand: 'SL', wave: 4 },
   // ===== L: Language =====
   { value: 'sentence-builder', label: 'Sentence Builder', icon: '🧱', topic: 'Building compound sentences', strand: 'L', wave: 1 },
@@ -166,8 +164,6 @@ const PrimitiveRenderer: React.FC<{
       return <OpinionBuilder data={data as Parameters<typeof OpinionBuilder>[0]['data']} />;
     case 'revision-workshop':
       return <RevisionWorkshop data={data as Parameters<typeof RevisionWorkshop>[0]['data']} />;
-    case 'listen-and-respond':
-      return <ListenAndRespond data={data as Parameters<typeof ListenAndRespond>[0]['data']} />;
     case 'read-aloud-studio':
       return <ReadAloudStudio data={data as Parameters<typeof ReadAloudStudio>[0]['data']} />;
     case 'sentence-builder':

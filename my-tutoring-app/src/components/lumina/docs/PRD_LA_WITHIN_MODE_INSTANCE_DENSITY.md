@@ -1,10 +1,12 @@
 # PRD: Within-Mode Instance Density — Language Arts Edition
 
-**Status:** Draft (2026-05-25)
+**Status:** Draft (2026-05-26 — primitive-by-primitive audit completed)
 **Priority:** High — affects every K-6 literacy primitive's ability to legitimately measure mastery
 **Audience:** Product, Engineering
-**Scope:** K-6 language arts (the ~26 literacy generators in [service/literacy/](../service/literacy/), plus [sentence-analyzer](../service/sentence-analyzer/), [word-builder](../service/word-builder/), [interactive-passage](../service/interactive-passage/), [passage-studio](../service/passage-studio/)). Mirrors [PRD_WITHIN_MODE_INSTANCE_DENSITY](PRD_WITHIN_MODE_INSTANCE_DENSITY.md) §5a for math.
-**Companion (forthcoming):** `PLAN_LA_INSTANCE_COUNT_TIER_SWEEP.md` — bag-of-tasks plan to apply this PRD to every shipped LA primitive (analog of [PLAN_INSTANCE_COUNT_TIER_SWEEP](PLAN_INSTANCE_COUNT_TIER_SWEEP.md)).
+**Scope:** K-6 language arts. 27 generators in [service/literacy/](../service/literacy/), plus [sentence-analyzer](../service/sentence-analyzer/gemini-sentence-analyzer.ts), [word-builder](../service/word-builder/gemini-word-builder.ts), [interactive-passage](../service/interactive-passage/gemini-interactive-passage.ts), and [passage-studio/judge.ts](../service/passage-studio/judge.ts). Mirrors [PRD_WITHIN_MODE_INSTANCE_DENSITY](PRD_WITHIN_MODE_INSTANCE_DENSITY.md) §5a for math.
+**Companion:** [PLAN_LA_INSTANCE_COUNT_TIER_SWEEP.md](PLAN_LA_INSTANCE_COUNT_TIER_SWEEP.md) — per-primitive worksheet, refactor recipe, status tracker. Use it at the start of every session; this PRD owns the rationale, the plan owns the execution.
+
+**Headline finding from the 2026-05-26 audit (see [§11](#11-per-primitive-audit-summary-2026-05-26)):** of 30 LA generators, **15 currently emit exactly 1 instance per session** — almost every passage-shaped, production-shaped, and analysis-shaped primitive. The suite-wide instance density is the inverse of the math suite's pre-sweep state. This is the single largest mastery-measurement gap in the literacy catalog.
 
 ---
 
@@ -14,31 +16,44 @@ The math PRD established that a single-mode session must produce **multiple dist
 
 ### What's already true in ELA
 
-A static scan of [service/literacy/](../service/literacy/) shows the current count landscape is the opposite of math's pre-sweep state — instead of every generator defaulting to 4, literacy generators sit anywhere from 3 to 9 with no central rule:
+The current count landscape (2026-05-26 audit of all 30 generators — full table in [§11](#11-per-primitive-audit-summary-2026-05-26)) splits the suite into **three failure modes**:
+
+**Bucket A — "Goldilocks already." Pool-service tap primitives, count pinned via `config?.challengeCount ?? N`.**
 
 | Primitive | Current count | Pattern site |
 |---|---|---|
 | `rhyme-studio` | **9** | [gemini-rhyme-studio.ts:185](../service/literacy/gemini-rhyme-studio.ts#L185) — `config?.challengeCount ?? 9` |
 | `sound-swap` | **9** | [gemini-sound-swap.ts:439](../service/literacy/gemini-sound-swap.ts#L439) — `config?.challengeCount ?? 9` |
 | `syllable-clapper` | **8** | [gemini-syllable-clapper.ts:138](../service/literacy/gemini-syllable-clapper.ts#L138) — `config?.challengeCount ?? 8` |
-| `letter-spotter` | **6-8** | [gemini-letter-spotter.ts:221](../service/literacy/gemini-letter-spotter.ts#L221) — prompt range |
-| `letter-sound-link` | **6-8** | [gemini-letter-sound-link.ts:306](../service/literacy/gemini-letter-sound-link.ts#L306) — prompt range |
-| `phoneme-explorer` | **5** | [gemini-phoneme-explorer.ts:302](../service/literacy/gemini-phoneme-explorer.ts#L302) — hardcoded |
+| `phoneme-explorer` | **5** | [gemini-phoneme-explorer.ts](../service/literacy/gemini-phoneme-explorer.ts) — sub-T1, bump needed |
 | `word-workout` | **5** | [gemini-word-workout.ts:457](../service/literacy/gemini-word-workout.ts#L457) — `config?.challengeCount \|\| 5` |
-| `cvc-speller` | **4-6** | [gemini-cvc-speller.ts:159](../service/literacy/gemini-cvc-speller.ts#L159) — schema description |
-| `word-sorter` | **3-4** | [gemini-word-sorter.ts:304](../service/literacy/gemini-word-sorter.ts#L304) — prompt range |
-| _everything else_ | unknown / ad-hoc | _not surveyed in this PRD_ |
 
-The high end (9 challenges of `rhyme-studio`) is fine *for that primitive's per-challenge active time* (~5-8s tap to pick a rhyme), but applied uncritically to e.g. `paragraph-architect` would produce a 30-minute writing session. The low end (3-4 sorts in `word-sorter`) is fine for that mode (each sort takes 30-60s) but applied to `letter-spotter` would produce a 20-second session.
+**Bucket B — "Range in the prompt, no pinning." Count only constrained by an English phrase Gemini may ignore.**
+
+| Primitive | Prompt range | Pattern site | Audit note |
+|---|---|---|---|
+| `letter-spotter` | "Generate 6-8 challenges" | [gemini-letter-spotter.ts:221](../service/literacy/gemini-letter-spotter.ts#L221) | But per-mode docs say "2-3 challenges per session" ([L27,33,40](../service/literacy/gemini-letter-spotter.ts#L27)) — **prompt is internally contradictory.** |
+| `letter-sound-link` | "Generate 6-8 challenges" | [gemini-letter-sound-link.ts:306](../service/literacy/gemini-letter-sound-link.ts#L306) | Same contradiction with per-mode "2-3 challenges per session" ([L23,30,38](../service/literacy/gemini-letter-sound-link.ts#L23)). |
+| `cvc-speller` | "4-6 challenges total" | [gemini-cvc-speller.ts:265](../service/literacy/gemini-cvc-speller.ts#L265) | Schema-level range, no pin. |
+| `word-sorter` | "Generate 3-4 challenges" | [gemini-word-sorter.ts:304](../service/literacy/gemini-word-sorter.ts#L304) | Three prompt sites (binary/ternary/match_pairs each repeat). |
+| `sentence-builder` | "3-4 challenges per session" | [gemini-sentence-builder.ts:192](../service/literacy/gemini-sentence-builder.ts#L192) | Per-grade ranges 3-4 across modes, varying with grade. |
+| `context-clues-detective` | "3-4 challenges" | [gemini-context-clues-detective.ts:243](../service/literacy/gemini-context-clues-detective.ts#L243) | Per-grade override (3 for G2, 3-4 for G3+). |
+| `word-builder` | 4-6 `targets` per activity | [gemini-word-builder.ts](../service/word-builder/gemini-word-builder.ts) | Uses `targets[]`, not `challenges[]`. |
+| `sentence-analyzer` | unspecified | [gemini-sentence-analyzer.ts](../service/sentence-analyzer/gemini-sentence-analyzer.ts) | No count instruction; Gemini decides. **Worst form of Bucket B.** |
+
+**Bucket C — "Structurally 1 instance per session." The mastery-measurement crisis.** Every passage-shaped, production-shaped, and single-artifact analysis primitive. See [§11](#11-per-primitive-audit-summary-2026-05-26) for the full list — `interactive-passage`, `listen-and-respond`, `read-aloud-studio`, `decodable-reader`, `story-map`, `text-structure-analyzer`, `character-web`, `evidence-finder`, `figurative-language-finder`, `genre-explorer`, `poetry-lab` (both modes), `paragraph-architect`, `story-planner`, `opinion-builder`, `revision-workshop`, `spelling-pattern-explorer`. **Fifteen of thirty.**
+
+The high end of Bucket A (9 challenges of `rhyme-studio`) is fine *for that primitive's per-challenge active time* (~5-8s tap to pick a rhyme), but applied uncritically to `paragraph-architect` would produce a 30-minute writing session. The Bucket C state — 1 instance per session — is the opposite failure: a 30-second-to-3-minute session that the mastery engine treats as a single high-variance IRT signal.
 
 ### The problem this PRD solves
 
 There is no tier framework calibrating per-mode count against per-challenge active time, so:
 
 1. **New LA primitives ship with ad-hoc counts.** Each generator's author picks `?? N` based on gut feel. There is no §5a equivalent to copy from.
-2. **Already-shipped LA primitives drift in opposite directions.** Some passage-shaped primitives produce 1-instance sessions (interactive-passage with N within-passage questions is *one* render); some fast-tap primitives produce 9-instance sessions that may be fine but have never been timed end-to-end.
+2. **Already-shipped LA primitives drift in opposite directions.** Bucket C (1 instance per session) and Bucket A (9 instances per session) coexist with no shared rationale. `interactive-passage` is a 1-passage render; `sound-swap` runs 9 phoneme manipulations back-to-back. Both ship today; neither has been timed end-to-end against a target session length.
 3. **Production primitives have no count guidance at all.** Should `poetry-lab` ship 1 poem, 2 poems, or 4 poems per session? The math tier table doesn't address this because math has nothing analogous to a 5-10-minute composition task.
-4. **IRT update density varies by 9× across the suite** with no pedagogical justification. The mastery engine learns very differently from a `sound-swap` session (9 binary signals) vs a `paragraph-architect` session (1 rubric-scored signal).
+4. **Three primitives have prompt-internal contradictions.** `letter-spotter` and `letter-sound-link` ask Gemini for "6-8 challenges total" in the outer prompt but "2-3 challenges per session" inside each per-mode doc string — the model is being given conflicting orders and the realized count is non-deterministic.
+5. **IRT update density varies by 30× across the suite** with no pedagogical justification. The mastery engine learns very differently from a `sound-swap` session (9 binary signals) vs a `paragraph-architect` session (1 rubric-scored signal). When a Bucket C primitive routes to the mastery engine, the engine is asked to update beta on a single observation — equivalent to a 1-question quiz.
 
 ### Why this is a mastery problem
 
@@ -109,90 +124,102 @@ Same construction as math §5a — per-challenge active time × within-challenge
 
 ## 4. Per-Primitive / Per-Mode Tier Assignments
 
-The tables below are the **proposed canonical assignment** as of 2026-05-25. Rows marked _unconfirmed_ require an `/eval-test` run or generator inspection to confirm the mode names and current count before they're swept. Per-mode assignment lives in `COUNT_BY_MODE` (see §5).
+The tables below are the **proposed canonical assignment** as of 2026-05-26, with eval-mode keys verified against each generator's `CHALLENGE_TYPE_DOCS` and `service/manifest/catalog/literacy.ts` `evalModes` array. Each row names the actual eval-mode key that ships in the catalog. Per-mode assignment lives in `COUNT_BY_MODE` (see [§5](#5-implementation-pattern-count_by_mode-same-as-math-5a)).
 
-Modes are quoted as best-effort inferences from generator names; the sweep plan will confirm exact eval-mode keys from each generator's `MODE_PROFILES` (or equivalent) and update this PRD before the code change lands.
+A two-line glossary for column meanings:
+
+- **"Current"** is what the generator/prompt produces *today*. "1 (structural)" means a Bucket-C primitive that emits exactly one artifact per session by schema design — a count bump alone won't fix it; the generator's challenge unit has to change.
+- **"Recommended"** is the post-sweep target. Arrows: `↑` = bump, `↓` = drop, `(hold)` = keep, `[refactor]` = Bucket-C structural change required first.
 
 ### T1 — Tap / pick / decode (count 7-10)
 
 Phoneme-, letter-, and rhyme-level recognition. Most of these are already in or near the T1 range; the bump formalizes the per-mode table and clamps modes that drifted below 7.
 
-| Primitive | Modes (best-effort) | Current | Recommended | Pattern | Notes |
+| Primitive | Eval modes (catalog keys) | Current | Recommended | Pattern | Notes |
 |---|---|---|---|---|---|
-| `rhyme-studio` | all rhyme-pick modes | 9 | **9** _(hold)_ | Pool-service | Already T1-shaped. Confirm `/eval-test` mid-session walk stays inside 1.5-3 min. |
-| `sound-swap` | all phoneme-manipulation modes | 9 | **9** _(hold)_ | Pool-service | Same — already correctly sized. |
-| `syllable-clapper` | all | 8 | **8** _(hold)_ | Pool-service | Each clap is ~3-5s; 8 fits the T1 ceiling. |
-| `letter-spotter` | all | 6-8 (prompt range) | **8** _(formalize)_ | Pool-service | Convert prompt range to per-mode exact count. |
-| `letter-sound-link` | all | 6-8 (prompt range) | **8** _(formalize)_ | Pool-service + cached audio | Audio cost gated by phoneme-asset cache (Adjustment 3). |
-| `phoneme-explorer` | all | 5 | **7** ↑ | Pool-service | Bump — 5 is sub-T1 for this interaction class. |
-| `letter-tracing` _(if eval-mode wired)_ | trace-letter | unconfirmed | **8** | Pool-service | Trace per letter is fast; high count is the variance lever. |
-| `alphabet-sequence` _(if eval-mode wired)_ | sequence | unconfirmed | **7** | Pool-service | One ordering, 7 letters into slots. |
-| `phonics-blender` | blend-cvc, blend-onset-rime | unconfirmed | **7** | Pool-service + cached audio | Each blend is fast; 5+ phonemes per item is the cognitive load, not count. |
-| `rhyming-pairs` (existing K) | match-rhyme | unconfirmed | **8** | Pool-service | Tap-pair match. |
-| `sight-word-card` (existing K) | recognize | unconfirmed | **10** | Pool-service | Pure recognition tap; sight-word decks naturally want N≥10 per session for spaced-repetition density. |
-| `sound-sort` (existing K) | sort-by-sound | unconfirmed | **7** | Pool-service | Tap-sort. |
+| `rhyme-studio` | `recognition`, `identification`, `production` | 9 (pinned) | **9 / 9 / 6 ↓** | Pool-service | `production` is speech-capture (per Adjustment 4) — drop to 6 (T2 ceiling). `recognition` / `identification` stay at 9. |
+| `sound-swap` | `addition`, `deletion`, `substitution` | 9 (pinned) | **9** (hold) | Pool-service | Already correctly sized; verify session timing under 3 min. |
+| `syllable-clapper` | `easy`, `medium`, `hard` | 8 (pinned) | **8** (hold) | Pool-service + cached TTS | Each clap is ~3-5s; 8 fits the T1 ceiling. Audio is per-word pool-able. |
+| `letter-spotter` | `name_it`, `find_it`, `match_it` | 6-8 (prompt, contradictory) | **8 / 8 / 10 ↑** | Pool-service | Resolve outer-vs-per-mode contradiction. `name_it` reads a sentence aloud (audio-gated, hold at 8). `find_it` is one 4×4 letter grid (8 sessions). `match_it` is pure visual tap (10 — pushes upper T1). |
+| `letter-sound-link` | `see_hear`, `hear_see`, `keyword_match` | 6-8 outer / 2-3 per-mode (contradictory) | **8** (formalize) | Pool-service + cached audio | Each challenge is a binary discrimination with 2 TTS speaker buttons (`see_hear`) or auto-played phoneme (`hear_see`). Pool-able only if `/audio/phonemes/{x}.mp3` is cached — see Adjustment 3 audit hook. |
+| `phoneme-explorer` | `isolate`, `blend`, `segment`, `manipulate` | 5 (hardcoded) | **7 ↑** | Pool-service + audio | Bump — 5 is sub-T1. `isolate` and `manipulate` auto-play phonemes (audio-gated, formal cache check before deploy). |
+| `word-workout` | `real_vs_nonsense`, `picture_match`, `word_chains`, `sentence_reading` | 5 (pinned) | **8 / 7 / 4 / 4 ↓** (split) | Pool-service | **Per-mode split needed.** `real_vs_nonsense` is a 3-5s binary tap (T1, 8). `picture_match` is a 6-10s word-meaning tap (T1, 7). `word_chains` is a 30-60s 4-6-word chain (T3 within-challenge multi-phase, 4). `sentence_reading` is a 20-40s decodable sentence + comprehension question (T3, 4). |
 
 ### T2 — Speak / build / spell (count 5-6)
 
-Single-word production, short construct assembly, speech-capture utterance. The bound is utterance length + a brief consider/select step.
+Single-word production, short-construct assembly, speech-capture utterance, or multi-phase per-word phonics. The bound is utterance length + a brief consider/select step, or the within-challenge phase count.
 
-| Primitive | Modes (best-effort) | Current | Recommended | Notes |
+| Primitive | Eval modes (catalog keys) | Current | Recommended | Notes |
 |---|---|---|---|---|
-| `cvc-speller` | fill-vowel, spell-word, word-sort | 4-6 (schema range) | **6** | Formalize exact count via per-mode table; bump low end. |
-| `word-workout` | match-meaning, fill-blank, identify-affix | 5 | **6** | Per-mode; analysis modes may drop to T3 (see below). |
-| `spelling-pattern-explorer` | identify-pattern, apply-pattern | unconfirmed | **5** | Build/spell variant. |
-| `word-builder` | combine-morphemes (build-word) | unconfirmed | **5** | Each build is a 20-40s drag-assemble + check. |
-| `word-sorter` | sort-by-prefix/suffix/root, match-roots | 3-4 (prompt range) | **5** ↑ | Bump from current 3-4; sort per challenge is ~30s. Confirm no within-challenge accumulation pushes it to T3. |
-| `sentence-builder` | build-simple, build-compound | unconfirmed | **5** | Drag-arrange sentence pieces, 20-40s per build. |
-| `read-aloud-studio` | repeat-word, repeat-phrase | unconfirmed | **5** | Speech-capture utterance (Adjustment 4 — physical floor pushes this from T1 to T2). Audio-cost gated. |
-| `decodable-reader` | decode-word, decode-phrase | unconfirmed | **5** | Speech-capture; same Adjustment 4 logic. |
+| `cvc-speller` | `fill_vowel`, `spell_word`, `word_sort` | 4-6 (prompt range) | **6 / 5 / 5** | Each mode is audio-first; progressive scaffolding plays the word 3 ways per instance. Pool-able TTS per word. |
+| `phonics-blender` | `cvc`, `cvce_blend`, `digraph`, `advanced` | unspecified | **6 / 5 / 5 / 5** | Each "word" is itself 3 within-challenge phases (Listen tiles → Build → Blend). Multi-phase shape per Adjustment 2 keeps count at T2 ceiling, not T1. Audio is per-phoneme pool-able. |
+| `word-builder` | `simple_affix`, `compound_affix`, `greek_latin`, `multi_morpheme` | 4-6 targets | **6 / 5 / 4 / 4** | Targets, not challenges. `simple_affix` is 2-part word build (~20s, T2). `compound_affix` is 3-part build (~35s). `greek_latin` / `multi_morpheme` are analysis-heavy (T3 — drop to 4). |
+| `word-sorter` | `binary_sort`, `ternary_sort`, `match_pairs` | 3-4 (prompt range) | **5 / 4 / 5 ↑** | Each sort wraps 6-10 within-challenge word cards (multi-phase). `ternary_sort` (8-10 cards) is heavier — hold at 4 (T3). |
+| `sentence-builder` | `simple`, `compound`, `complex`, `compound_complex` | 3-4 (per-grade prompt) | **5 / 4 / 4 / 4** | Drag-arrange tiles. `simple` (3-5 tiles, ~20s) is T2. Compound+ is T3 once tile count exceeds 6 and grammatical reasoning kicks in. |
+| `read-aloud-studio` | _(no eval mode wired)_ | 1 passage (structural) | **2 passages [refactor]** | T4-shape, but per Adjustment 4 each passage requires student-paced read-aloud (1-3 min). Treat as T4 with 2 passages. **Refactor required:** generator emits 1 passage today; needs `passageCount` field. |
+| `decodable-reader` | `default` | 1 passage (structural) | **2-3 passages [refactor]** | T4-shape. Per-grade passage size: K-1 (2-3 sentences each — 3 passages OK), G2+ (4-8 sentences — 2 passages). **Refactor required.** Audio-gated. |
 
 ### T3 — Sentence-level analyze or transform (count 4)
 
 One sentence read + parse + answer or rewrite. The interaction is comprehension-bound, not motor-bound.
 
-| Primitive | Modes (best-effort) | Current | Recommended | Notes |
+| Primitive | Eval modes (catalog keys) | Current | Recommended | Notes |
 |---|---|---|---|---|
-| `sentence-analyzer` | identify-parts, diagram, label | unconfirmed | **4** | One-sentence analysis. |
-| `context-clues-detective` | infer-meaning, identify-clue-type | unconfirmed | **4** | Per-item: read sentence with target word, infer/select. |
-| `figurative-language-finder` | identify-simile/metaphor/personification | unconfirmed | **4** | Per-item: read sentence, classify the device. |
-| `revision-workshop` | fix-fragment, fix-runon, combine, replace-wordy | unconfirmed | **4** | One-sentence revise. |
-| `evidence-finder` | find-supporting-quote | unconfirmed | **4** | Short passage + select-evidence; if passage length >100w, reclassify as T4. |
-| `opinion-builder` | scaffolded-claim, scaffolded-reason | unconfirmed | **4** | T3 only when the claim/reason is sentence-length; T5 if asked to write the full paragraph. |
-| `word-workout` | analyze-shade-of-meaning, compare-words | _(if mode exists)_ | **4** | The analysis modes; production modes stay at T2. |
+| `sentence-analyzer` | `identify_pos`, `identify_role`, `label_all`, `parse_structure` | unspecified | **5 / 5 / 4 / 4** | `identify_pos` / `identify_role` are single-word-pick from 4 options (~15-25s — T2 ceiling, 5). `label_all` labels every word + classifies sentence type (T3, 4). `parse_structure` is two-step subject/predicate + sentence type (T3, 4). |
+| `context-clues-detective` | `definition`, `synonym`, `antonym`, `example`, `inference` | 3-4 (per-grade prompt) | **4** (all modes) | Each challenge is a short passage (3-8 sentences) + target word + 4-option meaning pick. Borderline T3/T4 — counts the passage but each is short enough to belong in T3. |
+| `revision-workshop` | `add_details`, `word_choice`, `combine_sentences`, `transitions` | 1 draft / 2-5 targets per draft | **4 drafts [refactor]** | Each draft = one sentence-level revision target. **Refactor:** today the generator emits 1 draft with 2-5 targets — push to 4 drafts each with 1-2 targets so the IRT signal is per-draft not per-target. Modes `reorganize`/`concision` move to T5 (full-paragraph revision). |
+| `word-workout` `word_chains`, `sentence_reading` | _(see T1 split above)_ | 5 | **4** | Listed here for completeness — these two modes drop from T1's pool of 5 to a T3 count of 4. |
 
-### T4 — Passage + multi-question (count 2-3 passages per session)
+### T4 — Passage + multi-instance per passage (count 2-3 passages per session)
 
-Passage-shaped primitives. **The count is in passages, not questions.** Internal within-passage question count stays as the generator currently emits (typically 3-5 questions per passage). Per Adjustment 2.
+Passage-shaped primitives. **The count is in passages, not questions or within-passage instances.** Internal within-passage instance count stays as the generator currently emits (3-7 typically). Per Adjustment 2.
 
-| Primitive | Modes (best-effort) | Current | Recommended | Notes |
+All Bucket-C primitives in this tier (every row marked `[refactor]`) need a structural change before the count is meaningful — the generator currently treats one passage as one render. The refactor pattern is the same as math's Bucket-A passage refactor (`useChallengeProgress` + per-challenge `passage` field).
+
+| Primitive | Eval modes (catalog keys) | Current | Recommended | Notes |
 |---|---|---|---|---|
-| `interactive-passage` | comprehension, evidence, inference | unconfirmed (likely 1) | **2 passages** ↑ | Almost certainly currently emits 1 passage per session — the structural Bucket-A failure described in §1. First-priority sweep item. |
-| `listen-and-respond` | audio-comprehension | unconfirmed (likely 1) | **2 passages** ↑ | Audio-cost gated (Adjustment 3) — confirm TTS caching before bumping to 3. |
-| `decodable-reader` | read-and-comprehend | unconfirmed | **2-3 passages** | Higher end OK if passages are 1-2 sentences each (K-1); drop to 2 for longer texts. |
-| `story-map` | identify-elements (char/setting/problem/solution) | unconfirmed (likely 1) | **2 passages** | One story per session is the demo shape; 2 forces variance. |
-| `text-structure-analyzer` | identify-structure (compare/sequence/cause) | unconfirmed (likely 1) | **2 passages** | Same. |
-| `character-web` | map-characters, map-relationships | unconfirmed (likely 1) | **2 passages** | Same — one web per passage. |
-| `genre-explorer` | classify-genre, identify-features | unconfirmed | **3** | Per-instance is one excerpt + classify — shorter than other T4 entries. |
-| `poetry-lab` (analysis modes only) | identify-device, identify-form | unconfirmed | **3** | Production modes belong in T5. |
+| `interactive-passage` | _(single `default` flow)_ | 1 multi-section passage (structural) | **2 passages [refactor]** | Highest-impact sweep item. Bucket-C. Current shape is 1 multi-section passage with N inline questions + 1 highlight task — that's a 1-instance session no matter how long. Audio-cost-gated only if section TTS becomes default. |
+| `listen-and-respond` | `default` | 1 passage / 3-5 questions (structural) | **2 passages [refactor]** | Audio-cost gated — entire passage is TTS, plus optional question TTS. **Hold at 2 until TTS-cache audit (see Adjustment 3 hook).** 3 is the goal for short K-1 passages once cached. |
+| `decodable-reader` | `default` | 1 passage (structural) | **2-3 passages [refactor]** | Listed under T2 above as the speech-capture variant; classification depends on whether comprehension Q or decoding speech is the IRT signal. |
+| `story-map` | `bme`, `story_mountain`, `plot_diagram`, `heros_journey` | 1 story (structural) | **2 stories per mode [refactor]** | One story per session is the demo shape — 2 forces structural-vocabulary variance. `heros_journey` may stay at 1 (T5 — story length is K-6 ceiling for the deeper arc). |
+| `text-structure-analyzer` | `chronological_description`, `cause_effect`, `compare_contrast`, `problem_solution` | 1 passage (structural) | **2 passages per mode [refactor]** | Bucket-C. Structural type is sticky on surface features — 1 passage lets students solve by signal-word detection rather than structural reasoning. 2 forces transfer. |
+| `character-web` | `simple_traits`, `trait_evidence`, `default`, `complex_analysis` | 1 story / 1-3 chars (structural) | **2 stories ↑ / hold `complex_analysis` at 1 (T5)** | Bucket-C. `simple_traits` and `trait_evidence` are 2-3-minute single-graph fills — 2 stories per session is right. `complex_analysis` (foils, motivations, themes) is genuinely T5-paragraph-of-thinking — 1 story is correct. |
+| `genre-explorer` | `default` | 1-2 excerpts (structural) | **3 excerpts ↑ [refactor]** | Each excerpt is 4-8 sentences plus a 5-8 feature checklist. 3 short excerpts in one session is realistic at T4 ceiling. Refactor: `excerpts.length` must be parameterized off `instanceCount`, not grade. |
+| `figurative-language-finder` | `sound_devices`, `comparison`, `advanced`, `idiom` | 1 passage / 3-7 instances (structural) | **2 passages per mode [refactor]** | **Reclassified from T3 to T4** by the 2026-05-26 audit — each "instance" is within-passage, so today's 1-passage shape is structurally identical to `interactive-passage` Bucket-C. 2 passages forces students to generalize past one author's voice/topic. |
+| `evidence-finder` | `default` | 1 passage / 1-2 claims (structural) | **2 passages [refactor]** | Bucket-C. Each passage carries 1-2 claims with N evidence sentences within — 1 passage = 1 session is gameable on surface-claim-keyword match. 2 forces re-application. |
+| `poetry-lab` (`analysis`) | `analysis` | 1 poem (structural) | **2 poems [refactor]** | Bucket-C. Short poems (K-3) can do 2 per session inside T4 band. Long/complex poems (G5-6) may belong in T5; per-grade override required. |
+| `spelling-pattern-explorer` | `short_vowel`, `long_vowel`, `r_controlled`, `silent_letter` | 1 pattern / 6-10 within (structural) | **2 patterns per mode [refactor]** | The 6-10 words inside ARE the within-challenge density — the pattern *is* the challenge unit, and there is currently only one per session. 2 patterns forces cross-pattern transfer. |
 
 ### T5 — Extended production (count 1-2 pieces per session)
 
-Compose original work. Count of **1** is valid and explicitly endorsed for the longest production modes — the variance lever for these primitives is the prompt/topic, not the count.
+Compose original work or carry out an extended deep analysis. Count of **1** is valid and explicitly endorsed for the longest production modes — the variance lever for these primitives is the prompt/topic, not the count.
 
-| Primitive | Modes (best-effort) | Current | Recommended | Notes |
+| Primitive | Eval modes (catalog keys) | Current | Recommended | Notes |
 |---|---|---|---|---|
-| `paragraph-architect` | write-paragraph (any framework) | unconfirmed | **1** | One paragraph per session. 5-10 min of composition + rubric scoring. |
-| `story-planner` | plan-story (outline → draft) | unconfirmed | **1** | One plan per session. |
-| `opinion-builder` | compose-opinion-paragraph | unconfirmed | **1** | Stays at 1 in compose mode; scaffolded sub-modes belong in T3. |
-| `poetry-lab` (composition modes) | compose-poem (any form) | unconfirmed | **1-2** | 1 for sonnet/long-form; 2 for haiku / acrostic where 2 fits inside the T5 session band. |
-| `revision-workshop` (paragraph-level mode) | revise-paragraph | _(if mode exists)_ | **1** | T5 when the revision target is a full paragraph; T3 for single-sentence modes. |
+| `paragraph-architect` | `informational`, `narrative`, `opinion` | 1 paragraph | **1** (formalize) | Per-mode hold. Each paragraph is 5-10 min of structured composition + rubric scoring. Pair with §6 step 3 rubric-stability check before shipping. |
+| `story-planner` | `default` | 1 plan | **1** (formalize) | One plan per session. The variance lever is the writing-prompt prompt, not the count. |
+| `opinion-builder` | `oreo`, `cer` | 1 piece | **1** (formalize) | Both modes are full-paragraph composition with framework scaffold. CER (G5-6) is the heaviest; OREO (G2-4) could in principle bump to 2 but the rubric load is the same as paragraph-architect. |
+| `poetry-lab` (`composition`) | `composition` | 1 poem | **1-2** (per-template) | Per Adjustment 1, the count varies by template type. Template-level table: haiku=2, acrostic=2, limerick=1, free_verse=1, sonnet_intro=1. Document in generator near `templateType` enum. |
+| `revision-workshop` (`reorganize`, `concision`) | `reorganize`, `concision` | 1 draft | **1** (formalize) | Paragraph-level revision. T5 modes; the other revision modes stay in T3 (4 drafts per session). |
+| `character-web` (`complex_analysis`) | `complex_analysis` | 1 story | **1** (formalize) | T5 deep-analysis mode. Foils + multi-layered motivation + thematic relationship analysis is rubric-scored extended thinking; 1 story is correct. |
+
+### Proposed K primitives (deferred until ship)
+
+These primitives are proposed in [PRD_KINDERGARTEN_PHONICS_AND_ALPHABET](PRD_KINDERGARTEN_PHONICS_AND_ALPHABET.md) but do not yet exist in [service/literacy/](../service/literacy/) as of 2026-05-26. Their entries below are forward-looking — apply on ship, do not include in the §8 sweep.
+
+| Primitive | Best-effort modes | Tier | Recommended | Notes |
+|---|---|---|---|---|
+| `letter-tracing` | `trace_letter` | T1 | **8** | Pool-service. Per-letter tracing is ~5-8s. |
+| `alphabet-sequence` | `sequence` | T1 | **7** | One ordering, 7 letters into slots. |
+| `rhyming-pairs` | `match_rhyme` | T1 | **8** | Tap-pair match. |
+| `sight-word-card` | `recognize` | T1 | **10** | Pure recognition tap; spaced-repetition density argues for upper T1. |
+| `sound-sort` | `sort_by_sound` | T1 | **7** | Tap-sort. |
 
 ### Out of scope for this PRD
 
-- `passage-studio/judge.ts` is a judge service, not a renderable primitive. No instance-count applies.
+- `passage-studio/judge.ts` is a judge service, not a renderable primitive. No instance count applies.
 - `tutoring-scaffold` audio sessions (Gemini Live) are turn-based real-time, not instance-counted. Out of scope.
-- `flashcard-deck` already has its own spaced-repetition density logic; if it integrates with a vocabulary primitive, that primitive's count owns the session shape.
+- `flashcard-deck` has its own spaced-repetition density logic; if a vocabulary primitive (`word-builder`, `word-workout`) integrates with it, that primitive's count owns the session shape, not the deck.
 
 ---
 
@@ -264,15 +291,57 @@ The math PRD's "instance floor ≥3" criterion is **deliberately replaced** for 
 
 ## 8. Sequencing
 
-Highest impact first. The sweep is a follow-up across already-shipped LA primitives — not a workstream blocker for any new LA primitive. New LA primitives should land directly on the §4 tier table; existing ones can be swept opportunistically.
+Sequenced by **impact × cost**, where impact = (grade-band routing volume × distance from target count) and cost = (single-line bump vs. Bucket-C structural refactor). The 2026-05-26 audit reshuffled the math PRD's borrowed sequencing — Bucket-C refactors dominate the high-impact slots, and the lowest-cost bumps (single-`?? N` edits) are now back-loaded into a bag-of-tasks sweep.
 
-1. **`interactive-passage` passage-count refactor (T4)** — the loudest structural failure if the current shape is in fact 1-passage-per-session. Touches reading-comprehension routing volume across grades 2-6. Probably a Bucket-A-style structural refactor, not a count-bump; sized accordingly.
-2. **`letter-spotter` + `letter-sound-link` per-mode formalization (T1)** — convert "Generate 6-8" range to per-mode exact count. K-1 routing volume.
-3. **`phoneme-explorer` bump 5 → 7 (T1)** — single-line edit, K-1 routing.
-4. **`word-sorter` bump 3-4 → 5 (T2)** — single-line edit, validates the T2 tier on a primitive that's currently under-counted.
-5. **`paragraph-architect` and other T5 entries** — formalize the count=1 decision in code with explanatory comments so future authors don't "fix" it by bumping to 3. Pair with the rubric-stability spot check (§6 step 3).
-6. **Bulk sweep of remaining T1/T2/T3 entries** — 1-line edits per primitive, bag-of-tasks, parallelizable.
-7. **T4 passage primitives other than `interactive-passage`** — `listen-and-respond`, `story-map`, `text-structure-analyzer`, `character-web`. Each may be a structural refactor (per Adjustment 2 / §5 passage-vs-question check); confirm shape before deciding bump-vs-refactor.
+### Phase 0 — ~~TTS-cache audit~~ (DROPPED 2026-05-26)
+
+**Original assumption:** audio-generating primitives need a TTS-cache audit before count bumps to avoid multiplying audio-synthesis spend.
+
+**Reality (user-confirmed 2026-05-26):** literacy audio in this codebase runs through Gemini Live (real-time turn-based AI tutor over a backend WebSocket), not pre-synthesized TTS. There is no per-instance synthesis cost to gate against. See `memory/feedback_no-tts-cache-gating.md` and `memory/project_audio-architecture-gemini-live.md`. Adjustment 3 (§2) is moot; the "audio cost contained" success criterion in §7 is moot; the per-row "Audio (pool)" annotations in §11 are descriptive of the Gemini Live path, not a caching requirement.
+
+**Implication for sequencing below:** items #2 (`listen-and-respond`), #7 (`decodable-reader`), #8 (`read-aloud-studio`) are NOT blocked. Proceed directly to the structural refactor.
+
+### Phase 1 — Bucket-C refactors, ordered by routing volume
+
+These are the structural changes — each generator currently emits 1 artifact per session and needs `instanceCount` plumbed through schema, prompt, and render. Sized as 1-3 day tickets each, not 1-line edits. Highest grade-band volume first.
+
+1. **`interactive-passage` (G2-6 reading comprehension)** — the loudest Bucket-C failure. One multi-section passage with N inline questions + 1 highlight task is `passage-studio` shape, not `tape-diagram` shape. Refactor to 2 passages per session with `useChallengeProgress`. Single-PR-sized refactor.
+2. **`listen-and-respond` (K-6 audio comprehension)** — same refactor pattern as `interactive-passage`. Gated on Phase 0 TTS-cache audit; do not bump until passage TTS is confirmed pool-able.
+3. **`figurative-language-finder` (G3-6 reading)** — reclassified to T4 by this audit. Each "instance" is within-passage today; refactor to 2 passages per mode so within-passage instances aren't double-counted against the mastery signal.
+4. **`evidence-finder` (G2-6 reading)** — Bucket-C. CER framework is sticky on surface claim-keyword features at 1 passage. 2 passages required for transfer.
+5. **`text-structure-analyzer` (G2-6 informational)** — Bucket-C. Signal words make 1-passage detection trivial; 2 passages forces structural reasoning.
+6. **`story-map` (K-6 narrative)** — Bucket-C. 2 stories per session for `bme` / `story_mountain` / `plot_diagram`; `heros_journey` stays at 1 (T5).
+7. **`decodable-reader` (K-2 reading)** — Bucket-C. Phase 0 audio audit prerequisite.
+8. **`read-aloud-studio` (G1-6 fluency)** — Bucket-C. Refactor to 2 passages per session; fluency requires across-text variance, not just within-text rereads.
+9. **`character-web` (G2-6 literary analysis)** — Bucket-C for the three lower modes; hold `complex_analysis` at 1.
+10. **`spelling-pattern-explorer` (G1-6 spelling)** — Bucket-C. 2 patterns per session.
+11. **`genre-explorer` (G1-6)** — Bucket-C. 3 excerpts per session.
+12. **`poetry-lab` `analysis` (G3-6)** — Bucket-C. 2 poems per session in analysis mode.
+13. **`revision-workshop` (G2-6 writing)** — Bucket-C. Refactor draft-per-session into 4 drafts per session for T3 modes (`add_details`, `word_choice`, `combine_sentences`, `transitions`); hold `reorganize` / `concision` at 1.
+
+### Phase 2 — Bucket-B disambiguation (per-mode `COUNT_BY_MODE` table)
+
+These primitives have prompt-internal contradictions or unpinned ranges. Each is a single-PR generator edit that introduces the `COUNT_BY_MODE` table per [§5](#5-implementation-pattern-count_by_mode-same-as-math-5a).
+
+14. **`letter-spotter` (K-1)** — resolve the "6-8 total" vs "2-3 per mode" prompt contradiction. Per-mode table: `name_it=8`, `find_it=8`, `match_it=10`.
+15. **`letter-sound-link` (K-1)** — same contradiction; per-mode table: `see_hear=8`, `hear_see=8`, `keyword_match=8`. Phase 0 audio audit prerequisite.
+16. **`word-workout` (K-2)** — split the single `?? 5` into per-mode counts. `real_vs_nonsense=8`, `picture_match=7`, `word_chains=4`, `sentence_reading=4`.
+17. **`sentence-analyzer` (G2-8)** — no count instruction at all today (worst Bucket B). Add per-mode table.
+18. **`cvc-speller`, `word-sorter`, `word-builder`, `sentence-builder`, `context-clues-detective`** — convert prompt ranges to per-mode exact counts. Five separate single-line PRs in parallel.
+
+### Phase 3 — Bucket-A pinned bumps (single-line edits)
+
+19. **`phoneme-explorer` bump 5 → 7 (T1)** — single-line edit, K-1 routing.
+20. **`rhyme-studio` per-mode split** — `recognition`/`identification` hold at 9, `production` drops to 6 (Adjustment 4 speech floor).
+21. **`sound-swap`, `syllable-clapper`** — hold (already correctly sized); the PR adds the `COUNT_BY_MODE` table for consistency only.
+
+### Phase 4 — T5 formalization + rubric audit
+
+22. **`paragraph-architect`, `story-planner`, `opinion-builder`, `poetry-lab` `composition`, `revision-workshop` `reorganize` / `concision`, `character-web` `complex_analysis`** — formalize count=1 in code with explanatory comment so future authors don't "fix" it by bumping to 3. Pair with §6 step 3 rubric-stability check; run 3 re-passes on a fixed student response through `passage-studio/judge.ts` for each T5 mode and confirm score stability before declaring the formalization done. If `judge.ts` is unstable on any mode, the rubric fix has to land first.
+
+### Phase 5 — Pulse re-baseline
+
+23. After each phase, run `/pulse-agent` to re-baseline. The Phase 1 batch will produce the biggest IRT update-density shift — student journeys that previously logged 1 update per `interactive-passage` session will now log 2. The mastery-engine 4-gate thresholds may need recalibration; do not declare the sweep complete until pulse confirms gate transitions still trigger sensibly.
 
 ---
 
@@ -289,10 +358,79 @@ Highest impact first. The sweep is a follow-up across already-shipped LA primiti
 
 ## 10. Open Questions
 
-1. **Should `interactive-passage` evolve to T4 (2-3 passages, structural refactor) or stay as T5 (1 passage, treat as production)?** If the passage is truly a single long-form text studied across multiple modes (annotation, evidence, inference), the right shape may be 1-passage-per-session with the IRT signal pooled across the within-passage questions. This is a pedagogical call that affects the sweep ordering — answer before writing the sweep plan.
-2. **For audio primitives, is per-instance TTS cost actually a blocker, or is it already cached?** Audit `LiveAssistant.tsx` / `media-player` audio paths before assuming the audit hook needs to fire.
-3. **Does the `flashcard-deck` spaced-repetition density logic supersede this PRD's tier when a vocabulary primitive uses it?** If yes, vocabulary primitives drop out of the §4 table and inherit count from the deck.
-4. **T5 rubric stability — is the existing `passage-studio/judge.ts` rubric stable enough today, or does it need calibration work before any T5 primitive can ship a count of 1 in good conscience?** Same answer affects all 4-5 T5 entries.
+1. **Should `interactive-passage` evolve to T4 (2-3 passages, structural refactor) or stay as T5 (1 passage, treat as production)?** *Resolved 2026-05-26 by audit: T4 with 2 passages.* The current 1-passage shape is comprehension scaffolding, not production — the student isn't generating an artifact, they're answering N comprehension questions across one text. That's the math T4 nesting (challenge=passage, phase=within-passage question). Pooling the IRT signal across within-passage questions doesn't fix the surface-features-gameable problem; the fix is variance across passages.
+2. **For audio primitives, is per-instance TTS cost actually a blocker, or is it already cached?** Phase 0 of the §8 sweep. The cache state for each of the 10 audio-gated primitives must be documented as a per-row annotation in §11 before any audio-primitive count bump ships.
+3. **Does the `flashcard-deck` spaced-repetition density logic supersede this PRD's tier when a vocabulary primitive uses it?** If yes, `word-builder` / `word-workout` may inherit deck-level counts when integrated. Currently neither integrates with `flashcard-deck`; defer until that integration is proposed.
+4. **T5 rubric stability — is the existing `passage-studio/judge.ts` rubric stable enough today, or does it need calibration work before any T5 primitive can ship a count of 1 in good conscience?** Phase 4 prerequisite. Run 3 re-passes on a fixed student response per T5 mode before the formalization PR; if any mode flips between rubric bands across re-passes, calibration work blocks that mode's formalization.
+5. **`character-web` `complex_analysis` mode split — should it move to T5 in this PRD, or be replaced by a dedicated `literary-analysis-essay` primitive?** Today the mode lives inside `character-web` but the rubric output looks more like `paragraph-architect` than a character graph. Out-of-scope for this PRD; flagged for the production-modality roadmap.
+6. **Pre-passage-refactor mitigations — for the 13 Bucket-C primitives, should they ship a deprecation banner during the refactor window so K-6 routing avoids them, or continue routing as-is with the understanding that the 1-instance shape is a known mastery-signal weakness?** Mastery-engine product call; flag to user before Phase 1 starts.
+
+---
+
+## 11. Per-Primitive Audit Summary (2026-05-26)
+
+Verified by reading each generator's `CHALLENGE_TYPE_DOCS` (or schema enum), `service/manifest/catalog/literacy.ts` `evalModes` array, and the per-grade prompt blocks. Bucket column references the §1 classification.
+
+**Bucket A — Pinned via `?? N` constant. Lowest-cost sweep targets.**
+
+| Primitive | Generator pattern site | Modes | Current | Tier | Recommended | Audio | Speech |
+|---|---|---|---|---|---|---|---|
+| `rhyme-studio` | [L185](../service/literacy/gemini-rhyme-studio.ts#L185) | `recognition`, `identification`, `production` | 9 | T1 (prod → T2) | 9 / 9 / 6 | Yes (pool) | `production` only |
+| `sound-swap` | [L439](../service/literacy/gemini-sound-swap.ts#L439) | `addition`, `deletion`, `substitution` | 9 | T1 | 9 (hold) | Yes (pool) | — |
+| `syllable-clapper` | [L138](../service/literacy/gemini-syllable-clapper.ts#L138) | `easy`, `medium`, `hard` | 8 | T1 | 8 (hold) | Yes (pool) | — |
+| `phoneme-explorer` | [L302](../service/literacy/gemini-phoneme-explorer.ts) | `isolate`, `blend`, `segment`, `manipulate` | 5 | T1 | 7 ↑ | Yes (pool) | — |
+| `word-workout` | [L457](../service/literacy/gemini-word-workout.ts#L457) | `real_vs_nonsense`, `picture_match`, `word_chains`, `sentence_reading` | 5 | T1 / T3 split | 8 / 7 / 4 / 4 | Yes (TTS directives) | — |
+
+**Bucket B — Range in prompt or unspecified. Disambiguation sweep targets.**
+
+| Primitive | Source of "count" | Modes | Current | Tier | Recommended | Audit note |
+|---|---|---|---|---|---|---|
+| `letter-spotter` | [L221](../service/literacy/gemini-letter-spotter.ts#L221) outer + per-mode docs | `name_it`, `find_it`, `match_it` | 6-8 outer / 2-3 per-mode | T1 | 8 / 8 / 10 | **Prompt contradicts itself**; resolve in PR |
+| `letter-sound-link` | [L306](../service/literacy/gemini-letter-sound-link.ts#L306) outer + per-mode docs | `see_hear`, `hear_see`, `keyword_match` | 6-8 outer / 2-3 per-mode | T1 | 8 / 8 / 8 | Same contradiction; Phase 0 audio gated |
+| `cvc-speller` | [L265 prompt](../service/literacy/gemini-cvc-speller.ts#L265) | `fill_vowel`, `spell_word`, `word_sort` | 4-6 prompt | T2 | 6 / 5 / 5 | Audio per word (pool-able) |
+| `word-sorter` | [L304](../service/literacy/gemini-word-sorter.ts#L304), [L357](../service/literacy/gemini-word-sorter.ts#L357), [L411](../service/literacy/gemini-word-sorter.ts#L411) | `binary_sort`, `ternary_sort`, `match_pairs` | 3-4 prompt | T2 / T3 | 5 / 4 / 5 | Each sort has 6-10 within-challenge cards |
+| `word-builder` | `targets[]` length per [generator](../service/word-builder/gemini-word-builder.ts) | `simple_affix`, `compound_affix`, `greek_latin`, `multi_morpheme` | 4-6 targets | T2 / T3 | 6 / 5 / 4 / 4 | Uses `targets`, not `challenges` |
+| `sentence-builder` | [L180-237 per-grade](../service/literacy/gemini-sentence-builder.ts#L180) | `simple`, `compound`, `complex`, `compound_complex` | 3-4 prompt | T2 / T3 | 5 / 4 / 4 / 4 | Per-grade ranges currently |
+| `context-clues-detective` | [L159-200 per-grade](../service/literacy/gemini-context-clues-detective.ts#L159) | `definition`, `synonym`, `antonym`, `example`, `inference` | 3-4 prompt | T3 | 4 (all modes) | Each "challenge" has its own 3-8s passage |
+| `sentence-analyzer` | _none_ | `identify_pos`, `identify_role`, `label_all`, `parse_structure` | unspecified | T2 / T3 | 5 / 5 / 4 / 4 | **No count instruction in code** — worst Bucket B |
+
+**Bucket C — Structurally 1 instance per session. Refactor required.**
+
+| Primitive | Per-session artifact today | Modes | Tier | Recommended | Refactor type |
+|---|---|---|---|---|---|
+| `interactive-passage` | 1 multi-section passage | `default` | T4 | 2 passages | Add `passageCount`; use `useChallengeProgress` hook |
+| `listen-and-respond` | 1 audio passage / 3-5 questions | `default` | T4 | 2 passages | Same + Phase 0 TTS-cache gate |
+| `decodable-reader` | 1 passage | `default` | T4 (T2 speech) | 2-3 passages | Same + Phase 0 |
+| `read-aloud-studio` | 1 passage | _(none — no eval mode wired)_ | T4 | 2 passages | Same + Phase 0 + eval-mode wiring per [PRD_EVAL_MODES_LITERACY](PRD_EVAL_MODES_LITERACY.md) |
+| `story-map` | 1 story | `bme`, `story_mountain`, `plot_diagram`, `heros_journey` | T4 (T5 for `heros_journey`) | 2 stories per mode | Add `storyCount` |
+| `text-structure-analyzer` | 1 passage | `chronological_description`, `cause_effect`, `compare_contrast`, `problem_solution` | T4 | 2 passages per mode | Same |
+| `character-web` | 1 story / 1-3 chars | `simple_traits`, `trait_evidence`, `default`, `complex_analysis` | T4 / T5 | 2 stories ↑ / hold T5 at 1 | Same except `complex_analysis` |
+| `genre-explorer` | 1-2 excerpts | `default` | T4 | 3 excerpts | Parameterize `excerpts.length` off `instanceCount` not grade |
+| `figurative-language-finder` | 1 passage / 3-7 within | `sound_devices`, `comparison`, `advanced`, `idiom` | T4 (reclassified) | 2 passages per mode | Same |
+| `evidence-finder` | 1 passage / 1-2 claims | `default` | T4 | 2 passages | Same |
+| `poetry-lab` `analysis` | 1 poem | `analysis` | T4 | 2 poems | Same; per-grade override may keep 1 for long poems |
+| `spelling-pattern-explorer` | 1 pattern / 6-10 words within | `short_vowel`, `long_vowel`, `r_controlled`, `silent_letter` | T4 | 2 patterns per mode | Add `patternCount` |
+| `revision-workshop` (T3 modes) | 1 draft / 2-5 targets | `add_details`, `word_choice`, `combine_sentences`, `transitions` | T3 | 4 drafts | Add `draftCount`; each draft = 1-2 targets |
+
+**Bucket D — Intentionally 1 per session (T5 formalization, no count change).**
+
+| Primitive | Modes | Tier | Recommended | Notes |
+|---|---|---|---|---|
+| `paragraph-architect` | `informational`, `narrative`, `opinion` | T5 | 1 (formalize) | Rubric-stability check required |
+| `story-planner` | `default` | T5 | 1 (formalize) | Variance lever is the writing prompt |
+| `opinion-builder` | `oreo`, `cer` | T5 | 1 (formalize) | Rubric-stability check required |
+| `poetry-lab` `composition` | `composition` | T5 | 1-2 per template | haiku/acrostic=2; sonnet/limerick/free_verse=1 |
+| `revision-workshop` (T5 modes) | `reorganize`, `concision` | T5 | 1 (formalize) | Paragraph-level revision |
+| `character-web` `complex_analysis` | `complex_analysis` | T5 | 1 (formalize) | Foils + motivations + thematic relationships |
+
+**Suite-wide totals (verified 2026-05-26):**
+
+- **Bucket A (5 primitives, ~17 modes):** ~3 minutes per single-line PR. The cheap wins.
+- **Bucket B (8 primitives, ~26 modes):** ~30 minutes per PR (generator edit + per-mode table + prompt rewrite). Two of the eight (`letter-spotter`, `letter-sound-link`) have an *additional* contradiction-fix step.
+- **Bucket C (13 primitives, ~29 modes):** 1-3 days per PR. Schema + generator + render layer changes. Dominates the engineering cost of this PRD.
+- **Bucket D (6 primitives, ~10 modes):** ~15 minutes per PR (code comment + count-pin formalization). Gated on `passage-studio/judge.ts` rubric stability spot check.
+
+The 15 Bucket-C primitives (some primitives have modes in both C and D, hence the discrepancy with the headline) are the structural mastery-measurement gap. Phase 1 of the §8 sweep is sized at ~15-30 PR-days. Phases 2-4 collectively are sized at ~3-5 PR-days.
 
 ---
 
