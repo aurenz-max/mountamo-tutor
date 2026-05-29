@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { ReadAloudStudioMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -184,6 +185,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     const idx = phases.indexOf(currentPhase);
     if (idx >= phases.length - 1) return;
     const next = phases[idx + 1];
+    SoundManager.navigate();
     setCurrentPhase(next);
 
     // Pedagogical speech triggers for phase transitions
@@ -214,7 +216,10 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
 
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx > 0) setCurrentPhase(phases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx - 1]);
+    }
   };
 
   // Trigger the AI tutor to read the passage aloud. The on-screen text is driven
@@ -273,6 +278,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
 
   // Handle self-assessment
   const handleSelfAssessment = useCallback((rating: number) => {
+    SoundManager.select();
     setSelfAssessment(rating);
     sendText(
       `[SELF_ASSESSMENT] The student rated their reading ${rating}/5. `

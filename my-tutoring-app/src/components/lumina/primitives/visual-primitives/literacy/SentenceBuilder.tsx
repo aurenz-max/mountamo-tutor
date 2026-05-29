@@ -13,6 +13,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -299,6 +300,7 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
 
   const handleAddTile = useCallback((tileId: string) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.tap();
     if (currentPhase === 'explore') {
       setPlacedTileIds([tileId]);
     } else {
@@ -340,6 +342,7 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     }
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Correct! Great job building that sentence!');
       setFeedbackType('success');
       setIsCelebrating(true);
@@ -360,6 +363,7 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
         hintsUsed: hintsUsedPerChallenge[currentChallenge.id] || 0,
       });
     } else {
+      SoundManager.playIncorrect();
       const placedWords = placedTileIds.map(id => currentChallenge.tiles.find(t => t.id === id)?.text ?? '').join(' ');
       setFeedback('Not quite right. Try rearranging the tiles!');
       setFeedbackType('error');

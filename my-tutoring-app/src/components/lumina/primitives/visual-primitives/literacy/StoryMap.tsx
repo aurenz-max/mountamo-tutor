@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { StoryMapMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Type Definitions
@@ -611,8 +612,11 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     const settingCorrect = selectedSetting === 'correct';
 
     if (allCharsSelected && noExtraChars && settingCorrect) {
+      SoundManager.playCorrect();
       // Auto-advance to phase 2
       setTimeout(() => setPhase('sequence'), 1200);
+    } else {
+      SoundManager.playIncorrect();
     }
   };
 
@@ -629,6 +633,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     if (hasSubmitted || phase2Checked) return;
 
     if (selectedEventId) {
+      SoundManager.snap();
       // Place event on arc
       const alreadyPlaced = placedEvents.find(
         (pe) => pe.eventId === selectedEventId
@@ -683,12 +688,15 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     const allPlaced = placedEvents.length === data.events.length;
 
     if (allCorrect && allPlaced) {
+      SoundManager.playCorrect();
       if (showConflictPhase) {
         setTimeout(() => setPhase('analyze'), 1200);
       } else {
         // Submit evaluation
         handleFinalSubmit();
       }
+    } else {
+      SoundManager.playIncorrect();
     }
   };
 

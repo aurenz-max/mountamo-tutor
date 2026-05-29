@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -248,6 +249,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     const isCorrect = option.toLowerCase() === currentChallenge.targetLetter.toLowerCase();
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! That's the letter ${currentChallenge.targetLetter.toUpperCase()}!`);
       setFeedbackType('success');
       setIsLocked(true);
@@ -272,6 +274,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback('Try again! Look at the letter carefully.');
       setFeedbackType('error');
       trackConfusion(currentChallenge.targetLetter, option);
@@ -315,6 +318,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
   // ---------------------------------------------------------------------------
   const handleGridCellToggle = useCallback((index: number) => {
     if (isLocked || hasSubmittedEvaluation) return;
+    SoundManager.tap();
     setSelectedGridCells(prev => {
       const next = new Set(prev);
       if (next.has(index)) next.delete(index);
@@ -341,6 +345,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       Array.from(selectedGridCells).every(i => targetIndices.has(i));
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback(`You found all the ${currentChallenge.targetLetter.toUpperCase()}'s!`);
       setFeedbackType('success');
       setIsLocked(true);
@@ -362,6 +367,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       const missed = Array.from(targetIndices).filter(i => !selectedGridCells.has(i)).length;
       const extra = Array.from(selectedGridCells).filter(i => !targetIndices.has(i)).length;
 

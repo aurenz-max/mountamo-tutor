@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { DecodableReaderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -232,6 +233,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
 
   // Move to comprehension
   const handleDoneReading = useCallback(() => {
+    SoundManager.navigate();
     setReadingEndTime(Date.now());
     setCurrentPhase('comprehension');
     sendText(
@@ -260,6 +262,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     setComprehensionCorrect(isCorrect);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       sendText(
         `[COMPREHENSION_CORRECT] The student answered the comprehension question correctly`
         + `${comprehensionAttempts > 0 ? ` after ${comprehensionAttempts + 1} attempts` : ' on the first try'}! `
@@ -269,6 +272,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
       // Move to review after short delay
       setTimeout(() => setCurrentPhase('review'), 1200);
     } else {
+      SoundManager.playIncorrect();
       const studentAnswer = comprehensionQuestion.type === 'multiple-choice'
         ? comprehensionQuestion.options?.find(o => o.id === selectedAnswer)?.text ?? selectedAnswer
         : shortAnswer.trim();

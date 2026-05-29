@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { FigurativeLanguageFinderMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -115,11 +116,17 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
 
   const nextPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) setCurrentPhase(phases[idx + 1]);
+    if (idx < phases.length - 1) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx + 1]);
+    }
   };
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx > 0) setCurrentPhase(phases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx - 1]);
+    }
   };
 
   // Toggle instance found
@@ -178,8 +185,10 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
 
   // Classify an instance
   const classifyInstance = useCallback((index: number, type: FigurativeType) => {
+    if (type === instances[index]?.type) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
     setClassifications(prev => ({ ...prev, [index]: type }));
-  }, []);
+  }, [instances]);
 
   // Calculate score
   const calculateScore = useCallback(() => {

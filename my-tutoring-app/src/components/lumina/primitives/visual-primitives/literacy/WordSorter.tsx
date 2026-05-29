@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -248,6 +249,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
   // ─── Handle word selection (sort modes) ────────────────────────
   const handleWordClick = useCallback((wordId: string) => {
     if (hasSubmittedEvaluation || !currentChallenge) return;
+    SoundManager.tap();
     setSelectedWordId(prev => prev === wordId ? null : wordId);
   }, [hasSubmittedEvaluation, currentChallenge]);
 
@@ -259,6 +261,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     if (!word) return;
 
     if (word.correctBucket === bucketLabel) {
+      SoundManager.playCorrect();
       setBucketAssignments(prev => new Map(prev).set(word.id, bucketLabel));
       setFeedback('Correct!');
       setFeedbackType('success');
@@ -268,6 +271,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       incrementAttempts();
       setFeedback(`Try again — "${word.word}" doesn't belong in "${bucketLabel}".`);
       setFeedbackType('error');
@@ -295,6 +299,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
 
     if (pair.id === matchId) {
       // Correct match
+      SoundManager.playCorrect();
       setMatchedPairs(prev => new Map(prev).set(pair.id, matchId));
       setSelectedTermId(null);
       setFeedback(`"${pair.term}" → "${pair.match}"`);
@@ -304,6 +309,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       const wrongMatch = currentChallenge.pairs.find(p => p.id === matchId);
       incrementAttempts();
       setFeedback('Not quite — try a different match.');

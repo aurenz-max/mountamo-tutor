@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -400,6 +401,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       const isCorrect = word === currentChallenge.realWord;
 
       if (isCorrect) {
+        SoundManager.playCorrect();
         setFeedback("Correct! That's a real word!");
         setFeedbackType('success');
         setIsCelebrating(true);
@@ -418,6 +420,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
           { silent: true }
         );
       } else {
+        SoundManager.playIncorrect();
         setFeedback('Try again! Sound out both words.');
         setFeedbackType('error');
         setIsShaking(true);
@@ -453,6 +456,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       const isCorrect = word === currentChallenge.targetWord;
 
       if (isCorrect) {
+        SoundManager.playCorrect();
         setFeedback('Correct! Great match!');
         setFeedbackType('success');
         setIsCelebrating(true);
@@ -470,6 +474,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
           { silent: true }
         );
       } else {
+        SoundManager.playIncorrect();
         setFeedback('Not quite! Read the word again carefully.');
         setFeedbackType('error');
         setIsShaking(true);

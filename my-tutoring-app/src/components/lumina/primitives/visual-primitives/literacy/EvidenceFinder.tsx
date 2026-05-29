@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { EvidenceFinderMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -141,6 +142,7 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
   // Toggle highlight on a sentence for the active claim
   const handleToggleHighlight = useCallback((sentenceId: string) => {
     if (hasSubmittedEvaluation || currentPhase !== 'find') return;
+    SoundManager.tap();
 
     setHighlightedSentences(prev => {
       const existing = prev[sentenceId];
@@ -191,6 +193,7 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
     });
 
     if (correct > 0) {
+      SoundManager.playCorrect();
       setFeedback(`Found ${correct} piece${correct > 1 ? 's' : ''} of evidence!${falsePositives > 0 ? ` (${falsePositives} non-evidence also highlighted)` : ''}`);
       setFeedbackType('success');
       // Advance to evaluate phase after brief delay
@@ -200,6 +203,7 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
         setFeedbackType('');
       }, 1200);
     } else {
+      SoundManager.playIncorrect();
       setFeedback('The highlighted sentence(s) are not strong evidence. Try again!');
       setFeedbackType('error');
     }

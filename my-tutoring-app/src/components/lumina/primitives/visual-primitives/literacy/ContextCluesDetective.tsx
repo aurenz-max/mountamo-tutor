@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { ContextCluesDetectiveMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -177,6 +178,7 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
     const isCorrect = correctClues.length > 0;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Great detective work! You found a context clue!');
       setFeedbackType('success');
       setTimeout(() => {
@@ -185,6 +187,7 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
         setFeedbackType('');
       }, 1000);
     } else {
+      SoundManager.playIncorrect();
       setFeedback('That sentence doesn\'t contain a clue. Look for a sentence that helps explain the highlighted word.');
       setFeedbackType('error');
     }
@@ -197,6 +200,7 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
     const isCorrect = selectedClueType === currentChallenge.clueType;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Correct! You identified the clue type!');
       setFeedbackType('success');
       setTimeout(() => {
@@ -205,6 +209,7 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
         setFeedbackType('');
       }, 1000);
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. Think about what the clue sentence does — does it define, give a synonym, show an opposite, provide an example, or require inference?`);
       setFeedbackType('error');
     }
@@ -237,9 +242,11 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
     ]);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Excellent! You figured out the meaning from context!');
       setFeedbackType('success');
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`The meaning is: "${currentChallenge.correctMeaning}"`);
       setFeedbackType('info');
     }

@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PoetryLabMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -120,21 +121,25 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
   const nextAnalysis = () => {
     const idx = analysisPhases.indexOf(analysisPhase);
     if (idx < analysisPhases.length - 1) {
+      SoundManager.navigate();
       setAnalysisPhase(analysisPhases[idx + 1]);
       setElementsExplored(prev => prev + 1);
     }
   };
   const prevAnalysis = () => {
     const idx = analysisPhases.indexOf(analysisPhase);
-    if (idx > 0) setAnalysisPhase(analysisPhases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setAnalysisPhase(analysisPhases[idx - 1]);
+    }
   };
 
   // Toggle figurative instance
   const toggleFigurative = useCallback((index: number) => {
     setFoundFigurative(prev => {
       const next = new Set(Array.from(prev));
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
+      if (next.has(index)) { next.delete(index); SoundManager.toggle(false); }
+      else { next.add(index); SoundManager.toggle(true); }
       return next;
     });
   }, []);
@@ -312,7 +317,7 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
           <p className="text-xs text-slate-500">What mood or feeling does this poem create?</p>
           <div className="flex flex-wrap gap-2">
             {(moodOptions || []).map(mood => (
-              <button key={mood} onClick={() => setSelectedMood(mood)}
+              <button key={mood} onClick={() => { SoundManager.select(); setSelectedMood(mood); }}
                 className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
                   selectedMood === mood ? 'bg-violet-500/20 border-violet-500/40 text-violet-300' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                 }`}>

@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { GenreExplorerMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -90,19 +91,25 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
 
   const nextPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) setCurrentPhase(phases[idx + 1]);
+    if (idx < phases.length - 1) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx + 1]);
+    }
   };
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx > 0) setCurrentPhase(phases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx - 1]);
+    }
   };
 
   // Toggle feature
   const toggleFeature = useCallback((excerptId: string, featureId: string) => {
     setCheckedFeatures(prev => {
       const current = new Set(Array.from(prev[excerptId] || []));
-      if (current.has(featureId)) current.delete(featureId);
-      else current.add(featureId);
+      if (current.has(featureId)) { current.delete(featureId); SoundManager.toggle(false); }
+      else { current.add(featureId); SoundManager.toggle(true); }
       return { ...prev, [excerptId]: current };
     });
   }, []);
@@ -264,7 +271,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
                 const isSelected = selectedGenres[activeExcerpt?.excerptId || ''] === genre;
                 return (
                   <button key={genre}
-                    onClick={() => activeExcerpt && setSelectedGenres(prev => ({ ...prev, [activeExcerpt.excerptId]: genre }))}
+                    onClick={() => { if (activeExcerpt) { SoundManager.select(); setSelectedGenres(prev => ({ ...prev, [activeExcerpt.excerptId]: genre })); } }}
                     className={`px-3 py-2 rounded-lg border text-sm transition-all capitalize ${
                       isSelected ? 'bg-violet-500/20 border-violet-500/40 text-violet-300' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                     }`}>

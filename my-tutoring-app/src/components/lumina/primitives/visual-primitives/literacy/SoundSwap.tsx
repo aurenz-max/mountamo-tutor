@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -405,6 +406,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     const isCorrect = tappedIndex === correctIndex;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setRemovedIndex(tappedIndex);
       setFeedback(
         `Yes! Take away ${currentChallenge.deletePhoneme} from "${currentChallenge.originalWord}" `
@@ -428,6 +430,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       const tappedPhoneme = currentChallenge.originalPhonemes[tappedIndex];
       setFeedback(`That's ${tappedPhoneme} \u2014 look for the ${currentChallenge.deletePhoneme} sound.`);
       setFeedbackType('error');
@@ -466,6 +469,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     incrementAttempts();
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setAddedPhoneme(phoneme);
       setFeedback(
         `Yes! Add ${phoneme} to "${currentChallenge.originalWord}" `
@@ -489,6 +493,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`${phoneme} doesn't make the right word here. Listen to the instruction again...`);
       setFeedbackType('error');
       setIsShaking(true);
@@ -526,6 +531,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     incrementAttempts();
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setSwappedPhoneme(phoneme);
       setFeedback(
         `Yes! Change ${currentChallenge.oldPhoneme} to ${phoneme} in "${currentChallenge.originalWord}" `
@@ -549,6 +555,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`${phoneme} doesn't make the right word. Which sound replaces ${currentChallenge.oldPhoneme}?`);
       setFeedbackType('error');
       setIsShaking(true);

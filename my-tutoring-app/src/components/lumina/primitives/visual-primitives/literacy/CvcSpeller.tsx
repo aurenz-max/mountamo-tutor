@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -371,6 +372,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     const isCorrect = vowel.toLowerCase() === correctVowel;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setVowelCorrect(prev => prev + 1);
       setFeedback(`Yes! "${currentChallenge.targetWord}" has the ${vowel} sound in the middle!`);
       setFeedbackType('success');
@@ -392,6 +394,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setVowelErrors(prev => prev + 1);
       setSelectedVowel(null);
       const correctKeyword = VOWEL_KEYWORDS[correctVowel] || '';
@@ -446,6 +449,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   const handleSelectLetter = useCallback((letter: string) => {
     if (hasSubmittedEvaluation || wordComplete || activeSlotIndex === null) return;
 
+    SoundManager.tap();
     setSlots(prev => {
       const next = [...prev];
       next[activeSlotIndex] = letter;
@@ -495,6 +499,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     const isCorrect = placed.length === target.length && placed.every((l, i) => l === target[i]);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       target.forEach((letter) => {
         if (VOWELS.has(letter)) setVowelCorrect(prev => prev + 1);
         else setConsonantCorrect(prev => prev + 1);
@@ -520,6 +525,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       const wrongPositions: string[] = [];
       target.forEach((letter, i) => {
         if (placed[i] !== letter) {
@@ -588,6 +594,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     const isCorrect = bucketLabel === correctBucket;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setVowelCorrect(prev => prev + 1);
       setFeedback(`Yes! "${currentChallenge.targetWord}" has the ${correctBucket.replace('short-', '')} sound!`);
       setFeedbackType('success');
@@ -609,6 +616,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setVowelErrors(prev => prev + 1);
       setSortedBucket(null);
 

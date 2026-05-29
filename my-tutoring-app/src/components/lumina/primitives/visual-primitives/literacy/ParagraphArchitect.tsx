@@ -10,6 +10,7 @@ import {
   type ParagraphArchitectMetrics,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface
@@ -370,6 +371,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
       setExploreAttempts((a) => a + 1);
 
       if (modelParagraph && sentence === modelParagraph.topicSentence) {
+        SoundManager.playCorrect();
         setExploreCorrect(true);
         setFeedback('Correct! That is the topic sentence -- it tells the reader what the paragraph is about.');
         sendText(
@@ -378,6 +380,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
           { silent: true }
         );
       } else {
+        SoundManager.playIncorrect();
         setExploreCorrect(false);
         setFeedback(
           'Not quite. The topic sentence is the first sentence that tells the main idea. Try again!'
@@ -393,6 +396,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
   );
 
   const handleMoveToPhase2 = useCallback(() => {
+    SoundManager.navigate();
     setCurrentPhase('practice');
     setFeedback('');
     setSelectedModelPart(null);
@@ -488,6 +492,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
   ]);
 
   const handleMoveToPhase3 = useCallback(() => {
+    SoundManager.navigate();
     setCurrentPhase('apply');
     setFeedback('');
     sendText(

@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { OpinionBuilderMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -95,6 +96,7 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
 
   // Insert a starter into the active field
   const handleUseStarter = useCallback((starter: string, field: 'claim' | 'reason' | 'counter' | 'conclusion', reasonIndex?: number) => {
+    SoundManager.select();
     setUsedStarters(prev => new Set(Array.from(prev).concat(starter)));
     if (field === 'claim') setClaimText(prev => prev ? prev : starter + ' ');
     else if (field === 'reason' && reasonIndex !== undefined) {
@@ -130,11 +132,17 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
 
   const nextPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) setCurrentPhase(phases[idx + 1]);
+    if (idx < phases.length - 1) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx + 1]);
+    }
   };
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx > 0) setCurrentPhase(phases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx - 1]);
+    }
   };
 
   // Submit evaluation

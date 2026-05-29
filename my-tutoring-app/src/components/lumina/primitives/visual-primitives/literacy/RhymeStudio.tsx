@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -410,6 +411,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     const isCorrect = answer === currentChallenge.doesRhyme;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       const msg = currentChallenge.doesRhyme
         ? `Yes! "${currentChallenge.targetWord}" and "${currentChallenge.comparisonWord}" both end in ${currentChallenge.rhymeFamily}!`
         : `Correct! "${currentChallenge.targetWord}" and "${currentChallenge.comparisonWord}" do NOT rhyme.`;
@@ -432,6 +434,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback('Not quite \u2014 listen to the ending sounds...');
       setFeedbackType('error');
       setIsShaking(true);
@@ -474,6 +477,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     const isCorrect = option.isCorrect;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback(
         `Yes! "${option.word}" rhymes with "${currentChallenge.targetWord}" `
         + `\u2014 they both end in ${currentChallenge.rhymeFamily}!`,
@@ -495,6 +499,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`"${option.word}" doesn't end with ${currentChallenge.rhymeFamily}. Try again!`);
       setFeedbackType('error');
       setIsShaking(true);
@@ -534,6 +539,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     incrementAttempts();
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback(
         `Great! "${word}" rhymes with "${currentChallenge.targetWord}" `
         + `\u2014 they both end in ${currentChallenge.rhymeFamily}!`,
@@ -555,6 +561,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(
         `"${word}" doesn't end with ${currentChallenge.rhymeFamily}. `
         + `Think about the ending sound...`,
@@ -807,6 +814,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
           <Button
             variant="ghost"
             onClick={() => {
+              SoundManager.tap();
               startTimeRef.current = Date.now();
               setHasStarted(true);
             }}

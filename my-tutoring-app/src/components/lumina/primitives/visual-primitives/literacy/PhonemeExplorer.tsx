@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -331,6 +332,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     incrementAttempts();
 
     if (choice.correct) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! ${choice.emoji} "${choice.word}" is correct!`);
       setFeedbackType('success');
       setShowResult(true);
@@ -344,6 +346,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Hmm, that's not quite right. Try again!`);
       setFeedbackType('error');
       setIsShaking(true);
@@ -380,6 +383,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     const isCorrect = optionIndex === currentChallenge.correctSegmentation;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       const correctOption = currentChallenge.segmentOptions?.[optionIndex] ?? '';
       setFeedback(`Yes! "${currentChallenge.targetWord}" breaks into ${correctOption}!`);
       setFeedbackType('success');
@@ -394,6 +398,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite — listen carefully to each sound. Try again!`);
       setFeedbackType('error');
       setIsShaking(true);

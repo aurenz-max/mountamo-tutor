@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { StoryPlannerMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -85,11 +86,17 @@ const StoryPlanner: React.FC<StoryPlannerProps> = ({ data, className }) => {
 
   const nextPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) setCurrentPhase(phases[idx + 1]);
+    if (idx < phases.length - 1) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx + 1]);
+    }
   };
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx > 0) setCurrentPhase(phases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx - 1]);
+    }
   };
 
   // Metrics calculation
@@ -226,7 +233,7 @@ const StoryPlanner: React.FC<StoryPlannerProps> = ({ data, className }) => {
                 <p className="text-xs text-slate-500">Conflict type:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {conflictTypes.map(ct => (
-                    <button key={ct} onClick={() => setSelectedConflict(ct)}
+                    <button key={ct} onClick={() => { SoundManager.select(); setSelectedConflict(ct); }}
                       className={`px-2 py-1 rounded text-xs border transition-all ${
                         selectedConflict === ct ? 'bg-rose-500/20 border-rose-500/40 text-rose-300' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                       }`}>

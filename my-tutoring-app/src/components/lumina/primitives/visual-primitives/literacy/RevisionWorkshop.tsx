@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { RevisionWorkshopMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -105,11 +106,17 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
 
   const nextPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) setCurrentPhase(phases[idx + 1]);
+    if (idx < phases.length - 1) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx + 1]);
+    }
   };
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx > 0) setCurrentPhase(phases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx - 1]);
+    }
   };
 
   // Reorganize helpers
@@ -120,6 +127,7 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
       const arr = [...prev];
       const toIdx = direction === 'up' ? fromIdx - 1 : fromIdx + 1;
       if (toIdx < 0 || toIdx >= arr.length) return prev;
+      SoundManager.snap();
       [arr[fromIdx], arr[toIdx]] = [arr[toIdx], arr[fromIdx]];
       return arr;
     });
@@ -340,7 +348,7 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
                     {target.alternatives && target.alternatives.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5">
                         {target.alternatives.map((alt, i) => (
-                          <button key={i} onClick={() => setRevisions(prev => ({ ...prev, [target.targetId]: alt }))}
+                          <button key={i} onClick={() => { SoundManager.select(); setRevisions(prev => ({ ...prev, [target.targetId]: alt })); }}
                             className={`px-2 py-1 rounded text-xs border transition-all ${
                               revisions[target.targetId] === alt
                                 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'

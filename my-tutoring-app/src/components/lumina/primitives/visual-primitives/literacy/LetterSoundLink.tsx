@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -378,6 +379,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     const isCorrect = option.isCorrect;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback(
         currentChallenge.mode === 'keyword-match'
           ? `Yes! "${currentChallenge.targetLetter.toUpperCase()}" makes ${currentChallenge.targetSound}, like in "${currentChallenge.keywordWord}"!`
@@ -409,6 +411,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       const wrongDisplay = currentChallenge.mode === 'hear-see'
         ? `letter "${option.letter || '?'}"`
         : `sound "${option.sound || '?'}"`;
@@ -740,6 +743,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                   const isCorrect = option.isCorrect;
 
                   if (isCorrect) {
+                    SoundManager.playCorrect();
                     setFeedback(`Yes! The letter "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}!`);
                     setFeedbackType('success');
                     setIsLocked(true);
@@ -759,6 +763,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                       { silent: true },
                     );
                   } else {
+                    SoundManager.playIncorrect();
                     setFeedback('Not quite! Listen to the sound again and try the other letter.');
                     setFeedbackType('error');
                     setShowKeywordHint(true);

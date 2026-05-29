@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -203,6 +204,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
   const handleClap = useCallback(() => {
     if (hasChecked || clapCount >= MAX_CLAPS) return;
 
+    SoundManager.tap();
     setClapCount(prev => prev + 1);
     setIsClapping(true);
     setTimeout(() => setIsClapping(false), 200);
@@ -216,6 +218,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     const isCorrect = clapCount === currentChallenge.syllableCount;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setHasChecked(true);
       setShowSyllables(true);
       setFeedback(
@@ -248,6 +251,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
         );
       }, 2000);
     } else {
+      SoundManager.playIncorrect();
       setFeedback(
         clapCount > currentChallenge.syllableCount
           ? "That's too many claps. Listen again..."

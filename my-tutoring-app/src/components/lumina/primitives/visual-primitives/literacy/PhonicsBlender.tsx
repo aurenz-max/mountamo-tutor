@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { PhonicsBlenderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -235,6 +236,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   // Add phoneme to build area
   const handlePlacePhoneme = useCallback((phonemeId: string) => {
     if (hasSubmittedEvaluation || currentPhase !== 'build') return;
+    SoundManager.tap();
     setPlacedPhonemeIds(prev => [...prev, phonemeId]);
     setFeedback('');
     setFeedbackType('');
@@ -274,6 +276,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       placedPhonemeIds.every((id, i) => id === correctOrder[i]);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       // Track first-try success
       if ((attemptsPerWord[wordId] || 0) === 0) {
         setCorrectOnFirstTry(prev => new Set(Array.from(prev).concat(wordId)));
@@ -304,6 +307,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
         setFeedbackType('');
       }, 1000);
     } else {
+      SoundManager.playIncorrect();
       const placedSounds = placedPhonemeIds
         .map(id => currentWord.phonemes.find(p => p.id === id)?.sound)
         .filter(Boolean)

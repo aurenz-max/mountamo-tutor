@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { CharacterWebMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -135,11 +136,17 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
 
   const nextPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) setCurrentPhase(phases[idx + 1]);
+    if (idx < phases.length - 1) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx + 1]);
+    }
   };
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx > 0) setCurrentPhase(phases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx - 1]);
+    }
   };
 
   // Add trait to current character
@@ -147,6 +154,7 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
     if (!newTraitText.trim()) return;
     const charId = characters[activeCharacterIdx]?.characterId;
     if (!charId) return;
+    SoundManager.pop();
     setStudentTraits(prev => ({
       ...prev,
       [charId]: [...(prev[charId] || []), { trait: newTraitText.trim(), evidence: newEvidenceText.trim() }],
@@ -172,6 +180,7 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
       (r.fromId === connectToId && r.toId === connectFromId)
     );
     if (exists) return;
+    SoundManager.pop();
     setStudentRelationships(prev => [...prev, { fromId: connectFromId, toId: connectToId, type: connectType }]);
     setConnectFromId('');
     setConnectToId('');

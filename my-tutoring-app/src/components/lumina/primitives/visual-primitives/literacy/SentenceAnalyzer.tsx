@@ -13,6 +13,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -264,6 +265,7 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
     incrementAttempts();
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Correct!');
       setFeedbackType('success');
       setShowExplanation(true);
@@ -275,6 +277,7 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
       });
       sendText(`[ANSWER_CORRECT] Student correctly identified ${isPos ? 'part of speech' : 'grammatical role'} as "${selectedOption}". Congratulate briefly.`, { silent: true });
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. ${isPos ? 'Think about what this word does in the sentence.' : 'Consider how this word functions grammatically.'}`);
       setFeedbackType('error');
 
@@ -305,6 +308,9 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
     const accuracy = Math.round((correctCount / words.length) * 100);
     const isCorrect = accuracy >= 80; // 80% threshold
+
+    if (isCorrect) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
 
     setLabelAllChecked(true);
     setFeedback(`${correctCount} of ${words.length} correct (${accuracy}%)`);
@@ -366,9 +372,11 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
     incrementAttempts();
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Correct!');
       setFeedbackType('success');
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`The sentence is ${currentChallenge.sentenceType}.`);
       setFeedbackType('error');
     }

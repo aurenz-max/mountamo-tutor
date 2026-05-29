@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SpellingPatternExplorerMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -100,11 +101,17 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
 
   const nextPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) setCurrentPhase(phases[idx + 1]);
+    if (idx < phases.length - 1) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx + 1]);
+    }
   };
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx > 0) setCurrentPhase(phases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx - 1]);
+    }
   };
 
   // Check spelling
@@ -213,7 +220,7 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
             <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2">
               <p className="text-xs text-amber-300">Pattern: <span className="font-bold text-yellow-300">{highlightPattern}</span></p>
             </div>
-            <Button variant="ghost" onClick={() => { setPatternIdentified(true); nextPhase(); }}
+            <Button variant="ghost" onClick={() => { SoundManager.select(); setPatternIdentified(true); setCurrentPhase('rule'); }}
               className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 w-full">
               I see the pattern! Next: Write the Rule
             </Button>

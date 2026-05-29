@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { TextStructureAnalyzerMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -130,11 +131,17 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
 
   const nextPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx < phases.length - 1) setCurrentPhase(phases[idx + 1]);
+    if (idx < phases.length - 1) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx + 1]);
+    }
   };
   const prevPhase = () => {
     const idx = phases.indexOf(currentPhase);
-    if (idx > 0) setCurrentPhase(phases[idx - 1]);
+    if (idx > 0) {
+      SoundManager.navigate();
+      setCurrentPhase(phases[idx - 1]);
+    }
   };
 
   // Toggle signal word highlight
@@ -193,6 +200,7 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
 
   // Map an idea to a region
   const mapIdeaToRegion = useCallback((ideaId: string, regionId: string) => {
+    SoundManager.snap();
     setIdeaMapping(prev => ({ ...prev, [ideaId]: regionId }));
   }, []);
 
@@ -391,7 +399,7 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
                 return (
                   <button
                     key={opt.type}
-                    onClick={() => setSelectedStructure(opt.type)}
+                    onClick={() => { SoundManager.select(); setSelectedStructure(opt.type); }}
                     className={`text-left rounded-lg border p-3 transition-all ${
                       isSelected ? colorClass : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
                     }`}
