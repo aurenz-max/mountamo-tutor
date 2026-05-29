@@ -47,6 +47,7 @@ import {
 } from '../../../evaluation';
 import type { PracticeProblemMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 import type {
   PracticeProblemSolution,
   PracticeStep,
@@ -219,6 +220,7 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
   }, []);
 
   const clearCanvas = useCallback(() => {
+    SoundManager.tap();
     setStrokes([]);
   }, []);
 
@@ -275,6 +277,8 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
 
   const handleDone = useCallback(async () => {
     if (phase.kind !== 'solving' || strokes.length === 0) return;
+
+    SoundManager.tap();
 
     try {
       await forceSnapshot();
@@ -370,6 +374,7 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
   }, [phase]);
 
   const handleReset = useCallback(() => {
+    SoundManager.tap();
     setStrokes([]);
     setPhase({ kind: 'solving' });
   }, []);
@@ -492,7 +497,10 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setTool('pen')}
+                      onClick={() => {
+                        SoundManager.tap();
+                        setTool('pen');
+                      }}
                       disabled={!canvasReady}
                       className={`gap-2 border ${
                         tool === 'pen'
@@ -506,7 +514,10 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setTool('eraser')}
+                      onClick={() => {
+                        SoundManager.tap();
+                        setTool('eraser');
+                      }}
                       disabled={!canvasReady}
                       className={`gap-2 border ${
                         tool === 'eraser'

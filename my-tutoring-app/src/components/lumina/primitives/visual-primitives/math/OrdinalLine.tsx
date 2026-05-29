@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -364,11 +365,14 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [currentChallenge, currentAttempts, checkIdentify, checkMatch, checkRelativeOrStory, checkBuildSequence, recordResult]);
 
@@ -556,6 +560,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
             } ${isSelected ? 'scale-110' : isHighlighted ? 'scale-105' : ''}`}
             onClick={() => {
               if (interactive && !isCurrentChallengeComplete) {
+                SoundManager.select();
                 setSelectedPosition(pos);
                 setFeedback('');
                 setFeedbackType('');
@@ -615,6 +620,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                 }`}
                 onClick={() => {
                   if (isCurrentChallengeComplete) return;
+                  SoundManager.tap();
                   setCurrentMatchWord(pair.word);
                 }}
               >
@@ -644,6 +650,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                   }`}
                   onClick={() => {
                     if (isCurrentChallengeComplete || !currentMatchWord) return;
+                    SoundManager.snap();
                     setMatchSelections(prev => {
                       const next = new Map(prev);
                       Array.from(next.entries()).forEach(([k, v]) => {
@@ -693,6 +700,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
             }`}
             onClick={() => {
               if (isCurrentChallengeComplete) return;
+              SoundManager.select();
               setSelectedOption(opt);
               setFeedback('');
               setFeedbackType('');
@@ -746,6 +754,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                   if (selectedBuildCharacter) {
                     const char = chars.find(c => c.name === selectedBuildCharacter);
                     if (char) {
+                      SoundManager.snap();
                       setBuildSlots(prev => {
                         const next = new Map(prev);
                         Array.from(next.entries()).forEach(([k, v]) => {
@@ -796,6 +805,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                 }`}
                 onClick={() => {
                   if (isCurrentChallengeComplete) return;
+                  SoundManager.tap();
                   setSelectedBuildCharacter(
                     selectedBuildCharacter === char.name ? null : char.name,
                   );

@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -361,6 +362,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     if (jumpAnimationTimerRef.current) clearTimeout(jumpAnimationTimerRef.current);
     jumpAnimationTimerRef.current = setTimeout(() => {
       jumpAnimationTimerRef.current = null;
+      SoundManager.snap();        // ← character lands on the next number
       setCurrentPosition(nextExpectedPosition);
       setLandingSpots(prev => [...prev, nextExpectedPosition]);
       setIsAnimating(false);
@@ -576,12 +578,15 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
         type: currentChallenge.type,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [
     currentChallenge, currentAttempts, nextExpectedPosition,

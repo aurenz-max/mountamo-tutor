@@ -11,6 +11,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Fraction Bar — multi-challenge interactive fraction model.
@@ -330,6 +331,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     setNumeratorAttempts(nextAttempts);
 
     if (selectedNumerator === numerator) {
+      SoundManager.playCorrect();
       setFeedback(
         `Correct! The numerator is ${numerator} — it’s the top number that tells us how many parts are shaded.`,
       );
@@ -351,6 +353,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
         );
       }, 1500);
     } else {
+      SoundManager.playIncorrect();
       setFeedback(
         `Not quite. The numerator is the top number in a fraction. In ${numerator}/${denominator}, look at which number is on top.`,
       );
@@ -377,6 +380,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     setDenominatorAttempts(nextAttempts);
 
     if (selectedDenominator === denominator) {
+      SoundManager.playCorrect();
       setFeedback(
         `Correct! The denominator is ${denominator} — it’s the bottom number that tells us how many equal parts make up the whole.`,
       );
@@ -398,6 +402,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
         );
       }, 1500);
     } else {
+      SoundManager.playIncorrect();
       setFeedback(
         `Not quite. The denominator is the bottom number in a fraction. In ${numerator}/${denominator}, look at which number is on the bottom.`,
       );
@@ -415,6 +420,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
   const togglePartition = useCallback(
     (partitionIndex: number) => {
       if (challengeDone) return;
+      SoundManager.tap();
       if (partitionIndex < shadedCount) {
         setShadedCount(partitionIndex);
       } else {
@@ -436,6 +442,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     const targetFraction = `${numerator}/${denominator}`;
 
     if (!isCorrect) {
+      SoundManager.playIncorrect();
       setFeedback(
         `You shaded ${shadedCount} out of ${denominator} parts, making ${selectedFraction}. The target is ${targetFraction}. Try shading exactly ${numerator} part${numerator !== 1 ? 's' : ''}!`,
       );
@@ -459,6 +466,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     const p3 = phaseScore(nextBuildAttempts);
     const score = Math.round((p1 + p2 + p3) / 3);
 
+    SoundManager.playCorrect();
     setFeedback(
       `Excellent! You correctly built ${targetFraction} by shading ${numerator} out of ${denominator} equal parts!`,
     );
@@ -714,7 +722,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
                   {numeratorChoices.map((choice, idx) => (
                     <button
                       key={`${choice}-${idx}`}
-                      onClick={() => setSelectedNumerator(choice)}
+                      onClick={() => { SoundManager.select(); setSelectedNumerator(choice); }}
                       className={`p-4 rounded-xl border text-center transition-all duration-300 text-2xl font-bold font-mono ${
                         selectedNumerator === choice
                           ? 'glass-panel border-purple-400/50 text-purple-300 shadow-lg scale-105'
@@ -762,7 +770,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
                   {denominatorChoices.map((choice, idx) => (
                     <button
                       key={`${choice}-${idx}`}
-                      onClick={() => setSelectedDenominator(choice)}
+                      onClick={() => { SoundManager.select(); setSelectedDenominator(choice); }}
                       className={`p-4 rounded-xl border text-center transition-all duration-300 text-2xl font-bold font-mono ${
                         selectedDenominator === choice
                           ? 'glass-panel border-blue-400/50 text-blue-300 shadow-lg scale-105'

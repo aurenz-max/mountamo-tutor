@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -533,11 +534,14 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [
     currentChallenge, currentAttempts,
@@ -835,7 +839,10 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
                       ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 border'
                       : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
                   }`}
-                  onClick={() => setSelectedAnswer(answer)}
+                  onClick={() => {
+                    SoundManager.select();
+                    setSelectedAnswer(answer);
+                  }}
                 >
                   {answer === 'equal' ? 'The Same' : answer === 'more' ? 'More' : 'Fewer'}
                 </Button>
@@ -913,7 +920,10 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
                     ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 border-2'
                     : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
                 }`}
-                onClick={() => setSelectedAnswer(symbol)}
+                onClick={() => {
+                  SoundManager.select();
+                  setSelectedAnswer(symbol);
+                }}
               >
                 {useAlligatorMnemonic && symbol !== '=' ? (
                   <>
@@ -1005,7 +1015,10 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
                 key={`card-${num}`}
                 variant="ghost"
                 className="w-14 h-14 text-xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 hover:text-white"
-                onClick={() => setOrderedNumbers((prev) => [...prev, num])}
+                onClick={() => {
+                  SoundManager.snap();
+                  setOrderedNumbers((prev) => [...prev, num]);
+                }}
               >
                 {num}
               </Button>
@@ -1060,7 +1073,10 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
                     : 'bg-white/5 border border-white/15 hover:bg-white/10 text-slate-300'
               }`}
               onClick={() => {
-                if (!isCurrentChallengeComplete) onSelect(i);
+                if (!isCurrentChallengeComplete) {
+                  SoundManager.select();
+                  onSelect(i);
+                }
               }}
               disabled={isCurrentChallengeComplete}
             >

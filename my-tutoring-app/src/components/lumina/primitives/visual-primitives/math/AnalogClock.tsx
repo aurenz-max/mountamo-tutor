@@ -14,6 +14,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -545,6 +546,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
 
     // Detect hour change via wraparound using ref (not stale state)
     const prevMin = prevMinuteRef.current;
+    if (snapped !== prevMin) SoundManager.tick(); // ratcheting click only when the hand crosses a snap
     prevMinuteRef.current = snapped;
     if (prevMin >= 45 && snapped <= 15) {
       setDisplayHour(h => (h % 12) + 1);
@@ -584,6 +586,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback('Correct!');
       setFeedbackType('success');
       recordResult({
@@ -598,6 +601,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       incrementAttempts();
       setFeedback(currentAttempts === 0 ? 'Not quite — try again!' : currentChallenge.hint);
       setFeedbackType('error');
@@ -672,6 +676,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   // Stopwatch controls
   // -------------------------------------------------------------------------
   const handleStopwatchToggle = useCallback(() => {
+    SoundManager.toggle(!stopwatchRunning); // rising blips on start, falling on stop
     if (!stopwatchRunning && !stopwatchStartTime) {
       // Starting — record current time
       setStopwatchStartTime({ hour: displayHour, minute: displayMinute });
@@ -694,9 +699,10 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   const handleTimelineChange = useCallback((hour: number, minute: number) => {
     if (currentChallenge?.type === 'read' || currentChallenge?.type === 'match') return; // locked in read/match
     const snapped = snapMinute(minute, gradeBand);
+    if (snapped !== displayMinute || hour !== displayHour) SoundManager.tick(); // tick only on a real time change
     setDisplayHour(hour);
     setDisplayMinute(snapped);
-  }, [currentChallenge?.type, gradeBand]);
+  }, [currentChallenge?.type, gradeBand, displayHour, displayMinute]);
 
   // -------------------------------------------------------------------------
   // Computed values
@@ -844,7 +850,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                         ? 'bg-blue-500/20 border-blue-400/50 text-blue-200'
                         : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
                     }`}
-                    onClick={() => setSelectedOption(i)}
+                    onClick={() => { SoundManager.select(); setSelectedOption(i); }}
                     disabled={hasSubmittedEvaluation}
                   >
                     {option}

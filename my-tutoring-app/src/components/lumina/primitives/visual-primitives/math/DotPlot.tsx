@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { SoundManager } from '../../../utils/SoundManager';
 
 export type DotPlotEvalMode =
   | 'whole_number_plot'
@@ -201,6 +202,7 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
   // Handle click on number line to add/remove points
   const handleNumberLineClick = useCallback((value: number) => {
     if (!editable) return;
+    SoundManager.tap();        // ← tactile add/remove of a data point
 
     const currentPoints = activeDataset === 'primary' ? dataPoints : secondaryDataPoints;
     const setPoints = activeDataset === 'primary' ? setDataPoints : setSecondaryDataPoints;
@@ -323,6 +325,7 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
                 <div className="mt-3 flex items-center justify-center gap-2">
                   <button
                     onClick={() => {
+                      SoundManager.playCorrect();   // ← per-challenge completion feedback
                       incrementAttempts();
                       recordResult({
                         challengeId: currentChallenge.id,
@@ -346,7 +349,7 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
           {parallel && editable && (
             <div className="flex justify-center gap-4 mb-6">
               <button
-                onClick={() => setActiveDataset('primary')}
+                onClick={() => { SoundManager.select(); setActiveDataset('primary'); }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   activeDataset === 'primary'
                     ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50'
@@ -357,7 +360,7 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
                 {primaryLabel}
               </button>
               <button
-                onClick={() => setActiveDataset('secondary')}
+                onClick={() => { SoundManager.select(); setActiveDataset('secondary'); }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   activeDataset === 'secondary'
                     ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'

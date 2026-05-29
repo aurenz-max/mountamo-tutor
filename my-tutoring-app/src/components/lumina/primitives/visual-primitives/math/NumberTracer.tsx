@@ -31,6 +31,7 @@ async function evaluateDigitDrawing(
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -575,6 +576,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     if (!isDrawing) return;
     setIsDrawing(false);
     if (currentStroke.length >= 3) {
+      SoundManager.tap();        // ← tactile: a pen stroke lands
       setAllStrokes(prev => [...prev, currentStroke]);
     }
     setCurrentStroke([]);
@@ -702,6 +704,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
   const handleCheckDrawing = useCallback(async () => {
     if (!currentChallenge || isEvaluating) return;
     if (allStrokes.flat().length < MIN_STROKE_POINTS) {
+      SoundManager.invalid();    // ← blocked action, not a wrong answer
       setFeedback('Keep writing! Draw the full number.');
       setFeedbackType('error');
       return;
@@ -720,6 +723,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
 
     // If geometric score is already >= 90, accept without API call
     if (geoScore >= 90) {
+      SoundManager.playCorrect();
       setLastScore(geoScore);
       setFeedback('Excellent writing!');
       setFeedbackType('success');
@@ -761,6 +765,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
       const isCorrect = finalScore >= 50;
 
       if (isCorrect) {
+        SoundManager.playCorrect();
         const feedbackMsg = geminiResult?.feedback
           ?? (finalScore >= 80 ? 'Excellent writing!' : 'Good job! You wrote the number!');
         setFeedback(feedbackMsg);
@@ -782,6 +787,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
           { silent: true },
         );
       } else {
+        SoundManager.playIncorrect();
         const feedbackMsg = geminiResult?.feedback
           ?? (currentChallenge.type === 'trace'
             ? 'Follow the dotted path more closely.'

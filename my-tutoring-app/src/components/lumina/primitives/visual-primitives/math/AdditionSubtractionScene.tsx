@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -312,6 +313,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     const correct = answer === target;
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! ${currentChallenge.equation}`);
       setFeedbackType('success');
       sendText(
@@ -321,6 +323,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       );
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite — you said ${answer || '?'}. ${currentChallenge.operation === 'addition' ? 'Count all the objects together!' : 'Count what\'s left!'}`);
       setFeedbackType('error');
       sendText(
@@ -343,6 +346,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     const eqMatch = stripped.match(/^(\d+)([+-])(\d+)=(\d+)$/);
 
     if (!eqMatch) {
+      SoundManager.invalid();
       setFeedback('Build an equation like 3 + 2 = 5');
       setFeedbackType('error');
       return;
@@ -372,6 +376,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     const correct = mathCorrect && usesCorrectNumbers && correctOp;
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Perfect! ${stripped} matches the story!`);
       setFeedbackType('success');
       sendText(
@@ -381,6 +386,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       );
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else if (!mathCorrect) {
+      SoundManager.playIncorrect();
       setFeedback('The math doesn\'t add up — check the numbers.');
       setFeedbackType('error');
       sendText(
@@ -389,6 +395,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
         { silent: true },
       );
     } else if (!correctOp) {
+      SoundManager.playIncorrect();
       setFeedback(`Think about the story — did the ${currentChallenge.objectType} come or go away?`);
       setFeedbackType('error');
       sendText(
@@ -397,6 +404,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Use the numbers from the story: ${startCount}, ${changeCount}, and ${resultCount}`);
       setFeedbackType('error');
       sendText(
@@ -417,6 +425,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     const correct = answer === target;
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`That's right! The answer is ${target}.`);
       setFeedbackType('success');
       sendText(
@@ -426,6 +435,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       );
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite — try again! Read the story carefully.`);
       setFeedbackType('error');
       sendText(
@@ -442,6 +452,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     incrementAttempts();
     // Create-story is open-ended — accept any scene+object selection as correct
     const correct = true;
+    SoundManager.playCorrect();
     setFeedback(`Great story! You showed ${currentChallenge.equation} with ${createSelection.object} at the ${createSelection.scene}!`);
     setFeedbackType('success');
     sendText(
@@ -549,15 +560,18 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
   // ── Equation tile handlers ──────────────────────────────────────
   const addTile = useCallback((tile: string) => {
+    SoundManager.tap();
     setEquationTiles((prev) => [...prev, tile]);
   }, []);
   const removeTile = useCallback((index: number) => {
+    SoundManager.tap();
     setEquationTiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   // ── Object tap handler (act-out counting) ───────────────────────
   const handleObjectTap = useCallback((index: number) => {
     if (currentChallenge?.type !== 'act-out' || isCurrentChallengeComplete) return;
+    SoundManager.tap();
     setTappedObjects((prev) => {
       const next = new Set(prev);
       if (next.has(index)) {
@@ -835,7 +849,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                       ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
                       : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'
                   }`}
-                  onClick={() => setCreateSelection((prev) => ({ scene: key, object: prev?.object || '' }))}
+                  onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: key, object: prev?.object || '' })); }}
                 >
                   {cfg.label}
                 </Button>
@@ -851,7 +865,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                       ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
                       : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'
                   }`}
-                  onClick={() => setCreateSelection((prev) => ({ scene: prev?.scene || '', object: key }))}
+                  onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: prev?.scene || '', object: key })); }}
                 >
                   {emoji} {key}
                 </Button>

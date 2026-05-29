@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -565,6 +566,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           return ptDist(px, centerPx) < CELL_SIZE * 1.5;
         });
         if (clickedShape) {
+          SoundManager.select();
           setSelectedShapeId(clickedShape.id);
           setFeedback(`Selected: ${clickedShape.name}. Now choose a category.`);
           setFeedbackType('info');
@@ -583,6 +585,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         if (placedVertices.length >= 3) {
           const first = placedVertices[0];
           if (first.x === gridPt.x && first.y === gridPt.y) {
+            SoundManager.pop();
             setIsShapeClosed(true);
             setFeedback('');
             setFeedbackType('');
@@ -600,11 +603,13 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         }
 
         if (placedVertices.some((v) => v.x === gridPt.x && v.y === gridPt.y)) {
+          SoundManager.invalid();
           setFeedback('That point is already placed!');
           setFeedbackType('error');
           return;
         }
 
+        SoundManager.snap();
         setPlacedVertices((prev) => [...prev, gridPt]);
         setFeedback('');
         if (placedVertices.length === 0) {
@@ -638,6 +643,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
             });
 
             if (valid && !isDuplicate) {
+              SoundManager.playCorrect();
               setSymmetryLines((prev) => [...prev, { start: lineStart, end: lineEnd }]);
               setValidSymmetryLines((prev) => prev + 1);
               setSymmetryLinesFoundTotal((prev) => prev + 1);
@@ -650,9 +656,11 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
                 { silent: true },
               );
             } else if (isDuplicate) {
+              SoundManager.invalid();
               setFeedback("You already found that line of symmetry!");
               setFeedbackType('info');
             } else {
+              SoundManager.playIncorrect();
               setFeedback("That's not a line of symmetry. Try again!");
               setFeedbackType('error');
               sendText(
@@ -707,6 +715,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       const isCorrect = shape.correctCategory === category;
 
       if (isCorrect) {
+        SoundManager.playCorrect();
         setClassificationsCorrect((prev) => prev + 1);
         setFeedback(`Correct! ${shape.name} belongs in "${category}".`);
         setFeedbackType('success');
@@ -715,6 +724,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           { silent: true },
         );
       } else {
+        SoundManager.playIncorrect();
         setFeedback(`Not quite. Look at the properties of ${shape.name} again.`);
         setFeedbackType('error');
         sendText(
@@ -734,21 +744,24 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
 
   const handleToggleRuler = useCallback(() => {
+    SoundManager.toggle(!showSideLengths);
     setShowSideLengths((prev) => !prev);
     setToolsUsed((prev) => new Set(prev).add('ruler'));
     setActiveTool('ruler');
-  }, []);
+  }, [showSideLengths]);
 
   const handleToggleProtractor = useCallback(() => {
+    SoundManager.toggle(!showAngles);
     setShowAngles((prev) => !prev);
     setToolsUsed((prev) => new Set(prev).add('protractor'));
     setActiveTool('protractor');
-  }, []);
+  }, [showAngles]);
 
   const handleToggleParallel = useCallback(() => {
+    SoundManager.toggle(!showParallel);
     setShowParallel((prev) => !prev);
     setToolsUsed((prev) => new Set(prev).add('parallelMarker'));
-  }, []);
+  }, [showParallel]);
 
   // -------------------------------------------------------------------------
   // Check Answer
@@ -760,12 +773,14 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
     if (activeMode === 'build' || activeMode === 'coordinate_shape') {
       if (!isShapeClosed || !currentShapeProps) {
+        SoundManager.invalid();
         setFeedback('Close your shape first by clicking the first vertex!');
         setFeedbackType('error');
         return;
       }
       const target = currentChallenge.targetProperties;
       if (!target) {
+        SoundManager.playCorrect();
         setShapesBuiltCorrectly((prev) => prev + 1);
         setFeedback(`Great! You built a ${currentShapeName}!`);
         setFeedbackType('success');
@@ -806,6 +821,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       }
 
       if (matches) {
+        SoundManager.playCorrect();
         setShapesBuiltCorrectly((prev) => prev + 1);
         setFeedback(`Perfect! That's a ${currentShapeName}!`);
         setFeedbackType('success');
@@ -820,6 +836,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           { silent: true },
         );
       } else {
+        SoundManager.playIncorrect();
         setFeedback(`Not quite. ${mismatches.join('. ')}. Try again!`);
         setFeedbackType('error');
         sendText(
@@ -840,6 +857,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       propsNeeded = [tools.ruler, tools.protractor, tools.parallelMarker].filter(Boolean).length;
 
       if (propsFound >= propsNeeded && currentShapeProps) {
+        SoundManager.playCorrect();
         setPropertiesIdentified((prev) => prev + propsFound);
         setPropertiesTotal((prev) => prev + propsNeeded);
         setFeedback(`You discovered all properties of this ${currentShapeName}!`);
@@ -856,6 +874,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           { silent: true },
         );
       } else {
+        SoundManager.invalid();
         setFeedback("Use all measurement tools to discover the shape's properties!");
         setFeedbackType('info');
         const missing = !showSideLengths ? 'ruler' : !showAngles ? 'protractor' : 'parallel marker';
@@ -888,6 +907,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           { silent: true },
         );
       } else {
+        SoundManager.invalid();
         setFeedback(`Classify all shapes first. ${classified}/${totalShapes} done.`);
         setFeedbackType('info');
       }
@@ -911,6 +931,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           { silent: true },
         );
       } else {
+        SoundManager.invalid();
         setFeedback(`Found ${validSymmetryLines}/${target}. Keep looking!`);
         setFeedbackType('info');
         sendText(
@@ -923,6 +944,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     }
 
     if (activeMode === 'compose') {
+      SoundManager.playCorrect();
       setFeedback('Shape composed! Great work with pattern blocks.');
       setFeedbackType('success');
       recordResult({

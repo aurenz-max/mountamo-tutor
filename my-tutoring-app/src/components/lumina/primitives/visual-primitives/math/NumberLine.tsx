@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -386,6 +387,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
     // Order mode: place the selected value
     if (currentChallenge?.type === 'order_values' && selectedOrderValue !== null) {
+      SoundManager.snap();
       setOrderedPlacements(prev => {
         const next = new Map(prev);
         next.set(selectedOrderValue, snappedValue);
@@ -397,6 +399,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
     // Jump mode: set endpoint
     if (currentChallenge?.type === 'show_jump') {
+      SoundManager.snap();
       setJumpEndPoints(prev => {
         if (prev.length >= activeOperations.length) {
           // Replace last endpoint when all steps already placed
@@ -412,6 +415,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     // Plot / find_between: add a point
     // find_between: student places 1 point anywhere between the two bounds (targetValues are the bounds, not the answer)
     if (currentChallenge?.type === 'plot_point' || currentChallenge?.type === 'find_between') {
+      SoundManager.snap();
       const maxPoints = currentChallenge.type === 'find_between' ? 1 : currentChallenge.targetValues.length;
       setPlacedPoints(prev => {
         if (prev.length >= maxPoints) {
@@ -445,8 +449,9 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   }, [draggingIndex, xToValue, activeNumberType, zoomLevel, visibleMin, visibleMax]);
 
   const handlePointerUp = useCallback(() => {
+    if (draggingIndex !== null) SoundManager.snap();
     setDraggingIndex(null);
-  }, []);
+  }, [draggingIndex]);
 
   // Auto-zoom + auto-center when a challenge starts.
   // Zoom is purely about visibility — it fits all relevant values (targets, highlights,
@@ -559,6 +564,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(isK2 ? 'Great job!' : 'Correct!');
       setFeedbackType('success');
       recordResult({
@@ -574,6 +580,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(currentChallenge.hint || 'Not quite. Try again!');
       setFeedbackType('error');
       sendText(
@@ -886,7 +893,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
                         ? 'bg-orange-500/20 border-orange-400/50 text-orange-300 ring-1 ring-orange-400/50'
                         : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
                   }`}
-                  onClick={() => !isPlaced && setSelectedOrderValue(val)}
+                  onClick={() => { if (!isPlaced) { SoundManager.select(); setSelectedOrderValue(val); } }}
                   disabled={isPlaced}
                 >
                   {formatValue(val, activeNumberType)}

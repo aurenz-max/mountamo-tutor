@@ -11,6 +11,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Place Value Chart — multi-challenge place value model.
@@ -428,6 +429,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     setPlaceAttempts(nextPlaceAttempts);
 
     if (selectedPlaceName === correctPlaceName) {
+      SoundManager.playCorrect();
       setFeedback(`Correct! The digit ${highlightedDigit} is in the ${correctPlaceName} place.`);
       setFeedbackType('success');
       sendText(
@@ -450,6 +452,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
         + `Attempt ${nextPlaceAttempts}. Gentle hint about counting positions.`,
         { silent: true },
       );
+      SoundManager.playIncorrect();
     }
   }, [
     currentChallenge, selectedPlaceName, correctPlaceName, highlightedDigit,
@@ -468,6 +471,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     setValueAttempts(nextValueAttempts);
 
     if (selectedValue === highlightedValue) {
+      SoundManager.playCorrect();
       const correctWord =
         currentChallenge.digitValueChoices.find((c) => c.value === highlightedValue)?.wordForm
         ?? highlightedValue.toLocaleString();
@@ -496,6 +500,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
         + `Attempt ${nextValueAttempts}. Coach the student to verbalize the place-value vocabulary (e.g., "thirty", "two hundred", "five tenths") — do NOT give the answer word directly.`,
         { silent: true },
       );
+      SoundManager.playIncorrect();
     }
   }, [
     currentChallenge, selectedValue, highlightedValue, highlightedDigit,
@@ -507,6 +512,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
   const handleDigitChange = useCallback((place: number, value: string) => {
     if (currentPhase === 'challenge-done') return;
     const sanitized = value.replace(/[^0-9]/g, '').slice(-1);
+    if (sanitized !== '') SoundManager.tick();
     setDigits((prev) => {
       const updated = { ...prev };
       if (sanitized === '') {
@@ -552,6 +558,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     const isCorrect = Math.abs(studentValue - targetNumber) < 0.0001;
 
     if (!isCorrect) {
+      SoundManager.playIncorrect();
       setFeedback(
         `You built ${studentValue.toLocaleString()}, but the target is ${targetNumber.toLocaleString()}. Check each digit's column!`,
       );
@@ -570,6 +577,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     const p3 = phaseScore(nextBuildAttempts);
     const overallScore = Math.round((p1 + p2 + p3) / 3);
 
+    SoundManager.playCorrect();
     setFeedback(`Excellent! You built ${targetNumber.toLocaleString()} correctly!`);
     setFeedbackType('success');
     setCurrentPhase('challenge-done');
@@ -818,7 +826,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
                   {placeNameChoices.map((choice) => (
                     <button
                       key={choice}
-                      onClick={() => setSelectedPlaceName(choice)}
+                      onClick={() => { SoundManager.select(); setSelectedPlaceName(choice); }}
                       className={`p-4 rounded-xl border text-center transition-all duration-300 text-lg font-semibold ${
                         selectedPlaceName === choice
                           ? 'glass-panel border-indigo-400/50 text-indigo-300 shadow-lg scale-105'
@@ -863,7 +871,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
                   {digitValueChoices.map((choice) => (
                     <button
                       key={choice.value}
-                      onClick={() => setSelectedValue(choice.value)}
+                      onClick={() => { SoundManager.select(); setSelectedValue(choice.value); }}
                       className={`p-4 rounded-xl border text-center transition-all duration-300 text-xl font-semibold ${
                         selectedValue === choice.value
                           ? 'glass-panel border-amber-400/50 text-amber-300 shadow-lg scale-105'

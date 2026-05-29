@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -403,11 +404,14 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [currentChallenge, currentAttempts, handleCheckSequence, handleCheckTimeOfDay, handleCheckBeforeAfter, handleCheckDuration, handleCheckSchedule, recordResult]);
 
@@ -486,6 +490,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
   // ── Sequence event toggling ────────────────────────────────────────
   const handleToggleSequenceEvent = useCallback((eventId: string) => {
     if (isCurrentChallengeCorrect) return;
+    SoundManager.tap();
     setOrderedEvents((prev) => {
       if (prev.includes(eventId)) {
         return prev.filter((id) => id !== eventId);
@@ -584,7 +589,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
             <button
               key={period}
               type="button"
-              onClick={() => !isCurrentChallengeCorrect && setSelectedPeriod(period)}
+              onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setSelectedPeriod(period); } }}
               disabled={isCurrentChallengeCorrect}
               className={`
                 p-3 rounded-xl border-2 text-center transition-all
@@ -622,7 +627,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
               key={event.id}
               event={event}
               selected={selectedEvent === event.id}
-              onClick={() => !isCurrentChallengeCorrect && setSelectedEvent(event.id)}
+              onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setSelectedEvent(event.id); } }}
               disabled={isCurrentChallengeCorrect}
             />
           ))}
@@ -641,7 +646,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
         <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
-            onClick={() => !isCurrentChallengeCorrect && setDurationAnswer('A')}
+            onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('A'); } }}
             disabled={isCurrentChallengeCorrect}
             className={`p-3 rounded-xl border-2 transition-all ${
               durationAnswer === 'A'
@@ -654,7 +659,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
           </button>
           <button
             type="button"
-            onClick={() => !isCurrentChallengeCorrect && setDurationAnswer('B')}
+            onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('B'); } }}
             disabled={isCurrentChallengeCorrect}
             className={`p-3 rounded-xl border-2 transition-all ${
               durationAnswer === 'B'
@@ -670,7 +675,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => !isCurrentChallengeCorrect && setDurationAnswer('same')}
+            onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setDurationAnswer('same'); } }}
             disabled={isCurrentChallengeCorrect}
             className={`text-sm ${
               durationAnswer === 'same'
@@ -727,7 +732,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
             <button
               key={activity}
               type="button"
-              onClick={() => !isCurrentChallengeCorrect && setScheduleAnswer(activity)}
+              onClick={() => { if (!isCurrentChallengeCorrect) { SoundManager.select(); setScheduleAnswer(activity); } }}
               disabled={isCurrentChallengeCorrect}
               className={`
                 w-full px-4 py-3 rounded-xl border-2 text-left text-sm font-medium transition-all

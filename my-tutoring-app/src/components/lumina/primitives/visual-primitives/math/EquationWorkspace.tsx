@@ -15,6 +15,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -233,6 +234,7 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
 
       // Check if solved
       if (newSteps.length === currentChallenge.solutionSteps.length) {
+        SoundManager.playCorrect();
         setChallengeSolved(true);
         sendText(
           `[ANSWER_CORRECT] Student solved the equation in ${newSteps.length} steps ` +
@@ -241,6 +243,7 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
           { silent: true },
         );
       } else {
+        SoundManager.snap();
         sendText(
           `[STEP_CORRECT] Student applied "${expectedStep.operation}" correctly. ` +
           `${currentChallenge.solutionSteps.length - newSteps.length} steps remaining. ` +
@@ -250,6 +253,7 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
       }
     } else {
       // Incorrect operation
+      SoundManager.playIncorrect();
       incrementAttempts();
       setIncorrectOps(prev => prev + 1);
       const opLabel = currentChallenge.availableOperations.find(o => o.id === opId)?.label ?? opId;
@@ -273,6 +277,7 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
     const opLabel = currentChallenge.availableOperations.find(o => o.id === selectedAnswer)?.label ?? selectedAnswer;
 
     if (correct) {
+      SoundManager.playCorrect();
       setChallengeSolved(true);
       setFeedback({ message: 'Correct! That\'s the right next step.', correct: true });
       sendText(
@@ -280,6 +285,7 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       incrementAttempts();
       setIncorrectOps(prev => prev + 1);
       const correctLabel = currentChallenge.availableOperations.find(
@@ -546,7 +552,7 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
                           ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
                       }`}
-                      onClick={() => setSelectedAnswer(op.id)}
+                      onClick={() => { SoundManager.select(); setSelectedAnswer(op.id); }}
                     >
                       <Badge variant="outline" className={`mr-2 text-xs ${CATEGORY_COLORS[op.category] ?? ''}`}>
                         {op.category}

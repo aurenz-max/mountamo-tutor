@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -602,11 +603,14 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, currentAttempts,
@@ -682,6 +686,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
   // ── Sorting handler (2d-vs-3d) ────────────────────────────────
   const handleSort = useCallback((shapeName: string, bin: '2d' | '3d') => {
     if (hasSubmittedEvaluation || isCurrentChallengeComplete) return;
+    SoundManager.snap();
     setSortedShapes(prev => {
       const next = new Map(prev);
       if (next.get(shapeName) === bin) {
@@ -696,6 +701,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
   // ── Matching handler ──────────────────────────────────────────
   const handleMatchSelect = useCallback((shape3d: string) => {
     if (!selectedMatchObject || hasSubmittedEvaluation || isCurrentChallengeComplete) return;
+    SoundManager.snap();
     setMatchSelections(prev => {
       const next = new Map(prev);
       next.set(selectedMatchObject, shape3d);
@@ -707,6 +713,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
   // ── Property answer handler ───────────────────────────────────
   const handlePropertyAnswer = useCallback((qIndex: number, answer: string | number | boolean) => {
     if (hasSubmittedEvaluation || isCurrentChallengeComplete) return;
+    SoundManager.select();
     setPropertyAnswers(prev => {
       const next = new Map(prev);
       next.set(qIndex, answer);
@@ -799,7 +806,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
                           ? 'bg-blue-500/20 border-blue-400/50 text-blue-200'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                       }`}
-                      onClick={() => setSelectedOption(opt)}
+                      onClick={() => { SoundManager.select(); setSelectedOption(opt); }}
                       disabled={isCurrentChallengeComplete}
                     >
                       {SHAPE_LABELS[opt] || opt}
@@ -881,9 +888,9 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
                               ? 'bg-slate-700/30 border-slate-600/30 text-slate-400'
                               : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                           }`}
-                          onClick={() => setSelectedMatchObject(
+                          onClick={() => { SoundManager.select(); setSelectedMatchObject(
                             selectedMatchObject === pair.realWorldObject ? null : pair.realWorldObject
-                          )}
+                          ); }}
                           disabled={isCurrentChallengeComplete}
                         >
                           <span className="mr-2">{pair.emoji}</span>
@@ -1013,7 +1020,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
                           ? 'bg-cyan-500/20 border-cyan-400/50 text-cyan-200'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                       }`}
-                      onClick={() => setSelectedOption(opt)}
+                      onClick={() => { SoundManager.select(); setSelectedOption(opt); }}
                       disabled={isCurrentChallengeComplete}
                     >
                       <Shape3DSVG shape={opt} size={48} />

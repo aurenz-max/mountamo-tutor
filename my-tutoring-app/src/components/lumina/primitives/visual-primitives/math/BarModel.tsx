@@ -6,6 +6,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 import {
   usePrimitiveEvaluation,
   type BarModelMetrics,
@@ -299,6 +300,7 @@ const BuildControls: React.FC<BuildControlsProps> = ({
   disabled,
 }) => {
   const adjust = (i: number, delta: number) => {
+    SoundManager.tick();
     const next = values.map((v, idx) =>
       idx === i ? { ...v, value: Math.max(0, v.value + delta) } : v,
     );
@@ -349,7 +351,7 @@ const BuildControls: React.FC<BuildControlsProps> = ({
               key={s}
               variant="ghost"
               disabled={disabled}
-              onClick={() => onChooseStep(s)}
+              onClick={() => { SoundManager.select(); onChooseStep(s); }}
               className={`px-4 py-2 border ${chosenStep === s ? 'bg-cyan-500/20 border-cyan-400 text-cyan-100' : 'bg-white/5 border-white/20 text-slate-100 hover:bg-white/10'}`}
             >
               Step of {s}
@@ -599,6 +601,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
       if (correct) {
         if (recordedRef.current) return;
         recordedRef.current = true;
+        SoundManager.playCorrect();
         recordResult({
           challengeId: currentChallenge.id,
           correct: true,
@@ -611,6 +614,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
           { silent: true },
         );
       } else {
+        SoundManager.playIncorrect();
         setShowHint(true);
       }
     },

@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Area Model — multi-challenge multiplication / area / perimeter / factoring.
@@ -365,6 +366,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     if (challengeDone || isFactorMode || isPerimeterMode) return;
     const cellState = getCellState(row, col);
     if (cellState?.isCorrect) return;
+    SoundManager.tap();
     setSelectedCell([row, col]);
     setCurrentInput(cellState?.studentAnswer || '');
   };
@@ -391,8 +393,11 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     setCellStates(next);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setSelectedCell(null);
       setCurrentInput('');
+    } else {
+      SoundManager.playIncorrect();
     }
   };
 
@@ -410,8 +415,10 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     setSumCorrect(isCorrect);
 
     if (!isCorrect) {
+      SoundManager.playIncorrect();
       return; // let the student try again
     }
+    SoundManager.playCorrect();
 
     // All cells were already correct (sum button is only enabled then).
     let cellAttempts = 0;
@@ -451,7 +458,11 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     setPerimeterCorrect(isCorrect);
     setPerimeterAttempts(nextAttempts);
 
-    if (!isCorrect) return;
+    if (!isCorrect) {
+      SoundManager.playIncorrect();
+      return;
+    }
+    SoundManager.playCorrect();
 
     const score = phaseScore(nextAttempts);
     completeCurrentChallenge(true, score, nextAttempts, {
@@ -497,7 +508,11 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     setFactorChecked(true);
 
     const allCorrect = topResults.every(Boolean) && leftResults.every(Boolean);
-    if (!allCorrect) return;
+    if (!allCorrect) {
+      SoundManager.playIncorrect();
+      return;
+    }
+    SoundManager.playCorrect();
 
     const score = phaseScore(nextAttempts);
     completeCurrentChallenge(true, score, nextAttempts, {

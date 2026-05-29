@@ -16,6 +16,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -406,6 +407,7 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
   // -------------------------------------------------------------------------
   const handleParamChange = useCallback(
     (symbol: string, value: number) => {
+      SoundManager.tick();
       setParamValues((prev) => ({ ...prev, [symbol]: value }));
       setExploredParams((prev) => new Set(prev).add(symbol));
     },
@@ -418,9 +420,11 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
         const next = new Set(prev);
         if (next.has(symbol)) {
           next.delete(symbol);
+          SoundManager.toggle(false);
         } else {
           next.add(symbol);
           setUsedHoldAndVary(true);
+          SoundManager.toggle(true);
         }
         return next;
       });
@@ -521,6 +525,11 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
     }
 
     incrementAttempts();
+    if (isCorrect) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
     setAnswerFeedback(isCorrect ? 'correct' : 'incorrect');
     setShowExplanation(true);
 
@@ -734,7 +743,10 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                           ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                       }`}
-                      onClick={() => setSelectedDirection(dir)}
+                      onClick={() => {
+                        SoundManager.select();
+                        setSelectedDirection(dir);
+                      }}
                       disabled={answerFeedback !== null}
                     >
                       {dir === 'increase' ? '📈 Increase' : dir === 'decrease' ? '📉 Decrease' : '➡️ Stay Same'}
@@ -811,7 +823,10 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                           ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                       }`}
-                      onClick={() => setSelectedParameter(param.symbol)}
+                      onClick={() => {
+                        SoundManager.select();
+                        setSelectedParameter(param.symbol);
+                      }}
                       disabled={answerFeedback !== null}
                     >
                       {param.symbol}

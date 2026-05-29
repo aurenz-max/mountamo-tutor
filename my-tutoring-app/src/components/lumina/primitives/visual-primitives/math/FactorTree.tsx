@@ -6,6 +6,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 export interface TreeNode {
   value: number;
@@ -247,6 +248,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     if (!node || node.factors) return false;
 
     if (factor1 * factor2 !== node.value) {
+      SoundManager.playIncorrect();
       setError(`${factor1} × ${factor2} ≠ ${node.value}`);
       setPerChallengeInvalidSplits((n) => n + 1);
       incrementAttempts();
@@ -259,6 +261,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     }
 
     if (factor1 === 1 || factor2 === 1) {
+      SoundManager.invalid();
       setError('Factor pairs cannot include 1');
       setPerChallengeInvalidSplits((n) => n + 1);
       incrementAttempts();
@@ -272,6 +275,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
 
     setError(null);
     incrementAttempts();
+    SoundManager.snap();
 
     const newTree = new Map(tree);
     newTree.set(nodeId, { ...node, factors: [factor1, factor2] });
@@ -304,6 +308,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     if (currentlySelected) { setSelectedNode(null); return; }
     const node = tree.get(nodeId);
     if (!node) return;
+    SoundManager.select();
     setSelectedNode(nodeId);
     const pairs = getFactorPairs(node.value);
     sendText(
@@ -316,6 +321,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
 
   const resetTree = useCallback(() => {
     if (!currentChallenge) return;
+    SoundManager.toggle(false); // falling blips — undo / clear the tree
     setTree(new Map([['0', { value: currentRootValue, isPrime: isPrime(currentRootValue) }]]));
     setSelectedNode(null);
     setFactorInput({ factor1: '', factor2: '' });
@@ -341,6 +347,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     const rootNode = tree.get('0');
     if (!rootNode || rootNode.value !== currentChallenge.rootValue) return;
     treeCompleteTriggeredRef.current = true;
+    SoundManager.playCorrect();
 
     const splits = tree.size - leavesNow.length;
     const optimal = optimalSplitsFor(currentRootValue);

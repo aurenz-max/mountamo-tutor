@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -384,6 +385,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     const otherIdx = otherSide.findIndex(o => o.isVariable === obj.isVariable && o.value === obj.value);
 
     if (otherIdx === -1) {
+      SoundManager.invalid();
       setFeedback('To keep balanced, remove the same value from both sides!');
       setFeedbackType('error');
       sendText(
@@ -401,6 +403,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
       ? currentRight.filter((_, i) => i !== index)
       : currentRight.filter((_, i) => i !== otherIdx);
 
+    SoundManager.tap();
     setCurrentLeft(newLeft);
     setCurrentRight(newRight);
 
@@ -422,6 +425,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
 
     const value = parseFloat(opValue);
     if (isNaN(value) || value <= 0) {
+      SoundManager.invalid();
       setFeedback('Enter a valid positive number');
       setFeedbackType('error');
       return;
@@ -439,6 +443,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
       const leftIdx = newLeft.findIndex(o => !o.isVariable && o.value === value);
       const rightIdx = newRight.findIndex(o => !o.isVariable && o.value === value);
       if (leftIdx === -1 || rightIdx === -1) {
+        SoundManager.invalid();
         setFeedback(`Need ${value} on both sides to subtract!`);
         setFeedbackType('error');
         return;
@@ -448,6 +453,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
       desc = `Subtracted ${value} from both sides`;
     } else if (selectedOp === 'multiply') {
       if (!Number.isInteger(value)) {
+        SoundManager.invalid();
         setFeedback('Multiplier must be a whole number.');
         setFeedbackType('error');
         return;
@@ -457,11 +463,13 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
       desc = `Multiplied both sides by ${value}`;
     } else if (selectedOp === 'divide') {
       if (!Number.isInteger(value)) {
+        SoundManager.invalid();
         setFeedback('Divisor must be a whole number.');
         setFeedbackType('error');
         return;
       }
       if (!isSideDivisibleBy(newLeft, value) || !isSideDivisibleBy(newRight, value)) {
+        SoundManager.invalid();
         setFeedback(`Cannot divide both sides evenly by ${value}.`);
         setFeedbackType('error');
         return;
@@ -471,6 +479,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
       desc = `Divided both sides by ${value}`;
     }
 
+    SoundManager.tap();
     setCurrentLeft(newLeft);
     setCurrentRight(newRight);
     addStep(desc, `${selectedOp} ${value} to isolate variable`);
@@ -492,6 +501,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   const handleDrop = useCallback((e: React.DragEvent, side: 'left' | 'right') => {
     e.preventDefault();
     if (!draggedBlock || hasSubmittedEvaluation) return;
+    SoundManager.snap();
     const block = { ...draggedBlock };
     if (side === 'left') setCurrentLeft(prev => [...prev, block]);
     else setCurrentRight(prev => [...prev, block]);
@@ -505,6 +515,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     if (recordedRef.current) return; // stale-state guard — already recorded for this challenge
     const answer = parseFloat(verifyInput);
     if (Number.isNaN(answer)) {
+      SoundManager.invalid();
       setFeedback('Enter a number to check your answer.');
       setFeedbackType('error');
       return;
@@ -514,6 +525,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     const attempts = currentAttempts + 1;
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Correct! x = ${activeVariableValue}`);
       setFeedbackType('success');
       sendText(`[ANSWER_CORRECT] Student verified x = ${activeVariableValue}. Celebrate!`, { silent: true });
@@ -532,6 +544,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
         });
       }
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`${answer} is not correct. Check your work!`);
       setFeedbackType('error');
       sendText(

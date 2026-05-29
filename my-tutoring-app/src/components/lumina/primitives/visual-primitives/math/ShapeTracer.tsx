@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -321,6 +322,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     if (!path) return;
 
     if (vertexIndex !== tappedIndices.length) {
+      SoundManager.invalid();
       setFeedback('Try tapping the next dot in order!');
       setFeedbackType('error');
       return;
@@ -331,6 +333,9 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     setFeedback('');
     setFeedbackType('');
 
+    const isComplete = newTapped.length === path.length;
+    if (!isComplete) SoundManager.tap();
+
     const sideNum = newTapped.length - 1;
     if (sideNum > 0 && sideNum < path.length) {
       sendText(
@@ -340,7 +345,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       );
     }
 
-    if (newTapped.length === path.length) {
+    if (isComplete) {
+      SoundManager.playCorrect();
       setShapeComplete(true);
       setFeedback(`You traced the ${currentChallenge?.targetShape}!`);
       setFeedbackType('success');
@@ -363,6 +369,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     if (!remaining) return;
 
     if (vertexIndex !== tappedIndices.length) {
+      SoundManager.invalid();
       setFeedback('Tap the next dot to add the next side!');
       setFeedbackType('error');
       return;
@@ -372,6 +379,9 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     setTappedIndices(newTapped);
     setFeedback('');
     setFeedbackType('');
+
+    const isComplete = newTapped.length === remaining.length;
+    if (!isComplete) SoundManager.tap();
 
     const drawnCount = currentChallenge?.drawnSides?.length ?? 0;
     const sideNum = drawnCount + newTapped.length;
@@ -385,7 +395,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       );
     }
 
-    if (newTapped.length === remaining.length) {
+    if (isComplete) {
+      SoundManager.playCorrect();
       setShapeComplete(true);
       setFeedback(`You completed the ${currentChallenge?.targetShape}!`);
       setFeedbackType('success');
@@ -405,10 +416,12 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
   const handleGridDotClick = useCallback((dot: { x: number; y: number }) => {
     if (hasSubmittedEvaluation || shapeComplete) return;
     if (selectedGridPoints.some(p => p.x === dot.x && p.y === dot.y)) {
+      SoundManager.invalid();
       setFeedback('You already placed a corner there!');
       setFeedbackType('error');
       return;
     }
+    SoundManager.tap();
     setSelectedGridPoints(prev => [...prev, dot]);
     setFeedback('');
     setFeedbackType('');
@@ -422,6 +435,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
 
     const expectedDot = order[tappedIndices.length];
     if (dotIndex !== expectedDot) {
+      SoundManager.invalid();
       incrementAttempts();
       setFeedback('Try finding the next number in order!');
       setFeedbackType('error');
@@ -438,7 +452,11 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     setFeedback('');
     setFeedbackType('');
 
-    if (newTapped.length === order.length) {
+    const isComplete = newTapped.length === order.length;
+    if (!isComplete) SoundManager.tap();
+
+    if (isComplete) {
+      SoundManager.playCorrect();
       setShapeComplete(true);
       const shapeName = currentChallenge?.revealShape || currentChallenge?.targetShape || 'shape';
       setRevealedShape(shapeName);
@@ -470,6 +488,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
   const handleCheckShape = useCallback(() => {
     if (!currentChallenge || currentChallenge.type !== 'draw-from-description') return;
     if (selectedGridPoints.length < 3) {
+      SoundManager.invalid();
       setFeedback('You need at least 3 corners to make a shape!');
       setFeedbackType('error');
       return;
@@ -478,6 +497,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     incrementAttempts();
     const required = currentChallenge.requiredProperties;
     if (!required) {
+      SoundManager.playCorrect();
       setShapeComplete(true);
       setFeedback(`Nice ${currentChallenge.targetShape}!`);
       setFeedbackType('success');
@@ -491,6 +511,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
 
     const result = checkShapeProperties(selectedGridPoints, required);
     if (result.correct) {
+      SoundManager.playCorrect();
       setShapeComplete(true);
       setFeedback(`Great job! You drew a ${currentChallenge.targetShape}!`);
       setFeedbackType('success');
@@ -505,6 +526,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(result.feedback);
       setFeedbackType('error');
       sendText(

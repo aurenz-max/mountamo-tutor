@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -388,6 +389,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const handleObjectSelect = useCallback((objectName: string) => {
     if (hasSubmittedEvaluation || showCorrectAnswer) return;
+    SoundManager.select();
     setSelectedObject(objectName);
     setFeedback('');
     setFeedbackType('');
@@ -395,6 +397,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
 
   const handleAttributeSelect = useCallback((attr: string) => {
     if (hasSubmittedEvaluation || showCorrectAnswer) return;
+    SoundManager.select();
     setSelectedAttribute(attr);
     setFeedback('');
     setFeedbackType('');
@@ -402,6 +405,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
 
   const handleOrderSelect = useCallback((objectName: string) => {
     if (hasSubmittedEvaluation || showCorrectAnswer) return;
+    SoundManager.tap();
     setOrderSelection(prev => {
       if (prev.includes(objectName)) {
         return prev.filter(n => n !== objectName);
@@ -424,6 +428,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
     switch (currentChallenge.type) {
       case 'identify_attribute': {
         if (!selectedAttribute) {
+          SoundManager.invalid();
           setFeedback('Pick an attribute first!');
           setFeedbackType('error');
           return;
@@ -448,6 +453,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
       }
       case 'compare_two': {
         if (!selectedObject) {
+          SoundManager.invalid();
           setFeedback('Tap on the object you think is the answer!');
           setFeedbackType('error');
           return;
@@ -472,6 +478,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
       }
       case 'order_three': {
         if (orderSelection.length !== (currentChallenge.objects?.length ?? 3)) {
+          SoundManager.invalid();
           setFeedback(`Tap all ${currentChallenge.objects?.length ?? 3} objects in order!`);
           setFeedbackType('error');
           return;
@@ -499,6 +506,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
       case 'non_standard': {
         const answer = parseInt(nonStandardAnswer, 10);
         if (isNaN(answer)) {
+          SoundManager.invalid();
           setFeedback('Type a number!');
           setFeedbackType('error');
           return;
@@ -524,22 +532,26 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
       });
       setShowCorrectAnswer(true);
-    } else if (currentAttempts + 1 >= 3) {
-      // After 3 wrong attempts, show correct answer and record as incorrect
-      setShowCorrectAnswer(true);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: false,
-        attempts: currentAttempts + 1,
-      });
-      setFeedback(`The answer is: ${currentChallenge.correctAnswer}`);
-      setFeedbackType('error');
+    } else {
+      SoundManager.playIncorrect();
+      if (currentAttempts + 1 >= 3) {
+        // After 3 wrong attempts, show correct answer and record as incorrect
+        setShowCorrectAnswer(true);
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: false,
+          attempts: currentAttempts + 1,
+        });
+        setFeedback(`The answer is: ${currentChallenge.correctAnswer}`);
+        setFeedbackType('error');
+      }
     }
   }, [
     currentChallenge, selectedObject, selectedAttribute, orderSelection, nonStandardAnswer,

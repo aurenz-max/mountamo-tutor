@@ -12,6 +12,7 @@ import type { HistogramMetrics } from '../../../evaluation/types';
 import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -505,6 +506,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     }
 
     if (validationError) {
+      SoundManager.invalid();
       setFeedback({ message: validationError, correct: false });
       return;
     }
@@ -514,6 +516,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     setAttempts(nextAttempts);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       recordedRef.current = true;
       const score = phaseScore(nextAttempts);
       recordResult({
@@ -533,6 +536,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
       });
       setTimeout(() => advance(), 1100);
     } else {
+      SoundManager.playIncorrect();
       const msg =
         challengeType === 'identify_shape'
           ? 'Not quite — take another look at the bars.'
@@ -734,7 +738,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
                 selectedBinIndex={selectedBinIndex}
                 targetBin={targetBin}
                 clickable={challengeType === 'find_modal_bin'}
-                onBinClick={(idx) => setSelectedBinIndex(idx)}
+                onBinClick={(idx) => { SoundManager.select(); setSelectedBinIndex(idx); }}
                 onBinHover={setHoveredBinIndex}
               />
 
@@ -765,7 +769,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
                     <Button
                       key={opt}
                       variant="ghost"
-                      onClick={() => setSelectedShape(opt)}
+                      onClick={() => { SoundManager.select(); setSelectedShape(opt); }}
                       className={`bg-white/5 border hover:bg-white/10 ${
                         selectedShape === opt
                           ? 'border-emerald-400/60 text-emerald-300'

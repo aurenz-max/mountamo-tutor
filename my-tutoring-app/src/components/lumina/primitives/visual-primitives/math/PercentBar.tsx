@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -266,7 +267,9 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    setCurrentPercent(Math.round(percentage));
+    const rounded = Math.round(percentage);
+    if (rounded !== currentPercent) SoundManager.tick(); // slider-style increment
+    setCurrentPercent(rounded);
     setFeedback('');
     setFeedbackType('');
   };
@@ -304,6 +307,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     const accuracy = getAccuracyScore(currentPercent, target);
 
     if (correct) {
+      SoundManager.playCorrect();
       const partValue = ((target / 100) * currentChallenge.wholeValue).toFixed(2);
       setFeedback(`${target}% of ${currentChallenge.wholeValue} = ${partValue}.`);
       setFeedbackType('success');
@@ -326,6 +330,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       const diff = currentPercent - target;
       if (Math.abs(diff) <= 5) {
         setFeedback(`Very close! You're at ${currentPercent}%, adjust slightly.`);

@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -411,14 +412,19 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
     if (draggingHandle === 'base') {
       // Drag the whole triangle along x; keep size fixed.
       const newX = Math.max(xRange[0], Math.min(xRange[1] - trianglePos.size, roundedX));
+      if (newX !== trianglePos.x) SoundManager.tick(); // barely-there click per grid unit crossed
       setTrianglePos((prev) => ({ ...prev, x: newX }));
     } else if (draggingHandle === 'right') {
       const newSize = Math.max(1, Math.min(8, roundedX - trianglePos.x));
+      if (newSize !== trianglePos.size) SoundManager.tick();
       setTrianglePos((prev) => ({ ...prev, size: newSize }));
     }
   };
 
-  const handleMouseUp = () => setDraggingHandle(null);
+  const handleMouseUp = () => {
+    if (draggingHandle) SoundManager.snap(); // handle lands in place
+    setDraggingHandle(null);
+  };
   const handleMouseLeave = () => setDraggingHandle(null);
 
   // -------------------------------------------------------------------------
@@ -537,11 +543,13 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
       Math.abs(rise - currentChallenge.expectedRise) < 0.01 &&
       Math.abs(run - currentChallenge.expectedRun) < 0.01;
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Correct! Rise = ${currentChallenge.expectedRise}, Run = ${currentChallenge.expectedRun}.`);
       setFeedbackType('success');
       sendText(`[ANSWER_CORRECT] Student identified rise/run. Celebrate briefly.`, { silent: true });
       completeChallenge(true);
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. Count the grid units carefully.`);
       setFeedbackType('error');
       incrementAttempts();
@@ -574,11 +582,13 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
     }
     const correct = Math.abs(parsed - currentChallenge.expectedSlope) < 0.01;
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Correct! Slope = ${currentChallenge.expectedSlope}.`);
       setFeedbackType('success');
       sendText(`[ANSWER_CORRECT] Student calculated slope. Reinforce rise/run formula.`, { silent: true });
       completeChallenge(true);
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. Slope = rise ÷ run.`);
       setFeedbackType('error');
       incrementAttempts();
@@ -596,6 +606,7 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
     const sizeMatches = Math.abs(trianglePos.size - currentChallenge.expectedRun) < 0.01;
     // Position-on-line is implicit because we compute basePoint from the line equation.
     if (sizeMatches) {
+      SoundManager.playCorrect();
       setFeedback(
         `Triangle confirmed. Run = ${currentChallenge.expectedRun}, Rise = ${currentChallenge.expectedRise}, Slope = ${currentChallenge.expectedSlope}.`
       );
@@ -603,6 +614,7 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
       sendText(`[ANSWER_CORRECT] Student built a slope triangle. Reinforce slope constancy.`, { silent: true });
       completeChallenge(true);
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Make the run = ${currentChallenge.expectedRun}. Drag the right corner.`);
       setFeedbackType('error');
       incrementAttempts();

@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -205,6 +206,7 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const applyCellAction = useCallback((num: number) => {
     if (givenSet.has(num)) return;
+    SoundManager.tick();
     setSelectedCells(prev => {
       const next = new Set(prev);
       if (dragModeRef.current === 'select') {
@@ -265,6 +267,7 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const handleOptionSelect = useCallback((option: string) => {
     if (allChallengesComplete || !currentChallenge) return;
+    SoundManager.select();
     setSelectedOption(option);
     setFeedback('');
     setFeedbackType('');
@@ -293,6 +296,7 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
     incrementAttempts();
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Correct!');
       setFeedbackType('success');
 
@@ -310,6 +314,7 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setCurrentRetries(r => r + 1);
       setFeedback(currentChallenge.hint || 'Not quite. Try again!');
       setFeedbackType('error');

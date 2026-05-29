@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -469,6 +470,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
     setResponseTimes(prev => [...prev, responseTimeSec]);
 
     if (correct) {
+      SoundManager.playCorrect();
       setTotalCorrect(prev => prev + 1);
       const newStreak = streak + 1;
       setStreak(newStreak);
@@ -498,6 +500,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         );
       }
     } else {
+      SoundManager.playIncorrect();
       setStreak(0);
       setFeedbackType('error');
       setShowCorrectAnswer(true);
@@ -566,6 +569,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
     setResponseTimes(prev => [...prev, responseTimeSec]);
 
     if (correct) {
+      SoundManager.playCorrect();
       setTotalCorrect(prev => prev + 1);
       const newStreak = streak + 1;
       setStreak(newStreak);
@@ -582,6 +586,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         streak: newStreak,
       });
     } else {
+      SoundManager.playIncorrect();
       setStreak(0);
       setFeedback(`Not quite. The correct equation is ${currentChallenge.equation}.`);
       setFeedbackType('error');
@@ -615,6 +620,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
     setResponseTimes(prev => [...prev, responseTimeSec]);
 
     if (correct) {
+      SoundManager.playCorrect();
       setTotalCorrect(prev => prev + 1);
       const newStreak = streak + 1;
       setStreak(newStreak);
@@ -631,6 +637,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         streak: newStreak,
       });
     } else {
+      SoundManager.playIncorrect();
       setStreak(0);
       setFeedback(`Not quite. The correct answer shows ${currentChallenge.correctAnswer}.`);
       setFeedbackType('error');
@@ -795,11 +802,13 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   const numericValue = typedAnswer === '' ? 0 : parseInt(typedAnswer, 10) || 0;
   const handleIncrement = useCallback(() => {
     if (isCurrentChallengeComplete || allChallengesComplete) return;
+    SoundManager.tick();
     const next = Math.min(numericValue + 1, maxNumber + 5);
     setTypedAnswer(String(next));
   }, [numericValue, maxNumber, isCurrentChallengeComplete, allChallengesComplete]);
   const handleDecrement = useCallback(() => {
     if (isCurrentChallengeComplete || allChallengesComplete) return;
+    SoundManager.tick();
     const next = Math.max(numericValue - 1, 0);
     setTypedAnswer(String(next));
   }, [numericValue, isCurrentChallengeComplete, allChallengesComplete]);

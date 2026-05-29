@@ -10,6 +10,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ---------------------------------------------------------------------------
 // Data Interfaces
@@ -145,6 +146,7 @@ const SegmentStepper: React.FC<SegmentStepperProps> = ({
 
   const adjust = (delta: number) => {
     const next = Math.max(0, safeValue + delta);
+    SoundManager.tick();
     onChange(String(next));
   };
 
@@ -686,6 +688,8 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       const isCorrect = Math.abs(userVal - segment.value) < 0.01;
       incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
+      if (isCorrect) SoundManager.playCorrect();
+      else SoundManager.playIncorrect();
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
@@ -778,11 +782,13 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       setPhaseAttempts((prev) => ({ ...prev, explore: prev.explore + 1 }));
 
       if (Math.abs(inputWhole - actualTotal) < 0.01) {
+        SoundManager.playCorrect();
         setWholeFound(true);
         setFeedback({ explore: 'correct' });
         sendText('[PHASE_TRANSITION] Student found the whole. Moving to practice phase.', { silent: true });
         setTimeout(() => { setCurrentPhase('practice'); setFeedback({}); }, 1500);
       } else {
+        SoundManager.playIncorrect();
         setFeedback({ explore: 'incorrect' });
       }
     };
@@ -797,6 +803,8 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       const isCorrect = Math.abs(userVal - segment.value) < 0.01;
       incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
+      if (isCorrect) SoundManager.playCorrect();
+      else SoundManager.playIncorrect();
       setPhaseAttempts((prev) => ({ ...prev, [currentPhase]: prev[currentPhase] + 1 }));
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
@@ -950,6 +958,8 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       const isCorrect = Math.abs(userVal - segment.value) < 0.01;
       incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
+      if (isCorrect) SoundManager.playCorrect();
+      else SoundManager.playIncorrect();
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
@@ -1040,6 +1050,8 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       const isCorrect = Math.abs(userVal - segment.value) < 0.01;
       incrementAttempts();
       trackAttempt(barIndex, segmentIndex, isCorrect);
+      if (isCorrect) SoundManager.playCorrect();
+      else SoundManager.playIncorrect();
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);

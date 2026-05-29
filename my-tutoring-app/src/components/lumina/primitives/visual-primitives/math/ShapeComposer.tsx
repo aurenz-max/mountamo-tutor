@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -347,6 +348,23 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
 
   const handleCanvasMouseUp = useCallback(() => {
     if (!dragging) return;
+    // Tactile snap feedback (sound only — the state updaters below do the actual snapping)
+    const draggedNow = placedShapes.find(s => s.id === dragging.id);
+    if (draggedNow) {
+      if (currentChallenge?.type === 'compose-match' && currentChallenge.pieces) {
+        const willSnap = currentChallenge.pieces.some(p =>
+          p.shape === draggedNow.shape && p.targetX !== undefined && p.targetY !== undefined &&
+          Math.hypot(draggedNow.x - p.targetX!, draggedNow.y - p.targetY!) < snapTolerance
+        );
+        if (willSnap) SoundManager.snap();
+      } else if (currentChallenge?.type === 'compose-picture' && currentChallenge.pictureSlots) {
+        const willSnap = currentChallenge.pictureSlots.some(slot =>
+          slot.shape === draggedNow.shape &&
+          Math.hypot(draggedNow.x - slot.x, draggedNow.y - slot.y) < snapTolerance
+        );
+        if (willSnap) SoundManager.snap();
+      }
+    }
     // Check snap-to-fit for compose-match — match by shape type, not ID
     if (currentChallenge?.type === 'compose-match' && currentChallenge.pieces) {
       setPlacedShapes(prev => {
@@ -407,7 +425,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
       }));
     }
     setDragging(null);
-  }, [dragging, currentChallenge, snapTolerance]);
+  }, [dragging, currentChallenge, snapTolerance, placedShapes]);
 
   const handleShapeMouseDown = useCallback((id: string, e: React.MouseEvent) => {
     if (hasSubmittedEvaluation) return;
@@ -427,6 +445,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const addShapeFromPalette = useCallback((shape: string, color: string, w: number, h: number) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.pop();
     placedCountRef.current += 1;
     const newShape: PlacedShape = {
       id: `placed-${Date.now()}-${placedCountRef.current}`,
@@ -449,6 +468,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
   const addPieceToCanvas = useCallback((piece: ShapeComposerPiece) => {
     if (hasSubmittedEvaluation) return;
     if (placedShapes.some(s => s.id === piece.id)) return; // already placed
+    SoundManager.pop();
     const newShape: PlacedShape = {
       id: piece.id,
       shape: piece.shape,
@@ -486,6 +506,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const handleDecomposeTap = useCallback((componentShape: string) => {
     if (hasSubmittedEvaluation || !currentChallenge || currentChallenge.type !== 'decompose') return;
+    SoundManager.select();
     setDecomposeTaps(prev => [...prev, componentShape]);
   }, [hasSubmittedEvaluation, currentChallenge]);
 
@@ -555,6 +576,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(currentChallenge.type === 'free-create'
         ? 'Amazing creation! 🎉'
         : 'Correct! Great job! 🎉');
@@ -574,6 +596,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
         piecesUsed: currentChallenge.type === 'free-create' ? freeCreateShapes.length : placedShapes.length,
       });
     } else {
+      SoundManager.playIncorrect();
       const hintText = currentChallenge.hint ?? 'Try again! Look at the shapes carefully.';
       setFeedback(hintText);
       setFeedbackType('error');

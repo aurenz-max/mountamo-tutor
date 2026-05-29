@@ -12,6 +12,7 @@ import type { MatrixDisplayMetrics } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types — re-exported from the generator's canonical interface
@@ -485,6 +486,7 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
     setCellCorrectness(perCellCorrect);
 
     if (correct) {
+      SoundManager.playCorrect();
       const score = phaseScore(attempts);
       setFeedback({ correct: true, message: `Correct! +${score} points` });
       recordedRef.current = true;
@@ -497,6 +499,7 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
         hintViewed: hintViewedRef.current,
       });
     } else {
+      SoundManager.playIncorrect();
       setFeedback({
         correct: false,
         message: attempts === 1
@@ -508,6 +511,7 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
 
   // ── Reveal hint / steps ─────────────────────────────────────────
   const handleShowSteps = useCallback(() => {
+    SoundManager.pop();
     setShowSteps(true);
     hintViewedRef.current = true;
   }, []);

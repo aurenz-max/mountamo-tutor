@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -147,11 +148,13 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
 
   const addUnit = useCallback(() => {
     if (disabled || submitted) return;
+    SoundManager.tick();
     setPlacedUnits(prev => Math.min(prev + 1, MAX_BAR_UNITS + 2));
   }, [disabled, submitted]);
 
   const removeUnit = useCallback(() => {
     if (disabled || submitted) return;
+    SoundManager.tick();
     setPlacedUnits(prev => Math.max(prev - 1, 0));
   }, [disabled, submitted]);
 
@@ -289,6 +292,7 @@ function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled }: Ord
     if (disabled || submitted) return;
     const firstEmpty = slots.findIndex(s => s === null);
     if (firstEmpty === -1) return;
+    SoundManager.snap();
     const newSlots = [...slots];
     newSlots[firstEmpty] = item;
     setSlots(newSlots);
@@ -551,6 +555,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     const correct = answer === currentChallenge.correctAnswer;
 
     if (correct) {
+      SoundManager.playCorrect();
       sendText(`[ANSWER_CORRECT] Student correctly identified "${currentChallenge.objectName0}" vs "${currentChallenge.objectName1}" — answered "${answer}".`, { silent: true });
       recordResult({
         challengeId: currentChallenge.id,
@@ -558,6 +563,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
         attempts: currentAttempts + 1,
       });
     } else {
+      SoundManager.playIncorrect();
       sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}" for "${currentChallenge.objectName0}" vs "${currentChallenge.objectName1}". Give a hint.`, { silent: true });
       recordResult({
         challengeId: currentChallenge.id,
@@ -574,8 +580,10 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     const correct = count === currentChallenge.correctUnitCount;
 
     if (correct) {
+      SoundManager.playCorrect();
       sendText(`[ANSWER_CORRECT] Student correctly tiled ${count} ${unitType} for "${currentChallenge.objectName0}".`, { silent: true });
     } else {
+      SoundManager.playIncorrect();
       sendText(`[ANSWER_INCORRECT] Student placed ${count} ${unitType} but correct is ${currentChallenge.correctUnitCount} for "${currentChallenge.objectName0}". Hint about gaps or overlaps.`, { silent: true });
     }
 
@@ -593,8 +601,10 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     incrementAttempts();
 
     if (correct) {
+      SoundManager.playCorrect();
       sendText(`[ANSWER_CORRECT] Student correctly ordered objects from shortest to longest.`, { silent: true });
     } else {
+      SoundManager.playIncorrect();
       sendText(`[ANSWER_INCORRECT] Student ordered incorrectly. The correct order is: ${currentChallenge.correctOrderCsv}. Encourage comparing two at a time.`, { silent: true });
     }
 
@@ -616,8 +626,10 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     const correct = answer === currentChallenge.correctAnswer;
 
     if (correct) {
+      SoundManager.playCorrect();
       sendText(`[ANSWER_CORRECT] Student correctly used indirect comparison: "${answer}".`, { silent: true });
     } else {
+      SoundManager.playIncorrect();
       sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}". Remind them about the clues: "${currentChallenge.clue0}" and "${currentChallenge.clue1}".`, { silent: true });
     }
 

@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -279,6 +280,8 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   const handleSliceClick = useCallback((index: number) => {
     if (hasSubmittedEvaluation) return;
+    const willShade = !shadedSlices.has(index);
+    SoundManager.toggle(willShade);   // ← rising blip when shading, falling when clearing
     setShadedSlices(prev => {
       const next = new Set(prev);
       if (next.has(index)) {
@@ -290,7 +293,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
     });
     setFeedback('');
     setFeedbackType('');
-  }, [hasSubmittedEvaluation]);
+  }, [hasSubmittedEvaluation, shadedSlices]);
 
   // -------------------------------------------------------------------------
   // Challenge checking
@@ -306,6 +309,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
       && fractionsEquivalent(userNum, userDen, currentChallenge.numerator, currentChallenge.denominator);
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Correct! ${currentChallenge.numerator}/${currentChallenge.denominator} is right!`);
       setFeedbackType('success');
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
@@ -315,6 +319,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. Look at how many pieces are shaded out of the total.`);
       setFeedbackType('error');
       sendText(
@@ -332,6 +337,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
     const correct = shadedSlices.size === currentChallenge.numerator;
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Great job! You built ${currentChallenge.numerator}/${currentChallenge.denominator}!`);
       setFeedbackType('success');
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
@@ -340,6 +346,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`You shaded ${shadedSlices.size}/${currentChallenge.denominator}. The target is ${currentChallenge.numerator}/${currentChallenge.denominator}.`);
       setFeedbackType('error');
       sendText(
@@ -367,6 +374,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
       const msg = areEqual
         ? `Yes! ${leftStr} and ${rightStr} are equal — they represent the same amount!`
         : `Yes! ${correctChoice === 'left' ? leftStr : rightStr} is larger!`;
+      SoundManager.playCorrect();
       setFeedback(msg);
       setFeedbackType('success');
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
@@ -376,6 +384,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(areEqual
         ? `These fractions are actually equal! Look at how much of each circle is shaded.`
         : `Look again at how much of each circle is shaded.`);
@@ -399,6 +408,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
     const correct = fractionsEquivalent(builtNum, equivDen, targetNum, targetDen);
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Excellent! ${builtNum}/${equivDen} is equivalent to ${targetNum}/${targetDen}!`);
       setFeedbackType('success');
       recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
@@ -408,6 +418,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`${builtNum}/${equivDen} is not equivalent to ${targetNum}/${targetDen}. Try adjusting the shaded slices.`);
       setFeedbackType('error');
       sendText(
@@ -626,7 +637,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
                     ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
                     : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                 }`}
-                onClick={() => { setCompareChoice('left'); setFeedback(''); setFeedbackType(''); }}
+                onClick={() => { SoundManager.select(); setCompareChoice('left'); setFeedback(''); setFeedbackType(''); }}
               >
                 Left ({currentChallenge.numerator}/{currentChallenge.denominator}) is larger
               </Button>
@@ -637,7 +648,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
                     ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
                     : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                 }`}
-                onClick={() => { setCompareChoice('equal'); setFeedback(''); setFeedbackType(''); }}
+                onClick={() => { SoundManager.select(); setCompareChoice('equal'); setFeedback(''); setFeedbackType(''); }}
               >
                 They are equal
               </Button>
@@ -648,7 +659,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
                     ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
                     : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                 }`}
-                onClick={() => { setCompareChoice('right'); setFeedback(''); setFeedbackType(''); }}
+                onClick={() => { SoundManager.select(); setCompareChoice('right'); setFeedback(''); setFeedbackType(''); }}
               >
                 Right ({cmp.numerator}/{cmp.denominator}) is larger
               </Button>

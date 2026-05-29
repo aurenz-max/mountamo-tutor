@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -265,6 +266,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
       precision = Math.max(0, 100 - sliderError);
 
       if (correct) {
+        SoundManager.playCorrect();
         setFeedback(`Great! You built the correct equivalent ratio (\u00D7${formatNum(sliderMultiplier)}).`);
         setFeedbackType('success');
         sendText(
@@ -273,6 +275,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
           { silent: true },
         );
       } else {
+        SoundManager.playIncorrect();
         setFeedback(`Your multiplier \u00D7${formatNum(sliderMultiplier)} doesn't match yet. Keep adjusting!`);
         setFeedbackType('error');
         sendText(
@@ -285,6 +288,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
       // Text-input based: parse student answer
       const parsed = parseFloat(studentAnswer);
       if (isNaN(parsed)) {
+        SoundManager.invalid();
         setFeedback('Please enter a number.');
         setFeedbackType('error');
         return;
@@ -303,6 +307,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
           ? `The unit rate is ${formatNum(unitRate)} ${rowLabels[1]} per ${rowLabels[0]}.`
           : `${hiddenValue === 'scaled-first' ? rowLabels[0] : rowLabels[1]} = ${formatNum(targetValue)}`;
 
+        SoundManager.playCorrect();
         setFeedback(`Correct! ${label}`);
         setFeedbackType('success');
         sendText(
@@ -311,6 +316,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
           { silent: true },
         );
       } else if (percentError < 10) {
+        SoundManager.playIncorrect();
         setFeedback(`Very close! Your answer ${formatNum(parsed)} is almost right. Check your arithmetic.`);
         setFeedbackType('error');
         sendText(
@@ -324,6 +330,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
           : currentChallenge.type === 'unit-rate'
           ? `Divide ${baseRatio[1]} by ${baseRatio[0]} to find the unit rate.`
           : `Think about the relationship between ${rowLabels[0]} and ${rowLabels[1]}.`;
+        SoundManager.playIncorrect();
         setFeedback(`Not quite. ${hintMsg}`);
         setFeedbackType('error');
         sendText(
@@ -714,7 +721,10 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
               max={maxMultiplier}
               step="0.1"
               value={sliderMultiplier}
-              onChange={(e) => setSliderMultiplier(parseFloat(e.target.value))}
+              onChange={(e) => {
+                SoundManager.tick();
+                setSliderMultiplier(parseFloat(e.target.value));
+              }}
               disabled={hasSubmittedEvaluation}
               className="w-full h-2 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-purple-500"
               style={{

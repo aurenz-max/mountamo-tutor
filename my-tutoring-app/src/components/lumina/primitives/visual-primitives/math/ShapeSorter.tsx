@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -602,6 +603,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
 
   const handleIdentifyToggle = useCallback((idx: number) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.tap();
     setIdentifySelected(prev => {
       const next = new Set(prev);
       if (next.has(idx)) next.delete(idx); else next.add(idx);
@@ -610,6 +612,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
   }, [hasSubmittedEvaluation]);
 
   const handleTapSide = useCallback((idx: number) => {
+    SoundManager.tap();
     setTappedSides(prev => {
       const next = new Set(prev);
       if (next.has(idx)) next.delete(idx); else next.add(idx);
@@ -619,11 +622,13 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
 
   const handleSortSelectShape = useCallback((idx: number) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.select();
     setSortSelectedShape(idx);
   }, [hasSubmittedEvaluation]);
 
   const handleSortSelectBin = useCallback((binLabel: string) => {
     if (sortSelectedShape === null) return;
+    SoundManager.snap();
     setBinAssignments(prev => {
       const next = new Map(prev);
       next.set(sortSelectedShape, binLabel);
@@ -713,12 +718,15 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
         challengeType: currentChallenge.type,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [
     currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText,
@@ -892,9 +900,9 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
                 sidesAnswer={sidesAnswer}
                 cornersAnswer={cornersAnswer}
                 onTapSide={handleTapSide}
-                onToggleCorners={() => setShowCorners(p => !p)}
-                onSidesChange={setSidesAnswer}
-                onCornersChange={setCornersAnswer}
+                onToggleCorners={() => { SoundManager.toggle(!showCorners); setShowCorners(p => !p); }}
+                onSidesChange={(v) => { SoundManager.tick(); setSidesAnswer(v); }}
+                onCornersChange={(v) => { SoundManager.tick(); setCornersAnswer(v); }}
               />
             )}
             {currentChallenge.type === 'sort' && (

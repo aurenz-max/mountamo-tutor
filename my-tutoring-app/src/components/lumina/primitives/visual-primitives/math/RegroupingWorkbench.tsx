@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -378,6 +379,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
           return next;
         });
         setRegroupedPlaces(prev => new Set(prev).add(placeIndex));
+        SoundManager.snap();
         setFeedback(`Traded 10 ${PLACE_LABELS[placeIndex].toLowerCase()} for 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()}!`);
         setFeedbackType('success');
 
@@ -389,6 +391,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         );
       } else if (blocks[placeIndex] < 10) {
         setIncorrectRegroupAttempts(c => c + 1);
+        SoundManager.invalid();
         setFeedback(`You only have ${blocks[placeIndex]} ${PLACE_LABELS[placeIndex].toLowerCase()}. You need 10 to regroup!`);
         setFeedbackType('error');
         sendText(
@@ -413,6 +416,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
           return next;
         });
         setRegroupedPlaces(prev => new Set(prev).add(placeIndex));
+        SoundManager.snap();
         setFeedback(`Borrowed 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()} = 10 ${PLACE_LABELS[placeIndex].toLowerCase()}!`);
         setFeedbackType('success');
 
@@ -424,6 +428,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         );
       } else if (blocks[placeIndex] >= d2[placeIndex]) {
         setIncorrectRegroupAttempts(c => c + 1);
+        SoundManager.invalid();
         setFeedback(`You have enough ${PLACE_LABELS[placeIndex].toLowerCase()} already. No need to borrow!`);
         setFeedbackType('error');
       }
@@ -460,6 +465,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     const regroupingCorrect = Math.min(regroupedPlaces.size, expectedRegroups);
 
     if (correct) {
+      SoundManager.playCorrect();
       setAlgorithmConnectionMade(true);
       setFeedback(`Correct! ${currentChallenge.problem} = ${correctAnswer}`);
       setFeedbackType('success');
@@ -480,6 +486,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         timeMs,
       });
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Your answer is ${studentAnswer}, but the correct answer is ${correctAnswer}. Check your work!`);
       setFeedbackType('error');
       sendText(

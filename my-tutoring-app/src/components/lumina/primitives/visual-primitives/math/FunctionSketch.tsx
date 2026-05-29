@@ -13,6 +13,7 @@ import {
 } from '../../../evaluation';
 import type { FunctionSketchMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -303,6 +304,7 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
           const next = new Set(hitFeatures);
           next.add(i);
           setHitFeatures(next);
+          SoundManager.snap();        // ← feature lands / discovered
           sendText(`[FEATURE_FOUND] Student correctly identified "${challenge.features[i].label}" (${challenge.features[i].type}). ${next.size}/${challenge.features.length} found.`, { silent: true });
           break;
         }
@@ -312,6 +314,7 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
     if (challenge.type === 'sketch-match') {
       // Constrain to axes area
       if (cx >= PADDING && cx <= CANVAS_WIDTH - PADDING && cy >= PADDING && cy <= CANVAS_HEIGHT - PADDING) {
+        SoundManager.tap();        // ← control point placed
         // Snap to closest existing point for drag-like behavior, or add new
         const SNAP_DIST = 12;
         let snapped = false;
@@ -414,6 +417,9 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
         : `[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: ${type}. Score: ${score}%. Give a hint.`,
       { silent: true },
     );
+
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
 
     recordedRef.current = true;
     recordResult({
@@ -570,7 +576,7 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
                 <Button
                   variant="ghost"
                   className={`border ${selectedCurve === 'A' ? 'bg-blue-500/20 border-blue-400' : 'bg-white/5 border-white/20'} hover:bg-blue-500/15`}
-                  onClick={() => setSelectedCurve('A')}
+                  onClick={() => { SoundManager.select(); setSelectedCurve('A'); }}
                 >
                   <span className="w-3 h-3 rounded-full bg-blue-500 mr-2 inline-block" />
                   {challenge.labelA ?? 'Curve A'}
@@ -578,7 +584,7 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
                 <Button
                   variant="ghost"
                   className={`border ${selectedCurve === 'B' ? 'bg-amber-500/20 border-amber-400' : 'bg-white/5 border-white/20'} hover:bg-amber-500/15`}
-                  onClick={() => setSelectedCurve('B')}
+                  onClick={() => { SoundManager.select(); setSelectedCurve('B'); }}
                 >
                   <span className="w-3 h-3 rounded-full bg-amber-500 mr-2 inline-block" />
                   {challenge.labelB ?? 'Curve B'}
@@ -594,7 +600,7 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
                     key={opt}
                     variant="ghost"
                     className={`border text-left ${selectedOption === opt ? 'bg-purple-500/20 border-purple-400 text-purple-200' : 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10'}`}
-                    onClick={() => !feedback && setSelectedOption(opt)}
+                    onClick={() => { if (!feedback) { SoundManager.select(); setSelectedOption(opt); } }}
                   >
                     {opt}
                   </Button>

@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -318,11 +319,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     const correct = selectedOption === currentChallenge.correctPosition;
 
     if (correct) {
+      SoundManager.playCorrect();
       const posLabel = POSITION_LABELS[currentChallenge.correctPosition] || currentChallenge.correctPosition;
       setFeedback(`Yes! The ${currentChallenge.targetObject.name} is ${posLabel.toLowerCase()} the ${currentChallenge.referenceObjectName}!`);
       setFeedbackType('success');
       sendText(`[ANSWER_CORRECT] Student identified position "${currentChallenge.correctPosition}" correctly. Congratulate!`, { silent: true });
     } else {
+      SoundManager.playIncorrect();
       setFeedback('Not quite. Look at where the objects are in the scene!');
       setFeedbackType('error');
       sendText(
@@ -341,10 +344,12 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     const correct = target ? selectedCell.row === target.row && selectedCell.col === target.col : false;
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Perfect! You placed it in the right spot!`);
       setFeedbackType('success');
       sendText(`[ANSWER_CORRECT] Student placed ${currentChallenge.targetObject.name} correctly. Celebrate!`, { silent: true });
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`That's not quite the right spot. Read the instruction again carefully!`);
       setFeedbackType('error');
       sendText(
@@ -363,11 +368,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     const correct = selectedOption === currentChallenge.correctPosition;
 
     if (correct) {
+      SoundManager.playCorrect();
       const posLabel = POSITION_LABELS[currentChallenge.correctPosition] || currentChallenge.correctPosition;
       setFeedback(`Correct! "${posLabel}" is the right position word!`);
       setFeedbackType('success');
       sendText(`[ANSWER_CORRECT] Student described position as "${currentChallenge.correctPosition}" correctly.`, { silent: true });
     } else {
+      SoundManager.playIncorrect();
       setFeedback('Not quite. Look at the objects and think about their positions.');
       setFeedbackType('error');
       sendText(
@@ -387,6 +394,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     const correct = row === step.correctCell.row && col === step.correctCell.col;
 
     if (correct) {
+      SoundManager.snap();
       setPlacedObjects((prev) => [...prev, { object: step.targetObject, row, col }]);
       setStepsCorrect((prev) => prev + 1);
 
@@ -401,6 +409,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
         );
       } else {
         // All steps done
+        SoundManager.playCorrect();
         setFeedback('Amazing! You followed all the directions!');
         setFeedbackType('success');
         incrementAttempts();
@@ -417,6 +426,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
         );
       }
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. Read step ${currentStep + 1} again and look at the scene.`);
       setFeedbackType('error');
       sendText(
@@ -550,7 +560,11 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
               <button
                 key={opt}
                 type="button"
-                onClick={() => !isCurrentChallengeCorrect && setSelectedOption(opt)}
+                onClick={() => {
+                  if (isCurrentChallengeCorrect) return;
+                  SoundManager.select();
+                  setSelectedOption(opt);
+                }}
                 disabled={isCurrentChallengeCorrect}
                 className={`
                   px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all
@@ -590,7 +604,10 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
               const occupied = currentChallenge.sceneObjects.some(
                 (o) => o.position.row === row && o.position.col === col,
               );
-              if (!occupied) setSelectedCell({ row, col });
+              if (!occupied) {
+                SoundManager.tap();
+                setSelectedCell({ row, col });
+              }
             }
           }}
           interactive={!isCurrentChallengeCorrect}

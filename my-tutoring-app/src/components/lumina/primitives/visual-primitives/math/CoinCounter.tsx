@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -445,11 +446,14 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [currentChallenge, currentAttempts, handleCheckIdentify, handleCheckCount, handleCheckMakeAmount, handleCheckCompare, handleCheckMakeChange, recordResult]);
 
@@ -559,7 +563,11 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
               key={coin}
               type={coin}
               selected={selectedCoin === coin}
-              onClick={() => !isCurrentChallengeCorrect && setSelectedCoin(coin)}
+              onClick={() => {
+                if (isCurrentChallengeCorrect) return;
+                SoundManager.select();
+                setSelectedCoin(coin);
+              }}
               disabled={isCurrentChallengeCorrect}
               showValue={false}
             />
@@ -612,7 +620,9 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
               key={coin}
               type={coin}
               onClick={() => {
-                if (!isCurrentChallengeCorrect) setPlacedCoins((prev) => [...prev, coin]);
+                if (isCurrentChallengeCorrect) return;
+                SoundManager.tap();
+                setPlacedCoins((prev) => [...prev, coin]);
               }}
               disabled={isCurrentChallengeCorrect}
             />
@@ -634,13 +644,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                 key={`placed-${i}`}
                 type={coin}
                 onClick={() => {
-                  if (!isCurrentChallengeCorrect) {
-                    setPlacedCoins((prev) => {
-                      const next = [...prev];
-                      next.splice(i, 1);
-                      return next;
-                    });
-                  }
+                  if (isCurrentChallengeCorrect) return;
+                  SoundManager.tap();
+                  setPlacedCoins((prev) => {
+                    const next = [...prev];
+                    next.splice(i, 1);
+                    return next;
+                  });
                 }}
                 disabled={isCurrentChallengeCorrect}
                 className="hover:ring-2 hover:ring-red-400/50"
@@ -673,7 +683,11 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
         <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
-            onClick={() => !isCurrentChallengeCorrect && setSelectedGroup('A')}
+            onClick={() => {
+              if (isCurrentChallengeCorrect) return;
+              SoundManager.select();
+              setSelectedGroup('A');
+            }}
             disabled={isCurrentChallengeCorrect}
             className={`p-3 rounded-xl border-2 transition-all ${
               selectedGroup === 'A'
@@ -685,7 +699,11 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
           </button>
           <button
             type="button"
-            onClick={() => !isCurrentChallengeCorrect && setSelectedGroup('B')}
+            onClick={() => {
+              if (isCurrentChallengeCorrect) return;
+              SoundManager.select();
+              setSelectedGroup('B');
+            }}
             disabled={isCurrentChallengeCorrect}
             className={`p-3 rounded-xl border-2 transition-all ${
               selectedGroup === 'B'
@@ -700,7 +718,11 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => !isCurrentChallengeCorrect && setSelectedGroup('equal')}
+            onClick={() => {
+              if (isCurrentChallengeCorrect) return;
+              SoundManager.select();
+              setSelectedGroup('equal');
+            }}
             disabled={isCurrentChallengeCorrect}
             className={`text-sm ${
               selectedGroup === 'equal'

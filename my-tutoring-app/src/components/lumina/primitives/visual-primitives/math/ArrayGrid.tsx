@@ -9,6 +9,7 @@ import {
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -288,12 +289,14 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
   // ── Build-mode controls ────────────────────────────────────────
   const handleRowChange = (newRows: number) => {
     if (challengeDone || isPreBuilt) return;
+    SoundManager.select();
     setCurrentRows(newRows);
     setFeedback(null);
   };
 
   const handleColumnChange = (newColumns: number) => {
     if (challengeDone || isPreBuilt) return;
+    SoundManager.select();
     setCurrentColumns(newColumns);
     setFeedback(null);
   };
@@ -312,6 +315,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     setAttempts(nextAttempts);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback(
         sessionChallengeType === 'count_array'
           ? `Correct! There are ${targetProduct} ${iconType}s in total.`
@@ -323,6 +327,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
       return;
     }
 
+    SoundManager.playIncorrect();
     if (correctArray && !correctTotal) {
       setFeedback(
         sessionChallengeType === 'count_array'
@@ -360,6 +365,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     setAttempts(nextAttempts);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback(
         `Excellent! ${targetRows} × ${targetColumns} = ${targetProduct}. You wrote the multiplication fact correctly!`,
       );
@@ -369,6 +375,7 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
       return;
     }
 
+    SoundManager.playIncorrect();
     const hints: string[] = [];
     if (!correctRows) hints.push('count the rows (horizontal groups)');
     if (!correctColumns) hints.push('count the columns (items in each row)');

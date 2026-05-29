@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -586,6 +587,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
   // Face click for correspondence
   const handleFaceClick = useCallback((label: string) => {
     if (!showFaceCorrespondence) return;
+    SoundManager.tap();
     setHighlightedFace(prev => prev === label ? null : label);
   }, [showFaceCorrespondence]);
 
@@ -761,11 +763,14 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, currentAttempts,
@@ -901,7 +906,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
               <Button
                 key={opt}
                 variant="ghost"
-                onClick={() => setSelectedAnswer(opt)}
+                onClick={() => { SoundManager.select(); setSelectedAnswer(opt); }}
                 className={`border transition-all ${
                   selectedAnswer === opt
                     ? 'bg-indigo-600/40 border-indigo-400 text-white'
@@ -927,7 +932,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
                 <Button
                   key={opt}
                   variant="ghost"
-                  onClick={() => setSelectedAnswer(opt)}
+                  onClick={() => { SoundManager.select(); setSelectedAnswer(opt); }}
                   className={`border transition-all ${
                     selectedAnswer === opt
                       ? 'bg-indigo-600/40 border-indigo-400 text-white'
@@ -946,7 +951,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
           <div className="flex gap-3">
             <Button
               variant="ghost"
-              onClick={() => setSelectedAnswer('valid')}
+              onClick={() => { SoundManager.select(); setSelectedAnswer('valid'); }}
               className={`border transition-all flex-1 ${
                 selectedAnswer === 'valid'
                   ? 'bg-emerald-600/40 border-emerald-400 text-white'
@@ -957,7 +962,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
             </Button>
             <Button
               variant="ghost"
-              onClick={() => setSelectedAnswer('invalid')}
+              onClick={() => { SoundManager.select(); setSelectedAnswer('invalid'); }}
               className={`border transition-all flex-1 ${
                 selectedAnswer === 'invalid'
                   ? 'bg-red-600/40 border-red-400 text-white'
@@ -1102,7 +1107,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsFolded(prev => !prev)}
+                onClick={() => { SoundManager.toggle(isFolded); setIsFolded(prev => !prev); }}
                 className="text-xs bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 h-6 px-2"
               >
                 {isFolded ? 'Unfold' : 'Fold'}

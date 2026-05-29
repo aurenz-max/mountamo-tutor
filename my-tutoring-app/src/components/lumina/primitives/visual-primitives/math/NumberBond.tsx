@@ -14,6 +14,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -569,11 +570,13 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
 
   const handleAddLeft = useCallback(() => {
     if (hasSubmittedEvaluation || remainingCounters <= 0) return;
+    SoundManager.tick();
     setLeftCount(prev => prev + 1);
   }, [hasSubmittedEvaluation, remainingCounters]);
 
   const handleAddRight = useCallback(() => {
     if (hasSubmittedEvaluation || remainingCounters <= 0) return;
+    SoundManager.tick();
     setRightCount(prev => prev + 1);
   }, [hasSubmittedEvaluation, remainingCounters]);
 
@@ -587,6 +590,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const handleSubmitPair = useCallback(() => {
     if (totalCounters !== whole) {
+      SoundManager.invalid();
       setFeedback(`Place all ${whole} counters first!`);
       setFeedbackType('error');
       return;
@@ -596,6 +600,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     const alreadyFound = foundPairs.some(p => p[0] === pair[0] && p[1] === pair[1]);
 
     if (alreadyFound) {
+      SoundManager.invalid();
       setFeedback(`You already found ${leftCount} + ${rightCount} = ${whole}!`);
       setFeedbackType('error');
       sendText(
@@ -606,6 +611,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       return;
     }
 
+    SoundManager.playCorrect();
     const newPairs = [...foundPairs, pair];
     setFoundPairs(newPairs);
     setLeftCount(0);
@@ -651,6 +657,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     const correct = answer === expected;
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! ${currentChallenge.whole} = ${currentChallenge.part1 ?? expected} + ${currentChallenge.part2 ?? expected}`);
       setFeedbackType('success');
       recordResult({
@@ -664,6 +671,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. Think: ${currentChallenge.whole} = ${currentChallenge.part1 ?? '?'} + ${currentChallenge.part2 ?? '?'}`);
       setFeedbackType('error');
       sendText(
@@ -712,6 +720,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     const allKeysFound = validKeys.size > 0 && seenKeys.size >= validKeys.size;
 
     if (allKeysFound) {
+      SoundManager.playCorrect();
       setFeedback('You found the whole fact family!');
       setFeedbackType('success');
       recordResult({
@@ -726,6 +735,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       // Build specific feedback per slot
       const hints: string[] = [];
       checks.forEach((c, i) => {
@@ -756,11 +766,13 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
   // Build-equation: tile management
   // -------------------------------------------------------------------------
   const handleTileToSlot = useCallback((tile: string, tileIndex: number) => {
+    SoundManager.snap();
     setAvailableTiles(prev => prev.filter((_, i) => i !== tileIndex));
     setEquationSlots(prev => [...prev, tile]);
   }, []);
 
   const handleSlotRemove = useCallback((slotIndex: number) => {
+    SoundManager.tap();
     const tile = equationSlots[slotIndex];
     setEquationSlots(prev => prev.filter((_, i) => i !== slotIndex));
     setAvailableTiles(prev => [...prev, tile]);
@@ -777,6 +789,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     const parsed = parseEquation(builtEq, w, p1, p2);
 
     if (!parsed) {
+      SoundManager.invalid();
       setFeedback('Arrange the tiles into an equation like 6+4=10');
       setFeedbackType('error');
       return;
@@ -786,6 +799,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     const correct = parsed.valid && parsed.usesCorrectNumbers;
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Correct! ${builtEq.replace(/\s+/g, '')}`);
       setFeedbackType('success');
       recordResult({
@@ -798,6 +812,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
         { silent: true }
       );
     } else if (!parsed.valid) {
+      SoundManager.playIncorrect();
       setFeedback('The math doesn\'t add up — check the numbers.');
       setFeedbackType('error');
       sendText(
@@ -806,6 +821,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Use the numbers from the bond: ${p1}, ${p2}, and ${w}`);
       setFeedbackType('error');
       sendText(
@@ -1108,7 +1124,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
                 variant="ghost"
                 size="icon"
                 className="h-10 w-10 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold"
-                onClick={() => setMissingAnswer(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1)))}
+                onClick={() => { SoundManager.tick(); setMissingAnswer(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
                 disabled={!missingAnswer || parseInt(missingAnswer, 10) <= 0}
               >
                 −
@@ -1120,7 +1136,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
                 variant="ghost"
                 size="icon"
                 className="h-10 w-10 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold"
-                onClick={() => setMissingAnswer(prev => String(Math.min(maxNumber, (parseInt(prev, 10) || 0) + 1)))}
+                onClick={() => { SoundManager.tick(); setMissingAnswer(prev => String(Math.min(maxNumber, (parseInt(prev, 10) || 0) + 1))); }}
                 disabled={parseInt(missingAnswer, 10) >= maxNumber}
               >
                 +

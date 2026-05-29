@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -341,6 +342,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   // Add token to extension answer
   const handleAddExtensionToken = useCallback((token: string) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.tap();
     setExtensionAnswers(prev => {
       if (prev.length >= activeSequence.hidden.length) return prev;
       return [...prev, token];
@@ -360,6 +362,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   // Toggle core index selection
   const handleToggleCoreIndex = useCallback((index: number) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.select();
     setSelectedCoreIndices(prev => {
       const next = new Set(prev);
       if (next.has(index)) {
@@ -376,6 +379,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   // Add token to created pattern
   const handleAddCreatedToken = useCallback((token: string) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.tap();
     setCreatedPattern(prev => [...prev, token]);
     setFeedback('');
     setFeedbackType('');
@@ -392,6 +396,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   // Add token to translated pattern
   const handleAddTranslatedToken = useCallback((token: string) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.tap();
     setTranslatedPattern(prev => [...prev, token]);
     setFeedback('');
     setFeedbackType('');
@@ -626,12 +631,15 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         type: currentChallenge.type,
         attempts: currentAttempts + 1,
       });
+    } else {
+      SoundManager.playIncorrect();
     }
   }, [
     currentChallenge, currentAttempts,

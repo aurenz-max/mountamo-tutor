@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -310,6 +311,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   const processValue = useCallback(async (input: number) => {
     if (isProcessing || !currentChallenge) return;
+    SoundManager.tap();           // ← tactile feed of an input into the machine
     setIsProcessing(true);
     setCurrentInput(input);
     setCurrentOutput(null);
@@ -331,6 +333,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
       setPredictionFeedback(predictionWasCorrect ? 'correct' : 'incorrect');
       setPredictionsTotal((t) => t + 1);
       if (predictionWasCorrect) setPredictionsCorrect((c) => c + 1);
+      if (predictionWasCorrect) SoundManager.playCorrect();
+      else SoundManager.playIncorrect();
       if (predictionWasCorrect) {
         sendText(`[PREDICTION_CORRECT] Student predicted ${predicted} for input ${input}. Output ${output}. Celebrate briefly.`, { silent: true });
       } else {
@@ -420,6 +424,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
 
     const isCorrect = rulesEquivalent(guessedRule, currentChallenge.rule);
     setGuessResult(isCorrect ? 'correct' : 'incorrect');
+    if (isCorrect) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
 
     if (isCorrect) {
       const score = phaseScore(nextAttempts);

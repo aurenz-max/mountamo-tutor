@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -322,6 +323,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback('Correct! Great job!');
       setFeedbackType('success');
       recordResult({
@@ -335,6 +337,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback('Not quite — try again!');
       setFeedbackType('error');
       const correctStr = currentChallenge.correctAnswers.join(', ');
@@ -471,6 +474,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
 
   const handleCardTap = useCallback((num: number) => {
     if (isCurrentChallengeComplete || hasSubmittedEvaluation) return;
+    SoundManager.snap();
     setOrderedCards(prev => [...prev, num]);
   }, [isCurrentChallengeComplete, hasSubmittedEvaluation]);
 

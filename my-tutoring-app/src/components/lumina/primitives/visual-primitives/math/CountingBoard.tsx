@@ -14,6 +14,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import HandIcon from './HandIcon';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -452,6 +453,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     if (hasSubmittedEvaluation) return;
 
     if (countedObjects.has(objectIndex)) {
+      SoundManager.invalid();   // ← blocked action (already counted), not a wrong answer
       if (!doubleCounted) {
         setDoubleCounted(true);
         if (isConnected) {
@@ -467,6 +469,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       return;
     }
 
+    SoundManager.tap();   // ← tactile count placement
     const newCount = countedObjects.size + 1;
     setCountedObjects(prev => {
       const next = new Set(prev);
@@ -494,6 +497,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     incrementAttempts();
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! There are ${target} ${objects.type}!`);
       setFeedbackType('success');
       sendText(
@@ -503,6 +507,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`You counted ${counted} but there are ${target} ${objects.type}. Try again!`);
       setFeedbackType('error');
       sendText(
@@ -524,6 +529,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     incrementAttempts();
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! There are ${target} ${objects.type}!`);
       setFeedbackType('success');
       sendText(
@@ -532,6 +538,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite — you said ${answer}. Look again!`);
       setFeedbackType('error');
       sendText(
@@ -553,6 +560,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
     // Feedback strings must NEVER contain numerals — pre-numeric mode.
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! That's how many ${objects.type} you saw!`);
       setFeedbackType('success');
       sendText(
@@ -561,6 +569,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Look again at the ${objects.type}! Which hand matches?`);
       setFeedbackType('error');
       sendText(
@@ -581,6 +590,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     incrementAttempts();
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! ${preCountedCount} and ${target - preCountedCount} more makes ${target}!`);
       setFeedbackType('success');
       setUsedCountOn(true);
@@ -590,6 +600,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. Start from ${preCountedCount} and count the rest.`);
       setFeedbackType('error');
       sendText(
@@ -1099,7 +1110,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               <Button
                 variant="ghost"
                 className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
-                onClick={() => setSubitizeInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1)))}
+                onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
                 disabled={hasSubmittedEvaluation}
               >
                 &minus;
@@ -1110,7 +1121,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               <Button
                 variant="ghost"
                 className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
-                onClick={() => setSubitizeInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1)))}
+                onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1))); }}
                 disabled={hasSubmittedEvaluation}
               >
                 +
@@ -1130,7 +1141,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               <Button
                 variant="ghost"
                 className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
-                onClick={() => setCountOnInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1)))}
+                onClick={() => { SoundManager.tick(); setCountOnInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
                 disabled={hasSubmittedEvaluation}
               >
                 &minus;
@@ -1141,7 +1152,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               <Button
                 variant="ghost"
                 className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
-                onClick={() => setCountOnInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1)))}
+                onClick={() => { SoundManager.tick(); setCountOnInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1))); }}
                 disabled={hasSubmittedEvaluation}
               >
                 +

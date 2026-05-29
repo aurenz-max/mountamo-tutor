@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -292,6 +293,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
 
   const handleObjectClick = useCallback((objId: string) => {
     if (hasSubmittedEvaluation || !currentChallenge) return;
+    SoundManager.select();
     const type = currentChallenge.type;
 
     if (type === 'sort-by-one' || type === 'sort-by-attribute' || (type === 'tally-record' && tallyRecordPhase === 'sort')) {
@@ -310,6 +312,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
 
   const handleBinClick = useCallback((binIndex: number) => {
     if (hasSubmittedEvaluation || !selectedObjectId) return;
+    SoundManager.snap();
     setBinAssignments(prev => {
       const next = new Map(prev);
       next.set(selectedObjectId, binIndex);
@@ -330,6 +333,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   }, [hasSubmittedEvaluation]);
 
   const handleAttributeSelect = useCallback((attr: string) => {
+    SoundManager.select();
     setSelectedAttribute(attr);
     setBinAssignments(new Map());
     setSelectedObjectId(null);
@@ -367,6 +371,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       const allCorrect = allPlaced && correctCount === totalPlaced;
 
       if (allCorrect) {
+        SoundManager.playCorrect();
         setFeedback('Perfect sorting!');
         setFeedbackType('success');
         recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
@@ -375,6 +380,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
           { silent: true },
         );
       } else if (!allPlaced) {
+        SoundManager.invalid();
         setFeedback(`Place all objects into bins first! (${totalPlaced}/${currentChallenge.objects.length} placed)`);
         setFeedbackType('error');
         sendText(
@@ -384,6 +390,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       } else {
         const wrongCount = totalPlaced - correctCount;
         const attempt = currentAttempts + 1;
+        SoundManager.playIncorrect();
         setFeedback(`${wrongCount} object${wrongCount > 1 ? 's are' : ' is'} in the wrong bin. Try again!`);
         setFeedbackType('error');
         sendText(
@@ -414,6 +421,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         }
 
         if (allCountsCorrect) {
+          SoundManager.playCorrect();
           setFeedback('Great counting! Now answer the question.');
           setFeedbackType('success');
           setCountComparePhase('compare');
@@ -425,6 +433,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         } else {
           const attempt = currentAttempts + 1;
           const wrongBins = cats.filter((cat, i) => (enteredBinCounts[cat.label] ?? -1) !== binCounts[i].count);
+          SoundManager.playIncorrect();
           setFeedback(`Some counts aren't right. Try counting ${wrongBins.map(c => c.label).join(' and ')} again!`);
           setFeedbackType('error');
           sendText(
@@ -455,6 +464,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
 
       const correct = comparisonAnswer === correctLabel;
       if (correct) {
+        SoundManager.playCorrect();
         setFeedback('Correct! Great comparing!');
         setFeedbackType('success');
         recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
@@ -464,6 +474,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         );
       } else {
         const attempt = currentAttempts + 1;
+        SoundManager.playIncorrect();
         setFeedback('Not quite. Look at your counts again!');
         setFeedbackType('error');
         sendText(
@@ -486,6 +497,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         && selectedArr.every(id => correctIds.has(id));
 
       if (allCorrect) {
+        SoundManager.playCorrect();
         setFeedback('You found them all!');
         setFeedbackType('success');
         recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
@@ -500,6 +512,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         let msg = 'Not quite.';
         if (missed > 0) msg += ` You missed ${missed}.`;
         if (extra > 0) msg += ` ${extra} ${extra === 1 ? "doesn't" : "don't"} belong.`;
+        SoundManager.playIncorrect();
         setFeedback(msg);
         setFeedbackType('error');
         const ruleKeys = Object.keys(rule);
@@ -515,6 +528,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       if (!selectedOddOne) return;
       const correct = selectedOddOne === currentChallenge.oddOneOut;
       if (correct) {
+        SoundManager.playCorrect();
         setFeedback(`Yes! ${currentChallenge.oddOneOutReason || "It doesn't belong!"}`);
         setFeedbackType('success');
         recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
@@ -525,6 +539,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         );
       } else {
         const attempt = currentAttempts + 1;
+        SoundManager.playIncorrect();
         setFeedback('That one fits in! Look for the one that is different.');
         setFeedbackType('error');
         setSelectedOddOne(null);
@@ -558,6 +573,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         const allCorrect = allPlaced && correctCount === totalPlaced;
 
         if (allCorrect) {
+          SoundManager.playCorrect();
           setFeedback('Great sorting! Now count each group.');
           setFeedbackType('success');
           setTallyRecordPhase('tally');
@@ -567,6 +583,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
             { silent: true },
           );
         } else if (!allPlaced) {
+          SoundManager.invalid();
           setFeedback(`Sort all objects first! (${totalPlaced}/${currentChallenge.objects.length} placed)`);
           setFeedbackType('error');
           sendText(
@@ -576,6 +593,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         } else {
           const attempt = currentAttempts + 1;
           const wrongCount = totalPlaced - correctCount;
+          SoundManager.playIncorrect();
           setFeedback(`${wrongCount} object${wrongCount > 1 ? 's are' : ' is'} in the wrong bin. Try again!`);
           setFeedbackType('error');
           sendText(
@@ -599,6 +617,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       }
 
       if (allCorrect) {
+        SoundManager.playCorrect();
         setFeedback('Perfect tallies!');
         setFeedbackType('success');
         recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1, score: attemptScore(currentAttempts + 1) });
@@ -609,6 +628,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       } else {
         const attempt = currentAttempts + 1;
         const wrongBins = cats.filter((cat, i) => (tallyCounts[cat.label] ?? 0) !== (objectsInBins.get(i) || []).length);
+        SoundManager.playIncorrect();
         setFeedback(`Some counts are off. Count ${wrongBins.map(c => c.label).join(' and ')} again!`);
         setFeedbackType('error');
         sendText(
@@ -895,12 +915,13 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                       <span className={`text-sm font-medium ${color.text}`}>{cat.label}</span>
                       <div className="flex items-center gap-0">
                         <button
-                          onClick={() =>
+                          onClick={() => {
+                            SoundManager.tick();
                             setEnteredBinCounts(prev => ({
                               ...prev,
                               [cat.label]: Math.max((prev[cat.label] ?? 0) - 1, 0),
-                            }))
-                          }
+                            }));
+                          }}
                           disabled={count <= 0}
                           className={`w-9 h-10 rounded-l-lg border border-white/20 flex items-center justify-center text-lg font-bold transition-colors ${
                             count <= 0
@@ -914,12 +935,13 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                           {count}
                         </div>
                         <button
-                          onClick={() =>
+                          onClick={() => {
+                            SoundManager.tick();
                             setEnteredBinCounts(prev => ({
                               ...prev,
                               [cat.label]: Math.min((prev[cat.label] ?? 0) + 1, 20),
-                            }))
-                          }
+                            }));
+                          }}
                           disabled={count >= 20}
                           className={`w-9 h-10 rounded-r-lg border border-white/20 flex items-center justify-center text-lg font-bold transition-colors ${
                             count >= 20
@@ -1095,12 +1117,13 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                     <span className={`text-sm font-medium ${color.text}`}>{cat.label}</span>
                     <div className="flex items-center gap-0">
                       <button
-                        onClick={() =>
+                        onClick={() => {
+                          SoundManager.tick();
                           setTallyCounts(prev => ({
                             ...prev,
                             [cat.label]: Math.max((prev[cat.label] ?? 0) - 1, 0),
-                          }))
-                        }
+                          }));
+                        }}
                         disabled={count <= 0}
                         className={`w-9 h-10 rounded-l-lg border border-white/20 flex items-center justify-center text-lg font-bold transition-colors ${
                           count <= 0
@@ -1114,12 +1137,13 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                         {count}
                       </div>
                       <button
-                        onClick={() =>
+                        onClick={() => {
+                          SoundManager.tick();
                           setTallyCounts(prev => ({
                             ...prev,
                             [cat.label]: Math.min((prev[cat.label] ?? 0) + 1, 20),
-                          }))
-                        }
+                          }));
+                        }}
                         disabled={count >= 20}
                         className={`w-9 h-10 rounded-r-lg border border-white/20 flex items-center justify-center text-lg font-bold transition-colors ${
                           count >= 20

@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -606,6 +607,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     const snapZoneTop = rulerY - 50;
 
     if (shapeBottom >= snapZoneTop && pos.y < rulerY) {
+      SoundManager.snap();
       const snappedY = rulerY - shapeH - 2;
       setShapePositions((prev) => ({
         ...prev,
@@ -680,6 +682,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
     if (challengeType === 'convert' && isCorrect) {
       // Correct measurement → switch to convert step (per-challenge multi-step)
+      SoundManager.playCorrect();
       setMeasuredValue(currentChallenge.widthInches);
       setFeedback({
         message: `Yes! The ${currentChallenge.label} is ${currentChallenge.widthInches} ${unit} long. Now convert it!`,
@@ -700,6 +703,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     }
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       completeChallenge({ correct: true, studentMeasure: studentNum });
       setFeedback({
         message: `Yes! The ${currentChallenge.label} is ${currentChallenge.widthInches} ${unit} long!`,
@@ -732,6 +736,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
         }
       }, 1100);
     } else {
+      SoundManager.playIncorrect();
       setFeedback({
         message: 'Not quite — look at the ruler more carefully!',
         correct: false,
@@ -766,6 +771,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     const isCorrect = Math.abs(studentNum - correctConverted) <= tolerance;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       completeChallenge({ correct: true, studentMeasure: measuredValue });
       setConvertFeedback({
         message: `Correct! ${measuredValue} ${unit} = ${Math.round(correctConverted * 10) / 10} ${effectiveConvertToUnit}!`,
@@ -792,6 +798,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
         }
       }, 1100);
     } else {
+      SoundManager.playIncorrect();
       setConvertFeedback({
         message: effectiveConvertToUnit === 'centimeters'
           ? `Not quite. Remember: 1 inch = ${INCH_TO_CM} centimeters. Try multiplying!`
@@ -816,6 +823,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     setCompareAttempts((a) => a + 1);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setCompareFeedback({ message: 'Perfect! You ordered them shortest to longest!', correct: true });
       setComparisonDone(true);
       const orderLabels = selectedOrder.map((id) => challenges.find((c) => c.id === id)?.label).join(' → ');
@@ -824,6 +832,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setCompareFeedback({ message: 'Not quite! Think back to which shapes were shorter.', correct: false });
       setSelectedOrder([]);
       sendText(
@@ -1113,7 +1122,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                       <button
                         key={c.id}
                         type="button"
-                        onClick={() => setSelectedOrder((prev) => [...prev, c.id])}
+                        onClick={() => { SoundManager.select(); setSelectedOrder((prev) => [...prev, c.id]); }}
                         className="w-full flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/20 hover:border-purple-400/40 rounded-lg pl-3 pr-4 py-1.5 text-left transition-colors"
                       >
                         <ShapePreview challenge={c} interactive />
@@ -1237,6 +1246,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                       variant="ghost"
                       className="h-11 w-11 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
                       onClick={() => {
+                        SoundManager.tick();
                         const cur = parseFloat(answerInput) || 0;
                         setAnswerInput(String(Math.max(0, +(cur - measureStep).toFixed(1))));
                       }}
@@ -1251,6 +1261,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                       variant="ghost"
                       className="h-11 w-11 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
                       onClick={() => {
+                        SoundManager.tick();
                         const cur = parseFloat(answerInput) || 0;
                         setAnswerInput(String(Math.min(rulerLengthInches, +(cur + measureStep).toFixed(1))));
                       }}
@@ -1327,6 +1338,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                       variant="ghost"
                       className="h-11 w-11 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
                       onClick={() => {
+                        SoundManager.tick();
                         const cur = parseFloat(convertInput) || 0;
                         setConvertInput(String(Math.max(0, +(cur - convertStepSize).toFixed(1))));
                       }}
@@ -1341,6 +1353,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                       variant="ghost"
                       className="h-11 w-11 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
                       onClick={() => {
+                        SoundManager.tick();
                         const cur = parseFloat(convertInput) || 0;
                         setConvertInput(String(+(cur + convertStepSize).toFixed(1)));
                       }}

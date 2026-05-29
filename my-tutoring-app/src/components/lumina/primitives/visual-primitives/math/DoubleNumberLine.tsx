@@ -10,6 +10,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Double Number Line — Multi-instance proportional reasoning primitive.
@@ -107,6 +108,7 @@ const LuminaNumberStepper: React.FC<LuminaNumberStepperProps> = ({
 
   const handleStep = (direction: 1 | -1) => {
     if (disabled) return;
+    SoundManager.tick();
     const current = isNaN(numValue) ? 0 : numValue;
     const next = Math.round((current + direction * step) * 100) / 100;
     onChange(String(next));
@@ -393,6 +395,7 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     }
 
     if (allCorrect) {
+      SoundManager.playCorrect();
       setFeedback('correct');
       if (!recordedRef.current) {
         recordedRef.current = true;
@@ -407,6 +410,7 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
         );
       }
     } else {
+      SoundManager.playIncorrect();
       setFeedback('incorrect');
       setShowHint(true);
     }

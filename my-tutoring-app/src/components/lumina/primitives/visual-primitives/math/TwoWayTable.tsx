@@ -12,6 +12,7 @@ import type { TwoWayTableMetrics } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types — canonical interface re-exported from the generator
@@ -345,6 +346,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
 
     const parsed = parseProbabilityInput(answerInput);
     if (parsed === null) {
+      SoundManager.invalid();
       setFeedback({
         correct: false,
         message: 'Please enter a decimal between 0 and 1 (e.g., 0.25).',
@@ -358,6 +360,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
     const correct = Math.abs(parsed - currentChallenge.expectedProbability) <= currentChallenge.tolerance;
 
     if (correct) {
+      SoundManager.playCorrect();
       const score = phaseScore(attempts);
       setFeedback({
         correct: true,
@@ -373,6 +376,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
         hintViewed: hintViewedRef.current,
       });
     } else {
+      SoundManager.playIncorrect();
       setFeedback({
         correct: false,
         message: attempts === 1
@@ -390,6 +394,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
   ]);
 
   const handleShowHint = useCallback(() => {
+    SoundManager.pop();
     setShowHint(true);
     hintViewedRef.current = true;
   }, []);

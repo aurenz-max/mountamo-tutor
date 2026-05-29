@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth — mirrored in gemini-systems-equations.ts)
@@ -402,6 +403,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     const trimmedX = xInput.trim();
     const trimmedY = yInput.trim();
     if (!trimmedX || !trimmedY) {
+      SoundManager.invalid();
       setFeedback('Enter both x and y values.');
       setFeedbackType('error');
       return;
@@ -409,6 +411,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     const xVal = parseFloat(trimmedX);
     const yVal = parseFloat(trimmedY);
     if (!Number.isFinite(xVal) || !Number.isFinite(yVal)) {
+      SoundManager.invalid();
       setFeedback('Enter numbers for x and y.');
       setFeedbackType('error');
       return;
@@ -417,6 +420,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
       Math.abs(xVal - currentChallenge.expectedX) < 0.01 &&
       Math.abs(yVal - currentChallenge.expectedY) < 0.01;
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Correct! The solution is (${currentChallenge.expectedX}, ${currentChallenge.expectedY}).`);
       setFeedbackType('success');
       setRevealLines(true);
@@ -427,6 +431,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
       );
       completeChallenge(true);
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. Check both equations carefully.`);
       setFeedbackType('error');
       incrementAttempts();
@@ -622,7 +627,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
                 variant="ghost"
                 size="sm"
                 className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 text-xs"
-                onClick={() => setRevealLines(true)}
+                onClick={() => { SoundManager.tap(); setRevealLines(true); }}
               >
                 Peek at the graph
               </Button>

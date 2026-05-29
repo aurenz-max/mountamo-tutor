@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -161,6 +162,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
   const handleAnswer = useCallback((correct: boolean, student: string, answer: string) => {
     if (feedback) return;
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback('correct');
       recordResult({
         challengeId: challenge!.id, correct: true,
@@ -169,6 +171,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
       });
       sendText(`[ANSWER_CORRECT] Challenge ${currentIndex + 1}/${challenges.length}: "${challenge!.instruction}". Student answered "${student}" correctly on attempt ${currentAttempts + 1}. Congratulate briefly.`, { silent: true });
     } else {
+      SoundManager.playIncorrect();
       incrementAttempts();
       if (currentAttempts >= 1) {
         setFeedback('show_answer');
@@ -240,6 +243,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
     if (!challenge || challenge.type !== 'plot_point' || feedback) return;
     const pt = svgToGraph(e);
     if (!pt) return;
+    SoundManager.snap();
     setPlacedPt(pt);
     const correct = pt.x === challenge.x1 && pt.y === challenge.y1;
     handleAnswer(correct, `(${pt.x}, ${pt.y})`, `(${challenge.x1}, ${challenge.y1})`);
@@ -252,6 +256,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
 
   const handleOptionClick = useCallback((idx: number) => {
     if (!challenge || feedback) return;
+    SoundManager.select();
     setSelectedOpt(idx);
     const opts = [challenge.option0, challenge.option1, challenge.option2, challenge.option3];
     const correct = idx === challenge.correctOptionIndex;

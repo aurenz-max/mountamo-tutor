@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MultiplicationExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
 
 // =============================================================================
@@ -550,6 +551,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     }
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFactsCorrect((c) => c + 1);
       if (currentChallenge?.type === 'missing_factor') {
         setMissingFactorCorrect((c) => c + 1);
@@ -572,6 +574,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback({
         correct: false,
         message: currentChallenge?.hint || `Not quite. Try again!`,
@@ -590,6 +593,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
 
   const handleNextChallenge = useCallback(() => {
     if (challengeIndex < challenges.length - 1) {
+      SoundManager.navigate();
       setChallengeIndex((i) => i + 1);
       setAnswer('');
       setFeedback(null);
@@ -606,6 +610,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   }, [challengeIndex, challenges, sendText]);
 
   const handlePhaseTransition = useCallback((newPhase: Phase) => {
+    SoundManager.navigate();
     setCurrentPhase(newPhase);
     setFeedback(null);
 
@@ -619,6 +624,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   }, [sendText]);
 
   const handleFlip = useCallback(() => {
+    SoundManager.toggle(!flipped);
     setFlipped((f) => !f);
     setCommutativeExplored(true);
 
@@ -627,9 +633,10 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       `Ask: "Is the total the same? Why?"`,
       { silent: true }
     );
-  }, [fact, sendText]);
+  }, [fact, flipped, sendText]);
 
   const handleShowFactFamily = useCallback(() => {
+    SoundManager.pop();
     setFactFamilyCompleted(true);
 
     sendText(
@@ -641,6 +648,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   }, [fact, sendText]);
 
   const handleShowDistributive = useCallback(() => {
+    SoundManager.pop();
     setDistributiveUsed(true);
 
     const a = Math.min(5, fact.factor1 - 1);

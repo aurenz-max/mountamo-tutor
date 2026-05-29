@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -447,6 +448,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     if (hasSubmittedEvaluation || challengeSolved) return;
     const tile = poolTiles[poolIndex];
     if (!tile) return;
+    SoundManager.snap();        // ← tile lands in the workspace
     setPoolTiles(prev => prev.filter((_, i) => i !== poolIndex));
     setWorkspaceSlots(prev => [...prev, tile]);
   }, [hasSubmittedEvaluation, challengeSolved, poolTiles]);
@@ -476,6 +478,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     const correct = equationsMatch(workspaceSlots, target);
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback('You built it! Great job!');
       setFeedbackType('success');
       setChallengeSolved(true);
@@ -489,6 +492,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       const builtStr = workspaceSlots.join(' ');
       // Check if mathematically valid but wrong target
       const isValidMath = evaluateEquation(builtStr);
@@ -517,6 +521,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     const correct = selectedOption === currentChallenge.correctValue;
 
     if (correct) {
+      SoundManager.playCorrect();
       const filledEq = (currentChallenge.equation ?? '').replace('?', String(selectedOption));
       setFeedback(`Yes! ${filledEq} is true!`);
       setFeedbackType('success');
@@ -531,6 +536,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback('Not quite. Remember, both sides of = must be the same amount!');
       setFeedbackType('error');
       sendText(
@@ -552,6 +558,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     const correct = selectedTruthValue === currentChallenge.isTrue;
 
     if (correct) {
+      SoundManager.playCorrect();
       const eq = currentChallenge.displayEquation ?? '';
       setFeedback(
         currentChallenge.isTrue
@@ -570,6 +577,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback('Think again. Check each side of the = sign. Are they the same amount?');
       setFeedbackType('error');
       sendText(
@@ -591,6 +599,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     const correct = answer === currentChallenge.correctAnswer;
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! ${currentChallenge.leftSide} = ${(currentChallenge.rightSide ?? '').replace('?', String(answer))} — both sides balance!`);
       setFeedbackType('success');
       setChallengeSolved(true);
@@ -606,6 +615,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback('The two sides aren\'t equal yet. What number makes both sides the same?');
       setFeedbackType('error');
       sendText(
@@ -629,6 +639,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     const correct = matchesAcceptedForm(workspaceSlots, acceptedForms);
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Great! ${builtStr} says the same thing a different way!`);
       setFeedbackType('success');
       setChallengeSolved(true);
@@ -643,6 +654,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       const isValidMath = evaluateEquation(builtStr);
       // Check if it matches the original (not rewritten)
       const originalNorm = (currentChallenge.originalEquation ?? '').replace(/\s+/g, '');
@@ -824,7 +836,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
                   : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
-              onClick={() => !disabled && setSelectedOption(opt)}
+              onClick={() => { if (!disabled) { SoundManager.select(); setSelectedOption(opt); } }}
               disabled={disabled}
             >
               {opt}
@@ -867,7 +879,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
                 : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'}
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             `}
-            onClick={() => !disabled && setSelectedTruthValue(true)}
+            onClick={() => { if (!disabled) { SoundManager.select(); setSelectedTruthValue(true); } }}
             disabled={disabled}
           >
             True
@@ -881,7 +893,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
                 : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'}
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             `}
-            onClick={() => !disabled && setSelectedTruthValue(false)}
+            onClick={() => { if (!disabled) { SoundManager.select(); setSelectedTruthValue(false); } }}
             disabled={disabled}
           >
             False

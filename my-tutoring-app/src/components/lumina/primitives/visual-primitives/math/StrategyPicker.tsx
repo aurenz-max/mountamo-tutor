@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -523,6 +524,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
       const correct = answer === problem.result;
 
       if (correct) {
+        SoundManager.playCorrect();
         const strat = currentChallenge.assignedStrategy ?? chosenStrategy ?? 'unknown';
         setFeedback(`Correct! ${problem.equation.replace('?', String(problem.result))}`);
         setFeedbackType('success');
@@ -539,6 +541,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
           strategyUsed: strat,
         });
       } else {
+        SoundManager.playIncorrect();
         setFeedback(`Not quite. Try again!`);
         setFeedbackType('error');
         sendText(
@@ -550,6 +553,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     } else if (type === 'compare') {
       // Compare always counts as correct (metacognitive reflection)
       if (!compareAnswer) return;
+      SoundManager.playCorrect();
       setFeedback('Great thinking! Both strategies give the same answer.');
       setFeedbackType('success');
       sendText(
@@ -566,6 +570,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     } else if (type === 'match-strategy') {
       const correct = matchSelection === currentChallenge.correctStrategy;
       if (correct) {
+        SoundManager.playCorrect();
         setFeedback(`Yes! That's ${STRATEGY_INFO[matchSelection as StrategyId]?.label ?? matchSelection}!`);
         setFeedbackType('success');
         sendText(
@@ -578,6 +583,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
           attempts: currentAttempts + 1,
         });
       } else {
+        SoundManager.playIncorrect();
         setFeedback(`Not quite — look at the steps again.`);
         setFeedbackType('error');
         sendText(
@@ -809,6 +815,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                       variant="ghost"
                       className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 h-auto py-3 flex flex-col gap-1"
                       onClick={() => {
+                        SoundManager.select();
                         setChosenStrategy(strat);
                         sendText(
                           `[STRATEGY_CHOSEN] Student chose "${info.label}" for ${currentChallenge.problem.equation}. `
@@ -845,7 +852,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                           ? 'bg-cyan-500/20 border-cyan-400/50 text-cyan-300'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                       }`}
-                      onClick={() => setMatchSelection(opt)}
+                      onClick={() => { SoundManager.select(); setMatchSelection(opt); }}
                     >
                       {STRATEGY_INFO[opt as StrategyId]?.icon ?? '?'}{' '}
                       {STRATEGY_INFO[opt as StrategyId]?.label ?? opt}
@@ -871,7 +878,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                           ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
                           : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                       }`}
-                      onClick={() => setCompareAnswer(strat)}
+                      onClick={() => { SoundManager.select(); setCompareAnswer(strat); }}
                     >
                       {STRATEGY_INFO[strat as StrategyId]?.label ?? strat}
                     </Button>
@@ -883,7 +890,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                         ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
                         : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
                     }`}
-                    onClick={() => setCompareAnswer('both-same')}
+                    onClick={() => { SoundManager.select(); setCompareAnswer('both-same'); }}
                   >
                     Both the same
                   </Button>
@@ -902,7 +909,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                   <Button
                     variant="ghost"
                     className="w-11 h-11 rounded-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-xl font-medium p-0"
-                    onClick={() => setAnswerInput(String(Math.max(0, (parseInt(answerInput, 10) || 0) - 1)))}
+                    onClick={() => { SoundManager.tick(); setAnswerInput(String(Math.max(0, (parseInt(answerInput, 10) || 0) - 1))); }}
                     disabled={!answerInput || parseInt(answerInput, 10) <= 0}
                   >
                     −
@@ -915,7 +922,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                   <Button
                     variant="ghost"
                     className="w-11 h-11 rounded-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-xl font-medium p-0"
-                    onClick={() => setAnswerInput(String(Math.min(20, (parseInt(answerInput, 10) || 0) + 1)))}
+                    onClick={() => { SoundManager.tick(); setAnswerInput(String(Math.min(20, (parseInt(answerInput, 10) || 0) + 1))); }}
                   >
                     +
                   </Button>

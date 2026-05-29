@@ -14,6 +14,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -268,11 +269,13 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const addBlock = useCallback((place: PlaceValue) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.tick();
     setColumns(prev => ({ ...prev, [place]: (prev[place] || 0) + 1 }));
   }, [hasSubmittedEvaluation]);
 
   const removeBlock = useCallback((place: PlaceValue) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.tick();
     setColumns(prev => {
       if ((prev[place] || 0) <= 0) return prev;
       return { ...prev, [place]: prev[place] - 1 };
@@ -292,6 +295,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     }
     setRegroupAnimating(place);
     setTimeout(() => {
+      SoundManager.snap();
       setColumns(prev => ({
         ...prev,
         [place]: prev[place] - 10,
@@ -322,6 +326,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     }
     setRegroupAnimating(place);
     setTimeout(() => {
+      SoundManager.snap();
       setColumns(prev => ({
         ...prev,
         [place]: prev[place] - 1,
@@ -359,6 +364,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     incrementAttempts();
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Correct! ${parsed} is right!`);
       setFeedbackType('success');
       recordResult({
@@ -374,6 +380,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`You entered ${parsed}, but the answer is ${target}. Try again!`);
       setFeedbackType('error');
       setTypedAnswer('');
