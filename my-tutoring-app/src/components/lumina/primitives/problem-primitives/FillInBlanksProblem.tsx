@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { FillInBlanksProblemData } from '../../types';
 import { InsetRenderer } from './insets';
+import { SoundManager } from '../../utils/SoundManager';
 import {
   usePrimitiveEvaluation,
   type FillInBlanksMetrics,
@@ -179,6 +180,7 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
               onClick={() => {
                 // Allow deselecting by clicking the blank
                 if (!isSubmitted && selectedWord) {
+                  SoundManager.tap();
                   setSelectedWords(prev => {
                     const newState = { ...prev };
                     delete newState[blankId];
@@ -251,12 +253,14 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
                     // Select for the first available blank
                     const firstEmptyBlank = data.blanks.find(blank => !selectedWords[blank.id]);
                     if (firstEmptyBlank) {
+                      SoundManager.snap();
                       handleWordSelect(firstEmptyBlank.id, word);
                     }
                   } else {
                     // Deselect
                     const blankId = Object.keys(selectedWords).find(id => selectedWords[id] === word);
                     if (blankId) {
+                      SoundManager.tap();
                       setSelectedWords(prev => {
                         const newState = { ...prev };
                         delete newState[blankId];

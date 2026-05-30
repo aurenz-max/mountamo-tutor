@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SoundManager } from '../../utils/SoundManager';
 
 // Species characteristic data structure
 export interface PhysicalStats {
@@ -109,6 +110,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
   const handleGenerateImage = async () => {
     if (!data.imagePrompt || isLoadingImage || generatedImageUrl) return;
 
+    SoundManager.tap();        // ← tactile press on generate
     setIsLoadingImage(true);
     setImageError(false);
 
@@ -131,12 +133,15 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
 
       const result = await response.json();
       if (result.imageUrl) {
+        SoundManager.pop();      // ← the visualization appears
         setGeneratedImageUrl(result.imageUrl);
       } else {
+        SoundManager.invalid();  // ← generation produced no image
         setImageError(true);
       }
     } catch (error) {
       console.error('Failed to generate species image:', error);
+      SoundManager.invalid();    // ← generation failed
       setImageError(true);
     } finally {
       setIsLoadingImage(false);
@@ -270,7 +275,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                 <AccordionItem value="physical" className="border-white/10">
                   <SpotlightCard color={colors.rgb}>
                     <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                      <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
+                      <AccordionTrigger onClick={() => SoundManager.tap()} className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
                         <div className="flex items-center gap-2">
                           <Ruler className={`w-5 h-5 ${colors.text}`} />
                           <span className={`font-bold ${colors.text}`}>Physical Stats</span>
@@ -329,7 +334,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                 <AccordionItem value="diet" className="border-white/10">
                   <SpotlightCard color={colors.rgb}>
                     <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                      <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
+                      <AccordionTrigger onClick={() => SoundManager.tap()} className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
                         <div className="flex items-center gap-2">
                           <Utensils className={`w-5 h-5 ${colors.text}`} />
                           <span className={`font-bold ${colors.text}`}>Diet & Behavior</span>
@@ -376,7 +381,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                 <AccordionItem value="habitat" className="border-white/10">
                   <SpotlightCard color={colors.rgb}>
                     <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                      <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
+                      <AccordionTrigger onClick={() => SoundManager.tap()} className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
                         <div className="flex items-center gap-2">
                           <MapPin className={`w-5 h-5 ${colors.text}`} />
                           <span className={`font-bold ${colors.text}`}>Habitat & Era</span>
@@ -423,7 +428,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                 <AccordionItem value="taxonomy" className="border-white/10">
                   <SpotlightCard color={colors.rgb}>
                     <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                      <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
+                      <AccordionTrigger onClick={() => SoundManager.tap()} className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
                         <div className="flex items-center gap-2">
                           <Users className={`w-5 h-5 ${colors.text}`} />
                           <span className={`font-bold ${colors.text}`}>Family Tree</span>

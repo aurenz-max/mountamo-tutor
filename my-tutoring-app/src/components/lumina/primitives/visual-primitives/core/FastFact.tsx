@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -254,6 +255,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
   // Start button & countdown
   // -------------------------------------------------------------------------
   const handleStart = useCallback(() => {
+    SoundManager.tap();        // ← tactile press to begin
     setGamePhase('counting');
     setCountdown(3);
   }, []);
@@ -261,9 +263,11 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
   useEffect(() => {
     if (gamePhase !== 'counting') return;
     if (countdown <= 0) {
+      SoundManager.pop();      // ← "GO!" — we're live
       setGamePhase('playing');
       return;
     }
+    SoundManager.tick();       // ← 3 · 2 · 1 countdown anticipation
     const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
     return () => clearTimeout(timer);
   }, [gamePhase, countdown]);
@@ -412,6 +416,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
     setResponseTimes(prev => [...prev, responseTimeSec]);
 
     if (correct) {
+      SoundManager.playCorrect();   // ← immediate per-challenge feedback
       setTotalCorrect(prev => prev + 1);
       const newStreak = streak + 1;
       setStreak(newStreak);
@@ -441,6 +446,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
         );
       }
     } else {
+      SoundManager.playIncorrect();  // ← wrong answer or time-up (both route here)
       setStreak(0);
       setFeedbackType('error');
 

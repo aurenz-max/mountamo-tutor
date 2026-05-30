@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { InheritanceLabMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Interface (Single source of truth)
@@ -349,6 +350,12 @@ const InheritanceLab: React.FC<InheritanceLabProps> = ({ data, className }) => {
   const handleCheckAnswers = () => {
     setShowPunnettResults(true);
 
+    if (allCorrect) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
+
     if (!hasSubmitted) {
       const score = Math.round((correctCells / totalCells) * 100);
 
@@ -411,6 +418,7 @@ const InheritanceLab: React.FC<InheritanceLabProps> = ({ data, className }) => {
     }
 
     setSimulationResults(results);
+    SoundManager.snap();
     setActiveTab('simulation');
   };
 

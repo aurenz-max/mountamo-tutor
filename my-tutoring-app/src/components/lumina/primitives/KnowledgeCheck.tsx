@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Lightbulb, ChevronDown, ChevronUp, Sparkles, Loader2, PenLine } from 'lucide-react';
+import { SoundManager } from '../utils/SoundManager';
 
 /**
  * KnowledgeCheck Component
@@ -102,6 +103,7 @@ const AIHelperCard: React.FC<AIHelperCardProps> = ({
   }, [conversation, hintLevel]);
 
   const handleRequestHint = useCallback(() => {
+    SoundManager.tap();
     const nextLevel = Math.min(hintLevel + 1, maxHintLevel) as 1 | 2 | 3;
     setHintLevel(nextLevel);
     conversationLengthAtHintRef.current = conversation.length;
@@ -314,6 +316,14 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     const problem = problems[problemIndex];
     const questionText = getQuestionText(problem);
 
+    // Immediate per-problem answer feedback. Kept outside the state updater so
+    // StrictMode's double-invoke can't double-play it.
+    if (isCorrect) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
+
     setEvaluationResults((prev) => {
       const next = new Map(prev);
       const existing = next.get(problemId);
@@ -443,6 +453,7 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
                     <Button
                       variant="ghost"
                       onClick={() => {
+                        SoundManager.tap();
                         setScratchPadProblemTopic(getQuestionText(problem));
                         setIsScratchPadOpen(o => !o);
                       }}

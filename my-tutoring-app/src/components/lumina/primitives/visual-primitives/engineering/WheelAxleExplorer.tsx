@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Wheel & Axle Explorer - Interactive wheel/axle system for teaching simple machines
@@ -168,6 +169,7 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
 
   // Rotate by fixed amount (for buttons/slider)
   const rotateWheel = (degrees: number) => {
+    SoundManager.tap();
     setWheelRotation(prev => prev + degrees);
   };
 
@@ -627,7 +629,7 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
                   max={720}
                   step={15}
                   value={wheelRotation}
-                  onChange={(e) => setWheelRotation(parseFloat(e.target.value))}
+                  onChange={(e) => { SoundManager.tick(); setWheelRotation(parseFloat(e.target.value)); }}
                   className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
                 />
               </div>
@@ -646,7 +648,7 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
                     max={12}
                     step={1}
                     value={wheelDiameter}
-                    onChange={(e) => setWheelDiameter(parseInt(e.target.value))}
+                    onChange={(e) => { SoundManager.tick(); setWheelDiameter(parseInt(e.target.value)); }}
                     className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                   />
                 </div>
@@ -661,7 +663,7 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
                     max={6}
                     step={0.5}
                     value={axleDiameter}
-                    onChange={(e) => setAxleDiameter(parseFloat(e.target.value))}
+                    onChange={(e) => { SoundManager.tick(); setAxleDiameter(parseFloat(e.target.value)); }}
                     className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
                   />
                 </div>

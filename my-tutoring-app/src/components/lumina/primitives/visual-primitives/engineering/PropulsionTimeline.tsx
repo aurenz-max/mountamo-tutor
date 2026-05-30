@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * PropulsionTimeline - History of How Humans Move
@@ -168,6 +169,7 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const exploreMilestone = useCallback((id: string) => {
+    SoundManager.select();
     setSelectedMilestoneId(id);
     setExploredMilestones(prev => {
       const next = new Set(prev);
@@ -212,6 +214,8 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
   const checkSequence = useCallback(() => {
     if (!currentSeqChallenge) return;
     const isCorrect = JSON.stringify(seqUserOrder) === JSON.stringify(currentSeqChallenge.correctOrder);
+    if (isCorrect) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
     setSeqChecked(true);
     setSeqResults(prev => [...prev, isCorrect]);
 

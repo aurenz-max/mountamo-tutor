@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Lever Lab - Interactive lever/fulcrum system for teaching simple machines
@@ -205,6 +206,7 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
     if (!loads[index].isDraggable) return;
     e.preventDefault();
     e.stopPropagation();
+    SoundManager.snap();
     setDraggedLoadIndex(index);
     setHasUserInteracted(true);
   };
@@ -213,6 +215,7 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
   const handleBeamPress = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    SoundManager.tap();
     const svgCoords = screenToSVG(e.clientX, e.clientY);
     const pos = pixelToUnit(svgCoords.x);
     const clampedPos = Math.max(0, Math.min(beamLength, pos));
@@ -286,6 +289,7 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
       return;
     }
 
+    SoundManager.pop();
     const newLoad: LeverLoad = {
       position: Math.random() * beamLength,
       weight: 1,

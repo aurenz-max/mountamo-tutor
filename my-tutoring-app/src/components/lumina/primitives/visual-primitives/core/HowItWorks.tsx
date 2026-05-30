@@ -17,6 +17,7 @@ import {
 import type { HowItWorksMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SpotlightCard } from '../../../components/SpotlightCard';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -373,6 +374,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   const currentChallenge = challenges[currentChallengeIndex] ?? null;
 
   const handleStartChallenges = useCallback(() => {
+    SoundManager.tap();
     setShowChallenges(true);
     setCurrentChallengeIndex(0);
     setCurrentAttempts(0);
@@ -391,6 +393,12 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     const correct = optionIndex === currentChallenge.correctIndex;
     const attempts = currentAttempts + 1;
     setCurrentAttempts(attempts);
+
+    if (correct) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
 
     if (correct || attempts >= 2) {
       setChallengeAnswers(prev => [...prev, { correct, attempts }]);
@@ -418,6 +426,12 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     setCurrentAttempts(attempts);
     setSequenceChecked(true);
     setSequenceCorrect(correct);
+
+    if (correct) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
 
     if (correct || attempts >= 2) {
       setChallengeAnswers(prev => [...prev, { correct, attempts }]);
@@ -548,6 +562,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   const moveSequenceItem = useCallback((fromIndex: number, direction: number) => {
     const toIndex = fromIndex + direction;
     if (toIndex < 0 || toIndex >= sequenceOrder.length) return;
+    SoundManager.tick();
     setSequenceOrder(prev => {
       const next = [...prev];
       [next[fromIndex], next[toIndex]] = [next[toIndex], next[fromIndex]];

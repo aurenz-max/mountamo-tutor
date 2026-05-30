@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import type { MiniSimBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
+import { SoundManager } from '../../../../../utils/SoundManager';
 
 interface MiniSimBlockProps {
   data: MiniSimBlockData;
@@ -65,6 +66,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
   const handlePredictionSelect = useCallback(
     (idx: number) => {
       if (predictionSubmitted) return;
+      SoundManager.select();
       setPredictionAnswer((prev) => (prev === idx ? null : idx));
     },
     [predictionSubmitted],
@@ -78,16 +80,19 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
     const isCorrect = predictionAnswer === prediction.correctIndex;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setPredictionSubmitted(true);
       setSimUnlocked(true);
       setAnswered(true);
       onAnswer?.(data.id, true, newAttempts);
     } else if (newAttempts >= 2) {
+      SoundManager.playIncorrect();
       setPredictionSubmitted(true);
       setSimUnlocked(true);
       setAnswered(true);
       onAnswer?.(data.id, false, newAttempts);
     } else {
+      SoundManager.playIncorrect();
       setPredictionAnswer(null);
     }
   }, [predictionAnswer, prediction, predictionSubmitted, predictionAttempts, data.id, onAnswer]);
@@ -210,7 +215,10 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
               </span>
               <Switch
                 checked={toggleValue}
-                onCheckedChange={setToggleValue}
+                onCheckedChange={(v) => {
+                  SoundManager.toggle(v);
+                  setToggleValue(v);
+                }}
                 className="data-[state=checked]:bg-cyan-500"
               />
               <span
@@ -225,7 +233,10 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
             <div className="space-y-2">
               <Slider
                 value={[sliderValue]}
-                onValueChange={([v]) => setSliderValue(v)}
+                onValueChange={([v]) => {
+                  SoundManager.tick();
+                  setSliderValue(v);
+                }}
                 min={sliderMin}
                 max={sliderMax}
                 step={sliderStep}

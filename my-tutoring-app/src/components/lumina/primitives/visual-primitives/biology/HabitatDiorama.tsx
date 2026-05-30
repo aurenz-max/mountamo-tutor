@@ -17,6 +17,7 @@
 import React, { useState } from 'react';
 import { Info, Zap, Eye, Link2 } from 'lucide-react';
 import { usePrimitiveEvaluation } from '../../../evaluation';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -113,6 +114,7 @@ const HabitatDiorama: React.FC<HabitatDioramaProps> = ({
 
   // Handle organism click
   const handleOrganismClick = (organismId: string) => {
+    SoundManager.tap();
     setSelectedOrganism(organismId === selectedOrganism ? null : organismId);
     setSelectedFeature(null);
 
@@ -146,6 +148,7 @@ const HabitatDiorama: React.FC<HabitatDioramaProps> = ({
   // Toggle relationship view
   const handleToggleRelationships = () => {
     const newState = !showRelationships;
+    SoundManager.toggle(newState);
     setShowRelationships(newState);
 
     const interaction = {

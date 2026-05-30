@@ -5,6 +5,7 @@ import {
   usePrimitiveEvaluation,
   type DumpTruckLoaderMetrics,
 } from '../../../evaluation';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Dump Truck Loader - Interactive dump truck loading and hauling simulation
@@ -909,6 +910,7 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
   // Touch/mouse hold helpers for mobile controls
   const holdIntervalRef = useRef<ReturnType<typeof setInterval>>();
   const startHold = (key: string) => {
+    SoundManager.tick();
     keysRef.current.add(key);
     clearInterval(holdIntervalRef.current);
   };
@@ -982,7 +984,7 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
           <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 text-center">Excavator</div>
           <div className="flex items-center justify-center">
             <button
-              onMouseDown={() => { loadPressedRef.current = true; }}
+              onMouseDown={() => { SoundManager.tap(); loadPressedRef.current = true; }}
               disabled={!uiState.nearSource || uiState.isLoading || uiState.sourceRemaining <= 0}
               className="w-full max-w-[180px] h-14 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 active:bg-blue-500/40 disabled:bg-slate-700/40 disabled:opacity-40 border border-blue-500/40 disabled:border-slate-600/30 text-blue-300 disabled:text-slate-500 font-semibold transition-all flex items-center justify-center gap-2 select-none disabled:cursor-not-allowed"
             >
@@ -1002,10 +1004,10 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
           <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 text-center">Bed Tilt</div>
           <div className="flex items-center justify-center gap-3">
             <button
-              onMouseDown={() => { raisePressedRef.current = true; }}
+              onMouseDown={() => { SoundManager.tick(); raisePressedRef.current = true; }}
               onMouseUp={() => { raisePressedRef.current = false; }}
               onMouseLeave={() => { raisePressedRef.current = false; }}
-              onTouchStart={(e) => { e.preventDefault(); raisePressedRef.current = true; }}
+              onTouchStart={(e) => { e.preventDefault(); SoundManager.tick(); raisePressedRef.current = true; }}
               onTouchEnd={() => { raisePressedRef.current = false; }}
               disabled={!uiState.nearDump || uiState.currentVolume <= 0.1}
               className="w-14 h-14 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 active:bg-orange-500/40 disabled:bg-slate-700/40 disabled:opacity-40 border border-orange-500/40 disabled:border-slate-600/30 text-orange-300 disabled:text-slate-500 text-2xl font-bold transition-all flex items-center justify-center select-none disabled:cursor-not-allowed"
@@ -1018,10 +1020,10 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
               </span>
             </div>
             <button
-              onMouseDown={() => { lowerPressedRef.current = true; }}
+              onMouseDown={() => { SoundManager.tick(); lowerPressedRef.current = true; }}
               onMouseUp={() => { lowerPressedRef.current = false; }}
               onMouseLeave={() => { lowerPressedRef.current = false; }}
-              onTouchStart={(e) => { e.preventDefault(); lowerPressedRef.current = true; }}
+              onTouchStart={(e) => { e.preventDefault(); SoundManager.tick(); lowerPressedRef.current = true; }}
               onTouchEnd={() => { lowerPressedRef.current = false; }}
               className="w-14 h-14 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 active:bg-orange-500/40 disabled:bg-slate-700/40 disabled:opacity-40 border border-orange-500/40 disabled:border-slate-600/30 text-orange-300 disabled:text-slate-500 text-2xl font-bold transition-all flex items-center justify-center select-none disabled:cursor-not-allowed"
             >

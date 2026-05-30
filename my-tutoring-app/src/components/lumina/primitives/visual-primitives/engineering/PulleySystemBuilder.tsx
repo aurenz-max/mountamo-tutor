@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Pulley System Builder - Interactive pulley system for teaching simple machines
@@ -524,6 +525,8 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
 
     const svg = svgRef.current;
     if (!svg) return;
+
+    SoundManager.pop();
 
     const rect = svg.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * svgWidth;
@@ -1264,7 +1267,7 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
                 max={loadWeight}
                 step={0.5}
                 value={effortForce}
-                onChange={(e) => setEffortForce(parseFloat(e.target.value))}
+                onChange={(e) => { SoundManager.tick(); setEffortForce(parseFloat(e.target.value)); }}
                 className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
               />
             </div>
@@ -1297,7 +1300,7 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
               <label className="block text-sm font-mono text-slate-300 mb-3">Pulley Type to Add:</label>
               <div className="flex gap-3">
                 <button
-                  onClick={() => setSelectedPulleyType('fixed')}
+                  onClick={() => { SoundManager.select(); setSelectedPulleyType('fixed'); }}
                   className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
                     selectedPulleyType === 'fixed'
                       ? 'bg-blue-500/30 border border-blue-500/50 text-blue-300'
@@ -1308,7 +1311,7 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
                   <span className="block text-xs font-normal mt-1">Changes direction only</span>
                 </button>
                 <button
-                  onClick={() => setSelectedPulleyType('movable')}
+                  onClick={() => { SoundManager.select(); setSelectedPulleyType('movable'); }}
                   className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
                     selectedPulleyType === 'movable'
                       ? 'bg-green-500/30 border border-green-500/50 text-green-300'

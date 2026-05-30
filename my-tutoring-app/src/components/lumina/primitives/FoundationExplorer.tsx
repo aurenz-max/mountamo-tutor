@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FoundationExplorerData, FoundationConcept } from '../types';
 import { generateConceptImage } from '../service/geminiClient-api';
 import { useLuminaAI } from '../hooks/useLuminaAI';
+import { SoundManager } from '../utils/SoundManager';
 import { Target, CheckCircle2, Lightbulb, HelpCircle, ChevronRight } from 'lucide-react';
 
 /**
@@ -77,6 +78,7 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
   useEffect(() => {
     if (allCompleted && !hasTriggeredAllCompleteRef.current) {
       hasTriggeredAllCompleteRef.current = true;
+      SoundManager.playStreak();
       const conceptNames = concepts.map(c => c.name).join(', ');
       sendText(
         `[ALL_COMPLETE] The student has explored all ${concepts.length} concepts: ${conceptNames}. ` +
@@ -111,6 +113,7 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
   const handleConceptSelect = (conceptId: string) => {
     const concept = concepts.find(c => c.id === conceptId);
     if (concept && conceptId !== selectedConceptId) {
+      SoundManager.select();
       setSelectedConceptId(conceptId);
       const exploredSoFar = Object.values(conceptsCompleted).filter(Boolean).length;
       sendText(
@@ -124,6 +127,7 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
   };
 
   const handleSelfCheckReveal = (conceptId: string) => {
+    SoundManager.pop();
     setSelfCheckRevealed(prev => ({ ...prev, [conceptId]: true }));
     const concept = concepts.find(c => c.id === conceptId);
     if (concept) {
@@ -138,6 +142,7 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
   };
 
   const handleConceptComplete = (conceptId: string) => {
+    SoundManager.playCorrect();
     setConceptsCompleted(prev => ({ ...prev, [conceptId]: true }));
     const concept = concepts.find(c => c.id === conceptId);
     // Auto-advance to next incomplete concept

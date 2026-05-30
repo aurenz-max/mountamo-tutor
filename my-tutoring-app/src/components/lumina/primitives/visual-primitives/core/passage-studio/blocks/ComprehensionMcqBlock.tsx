@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import BlockShell from './BlockShell';
+import { SoundManager } from '../../../../../utils/SoundManager';
 import type { ComprehensionMcqBlockData } from '../types';
 
 interface ComprehensionMcqBlockProps {
@@ -27,6 +28,7 @@ const ComprehensionMcqBlock: React.FC<ComprehensionMcqBlockProps> = ({
   const handleSelect = useCallback(
     (i: number) => {
       if (answered) return;
+      SoundManager.select();
       setSelectedIndex(i);
     },
     [answered],
@@ -36,6 +38,8 @@ const ComprehensionMcqBlock: React.FC<ComprehensionMcqBlockProps> = ({
     if (selectedIndex === null || answered) return;
     const next = attempts + 1;
     setAttempts(next);
+    if (selectedIndex === data.correctIndex) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
     if (selectedIndex === data.correctIndex) {
       setAnswered(true);
       setShowExplanation(true);

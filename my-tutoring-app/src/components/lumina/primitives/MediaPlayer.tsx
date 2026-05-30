@@ -4,6 +4,7 @@ import { MediaPlayerData } from '../types';
 import { usePrimitiveEvaluation, type MediaPlayerMetrics, type PrimitiveEvaluationResult } from '../evaluation';
 import { useLuminaAI } from '../hooks/useLuminaAI';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
+import { SoundManager } from '../utils/SoundManager';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -169,6 +170,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
   };
 
   const handleShowKnowledgeCheck = () => {
+    SoundManager.pop();           // ← knowledge check appears
     setSegmentPhases(prev => {
       const updated = [...prev];
       updated[currentIndex] = 'answering';
@@ -237,6 +239,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     setSegmentAttempts(prev => ({ ...prev, [segmentIndex]: attempts }));
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setSegmentAnswered(prev => ({ ...prev, [segmentIndex]: true }));
       setSegmentCorrect(prev => ({ ...prev, [segmentIndex]: true }));
       setSegmentPhases(prev => {
@@ -256,6 +259,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
         advanceToNextSegment(segmentIndex);
       }, 2000);
     } else {
+      SoundManager.playIncorrect();
       if (attempts >= MAX_ATTEMPTS_PER_SEGMENT) {
         setShowCorrectAnswer(prev => ({ ...prev, [segmentIndex]: true }));
         setSegmentPhases(prev => {
@@ -688,7 +692,10 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
                       <RadioGroup
                         value={selectedAnswers[currentIndex]?.toString()}
-                        onValueChange={(val) => setSelectedAnswers(prev => ({ ...prev, [currentIndex]: parseInt(val) }))}
+                        onValueChange={(val) => {
+                          SoundManager.select();   // ← option chosen
+                          setSelectedAnswers(prev => ({ ...prev, [currentIndex]: parseInt(val) }));
+                        }}
                         className="space-y-2"
                       >
                         {currentSegment.knowledgeCheck.options.map((option, optionIndex) => (

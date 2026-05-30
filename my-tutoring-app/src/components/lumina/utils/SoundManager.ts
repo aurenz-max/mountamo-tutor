@@ -8,11 +8,18 @@
  * One source of truth: the same SOUND_SPECS array drives both real playback
  * and the Sound Lab dev tool, so what you audition is exactly what ships.
  *
+ * Signal path: every note → a shared master bus (compressor → master gain) →
+ * destination. The compressor glues layered notes together and tames peaks, so
+ * the celebration sounds can read LOUD and full without clipping; the master
+ * gain owns the volume preference (and ramps it smoothly).
+ *
  * Design rules for "intuitive" UI sound:
  *   - Keep it short (50–250ms) so repetition never grates.
  *   - Consonant musical intervals (3rds, 5ths, octaves) read as "good".
  *   - Soft, low, short tones read as "neutral / no" without punishing.
  *   - Rising pitch = progress / on; falling pitch = undo / off.
+ *   - Impact lives in `correct`, `streak`, `perfect` — NOT in the tiny,
+ *     frequent interaction sounds. Punching those up is how an app gets muted.
  *
  * Singleton — import { SoundManager } and call directly.
  */
@@ -28,10 +35,17 @@ export interface Note {
   duration: number;
   /** Oscillator shape. Defaults to 'sine'. */
   waveform?: Waveform;
-  /** Relative loudness 0–1 (multiplied by master volume). Defaults to 1. */
+  /** Relative loudness 0–1 (master volume is applied downstream). Defaults to 1. */
   gain?: number;
   /** Optional pitch glide target in Hz (sweeps from `freq` to this over the note). */
   glideTo?: number;
+  /**
+   * Optional "fatten" amount in cents. When set, a second oscillator is spawned
+   * a hair off pitch (±detune/2) so the note reads bigger and more produced.
+   * Classic detuned-unison thickening. ~6 cents is plenty; reserve for lead
+   * tones in celebration sounds — it adds cost and weight you don't want on taps.
+   */
+  detune?: number;
 }
 
 export type SoundGroup = 'feedback' | 'interaction' | 'celebration';
@@ -43,10 +57,18 @@ export interface SoundSpec {
   /** Plain-language description of when to play this and what it conveys. */
   description: string;
   notes: Note[];
+  /**
+   * Optional reverb send amount, 0–1. When set, this sound is fed (in addition
+   * to the dry path) into a shared reverb so it blooms in a "space" rather than
+   * a vacuum — grandeur for rare, terminal moments. Leave unset for everything
+   * frequent: interaction and feedback sounds stay dry and tight.
+   */
+  reverb?: number;
 }
 
 // ── Note frequencies (equal temperament) ────────────────────────────────
 const NOTE = {
+  C3: 130.81,
   G3: 196.0,
   A3: 220.0,
   C4: 261.63,
@@ -72,8 +94,8 @@ export const SOUND_SPECS: SoundSpec[] = [
     id: 'tap',
     label: 'Tap',
     group: 'interaction',
-    description: 'Neutral button / card press. The everyday click.',
-    notes: [{ freq: NOTE.E5, start: 0, duration: 0.06, waveform: 'sine', gain: 0.5 }],
+    description: 'Friendly button / card press. The everyday click — a touch louder, with a small upward lift so it feels warm rather than flat.',
+    notes: [{ freq: NOTE.E5, start: 0, duration: 0.07, waveform: 'sine', gain: 0.68, glideTo: NOTE.G5 }],
   },
   {
     id: 'select',
@@ -149,11 +171,16 @@ export const SOUND_SPECS: SoundSpec[] = [
     id: 'correct',
     label: 'Correct',
     group: 'feedback',
-    description: 'A correct answer — bright ascending C-major arpeggio (C5 E5 G5).',
+    description: 'A correct answer — warm ascending major arpeggio (C5 E5 G5) with light body and a sparkle, resolving up an octave. Streak\'s DNA, scaled down for something that fires on every right answer.',
     notes: [
-      { freq: NOTE.C5, start: 0, duration: 0.3, waveform: 'sine', gain: 0.9 },
-      { freq: NOTE.E5, start: 0.09, duration: 0.3, waveform: 'sine', gain: 0.9 },
-      { freq: NOTE.G5, start: 0.18, duration: 0.32, waveform: 'sine', gain: 0.9 },
+      // Light low body — grounds the arpeggio without overstaying (this fires constantly)
+      { freq: NOTE.C4, start: 0, duration: 0.26, waveform: 'sine', gain: 0.4 },
+      // Warm, lightly-detuned major arpeggio (C5 E5 G5)
+      { freq: NOTE.C5, start: 0, duration: 0.28, waveform: 'triangle', gain: 0.85, detune: 6 },
+      { freq: NOTE.E5, start: 0.08, duration: 0.28, waveform: 'triangle', gain: 0.85, detune: 6 },
+      { freq: NOTE.G5, start: 0.16, duration: 0.34, waveform: 'triangle', gain: 0.9, detune: 7 },
+      // Single sparkle on the landing, an octave above the root
+      { freq: NOTE.C6, start: 0.22, duration: 0.3, waveform: 'sine', gain: 0.4 },
     ],
   },
   {
@@ -171,14 +198,15 @@ export const SOUND_SPECS: SoundSpec[] = [
     group: 'celebration',
     description: 'Several correct in a row — an accelerating "level-up" run that lands bright, with a sparkle on top.',
     notes: [
-      // Bass launch — gives the run body
+      // Sub-octave + bass launch — gives the run felt body
+      { freq: NOTE.C3, start: 0, duration: 0.32, waveform: 'sine', gain: 0.5 },
       { freq: NOTE.C4, start: 0, duration: 0.28, waveform: 'sine', gain: 0.45 },
-      // Accelerating major-pentatonic climb (warm triangle)
-      { freq: NOTE.C5, start: 0, duration: 0.16, waveform: 'triangle', gain: 0.85 },
-      { freq: NOTE.E5, start: 0.06, duration: 0.16, waveform: 'triangle', gain: 0.85 },
-      { freq: NOTE.G5, start: 0.12, duration: 0.16, waveform: 'triangle', gain: 0.85 },
-      { freq: NOTE.A5, start: 0.18, duration: 0.16, waveform: 'triangle', gain: 0.85 },
-      { freq: NOTE.C6, start: 0.24, duration: 0.32, waveform: 'triangle', gain: 0.95 },
+      // Accelerating major-pentatonic climb (warm, lightly-detuned triangle)
+      { freq: NOTE.C5, start: 0, duration: 0.16, waveform: 'triangle', gain: 0.85, detune: 6 },
+      { freq: NOTE.E5, start: 0.06, duration: 0.16, waveform: 'triangle', gain: 0.85, detune: 6 },
+      { freq: NOTE.G5, start: 0.12, duration: 0.16, waveform: 'triangle', gain: 0.85, detune: 6 },
+      { freq: NOTE.A5, start: 0.18, duration: 0.16, waveform: 'triangle', gain: 0.85, detune: 6 },
+      { freq: NOTE.C6, start: 0.24, duration: 0.32, waveform: 'triangle', gain: 0.95, detune: 7 },
       // Sparkle shimmer on the landing
       { freq: NOTE.E6, start: 0.3, duration: 0.35, waveform: 'sine', gain: 0.4 },
       { freq: NOTE.G6, start: 0.36, duration: 0.35, waveform: 'sine', gain: 0.3 },
@@ -188,17 +216,26 @@ export const SOUND_SPECS: SoundSpec[] = [
     id: 'perfect',
     label: 'Perfect',
     group: 'celebration',
-    description: 'A perfect score — triumphant arpeggio (C5 E5 G5 C6) into a sustained chord.',
+    description: 'A perfect score — the boldest sound in the app. Triumphant arpeggio climbing all the way to E6 over immediate low-end body, crowned with a sparkle, resolving into a big sustained chord that blooms in reverb. Rare and terminal, so it can afford grandeur.',
+    reverb: 0.4,
     notes: [
-      { freq: NOTE.C5, start: 0, duration: 0.5, waveform: 'triangle', gain: 0.8 },
-      { freq: NOTE.E5, start: 0.12, duration: 0.5, waveform: 'triangle', gain: 0.8 },
-      { freq: NOTE.G5, start: 0.24, duration: 0.5, waveform: 'triangle', gain: 0.8 },
-      { freq: NOTE.C6, start: 0.36, duration: 0.5, waveform: 'triangle', gain: 0.8 },
-      // Sustained closing chord
-      { freq: NOTE.C5, start: 0.48, duration: 0.7, waveform: 'sine', gain: 0.4 },
-      { freq: NOTE.E5, start: 0.48, duration: 0.7, waveform: 'sine', gain: 0.4 },
-      { freq: NOTE.G5, start: 0.48, duration: 0.7, waveform: 'sine', gain: 0.4 },
-      { freq: NOTE.C6, start: 0.48, duration: 0.7, waveform: 'sine', gain: 0.4 },
+      // Immediate low body at the launch — weight from the very first instant
+      { freq: NOTE.C3, start: 0, duration: 0.55, waveform: 'sine', gain: 0.55 },
+      // Triumphant rising arpeggio, now climbing a full octave-and-a-third to E6
+      { freq: NOTE.C5, start: 0, duration: 0.5, waveform: 'triangle', gain: 0.85, detune: 6 },
+      { freq: NOTE.E5, start: 0.1, duration: 0.5, waveform: 'triangle', gain: 0.85, detune: 6 },
+      { freq: NOTE.G5, start: 0.2, duration: 0.5, waveform: 'triangle', gain: 0.85, detune: 6 },
+      { freq: NOTE.C6, start: 0.3, duration: 0.5, waveform: 'triangle', gain: 0.9, detune: 7 },
+      { freq: NOTE.E6, start: 0.4, duration: 0.5, waveform: 'triangle', gain: 0.9, detune: 7 },
+      // Sparkle crown on the peak
+      { freq: NOTE.G6, start: 0.46, duration: 0.45, waveform: 'sine', gain: 0.4 },
+      // Big sustained closing chord with two octaves of low-end body
+      { freq: NOTE.C3, start: 0.56, duration: 0.95, waveform: 'sine', gain: 0.55 },
+      { freq: NOTE.C4, start: 0.56, duration: 0.95, waveform: 'sine', gain: 0.4 },
+      { freq: NOTE.C5, start: 0.56, duration: 0.95, waveform: 'sine', gain: 0.45, detune: 5 },
+      { freq: NOTE.E5, start: 0.56, duration: 0.95, waveform: 'sine', gain: 0.45, detune: 5 },
+      { freq: NOTE.G5, start: 0.56, duration: 0.95, waveform: 'sine', gain: 0.45, detune: 5 },
+      { freq: NOTE.C6, start: 0.56, duration: 0.95, waveform: 'sine', gain: 0.45, detune: 5 },
     ],
   },
 ];
@@ -223,9 +260,17 @@ export function describeSound(spec: SoundSpec) {
 
 const STORAGE_KEY = 'lumina.sound.prefs';
 const ATTACK = 0.008; // seconds — short fade-in so onsets don't click
+// Notes at/above this duration get the "hit" envelope (fast decay to a sustain
+// floor = front-loaded energy = punch). Shorter notes — every interaction
+// sound — keep the original tight attack→silence shape so they stay gentle and
+// so their envelope keyframes never overlap (e.g. tick is only 25ms).
+const HIT_ENVELOPE_MIN_DURATION = 0.2;
 
 class SoundManagerImpl {
   private ctx: AudioContext | null = null;
+  private bus: DynamicsCompressorNode | null = null;
+  private master: GainNode | null = null;
+  private reverb: ConvolverNode | null = null;
   private enabled = true;
   private volume = 0.3; // 0–1 master
 
@@ -264,6 +309,24 @@ class SoundManagerImpl {
     if (!this.ctx) {
       try {
         this.ctx = new AudioContext();
+        // notes → compressor (glue + peak control) → master gain → out.
+        // The compressor lets layered/celebration sounds read loud and full
+        // without clipping; the master gain owns the volume preference.
+        this.bus = this.ctx.createDynamicsCompressor();
+        this.bus.threshold.value = -20;
+        this.bus.ratio.value = 5;
+        this.bus.attack.value = 0.003;
+        this.bus.release.value = 0.18;
+        this.master = this.ctx.createGain();
+        this.master.gain.value = this.volume;
+        this.bus.connect(this.master);
+        this.master.connect(this.ctx.destination);
+        // Shared reverb for opt-in grandeur (see SoundSpec.reverb). Wet returns
+        // straight to the master, post-compressor; dry-by-default for everything
+        // else. A short generated impulse keeps it a "room", not a cathedral.
+        this.reverb = this.ctx.createConvolver();
+        this.reverb.buffer = this.makeImpulse(this.ctx, 1.6, 3.2);
+        this.reverb.connect(this.master);
       } catch {
         return null;
       }
@@ -287,6 +350,11 @@ class SoundManagerImpl {
 
   setVolume(v: number) {
     this.volume = Math.max(0, Math.min(1, v));
+    // Smoothly ramp the live master node (if a context exists) instead of only
+    // affecting future sounds — no zipper noise, applies to in-flight tails too.
+    if (this.master && this.ctx) {
+      this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.01);
+    }
     this.savePrefs();
   }
 
@@ -310,7 +378,7 @@ class SoundManagerImpl {
 
     const now = ctx.currentTime;
     for (const note of spec.notes) {
-      this.scheduleNote(ctx, note, now);
+      this.scheduleNote(ctx, note, now, spec.reverb ?? 0);
     }
   }
 
@@ -328,20 +396,64 @@ class SoundManagerImpl {
     if (spec) this.play(spec);
   }
 
-  private scheduleNote(ctx: AudioContext, note: Note, now: number) {
+  /** Build a short decaying-noise impulse response for the reverb convolver. */
+  private makeImpulse(ctx: AudioContext, seconds: number, decay: number): AudioBuffer {
+    const rate = ctx.sampleRate;
+    const len = Math.max(1, Math.floor(rate * seconds));
+    const buffer = ctx.createBuffer(2, len, rate);
+    for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+      const data = buffer.getChannelData(ch);
+      for (let i = 0; i < len; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+      }
+    }
+    return buffer;
+  }
+
+  private scheduleNote(ctx: AudioContext, note: Note, now: number, reverbSend = 0) {
     const t = now + note.start;
-    const peak = Math.max(0.0001, this.volume * (note.gain ?? 1) * 0.5);
+    // Master volume is applied by the master gain node downstream, so per-note
+    // math only carries the note's own relative loudness.
+    const peak = Math.max(0.0001, (note.gain ?? 1) * 0.5);
 
     const gain = ctx.createGain();
-    gain.connect(ctx.destination);
-    // Click-free envelope: fast exponential attack, then decay to silence.
+    gain.connect(this.bus ?? ctx.destination);
+    // Opt-in wet path: feed a parallel send into the shared reverb.
+    if (reverbSend > 0 && this.reverb) {
+      const send = ctx.createGain();
+      send.gain.value = reverbSend;
+      gain.connect(send);
+      send.connect(this.reverb);
+    }
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(peak, t + ATTACK);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + note.duration);
+    gain.gain.exponentialRampToValueAtTime(peak, t + ATTACK); // snap up
+    if (note.duration >= HIT_ENVELOPE_MIN_DURATION) {
+      // "Hit" envelope: quick decay to a sustain floor front-loads the energy,
+      // which the ear reads as punch; then a tail to silence.
+      const sustain = Math.max(0.0001, peak * 0.35);
+      gain.gain.exponentialRampToValueAtTime(sustain, t + ATTACK + 0.04);
+    }
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + note.duration); // tail to silence
 
+    // Primary oscillator, plus an optional detuned partner to "fatten" the tone.
+    this.spawnOscillator(ctx, note, gain, t, note.detune != null ? +note.detune / 2 : 0);
+    if (note.detune != null) {
+      this.spawnOscillator(ctx, note, gain, t, -note.detune / 2);
+    }
+  }
+
+  /** Create one oscillator for `note`, offset by `detuneCents`, wired into `gain`. */
+  private spawnOscillator(
+    ctx: AudioContext,
+    note: Note,
+    gain: GainNode,
+    t: number,
+    detuneCents: number,
+  ) {
     const osc = ctx.createOscillator();
     osc.type = note.waveform ?? 'sine';
     osc.frequency.setValueAtTime(note.freq, t);
+    if (detuneCents !== 0) osc.detune.setValueAtTime(detuneCents, t);
     if (note.glideTo != null) {
       osc.frequency.exponentialRampToValueAtTime(Math.max(1, note.glideTo), t + note.duration);
     }

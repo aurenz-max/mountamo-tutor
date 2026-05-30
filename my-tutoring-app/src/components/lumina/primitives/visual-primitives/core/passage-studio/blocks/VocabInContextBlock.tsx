@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import BlockShell from './BlockShell';
+import { SoundManager } from '../../../../../utils/SoundManager';
 import type { VocabInContextBlockData } from '../types';
 
 interface VocabInContextBlockProps {
@@ -28,6 +29,8 @@ const VocabInContextBlock: React.FC<VocabInContextBlockProps> = ({
     if (selectedIndex === null || answered) return;
     const next = attempts + 1;
     setAttempts(next);
+    if (selectedIndex === data.correctIndex) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
     if (selectedIndex === data.correctIndex) {
       setAnswered(true);
       setShowExplanation(true);
@@ -73,7 +76,11 @@ const VocabInContextBlock: React.FC<VocabInContextBlockProps> = ({
             return (
               <button
                 key={i}
-                onClick={() => !answered && setSelectedIndex(i)}
+                onClick={() => {
+                  if (answered) return;
+                  SoundManager.select();
+                  setSelectedIndex(i);
+                }}
                 disabled={answered}
                 className={cls}
               >

@@ -5,6 +5,7 @@ import {
   usePrimitiveEvaluation,
   type BridgeBuilderMetrics,
 } from '../../../evaluation';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Bridge Builder - Interactive 2D bridge construction for teaching structural engineering
@@ -600,8 +601,10 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
             endJointId: clickedJoint.id,
             strength: materialStrength[selectedPieceType],
           };
+          SoundManager.snap();
           setMembers([...members, newMember]);
         } else {
+          SoundManager.invalid();
           setHint(`No more ${selectedPieceType}s available!`);
           setTimeout(() => setHint(null), 2000);
         }
@@ -623,6 +626,7 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
             endJointId: newJoint.id,
             strength: materialStrength[selectedPieceType],
           };
+          SoundManager.snap();
           setJoints([...joints, newJoint]);
           setMembers([...members, newMember]);
         }
@@ -732,6 +736,7 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
 
   // Reset
   const handleReset = () => {
+    SoundManager.tap();
     const anchors: BridgeJoint[] = anchorPoints.map((p, i) => ({
       id: `anchor-${i}`,
       x: p.x,
@@ -1053,6 +1058,7 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
                               endJointId: joint.id,
                               strength: materialStrength[selectedPieceType],
                             };
+                            SoundManager.snap();
                             setMembers([...members, newMember]);
                           }
                           setSelectedJoint(null);
@@ -1165,7 +1171,10 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
               return (
                 <button
                   key={type}
-                  onClick={() => setSelectedPieceType(type)}
+                  onClick={() => {
+                    SoundManager.select();
+                    setSelectedPieceType(type);
+                  }}
                   disabled={available <= 0}
                   className={`px-4 py-3 rounded-xl border transition-all flex items-center gap-3 ${
                     isSelected

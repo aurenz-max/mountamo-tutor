@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * VehicleComparisonLab - Data-driven vehicle comparison workspace
@@ -177,6 +178,7 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
 
   // ── Vehicle Selection ─────────────────────────────────────────────────────
   const toggleVehicle = useCallback((vehicleId: string) => {
+    SoundManager.select();
     setSelectedVehicleIds(prev => {
       if (prev.includes(vehicleId)) {
         if (prev.length <= 2) return prev; // Keep at least 2
@@ -226,6 +228,8 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
     if (!challenge) return;
 
     const isCorrect = vehicleId === challenge.bestVehicleId || challenge.acceptableAlternatives.includes(vehicleId);
+    if (isCorrect) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
     setChallengeAnswer(vehicleId);
     setChallengeResults(prev => [...prev, isCorrect]);
 

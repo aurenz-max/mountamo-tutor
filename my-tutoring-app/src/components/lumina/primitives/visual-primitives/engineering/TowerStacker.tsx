@@ -5,6 +5,7 @@ import {
   usePrimitiveEvaluation,
   type TowerStackerMetrics,
 } from '../../../evaluation';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Tower Stacker - Interactive vertical building challenge for teaching structural engineering
@@ -393,6 +394,7 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
 
     // Check availability
     if (getAvailableCount(selectedPieceType) <= 0) {
+      SoundManager.invalid();
       setHint(`No more ${selectedPieceType}s available!`);
       setTimeout(() => setHint(null), 2000);
       return;
@@ -425,6 +427,7 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
 
     // Final validation
     if (!isValidPlacement(gridX, targetY, effectiveWidth, effectiveHeight)) {
+      SoundManager.invalid();
       setHint("Can't place here - needs support!");
       setTimeout(() => setHint(null), 2000);
       return;
@@ -443,6 +446,7 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
       rotation: currentRotation,
     };
 
+    SoundManager.snap();
     setPlacedPieces([...placedPieces, newPiece]);
     setTowerFell(false);
     setTowerStood(false);
@@ -499,6 +503,7 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
 
   // Reset
   const handleReset = () => {
+    SoundManager.tap();
     setPlacedPieces([]);
     setSelectedPieceType(null);
     setTowerFell(false);
@@ -886,7 +891,10 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
               return (
                 <button
                   key={piece.type}
-                  onClick={() => setSelectedPieceType(isSelected ? null : piece.type)}
+                  onClick={() => {
+                    SoundManager.select();
+                    setSelectedPieceType(isSelected ? null : piece.type);
+                  }}
                   disabled={available <= 0}
                   className={`px-4 py-3 rounded-xl border transition-all flex items-center gap-3 ${
                     isSelected

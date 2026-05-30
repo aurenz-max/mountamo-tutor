@@ -16,6 +16,7 @@ import {
   type PaperAirplaneDesignerMetrics,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Paper Airplane Designer — Design-Build-Test-Iterate
@@ -408,6 +409,7 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
   // ─── Template selection ───────────────────────────────────────────────
 
   const handleSelectTemplate = (name: string) => {
+    SoundManager.select();
     setSelectedTemplate(name);
     const preset = TEMPLATE_PRESETS[name];
     if (preset) {
@@ -424,6 +426,7 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
   // ─── Flight simulation ────────────────────────────────────────────────
 
   const launchFlight = useCallback(() => {
+    SoundManager.tap();
     setIsFlying(true);
     setFlightProgress(0);
     setPhase('launch');
@@ -866,7 +869,7 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                       </div>
                       <Slider
                         value={[noseAngle]}
-                        onValueChange={([v]) => setNoseAngle(v)}
+                        onValueChange={([v]) => { SoundManager.tick(); setNoseAngle(v); }}
                         min={15}
                         max={45}
                         step={1}

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { SequencingActivityProblemData } from '../../types';
 import { InsetRenderer } from './insets';
+import { SoundManager } from '../../utils/SoundManager';
 import {
   usePrimitiveEvaluation,
   type SequencingActivityMetrics,
@@ -59,6 +60,7 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
     e.preventDefault();
     if (isSubmitted || draggedIndex === null) return;
 
+    SoundManager.snap();
     const newItems = [...orderedItems];
     const [draggedItem] = newItems.splice(draggedIndex, 1);
     newItems.splice(dropIndex, 0, draggedItem);

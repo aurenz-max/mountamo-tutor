@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -696,6 +697,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
 
   // ---- Handlers ----
   const handleShapeChange = useCallback((shape: ShapeId) => {
+    SoundManager.select();
     setSelectedShape(shape);
     setShapesExplored(prev => new Set(prev).add(shape));
     setVariablesManipulated(prev => new Set(prev).add('shape'));
@@ -722,12 +724,14 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
   }, [sendText, data.results.stallAngle]);
 
   const handleWindSpeedChange = useCallback((speed: number) => {
+    SoundManager.tick();
     setWindSpeed(speed);
     setVariablesManipulated(prev => new Set(prev).add('windSpeed'));
   }, []);
 
   const handleToggleCompare = useCallback(() => {
     const next = !compareModeActive;
+    SoundManager.toggle(next);
     setCompareModeActive(next);
     if (next) sendText(`[COMPARISON_STARTED] Compare mode activated`, { silent: true });
   }, [compareModeActive, sendText]);

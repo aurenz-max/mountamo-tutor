@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Lightbulb, Clock, ChevronRight, CheckCircle2, Sparkles, Brain, Compass, Map, ChevronLeft } from 'lucide-react';
 import { IntroBriefingData, IntroData } from '../types';
+import { SoundManager } from '../utils/SoundManager';
 
 interface CuratorBriefProps {
   data: IntroBriefingData | IntroData;
@@ -98,6 +99,7 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
   ];
 
   const toggleObjective = (id: string) => {
+    SoundManager.toggle(!objectivesChecked[id]);
     setObjectivesChecked(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
@@ -108,12 +110,14 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
 
   const goToPreviousSection = () => {
     if (canGoPrevious) {
+      SoundManager.navigate();
       setExpandedSection(sections[currentSectionIndex - 1].id);
     }
   };
 
   const goToNextSection = () => {
     if (canGoNext) {
+      SoundManager.navigate();
       setExpandedSection(sections[currentSectionIndex + 1].id);
     }
   };
@@ -258,7 +262,7 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
 
           {!quickCheckRevealed ? (
             <button
-              onClick={() => setQuickCheckRevealed(true)}
+              onClick={() => { SoundManager.pop(); setQuickCheckRevealed(true); }}
               className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors font-medium flex items-center gap-2 group"
             >
               Show answer
@@ -302,7 +306,10 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
             {briefingData.roadmap.map((phase: any, idx: number) => (
               <button
                 key={idx}
-                onClick={() => setCurrentRoadmapPhase(idx)}
+                onClick={() => {
+                  if (idx !== currentRoadmapPhase) SoundManager.select();
+                  setCurrentRoadmapPhase(idx);
+                }}
                 className={`w-full flex items-start gap-4 p-4 rounded-xl transition-all duration-300 text-left ${
                   idx === currentRoadmapPhase
                     ? 'bg-white/10 border border-white/20 shadow-lg'
@@ -441,7 +448,10 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
               return (
                 <button
                   key={section.id}
-                  onClick={() => setExpandedSection(section.id)}
+                  onClick={() => {
+                    if (section.id !== expandedSection) SoundManager.navigate();
+                    setExpandedSection(section.id);
+                  }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                     expandedSection === section.id
                       ? 'glass-panel border border-white/30 text-white shadow-lg scale-105'

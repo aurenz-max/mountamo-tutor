@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { MatchingActivityProblemData } from '../../types';
 import { InsetRenderer } from './insets';
+import { SoundManager } from '../../utils/SoundManager';
 import {
   usePrimitiveEvaluation,
   type MatchingActivityMetrics,
@@ -57,12 +58,14 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
 
   const handleLeftClick = (leftId: string) => {
     if (isSubmitted) return;
+    SoundManager.select();
     setSelectedLeft(selectedLeft === leftId ? null : leftId);
   };
 
   const handleRightClick = (rightId: string) => {
     if (isSubmitted || !selectedLeft) return;
 
+    SoundManager.snap();
     setMatches(prev => {
       const current = prev[selectedLeft] || [];
       const isAlreadyMatched = current.includes(rightId);

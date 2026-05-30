@@ -5,6 +5,7 @@ import {
   usePrimitiveEvaluation,
   type FoundationBuilderMetrics,
 } from '../../../evaluation';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Foundation Builder - Soil/foundation simulator for K-5 engineering education
@@ -195,8 +196,10 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
 
     // Generate feedback
     if (result.passed) {
+      SoundManager.playCorrect();
       setHintMessage(`✓ Success! Foundation holds ${buildingLoad.toFixed(0)} kN with ${result.pressure.toFixed(1)} kN/m² pressure (soil capacity: ${soilCapacity} kN/m²)`);
     } else {
+      SoundManager.playIncorrect();
       const neededArea = buildingLoad / soilCapacity;
       setHintMessage(`❌ Failed! Too much pressure: ${result.pressure.toFixed(1)} kN/m² exceeds soil capacity of ${soilCapacity} kN/m². Try increasing footing area to at least ${neededArea.toFixed(1)} m².`);
     }
@@ -548,7 +551,10 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
                   {(['spread', 'strip', 'slab', 'piles'] as FoundationType[]).map(type => (
                     <button
                       key={type}
-                      onClick={() => setFoundationType(type)}
+                      onClick={() => {
+                        SoundManager.select();
+                        setFoundationType(type);
+                      }}
                       disabled={isTesting}
                       className={`px-6 py-3 rounded-xl border transition-all capitalize ${
                         foundationType === type
@@ -575,7 +581,10 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
                       max="10"
                       step="0.5"
                       value={footingWidth}
-                      onChange={(e) => setFootingWidth(parseFloat(e.target.value))}
+                      onChange={(e) => {
+                        SoundManager.tick();
+                        setFootingWidth(parseFloat(e.target.value));
+                      }}
                       disabled={isTesting}
                       className="w-full"
                     />
@@ -590,7 +599,10 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
                       max="10"
                       step="0.5"
                       value={footingLength}
-                      onChange={(e) => setFootingLength(parseFloat(e.target.value))}
+                      onChange={(e) => {
+                        SoundManager.tick();
+                        setFootingLength(parseFloat(e.target.value));
+                      }}
                       disabled={isTesting}
                       className="w-full"
                     />

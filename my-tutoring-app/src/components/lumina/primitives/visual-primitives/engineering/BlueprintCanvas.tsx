@@ -6,6 +6,7 @@ import {
   usePrimitiveEvaluation,
   type BlueprintCanvasMetrics,
 } from '../../../evaluation';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Blueprint Canvas - Grid-based drawing surface for creating technical drawings
@@ -193,6 +194,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
   };
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    SoundManager.snap();
     setIsDrawing(true);
     const { offsetX, offsetY } = getCoordinates(e);
     const ctx = canvasRef.current?.getContext('2d');
@@ -405,7 +407,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setDrawMode('line')}
+                onClick={() => { SoundManager.select(); setDrawMode('line'); }}
                 className={`p-2 rounded-lg transition-colors ${
                   drawMode === 'line' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
@@ -414,7 +416,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
                 <Ruler size={18} />
               </button>
               <button
-                onClick={() => setDrawMode('freeform')}
+                onClick={() => { SoundManager.select(); setDrawMode('freeform'); }}
                 className={`p-2 rounded-lg transition-colors ${
                   drawMode === 'freeform' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
@@ -424,7 +426,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
               </button>
               <div className="w-px bg-slate-700 mx-1" />
               <button
-                onClick={() => setTool('pen')}
+                onClick={() => { SoundManager.select(); setTool('pen'); }}
                 className={`p-2 rounded-lg transition-colors ${
                   tool === 'pen' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
@@ -433,7 +435,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
                 <Pen size={18} />
               </button>
               <button
-                onClick={() => setTool('eraser')}
+                onClick={() => { SoundManager.select(); setTool('eraser'); }}
                 className={`p-2 rounded-lg transition-colors ${
                   tool === 'eraser' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { InteractivePassageData, PassageSection, VocabularyTerm } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, CheckCircle, HelpCircle, Highlighter, X } from 'lucide-react';
+import { SoundManager } from '../utils/SoundManager';
 
 interface InteractivePassageProps {
   data: InteractivePassageData;
@@ -36,14 +37,17 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
 
     if (match) {
       if (match.correct) {
+        SoundManager.playCorrect();
         setSelectionStatus('success');
         setFeedbackMessage(match.feedback || "Correct evidence found!");
       } else {
+        SoundManager.playIncorrect();
         setSelectionStatus('error');
         setFeedbackMessage(match.feedback || "That's not quite right. Look for evidence that specifically answers the prompt.");
       }
     } else {
       // No specific match found (generic incorrect)
+      SoundManager.playIncorrect();
       setSelectionStatus('error');
       setFeedbackMessage("Try again. That doesn't seem to be the right evidence.");
     }
@@ -60,6 +64,7 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
 
   const handleVocabClick = (e: React.MouseEvent, term: VocabularyTerm) => {
     e.stopPropagation();
+    SoundManager.pop(); // tooltip opens
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const containerRect = containerRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
     
@@ -70,7 +75,12 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
     });
   };
 
-  const handleInlineAnswer = (sectionId: string, optionIndex: number) => {
+  const handleInlineAnswer = (sectionId: string, optionIndex: number, correctIndex: number) => {
+    if (optionIndex === correctIndex) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
     setInlineAnswers(prev => ({
       ...prev,
       [sectionId]: optionIndex
@@ -207,7 +217,7 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
                     return (
                       <button
                         key={optIdx}
-                        onClick={() => handleInlineAnswer(section.id, optIdx)}
+                        onClick={() => handleInlineAnswer(section.id, optIdx, section.inlineQuestion!.correctIndex)}
                         disabled={showResult && isCorrect}
                         className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between ${
                           showResult

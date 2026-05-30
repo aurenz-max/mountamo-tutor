@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { AdaptationInvestigatorMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 import {
   Eye,
   TreePine,
@@ -244,6 +245,10 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
 
   const handleWhatIfAnswer = (scenarioIndex: number, answer: boolean) => {
     if (hasSubmitted) return;
+
+    const isCorrect = answer === data.whatIfScenarios[scenarioIndex].adaptationStillUseful;
+    if (isCorrect) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
 
     setWhatIfResponses(prev =>
       prev.map((r, i) =>

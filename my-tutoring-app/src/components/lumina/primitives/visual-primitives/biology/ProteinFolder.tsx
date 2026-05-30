@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ProteinFolderMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -172,6 +173,7 @@ const ProteinFolder: React.FC<ProteinFolderProps> = ({ data, className }) => {
   // --- Handlers ---
   const handlePlacement = useCallback((position: number, placement: 'interior' | 'surface') => {
     if (foldingChecked) return;
+    SoundManager.toggle(placement === 'interior');
     setPlacements((prev) => ({ ...prev, [position]: placement }));
   }, [foldingChecked]);
 
@@ -179,6 +181,7 @@ const ProteinFolder: React.FC<ProteinFolderProps> = ({ data, className }) => {
     setFoldingChecked(true);
     const correct = foldingResults.filter((r) => r.isCorrect).length;
     const total = foldingResults.length;
+    if (correct === total) SoundManager.playCorrect(); else SoundManager.playIncorrect();
     if (correct === total) {
       setFoldingFeedback(`Perfect! All ${total} residues correctly placed. ${data.analogies.foldingAnalogy}`);
     } else {

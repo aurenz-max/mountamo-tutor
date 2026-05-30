@@ -17,6 +17,7 @@ import type {
   StepSpec,
 } from './annotated-example/types';
 import { ANNOTATION_LAYERS } from './annotated-example/types';
+import { SoundManager } from '../utils/SoundManager';
 
 // ═══════════════════════════════════════════════════════════════════════
 // AnnotatedExample — pre-hydrated worked example.
@@ -77,9 +78,11 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
   );
 
   const toggleLayer = (layerId: LayerId) => {
-    setActiveLayers((prev) =>
-      prev.includes(layerId) ? prev.filter((id) => id !== layerId) : [...prev, layerId],
-    );
+    setActiveLayers((prev) => {
+      const turningOn = !prev.includes(layerId);
+      SoundManager.toggle(turningOn);
+      return turningOn ? [...prev, layerId] : prev.filter((id) => id !== layerId);
+    });
   };
 
   return (

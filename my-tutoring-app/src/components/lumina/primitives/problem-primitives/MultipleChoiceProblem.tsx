@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Info } from 'lucide-react';
 import { InsetRenderer, renderKatexString } from './insets';
+import { SoundManager } from '../../utils/SoundManager';
 
 /**
  * Multiple Choice Problem Component
@@ -61,6 +62,7 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
 
   const handleSelect = (id: string) => {
     if (isSubmitted) return;
+    SoundManager.select();
     setSelectedId(id);
   };
 

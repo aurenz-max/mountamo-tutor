@@ -5,6 +5,7 @@ import { Lightbulb, CheckCircle2, XCircle, RotateCcw, Sparkles } from 'lucide-re
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Classification Sorter - Interactive biology primitive for categorizing organisms
@@ -158,6 +159,8 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
     e.preventDefault();
     if (!draggedItem) return;
 
+    SoundManager.snap();
+
     const currentTime = Date.now() - startTime;
     const isCorrect = draggedItem.correctCategoryId === categoryId;
     const currentAttempts = attemptCounts.get(draggedItem.id) || 0;
@@ -177,9 +180,11 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
 
     // Show hint if incorrect
     if (!isCorrect) {
+      SoundManager.invalid();
       setShowHint(draggedItem.id);
       setTimeout(() => setShowHint(null), 3000); // Hide hint after 3 seconds
     } else {
+      SoundManager.playCorrect();
       setShowHint(null);
     }
 

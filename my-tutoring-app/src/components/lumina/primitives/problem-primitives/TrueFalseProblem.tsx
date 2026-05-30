@@ -5,6 +5,7 @@ import { TrueFalseProblemData, VisualObjectCollection, VisualComparisonData, Let
 import { ObjectCollection, ComparisonPanel, LetterPicture, AlphabetSequence, RhymingPairs, SightWordCard, SoundSort } from '../visual-primitives';
 import { LetterTracing } from '../LetterTracing';
 import { InsetRenderer } from './insets';
+import { SoundManager } from '../../utils/SoundManager';
 import {
   usePrimitiveEvaluation,
   type TrueFalseMetrics,
@@ -56,6 +57,7 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
 
   const handleSelect = (answer: boolean) => {
     if (isSubmitted) return;
+    SoundManager.select();
     setSelectedAnswer(answer);
   };
 

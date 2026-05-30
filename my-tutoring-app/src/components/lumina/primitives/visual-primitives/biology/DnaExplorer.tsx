@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { DnaExplorerMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 import { DnaHelixScene } from './DnaHelixScene';
 
 // ============================================================================
@@ -307,6 +308,8 @@ const BuildChallengePanel: React.FC<{
     const normalizedAnswer = answer.toUpperCase().replace(/\s/g, '');
     const normalizedCorrect = challenge.correctAnswer.toUpperCase().replace(/\s/g, '');
     const isCorrect = normalizedAnswer === normalizedCorrect;
+    if (isCorrect) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
 
     setFeedback({
       correct: isCorrect,
@@ -431,6 +434,7 @@ const DnaExplorer: React.FC<DnaExplorerProps> = ({ data, className }) => {
   });
 
   const handleZoomLevelChange = useCallback((level: string) => {
+    SoundManager.select();
     setCurrentZoomLevel(level);
     setExploredZoomLevels((prev) => { const next = new Set(prev); next.add(level); return next; });
   }, []);

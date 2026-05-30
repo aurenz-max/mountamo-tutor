@@ -5,6 +5,7 @@ import {
   usePrimitiveEvaluation,
   type ExcavatorArmSimulatorMetrics,
 } from '../../../evaluation';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Excavator Arm Simulator - Interactive multi-jointed arm simulation
@@ -984,6 +985,8 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
 
     if (bucketY < groundY) return;
 
+    SoundManager.tap();
+
     let materialType = 'dirt';
     let materialColor = '#8B7355';
     let hardness = 1;
@@ -1036,6 +1039,8 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
   // Dump operation
   const handleDump = useCallback(() => {
     if (bucketContentsRef.current.length === 0) return;
+
+    SoundManager.snap();
 
     const nodes = nodesRef.current;
     if (targetZone && nodes.length >= 4) {

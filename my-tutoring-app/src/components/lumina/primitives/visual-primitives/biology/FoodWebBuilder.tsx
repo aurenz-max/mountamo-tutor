@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { FoodWebBuilderMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -140,6 +141,7 @@ const FoodWebBuilder: React.FC<FoodWebBuilderProps> = ({ data, className }) => {
 
     if (!isDrawing) {
       // Start drawing from this organism
+      SoundManager.select();
       setIsDrawing(true);
       setDrawFrom(orgId);
     } else {
@@ -158,6 +160,7 @@ const FoodWebBuilder: React.FC<FoodWebBuilderProps> = ({ data, className }) => {
 
         if (!exists) {
           setStudentConnections([...studentConnections, newConnection]);
+          SoundManager.snap();
         }
       }
 

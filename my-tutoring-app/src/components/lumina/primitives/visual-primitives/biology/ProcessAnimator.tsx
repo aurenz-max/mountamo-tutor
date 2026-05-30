@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ProcessAnimatorMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight, CheckCircle2, XCircle, RotateCcw, Sparkles, ArrowRight, Zap, Image as ImageIcon } from 'lucide-react';
 
 /**
@@ -289,6 +290,7 @@ const ProcessAnimator: React.FC<ProcessAnimatorProps> = ({ data, className = '' 
 
   const handleAnswerSelect = (optionIndex: number) => {
     if (showExplanation || hasSubmitted) return;
+    SoundManager.select();
     setSelectedAnswer(optionIndex);
   };
 
@@ -297,6 +299,7 @@ const ProcessAnimator: React.FC<ProcessAnimatorProps> = ({ data, className = '' 
 
     const checkpoint = data.checkpoints[activeCheckpoint];
     const isCorrect = selectedAnswer === checkpoint.correctIndex;
+    if (isCorrect) SoundManager.playCorrect(); else SoundManager.playIncorrect();
     const responseTime = Date.now() - startTime;
 
     const response: CheckpointResponse = {

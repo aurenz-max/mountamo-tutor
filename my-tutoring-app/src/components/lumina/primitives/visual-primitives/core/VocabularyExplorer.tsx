@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { VocabularyExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -194,6 +195,7 @@ const VocabularyExplorer: React.FC<VocabularyExplorerProps> = ({ data, className
   const handleTermChange = useCallback((newIndex: number) => {
     if (newIndex < 0 || newIndex >= totalTerms) return;
 
+    SoundManager.navigate();   // ← soft whoosh on term-to-term movement
     recordTermTime();
     setTermEntryTime(Date.now());
     setCurrentTermIndex(newIndex);
@@ -277,6 +279,12 @@ const VocabularyExplorer: React.FC<VocabularyExplorerProps> = ({ data, className
     const attempts = currentAttempts + 1;
     setCurrentAttempts(attempts);
 
+    if (correct) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
+
     if (correct || attempts >= 2) {
       setChallengeAnswers(prev => [...prev, { correct, attempts }]);
     }
@@ -299,12 +307,14 @@ const VocabularyExplorer: React.FC<VocabularyExplorerProps> = ({ data, className
   const handleMatchTermSelect = useCallback((termIdx: number) => {
     if (matchChecked) return;
     if (matchedPairs.some(([t]) => t === termIdx)) return;
+    SoundManager.select();   // ← choosing a term to match
     setSelectedMatchTerm(termIdx);
   }, [matchChecked, matchedPairs]);
 
   const handleMatchDefSelect = useCallback((defIdx: number) => {
     if (matchChecked || selectedMatchTerm === null) return;
     if (matchedPairs.some(([, d]) => d === defIdx)) return;
+    SoundManager.snap();     // ← pair lands in place
     setMatchedPairs(prev => [...prev, [selectedMatchTerm, defIdx]]);
     setSelectedMatchTerm(null);
   }, [matchChecked, selectedMatchTerm, matchedPairs]);
@@ -321,6 +331,12 @@ const VocabularyExplorer: React.FC<VocabularyExplorerProps> = ({ data, className
     setCurrentAttempts(attempts);
     setMatchChecked(true);
     setMatchCorrect(correct);
+
+    if (correct) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
 
     if (correct || attempts >= 2) {
       setChallengeAnswers(prev => [...prev, { correct, attempts }]);

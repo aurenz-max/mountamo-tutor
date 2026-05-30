@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, MouseEvent } from 'react';
 import { ConceptCardData } from '../types';
 import { generateConceptImage } from '../service/geminiClient-api';
 import { useLuminaAI } from '../hooks/useLuminaAI';
+import { SoundManager } from '../utils/SoundManager';
 
 interface ConceptCardProps {
   data: ConceptCardData;
@@ -121,7 +122,11 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceI
       className="relative w-full max-w-sm h-[550px] perspective-1000 cursor-pointer group"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      onClick={() => setIsFlipped(!isFlipped)}
+      onClick={() => {
+        const next = !isFlipped;
+        SoundManager.toggle(next); // flip = toggle: rising to back, falling to front
+        setIsFlipped(next);
+      }}
     >
       <div
         ref={cardRef}

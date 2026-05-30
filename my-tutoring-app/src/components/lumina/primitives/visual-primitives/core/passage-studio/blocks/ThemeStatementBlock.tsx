@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import BlockShell from './BlockShell';
+import { SoundManager } from '../../../../../utils/SoundManager';
 import type {
   ThemeStatementBlockData,
   ThemeRubricVerdict,
@@ -80,6 +81,8 @@ const ThemeStatementBlock: React.FC<ThemeStatementBlockProps> = ({
       setPhase({ kind: 'reveal', verdict });
 
       const success = verdict.verdict === 'strong';
+      if (success) SoundManager.playCorrect();
+      else SoundManager.playIncorrect();
       onAnswer(data.id, success, next);
     } catch (error) {
       setPhase({

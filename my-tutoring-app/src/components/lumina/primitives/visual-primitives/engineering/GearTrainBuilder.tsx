@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Gear Train Builder - Interactive gear system sandbox for teaching simple machines
@@ -263,6 +264,7 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
   const handleAddGear = (gridX: number, gridY: number) => {
     if (!allowAddGears) return;
     if (gears.length >= maxGears) {
+      SoundManager.invalid();
       setHint(`Maximum ${maxGears} gears allowed!`);
       setTimeout(() => setHint(null), 2000);
       return;
@@ -271,10 +273,13 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
     // Check if position is occupied
     const occupied = gears.some(g => g.x === gridX && g.y === gridY);
     if (occupied) {
+      SoundManager.invalid();
       setHint('This spot is already taken!');
       setTimeout(() => setHint(null), 2000);
       return;
     }
+
+    SoundManager.snap();
 
     const newGear: Gear = {
       id: `gear-${Date.now()}`,
@@ -612,7 +617,7 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
               {availableGears.map((teeth) => (
                 <button
                   key={teeth}
-                  onClick={() => setSelectedGearSize(teeth)}
+                  onClick={() => { SoundManager.select(); setSelectedGearSize(teeth); }}
                   className={`px-4 py-2 rounded-lg font-mono text-sm transition-all ${
                     selectedGearSize === teeth
                       ? 'bg-cyan-500/30 border-cyan-500 text-cyan-300 border-2'

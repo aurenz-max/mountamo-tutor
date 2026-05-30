@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { DiagramBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
+import { SoundManager } from '../../../../../utils/SoundManager';
 
 // ── Shared types ───────────────────────────────────────────────────
 interface DiagramExploreProps {
@@ -284,6 +285,7 @@ const LabelMode: React.FC<{
       const label = data.labels.find((l) => l.id === draggedLabel);
       if (!label) return;
 
+      SoundManager.snap();
       setPlacements((prev) => {
         const existing = prev.findIndex((p) => p.labelId === draggedLabel);
         const newPlacement: LabelPlacement = { labelId: draggedLabel, text: label.text, position: { x, y } };
@@ -334,11 +336,14 @@ const LabelMode: React.FC<{
       const correctCount = perLabel.filter((r: { correct: boolean }) => r.correct).length;
       const score = data.labels.length > 0 ? Math.round((correctCount / data.labels.length) * 100) : 0;
 
+      if (score >= 70) SoundManager.playCorrect();
+      else SoundManager.playIncorrect();
       setFeedback({ perLabel, overall: result.overallFeedback || '', score });
       setSubmitted(true);
       onAnswer(data.id, score >= 70, 1);
     } catch (error) {
       console.error('[DiagramBlock] Evaluation failed:', error);
+      SoundManager.playIncorrect();
       setSubmitted(true);
       setFeedback({
         perLabel: data.labels.map((l) => ({ labelId: l.id, correct: false, reasoning: 'Evaluation unavailable' })),

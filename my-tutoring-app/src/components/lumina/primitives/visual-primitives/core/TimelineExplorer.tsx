@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { TimelineExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -217,6 +218,7 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
   // Event Selection
   // -------------------------------------------------------------------------
   const handleEventSelect = useCallback((index: number) => {
+    SoundManager.tap();
     // Record time on previous event
     if (selectedEvent) {
       const elapsed = Date.now() - eventEntryTime;
@@ -303,6 +305,9 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
     const attempts = currentAttempts + 1;
     setCurrentAttempts(attempts);
 
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
+
     if (correct || attempts >= 2) {
       setChallengeAnswers(prev => [...prev, { correct, attempts }]);
     }
@@ -328,6 +333,9 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
     setOrderChecked(true);
     setOrderCorrect(correct);
 
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
+
     if (correct || attempts >= 2) {
       setChallengeAnswers(prev => [...prev, { correct, attempts }]);
       setShowChallengeFeedback(true);
@@ -346,6 +354,7 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
   // Cause-effect matching
   const handleCauseSelect = useCallback((causeIdx: number) => {
     if (ceChecked) return;
+    SoundManager.select();
     setSelectedCause(causeIdx);
   }, [ceChecked]);
 
@@ -356,6 +365,7 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
       setSelectedCause(null);
       return;
     }
+    SoundManager.snap();
     setMatchedPairs(prev => [...prev, [selectedCause, effectIdx]]);
     setSelectedCause(null);
   }, [ceChecked, selectedCause, matchedPairs]);
@@ -372,6 +382,9 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
     setCurrentAttempts(attempts);
     setCeChecked(true);
     setCeCorrect(correct);
+
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
 
     if (correct || attempts >= 2) {
       setChallengeAnswers(prev => [...prev, { correct, attempts }]);
@@ -497,6 +510,7 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
   const moveOrderItem = useCallback((fromIndex: number, direction: number) => {
     const toIndex = fromIndex + direction;
     if (toIndex < 0 || toIndex >= orderSequence.length) return;
+    SoundManager.tick();
     setOrderSequence(prev => {
       const next = [...prev];
       [next[fromIndex], next[toIndex]] = [next[toIndex], next[fromIndex]];

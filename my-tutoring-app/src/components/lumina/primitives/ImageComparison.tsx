@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeftRight } from 'lucide-react';
 import { ImageComparisonData } from '../types';
+import { SoundManager } from '../utils/SoundManager';
 
 interface ImageComparisonProps {
   data: ImageComparisonData;
@@ -14,6 +15,7 @@ const ImageComparison: React.FC<ImageComparisonProps> = ({ data, className = '' 
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = useCallback(() => {
+    SoundManager.tap();
     setIsResizing(true);
   }, []);
 
@@ -68,6 +70,7 @@ const ImageComparison: React.FC<ImageComparisonProps> = ({ data, className = '' 
 
     const checkBothLoaded = () => {
       if (beforeLoaded && afterLoaded) {
+        SoundManager.pop();
         setImagesLoaded(true);
       }
     };

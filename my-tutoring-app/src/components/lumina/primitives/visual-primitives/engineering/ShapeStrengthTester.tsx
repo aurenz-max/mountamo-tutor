@@ -5,6 +5,7 @@ import {
   usePrimitiveEvaluation,
   type ShapeStrengthTesterMetrics,
 } from '../../../evaluation';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /* -------------------------------------------------------------------------- */
 /*                                PHYSICS ENGINE                              */
@@ -256,6 +257,7 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
         stress: 0,
       };
 
+      SoundManager.snap();
       setBeams(prev => [...prev, newBeam]);
     }
 
@@ -288,9 +290,12 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
 
   const initPhysicsSimulation = () => {
     if (beams.length === 0) {
+      SoundManager.invalid();
       setHintMessage('Build a structure first before testing!');
       return;
     }
+
+    SoundManager.tap();
 
     particles.current.clear();
     sticks.current.clear();
@@ -935,7 +940,7 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
                     return (
                       <button
                         key={material}
-                        onClick={() => setSelectedMaterial(material)}
+                        onClick={() => { SoundManager.select(); setSelectedMaterial(material); }}
                         className={`px-6 py-3 rounded-xl border transition-all flex items-center gap-3 ${
                           selectedMaterial === material
                             ? 'bg-orange-500/30 border-orange-500 text-orange-300'

@@ -4,6 +4,7 @@ import type { CellBuilderMetrics, CellZone, QuantityLevel } from '../../../evalu
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SoundManager } from '../../../utils/SoundManager';
 import {
   CheckCircle2,
   XCircle,
@@ -331,8 +332,10 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     const correctCount = Object.values(fb).filter(f => f.correct).length;
     const total = organelles.length;
     if (correctCount === total) {
+      SoundManager.playCorrect();
       setFeedback('All organelles correctly classified! Moving to placement phase...');
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`${correctCount} of ${total} correct. Review the feedback, then continue.`);
     }
   }, [organelles, sortDecisions, cellContext]);
@@ -371,6 +374,7 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     const y = Math.max(5, Math.min(95, ((clientY - rect.top) / rect.height) * 100));
 
     setPlacedOrganelles(prev => ({ ...prev, [activeId]: { x, y } }));
+    SoundManager.snap();
     setDraggingId(null);
     setSelectedOrganelle(null);
     setPlaceChecked(false);
@@ -405,8 +409,10 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     const correctCount = Object.values(fb).filter(Boolean).length;
     const total = organellesToPlace.length;
     if (correctCount === total) {
+      SoundManager.playCorrect();
       setFeedback('All organelles correctly placed!');
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`${correctCount} of ${total} in the correct zone. Drag incorrect ones to new positions.`);
     }
   }, [organellesToPlace, placedOrganelles]);
@@ -458,8 +464,10 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     const correctCount = Object.values(fb).filter(Boolean).length;
     const total = validOrganelles.length;
     if (correctCount === total) {
+      SoundManager.playCorrect();
       setFeedback('Perfect! All functions correctly matched!');
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`${correctCount} of ${total} functions matched correctly.`);
     }
   }, [validOrganelles, matchConnections]);

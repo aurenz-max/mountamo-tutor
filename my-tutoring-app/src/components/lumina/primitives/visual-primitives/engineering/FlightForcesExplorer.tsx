@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { FlightForcesExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -848,6 +849,7 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
 
   // ---- Handlers ----
   const handleAircraftChange = useCallback((id: AircraftId) => {
+    SoundManager.select();
     setSelectedAircraft(id);
     setAircraftExplored(prev => { const n = new Set(prev); n.add(id); return n; });
     if (isConnected) {
@@ -860,6 +862,7 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
 
   const thrustTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const handleThrustChange = useCallback((val: number) => {
+    SoundManager.tick();
     setThrustPct(val);
     if (thrustTimeoutRef.current) clearTimeout(thrustTimeoutRef.current);
     thrustTimeoutRef.current = setTimeout(() => {
@@ -927,6 +930,7 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
     setSelectedAnswer(optionId);
     const challenge = challenges[currentChallengeIdx];
     const correct = optionId === challenge.correctOptionId;
+    if (correct) SoundManager.playCorrect(); else SoundManager.playIncorrect();
     setAnswerFeedback(correct ? 'correct' : 'incorrect');
 
     if (correct) {

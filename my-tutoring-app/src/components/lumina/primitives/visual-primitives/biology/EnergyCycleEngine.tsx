@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { EnergyCycleEngineMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Interface (Single Source of Truth)
@@ -348,10 +349,12 @@ const EnergyCycleEngine: React.FC<EnergyCycleEngineProps> = ({ data, className }
 
   // Handlers
   const handlePhotoInputChange = useCallback((molecule: string, level: number) => {
+    SoundManager.tick();
     setPhotoInputs((prev) => ({ ...prev, [molecule]: level }));
   }, []);
 
   const handleRespInputChange = useCallback((molecule: string, level: number) => {
+    SoundManager.tick();
     setRespInputs((prev) => ({ ...prev, [molecule]: level }));
   }, []);
 
@@ -359,6 +362,7 @@ const EnergyCycleEngine: React.FC<EnergyCycleEngineProps> = ({ data, className }
     const experiment = experiments[index];
     if (!experiment) return;
 
+    SoundManager.select();
     setActiveExperiment(index);
 
     // Apply affected inputs
@@ -405,8 +409,18 @@ const EnergyCycleEngine: React.FC<EnergyCycleEngineProps> = ({ data, className }
   }, [photosynthesis.inputs, cellularRespiration.inputs]);
 
   const handleRevealExplanation = useCallback((index: number) => {
+    const experiment = experiments[index];
+    const answer = experimentAnswers[index] || '';
+    const matched =
+      !!experiment &&
+      answer.toLowerCase().trim() === experiment.expectedOutcome.toLowerCase().trim();
+    if (matched) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
     setExperimentRevealed((prev) => ({ ...prev, [index]: true }));
-  }, []);
+  }, [experiments, experimentAnswers]);
 
   const handleSubmitEvaluation = useCallback(() => {
     if (hasSubmitted) return;

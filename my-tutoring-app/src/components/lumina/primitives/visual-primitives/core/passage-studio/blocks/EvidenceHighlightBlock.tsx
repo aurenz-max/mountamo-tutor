@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import BlockShell from './BlockShell';
 import PassageRenderer, { type AnchorTone } from '../PassageRenderer';
+import { SoundManager } from '../../../../../utils/SoundManager';
 import type { EvidenceHighlightBlockData, PassageStimulus } from '../types';
 
 interface EvidenceHighlightBlockProps {
@@ -60,6 +61,7 @@ const EvidenceHighlightBlock: React.FC<EvidenceHighlightBlockProps> = ({
   const handleAnchorClick = useCallback(
     (key: string) => {
       if (answered) return;
+      SoundManager.tap();
       setSelectedKeys((prev) => {
         const next = new Set(prev);
         if (next.has(key)) next.delete(key);
@@ -85,6 +87,9 @@ const EvidenceHighlightBlock: React.FC<EvidenceHighlightBlockProps> = ({
     });
 
     const success = correctSelected >= minRequired && wrongSelected === 0;
+
+    if (success) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
 
     if (success || next >= 2) {
       setAnswered(true);

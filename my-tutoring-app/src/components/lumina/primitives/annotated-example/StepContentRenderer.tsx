@@ -29,6 +29,7 @@ import {
   drawLabeledPoint,
 } from '../visual-primitives/math/canvas-2d/shapes';
 import { sampleCurve } from './canvas-2d-sample';
+import { SoundManager } from '../../utils/SoundManager';
 
 // ═══════════════════════════════════════════════════════════════════════
 // KaTeX Rendering Utilities
@@ -271,6 +272,8 @@ const ChallengeRow: React.FC<ChallengeRowProps> = ({
       const trimmed = value.trim();
       if (!trimmed) return;
       const correct = isAnswerCorrect(trimmed, challenge, canonical);
+      if (correct) SoundManager.playCorrect();
+      else SoundManager.playIncorrect();
       onCommit(trimmed, correct);
     },
     [challenge, canonical, onCommit],
@@ -391,6 +394,8 @@ const StepChallengeGate: React.FC<StepChallengeGateProps> = ({
       const trimmed = value.trim();
       if (!trimmed) return;
       const correct = isStepAnswerCorrect(trimmed, challenge);
+      if (correct) SoundManager.playCorrect();
+      else SoundManager.playIncorrect();
       setAttempt({ answer: trimmed, correct });
     },
     [challenge],

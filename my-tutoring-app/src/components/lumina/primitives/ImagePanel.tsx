@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ImageIcon, MapIcon, Beaker, BookIcon, GlobeIcon, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
 import { generateConceptImage } from '../service/geminiClient-api';
 import { usePrimitiveEvaluation, type ImagePanelMetrics } from '../evaluation';
+import { SoundManager } from '../utils/SoundManager';
 import html2canvas from 'html2canvas';
 
 // Annotation data structure
@@ -143,6 +144,7 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
   const IconComponent = config.icon;
 
   const toggleWallpaperMode = () => {
+    SoundManager.toggle(!isWallpaperMode);
     setIsWallpaperMode(!isWallpaperMode);
   };
 
@@ -163,6 +165,8 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (!draggedAnnotation || !imageContainerRef.current) return;
+
+    SoundManager.snap();
 
     const rect = imageContainerRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -199,6 +203,7 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
 
   // Remove a placement
   const handleRemovePlacement = (annotationId: string) => {
+    SoundManager.tap();
     setStudentPlacements(studentPlacements.filter(p => p.annotationId !== annotationId));
   };
 

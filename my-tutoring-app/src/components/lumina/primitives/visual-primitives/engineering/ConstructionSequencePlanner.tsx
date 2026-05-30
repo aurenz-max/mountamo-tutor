@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { ConstructionSequencePlannerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -666,6 +667,7 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
       setDropTargetIdx(null);
       return;
     }
+    SoundManager.snap();
     setSchedule(prev => {
       const next = [...prev];
       const [moved] = next.splice(draggedIdx, 1);
@@ -688,6 +690,12 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
     setAttempts(a => a + 1);
     const { valid, violations } = validateSchedule(schedule, tasks);
     const taskMap = new Map(tasks.map(t => [t.id, t]));
+
+    if (valid) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
 
     if (!valid) {
       // Find the first violation and animate up to it

@@ -3,6 +3,7 @@ import { CheckCircle, XCircle, Info, ArrowLeftRight, Image as ImageIcon } from '
 import { Button } from '@/components/ui/button';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { CompareContrastMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Compare & Contrast Viewer - Biology primitive for comparing entities
@@ -334,6 +335,7 @@ const VennInteractiveView: React.FC<{
   const handleDrop = (e: React.DragEvent, region: string) => {
     e.preventDefault();
     const attrValue = e.dataTransfer.getData('attributeValue');
+    SoundManager.snap();
     setPlacements(prev => ({ ...prev, [attrValue]: region }));
   };
 

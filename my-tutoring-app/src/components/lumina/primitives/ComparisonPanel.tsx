@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../evaluation';
 import { useLuminaAI } from '../hooks/useLuminaAI';
+import { SoundManager } from '../utils/SoundManager';
 
 interface ComparisonPanelProps {
   data: ComparisonData;
@@ -173,6 +174,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
   }, [data.item1.visualPrompt, data.item2.visualPrompt]);
 
   const handleItemClick = (itemNumber: 1 | 2) => {
+    SoundManager.tap();
     setSelectedItem(selectedItem === itemNumber ? null : itemNumber);
 
     if (itemNumber === 1 && !item1Clicked) {
@@ -191,6 +193,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
 
   const handleGateAnswer = (answer: boolean) => {
     if (gateSubmitted) return;
+    SoundManager.select();
     setGateAnswer(answer);
   };
 
@@ -218,6 +221,13 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
       [currentGateIndex]: attemptNumber,
     });
     setGateSubmitted(true);
+
+    // Immediate per-gate feedback
+    if (isCorrect) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
 
     // AI trigger: Gate answer feedback
     if (isCorrect) {

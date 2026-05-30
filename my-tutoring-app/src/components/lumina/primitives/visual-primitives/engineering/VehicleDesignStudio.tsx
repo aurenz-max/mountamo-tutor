@@ -15,6 +15,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 import type { VehicleDesignStudioMetrics } from '../../../evaluation/types';
 
 // ─── Data Interfaces ─────────────────────────────────────────────
@@ -409,6 +410,7 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
   // ─── Handlers ────────────────────────────────────────────────
 
   const toggleControl = useCallback((controlId: string) => {
+    SoundManager.select();
     setSelectedControlIds(prev =>
       prev.includes(controlId) ? prev.filter(id => id !== controlId) : [...prev, controlId]
     );
@@ -416,11 +418,13 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
   }, []);
 
   const selectBody = useCallback((bodyId: string) => {
+    SoundManager.select();
     setSelectedBodyId(prev => prev === bodyId ? null : bodyId);
     setLatestSimulation(null);
   }, []);
 
   const selectPropulsion = useCallback((propId: string) => {
+    SoundManager.select();
     setSelectedPropulsionId(prev => prev === propId ? null : propId);
     setLatestSimulation(null);
   }, []);
@@ -440,6 +444,7 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
   const handleTest = useCallback(() => {
     if (!selectedBody || !selectedPropulsion) return;
 
+    SoundManager.tap();
     setIsSimulating(true);
 
     // Track unique parts

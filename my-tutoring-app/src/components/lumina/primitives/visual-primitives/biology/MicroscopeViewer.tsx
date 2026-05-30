@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MicroscopeViewerMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 import {
   Search,
   ZoomIn,
@@ -218,6 +219,7 @@ const MicroscopeViewer: React.FC<MicroscopeViewerProps> = ({ data, className = '
 
   const handleZoomChange = (index: number) => {
     if (index >= 0 && index < data.zoomLevels.length) {
+      SoundManager.tick();
       setCurrentZoomIndex(index);
       setSelectedStructure(null);
       setStudentLabel('');
@@ -242,6 +244,7 @@ const MicroscopeViewer: React.FC<MicroscopeViewerProps> = ({ data, className = '
     if (!structure) return;
 
     const isCorrect = studentLabel.trim().toLowerCase() === structure.name.toLowerCase();
+    if (isCorrect) SoundManager.playCorrect(); else SoundManager.playIncorrect();
 
     const attempt: LabelAttempt = {
       structureId: selectedStructure,

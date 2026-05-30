@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { PropulsionLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -725,6 +726,7 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
 
   // ---- Handlers ----
   const handlePropulsionChange = useCallback((p: PropulsionType) => {
+    SoundManager.select();
     setPropulsion(p);
     trackCombo(p, medium);
     const def = PROPULSION_DEFS[p];
@@ -739,6 +741,7 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
   }, [medium, isConnected, sendText, trackCombo]);
 
   const handleMediumChange = useCallback((m: MediumType) => {
+    SoundManager.select();
     setMedium(m);
     trackCombo(propulsion, m);
     const mDef = MEDIUM_DEFS[m];
@@ -791,6 +794,7 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
     setAnswerFeedback(correct ? 'correct' : 'incorrect');
 
     if (correct) {
+      SoundManager.playCorrect();
       setChallengeResults(prev => [...prev, { id: challenge.id, correct: true }]);
       if (isConnected) {
         sendText(
@@ -805,6 +809,7 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
         setShowHint(false);
       }, 1500);
     } else {
+      SoundManager.playIncorrect();
       setShowHint(true);
       if (isConnected) {
         sendText(

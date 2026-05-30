@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { SoundManager } from '../../utils/SoundManager';
 
 export interface CalculatorInputProps {
   label?: string;
@@ -46,22 +47,38 @@ const CalculatorInput: React.FC<CalculatorInputProps> = ({
     const currentValue = value || '';
 
     if (digit === 'C') {
+      SoundManager.tap();
       onChange('');
     } else if (digit === '⌫') {
+      SoundManager.tap();
       onChange(currentValue.slice(0, -1));
-    } else if (digit === '-' && allowNegative && currentValue === '') {
-      onChange('-');
-    } else if (digit === '.' && allowDecimal && !currentValue.includes('.')) {
-      onChange(currentValue + '.');
+    } else if (digit === '-') {
+      if (allowNegative && currentValue === '') {
+        SoundManager.tap();
+        onChange('-');
+      } else {
+        SoundManager.invalid(); // negative not allowed here (already typed / disabled)
+      }
+    } else if (digit === '.') {
+      if (allowDecimal && !currentValue.includes('.')) {
+        SoundManager.tap();
+        onChange(currentValue + '.');
+      } else {
+        SoundManager.invalid(); // decimal not allowed / already present
+      }
     } else if (!isNaN(parseInt(digit))) {
       if (currentValue.length < maxLength) {
+        SoundManager.tap();
         onChange(currentValue + digit);
+      } else {
+        SoundManager.invalid(); // max length reached
       }
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && onSubmit) {
+      SoundManager.select();
       onSubmit();
     }
   };
@@ -213,7 +230,10 @@ const CalculatorInput: React.FC<CalculatorInputProps> = ({
             {/* Submit Button */}
             {showSubmitButton && onSubmit && (
               <button
-                onClick={onSubmit}
+                onClick={() => {
+                  SoundManager.select();
+                  onSubmit();
+                }}
                 disabled={disabled || !value}
                 className={`
                   h-12 rounded-lg font-bold text-base transition-all duration-200

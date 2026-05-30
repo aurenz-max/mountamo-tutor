@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { FlashcardDeckData, FlashcardItem } from '../types';
 import { Check, X, BookOpen, Shuffle, AlertCircle } from 'lucide-react';
+import { SoundManager } from '../utils/SoundManager';
 
 interface FlashcardDeckProps {
   data: FlashcardDeckData;
@@ -24,41 +25,6 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const [stats, setStats] = useState<GameStats>({ correct: 0, incorrect: 0, remaining: 0, streak: 0 });
   const [results, setResults] = useState<(boolean | null)[]>([]);
-
-  // Audio context for sound effects
-  const [audioContext] = useState<AudioContext | null>(() => {
-    try {
-      return new (window.AudioContext || (window as any).webkitAudioContext)();
-    } catch (e) {
-      return null;
-    }
-  });
-
-  const playTone = useCallback((type: 'success' | 'miss') => {
-    if (!audioContext) return;
-    if (audioContext.state === 'suspended') audioContext.resume();
-
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-
-    osc.connect(gain);
-    gain.connect(audioContext.destination);
-
-    if (type === 'success') {
-      osc.frequency.setValueAtTime(600, audioContext.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-    } else {
-      osc.frequency.setValueAtTime(300, audioContext.currentTime);
-      osc.frequency.linearRampToValueAtTime(200, audioContext.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-    }
-
-    osc.start();
-    osc.stop(audioContext.currentTime + 0.2);
-  }, [audioContext]);
 
   const handleStart = () => {
     setCurrentCardIndex(0);
@@ -84,6 +50,7 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
 
   const handleFlip = () => {
     if (phase === 'playing') {
+      SoundManager.tap();
       setIsFlipped(!isFlipped);
     }
   };
@@ -92,7 +59,11 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
     if (phase !== 'playing') return;
 
     setDirection(known ? 'right' : 'left');
-    playTone(known ? 'success' : 'miss');
+    if (known) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
 
     setTimeout(() => {
       setStats(prev => ({
@@ -118,7 +89,7 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
         setPhase('summary');
       }
     }, 300);
-  }, [currentCardIndex, deck.length, phase, playTone]);
+  }, [currentCardIndex, deck.length, phase]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -128,6 +99,7 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
       if (e.code === 'Space') {
         e.preventDefault();
         if (!direction) {
+          SoundManager.tap();
           setIsFlipped(prev => !prev);
         }
       } else if (isFlipped && !direction) {

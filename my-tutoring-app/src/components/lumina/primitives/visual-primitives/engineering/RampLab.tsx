@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Ramp Lab - Interactive inclined plane simulation for teaching simple machines
@@ -579,6 +580,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
 
   // Handle angle change
   const handleAngleChange = (newAngle: number) => {
+    SoundManager.tick();
     setRampAngle(Math.max(0, Math.min(60, newAngle)));
     setHasUserInteracted(true);
     // Stop animation and reset velocity when angle changes
@@ -588,6 +590,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
 
   // Handle push force change
   const handlePushForceChange = (force: number) => {
+    SoundManager.tick();
     setPushForce(Math.max(0, Math.min(100, force)));
     setHasUserInteracted(true);
     // Stop animation and reset velocity when force changes
@@ -598,6 +601,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
   // Start pushing
   const handleStartPush = () => {
     if (pushForce > 0) {
+      SoundManager.tap();
       setIsAnimating(true);
     }
   };
@@ -634,6 +638,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
   // Release load to see if it slides
   const handleRelease = () => {
     if (loadPosition > 0) {
+      SoundManager.tap();
       setPushForce(0);
       setIsAnimating(true);
     }

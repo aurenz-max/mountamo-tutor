@@ -16,6 +16,7 @@ import {
 } from '../../../evaluation';
 import type { FactFileMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -224,6 +225,7 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   // Tab switching
   // -------------------------------------------------------------------------
   const handleTabChange = useCallback((tab: TabKey) => {
+    SoundManager.tap();
     // Record time on previous tab
     const now = Date.now();
     const elapsed = now - tabEntryTimeRef.current;
@@ -268,6 +270,7 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   // Key stat tap
   // -------------------------------------------------------------------------
   const handleStatTap = useCallback((index: number) => {
+    SoundManager.tap();
     setTappedStats(prev => {
       const next = new Set(prev);
       next.add(index);
@@ -301,6 +304,11 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
     setShowCheckFeedback(true);
 
     const correct = optionIndex === currentCheck.correctIndex;
+    if (correct) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
     setCheckAnswers(prev => [...prev, { selected: optionIndex, correct }]);
 
     if (isConnected) {

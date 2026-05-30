@@ -9,6 +9,7 @@ import type {
   HypothesisVariableRole,
 } from '../types';
 import BlockWrapper from './BlockWrapper';
+import { SoundManager } from '../../../../../utils/SoundManager';
 
 type Zone = 'pool' | 'iv' | 'dv' | 'control';
 
@@ -78,6 +79,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
   const handleChipClick = useCallback(
     (id: string) => {
       if (answered) return;
+      SoundManager.tap();
       const currentZone = positions[id];
       // Clicking a chip already in a zone returns it to the pool.
       if (currentZone !== 'pool') {
@@ -94,6 +96,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
   const handleZoneClick = useCallback(
     (zone: Exclude<Zone, 'pool'>) => {
       if (answered || !selectedId) return;
+      SoundManager.snap();
       setPositions((p) => {
         const next = { ...p };
         // IV/DV are single-slot — eject any existing occupant back to the pool.
@@ -125,6 +128,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
     setAttempts(newAttempts);
 
     if (wrong.size === 0) {
+      SoundManager.playCorrect();
       setAnswered(true);
       setShowExplanation(true);
       setWrongIds(new Set());
@@ -134,6 +138,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
       // Reveal answer key by snapping every chip to its correct zone.
       const corrected: Record<string, Zone> = {};
       for (const v of variables) corrected[v.id] = correctZoneFor(v.role);
+      SoundManager.playIncorrect();
       setPositions(corrected);
       setAnswered(true);
       setShowExplanation(true);
@@ -141,6 +146,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
       setWasCorrect(false);
       onAnswer(data.id, false, newAttempts);
     } else {
+      SoundManager.playIncorrect();
       setWrongIds(wrong);
     }
   }, [canSubmit, variables, positions, attempts, onAnswer, data.id]);

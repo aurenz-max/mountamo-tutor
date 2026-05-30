@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { LifeCycleSequencerMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 import { Clock, ArrowRight, CheckCircle2, XCircle, RotateCcw, Lightbulb, Sparkles, RefreshCw, GripVertical, ChevronDown, ChevronUp, HelpCircle, Zap } from 'lucide-react';
 
 /**
@@ -226,6 +227,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     e.preventDefault();
 
     if (!draggedStage || hasSubmitted) return;
+    SoundManager.snap();
 
     const newTimeline = [...timelineStages];
     const isFromTimeline = timelineStages.some(s => s?.id === draggedStage.id);
@@ -291,6 +293,8 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
 
     const allPlaced = timelineStages.every(s => s !== null);
     const allCorrect = correctCount === data.stages.length && allPlaced;
+
+    if (allCorrect) SoundManager.playCorrect(); else SoundManager.playIncorrect();
 
     if (allCorrect && !hasSubmitted) {
       setShowMisconception(false);

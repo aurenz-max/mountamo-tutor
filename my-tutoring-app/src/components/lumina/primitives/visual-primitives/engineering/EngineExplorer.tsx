@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { EngineExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -790,6 +791,7 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
   // ---- Handlers ----
   const handleZoneClick = useCallback((zoneId: string) => {
     if (!zoneId) { setSelectedZone(null); return; }
+    SoundManager.select();
     setSelectedZone(zoneId);
     setExploredZones(prev => {
       const next = new Set(prev);
@@ -866,6 +868,7 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
     setAnswerFeedback(correct ? 'correct' : 'incorrect');
 
     if (correct) {
+      SoundManager.playCorrect();
       setChallengeResults(prev => [...prev, { id: challenge.id, correct: true }]);
       if (isConnected) {
         sendText(
@@ -882,6 +885,7 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
         setShowHint(false);
       }, 1500);
     } else {
+      SoundManager.playIncorrect();
       setShowHint(true);
       if (isConnected) {
         sendText(

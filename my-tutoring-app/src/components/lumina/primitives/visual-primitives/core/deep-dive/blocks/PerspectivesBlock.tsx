@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { PerspectivesBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
+import { SoundManager } from '../../../../../utils/SoundManager';
 
 interface PerspectivesBlockProps {
   data: PerspectivesBlockData;
@@ -55,6 +56,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
   const handleSelect = useCallback(
     (optionIndex: number) => {
       if (answered) return;
+      SoundManager.select();
       setSelectedIndex(optionIndex);
     },
     [answered],
@@ -66,15 +68,18 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
     setAttempts(newAttempts);
 
     if (selectedIndex === comprehension.correctIndex) {
+      SoundManager.playCorrect();
       setAnswered(true);
       setShowExplanation(true);
       onAnswer?.(data.id, true, newAttempts);
     } else if (newAttempts >= 2) {
+      SoundManager.playIncorrect();
       setAnswered(true);
       setShowExplanation(true);
       setSelectedIndex(comprehension.correctIndex);
       onAnswer?.(data.id, false, newAttempts);
     } else {
+      SoundManager.playIncorrect();
       setSelectedIndex(null);
     }
   }, [comprehension, selectedIndex, answered, attempts, onAnswer, data.id]);

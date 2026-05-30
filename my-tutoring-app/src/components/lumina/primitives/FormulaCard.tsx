@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { EquationData } from '../types';
+import { SoundManager } from '../utils/SoundManager';
 import {
   usePrimitiveEvaluation,
   type FormulaCardMetrics,
@@ -135,6 +136,7 @@ export const FormulaCard: React.FC<FormulaCardProps> = ({ data }) => {
   }, [hasInteracted, gateAttemptStartTime]);
 
   const handleParameterClick = (symbol: string) => {
+    SoundManager.tap();
     setSelectedParameter(selectedParameter === symbol ? null : symbol);
 
     if (!exploredParameters.has(symbol)) {
@@ -145,6 +147,7 @@ export const FormulaCard: React.FC<FormulaCardProps> = ({ data }) => {
 
   const handleGateAnswer = (answer: string) => {
     if (gateSubmitted) return;
+    SoundManager.select();
     setSelectedAnswer(answer);
   };
 
@@ -152,6 +155,11 @@ export const FormulaCard: React.FC<FormulaCardProps> = ({ data }) => {
     if (selectedAnswer === null || !currentGate) return;
 
     const isCorrect = selectedAnswer === currentGate.correctAnswer;
+    if (isCorrect) {
+      SoundManager.playCorrect();
+    } else {
+      SoundManager.playIncorrect();
+    }
     const attemptNumber = (gateAttemptCounts[currentGateIndex] || 0) + 1;
     const timeToAnswer = gateAttemptStartTime ? Date.now() - gateAttemptStartTime : 0;
 

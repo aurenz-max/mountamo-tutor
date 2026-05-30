@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { CategorizationActivityProblemData } from '../../types';
 import { InsetRenderer } from './insets';
+import { SoundManager } from '../../utils/SoundManager';
 import {
   usePrimitiveEvaluation,
   type CategorizationActivityMetrics,
@@ -60,6 +61,7 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
 
   const handleDrop = (category: string) => {
     if (isSubmitted || !draggedItem) return;
+    SoundManager.snap();
     setItemCategories(prev => ({ ...prev, [draggedItem]: category }));
     setDraggedItem(null);
   };

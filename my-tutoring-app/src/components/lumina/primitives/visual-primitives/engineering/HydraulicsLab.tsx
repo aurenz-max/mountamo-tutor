@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { HydraulicsLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -1214,6 +1215,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     setAnswerFeedback(correct ? 'correct' : 'incorrect');
 
     if (correct) {
+      SoundManager.playCorrect();
       setChallengeResults(prev => [...prev, { id: challenge.id, correct: true }]);
       if (isConnected) {
         sendText(
@@ -1229,6 +1231,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
         setShowHint(false);
       }, 1500);
     } else {
+      SoundManager.playIncorrect();
       setShowHint(true);
       if (isConnected) {
         sendText(

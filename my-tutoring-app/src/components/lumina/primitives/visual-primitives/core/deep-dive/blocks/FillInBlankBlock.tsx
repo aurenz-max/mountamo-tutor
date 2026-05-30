@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { FillInBlankBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
+import { SoundManager } from '../../../../../utils/SoundManager';
 
 interface FillInBlankBlockProps {
   data: FillInBlankBlockData;
@@ -30,6 +31,7 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
   const handleWordSelect = useCallback(
     (word: string) => {
       if (answered) return;
+      SoundManager.select();
       setSelectedWord((prev) => (prev === word ? null : word));
     },
     [answered],
@@ -43,16 +45,19 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
     const isCorrect = selectedWord.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setAnswered(true);
       setShowResult(true);
       onAnswer(data.id, true, newAttempts);
     } else if (newAttempts >= 2) {
+      SoundManager.playIncorrect();
       setAnswered(true);
       setShowResult(true);
       setSelectedWord(correctAnswer);
       onAnswer(data.id, false, newAttempts);
     } else {
       // Wrong but can try again
+      SoundManager.playIncorrect();
       setSelectedWord(null);
     }
   }, [selectedWord, answered, attempts, correctAnswer, data.id, onAnswer]);

@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { EvolutionTimelineMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface (single source of truth)
@@ -158,11 +159,13 @@ const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({ data, className }
   }, [data.eras, zoomRange]);
 
   const handleEventClick = (event: TimelineEvent) => {
+    SoundManager.select();
     setSelectedEvent(prev => prev?.id === event.id ? null : event);
     setEventsExplored(prev => { const next = new Set(Array.from(prev)); next.add(event.id); return next; });
   };
 
   const handleLineageSelect = (lineage: Lineage | null) => {
+    SoundManager.select();
     setActiveLineage(lineage);
     if (lineage) {
       setLineagesTraced(prev => { const next = new Set(Array.from(prev)); next.add(lineage.name); return next; });

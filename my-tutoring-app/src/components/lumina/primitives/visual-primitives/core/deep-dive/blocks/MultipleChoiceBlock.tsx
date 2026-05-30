@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { MultipleChoiceBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
+import { SoundManager } from '../../../../../utils/SoundManager';
 
 interface MultipleChoiceBlockProps {
   data: MultipleChoiceBlockData;
@@ -29,6 +30,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
   const handleSelect = useCallback(
     (optionIndex: number) => {
       if (answered) return;
+      SoundManager.select();
       setSelectedIndex(optionIndex);
     },
     [answered],
@@ -40,17 +42,20 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
     setAttempts(newAttempts);
 
     if (selectedIndex === data.correctIndex) {
+      SoundManager.playCorrect();
       setAnswered(true);
       setShowExplanation(true);
       onAnswer(data.id, true, newAttempts);
     } else if (newAttempts >= 2) {
       // After 2 wrong attempts, reveal answer
+      SoundManager.playIncorrect();
       setAnswered(true);
       setShowExplanation(true);
       setSelectedIndex(data.correctIndex);
       onAnswer(data.id, false, newAttempts);
     } else {
       // Wrong but can try again — reset selection
+      SoundManager.playIncorrect();
       setSelectedIndex(null);
     }
   }, [selectedIndex, answered, attempts, data, onAnswer]);

@@ -11,6 +11,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ─── Data Interfaces ──────────────────────────────────────────────────────────
 
@@ -399,6 +400,7 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handlePickVehicle = useCallback((vehicleId: string) => {
     if (scenarioPhase !== 'picking') return;
+    SoundManager.select();
     setSelectedVehicleId(vehicleId);
   }, [scenarioPhase]);
 
@@ -423,6 +425,9 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
     if (questionAnswer === null || !currentScenario) return;
     const correct = questionAnswer === currentScenario.tradeOffCorrectIndex;
     setQuestionAttempts(prev => prev + 1);
+
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
 
     if (correct) {
       setScenarioPhase('answered');

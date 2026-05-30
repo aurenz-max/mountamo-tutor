@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Interfaces (Single Source of Truth)
@@ -107,6 +108,7 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
   // Handle on-demand image generation
   const handleGenerateImage = async () => {
     if (!data.imagePrompt || isLoadingImage || generatedImageUrl) return;
+    SoundManager.tap();
 
     setIsLoadingImage(true);
     setImageError(false);
