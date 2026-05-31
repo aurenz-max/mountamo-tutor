@@ -381,7 +381,7 @@ export const generateWarmUpQuestion = async (
  */
 export interface PracticeStreamCallbacks {
   onProgress?: (message: string) => void;
-  onManifestReady?: (preview: { instanceId: string; problemText: string; difficulty: string; isVisual: boolean }[]) => void;
+  onManifestReady?: (preview: { instanceId: string; problemText: string; difficulty: string; isVisual: boolean; bloomLevel: string | null; kind: string | null }[]) => void;
   onSessionBrief?: (brief: SessionBrief) => void;
   onItemReady?: (item: HydratedPracticeItem, index: number, total: number) => void;
 }

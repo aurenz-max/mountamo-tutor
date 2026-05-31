@@ -1612,11 +1612,16 @@ export interface PracticeManifestItem {
   instanceId: string;
   problemText: string;
   difficulty: ProblemDifficulty;
+  /** Bloom's cognitive tier this problem targets. Set by the manifest generator. */
+  bloomLevel?: BloomsTier;
   rationale: string;
   teachingNote: string;
   visualPrimitive: VisualPrimitiveSpec | null;
   standardProblem: StandardProblemSpec | null;
 }
+
+/** Bloom's cognitive tiers used across the practice pipeline (matches IRT beta→tier mapping). */
+export type BloomsTier = 'recall' | 'apply' | 'analyze' | 'evaluate';
 
 /**
  * Student-facing brief generated alongside the practice manifest.

@@ -9,12 +9,15 @@ import {
   type MultipleChoiceMetrics,
   type PrimitiveEvaluationResult,
 } from '../../evaluation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Info } from 'lucide-react';
 import { InsetRenderer, renderKatexString } from './insets';
 import { SoundManager } from '../../utils/SoundManager';
+// Eval-loop chrome from the Lumina UI kit (see lumina/ui/index.ts for the full list).
+import {
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  LuminaActionButton,
+  type AnswerChoiceState,
+} from '../../ui';
 
 /**
  * Multiple Choice Problem Component
@@ -24,6 +27,10 @@ import { SoundManager } from '../../utils/SoundManager';
  * - Submits evaluation metrics on answer submission
  * - Supports competency tracking via skillId/subskillId/objectiveId
  * - Enables retry mechanism with resetAttempt
+ *
+ * UI: the option-answer FSM, feedback banner, and action buttons come from the
+ * Lumina UI kit (LuminaAnswerChoice / LuminaFeedbackCard / LuminaActionButton).
+ * The question and embedded visual are the bespoke "painting" and stay custom.
  */
 
 interface MultipleChoiceProblemProps {
@@ -108,6 +115,18 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
 
   const isCorrect = selectedId === data.correctOptionId;
 
+  // Option-answer state machine: which visual state each option is in.
+  const choiceState = (optionId: string): AnswerChoiceState =>
+    !isSubmitted
+      ? selectedId === optionId
+        ? 'selected'
+        : 'idle'
+      : optionId === data.correctOptionId
+        ? 'correct'
+        : selectedId === optionId
+          ? 'incorrect'
+          : 'dimmed';
+
   return (
     <div className="w-full">
       {/* Question */}
@@ -148,66 +167,40 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
       {/* Inset (rich inline content — equation, table, passage, chart, etc.) */}
       {data.inset && <InsetRenderer inset={data.inset} />}
 
-      {/* Options Grid */}
+      {/* Options Grid — LuminaAnswerChoice FSM (renders its own ✓ on correct) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {data.options.map((option) => {
-          const isSelected = selectedId === option.id;
-          const isCorrectOption = option.id === data.correctOptionId;
-          const isIncorrectChoice = isSubmitted && isSelected && !isCorrectOption;
-
-          // Determine button variant and styling based on state
-          let buttonClasses = "h-auto text-left p-6 border transition-all duration-300";
-
-          if (!isSubmitted) {
-            buttonClasses += isSelected
-              ? " border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-              : " border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20";
-          } else {
-            if (isCorrectOption) {
-              buttonClasses += " border-emerald-500 bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
-            } else if (isIncorrectChoice) {
-              buttonClasses += " border-red-500 bg-red-500/20 opacity-60";
-            } else {
-              buttonClasses += " opacity-40 border-transparent bg-black/20";
-            }
-          }
-
+          const state = choiceState(option.id);
+          const badgeActive = state === 'selected' || state === 'correct';
           return (
-            <Button
+            <LuminaAnswerChoice
               key={option.id}
-              onClick={() => handleSelect(option.id)}
+              state={state}
               disabled={isSubmitted}
-              variant="ghost"
-              className={buttonClasses}
+              onClick={() => handleSelect(option.id)}
             >
-              <div className="flex items-center justify-between w-full min-w-0 gap-3">
-                <div className="flex items-start gap-4 min-w-0">
-                  <Badge
-                    className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full text-sm font-bold border
-                      ${isSelected || (isSubmitted && isCorrectOption)
-                        ? 'bg-white text-slate-900 border-white'
-                        : 'bg-black/30 text-slate-400 border-white/10'}
-                    `}
-                  >
-                    {option.id}
-                  </Badge>
-                  {data.optionFormat === 'katex' ? (
-                    <span
-                      className="text-lg text-slate-200 font-light group-hover:text-white transition-colors whitespace-normal break-words"
-                      dangerouslySetInnerHTML={{ __html: renderKatexString(option.text) }}
-                    />
-                  ) : (
-                    <span className="text-lg text-slate-200 font-light group-hover:text-white transition-colors whitespace-normal break-words">
-                      {option.text}
-                    </span>
-                  )}
-                </div>
-
-                {isSubmitted && isCorrectOption && (
-                  <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+              <div className="flex items-start gap-4 min-w-0">
+                <span
+                  className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full text-sm font-bold border ${
+                    badgeActive
+                      ? 'bg-white text-slate-900 border-white'
+                      : 'bg-black/30 text-slate-400 border-white/10'
+                  }`}
+                >
+                  {option.id}
+                </span>
+                {data.optionFormat === 'katex' ? (
+                  <span
+                    className="text-lg font-light whitespace-normal break-words"
+                    dangerouslySetInnerHTML={{ __html: renderKatexString(option.text) }}
+                  />
+                ) : (
+                  <span className="text-lg font-light whitespace-normal break-words">
+                    {option.text}
+                  </span>
                 )}
               </div>
-            </Button>
+            </LuminaAnswerChoice>
           );
         })}
       </div>
@@ -215,45 +208,23 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
       {/* Action Area */}
       <div className="flex flex-col items-center">
         {!isSubmitted ? (
-          <Button
-            onClick={handleSubmit}
+          <LuminaActionButton
+            action="check"
             disabled={!selectedId}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide shadow-lg shadow-blue-600/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 disabled:opacity-50"
+            onClick={handleSubmit}
           >
             Verify Answer
-          </Button>
+          </LuminaActionButton>
         ) : (
           <div className="w-full space-y-4">
-            <Card className="animate-fade-in backdrop-blur-xl bg-black/20 border-white/5">
-              <CardContent className="pt-6">
-                <div className={`flex items-center gap-3 mb-3 font-bold uppercase tracking-wider ${isCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-                  {isCorrect ? (
-                    <CheckCircle2 className="w-5 h-5" />
-                  ) : (
-                    <Info className="w-5 h-5" />
-                  )}
-                  <span>{isCorrect ? 'Correct Analysis' : 'Insight'}</span>
-                </div>
-                <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-                  {data.rationale}
-                </p>
-                {data.teachingNote && (
-                  <div className="mt-3 pt-3 border-t border-white/5">
-                    <p className="text-sm text-slate-400 italic">
-                      💡 {data.teachingNote}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Button
-              onClick={handleReset}
-              variant="ghost"
-              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide"
+            <LuminaFeedbackCard
+              status={isCorrect ? 'correct' : 'insight'}
+              label={isCorrect ? 'Correct Analysis' : undefined}
+              teachingNote={data.teachingNote}
             >
-              Try Again
-            </Button>
+              {data.rationale}
+            </LuminaFeedbackCard>
+            <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
         )}
       </div>

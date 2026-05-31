@@ -68,8 +68,18 @@ Create: `lumina/primitives/visual-primitives/<domain>/<Name>.tsx`
 
 ```tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+// Compose ALL chrome from the Lumina UI kit — the codified design system and
+// single source of truth. `lumina/ui/index.ts` is the AUTHORITATIVE component
+// list (it grows often) — read it and import only what this primitive needs.
+// NEVER re-derive glass class strings or hand-roll answer/feedback/stepper chrome.
+import {
+  LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardDescription, LuminaCardContent,
+  LuminaButton, LuminaBadge, LuminaPanel,
+  // Multi-phase scaffold (header, prompt, answer entry, readouts):
+  LuminaModeTabs, LuminaChallengeCounter, LuminaPrompt, LuminaStepper, LuminaInlineStat, LuminaStat,
+  // Evaluation loop (every evaluable primitive):
+  LuminaAnswerChoice, LuminaFeedbackCard, LuminaActionButton, LuminaHintDisclosure, LuminaScoreRing,
+} from '../../../ui';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { <Name>Metrics } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
@@ -116,11 +126,13 @@ Classify the per-challenge data BEFORE designing the schema. This determines whe
 
 Document the choice in the Required Fields Manifest in Phase 2c so the Phase 4 Generator Agent knows which fork to build.
 
-**UI rules:**
-- Use shadcn/ui components (Card, Button, Badge, Accordion, etc.)
-- Lumina theming: `backdrop-blur-xl bg-slate-900/40 border-white/10`
-- Buttons: `variant="ghost" className="bg-white/5 border border-white/20 hover:bg-white/10"`
-- Text: `text-slate-100` (primary), `text-slate-400` (secondary)
+**UI rules — compose ALL chrome from the Lumina UI kit (`lumina/ui`). NEVER raw glass class strings, and NEVER hand-roll answer/feedback/stepper/score widgets. The barrel `lumina/ui/index.ts` is the live component list — read it; pull what you need.**
+- **Containers/labels:** `LuminaCard` (`surface=`) + Header/Title/Description/Content, `LuminaPanel` (nested, optional `accent` rail), `LuminaBadge` (`accent=`), `LuminaCallout` (icon-chip + uppercase label + body), `LuminaSectionLabel`, `LuminaTable` (`columns`/`rows`), `LuminaAccordion`/`LuminaAccordionItem`.
+- **Controls:** `LuminaButton` (`tone="ghost|primary|danger|subtle"`), `LuminaSlider` (smooth feel baked in), `LuminaStepper` (−/value/+ number entry — NEVER hand-roll this; a hand-rolled one already shipped a broken Tailwind class), `LuminaChoiceChip`.
+- **Multi-phase scaffold:** `LuminaModeTabs` (eval-mode pills), `LuminaChallengeCounter` ("Challenge X of Y", `variant="text|dots"`), `LuminaPrompt` (task/question banner), `LuminaInlineStat` / `LuminaStat` (readouts), `LuminaProgress`.
+- **Evaluation loop (use these for EVERY evaluable primitive — don't hand-roll):** `LuminaAnswerChoice` (answer-option state machine — `state="idle|selected|correct|incorrect|dimmed"`), `LuminaFeedbackCard` (`status="correct|incorrect|insight"` + `teachingNote`), `LuminaActionButton` (`action="check|retry|next"` — on-brand glass, NOT solid blue), `LuminaHintDisclosure`, `LuminaScoreRing`. Tiers come from `getPerformanceTier`/`TIERS` in tokens — never re-declare a local TIER_CONFIG.
+- Need a shadcn part NOT in the kit (Tabs, Switch, Select, Collapsible, Dialog)? Import from `@/components/ui/*` and theme via exported tokens (`surface`, `text`, `accentText`, `accentSoftBg`, `accentChipBg`, `accentStrongText`) — do NOT reinvent class strings.
+- **Boundary:** the kit is the FRAME (chrome). The bespoke interaction surface — canvas, drag targets, the simulation object the student manipulates — stays custom per primitive. Never force it into kit components.
 
 **If interactive, add AI tutoring triggers:**
 
@@ -895,7 +907,7 @@ When adding a **new domain** (not new primitive in existing domain), also update
 1. **Single source of truth**: Data interface defined and exported ONLY in the component file. Generator imports it.
 2. **Pass `onEvaluationSubmit` in the tester**: `usePrimitiveEvaluation` guards against double submission via `submittedRef`. Omitting the prop silently suppresses ALL metrics submission from the tester (function-sketch and matrix-display both had this silent gap before the multi-instance refactors). **Always pass it.**
 3. **Multi-instance is the default**: Every new evaluable primitive ships with `challenges: <Name>Challenge[]` and `useChallengeProgress`. Singular `<Name>Data` shapes are Bucket A by definition — don't create new ones. See [PRD §4](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern).
-4. **Use shadcn/ui**: Cards, Buttons, Badges, Accordions — never custom div-based UI patterns.
+4. **Compose ALL chrome from the Lumina UI kit (`lumina/ui`)** — read the barrel `lumina/ui/index.ts` for the live list. Containers/controls (`LuminaCard`/`LuminaButton`/`LuminaBadge`/`LuminaPanel`/`LuminaTable`/`LuminaAccordion`), the multi-phase scaffold (`LuminaModeTabs`/`LuminaChallengeCounter`/`LuminaPrompt`/`LuminaStepper`/`LuminaInlineStat`), and the eval loop (`LuminaAnswerChoice`/`LuminaFeedbackCard`/`LuminaActionButton`/`LuminaHintDisclosure`/`LuminaScoreRing`) all come from the kit — never re-derive glass strings, hand-roll a +/- stepper or answer FSM, or build a local TIER_CONFIG. Only genuinely uncovered shadcn parts (Tabs, Switch, Select) drop to `@/components/ui/*` themed via tokens. The kit is the frame, not the bespoke interaction surface.
 5. **Write complete component files**: Use Write tool, not incremental edits, to prevent broken JSX.
 6. **Required Fields Manifest**: Always create one in Phase 2c (includes the Fork A vs Fork B decision from PRD §5 rule 1) and pass it to Phases 4 and 6.
 7. **Generator rejects, never silently falls back**: Missing visual data = reject challenge + log. Never `?? defaultValue` for fields the component renders.

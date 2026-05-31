@@ -18,7 +18,7 @@ import {
   generatePracticeManifestAndHydrateStreaming,
   type PracticeStreamCallbacks,
 } from '../../service/geminiClient-api';
-import type { HydratedPracticeItem, PracticeItemResult } from '../../types';
+import type { HydratedPracticeItem, PracticeItemResult, SessionBrief } from '../../types';
 import type { GradeLevel } from '../../components/GradeLevelSelector';
 import { ADAPTIVE } from './constants';
 import { decideNext, adaptScaffoldingMode } from './decisionEngine';
@@ -29,6 +29,7 @@ import type {
   DecisionAction,
   TransitionType,
   ManifestLatencyEntry,
+  PracticePreviewItem,
   ViewSlice,
 } from './types';
 
@@ -88,6 +89,8 @@ export class SessionKernel {
 
   // -- UI ephemera --
   private loadingMessage = '';
+  private manifestPreview: PracticePreviewItem[] = [];
+  private sessionBrief: SessionBrief | null = null;
   private error: string | null = null;
 
   // -- Subscriptions (useSyncExternalStore) --
@@ -131,6 +134,8 @@ export class SessionKernel {
       transitionType: this.transitionType,
       isHydrating: this.hydrationInFlight,
       streamingMessage: this.loadingMessage,
+      manifestPreview: this.manifestPreview,
+      sessionBrief: this.sessionBrief,
       error: this.error,
       topic: this.topic,
       subject: this.subject,
@@ -364,6 +369,8 @@ export class SessionKernel {
     this.generatedPrimitives = [];
     this.latencyLog = [];
     this.loadingMessage = '';
+    this.manifestPreview = [];
+    this.sessionBrief = null;
     this.error = null;
     this.notify();
   }
@@ -549,9 +556,21 @@ export class SessionKernel {
     const startedAt = Date.now();
     const batch = this.batchIndex;
 
+    // Fresh planner metadata for this generation.
+    this.manifestPreview = [];
+    this.sessionBrief = null;
+
     const callbacks: PracticeStreamCallbacks = {
       onProgress: (msg) => {
         this.loadingMessage = msg;
+        this.notify();
+      },
+      onManifestReady: (preview) => {
+        this.manifestPreview = preview;
+        this.notify();
+      },
+      onSessionBrief: (brief) => {
+        this.sessionBrief = brief;
         this.notify();
       },
       onItemReady: (_item, index, total) => {

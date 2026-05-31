@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
             problemText: item.problemText,
             difficulty: item.difficulty,
             isVisual: !!item.visualPrimitive,
+            bloomLevel: item.bloomLevel || item.standardProblem?.evalMode || null,
+            kind: item.visualPrimitive?.componentId || item.standardProblem?.problemType || null,
           })),
         });
 

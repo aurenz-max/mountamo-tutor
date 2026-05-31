@@ -286,7 +286,12 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
 
           {/* Right Column: Accordion Sections */}
           <div className="space-y-3">
-            <Accordion type="single" collapsible defaultValue="quickStats">
+            <Accordion
+              type="single"
+              collapsible
+              defaultValue="quickStats"
+              onValueChange={(value) => SoundManager.toggle(!!value)}
+            >
 
               {/* Quick Stats Section */}
               {data.quickStats && (

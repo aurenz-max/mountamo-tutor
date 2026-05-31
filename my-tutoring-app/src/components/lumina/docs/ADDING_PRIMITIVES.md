@@ -67,7 +67,63 @@ Adding a new primitive involves these files:
 
 ## UI Component Guidelines
 
-**IMPORTANT: Use shadcn/ui with Lumina theming for all primitives.**
+**IMPORTANT: Compose primitive chrome from the Lumina UI kit (`lumina/ui`) — do not hand-write glass class strings.**
+
+### The Lumina UI kit (canonical)
+
+The kit at [`lumina/ui/`](../ui/) is the codified Lumina design system — the single source of truth for the glass aesthetic. Before it existed, `backdrop-blur-xl bg-slate-900/40 border-white/10` was copy-pasted into 140+ files, so the theme couldn't evolve without editing every primitive. Compose from the kit instead, and the theme moves at scale (edit [`tokens.ts`](../ui/tokens.ts) once → every primitive follows).
+
+```tsx
+import {
+  LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaCardDescription,
+  LuminaCardContent, LuminaButton, LuminaBadge, LuminaPanel,
+} from '../../../ui'; // path from primitives/visual-primitives/<domain>/
+```
+
+| Kit component | Replaces | Key props |
+|---|---|---|
+| `LuminaCard` (+ themed `Header`/`Title`/`Description`/`Content`/`Footer`) | `<Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl">` | `surface="glass"\|"nested"\|"elevated"` |
+| `LuminaButton` | `<Button variant="ghost" className="bg-white/5 border border-white/20 hover:bg-white/10">` | `tone="ghost"\|"primary"\|"danger"\|"subtle"` |
+| `LuminaBadge` | `<Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300">` | `accent="orange"\|"emerald"\|…` |
+| `LuminaPanel` | `<div className="bg-black/20 border border-white/10 rounded-lg p-4">` | `accent` (optional left rail) |
+| `LuminaCallout` | icon-chip + uppercase accent label + body (KEY DIFFERENCES, IN CONTEXT, MISCONCEPTION) | `accent`, `label`, `icon`, `italic` |
+| `LuminaSectionLabel` | accent eyebrow header (SYNTHESIS & ANALYSIS) | `accent`, `size="sm"\|"lg"` |
+| `LuminaSlider` | themed range control (replaces default-looking sliders) | `accent`, + all shadcn Slider props |
+| `LuminaStat` | label / value / unit readout tile | `label`, `value`, `unit`, `accent` |
+| `LuminaChoiceChip` | selectable pill + status dot (Tracks/House/Boom) | `label`, `accent`, `selected`, `onClick` |
+| `LuminaAccordion` / `LuminaAccordionItem` | themed profile sections | item: `value`, `label`, `icon`, `accent` |
+| `LuminaProgress` | thin accent progress bar | `value` (0–100), `accent` |
+| `LuminaTable` | data-driven glass data table (accent header, first-col emphasis) | `columns`, `rows`, `accent`, `caption` |
+
+**Multi-phase scaffold** (use these for the chrome around `useChallengeProgress`/`usePhaseResults` primitives — header, prompt, answer entry):
+
+| Kit component | Replaces | Key props |
+|---|---|---|
+| `LuminaStepper` | hand-rolled −/value/+ number entry (~29 math primitives) | `value`, `onChange`, `min`, `max`, `step`, `accent`, `editable` |
+| `LuminaModeTabs` | the eval-mode pill row (Count·Subitize·…) | `tabs`, `active`, `accent`, `onSelect?` |
+| `LuminaChallengeCounter` | "Challenge X of Y" (text + dotted-dots) | `current`, `total`, `variant="text"\|"dots"`, `accent` |
+| `LuminaPrompt` | the task/question banner | `accent`, `center` |
+| `LuminaInlineStat` | inline "Counted: 8 / 6" readouts | `label`, `value`, `suffix`, `accent` |
+
+A primitive built with the multi-phase hooks **plus** this scaffold is ~90% kit — only its interaction surface (stars, ten-frame, number line) stays bespoke.
+
+**Evaluation loop** (the problem → eval → results spec — use these for answer entry, feedback, and scoring; the most cross-cutting chrome in the system):
+
+| Kit component | Replaces | Key props |
+|---|---|---|
+| `LuminaAnswerChoice` | the 255+ hand-rolled answer-option state machines | `state="idle"\|"selected"\|"correct"\|"incorrect"\|"dimmed"` |
+| `LuminaFeedbackCard` | post-answer result banners | `status="correct"\|"incorrect"\|"insight"`, `teachingNote` |
+| `LuminaActionButton` | 129+ Check/Try Again/Next buttons (on-brand glass, not solid blue) | `action="check"\|"retry"\|"next"` |
+| `LuminaHintDisclosure` | 40+ "Need a hint?" reveals | `label`, `accent`, `defaultOpen` |
+| `LuminaScoreRing` | results score rings | `score` (0–100), `size`, `showTier` |
+
+Tiers live in `tokens.ts`: `getPerformanceTier(score)` + `TIERS` (perfect/great/good/needs-work) — single source of truth, was duplicated across 3 files.
+
+`LuminaCard` also takes an optional `topAccent` — a consistent, token-driven focus bar across the top edge (replaces one-off gradient lines).
+
+**Need a shadcn part the kit doesn't wrap** (Accordion, Tabs, Slider, Switch)? Import it from `@/components/ui/*` and theme it with the **exported tokens** (`surface`, `text`, `accentText`, `interactive` from `lumina/ui`) rather than retyping class strings. If you find a chrome pattern you're repeating across primitives, promote it into the kit instead of copying it.
+
+**Boundary — the kit is the frame, not the painting.** Standardize chrome (cards, buttons, badges, panels). The bespoke interaction surface — the canvas, the drag targets, the simulation object the student manipulates — stays custom per primitive. Per the Direct-Manipulation and Living-Simulation principles, that layer is *supposed* to be unique; never force it into kit components.
 
 ### Why shadcn/ui?
 
@@ -90,7 +146,7 @@ Adding a new primitive involves these files:
 
 ### Lumina Theming Classes
 
-Apply these classes to shadcn components for the Lumina glass design:
+These are the raw class strings the kit's `tokens.ts` encodes. **Prefer the kit components above** — reach for these directly only when theming a shadcn part the kit doesn't wrap (Accordion, Tabs, etc.), and prefer importing the `surface`/`text`/`accentText` tokens over retyping the literals:
 
 **Cards:**
 ```tsx

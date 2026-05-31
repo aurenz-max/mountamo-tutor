@@ -1,14 +1,17 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { GradeLevelSelector, type GradeLevel } from './GradeLevelSelector';
 import { CurriculumBrowser, type CurriculumContext } from './CurriculumBrowser';
 import { LessonGroupTray, assignBloomPhase, type SelectedSubskill, type BloomPhase } from './LessonGroupBuilder';
 import { SpotlightCard } from './SpotlightCard';
 import { ParticleField } from './ParticleField';
 import { TopicExplorer } from './TopicExplorer';
+import { SoundManager } from '../utils/SoundManager';
 import type { GenerateOptions } from '../hooks/useExhibitSession';
 
 // ── Cycling word animator ──────────────────────────────────────────────
-const CYCLING_WORDS = [
+// Learn mode shows topics to explore; Practice mode shows skills to drill.
+const LEARN_WORDS = [
   'quantum physics',
   'ancient Rome',
   'ocean ecosystems',
@@ -21,14 +24,27 @@ const CYCLING_WORDS = [
   'DNA',
 ];
 
-const CyclingWord: React.FC = () => {
+const PRACTICE_WORDS = [
+  'adding fractions',
+  'place value',
+  'telling time',
+  'counting money',
+  'multiplication facts',
+  'balancing equations',
+  'sentence structure',
+  'rounding numbers',
+  'reading graphs',
+  'spelling patterns',
+];
+
+const CyclingWord: React.FC<{ words: string[]; gradientClass: string }> = ({ words, gradientClass }) => {
   const [index, setIndex] = useState(0);
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    const word = CYCLING_WORDS[index];
+    const word = words[index];
 
     if (!isDeleting) {
       // Typing
@@ -48,18 +64,83 @@ const CyclingWord: React.FC = () => {
         }, 30);
       } else {
         setIsDeleting(false);
-        setIndex((prev) => (prev + 1) % CYCLING_WORDS.length);
+        setIndex((prev) => (prev + 1) % words.length);
       }
     }
 
     return () => clearTimeout(timeoutRef.current);
-  }, [displayText, isDeleting, index]);
+  }, [displayText, isDeleting, index, words]);
 
   return (
-    <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400">
+    <span className={`text-transparent bg-clip-text bg-gradient-to-r ${gradientClass}`}>
       {displayText}
       <span className="inline-block w-[3px] h-[0.85em] bg-blue-400/80 ml-0.5 align-middle animate-pulse" />
     </span>
+  );
+};
+
+// ── Learn / Practice snapping slider ───────────────────────────────────
+type HomeMode = 'learn' | 'practice';
+
+const SLIDER_TRAVEL = 128; // px the knob slides between the two ends
+
+const ModeSlider: React.FC<{ mode: HomeMode; onChange: (m: HomeMode) => void }> = ({ mode, onChange }) => {
+  // Flip sound only on an actual mode change (snapping back to the same end stays silent).
+  const change = (next: HomeMode) => {
+    if (next === mode) return;
+    SoundManager.toggle(next === 'practice'); // rising into Practice, falling back to Learn
+    onChange(next);
+  };
+
+  return (
+  <div
+    className="relative mx-auto h-11 w-[256px] select-none rounded-full border border-white/10 bg-slate-900/60 shadow-inner backdrop-blur-sm"
+    role="switch"
+    aria-checked={mode === 'practice'}
+    aria-label="Toggle between Learn and Practice"
+  >
+    {/* Static labels (also clickable for a no-drag toggle) */}
+    <button
+      type="button"
+      onClick={() => change('learn')}
+      className={`absolute inset-y-0 left-0 z-10 w-1/2 text-sm font-semibold transition-colors ${
+        mode === 'learn' ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+      }`}
+    >
+      Learn
+    </button>
+    <button
+      type="button"
+      onClick={() => change('practice')}
+      className={`absolute inset-y-0 right-0 z-10 w-1/2 text-sm font-semibold transition-colors ${
+        mode === 'practice' ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+      }`}
+    >
+      Practice
+    </button>
+    {/* Draggable knob — snaps to the nearest end on release */}
+    <motion.div
+      drag="x"
+      dragConstraints={{ left: 0, right: SLIDER_TRAVEL }}
+      dragElastic={0.06}
+      dragMomentum={false}
+      onDragEnd={(_, info) => {
+        const start = mode === 'learn' ? 0 : SLIDER_TRAVEL;
+        const projected = start + info.offset.x;
+        change(projected > SLIDER_TRAVEL / 2 ? 'practice' : 'learn');
+      }}
+      animate={{ x: mode === 'learn' ? 0 : SLIDER_TRAVEL }}
+      transition={{ type: 'spring', stiffness: 500, damping: 34 }}
+      className={`absolute left-1 top-1 z-20 flex h-9 w-[120px] cursor-grab items-center justify-center gap-1.5 rounded-full text-sm font-bold text-white shadow-lg active:cursor-grabbing ${
+        mode === 'learn'
+          ? 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-blue-500/30'
+          : 'bg-gradient-to-r from-violet-500 to-cyan-500 shadow-violet-500/30'
+      }`}
+    >
+      <span>{mode === 'learn' ? '📚' : '⚡'}</span>
+      <span>{mode === 'learn' ? 'Learn' : 'Practice'}</span>
+    </motion.div>
+  </div>
   );
 };
 
@@ -71,6 +152,7 @@ interface IdleScreenProps {
   gradeLevel: GradeLevel;
   onGradeLevelChange: (grade: GradeLevel) => void;
   onGenerate: (options: GenerateOptions) => void;
+  onStartPractice: (topic: string, gradeLevel: GradeLevel) => void;
   onCurriculumSelect: (topic: string, grade?: GradeLevel, curriculum?: CurriculumContext) => void;
   onLaunchGroupLesson: (params: {
     topic: string;
@@ -87,6 +169,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
   gradeLevel,
   onGradeLevelChange,
   onGenerate,
+  onStartPractice,
   onCurriculumSelect,
   onLaunchGroupLesson,
   onNavigate,
@@ -94,10 +177,16 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
   const [lessonGroupMode, setLessonGroupMode] = useState(false);
   const [selectedSubskills, setSelectedSubskills] = useState<SelectedSubskill[]>([]);
   const [lessonGroupTrayCollapsed, setLessonGroupTrayCollapsed] = useState(false);
+  const [mode, setMode] = useState<HomeMode>('learn');
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onGenerate({ topic, gradeLevel });
+    if (!topic.trim()) return;
+    if (mode === 'practice') {
+      onStartPractice(topic.trim(), gradeLevel);
+    } else {
+      onGenerate({ topic, gradeLevel });
+    }
   };
 
   const handleToggleSubskill = useCallback((subskill: SelectedSubskill) => {
@@ -179,34 +268,65 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
           {/* Animated headline */}
           <div className="space-y-2">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-slate-400 leading-[1.1]">
-              What will you learn about
+              {mode === 'learn' ? 'What will you learn about' : 'What will you practice'}
             </h1>
             <div className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight h-[1.2em]">
-              <CyclingWord />
+              <CyclingWord
+                key={mode}
+                words={mode === 'learn' ? LEARN_WORDS : PRACTICE_WORDS}
+                gradientClass={
+                  mode === 'learn'
+                    ? 'from-cyan-300 via-blue-400 to-violet-400'
+                    : 'from-violet-300 via-fuchsia-400 to-cyan-400'
+                }
+              />
             </div>
           </div>
 
-          {/* Search bar — the primary CTA */}
+          {/* Search bar — the primary CTA (routes to lesson or practice by mode) */}
           <form onSubmit={handleFormSubmit} className="relative group max-w-xl mx-auto">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-700"></div>
+            <div
+              className={`absolute -inset-1 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-700 bg-gradient-to-r ${
+                mode === 'learn' ? 'from-blue-600 to-purple-600' : 'from-violet-600 to-cyan-500'
+              }`}
+            ></div>
             <div className="relative flex items-center">
               <input
                 type="text"
                 value={topic}
                 onChange={(e) => onTopicChange(e.target.value)}
-                placeholder="Type any topic..."
+                placeholder={mode === 'learn' ? 'Type any topic...' : 'Type a skill to practice...'}
                 className="w-full px-8 py-5 bg-slate-900/80 backdrop-blur-sm text-white rounded-full border border-slate-700/80 focus:border-blue-400/50 focus:outline-none text-lg shadow-2xl transition-all placeholder:text-slate-500"
                 autoFocus
               />
               <button
                 type="submit"
-                className="absolute right-2 p-3 bg-white text-slate-900 rounded-full hover:bg-blue-50 transition-transform active:scale-95 disabled:opacity-50"
+                aria-label={mode === 'learn' ? 'Generate lesson' : 'Start practice'}
+                className={`absolute right-2 p-3 rounded-full transition-transform active:scale-95 disabled:opacity-50 ${
+                  mode === 'learn'
+                    ? 'bg-white text-slate-900 hover:bg-blue-50'
+                    : 'bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:from-violet-400 hover:to-cyan-400'
+                }`}
                 disabled={!topic}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                {mode === 'learn' ? (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" /></svg>
+                )}
               </button>
             </div>
           </form>
+
+          {/* Mode toggle — Learn ⇄ Practice, sits with the search it controls */}
+          <div className="space-y-3">
+            <ModeSlider mode={mode} onChange={setMode} />
+            <p className="text-sm text-slate-500">
+              {mode === 'learn'
+                ? 'Build an interactive lesson on any topic.'
+                : 'Adaptive practice — difficulty adjusts to you in real time.'}
+            </p>
+          </div>
 
           {/* Grade level — horizontal chip strip */}
           <div className="max-w-xl mx-auto">
@@ -218,8 +338,8 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
       {/* ── Below the fold ── */}
       <div className="relative z-10 max-w-5xl mx-auto w-full px-4 pb-16 space-y-12">
 
-        {/* Quick launch row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Quick launch row (Practice now lives in the home-screen mode slider) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <SpotlightCard
             color="34, 211, 238"
             onClick={() => onNavigate('daily-session')}
@@ -233,19 +353,6 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
                 <h4 className="text-sm font-bold text-white group-hover:text-cyan-200 transition-colors">Today's Session</h4>
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-semibold uppercase tracking-wider">Ready</span>
               </div>
-            </div>
-          </SpotlightCard>
-
-          <SpotlightCard
-            color="74, 222, 128"
-            onClick={() => onNavigate('practice-mode')}
-            className="bg-gradient-to-br from-green-900/20 to-emerald-900/20"
-          >
-            <div className="p-5 flex flex-col items-center text-center gap-2">
-              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <span className="text-2xl">&#x1F3AF;</span>
-              </div>
-              <h4 className="text-sm font-bold text-white group-hover:text-green-200 transition-colors">Practice</h4>
             </div>
           </SpotlightCard>
 
@@ -354,6 +461,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
               { panel: 'calibration-simulator', icon: '\uD83D\uDCC8', title: 'IRT Simulator', color: '251, 146, 60', cardClass: 'bg-gradient-to-br from-orange-900/20 to-amber-900/20', iconClass: 'bg-orange-500/20', hoverTitle: 'group-hover:text-orange-200', hoverArrow: 'group-hover:text-orange-400' },
               { panel: 'atom-registry', icon: '\uD83D\uDD2C', title: 'Atom Registry', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-sky-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
               { panel: 'sound-lab', icon: '\uD83D\uDD0A', title: 'Sound Lab', color: '20, 184, 166', cardClass: 'bg-gradient-to-br from-teal-900/20 to-cyan-900/20', iconClass: 'bg-teal-500/20', hoverTitle: 'group-hover:text-teal-200', hoverArrow: 'group-hover:text-teal-400' },
+              { panel: 'design-studio', icon: '\uD83C\uDFA8', title: 'Design Studio', color: '168, 85, 247', cardClass: 'bg-gradient-to-br from-purple-900/20 to-fuchsia-900/20', iconClass: 'bg-purple-500/20', hoverTitle: 'group-hover:text-purple-200', hoverArrow: 'group-hover:text-purple-400' },
               { panel: 'analytics-dashboard', icon: '📊', title: 'Analytics', color: '139, 92, 246', cardClass: 'bg-gradient-to-br from-purple-900/20 to-indigo-900/20', iconClass: 'bg-purple-500/20', hoverTitle: 'group-hover:text-purple-200', hoverArrow: 'group-hover:text-purple-400' },
             ] as const).map(({ panel, icon, title, color, cardClass, iconClass, hoverTitle, hoverArrow }) => (
               <SpotlightCard

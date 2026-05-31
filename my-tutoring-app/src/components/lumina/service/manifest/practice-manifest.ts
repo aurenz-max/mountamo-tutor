@@ -94,6 +94,11 @@ const practiceManifestSchema: Schema = {
             type: Type.STRING,
             enum: ["easy", "medium", "hard"],
           },
+          bloomLevel: {
+            type: Type.STRING,
+            enum: ["recall", "apply", "analyze", "evaluate"],
+            description: "Bloom's cognitive tier this problem demands of the student: 'recall' (remember a fact or definition), 'apply' (carry out a known procedure), 'analyze' (break down relationships or compare), 'evaluate' (judge, justify, or critique). Choose based on the actual cognitive work the problem requires, not its difficulty.",
+          },
           rationale: {
             type: Type.STRING,
             description: "Educational rationale for this problem"
@@ -153,7 +158,7 @@ const practiceManifestSchema: Schema = {
             required: ["problemType", "generationIntent"],
           },
         },
-        required: ["instanceId", "problemText", "difficulty", "rationale", "teachingNote"],
+        required: ["instanceId", "problemText", "difficulty", "bloomLevel", "rationale", "teachingNote"],
       },
     },
   },

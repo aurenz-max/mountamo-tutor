@@ -36,6 +36,7 @@ import LuminaTutorTester from './components/LuminaTutorTester';
 import CalibrationSimulator from './components/CalibrationSimulator';
 import AtomRegistry from './components/AtomRegistry';
 import SoundLab from './components/SoundLab';
+import DesignStudio from './components/DesignStudio';
 import { PulseAdaptiveSession } from './pulse/PulseAdaptiveSession';
 import { ScratchPad } from './components/scratch-pad';
 import { PlannerDashboard } from './components/PlannerDashboard';
@@ -58,6 +59,15 @@ export default function App() {
 
   // Single panel state replaces 17 individual booleans
   const [activePanel, setActivePanel] = useState<string | null>(null);
+
+  // Topic carried from the home-screen Practice slider into a Pulse session.
+  // When set, the Pulse setup screen is skipped and the session auto-starts.
+  const [practiceTopic, setPracticeTopic] = useState('');
+
+  const handleStartPractice = useCallback((t: string) => {
+    setPracticeTopic(t);
+    setActivePanel('practice-mode');
+  }, []);
 
   // Manifest Viewer State (dev tools)
   const [manifest, setManifest] = useState<ExhibitManifest | null>(null);
@@ -450,6 +460,7 @@ export default function App() {
             gradeLevel={gradeLevel}
             onGradeLevelChange={setGradeLevel}
             onGenerate={generate}
+            onStartPractice={handleStartPractice}
             onCurriculumSelect={handleCurriculumSelect}
             onLaunchGroupLesson={handleLaunchGroupLesson}
             onNavigate={setActivePanel}
@@ -601,6 +612,13 @@ export default function App() {
           </div>
         )}
 
+        {/* DESIGN STUDIO STATE */}
+        {phase === GameState.IDLE && activePanel === 'design-studio' && (
+          <div className="flex-1 animate-fade-in">
+            <DesignStudio onBack={() => setActivePanel(null)} />
+          </div>
+        )}
+
         {/* LUMINA TUTOR TESTER STATE */}
         {phase === GameState.IDLE && activePanel === 'lumina-tutor-tester' && (
           <div className="flex-1 animate-fade-in">
@@ -612,9 +630,11 @@ export default function App() {
         {phase === GameState.IDLE && activePanel === 'practice-mode' && (
           <div className="flex-1 animate-fade-in">
             <PulseAdaptiveSession
-              onBack={() => setActivePanel(null)}
+              onBack={() => { setActivePanel(null); setPracticeTopic(''); }}
               gradeLevel={gradeLevel}
-              debugMode
+              initialTopic={practiceTopic}
+              autoStart={!!practiceTopic}
+              debugMode={process.env.NODE_ENV === 'development'}
             />
           </div>
         )}

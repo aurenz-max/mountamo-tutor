@@ -1,5 +1,20 @@
-import type { HydratedPracticeItem, PracticeItemResult } from '../../types';
+import type { HydratedPracticeItem, PracticeItemResult, SessionBrief } from '../../types';
 import type { GradeLevel } from '../../components/GradeLevelSelector';
+
+// ---------------------------------------------------------------------------
+// Manifest preview — planner metadata streamed before items hydrate
+// ---------------------------------------------------------------------------
+
+export interface PracticePreviewItem {
+  instanceId: string;
+  problemText: string;
+  difficulty: string;
+  isVisual: boolean;
+  /** Bloom's cognitive tier (recall/apply/analyze/evaluate), null if untagged. */
+  bloomLevel: string | null;
+  /** Primitive componentId or standard problemType, null if neither resolved yet. */
+  kind: string | null;
+}
 
 // ---------------------------------------------------------------------------
 // Session lifecycle
@@ -78,6 +93,10 @@ export interface ViewSlice {
   transitionType: TransitionType | null;
   isHydrating: boolean;
   streamingMessage: string;
+  /** Planner metadata for the batch currently generating (cleared per hydrate). */
+  manifestPreview: PracticePreviewItem[];
+  /** Optional session-level brief streamed with the manifest. */
+  sessionBrief: SessionBrief | null;
   error: string | null;
   topic: string;
   subject: string;
