@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaChallengeCounter,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -76,10 +87,10 @@ export interface NumberTracerData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  trace: { label: 'Trace', icon: '\u270F\uFE0F', accentColor: 'blue' },
-  copy: { label: 'Copy', icon: '\uD83D\uDCCB', accentColor: 'purple' },
-  write: { label: 'Write', icon: '\u2712\uFE0F', accentColor: 'emerald' },
-  sequence: { label: 'Sequence', icon: '\uD83D\uDD22', accentColor: 'orange' },
+  trace: { label: 'Trace', icon: '✏️', accentColor: 'blue' },
+  copy: { label: 'Copy', icon: '📋', accentColor: 'purple' },
+  write: { label: 'Write', icon: '✒️', accentColor: 'emerald' },
+  sequence: { label: 'Sequence', icon: '🔢', accentColor: 'orange' },
 };
 
 const CANVAS_WIDTH = 500;
@@ -870,45 +881,48 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
 
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-        <CardContent className="p-8 text-center text-slate-400">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-8 text-center text-slate-400">
           No challenges available.
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   const isSequenceMode = currentChallenge?.type === 'sequence';
+  const typeAccent = (CHALLENGE_TYPE_CONFIG[currentChallenge?.type ?? 'trace']?.accentColor
+    ?? 'blue') as LuminaAccent;
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
+          <LuminaCardTitle>{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
             {currentChallenge && (
-              <Badge variant="outline" className="border-white/20 text-slate-300">
+              <LuminaBadge accent={typeAccent}>
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
             )}
-            <Badge variant="outline" className="border-white/20 text-slate-400">
-              {currentChallengeIndex + 1} / {challenges.length}
-            </Badge>
+            <LuminaChallengeCounter
+              current={currentChallengeIndex + 1}
+              total={challenges.length}
+            />
           </div>
         </div>
         {description && <p className="text-sm text-slate-400 mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="text-center">
-            <p className="text-lg text-slate-200 font-medium">
-              {currentChallenge.instruction}
-            </p>
+          <div className="space-y-2">
+            <LuminaPrompt center>
+              <span className="text-lg">{currentChallenge.instruction}</span>
+            </LuminaPrompt>
             {currentChallenge.hint && currentAttempts >= 2 && (
-              <p className="text-sm text-blue-400 mt-1">{currentChallenge.hint}</p>
+              <p className="text-center text-sm text-blue-400">{currentChallenge.hint}</p>
             )}
           </div>
         )}
@@ -916,19 +930,19 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
         {/* Copy mode: show model digit alongside */}
         {currentChallenge?.type === 'copy' && currentChallenge.showModel && !allChallengesComplete && (
           <div className="flex justify-center">
-            <div className="bg-slate-800/50 rounded-lg p-3 border border-white/10">
+            <LuminaPanel className="p-3">
               <p className="text-xs text-slate-500 text-center mb-1">Model</p>
               <div className="text-7xl font-bold text-slate-300 text-center px-4 select-none">
                 {currentChallenge.digit}
               </div>
-            </div>
+            </LuminaPanel>
           </div>
         )}
 
         {/* Sequence context (shown above canvas in sequence mode) */}
         {isSequenceMode && currentChallenge?.sequenceNumbers && !allChallengesComplete && (
           <div className="flex justify-center">
-            <div className="bg-slate-800/40 rounded-xl border border-white/10 px-6 py-3">
+            <LuminaPanel className="rounded-xl px-6 py-3">
               <div className="flex items-center gap-2 text-4xl font-bold">
                 {currentChallenge.sequenceNumbers.map((num, i) => (
                   <React.Fragment key={i}>
@@ -945,11 +959,11 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
                 ))}
               </div>
               <p className="text-xs text-slate-500 text-center mt-1">Write the missing number below</p>
-            </div>
+            </LuminaPanel>
           </div>
         )}
 
-        {/* Canvas (all drawing modes) */}
+        {/* Canvas (all drawing modes) — bespoke interaction surface */}
         {!allChallengesComplete && (
           <div className="flex justify-center">
             <div className="relative">
@@ -968,9 +982,9 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
                 onTouchEnd={handlePointerUp}
               />
               {lastScore !== null && isCurrentChallengeComplete && (
-                <div className="absolute top-3 right-3 bg-emerald-500/20 border border-emerald-500/30 rounded-lg px-3 py-1">
-                  <span className="text-emerald-300 font-bold text-lg">{lastScore}%</span>
-                </div>
+                <LuminaBadge accent="emerald" className="absolute top-3 right-3 text-lg font-bold">
+                  {lastScore}%
+                </LuminaBadge>
               )}
             </div>
           </div>
@@ -986,43 +1000,41 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
             Checking your writing…
           </div>
         )}
-        {!isEvaluating && feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' : 'text-amber-400'
-          }`}>
-            {feedback}
-          </div>
+        {!isEvaluating && feedback && feedbackType && (
+          <LuminaFeedbackCard
+            status={feedbackType === 'success' ? 'correct' : 'incorrect'}
+            className="p-4"
+          >
+            <span className="text-base">{feedback}</span>
+          </LuminaFeedbackCard>
+        )}
+        {!isEvaluating && feedback && !feedbackType && (
+          <div className="text-center text-sm font-medium text-slate-400">{feedback}</div>
         )}
 
         {/* Action buttons */}
         {!allChallengesComplete && currentChallenge && (
           <div className="flex justify-center gap-3">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10"
+            <LuminaButton
+              tone="subtle"
               onClick={handleClear}
               disabled={allStrokes.length === 0 || isCurrentChallengeComplete || isEvaluating}
             >
               Clear
-            </Button>
+            </LuminaButton>
             {!isCurrentChallengeComplete && (
-              <Button
-                variant="ghost"
-                className="bg-blue-500/20 border border-blue-400/30 hover:bg-blue-500/30 text-blue-300"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckDrawing}
                 disabled={allStrokes.length === 0 || isEvaluating}
               >
                 {isEvaluating ? 'Checking…' : 'Check'}
-              </Button>
+              </LuminaActionButton>
             )}
             {isCurrentChallengeComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/20 border border-emerald-400/30 hover:bg-emerald-500/30 text-emerald-300"
-                onClick={handleNextChallenge}
-              >
+              <LuminaActionButton action="next" onClick={handleNextChallenge}>
                 {currentChallengeIndex < challenges.length - 1 ? 'Next' : 'Finish'}
-              </Button>
+              </LuminaActionButton>
             )}
           </div>
         )}
@@ -1041,8 +1053,8 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

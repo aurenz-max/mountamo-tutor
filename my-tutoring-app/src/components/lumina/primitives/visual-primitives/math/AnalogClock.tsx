@@ -1,10 +1,16 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -724,22 +730,22 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             {description && <p className="text-sm text-slate-400 mt-1">{description}</p>}
           </div>
           {challenges.length > 0 && (
-            <Badge variant="outline" className="border-white/20 text-slate-300">
+            <LuminaBadge>
               {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-            </Badge>
+            </LuminaBadge>
           )}
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="flex flex-col items-center gap-4">
+      <LuminaCardContent className="flex flex-col items-center gap-4">
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
           <p className="text-slate-200 text-center font-medium text-base">
@@ -817,24 +823,22 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
             {/* Stopwatch controls (elapsed mode) */}
             {currentChallenge?.type === 'elapsed' && !isCurrentChallengeCorrect && (
               <div className="flex gap-3">
-                <Button
-                  variant="ghost"
-                  className={`border border-white/20 ${
+                <LuminaButton
+                  className={
                     stopwatchRunning
-                      ? 'bg-red-500/20 hover:bg-red-500/30 text-red-300'
-                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300'
-                  }`}
+                      ? 'bg-red-500/20 border-white/20 hover:bg-red-500/30 text-red-300'
+                      : 'bg-emerald-500/20 border-white/20 hover:bg-emerald-500/30 text-emerald-300'
+                  }
                   onClick={handleStopwatchToggle}
                 >
                   {stopwatchRunning ? 'Stop' : stopwatchStartTime ? 'Resume' : 'Start'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
+                </LuminaButton>
+                <LuminaButton
+                  className="text-slate-300"
                   onClick={handleStopwatchReset}
                 >
                   Reset
-                </Button>
+                </LuminaButton>
               </div>
             )}
 
@@ -842,10 +846,9 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
             {currentChallenge && ['read', 'match', 'elapsed'].includes(currentChallenge.type) && !isCurrentChallengeCorrect && (
               <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
                 {getOptions(currentChallenge).map((option, i) => (
-                  <Button
+                  <button
                     key={i}
-                    variant="ghost"
-                    className={`text-lg font-mono py-6 border ${
+                    className={`rounded-lg text-lg font-mono py-6 border transition-colors disabled:opacity-50 ${
                       selectedOption === i
                         ? 'bg-blue-500/20 border-blue-400/50 text-blue-200'
                         : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
@@ -854,7 +857,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                     disabled={hasSubmittedEvaluation}
                   >
                     {option}
-                  </Button>
+                  </button>
                 ))}
               </div>
             )}
@@ -872,33 +875,29 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
             {currentChallenge && !allChallengesComplete && (
               <div className="flex gap-3">
                 {!isCurrentChallengeCorrect ? (
-                  <Button
-                    variant="ghost"
-                    className="bg-blue-500/20 border border-blue-400/30 hover:bg-blue-500/30 text-blue-200"
+                  <LuminaActionButton
+                    action="check"
                     onClick={handleCheckAnswer}
                     disabled={
                       hasSubmittedEvaluation ||
                       (currentChallenge.type !== 'set_time' && selectedOption === null) ||
                       stopwatchRunning
                     }
-                  >
-                    Check Answer
-                  </Button>
+                  />
                 ) : (
-                  <Button
-                    variant="ghost"
-                    className="bg-emerald-500/20 border border-emerald-400/30 hover:bg-emerald-500/30 text-emerald-200"
+                  <LuminaActionButton
+                    action="next"
                     onClick={handleNext}
                   >
                     {currentChallengeIndex < challenges.length - 1 ? 'Next' : 'Finish'}
-                  </Button>
+                  </LuminaActionButton>
                 )}
               </div>
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

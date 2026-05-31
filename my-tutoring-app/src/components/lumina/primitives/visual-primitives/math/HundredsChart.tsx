@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardDescription,
+  LuminaChallengeCounter,
+  LuminaPrompt,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  LuminaActionButton,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -57,10 +67,10 @@ export interface HundredsChartData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  highlight_sequence:  { label: 'Highlight', icon: '\uD83D\uDD26', accentColor: 'purple' },
-  complete_sequence:   { label: 'Complete',  icon: '\u2728',        accentColor: 'blue' },
-  identify_pattern:    { label: 'Identify',  icon: '\uD83D\uDD0D', accentColor: 'emerald' },
-  find_skip_value:     { label: 'Find Skip', icon: '\uD83E\uDDEE', accentColor: 'amber' },
+  highlight_sequence:  { label: 'Highlight', icon: '🔦', accentColor: 'purple' },
+  complete_sequence:   { label: 'Complete',  icon: '✨',        accentColor: 'blue' },
+  identify_pattern:    { label: 'Identify',  icon: '🔍', accentColor: 'emerald' },
+  find_skip_value:     { label: 'Find Skip', icon: '🧮', accentColor: 'amber' },
 };
 
 const CELL_COLORS = [
@@ -404,24 +414,25 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             {description && (
-              <p className="text-slate-400 text-sm mt-1">{description}</p>
+              <LuminaCardDescription className="text-sm mt-1">{description}</LuminaCardDescription>
             )}
           </div>
           {challenges.length > 0 && (
-            <Badge variant="outline" className="border-white/20 text-slate-300">
-              {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-            </Badge>
+            <LuminaChallengeCounter
+              current={Math.min(currentChallengeIndex + 1, challenges.length)}
+              total={challenges.length}
+            />
           )}
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Completion summary */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -436,17 +447,17 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
 
         {/* Challenge instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-            <p className="text-slate-100 text-sm font-medium">{currentChallenge.instruction}</p>
+          <LuminaPrompt>
+            <p className="text-sm font-medium">{currentChallenge.instruction}</p>
             {isInteractive && (
               <p className="text-slate-400 text-xs mt-1">
                 Click or drag across cells to select them
               </p>
             )}
-          </div>
+          </LuminaPrompt>
         )}
 
-        {/* Hundreds Chart Grid */}
+        {/* Hundreds Chart Grid — bespoke drag-to-paint interaction surface */}
         <div className="flex justify-center">
           <div
             ref={gridRef}
@@ -504,63 +515,58 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
         {/* Multiple choice options */}
         {isMultipleChoice && currentChallenge && !allChallengesComplete && (
           <div className="flex flex-wrap gap-2 justify-center">
-            {currentChallenge.options.map((opt) => (
-              <Button
-                key={opt}
-                variant="ghost"
-                onClick={() => handleOptionSelect(opt)}
-                className={`
-                  border transition-all
-                  ${selectedOption === opt
-                    ? 'bg-blue-500/30 border-blue-400/60 text-white'
-                    : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'}
-                `}
-              >
-                {opt}
-              </Button>
-            ))}
+            {currentChallenge.options.map((opt) => {
+              const answeredCorrect = showNext;
+              let state: AnswerChoiceState;
+              if (answeredCorrect) {
+                state = selectedOption === opt ? 'correct' : 'dimmed';
+              } else {
+                state = selectedOption === opt ? 'selected' : 'idle';
+              }
+              return (
+                <LuminaAnswerChoice
+                  key={opt}
+                  state={state}
+                  onClick={() => handleOptionSelect(opt)}
+                  disabled={answeredCorrect}
+                  className="w-auto p-3 text-center"
+                >
+                  {opt}
+                </LuminaAnswerChoice>
+              );
+            })}
           </div>
         )}
 
         {/* Feedback */}
         {feedback && (
-          <div className={`text-center text-sm font-medium rounded-lg p-2 ${
-            feedbackType === 'success'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-              : feedbackType === 'error'
-                ? 'bg-red-500/20 text-red-300 border border-red-500/30'
-                : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-          }`}>
+          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Action buttons */}
         {!allChallengesComplete && currentChallenge && (
           <div className="flex justify-center gap-3">
             {!showNext && (
-              <Button
-                variant="ghost"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheck}
                 disabled={!canCheck}
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100 disabled:opacity-40"
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {showNext && (
-              <Button
-                variant="ghost"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNext}
-                className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-200"
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

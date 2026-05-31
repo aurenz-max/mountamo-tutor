@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaPanel,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -51,10 +61,10 @@ export interface FractionCirclesData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  identify:   { label: 'Identify',   icon: '\uD83D\uDD0D', accentColor: 'blue' },
-  build:      { label: 'Build',      icon: '\uD83E\uDDF1', accentColor: 'purple' },
-  compare:    { label: 'Compare',    icon: '\u2696\uFE0F', accentColor: 'amber' },
-  equivalent: { label: 'Equivalent', icon: '\uD83D\uDD04', accentColor: 'emerald' },
+  identify:   { label: 'Identify',   icon: '🔍', accentColor: 'blue' },
+  build:      { label: 'Build',      icon: '🧱', accentColor: 'purple' },
+  compare:    { label: 'Compare',    icon: '⚖️', accentColor: 'amber' },
+  equivalent: { label: 'Equivalent', icon: '🔄', accentColor: 'emerald' },
 };
 
 const CIRCLE_SIZE = 140;
@@ -568,12 +578,12 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
             {/* Input */}
             <div className="flex items-center gap-3">
               <span className="text-slate-300 text-sm">What fraction is shaded?</span>
-              <input
+              <LuminaInput
                 type="text"
                 placeholder="e.g. 3/4"
                 value={identifyInput}
                 onChange={e => setIdentifyInput(e.target.value)}
-                className="w-24 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-blue-400/50"
+                className="w-24 text-center text-lg"
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && canCheck && handleCheckAnswer()}
               />
@@ -628,7 +638,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
               </div>
             </div>
 
-            {/* Choice buttons */}
+            {/* Choice buttons — interaction surface (answer selection), left as-is */}
             <div className="flex gap-3 flex-wrap justify-center">
               <Button
                 variant="ghost"
@@ -711,27 +721,27 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+            <LuminaBadge accent="blue" className="text-xs">
               {gradeBand}
-            </Badge>
+            </LuminaBadge>
             {currentChallenge && !allChallengesComplete && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-purple-300 text-xs">
+              <LuminaBadge accent="purple" className="text-xs">
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon} {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Challenge Progress Badges */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -760,11 +770,11 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">
               {currentChallenge.instruction}
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Challenge Content */}
@@ -785,32 +795,29 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeCorrect && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckAnswer}
                 disabled={!canCheck}
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {isCurrentChallengeCorrect && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaButton
+                tone="primary"
+                className="bg-emerald-500/10 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/20"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaButton>
             )}
           </div>
         )}
 
         {/* Hint (shows after 2 failed attempts) */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Completion message */}
@@ -836,8 +843,8 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

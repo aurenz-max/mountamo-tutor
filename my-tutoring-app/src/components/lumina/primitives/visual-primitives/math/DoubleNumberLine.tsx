@@ -11,6 +11,17 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaPrompt,
+  LuminaCallout,
+  LuminaChallengeCounter,
+  LuminaFeedbackCard,
+  LuminaActionButton,
+  answerStateClass,
+  type AnswerChoiceState,
+} from '../../../ui';
 
 /**
  * Double Number Line — Multi-instance proportional reasoning primitive.
@@ -82,7 +93,8 @@ interface DoubleNumberLineProps {
 }
 
 // ---------------------------------------------------------------------------
-// Number stepper input
+// Number stepper input — the bespoke answer-entry interaction surface.
+// (The −/+ stepper IS the manipulable object here; left as painting.)
 // ---------------------------------------------------------------------------
 
 interface LuminaNumberStepperProps {
@@ -459,9 +471,9 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
   if (challenges.length === 0) {
     return (
       <div className={`w-full max-w-5xl mx-auto my-12 ${className || ''}`}>
-        <div className="backdrop-blur-xl bg-slate-900/40 rounded-3xl border border-white/10 p-6 text-center">
+        <LuminaCard className="rounded-3xl p-6 text-center">
           <p className="text-slate-300">No double-number-line challenges available.</p>
-        </div>
+        </LuminaCard>
       </div>
     );
   }
@@ -489,12 +501,12 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
         </div>
       </div>
 
-      <div className="glass-panel p-8 md:p-16 rounded-3xl border border-purple-500/20 relative overflow-hidden">
+      <LuminaCard className="rounded-3xl border-purple-500/20 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(#a855f7 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         />
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-8 md:p-16">
           {/* Title + description */}
           <div className="mb-8 text-center max-w-2xl mx-auto">
             <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
@@ -502,16 +514,20 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
 
             {/* Umbrella context — shared across all challenges */}
             {contextQuestion && (
-              <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <p className="text-sm text-blue-200 font-medium">{contextQuestion}</p>
-              </div>
+              <LuminaCallout accent="blue" label="Context" className="mt-4 text-left">
+                {contextQuestion}
+              </LuminaCallout>
             )}
           </div>
 
           {/* Progress dots */}
           {!isComplete && challenges.length > 1 && (
-            <div className="mb-8 flex items-center justify-center gap-3 text-xs text-purple-300 font-mono uppercase tracking-wider">
-              <span>Challenge {Math.min(currentIndex + 1, challenges.length)} of {challenges.length}</span>
+            <div className="mb-8 flex items-center justify-center gap-3">
+              <LuminaChallengeCounter
+                current={Math.min(currentIndex + 1, challenges.length)}
+                total={challenges.length}
+                className="text-purple-300 font-mono uppercase tracking-wider"
+              />
               <div className="flex gap-1.5">
                 {challenges.map((ch, idx) => {
                   const done = results.some((r) => r.challengeId === ch.id);
@@ -535,9 +551,9 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
 
           {/* Per-challenge prompt */}
           {!isComplete && currentChallenge && (
-            <div className="mb-8 rounded-xl border border-purple-400/30 bg-purple-500/10 px-4 py-3 text-center max-w-2xl mx-auto">
-              <p className="text-purple-100 text-base font-medium">{currentChallenge.prompt}</p>
-            </div>
+            <LuminaPrompt accent="purple" center className="mb-8 max-w-2xl mx-auto">
+              {currentChallenge.prompt}
+            </LuminaPrompt>
           )}
 
           {/* Double Number Line Visualization */}
@@ -688,17 +704,19 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                 {currentChallenge.targetPoints.map((target, i) => {
                   const studentVal = parseFloat(studentValues[i] ?? '');
                   const filled = !isNaN(studentVal);
-                  const correctClass = feedback === 'correct'
-                    ? 'bg-green-500/10 border-green-500/50'
-                    : feedback === 'incorrect' && filled
-                    ? 'bg-red-500/10 border-red-500/50'
-                    : filled
-                    ? 'bg-blue-500/10 border-blue-500/50'
-                    : 'bg-slate-800/40 border-slate-700/50';
+                  // Grading colors are FRAME → tokenize via answerStateClass.
+                  const gradeState: AnswerChoiceState =
+                    feedback === 'correct'
+                      ? 'correct'
+                      : feedback === 'incorrect' && filled
+                      ? 'incorrect'
+                      : filled
+                      ? 'selected'
+                      : 'idle';
                   return (
                     <div
                       key={i}
-                      className={`p-5 rounded-xl border-2 transition-all ${correctClass}`}
+                      className={`p-5 rounded-xl border-2 transition-all ${answerStateClass(gradeState)}`}
                     >
                       <div className="space-y-3">
                         <div>
@@ -737,42 +755,34 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
 
               {/* Feedback */}
               {feedback && (
-                <div className={`p-4 rounded-lg border max-w-2xl mx-auto ${
-                  feedback === 'correct'
-                    ? 'bg-green-500/10 border-green-500/30'
-                    : 'bg-red-500/10 border-red-500/30'
-                }`}>
-                  <p className={`text-sm ${feedback === 'correct' ? 'text-green-200' : 'text-red-200'}`}>
-                    {feedback === 'correct'
-                      ? `Correct! ${currentIndex + 1 < challenges.length ? 'Ready for the next one?' : 'Last challenge complete!'}`
-                      : 'Not quite — check your work and try again.'}
-                  </p>
-                  {feedback === 'incorrect' && showHint && currentChallenge.hint && (
-                    <p className="text-xs text-red-100/80 mt-2 font-light">
-                      Hint: {currentChallenge.hint}
-                    </p>
-                  )}
-                </div>
+                <LuminaFeedbackCard
+                  status={feedback === 'correct' ? 'correct' : 'incorrect'}
+                  className="max-w-2xl mx-auto"
+                  teachingNote={
+                    feedback === 'incorrect' && showHint && currentChallenge.hint
+                      ? currentChallenge.hint
+                      : undefined
+                  }
+                >
+                  {feedback === 'correct'
+                    ? `Correct! ${currentIndex + 1 < challenges.length ? 'Ready for the next one?' : 'Last challenge complete!'}`
+                    : 'Not quite — check your work and try again.'}
+                </LuminaFeedbackCard>
               )}
 
               {/* Action buttons */}
               <div className="flex gap-4 justify-center flex-wrap">
                 {feedback !== 'correct' && (
-                  <button
+                  <LuminaActionButton
+                    action="check"
                     onClick={handleCheckAnswers}
                     disabled={!allInputsFilled}
-                    className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors"
-                  >
-                    Check Answer
-                  </button>
+                  />
                 )}
                 {feedback === 'correct' && (
-                  <button
-                    onClick={handleAdvance}
-                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors"
-                  >
+                  <LuminaActionButton action="next" onClick={handleAdvance}>
                     {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
-                  </button>
+                  </LuminaActionButton>
                 )}
               </div>
             </div>
@@ -789,8 +799,8 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
               className="mt-4"
             />
           )}
-        </div>
-      </div>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

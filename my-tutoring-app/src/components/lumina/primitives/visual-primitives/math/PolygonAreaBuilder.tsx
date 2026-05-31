@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaInput,
+  LuminaPrompt,
+  LuminaFeedbackCard,
+  LuminaChallengeCounter,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -833,11 +843,11 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
   // -------------------------------------------------------------------------
   if (!currentChallenge) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6 text-center text-slate-400">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6 text-center text-slate-400">
           No polygon-area challenges in this session.
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -845,32 +855,33 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
   const needsRearrangeFirst = challengeType === 'decompose' && !rearranged;
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={['shadow-2xl', className].filter(Boolean).join(' ')}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
+            <LuminaBadge accent="cyan" className="text-xs">
               {gradeBand === '7' ? 'Grade 7' : 'Grade 6'}
-            </Badge>
-            <span className="text-slate-500 text-xs">
-              {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-            </span>
+            </LuminaBadge>
+            <LuminaChallengeCounter
+              current={Math.min(currentChallengeIndex + 1, challenges.length)}
+              total={challenges.length}
+            />
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Narration + instruction */}
-        <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5 space-y-1">
+        <LuminaPanel className="space-y-1">
           {currentChallenge.narration && (
             <p className="text-slate-300 text-sm italic">{currentChallenge.narration}</p>
           )}
           <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-        </div>
+        </LuminaPanel>
 
-        {/* Progress dots */}
+        {/* Progress dots — bespoke tri-state (done / active / pending) indicator. */}
         <div className="flex items-center justify-center gap-1.5">
           {challenges.map((ch, idx) => {
             const result = challengeResults.find((r) => r.challengeId === ch.id);
@@ -887,7 +898,7 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
           })}
         </div>
 
-        {/* Canvas */}
+        {/* Canvas — bespoke interaction surface (drag-to-decompose). Left as painting. */}
         <div className="p-3 bg-slate-800/30 rounded-2xl border border-cyan-500/20">
           <canvas
             ref={canvasRef}
@@ -911,73 +922,69 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
 
         {/* Answer panel */}
         {!isCurrentComplete && !allChallengesComplete && (
-          <div className="bg-slate-800/20 rounded-lg p-4 border border-white/5 space-y-3">
+          <LuminaPanel>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <span className="text-cyan-300 font-mono font-bold">Area =</span>
-              <input
+              <LuminaInput
                 type="text"
                 value={areaInput}
                 onChange={(e) => setAreaInput(e.target.value)}
                 disabled={needsRearrangeFirst}
-                className="w-28 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-cyan-400/50 disabled:opacity-40"
+                className="w-28 text-center"
                 placeholder="?"
                 onKeyDown={(e) => e.key === 'Enter' && handleCheckArea()}
               />
               <span className="text-slate-400 text-sm font-mono">{unit}&sup2;</span>
-              <Button
-                variant="ghost"
-                className="bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/20"
+              <LuminaButton
+                tone="primary"
                 onClick={handleCheckArea}
                 disabled={needsRearrangeFirst}
               >
                 Check
-              </Button>
+              </LuminaButton>
             </div>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Feedback */}
-        {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' :
-            'text-slate-300'
-          }`}>
-            {feedback}
-          </div>
+        {feedback && feedbackType === 'success' && (
+          <LuminaFeedbackCard status="correct">{feedback}</LuminaFeedbackCard>
+        )}
+        {feedback && feedbackType === 'error' && (
+          <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>
+        )}
+        {feedback && feedbackType === 'info' && (
+          <LuminaFeedbackCard status="insight">{feedback}</LuminaFeedbackCard>
         )}
 
-        {/* Hint */}
+        {/* Hint — revealed by the "Show hint" control below (tracks hintsViewed). */}
         {showHint && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-            <p className="text-amber-200 text-sm">
-              <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
-              {currentChallenge.hint}
-            </p>
-          </div>
+          <LuminaPrompt accent="amber">
+            <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
+            {currentChallenge.hint}
+          </LuminaPrompt>
         )}
 
         {/* Controls */}
         <div className="flex justify-center gap-2 flex-wrap">
           {isCurrentComplete && !allChallengesComplete && (
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+            <LuminaButton
+              tone="primary"
+              className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
               onClick={advanceChallenge}
             >
               Next Figure →
-            </Button>
+            </LuminaButton>
           )}
           {!isCurrentComplete && !allChallengesComplete && (
-            <Button
-              variant="ghost"
+            <LuminaButton
+              tone="subtle"
               size="sm"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
               onClick={handleShowHint}
               disabled={showHint}
             >
               {showHint ? 'Hint shown' : 'Show hint'}
-            </Button>
+            </LuminaButton>
           )}
         </div>
 
@@ -992,8 +999,8 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

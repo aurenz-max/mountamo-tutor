@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaModeTabs,
+  LuminaChallengeCounter,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  answerStateClass,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -73,22 +85,22 @@ const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
 };
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  count_all: { label: 'Count All', icon: '\uD83D\uDD22', accentColor: 'orange' },
-  subitize: { label: 'Subitize', icon: '\u26A1', accentColor: 'purple' },
+  count_all: { label: 'Count All', icon: '🔢', accentColor: 'orange' },
+  subitize: { label: 'Subitize', icon: '⚡', accentColor: 'purple' },
   subitize_perceptual: { label: 'Pre-K Subitize', icon: '✋', accentColor: 'pink' },
-  group_count: { label: 'Group Count', icon: '\uD83C\uDFAF', accentColor: 'emerald' },
-  count_on: { label: 'Count On', icon: '\u2795', accentColor: 'blue' },
-  compare: { label: 'Compare', icon: '\u2696\uFE0F', accentColor: 'amber' },
+  group_count: { label: 'Group Count', icon: '🎯', accentColor: 'emerald' },
+  count_on: { label: 'Count On', icon: '➕', accentColor: 'blue' },
+  compare: { label: 'Compare', icon: '⚖️', accentColor: 'amber' },
 };
 
 const OBJECT_EMOJI: Record<string, string> = {
-  bears: '\uD83E\uDDF8',
-  apples: '\uD83C\uDF4E',
-  stars: '\u2B50',
-  blocks: '\uD83D\uDFE6',
-  fish: '\uD83D\uDC1F',
-  butterflies: '\uD83E\uDD8B',
-  custom: '\u2B24',
+  bears: '🧸',
+  apples: '🍎',
+  stars: '⭐',
+  blocks: '🟦',
+  fish: '🐟',
+  butterflies: '🦋',
+  custom: '⬤',
 };
 
 const WORKSPACE_WIDTH = 480;
@@ -854,57 +866,52 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     return Math.round((correct / challenges.length) * 100);
   }, [allChallengesComplete, challenges, challengeResults]);
 
+  // Phase tab strip (read-only indicator of the active phase).
+  const phaseTabs = useMemo(
+    () => Object.entries(PHASE_CONFIG).map(([value, config]) => ({ value, label: config.label })),
+    []
+  );
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300 text-xs">
+            <LuminaBadge accent="orange" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
+            </LuminaBadge>
+            <LuminaBadge accent="emerald" className="text-xs">
               {challengeArrangement}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(PHASE_CONFIG).map(([phase, config]) => (
-              <Badge
-                key={phase}
-                className={`text-xs ${
-                  currentPhase === phase
-                    ? 'bg-orange-500/20 border-orange-400/50 text-orange-300'
-                    : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                }`}
-              >
-                {config.label}
-              </Badge>
-            ))}
-            <span className="text-slate-500 text-xs ml-auto">
-              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
-            </span>
+            <LuminaModeTabs tabs={phaseTabs} active={currentPhase} accent="orange" />
+            <LuminaChallengeCounter
+              current={Math.min(currentChallengeIndex + 1, challenges.length)}
+              total={challenges.length}
+              className="ml-auto"
+            />
           </div>
         )}
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-            <p className="text-slate-200 text-sm font-medium">
-              {currentChallenge.instruction}
-            </p>
-          </div>
+          <LuminaPrompt className="text-sm">
+            {currentChallenge.instruction}
+          </LuminaPrompt>
         )}
 
         {/* Counting Workspace */}
@@ -1082,20 +1089,16 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               {handOptions.map((choice) => {
                 const isPicked = handChoice === choice;
                 return (
-                  <Button
+                  <button
                     key={choice}
-                    variant="ghost"
+                    type="button"
                     aria-label="Pick this hand"
-                    className={`h-24 w-24 p-2 border bg-white/5 hover:bg-white/10 transition-colors ${
-                      isPicked
-                        ? 'border-pink-400/60 ring-2 ring-pink-400/40'
-                        : 'border-white/20'
-                    }`}
+                    className={`h-24 w-24 p-2 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-50 ${answerStateClass(isPicked ? 'selected' : 'idle')}`}
                     onClick={() => handleHandPick(choice)}
                     disabled={hasSubmittedEvaluation}
                   >
                     <HandIcon fingerCount={choice as 1 | 2 | 3} size={72} />
-                  </Button>
+                  </button>
                 );
               })}
             </div>
@@ -1107,25 +1110,23 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
           <div className="flex items-center justify-center gap-3">
             <span className="text-slate-300 text-sm">How many {objects.type} do you see?</span>
             <div className="flex items-center gap-1.5">
-              <Button
-                variant="ghost"
-                className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+              <LuminaButton
+                className="h-10 w-10 text-lg font-bold p-0"
                 onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
                 disabled={hasSubmittedEvaluation}
               >
                 &minus;
-              </Button>
+              </LuminaButton>
               <span className="w-12 text-center text-2xl font-bold text-orange-300 tabular-nums select-none">
                 {parseInt(subitizeInput, 10) || 0}
               </span>
-              <Button
-                variant="ghost"
-                className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+              <LuminaButton
+                className="h-10 w-10 text-lg font-bold p-0"
                 onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1))); }}
                 disabled={hasSubmittedEvaluation}
               >
                 +
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -1138,38 +1139,34 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               How many altogether?
             </span>
             <div className="flex items-center gap-1.5">
-              <Button
-                variant="ghost"
-                className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+              <LuminaButton
+                className="h-10 w-10 text-lg font-bold p-0"
                 onClick={() => { SoundManager.tick(); setCountOnInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
                 disabled={hasSubmittedEvaluation}
               >
                 &minus;
-              </Button>
+              </LuminaButton>
               <span className="w-12 text-center text-2xl font-bold text-blue-300 tabular-nums select-none">
                 {parseInt(countOnInput, 10) || 0}
               </span>
-              <Button
-                variant="ghost"
-                className="h-10 w-10 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+              <LuminaButton
+                className="h-10 w-10 text-lg font-bold p-0"
                 onClick={() => { SoundManager.tick(); setCountOnInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1))); }}
                 disabled={hasSubmittedEvaluation}
               >
                 +
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
 
         {/* Feedback */}
-        {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' :
-            'text-slate-300'
-          }`}>
+        {feedback && (feedbackType === 'success' || feedbackType === 'error' || feedbackType === 'info') && (
+          <LuminaFeedbackCard
+            status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}
+          >
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Action Buttons */}
@@ -1178,38 +1175,30 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
             {!isCurrentChallengeComplete && !allChallengesComplete && (
               <>
                 {currentPhase !== 'subitizePerceptual' && (
-                  <Button
-                    variant="ghost"
-                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                  <LuminaActionButton
+                    action="check"
                     onClick={handleCheckAnswer}
                     disabled={
                       (currentPhase === 'count' && countedObjects.size === 0) ||
                       hasSubmittedEvaluation
                     }
-                  >
-                    Check Answer
-                  </Button>
+                  />
                 )}
                 {feedbackType === 'error' && (
-                  <Button
-                    variant="ghost"
-                    className="bg-amber-500/10 border border-amber-400/30 hover:bg-amber-500/20 text-amber-300"
+                  <LuminaActionButton
+                    action="retry"
                     onClick={handleRetry}
                     disabled={hasSubmittedEvaluation}
                   >
-                    Retry{currentRetries > 0 ? ` (−${Math.round(currentRetries * RETRY_PENALTY * 100)}%)` : ' (−15%)'}
-                  </Button>
+                    Try Again{currentRetries > 0 ? ` (−${Math.round(currentRetries * RETRY_PENALTY * 100)}%)` : ' (−15%)'}
+                  </LuminaActionButton>
                 )}
               </>
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={advanceToNextChallenge}
-              >
+              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -1226,9 +1215,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
         {/* Hint */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Phase Summary */}
@@ -1242,8 +1231,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

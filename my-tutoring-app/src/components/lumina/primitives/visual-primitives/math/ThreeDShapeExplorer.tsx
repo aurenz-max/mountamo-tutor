@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -739,18 +747,18 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
 
   // ── Render ─────────────────────────────────────────────────────
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
-          <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+          <LuminaBadge accent="blue" className="text-xs">
             {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-          </Badge>
+          </LuminaBadge>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Progress */}
         {challenges.length > 1 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -778,9 +786,9 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* ── Challenge-specific UI ──────────────────── */}
@@ -1047,23 +1055,19 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckAnswer}
                 disabled={!canCheck}
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -1087,8 +1091,8 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

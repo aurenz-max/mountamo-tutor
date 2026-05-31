@@ -50,34 +50,48 @@ const baseSchema: Schema = {
           id: { type: Type.STRING },
           type: { type: Type.STRING, enum: ['trace', 'copy', 'write', 'sequence'] },
           digit: { type: Type.NUMBER },
-          instruction: { type: Type.STRING },
-          strokePaths: {
-            type: Type.ARRAY,
-            description: 'Leave empty [] — stroke paths are hardcoded in component',
-            items: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  x: { type: Type.NUMBER },
-                  y: { type: Type.NUMBER },
-                },
-                required: ['x', 'y'],
-              },
-            },
-          },
           showModel: { type: Type.BOOLEAN },
           showArrows: { type: Type.BOOLEAN },
           hint: { type: Type.STRING },
           sequenceNumbers: { type: Type.ARRAY, items: { type: Type.NUMBER } },
           missingIndex: { type: Type.NUMBER },
         },
-        required: ['id', 'type', 'digit', 'instruction', 'strokePaths', 'showModel', 'showArrows'],
+        // NOTE: `strokePaths` and `instruction` are intentionally NOT in the schema.
+        //   - strokePaths: canonical stroke order lives in the component (getDigitPaths);
+        //     a required deeply-nested coord array overflowed Flash Lite's output cap (NT-1, SP-6).
+        //   - instruction: synthesized deterministically via buildInstruction() to prevent the
+        //     sequence-mode answer leak — the LLM must never own answer-adjacent prose (SP-17).
+        required: ['id', 'type', 'digit', 'showModel', 'showArrows'],
       },
     },
   },
   required: ['title', 'description', 'gradeBand', 'challenges'],
 };
+
+// ---------------------------------------------------------------------------
+// Deterministic instruction synthesis (SP-17)
+// ---------------------------------------------------------------------------
+// The visible instruction is the most prominent text on screen. For trace/copy/
+// write the target digit is shown anyway, so naming it is fine. For sequence the
+// digit IS the hidden answer (UI renders "?" at missingIndex) — letting the LLM
+// write this prose risks leaking it (violates CLAUDE.md's no-answer-reveal rule).
+// Synthesize it from the same data that drives the visuals so it can never desync
+// or leak by construction.
+
+function buildInstruction(challenge: NumberTracerChallenge): string {
+  switch (challenge.type) {
+    case 'trace':
+      return `Trace the number ${challenge.digit}!`;
+    case 'copy':
+      return `Copy the number ${challenge.digit}!`;
+    case 'write':
+      return `Write the number ${challenge.digit}!`;
+    case 'sequence':
+      return `What's the missing number? Fill in the blank!`;
+    default:
+      return `Write the number ${challenge.digit}!`;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Generator
@@ -127,16 +141,11 @@ CHALLENGE RULES:
     Set digit to the number at missingIndex (the correct answer).
     showArrows = false, showModel = false.
 
-STROKE PATHS:
-- ALWAYS set strokePaths to [] (empty array). The component uses hardcoded stroke paths.
-
-INSTRUCTIONS (student-facing):
-- Use warm, child-friendly language (e.g., "Trace the number 5!", "Write the number seven!", "What comes next? Fill in the missing number!").
-- NEVER reveal the answer in the instruction text.
-
 HINTS:
 - Provide a hint field that helps without giving away the answer.
-  Examples: "Start at the top!", "Count on your fingers!", "What number comes after 4?"
+  Examples: "Start at the top!", "Count on your fingers!", "Count up by ones from the start."
+- For "sequence" challenges, the hint must NOT name or reveal the missing number.
+  Nudge the strategy instead (e.g., "Count up by ones", "Each number is one more than the last").
 
 REQUIREMENTS:
 1. Generate ${challengeCount} challenges (vary the types present)
@@ -150,19 +159,51 @@ Return the complete number tracer configuration.
 
   logEvalModeResolution('NumberTracer', config?.targetEvalMode, evalConstraint);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
+  // History: this generator used to set maxOutputTokens: 4096, added on the theory
+  // that Flash-Lite was falling into a repetition loop and ballooning the response.
+  // That diagnosis was wrong — the logs showed the response dying at a *consistent*
+  // ~4700-char ceiling every time with clean mid-JSON truncation, which is the
+  // signature of hitting the token cap itself (thinking + visible output share the
+  // budget), not a runaway. The cap was the bug. We now omit maxOutputTokens to
+  // match every other primitive generator and inherit the model's full output
+  // budget; the payload is a handful of small challenge objects, so there's room
+  // to spare. The bounded retry + fallback stay as a cheap backstop: the loop is
+  // stochastic, and on total failure we degrade to the fallback below rather than
+  // throwing — generators run under Promise.all in the build pipeline, where one
+  // unhandled SyntaxError fails the whole exhibit.
+  let data: any = null;
+  const MAX_ATTEMPTS = 2;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: activeSchema,
+      },
+    });
 
-  const data = result.text ? JSON.parse(result.text) : null;
+    if (!result.text) {
+      console.warn(`[NumberTracer] Empty response on attempt ${attempt}/${MAX_ATTEMPTS}.`);
+      continue;
+    }
+    try {
+      data = JSON.parse(result.text);
+      break;
+    } catch (err) {
+      console.warn(
+        `[NumberTracer] JSON parse failed on attempt ${attempt}/${MAX_ATTEMPTS} `
+        + `(${result.text.length} chars; finishReason=${result.candidates?.[0]?.finishReason ?? 'unknown'}). `
+        + `${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
 
-  if (!data) {
-    throw new Error('No valid number tracer data returned from Gemini API');
+  // All attempts failed — degrade to an empty-challenges skeleton so the existing
+  // fallback path below yields a valid single-challenge activity instead of crashing.
+  if (!data || typeof data !== 'object') {
+    console.warn('[NumberTracer] All generation attempts failed — using fallback challenge.');
+    data = { challenges: [] };
   }
 
   // ── Validation & Defaults ──
@@ -223,6 +264,10 @@ Return the complete number tracer configuration.
         challenge.digit = challenge.sequenceNumbers[1];
       }
     }
+
+    // Synthesize the visible instruction deterministically (SP-17) — after digit
+    // is finalized (sequence sets digit from sequenceNumbers above) so it's correct.
+    challenge.instruction = buildInstruction(challenge);
   }
 
   // Fallback if no valid challenges

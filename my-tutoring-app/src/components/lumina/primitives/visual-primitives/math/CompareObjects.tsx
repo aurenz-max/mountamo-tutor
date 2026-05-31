@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -64,10 +73,10 @@ export interface CompareObjectsData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  identify_attribute: { label: 'Identify', icon: '\uD83D\uDD0D', accentColor: 'purple' },
-  compare_two: { label: 'Compare', icon: '\u2696\uFE0F', accentColor: 'blue' },
-  order_three: { label: 'Order', icon: '\uD83D\uDCCA', accentColor: 'emerald' },
-  non_standard: { label: 'Measure', icon: '\uD83D\uDCCF', accentColor: 'amber' },
+  identify_attribute: { label: 'Identify', icon: '🔍', accentColor: 'purple' },
+  compare_two: { label: 'Compare', icon: '⚖️', accentColor: 'blue' },
+  order_three: { label: 'Order', icon: '📊', accentColor: 'emerald' },
+  non_standard: { label: 'Measure', icon: '📏', accentColor: 'amber' },
 };
 
 const ATTRIBUTE_COLORS: Record<string, string> = {
@@ -762,11 +771,12 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
             <span className="text-slate-300 text-sm">
               How many {currentChallenge.unitName}s?
             </span>
-            <input
+            <LuminaInput
               type="number"
+              inputMode="numeric"
               value={nonStandardAnswer}
               onChange={e => setNonStandardAnswer(e.target.value)}
-              className="w-20 px-3 py-2 bg-slate-800/60 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+              className="w-20 text-center text-lg"
               disabled={showCorrectAnswer}
               min={0}
               max={20}
@@ -787,14 +797,14 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-        <CardHeader>
-          <CardTitle className="text-slate-100">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <LuminaCard className={className}>
+        <LuminaCardHeader>
+          <LuminaCardTitle>{title}</LuminaCardTitle>
+        </LuminaCardHeader>
+        <LuminaCardContent>
           <p className="text-slate-400">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -803,20 +813,20 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
     : 0;
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
+          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
           {challenges.length > 1 && (
-            <Badge className="bg-white/10 text-slate-300 border-white/20">
+            <LuminaBadge>
               {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-            </Badge>
+            </LuminaBadge>
           )}
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-6">
+      <LuminaCardContent className="space-y-6">
         {/* Summary panel when complete */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -837,9 +847,9 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
               <Badge className={`bg-gradient-to-r ${ATTRIBUTE_COLORS[currentChallenge.attribute] ?? ATTRIBUTE_COLORS.length} text-white border-0`}>
                 {currentChallenge.attribute.charAt(0).toUpperCase() + currentChallenge.attribute.slice(1)}
               </Badge>
-              <Badge className="bg-white/10 text-slate-400 border-white/10">
+              <LuminaBadge>
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon} {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
             </div>
 
             {/* Instruction */}
@@ -849,9 +859,9 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
 
             {/* Visual display */}
             <div className="flex justify-center py-4">
-              <div className="bg-slate-800/40 rounded-xl p-6 border border-white/5 w-full max-w-md flex justify-center">
+              <LuminaPanel className="w-full max-w-md flex justify-center p-6">
                 {renderObjectVisuals()}
-              </div>
+              </LuminaPanel>
             </div>
 
             {/* Interaction area */}
@@ -873,27 +883,17 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
             {/* Action buttons */}
             <div className="flex justify-center gap-3">
               {!showCorrectAnswer ? (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100 px-6"
-                  onClick={handleCheckAnswer}
-                >
-                  Check Answer
-                </Button>
+                <LuminaActionButton action="check" onClick={handleCheckAnswer} />
               ) : (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 text-emerald-200 px-6"
-                  onClick={advanceToNextChallenge}
-                >
+                <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                   {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge' : 'See Results'}
-                </Button>
+                </LuminaActionButton>
               )}
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

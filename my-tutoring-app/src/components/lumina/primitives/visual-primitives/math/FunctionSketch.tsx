@@ -4,9 +4,19 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import katex from 'katex';
 // @ts-ignore – CSS import works at runtime via Next.js loader
 import 'katex/dist/katex.min.css';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPrompt,
+  LuminaChallengeCounter,
+  LuminaAnswerChoice,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -492,11 +502,11 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
   // ── Early return ───────────────────────────────────────────────
   if (!challenges || challenges.length === 0) {
     return (
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardContent className="p-6">
+      <LuminaCard>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -507,19 +517,17 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
   const elapsedMs = Date.now() - startTimeRef.current;
 
   return (
-    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-      <CardHeader className="pb-3">
+    <LuminaCard>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
-          <Badge variant="outline" className="border-white/20 text-slate-300">
-            {currentIndex + 1} / {challenges.length}
-          </Badge>
+          <LuminaCardTitle>{title}</LuminaCardTitle>
+          <LuminaChallengeCounter current={currentIndex + 1} total={challenges.length} />
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
         <p className="text-slate-500 text-xs mt-1">{context}</p>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Summary panel (when complete) */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -536,7 +544,7 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
         {!allChallengesComplete && challenge && (
           <>
             {/* Instruction + expression */}
-            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+            <LuminaPrompt>
               <p className="text-slate-200 text-sm font-medium">{challenge.instruction}</p>
               {challenge.expression && (
                 <div
@@ -556,9 +564,9 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
               {challenge.question && (
                 <p className="text-slate-300 mt-2">{challenge.question}</p>
               )}
-            </div>
+            </LuminaPrompt>
 
-            {/* Canvas */}
+            {/* Canvas — bespoke interaction surface (left untouched) */}
             <div className="flex justify-center">
               <canvas
                 ref={canvasRef}
@@ -570,25 +578,24 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
               />
             </div>
 
-            {/* Curve legend for compare mode */}
+            {/* Curve selectors for compare mode — selection tint mirrors the
+                canvas curve colors (bespoke painting), chrome via LuminaButton */}
             {challenge.type === 'compare-functions' && (
               <div className="flex gap-3 justify-center">
-                <Button
-                  variant="ghost"
-                  className={`border ${selectedCurve === 'A' ? 'bg-blue-500/20 border-blue-400' : 'bg-white/5 border-white/20'} hover:bg-blue-500/15`}
+                <LuminaButton
+                  className={selectedCurve === 'A' ? 'bg-blue-500/20 border-blue-400 hover:bg-blue-500/15' : undefined}
                   onClick={() => { SoundManager.select(); setSelectedCurve('A'); }}
                 >
                   <span className="w-3 h-3 rounded-full bg-blue-500 mr-2 inline-block" />
                   {challenge.labelA ?? 'Curve A'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className={`border ${selectedCurve === 'B' ? 'bg-amber-500/20 border-amber-400' : 'bg-white/5 border-white/20'} hover:bg-amber-500/15`}
+                </LuminaButton>
+                <LuminaButton
+                  className={selectedCurve === 'B' ? 'bg-amber-500/20 border-amber-400 hover:bg-amber-500/15' : undefined}
                   onClick={() => { SoundManager.select(); setSelectedCurve('B'); }}
                 >
                   <span className="w-3 h-3 rounded-full bg-amber-500 mr-2 inline-block" />
                   {challenge.labelB ?? 'Curve B'}
-                </Button>
+                </LuminaButton>
               </div>
             )}
 
@@ -596,14 +603,15 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
             {challenge.type === 'classify-shape' && challenge.options && (
               <div className="grid grid-cols-2 gap-2">
                 {challenge.options.map(opt => (
-                  <Button
+                  <LuminaAnswerChoice
                     key={opt}
-                    variant="ghost"
-                    className={`border text-left ${selectedOption === opt ? 'bg-purple-500/20 border-purple-400 text-purple-200' : 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10'}`}
+                    state={selectedOption === opt ? 'selected' : 'idle'}
+                    className="p-3"
+                    disabled={!!feedback}
                     onClick={() => { if (!feedback) { SoundManager.select(); setSelectedOption(opt); } }}
                   >
                     {opt}
-                  </Button>
+                  </LuminaAnswerChoice>
                 ))}
               </div>
             )}
@@ -615,64 +623,60 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
                   {controlPoints.length} point{controlPoints.length !== 1 ? 's' : ''} placed
                   {challenge.minPoints ? ` (min ${challenge.minPoints})` : ''}
                 </span>
-                <Button
-                  variant="ghost"
+                <LuminaButton
+                  tone="subtle"
                   size="sm"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 ml-auto"
+                  className="ml-auto"
                   onClick={() => setControlPoints([])}
                 >
                   Clear
-                </Button>
+                </LuminaButton>
               </div>
             )}
 
-            {/* Feature legend for identify mode */}
+            {/* Feature legend for identify mode — hit state mirrors discovery */}
             {challenge.type === 'identify-features' && challenge.features && (
               <div className="flex flex-wrap gap-2">
                 {challenge.features.map((f, i) => (
-                  <Badge
+                  <LuminaBadge
                     key={i}
-                    variant="outline"
-                    className={`text-xs ${hitFeatures.has(i) ? 'border-green-400/50 text-green-300 bg-green-500/10' : 'border-white/20 text-slate-400'}`}
+                    accent={hitFeatures.has(i) ? 'emerald' : undefined}
+                    className="text-xs"
                   >
                     {hitFeatures.has(i) ? '✓' : '○'} {f.label}
-                  </Badge>
+                  </LuminaBadge>
                 ))}
               </div>
             )}
 
             {/* Feedback */}
             {feedback && (
-              <div className={`rounded-lg p-3 border ${feedback.correct ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-200' : 'bg-red-500/10 border-red-400/30 text-red-200'}`}>
+              <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'} className="p-4">
                 <p className="text-sm">{feedback.message}</p>
-              </div>
+              </LuminaFeedbackCard>
             )}
 
             {/* Action buttons */}
             <div className="flex gap-2 justify-end">
               {!feedback ? (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+                <LuminaActionButton
+                  action="check"
                   disabled={!canSubmit}
                   onClick={handleCheck}
-                >
-                  Check Answer
-                </Button>
+                />
               ) : (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+                <LuminaActionButton
+                  action="next"
                   onClick={handleNext}
                 >
                   {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-                </Button>
+                </LuminaActionButton>
               )}
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

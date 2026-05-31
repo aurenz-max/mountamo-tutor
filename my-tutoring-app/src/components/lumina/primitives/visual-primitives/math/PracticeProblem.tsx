@@ -12,9 +12,15 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaSectionLabel,
+} from '../../../ui';
 import {
   WhiteboardCanvas,
   type WhiteboardRef,
@@ -402,37 +408,24 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
     phase.kind === 'solving' || phase.kind === 'judging' || phase.kind === 'judge-error';
 
   return (
-    <Card
-      className={`relative backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden ${className ?? ''}`}
-    >
-      <CardHeader className="pb-3">
+    <LuminaCard className={`relative overflow-hidden ${className ?? ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center gap-2 mb-1">
-          <Badge
-            variant="outline"
-            className="text-emerald-300 border-emerald-400/40 bg-emerald-500/10 gap-1.5"
-          >
+          <LuminaBadge accent="emerald" className="border-emerald-400/40 bg-emerald-500/10 gap-1.5">
             <Sparkles size={11} />
             Practice
-          </Badge>
-          <Badge
-            variant="outline"
-            className="text-blue-300 border-blue-400/30 bg-blue-500/10"
-          >
+          </LuminaBadge>
+          <LuminaBadge accent="blue" className="border-blue-400/30 bg-blue-500/10">
             {data.subject}
-          </Badge>
+          </LuminaBadge>
           {data.difficulty && (
-            <Badge
-              variant="outline"
-              className="text-slate-300 border-white/20 bg-white/5 capitalize"
-            >
-              {data.difficulty}
-            </Badge>
+            <LuminaBadge className="capitalize">{data.difficulty}</LuminaBadge>
           )}
         </div>
-        <CardTitle className="text-slate-100 text-lg">{data.title}</CardTitle>
-      </CardHeader>
+        <LuminaCardTitle className="text-lg">{data.title}</LuminaCardTitle>
+      </LuminaCardHeader>
 
-      <CardContent className="p-0">
+      <LuminaCardContent className="p-0">
         {/* Outer relative shell — RevealView absolute-positions inside this. */}
         <div className="relative min-h-[680px] flex flex-col">
           <AnimatePresence>
@@ -451,12 +444,9 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
             <div className="flex flex-col flex-1">
               {/* Problem statement */}
               <div className="px-5 pt-4 pb-3 border-b border-white/5">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-1 h-1 rounded-full bg-emerald-400/70 shadow-[0_0_6px_rgba(52,211,153,0.7)]" />
-                  <p className="text-[10px] text-slate-400 uppercase tracking-[0.15em] font-semibold">
-                    Problem Statement
-                  </p>
-                </div>
+                <LuminaSectionLabel accent="emerald" size="sm" className="mb-2">
+                  Problem Statement
+                </LuminaSectionLabel>
                 {data.problem.equations && data.problem.equations.length > 0 && (
                   <div className="flex flex-wrap items-center gap-3 mb-2">
                     {data.problem.equations.map((eq, i) => (
@@ -494,67 +484,64 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
                 {/* Canvas + toolbar */}
                 <div className="flex-1 flex flex-col min-w-0 p-4 gap-3">
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
+                    <LuminaButton
                       size="sm"
                       onClick={() => {
                         SoundManager.tap();
                         setTool('pen');
                       }}
                       disabled={!canvasReady}
-                      className={`gap-2 border ${
+                      className={`gap-2 ${
                         tool === 'pen'
-                          ? 'bg-blue-500/15 border-blue-400/40 text-blue-200'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
+                          ? 'bg-blue-500/15 border-blue-400/40 text-blue-200 hover:bg-blue-500/20'
+                          : 'text-slate-300'
                       }`}
                     >
                       <Pencil size={14} />
                       Pen
-                    </Button>
-                    <Button
-                      variant="ghost"
+                    </LuminaButton>
+                    <LuminaButton
                       size="sm"
                       onClick={() => {
                         SoundManager.tap();
                         setTool('eraser');
                       }}
                       disabled={!canvasReady}
-                      className={`gap-2 border ${
+                      className={`gap-2 ${
                         tool === 'eraser'
-                          ? 'bg-blue-500/15 border-blue-400/40 text-blue-200'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
+                          ? 'bg-blue-500/15 border-blue-400/40 text-blue-200 hover:bg-blue-500/20'
+                          : 'text-slate-300'
                       }`}
                     >
                       <Eraser size={14} />
                       Eraser
-                    </Button>
-                    <Button
-                      variant="ghost"
+                    </LuminaButton>
+                    <LuminaButton
                       size="sm"
                       onClick={clearCanvas}
                       disabled={!canvasReady || strokes.length === 0}
-                      className="gap-2 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 disabled:opacity-40"
+                      className="gap-2 text-slate-300 disabled:opacity-40"
                     >
                       <Trash2 size={14} />
                       Clear
-                    </Button>
+                    </LuminaButton>
 
                     <div className="ml-auto flex items-center gap-2">
-                      <Button
-                        variant="ghost"
+                      <LuminaButton
                         size="sm"
                         onClick={handleReset}
                         disabled={!canvasReady || strokes.length === 0}
-                        className="gap-2 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 disabled:opacity-40"
+                        className="gap-2 text-slate-400 disabled:opacity-40"
                       >
                         <RotateCcw size={14} />
                         Reset
-                      </Button>
-                      <Button
+                      </LuminaButton>
+                      <LuminaButton
+                        tone="primary"
                         size="sm"
                         onClick={handleDone}
                         disabled={!canvasReady || strokes.length === 0 || isJudging}
-                        className={`gap-2 bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30 font-semibold disabled:opacity-40 ${
+                        className={`gap-2 bg-emerald-500/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30 font-semibold disabled:opacity-40 ${
                           liveReview?.allStepsComplete
                             ? 'shadow-[0_0_24px_rgba(16,185,129,0.55)] animate-pulse'
                             : ''
@@ -562,7 +549,7 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
                       >
                         {liveReview?.allStepsComplete && <CheckCircle2 size={14} />}
                         Done
-                      </Button>
+                      </LuminaButton>
                     </div>
                   </div>
 
@@ -592,14 +579,13 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
                           <p className="text-xs text-slate-500">
                             Comparing your derivation to the worked solution.
                           </p>
-                          <Button
-                            variant="ghost"
+                          <LuminaButton
                             size="sm"
                             onClick={cancelJudge}
-                            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 mt-2"
+                            className="text-slate-300 mt-2"
                           >
                             Cancel
-                          </Button>
+                          </LuminaButton>
                         </div>
                       </div>
                     )}
@@ -613,21 +599,21 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
                           </p>
                           <p className="text-xs text-slate-500">{judgeError}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Button
+                            <LuminaButton
+                              tone="primary"
                               size="sm"
                               onClick={handleDone}
-                              className="bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30"
+                              className="bg-emerald-500/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30"
                             >
                               Try again
-                            </Button>
-                            <Button
-                              variant="ghost"
+                            </LuminaButton>
+                            <LuminaButton
                               size="sm"
                               onClick={cancelJudge}
-                              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
+                              className="text-slate-300"
                             >
                               Back to canvas
-                            </Button>
+                            </LuminaButton>
                           </div>
                         </div>
                       </div>
@@ -651,8 +637,8 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

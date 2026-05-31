@@ -4,9 +4,24 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import katex from 'katex';
 // @ts-ignore – CSS import works at runtime via Next.js loader
 import 'katex/dist/katex.min.css';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Lightbulb } from 'lucide-react';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaPanel,
+  LuminaBadge,
+  LuminaSlider,
+  LuminaSectionLabel,
+  LuminaCallout,
+  LuminaPrompt,
+  LuminaInput,
+  LuminaChallengeCounter,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  answerStateClass,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -160,7 +175,6 @@ const ParameterSlider: React.FC<ParameterSliderProps> = ({
   onToggleLock,
   highlighted,
 }) => {
-  const pct = ((value - param.min) / (param.max - param.min)) * 100;
   return (
     <div
       className={`p-3 rounded-lg border transition-all ${
@@ -198,27 +212,16 @@ const ParameterSlider: React.FC<ParameterSliderProps> = ({
           </button>
         </div>
       </div>
-      <div className="relative h-6 flex items-center">
-        <input
-          type="range"
-          min={param.min}
-          max={param.max}
-          step={param.step}
-          value={value}
-          disabled={locked}
-          onChange={(e) => onValueChange(parseFloat(e.target.value))}
-          className="w-full h-1.5 rounded-full appearance-none cursor-pointer
-            bg-slate-700 accent-blue-500 disabled:cursor-not-allowed disabled:opacity-50
-            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4
-            [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full
-            [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:shadow-lg
-            [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-300"
-        />
-        <div
-          className="absolute top-0 left-0 h-1.5 bg-blue-500/40 rounded-full pointer-events-none mt-[9px]"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      {/* Bespoke interaction surface: the parameter slider control. */}
+      <LuminaSlider
+        accent="blue"
+        min={param.min}
+        max={param.max}
+        step={param.step}
+        value={[value]}
+        disabled={locked}
+        onValueChange={([v]) => onValueChange(v)}
+      />
       <div className="flex justify-between text-[10px] text-slate-600 mt-0.5">
         <span>
           {param.min}
@@ -615,33 +618,34 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
   }, [challengeResults, challenges.length]);
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
+          <LuminaCardTitle>{title}</LuminaCardTitle>
           {challenges.length > 0 && (
-            <Badge variant="outline" className="border-white/20 text-slate-400">
-              {currentChallengeIndex + 1} / {challenges.length}
-            </Badge>
+            <LuminaChallengeCounter
+              current={currentChallengeIndex + 1}
+              total={challenges.length}
+            />
           )}
         </div>
         {(description || context) && (
           <p className="text-sm text-slate-400 mt-1">{description || context}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-6">
+      <LuminaCardContent className="space-y-6">
         {/* ── Formula Display ── */}
-        <div className="p-4 rounded-xl bg-slate-800/50 border border-white/10 text-center">
+        <LuminaPanel className="text-center">
           <p className="text-xs text-slate-500 mb-1 uppercase tracking-wider">Formula</p>
           <MathDisplay latex={formula} display className="text-lg text-slate-100" />
           <p className="text-xs text-slate-500 mt-1">
             {outputName}
             {outputUnit && ` (${outputUnit})`}
           </p>
-        </div>
+        </LuminaPanel>
 
-        {/* ── Output Display ── */}
+        {/* ── Output Display (bespoke focal readout) ── */}
         <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-400/20 text-center">
           <p className="text-xs text-slate-400 mb-1">{outputName}</p>
           <p className="text-3xl font-mono font-bold text-blue-300">
@@ -655,11 +659,11 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
         {/* ── Parameter Sliders ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-300">Parameters</p>
+            <LuminaSectionLabel accent="blue" size="sm">Parameters</LuminaSectionLabel>
             {lockedParams.size > 0 && (
-              <Badge variant="outline" className="border-red-500/30 text-red-400 text-xs">
+              <LuminaBadge accent="rose" className="text-xs">
                 {lockedParams.size} locked — hold-and-vary mode
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
           {parameters.map((param) => (
@@ -688,13 +692,14 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
             {observations.map(
               (obs, idx) =>
                 triggeredObservations.has(idx) && (
-                  <div
+                  <LuminaCallout
                     key={idx}
-                    className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-400/20 text-sm"
+                    accent="emerald"
+                    label="Observe"
+                    icon={<Lightbulb className="w-4 h-4" />}
                   >
-                    <span className="text-emerald-400 font-medium">💡 </span>
-                    <span className="text-slate-300">{obs.prompt}</span>
-                  </div>
+                    {obs.prompt}
+                  </LuminaCallout>
                 ),
             )}
           </div>
@@ -702,10 +707,8 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
 
         {/* ── Challenge Area ── */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="p-4 rounded-xl bg-slate-800/30 border border-white/10 space-y-4">
-            <p className="text-sm font-medium text-slate-200">
-              {currentChallenge.instruction}
-            </p>
+          <LuminaPanel className="space-y-4">
+            <LuminaPrompt>{currentChallenge.instruction}</LuminaPrompt>
 
             {/* Explore: just needs to interact with sliders */}
             {currentChallenge.type === 'explore' && (
@@ -713,14 +716,13 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                 <p className="text-xs text-slate-500 mb-3">
                   Move the sliders above to explore how the parameters affect the output.
                 </p>
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                <LuminaActionButton
+                  action="check"
                   onClick={handleCheckAnswer}
                   disabled={exploredParams.size === 0}
                 >
                   Done Exploring
-                </Button>
+                </LuminaActionButton>
               </div>
             )}
 
@@ -735,14 +737,12 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                 )}
                 <div className="flex gap-2 justify-center">
                   {(['increase', 'decrease', 'stay-same'] as const).map((dir) => (
-                    <Button
+                    <button
                       key={dir}
-                      variant="ghost"
-                      className={`border px-4 py-2 capitalize ${
-                        selectedDirection === dir
-                          ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                      }`}
+                      type="button"
+                      className={`rounded-xl border px-4 py-2 capitalize transition-all ${answerStateClass(
+                        selectedDirection === dir ? 'selected' : 'idle',
+                      )}`}
                       onClick={() => {
                         SoundManager.select();
                         setSelectedDirection(dir);
@@ -750,18 +750,12 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                       disabled={answerFeedback !== null}
                     >
                       {dir === 'increase' ? '📈 Increase' : dir === 'decrease' ? '📉 Decrease' : '➡️ Stay Same'}
-                    </Button>
+                    </button>
                   ))}
                 </div>
                 {answerFeedback === null && selectedDirection && (
                   <div className="text-center">
-                    <Button
-                      variant="ghost"
-                      className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                      onClick={handleCheckAnswer}
-                    >
-                      Check Answer
-                    </Button>
+                    <LuminaActionButton action="check" onClick={handleCheckAnswer} />
                   </div>
                 )}
               </div>
@@ -780,27 +774,19 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                   </p>
                 )}
                 <div className="flex items-center gap-2 justify-center">
-                  <input
+                  <LuminaInput
                     type="number"
                     value={predictedValue}
                     onChange={(e) => setPredictedValue(e.target.value)}
                     placeholder="Your prediction..."
                     disabled={answerFeedback !== null}
-                    className="w-40 px-3 py-2 bg-slate-800/50 border border-white/20 rounded-lg
-                      text-slate-200 placeholder-slate-600 text-center font-mono
-                      focus:outline-none focus:border-blue-400/50"
+                    className="w-40 text-center font-mono"
                   />
                   {outputUnit && <span className="text-sm text-slate-500">{outputUnit}</span>}
                 </div>
                 {answerFeedback === null && predictedValue.trim() && (
                   <div className="text-center">
-                    <Button
-                      variant="ghost"
-                      className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                      onClick={handleCheckAnswer}
-                    >
-                      Check Answer
-                    </Button>
+                    <LuminaActionButton action="check" onClick={handleCheckAnswer} />
                   </div>
                 )}
               </div>
@@ -815,14 +801,12 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {parameters.map((param) => (
-                    <Button
+                    <button
                       key={param.symbol}
-                      variant="ghost"
-                      className={`border px-4 py-2 font-mono ${
-                        selectedParameter === param.symbol
-                          ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
-                      }`}
+                      type="button"
+                      className={`rounded-xl border px-4 py-2 font-mono transition-all ${answerStateClass(
+                        selectedParameter === param.symbol ? 'selected' : 'idle',
+                      )}`}
                       onClick={() => {
                         SoundManager.select();
                         setSelectedParameter(param.symbol);
@@ -830,19 +814,13 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                       disabled={answerFeedback !== null}
                     >
                       {param.symbol}
-                      <span className="ml-1 text-xs font-sans text-slate-500">({param.name})</span>
-                    </Button>
+                      <span className="ml-1 text-xs font-sans text-slate-400">({param.name})</span>
+                    </button>
                   ))}
                 </div>
                 {answerFeedback === null && selectedParameter && (
                   <div className="text-center">
-                    <Button
-                      variant="ghost"
-                      className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                      onClick={handleCheckAnswer}
-                    >
-                      Check Answer
-                    </Button>
+                    <LuminaActionButton action="check" onClick={handleCheckAnswer} />
                   </div>
                 )}
               </div>
@@ -850,35 +828,24 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
 
             {/* Feedback */}
             {answerFeedback && (
-              <div
-                className={`p-3 rounded-lg border text-sm ${
-                  answerFeedback === 'correct'
-                    ? 'bg-emerald-500/10 border-emerald-400/20 text-emerald-300'
-                    : 'bg-red-500/10 border-red-400/20 text-red-300'
-                }`}
-              >
-                <span className="font-medium">
-                  {answerFeedback === 'correct' ? '✓ Correct!' : '✗ Not quite.'}
-                </span>
-                {showExplanation && currentChallenge.prediction?.explanation && (
-                  <p className="mt-1 text-slate-400">{currentChallenge.prediction.explanation}</p>
-                )}
-              </div>
+              <LuminaFeedbackCard status={answerFeedback}>
+                {showExplanation && currentChallenge.prediction?.explanation
+                  ? currentChallenge.prediction.explanation
+                  : answerFeedback === 'correct'
+                  ? 'Nicely done.'
+                  : 'Take another look at how the parameters drive the output.'}
+              </LuminaFeedbackCard>
             )}
 
             {/* Next button */}
             {answerFeedback !== null && (
               <div className="text-center">
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleNextChallenge}
-                >
+                <LuminaActionButton action="next" onClick={handleNextChallenge}>
                   {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish'}
-                </Button>
+                </LuminaActionButton>
               </div>
             )}
-          </div>
+          </LuminaPanel>
         )}
 
         {/* ── Phase Summary ── */}
@@ -892,8 +859,8 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

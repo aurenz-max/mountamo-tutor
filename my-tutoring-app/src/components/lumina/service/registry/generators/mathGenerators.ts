@@ -219,7 +219,10 @@ registerGenerator('two-way-table', async (item, topic, gradeContext) => ({
 registerGenerator('ten-frame', async (item, topic, gradeContext) => ({
   type: 'ten-frame',
   instanceId: item.instanceId,
-  data: await generateTenFrame(topic, gradeContext, item.config),
+  data: await generateTenFrame(topic, gradeContext, {
+    ...item.config,
+    intent: item.intent || item.title,
+  }),
 }));
 
 // Counting Board (K-1 counting and subitizing)

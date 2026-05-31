@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaModeTabs,
+  LuminaChallengeCounter,
+  LuminaPrompt,
+  LuminaFeedbackCard,
+  type LuminaModeTab,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -81,6 +92,10 @@ const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
   makeTen: { label: 'Make Ten', description: 'What makes 10?' },
   operate: { label: 'Operate', description: 'Add & subtract with frames' },
 };
+
+const PHASE_TABS: LuminaModeTab[] = (Object.entries(PHASE_CONFIG) as [Phase, { label: string }][]).map(
+  ([value, config]) => ({ value, label: config.label })
+);
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   build: { label: 'Build', icon: '🧱', accentColor: 'purple' },
@@ -795,53 +810,42 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300 text-xs">
+            <LuminaBadge accent="orange" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1-2'}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
+            </LuminaBadge>
+            <LuminaBadge accent="emerald" className="text-xs">
               {mode === 'double' ? 'Double Frame' : 'Ten Frame'}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(PHASE_CONFIG).map(([phase, config]) => (
-              <Badge
-                key={phase}
-                className={`text-xs ${
-                  currentPhase === phase
-                    ? 'bg-orange-500/20 border-orange-400/50 text-orange-300'
-                    : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                }`}
-              >
-                {config.label}
-              </Badge>
-            ))}
-            <span className="text-slate-500 text-xs ml-auto">
-              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
-            </span>
+            <LuminaModeTabs tabs={PHASE_TABS} active={currentPhase} accent="orange" />
+            <LuminaChallengeCounter
+              current={Math.min(currentChallengeIndex + 1, challenges.length)}
+              total={challenges.length}
+              className="ml-auto"
+            />
           </div>
         )}
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-            <p className="text-slate-200 text-sm font-medium">
-              {currentChallenge.instruction}
-            </p>
-          </div>
+          <LuminaPrompt>
+            <span className="text-sm">{currentChallenge.instruction}</span>
+          </LuminaPrompt>
         )}
 
         {/* Ten Frame SVG */}
@@ -878,70 +882,66 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
           )}
         </div>
 
-        {/* Subitize Input */}
+        {/* Subitize Input — bespoke number-entry surface */}
         {currentPhase === 'subitize' && !showCounters && !isFlashing && !isCurrentChallengeComplete && (
           <div className="flex flex-col items-center gap-3">
             <p className="text-slate-300 text-sm">How many counters did you see?</p>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+              <LuminaButton
+                className="w-14 h-14 text-2xl font-bold rounded-xl"
                 onClick={() => { SoundManager.tick(); setSubitizeInput(String(Math.max((parseInt(subitizeInput, 10) || 0) - 1, 0))); }}
                 disabled={(parseInt(subitizeInput, 10) || 0) <= 0}
               >
                 &minus;
-              </Button>
+              </LuminaButton>
               <div className="w-20 h-14 flex items-center justify-center bg-slate-800/50 border border-white/20 rounded-xl">
                 <span className="text-3xl font-bold text-slate-100">
-                  {subitizeInput === '' ? '\u2013' : parseInt(subitizeInput, 10) || 0}
+                  {subitizeInput === '' ? '–' : parseInt(subitizeInput, 10) || 0}
                 </span>
               </div>
-              <Button
-                variant="ghost"
-                className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+              <LuminaButton
+                className="w-14 h-14 text-2xl font-bold rounded-xl"
                 onClick={() => { SoundManager.tick(); setSubitizeInput(String(Math.min((parseInt(subitizeInput, 10) || 0) + 1, totalCells))); }}
               >
                 +
-              </Button>
+              </LuminaButton>
             </div>
-            <Button
-              variant="ghost"
-              className="text-xs bg-slate-800/30 border border-white/10 hover:bg-slate-700/30 text-slate-400"
+            <LuminaButton
+              tone="subtle"
+              className="text-xs"
               onClick={() => {
                 setSubitizeReflashes(r => r + 1);
                 startSubitizeFlash();
               }}
             >
               Flash Again
-            </Button>
+            </LuminaButton>
           </div>
         )}
 
-        {/* Make-ten Input */}
+        {/* Make-ten Input — bespoke number-entry surface */}
         {currentPhase === 'makeTen' && !isCurrentChallengeComplete && (
           <div className="flex flex-col items-center gap-3">
             <p className="text-slate-300 text-sm font-mono">{counterCount} + ___ = {totalCells}</p>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+              <LuminaButton
+                className="w-14 h-14 text-2xl font-bold rounded-xl"
                 onClick={() => { SoundManager.tick(); setMakeTenInput(String(Math.max((parseInt(makeTenInput, 10) || 0) - 1, 0))); }}
                 disabled={(parseInt(makeTenInput, 10) || 0) <= 0}
               >
                 &minus;
-              </Button>
+              </LuminaButton>
               <div className="w-20 h-14 flex items-center justify-center bg-slate-800/50 border border-white/20 rounded-xl">
                 <span className="text-3xl font-bold text-slate-100">
-                  {makeTenInput === '' ? '\u2013' : parseInt(makeTenInput, 10) || 0}
+                  {makeTenInput === '' ? '–' : parseInt(makeTenInput, 10) || 0}
                 </span>
               </div>
-              <Button
-                variant="ghost"
-                className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+              <LuminaButton
+                className="w-14 h-14 text-2xl font-bold rounded-xl"
                 onClick={() => { SoundManager.tick(); setMakeTenInput(String(Math.min((parseInt(makeTenInput, 10) || 0) + 1, totalCells))); }}
               >
                 +
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -949,51 +949,45 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         {/* Flash button for subitize */}
         {currentPhase === 'subitize' && showCounters && !isFlashing && !isCurrentChallengeComplete && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              className="bg-orange-500/10 border border-orange-400/30 hover:bg-orange-500/20 text-orange-300"
+            <LuminaButton
+              tone="primary"
+              className="bg-orange-500/10 border-orange-400/30 text-orange-300 hover:bg-orange-500/20"
               onClick={startSubitizeFlash}
             >
               Flash Counters
-            </Button>
+            </LuminaButton>
           </div>
         )}
 
         {/* Feedback */}
         {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' :
-            'text-slate-300'
-          }`}>
+          <LuminaFeedbackCard
+            status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}
+          >
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Action Buttons */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckAnswer}
                 disabled={
                   (currentPhase === 'subitize' && (showCounters || isFlashing)) ||
                   hasSubmittedEvaluation
                 }
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && !hasSubmittedEvaluation && (
               <div className="text-center">
@@ -1010,9 +1004,9 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
         {/* Hint */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPrompt accent="amber" center className="py-2">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPrompt>
         )}
 
         {/* Phase Summary */}
@@ -1026,8 +1020,8 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

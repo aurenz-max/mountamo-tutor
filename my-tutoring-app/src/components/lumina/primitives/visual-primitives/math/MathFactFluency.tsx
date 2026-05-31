@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPrompt,
+  LuminaButton,
+  LuminaActionButton,
+  answerStateClass,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -67,11 +76,11 @@ export interface MathFactFluencyData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'visual-fact':    { label: 'Visual Fact',    icon: '\uD83D\uDC41\uFE0F', accentColor: 'purple' },
-  'equation-solve': { label: 'Equation Solve', icon: '\uD83D\uDCA1',       accentColor: 'blue' },
-  'missing-number': { label: 'Missing Number', icon: '\u2753',             accentColor: 'amber' },
-  'match':          { label: 'Match',          icon: '\uD83D\uDD17',       accentColor: 'emerald' },
-  'speed-round':    { label: 'Speed Round',    icon: '\u26A1',             accentColor: 'orange' },
+  'visual-fact':    { label: 'Visual Fact',    icon: '👁️', accentColor: 'purple' },
+  'equation-solve': { label: 'Equation Solve', icon: '💡',       accentColor: 'blue' },
+  'missing-number': { label: 'Missing Number', icon: '❓',             accentColor: 'amber' },
+  'match':          { label: 'Match',          icon: '🔗',       accentColor: 'emerald' },
+  'speed-round':    { label: 'Speed Round',    icon: '⚡',             accentColor: 'orange' },
 };
 
 // ============================================================================
@@ -148,8 +157,8 @@ function TenFrameVisual({ count, size = 140 }: { count: number; size?: number })
 function FingerVisual({ count }: { count: number }) {
   // Show finger emoji representation
   const fingerEmojis: Record<number, string> = {
-    0: '\u270A', 1: '\u261D\uFE0F', 2: '\u270C\uFE0F', 3: '\uD83E\uDD1E',
-    4: '\uD83D\uDD90\uFE0F', 5: '\uD83D\uDD90\uFE0F',
+    0: '✊', 1: '☝️', 2: '✌️', 3: '🤞',
+    4: '🖐️', 5: '🖐️',
   };
   const safeCount = Math.min(count, 10);
   const leftHand = Math.min(safeCount, 5);
@@ -157,8 +166,8 @@ function FingerVisual({ count }: { count: number }) {
 
   return (
     <div className="flex items-center justify-center gap-4 text-4xl select-none">
-      <span>{fingerEmojis[leftHand] || '\uD83D\uDD90\uFE0F'}</span>
-      {rightHand > 0 && <span>{fingerEmojis[rightHand] || '\uD83D\uDD90\uFE0F'}</span>}
+      <span>{fingerEmojis[leftHand] || '🖐️'}</span>
+      {rightHand > 0 && <span>{fingerEmojis[rightHand] || '🖐️'}</span>}
     </div>
   );
 }
@@ -445,7 +454,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   // Format equation display
   // -------------------------------------------------------------------------
   const formatEquation = useCallback((ch: MathFactFluencyChallenge) => {
-    const op = ch.operation === 'addition' ? '+' : '\u2212';
+    const op = ch.operation === 'addition' ? '+' : '−';
     switch (ch.unknownPosition) {
       case 'operand1': return `? ${op} ${ch.operand2} = ${ch.result}`;
       case 'operand2': return `${ch.operand1} ${op} ? = ${ch.result}`;
@@ -768,32 +777,29 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   // Render helpers
   // -------------------------------------------------------------------------
+  // Grading-state color language for the answerable options comes from the kit
+  // tokens (answerStateClass) so "selected / correct / incorrect" looks
+  // identical across every primitive. The compact button sizing stays bespoke.
   const renderChoiceButtons = (options: number[]) => (
     <div className="flex flex-wrap justify-center gap-3">
       {options.map((opt) => {
         const isSelected = selectedAnswer === opt;
         const isCorrectOption = currentChallenge && opt === currentChallenge.correctAnswer;
-        const showAsCorrect = showCorrectAnswer && isCorrectOption;
-        const showAsWrong = showCorrectAnswer && isSelected && !isCorrectOption;
+        let state: AnswerChoiceState = 'idle';
+        if (showCorrectAnswer && isCorrectOption) state = 'correct';
+        else if (showCorrectAnswer && isSelected && !isCorrectOption) state = 'incorrect';
+        else if (isSelected) state = 'selected';
 
         return (
-          <Button
+          <button
             key={opt}
-            variant="ghost"
-            className={`w-16 h-16 text-2xl font-bold border transition-all duration-200 ${
-              showAsCorrect
-                ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300 scale-110'
-                : showAsWrong
-                  ? 'bg-red-500/20 border-red-400/50 text-red-300 animate-pulse'
-                  : isSelected
-                    ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
-                    : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
-            }`}
+            type="button"
+            className={`w-16 h-16 text-2xl font-bold border rounded-xl transition-all duration-200 ${answerStateClass(state)}`}
             onClick={() => handleSelectOption(opt)}
             disabled={isCurrentChallengeComplete || allChallengesComplete}
           >
             {opt}
-          </Button>
+          </button>
         );
       })}
     </div>
@@ -817,41 +823,38 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
     <div className="flex flex-col items-center gap-3">
       <div className="flex items-center gap-2">
         {/* Minus button */}
-        <Button
-          variant="ghost"
-          className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+        <LuminaButton
+          className="w-14 h-14 text-2xl font-bold rounded-xl"
           onClick={handleDecrement}
           disabled={numericValue <= 0 || isCurrentChallengeComplete || allChallengesComplete}
         >
           &minus;
-        </Button>
+        </LuminaButton>
 
-        {/* Number display */}
+        {/* Number display — bespoke answer-entry readout (kept as the painting) */}
         <div className="w-20 h-14 flex items-center justify-center bg-slate-800/50 border border-white/20 rounded-xl">
           <span className="text-3xl font-bold text-slate-100">
-            {typedAnswer === '' ? '\u2013' : numericValue}
+            {typedAnswer === '' ? '–' : numericValue}
           </span>
         </div>
 
         {/* Plus button */}
-        <Button
-          variant="ghost"
-          className="w-14 h-14 text-2xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 rounded-xl"
+        <LuminaButton
+          className="w-14 h-14 text-2xl font-bold rounded-xl"
           onClick={handleIncrement}
           disabled={isCurrentChallengeComplete || allChallengesComplete}
         >
           +
-        </Button>
+        </LuminaButton>
       </div>
 
-      <Button
-        variant="ghost"
-        className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300 px-8"
+      <LuminaActionButton
+        action="check"
         onClick={handleTypedSubmit}
         disabled={typedAnswer === '' || isCurrentChallengeComplete || allChallengesComplete}
       >
         Submit
-      </Button>
+      </LuminaActionButton>
     </div>
   );
 
@@ -861,27 +864,21 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         const isSelected = selectedEquation === eq;
         const eqResultVal = parseInt(eq.split('=').pop()?.trim() ?? '', 10);
         const isCorrectOpt = currentChallenge && eqResultVal === currentChallenge.correctAnswer;
-        const showAsCorrect = showCorrectAnswer && isCorrectOpt;
-        const showAsWrong = showCorrectAnswer && isSelected && !isCorrectOpt;
+        let state: AnswerChoiceState = 'idle';
+        if (showCorrectAnswer && isCorrectOpt) state = 'correct';
+        else if (showCorrectAnswer && isSelected && !isCorrectOpt) state = 'incorrect';
+        else if (isSelected) state = 'selected';
 
         return (
-          <Button
+          <button
             key={eq}
-            variant="ghost"
-            className={`h-12 text-lg font-mono border transition-all ${
-              showAsCorrect
-                ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
-                : showAsWrong
-                  ? 'bg-red-500/20 border-red-400/50 text-red-300'
-                  : isSelected
-                    ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
-                    : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
-            }`}
+            type="button"
+            className={`h-12 text-lg font-mono border rounded-xl transition-all ${answerStateClass(state)}`}
             onClick={() => handleSelectEquation(eq)}
             disabled={isCurrentChallengeComplete || allChallengesComplete}
           >
             {eq}
-          </Button>
+          </button>
         );
       })}
     </div>
@@ -892,24 +889,20 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
       {visOptions.map((vo, idx) => {
         const isSelected = selectedVisualIdx === idx;
         const isCorrectOpt = vo.count === currentChallenge?.correctAnswer;
-        const showAsCorrect = showCorrectAnswer && isCorrectOpt;
-        const showAsWrong = showCorrectAnswer && isSelected && !isCorrectOpt;
+        let state: AnswerChoiceState = 'idle';
+        if (showCorrectAnswer && isCorrectOpt) state = 'correct';
+        else if (showCorrectAnswer && isSelected && !isCorrectOpt) state = 'incorrect';
+        else if (isSelected) state = 'selected';
 
         return (
           <button
             key={idx}
-            className={`p-3 rounded-lg border transition-all ${
-              showAsCorrect
-                ? 'bg-emerald-500/20 border-emerald-400/50'
-                : showAsWrong
-                  ? 'bg-red-500/20 border-red-400/50'
-                  : isSelected
-                    ? 'bg-blue-500/20 border-blue-400/50'
-                    : 'bg-white/5 border-white/20 hover:bg-white/10'
-            }`}
+            type="button"
+            className={`p-3 rounded-lg border transition-all ${answerStateClass(state)}`}
             onClick={() => handleSelectVisual(idx)}
             disabled={isCurrentChallengeComplete || allChallengesComplete}
           >
+            {/* Bespoke interaction surface — the SVG visual the student picks. */}
             <MatchVisualOption type={vo.type} count={vo.count} />
           </button>
         );
@@ -921,25 +914,25 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+            <LuminaBadge accent="blue" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-amber-300 text-xs">
+            </LuminaBadge>
+            <LuminaBadge accent="amber" className="text-xs">
               Within {maxNumber}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Progress & Stats Bar */}
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex items-center justify-between text-sm">
@@ -948,12 +941,13 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
                 {currentChallengeIndex + 1} / {challenges.length}
               </span>
               {currentChallenge && (
-                <Badge className={`text-xs bg-slate-800/30 border-slate-700/30 ${
-                  currentChallenge.type === 'speed-round' ? 'text-orange-300' : 'text-slate-400'
-                }`}>
+                <LuminaBadge
+                  accent={currentChallenge.type === 'speed-round' ? 'orange' : undefined}
+                  className="text-xs"
+                >
                   {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                   {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-                </Badge>
+                </LuminaBadge>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -971,11 +965,9 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-            <p className="text-slate-200 text-sm font-medium">
-              {currentChallenge.instruction}
-            </p>
-          </div>
+          <LuminaPrompt>
+            <span className="text-sm">{currentChallenge.instruction}</span>
+          </LuminaPrompt>
         )}
 
         {/* Main Challenge Area */}
@@ -989,7 +981,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
               />
             )}
 
-            {/* Visual Aid (visual-fact phase) */}
+            {/* Visual Aid (visual-fact phase) — bespoke SVG interaction surface */}
             {currentChallenge.type === 'visual-fact' && currentChallenge.visualType && (
               <div className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">
                 <VisualAid
@@ -999,7 +991,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
               </div>
             )}
 
-            {/* Equation Display */}
+            {/* Equation Display — bespoke math readout */}
             {(currentChallenge.type !== 'match' || currentChallenge.matchDirection === 'equation-to-visual') && (
               <div className="text-center py-6">
                 <span className="text-5xl font-bold text-slate-100 font-mono tracking-wider">
@@ -1056,13 +1048,9 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         {/* Next Challenge Button */}
         {isCurrentChallengeComplete && !allChallengesComplete && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-              onClick={advanceToNextChallenge}
-            >
+            <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
               Next Challenge
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -1088,8 +1076,8 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -92,11 +99,11 @@ const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
 };
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  extend: { label: 'Extend the Pattern', icon: '\uD83D\uDD17', accentColor: 'blue' },
-  identify_core: { label: 'Identify the Core', icon: '\uD83D\uDD0D', accentColor: 'purple' },
-  create: { label: 'Create a Pattern', icon: '\u2728', accentColor: 'emerald' },
-  translate: { label: 'Translate the Pattern', icon: '\uD83D\uDD04', accentColor: 'cyan' },
-  find_rule: { label: 'Find the Rule', icon: '\uD83D\uDCD0', accentColor: 'amber' },
+  extend: { label: 'Extend the Pattern', icon: '🔗', accentColor: 'blue' },
+  identify_core: { label: 'Identify the Core', icon: '🔍', accentColor: 'purple' },
+  create: { label: 'Create a Pattern', icon: '✨', accentColor: 'emerald' },
+  translate: { label: 'Translate the Pattern', icon: '🔄', accentColor: 'cyan' },
+  find_rule: { label: 'Find the Rule', icon: '📐', accentColor: 'amber' },
 };
 
 // Visual representations for token types
@@ -119,12 +126,12 @@ const TOKEN_DISPLAY: Record<string, { bg: string; border: string; text: string }
 };
 
 const SHAPE_SYMBOLS: Record<string, string> = {
-  circle: '\u25CF',
-  square: '\u25A0',
-  triangle: '\u25B2',
-  star: '\u2605',
-  diamond: '\u25C6',
-  heart: '\u2665',
+  circle: '●',
+  square: '■',
+  triangle: '▲',
+  star: '★',
+  diamond: '◆',
+  heart: '♥',
 };
 
 function getTokenDisplay(token: string): { bg: string; border: string; text: string; label: string } {
@@ -562,7 +569,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[TRANSLATE_INCORRECT] Student translated: ${translatedPattern.join(', ')} but expected: ${expected.join(', ')}. `
-        + `Mapping: ${Object.entries(mapping).map(([k, v]) => `${k}\u2192${v}`).join(', ')}. `
+        + `Mapping: ${Object.entries(mapping).map(([k, v]) => `${k}→${v}`).join(', ')}. `
         + `Hint: "Look at the mapping: each source token becomes a new token."`,
         { silent: true }
       );
@@ -833,39 +840,40 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300 text-xs">
+            <LuminaBadge accent="orange" className="text-xs">
               {gradeBand === 'K-1' ? 'Grades K-1' : 'Grades 2-3'}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs capitalize">
+            </LuminaBadge>
+            <LuminaBadge accent="emerald" className="text-xs capitalize">
               {patternType} Pattern
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             {Object.entries(PHASE_CONFIG).filter(([phase]) => presentPhases.has(phase as Phase)).map(([phase, config]) => (
-              <Badge
+              <LuminaBadge
                 key={phase}
+                accent={currentPhase === phase ? 'orange' : undefined}
                 className={`text-xs ${
                   currentPhase === phase
-                    ? 'bg-orange-500/20 border-orange-400/50 text-orange-300'
+                    ? 'bg-orange-500/20 border-orange-400/50'
                     : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
                 }`}
               >
                 {config.label}
-              </Badge>
+              </LuminaBadge>
             ))}
             <span className="text-slate-500 text-xs ml-auto">
               Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
@@ -875,11 +883,11 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">
               {currentChallenge.instruction}
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Pattern Display */}
@@ -915,7 +923,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
 
                 {/* Separator */}
                 {currentPhase === 'copy' && activeSequence.hidden.length > 0 && (
-                  <div className="text-slate-600 text-xl mx-1">{'\u2192'}</div>
+                  <div className="text-slate-600 text-xl mx-1">{'→'}</div>
                 )}
 
                 {/* Hidden slots / extension answers */}
@@ -992,7 +1000,7 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                         className="inline-block w-5 h-5 rounded"
                         style={{ backgroundColor: fromDisplay.bg }}
                       />
-                      {'\u2192'}
+                      {'→'}
                       <span
                         className="inline-block w-5 h-5 rounded"
                         style={{ backgroundColor: toDisplay.bg }}
@@ -1028,9 +1036,9 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
         {/* Rule Display */}
         {showRule && sequence.rule && isCurrentChallengeComplete && (
           <div className="text-center">
-            <Badge className="bg-emerald-500/10 border-emerald-400/30 text-emerald-300 text-xs">
+            <LuminaBadge accent="emerald" className="bg-emerald-500/10 border-emerald-400/30 text-xs">
               Rule: {sequence.rule}
-            </Badge>
+            </LuminaBadge>
           </div>
         )}
 
@@ -1071,9 +1079,9 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
               <>
                 {/* Undo button */}
                 {(extensionAnswers.length > 0 || createdPattern.length > 0 || translatedPattern.length > 0) && (
-                  <Button
-                    variant="ghost"
-                    className="bg-slate-800/30 border border-white/10 hover:bg-slate-800/50 text-slate-400 text-xs"
+                  <LuminaButton
+                    tone="subtle"
+                    className="text-xs"
                     onClick={() => {
                       if (currentPhase === 'copy') handleRemoveLastExtension();
                       else if (currentPhase === 'create') handleRemoveLastCreated();
@@ -1081,26 +1089,22 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
                     }}
                   >
                     Undo
-                  </Button>
+                  </LuminaButton>
                 )}
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                <LuminaActionButton
+                  action="check"
                   onClick={handleCheckAnswer}
                   disabled={hasSubmittedEvaluation}
-                >
-                  Check Answer
-                </Button>
+                />
               </>
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && !hasSubmittedEvaluation && (
               <div className="text-center">
@@ -1129,12 +1133,12 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
 
         {/* Hint */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPanel>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

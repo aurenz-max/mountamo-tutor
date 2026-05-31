@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPrompt,
+  LuminaModeTabs,
+  LuminaChallengeCounter,
+  LuminaActionButton,
+  LuminaButton,
+  LuminaFeedbackCard,
+  answerStateClass,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -61,23 +72,23 @@ export interface ComparisonBuilderData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'compare-groups': { label: 'Compare Groups', icon: '\uD83D\uDC3B', accentColor: 'orange' },
-  'compare-numbers': { label: 'Compare Numbers', icon: '\uD83D\uDD22', accentColor: 'blue' },
-  'order': { label: 'Order', icon: '\uD83D\uDCCA', accentColor: 'purple' },
-  'one-more-one-less': { label: 'One More / Less', icon: '\u2795', accentColor: 'emerald' },
+  'compare-groups': { label: 'Compare Groups', icon: '🐻', accentColor: 'orange' },
+  'compare-numbers': { label: 'Compare Numbers', icon: '🔢', accentColor: 'blue' },
+  'order': { label: 'Order', icon: '📊', accentColor: 'purple' },
+  'one-more-one-less': { label: 'One More / Less', icon: '➕', accentColor: 'emerald' },
 };
 
 const OBJECT_EMOJI: Record<string, string> = {
-  bears: '\uD83E\uDDF8',
-  apples: '\uD83C\uDF4E',
-  stars: '\u2B50',
-  blocks: '\uD83D\uDFE6',
-  fish: '\uD83D\uDC1F',
-  butterflies: '\uD83E\uDD8B',
-  hearts: '\u2764\uFE0F',
-  flowers: '\uD83C\uDF38',
-  cookies: '\uD83C\uDF6A',
-  balls: '\uD83D\uDD34',
+  bears: '🧸',
+  apples: '🍎',
+  stars: '⭐',
+  blocks: '🟦',
+  fish: '🐟',
+  butterflies: '🦋',
+  hearts: '❤️',
+  flowers: '🌸',
+  cookies: '🍪',
+  balls: '🔴',
 };
 
 const GROUP_WIDTH = 200;
@@ -689,8 +700,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
     const left = currentChallenge.leftGroup ?? { count: 3, objectType: 'stars' };
     const right = currentChallenge.rightGroup ?? { count: 5, objectType: 'stars' };
-    const leftEmoji = OBJECT_EMOJI[left.objectType] || '\u2B50';
-    const rightEmoji = OBJECT_EMOJI[right.objectType] || '\u2B50';
+    const leftEmoji = OBJECT_EMOJI[left.objectType] || '⭐';
+    const rightEmoji = OBJECT_EMOJI[right.objectType] || '⭐';
 
     const leftPositions = generateGridPositions(left.count, 0, 20);
     const rightPositions = generateGridPositions(right.count, GROUP_WIDTH + GAP, 20);
@@ -831,21 +842,19 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
             </p>
             <div className="flex justify-center gap-3">
               {(['more', 'less', 'equal'] as const).map((answer) => (
-                <Button
+                <button
                   key={answer}
-                  variant="ghost"
-                  className={`px-6 py-3 text-base ${
-                    selectedAnswer === answer
-                      ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 border'
-                      : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
-                  }`}
+                  type="button"
+                  className={`rounded-xl border px-6 py-3 text-base transition-all ${answerStateClass(
+                    selectedAnswer === answer ? 'selected' : 'idle',
+                  )}`}
                   onClick={() => {
                     SoundManager.select();
                     setSelectedAnswer(answer);
                   }}
                 >
                   {answer === 'equal' ? 'The Same' : answer === 'more' ? 'More' : 'Fewer'}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
@@ -854,13 +863,13 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         {/* Toggle correspondence lines button */}
         {showCorrespondenceLines && !showLines && isCurrentChallengeComplete && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 text-xs"
+            <LuminaButton
+              tone="subtle"
+              className="text-xs"
               onClick={() => setShowLines(true)}
             >
               Show matching lines
-            </Button>
+            </LuminaButton>
           </div>
         )}
       </div>
@@ -912,14 +921,12 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         {!isCurrentChallengeComplete && (
           <div className="flex justify-center gap-3">
             {(['<', '>', '='] as const).map((symbol) => (
-              <Button
+              <button
                 key={symbol}
-                variant="ghost"
-                className={`w-16 h-20 text-2xl font-bold flex flex-col items-center gap-0.5 ${
-                  selectedAnswer === symbol
-                    ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 border-2'
-                    : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
-                }`}
+                type="button"
+                className={`w-16 h-20 rounded-xl border text-2xl font-bold flex flex-col items-center justify-center gap-0.5 transition-all ${answerStateClass(
+                  selectedAnswer === symbol ? 'selected' : 'idle',
+                )}`}
                 onClick={() => {
                   SoundManager.select();
                   setSelectedAnswer(symbol);
@@ -933,7 +940,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
                 ) : (
                   symbol
                 )}
-              </Button>
+              </button>
             ))}
           </div>
         )}
@@ -970,12 +977,12 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       <div className="space-y-5">
         {/* Direction label */}
         <div className="text-center">
-          <Badge className="bg-purple-500/20 border-purple-400/30 text-purple-300 text-xs">
-            {direction === 'ascending' ? 'Least \u2192 Greatest' : 'Greatest \u2192 Least'}
-          </Badge>
+          <LuminaBadge accent="purple" className="text-xs">
+            {direction === 'ascending' ? 'Least → Greatest' : 'Greatest → Least'}
+          </LuminaBadge>
         </div>
 
-        {/* Ordered slots */}
+        {/* Ordered slots (bespoke drop targets — grading color tokenized) */}
         <div className="flex justify-center gap-2 min-h-[64px]">
           {Array.from({ length: totalSlots }, (_, i) => (
             <div
@@ -1007,21 +1014,21 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
           ))}
         </div>
 
-        {/* Available number cards */}
+        {/* Available number cards (bespoke draggable tiles) */}
         {!isCurrentChallengeComplete && (
           <div className="flex justify-center gap-2 flex-wrap">
             {availableNumbers.map((num) => (
-              <Button
+              <button
                 key={`card-${num}`}
-                variant="ghost"
-                className="w-14 h-14 text-xl font-bold bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 hover:text-white"
+                type="button"
+                className={`w-14 h-14 rounded-xl border text-xl font-bold transition-all ${answerStateClass('idle')}`}
                 onClick={() => {
                   SoundManager.snap();
                   setOrderedNumbers((prev) => [...prev, num]);
                 }}
               >
                 {num}
-              </Button>
+              </button>
             ))}
           </div>
         )}
@@ -1029,13 +1036,13 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         {/* Reset button */}
         {!isCurrentChallengeComplete && orderedNumbers.length > 0 && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 text-xs"
+            <LuminaButton
+              tone="subtle"
+              className="text-xs"
               onClick={() => setOrderedNumbers([])}
             >
               Start Over
-            </Button>
+            </LuminaButton>
           </div>
         )}
       </div>
@@ -1061,28 +1068,32 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       <div className="space-y-2">
         <p className={`text-sm font-medium text-center ${colorClass}`}>{label}</p>
         <div className="flex justify-center gap-1.5 flex-wrap">
-          {Array.from({ length: Math.min(maxNum + 1, 21) }, (_, i) => (
-            <Button
-              key={i}
-              variant="ghost"
-              className={`w-10 h-10 text-sm font-bold p-0 ${
-                selected === i
-                  ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 border-2'
-                  : i === target
-                    ? 'bg-amber-500/10 border-amber-400/30 text-amber-300 border'
-                    : 'bg-white/5 border border-white/15 hover:bg-white/10 text-slate-300'
-              }`}
-              onClick={() => {
-                if (!isCurrentChallengeComplete) {
-                  SoundManager.select();
-                  onSelect(i);
-                }
-              }}
-              disabled={isCurrentChallengeComplete}
-            >
-              {i}
-            </Button>
-          ))}
+          {Array.from({ length: Math.min(maxNum + 1, 21) }, (_, i) => {
+            // Bespoke number-line cells: selected uses tokenized grading color;
+            // the target marker stays an amber affordance unique to this surface.
+            const cellState = selected === i ? 'selected' : 'idle';
+            const isTarget = i === target && selected !== i;
+            return (
+              <button
+                key={i}
+                type="button"
+                className={`w-10 h-10 rounded-lg border text-sm font-bold p-0 transition-all ${
+                  isTarget
+                    ? 'bg-amber-500/10 border-amber-400/30 text-amber-300'
+                    : answerStateClass(cellState)
+                }`}
+                onClick={() => {
+                  if (!isCurrentChallengeComplete) {
+                    SoundManager.select();
+                    onSelect(i);
+                  }
+                }}
+                disabled={isCurrentChallengeComplete}
+              >
+                {i}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -1119,61 +1130,59 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
   // =========================================================================
   // Main Render
   // =========================================================================
+  const activePhaseTabs = useMemo(
+    () =>
+      Object.entries(CHALLENGE_TYPE_CONFIG)
+        .filter(([type]) => challenges.some((c) => c.type === type))
+        .map(([type, config]) => ({
+          value: type,
+          label: `${config.icon} ${config.label}`,
+        })),
+    [challenges],
+  );
+
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300 text-xs">
+            <LuminaBadge accent="orange" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
+            </LuminaBadge>
             {currentChallenge && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-purple-300 text-xs">
+              <LuminaBadge accent="purple" className="text-xs">
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Phase badges + progress */}
+      <LuminaCardContent className="space-y-4">
+        {/* Phase tabs + progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(CHALLENGE_TYPE_CONFIG).map(([type, config]) => {
-              if (!challenges.some((c) => c.type === type)) return null;
-              return (
-                <Badge
-                  key={type}
-                  className={`text-xs ${
-                    currentChallenge?.type === type
-                      ? 'bg-orange-500/20 border-orange-400/50 text-orange-300'
-                      : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                  }`}
-                >
-                  {config.icon} {config.label}
-                </Badge>
-              );
-            })}
-            <span className="text-slate-500 text-xs ml-auto">
-              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of{' '}
-              {challenges.length}
-            </span>
+            <LuminaModeTabs
+              tabs={activePhaseTabs}
+              active={currentChallenge?.type ?? ''}
+              accent="orange"
+            />
+            <LuminaChallengeCounter
+              current={Math.min(currentChallengeIndex + 1, challenges.length)}
+              total={challenges.length}
+              className="ml-auto"
+            />
           </div>
         )}
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-            <p className="text-slate-200 text-sm font-medium">
-              {currentChallenge.instruction}
-            </p>
-          </div>
+          <LuminaPrompt>{currentChallenge.instruction}</LuminaPrompt>
         )}
 
         {/* Challenge workspace */}
@@ -1187,41 +1196,31 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         )}
 
         {/* Feedback */}
-        {feedback && (
-          <div
-            className={`text-center text-sm font-medium ${
-              feedbackType === 'success'
-                ? 'text-emerald-400'
-                : feedbackType === 'error'
-                  ? 'text-red-400'
-                  : 'text-slate-300'
-            }`}
+        {feedback && feedbackType && (
+          <LuminaFeedbackCard
+            status={feedbackType === 'success' ? 'correct' : 'incorrect'}
           >
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Action buttons */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckAnswer}
                 disabled={!canCheck || hasSubmittedEvaluation}
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -1247,8 +1246,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

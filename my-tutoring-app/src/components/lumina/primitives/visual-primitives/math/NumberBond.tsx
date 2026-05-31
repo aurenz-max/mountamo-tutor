@@ -1,10 +1,18 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -936,26 +944,26 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-purple-300 text-xs">
+            <LuminaBadge accent="purple" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
+            </LuminaBadge>
             {currentChallenge && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
+              <LuminaBadge accent="emerald" className="text-xs">
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Challenge Progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -963,16 +971,17 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
               const hasType = challenges.some(c => c.type === type);
               if (!hasType) return null;
               return (
-                <Badge
+                <LuminaBadge
                   key={type}
+                  accent={currentChallenge?.type === type ? 'purple' : undefined}
                   className={`text-xs ${
                     currentChallenge?.type === type
-                      ? 'bg-purple-500/20 border-purple-400/50 text-purple-300'
+                      ? 'bg-purple-500/20 border-purple-400/50'
                       : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
                   }`}
                 >
                   {config.icon} {config.label}
-                </Badge>
+                </LuminaBadge>
               );
             })}
             <span className="text-slate-500 text-xs ml-auto">
@@ -983,11 +992,11 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">
               {currentChallenge.instruction}
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Number Bond Diagram */}
@@ -1099,18 +1108,18 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
             )}
             {/* Found pairs tracker */}
             {foundPairs.length > 0 && (
-              <div className="bg-slate-800/20 rounded-lg p-3 border border-white/5">
+              <LuminaPanel className="p-3 bg-slate-800/20">
                 <p className="text-slate-400 text-xs mb-2">
                   Ways found: {foundPairs.length} of {currentChallenge.allPairs?.length ?? allPairsForWhole(whole).length}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {foundPairs.map((pair, i) => (
-                    <Badge key={i} className="bg-purple-500/15 border-purple-400/30 text-purple-300 text-xs">
+                    <LuminaBadge key={i} accent="purple" className="bg-purple-500/15 border-purple-400/30 text-xs">
                       {pair[0]} + {pair[1]}
-                    </Badge>
+                    </LuminaBadge>
                   ))}
                 </div>
-              </div>
+              </LuminaPanel>
             )}
           </div>
         )}
@@ -1166,21 +1175,21 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
             <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
               {familyInputs.map((val, i) => (
                 <div key={i} className="relative">
-                  <input
+                  <LuminaInput
                     type="text"
-                    placeholder={i < 2 ? '_ + _ = _' : '_ \u2212 _ = _'}
+                    placeholder={i < 2 ? '_ + _ = _' : '_ − _ = _'}
                     value={val}
                     onChange={e => {
                       const next = [...familyInputs];
                       next[i] = e.target.value;
                       setFamilyInputs(next);
                     }}
-                    className={`w-full px-3 py-1.5 bg-slate-800/50 border rounded-lg text-slate-100 text-center text-sm focus:outline-none ${
+                    className={`w-full text-center text-sm ${
                       familyChecked[i] === true
                         ? 'border-emerald-400/50'
                         : familyChecked[i] === false
-                          ? 'border-red-400/50'
-                          : 'border-white/20 focus:border-purple-400/50'
+                          ? 'border-rose-400/50'
+                          : ''
                     }`}
                   />
                   {familyChecked[i] === true && (
@@ -1263,13 +1272,12 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex justify-center">
             {isCurrentChallengeComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
           </div>
         )}
@@ -1287,14 +1295,14 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
 
         {/* Hint */}
         {currentChallenge && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 bg-slate-800/20 text-center">
             <p className="text-slate-400 text-xs italic">
               {currentChallenge.type === 'decompose' && `Try starting with 0 + ${whole}, then 1 + ${whole - 1}...`}
               {currentChallenge.type === 'missing-part' && `Think: ${currentChallenge.whole} take away ${currentChallenge.part1 ?? currentChallenge.part2} equals...`}
               {currentChallenge.type === 'fact-family' && `Remember: if a + b = c, then c - a = b and c - b = a`}
               {currentChallenge.type === 'build-equation' && `Look at the number bond — which numbers go with + or -?`}
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Phase Summary */}
@@ -1308,8 +1316,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

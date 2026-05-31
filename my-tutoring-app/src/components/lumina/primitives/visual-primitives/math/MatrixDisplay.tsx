@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -537,11 +544,11 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
   // ── Early return ────────────────────────────────────────────────
   if (!challenges || challenges.length === 0) {
     return (
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardContent className="p-6">
+      <LuminaCard>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400">No matrix challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -551,18 +558,18 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
     : (currentChallenge?.expectedMatrix?.every((row, i) => row.every((_, j) => (matrixInput[i]?.[j] ?? '').trim().length > 0)) ?? false);
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
-          <Badge variant="outline" className="border-white/20 text-slate-300">
+          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
+          <LuminaBadge>
             {Math.min(currentIndex + 1, challenges.length)} / {challenges.length}
-          </Badge>
+          </LuminaBadge>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Summary panel (when complete) */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -579,12 +586,12 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
         {!allChallengesComplete && currentChallenge && (
           <>
             {/* Instruction */}
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+            <LuminaPanel>
               <p className="text-slate-100 text-sm font-medium">{currentChallenge.instruction}</p>
-            </div>
+            </LuminaPanel>
 
             {/* Source matrices */}
-            <div className="flex flex-wrap items-center justify-center gap-6 p-4 bg-slate-950/30 rounded-lg border border-white/10">
+            <LuminaPanel className="flex flex-wrap items-center justify-center gap-6">
               <MatrixRenderer
                 values={currentChallenge.values}
                 label={currentChallenge.secondMatrix ? 'Matrix A' : 'Matrix'}
@@ -630,7 +637,7 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
                   highlightCorrect={cellCorrectness}
                 />
               ) : null}
-            </div>
+            </LuminaPanel>
 
             {/* Feedback */}
             {feedback && (
@@ -648,50 +655,35 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
 
             {/* Show steps reveal */}
             {showSteps && (
-              <div className="p-4 bg-slate-950/40 rounded-lg border border-purple-500/30">
+              <LuminaPanel accent="purple">
                 <div className="text-xs font-mono uppercase tracking-wider text-purple-400 mb-2">Walkthrough</div>
                 <StepsReveal challenge={currentChallenge} />
-              </div>
+              </LuminaPanel>
             )}
 
             {/* Controls */}
             <div className="flex flex-wrap items-center gap-2">
               {!feedback?.correct && (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-100"
+                <LuminaActionButton
+                  action="check"
                   onClick={handleCheck}
                   disabled={!canSubmit}
-                >
-                  Check Answer
-                </Button>
+                />
               )}
               {!showSteps && !feedback?.correct && (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleShowSteps}
-                >
+                <LuminaButton onClick={handleShowSteps}>
                   Show steps
-                </Button>
+                </LuminaButton>
               )}
               {feedback?.correct && (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleNext}
-                >
+                <LuminaActionButton action="next" onClick={handleNext}>
                   {currentIndex + 1 < challenges.length ? 'Next Matrix →' : 'Finish'}
-                </Button>
+                </LuminaActionButton>
               )}
               {!feedback?.correct && currentAttempts >= 3 && (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
-                  onClick={handleNext}
-                >
+                <LuminaButton tone="subtle" onClick={handleNext}>
                   Skip →
-                </Button>
+                </LuminaButton>
               )}
             </div>
           </>
@@ -699,12 +691,12 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
 
         {/* Educational context (session-level) */}
         {educationalContext && !allChallengesComplete && (
-          <div className="mt-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+          <LuminaPanel accent="purple">
             <p className="text-xs text-slate-300 leading-relaxed">{educationalContext}</p>
-          </div>
+          </LuminaPanel>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

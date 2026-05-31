@@ -9,6 +9,18 @@ import {
   type FillInBlanksMetrics,
   type PrimitiveEvaluationResult,
 } from '../../evaluation';
+// Kit chrome: blank slot, word-bank chips + tray, feedback banner, action
+// buttons. (See lumina/ui/index.ts for the full list.) Chips grade via the
+// shared answerStateClasses token — same colors as every other answer surface.
+import {
+  LuminaFillBlankSlot,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaChip,
+  LuminaChipBank,
+  type FillBlankState,
+  type ChipState,
+} from '../../ui';
 
 interface FillInBlanksProblemProps {
   data: FillInBlanksProblemData;
@@ -151,7 +163,7 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
     });
   };
 
-  // Parse text with blanks
+  // Parse text with blanks — each blank renders as a LuminaFillBlankSlot.
   const renderTextWithBlanks = () => {
     const parts = data.textWithBlanks.split(/(\[blank_\d+\])/g);
 
@@ -162,45 +174,31 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
         const selectedWord = selectedWords[blankId];
         const isCorrect = checkAnswer(blankId);
 
-        let blankClass = "border-2 border-dashed border-blue-400/50 bg-blue-500/10";
-        if (selectedWord && !isSubmitted) {
-          blankClass = "border-2 border-blue-500 bg-blue-500/20";
-        } else if (isSubmitted) {
-          if (isCorrect) {
-            blankClass = "border-2 border-emerald-500 bg-emerald-500/20";
-          } else {
-            blankClass = "border-2 border-red-500 bg-red-500/20";
-          }
-        }
+        const blankState: FillBlankState = !selectedWord
+          ? 'empty'
+          : !isSubmitted
+            ? 'filled'
+            : isCorrect
+              ? 'correct'
+              : 'incorrect';
 
         return (
-          <span key={idx} className="inline-block relative mx-1">
-            <div
-              className={`inline-flex items-center justify-center min-w-[140px] px-4 py-2 rounded-lg transition-all ${blankClass} cursor-pointer`}
-              onClick={() => {
-                // Allow deselecting by clicking the blank
-                if (!isSubmitted && selectedWord) {
-                  SoundManager.tap();
-                  setSelectedWords(prev => {
-                    const newState = { ...prev };
-                    delete newState[blankId];
-                    return newState;
-                  });
-                }
-              }}
-            >
-              {selectedWord ? (
-                <span className="text-white font-medium">{selectedWord}</span>
-              ) : (
-                <span className="text-slate-400 text-sm">Drop word here</span>
-              )}
-            </div>
-            {isSubmitted && isCorrect !== null && (
-              <span className={`absolute -top-2 -right-2 text-lg ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>
-                {isCorrect ? '✓' : '✗'}
-              </span>
-            )}
-          </span>
+          <LuminaFillBlankSlot
+            key={idx}
+            state={blankState}
+            value={selectedWord}
+            onClick={() => {
+              // Click a filled blank (pre-submit) to remove its word.
+              if (!isSubmitted && selectedWord) {
+                SoundManager.tap();
+                setSelectedWords(prev => {
+                  const newState = { ...prev };
+                  delete newState[blankId];
+                  return newState;
+                });
+              }
+            }}
+          />
         );
       }
       return <span key={idx}>{part}</span>;
@@ -219,33 +217,28 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
         {renderTextWithBlanks()}
       </div>
 
-      {/* Word Bank */}
-      <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
-        <h4 className="text-lg font-semibold text-slate-300 mb-4">Word Bank</h4>
-        <div className="flex flex-wrap gap-3">
+      {/* Word Bank — kit chip bank; chips grade via the shared answerStateClasses token */}
+      <div className="space-y-2">
+        <LuminaChipBank label="Word Bank">
           {availableWords.map((word, idx) => {
             const used = isWordUsed(word);
             const correct = isWordCorrect(word);
 
-            let wordClass = "px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium cursor-pointer transition-all";
-
-            if (used && !isSubmitted) {
-              wordClass = "px-4 py-2 bg-blue-600 text-white rounded-lg font-medium opacity-50";
-            } else if (isSubmitted) {
-              if (correct === true) {
-                wordClass = "px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium";
-              } else if (correct === false) {
-                wordClass = "px-4 py-2 bg-red-600 text-white rounded-lg font-medium";
-              } else {
-                // Not used or incorrect placement
-                wordClass = "px-4 py-2 bg-slate-700 text-slate-400 rounded-lg font-medium opacity-50";
-              }
-            }
+            const chipState: ChipState = isSubmitted
+              ? correct === true
+                ? 'correct'
+                : correct === false
+                  ? 'incorrect'
+                  : 'dimmed'
+              : used
+                ? 'dimmed'
+                : 'idle';
 
             return (
-              <button
+              <LuminaChip
                 key={idx}
-                className={wordClass}
+                state={chipState}
+                disabled={isSubmitted}
                 onClick={() => {
                   if (isSubmitted) return;
 
@@ -269,15 +262,14 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
                     }
                   }
                 }}
-                disabled={isSubmitted}
               >
                 {word}
-              </button>
+              </LuminaChip>
             );
           })}
-        </div>
+        </LuminaChipBank>
         {!isSubmitted && (
-          <p className="text-sm text-slate-400 mt-4 italic">
+          <p className="text-sm text-slate-400 italic px-1">
             Click a word to place it in the next blank, or click a filled blank to remove it
           </p>
         )}
@@ -286,42 +278,23 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
       {/* Action Area */}
       <div className="flex flex-col items-center">
         {!isSubmitted ? (
-          <button
-            onClick={handleSubmit}
+          <LuminaActionButton
+            action="check"
             disabled={!data.blanks.every(blank => selectedWords[blank.id])}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 hover:shadow-blue-500/40 hover:-translate-y-0.5"
+            onClick={handleSubmit}
           >
             Check Answers
-          </button>
+          </LuminaActionButton>
         ) : (
           <div className="w-full space-y-4">
-            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-              <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${allCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {allCorrect ?
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  }
-                </svg>
-                <span>{allCorrect ? 'Perfect!' : 'Review Your Answers'}</span>
-              </div>
-              <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-                {data.rationale}
-              </p>
-              {data.teachingNote && (
-                <div className="mt-3 pt-3 border-t border-white/5">
-                  <p className="text-sm text-slate-400 italic">
-                    💡 {data.teachingNote}
-                  </p>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleReset}
-              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+            <LuminaFeedbackCard
+              status={allCorrect ? 'correct' : 'insight'}
+              label={allCorrect ? 'Perfect!' : 'Review Your Answers'}
+              teachingNote={data.teachingNote}
             >
-              Try Again
-            </button>
+              {data.rationale}
+            </LuminaFeedbackCard>
+            <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
         )}
       </div>

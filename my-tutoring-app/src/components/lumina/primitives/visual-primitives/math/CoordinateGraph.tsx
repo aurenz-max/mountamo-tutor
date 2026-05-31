@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  LuminaActionButton,
+  LuminaChallengeCounter,
+  LuminaProgress,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -66,10 +73,10 @@ const PAD = 50;
 const DRAW = SVG_SIZE - 2 * PAD;
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  plot_point:     { label: 'Plot Point',      icon: '\uD83D\uDCCD', accentColor: 'amber' },
-  read_point:     { label: 'Read Point',      icon: '\uD83D\uDC41\uFE0F', accentColor: 'blue' },
-  find_slope:     { label: 'Find Slope',      icon: '\uD83D\uDCC8', accentColor: 'purple' },
-  find_intercept: { label: 'Find Intercept',  icon: '\uD83C\uDFAF', accentColor: 'emerald' },
+  plot_point:     { label: 'Plot Point',      icon: '📍', accentColor: 'amber' },
+  read_point:     { label: 'Read Point',      icon: '👁️', accentColor: 'blue' },
+  find_slope:     { label: 'Find Slope',      icon: '📈', accentColor: 'purple' },
+  find_intercept: { label: 'Find Intercept',  icon: '🎯', accentColor: 'emerald' },
 };
 
 // ============================================================================
@@ -264,24 +271,25 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
   }, [challenge, feedback, handleAnswer]);
 
   // --- Render helpers ---
-  const optionColors = (idx: number) => {
-    if (!feedback || selectedOpt === null) return 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-100';
+  // Map the option FSM onto the kit's grading-state language.
+  const optionState = (idx: number): AnswerChoiceState => {
+    if (!feedback || selectedOpt === null) return 'idle';
     const isSelected = idx === selectedOpt;
     const isCorrect = idx === challenge?.correctOptionIndex;
-    if (feedback === 'correct' && isSelected) return 'bg-emerald-500/20 border-emerald-400/60 text-emerald-200';
-    if (feedback === 'show_answer' && isCorrect) return 'bg-emerald-500/20 border-emerald-400/60 text-emerald-200';
-    if ((feedback === 'incorrect' || feedback === 'show_answer') && isSelected) return 'bg-red-500/20 border-red-400/60 text-red-200';
-    return 'bg-white/5 border-white/10 text-slate-400';
+    if (feedback === 'correct' && isSelected) return 'correct';
+    if (feedback === 'show_answer' && isCorrect) return 'correct';
+    if ((feedback === 'incorrect' || feedback === 'show_answer') && isSelected) return 'incorrect';
+    return 'dimmed';
   };
 
   // --- Guard ---
   if (!challenges || challenges.length === 0) {
     return (
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 max-w-2xl mx-auto">
-        <CardContent className="p-8 text-center">
+      <LuminaCard className="max-w-2xl mx-auto">
+        <LuminaCardContent className="p-8 text-center">
           <p className="text-slate-400">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -305,31 +313,26 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
 
       {/* Active challenge */}
       {!allChallengesComplete && challenge && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-          <CardContent className="p-6 space-y-5">
+        <LuminaCard>
+          <LuminaCardContent className="p-6 space-y-5">
             {/* Header + progress */}
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-slate-100">{data.title}</h3>
                 {data.description && <p className="text-sm text-slate-400 mt-0.5">{data.description}</p>}
               </div>
-              <Badge variant="outline" className="text-blue-300 border-blue-400/30 text-xs">
-                {currentIndex + 1} / {challenges.length}
-              </Badge>
+              <LuminaChallengeCounter current={currentIndex + 1} total={challenges.length} accent="blue" />
             </div>
 
             {/* Progress bar */}
-            <div className="h-1.5 rounded-full bg-slate-700/50 overflow-hidden">
-              <div className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                style={{ width: `${((currentIndex) / challenges.length) * 100}%` }} />
-            </div>
+            <LuminaProgress value={(currentIndex / challenges.length) * 100} accent="blue" />
 
             {/* Instruction */}
             <p className="text-base text-slate-200 font-medium text-center py-2">
               {challenge.instruction}
             </p>
 
-            {/* SVG Coordinate Plane */}
+            {/* SVG Coordinate Plane — bespoke interaction surface, untouched */}
             <div className="flex justify-center">
               <svg
                 ref={svgRef}
@@ -518,60 +521,55 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                   const text = [challenge.option0, challenge.option1, challenge.option2, challenge.option3][i];
                   if (!text) return null;
                   return (
-                    <Button key={i} variant="ghost"
-                      className={`h-auto py-3 px-4 text-sm font-mono border transition-all ${optionColors(i)}`}
+                    <LuminaAnswerChoice
+                      key={i}
+                      state={optionState(i)}
                       disabled={!!feedback}
-                      onClick={() => handleOptionClick(i)}>
+                      className="p-3 text-center text-sm font-mono"
+                      onClick={() => handleOptionClick(i)}
+                    >
                       {text}
-                    </Button>
+                    </LuminaAnswerChoice>
                   );
                 })}
               </div>
             )}
 
             {/* Feedback */}
-            {feedback && (
-              <div className={`p-4 rounded-xl border ${
-                feedback === 'correct'
-                  ? 'bg-emerald-500/10 border-emerald-500/30'
-                  : 'bg-red-500/10 border-red-500/30'
-              }`}>
-                {feedback === 'correct' && (
-                  <p className="text-emerald-300 text-sm font-medium">Correct! Well done.</p>
-                )}
-                {feedback === 'incorrect' && (
-                  <div className="space-y-3">
-                    <p className="text-red-300 text-sm font-medium">Not quite. Try again!</p>
-                    <p className="text-slate-400 text-xs">{challenge.hint}</p>
-                    <Button variant="ghost" size="sm"
-                      className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                      onClick={() => { setFeedback(null); setPlacedPt(null); setSelectedOpt(null); }}>
-                      Try Again
-                    </Button>
-                  </div>
-                )}
-                {feedback === 'show_answer' && (
-                  <div className="space-y-3">
-                    <p className="text-red-300 text-sm font-medium">
-                      The correct answer is{' '}
-                      <span className="text-emerald-300 font-bold">
-                        {challenge.type === 'plot_point'
-                          ? `(${challenge.x1}, ${challenge.y1})`
-                          : [challenge.option0, challenge.option1, challenge.option2, challenge.option3][challenge.correctOptionIndex ?? 0]}
-                      </span>
-                    </p>
-                    <p className="text-slate-400 text-xs">{challenge.hint}</p>
-                    <Button variant="ghost" size="sm"
-                      className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                      onClick={advanceToNext}>
-                      Continue
-                    </Button>
-                  </div>
-                )}
-              </div>
+            {feedback === 'correct' && (
+              <LuminaFeedbackCard status="correct">Correct! Well done.</LuminaFeedbackCard>
             )}
-          </CardContent>
-        </Card>
+            {feedback === 'incorrect' && (
+              <LuminaFeedbackCard status="incorrect" teachingNote={challenge.hint}>
+                <div className="space-y-3">
+                  <p className="text-sm">Not quite. Try again!</p>
+                  <LuminaActionButton
+                    action="retry"
+                    size="sm"
+                    onClick={() => { setFeedback(null); setPlacedPt(null); setSelectedOpt(null); }}
+                  />
+                </div>
+              </LuminaFeedbackCard>
+            )}
+            {feedback === 'show_answer' && (
+              <LuminaFeedbackCard status="incorrect" teachingNote={challenge.hint}>
+                <div className="space-y-3">
+                  <p className="text-sm">
+                    The correct answer is{' '}
+                    <span className="text-emerald-300 font-bold">
+                      {challenge.type === 'plot_point'
+                        ? `(${challenge.x1}, ${challenge.y1})`
+                        : [challenge.option0, challenge.option1, challenge.option2, challenge.option3][challenge.correctOptionIndex ?? 0]}
+                    </span>
+                  </p>
+                  <LuminaActionButton action="next" size="sm" onClick={advanceToNext}>
+                    Continue
+                  </LuminaActionButton>
+                </div>
+              </LuminaFeedbackCard>
+            )}
+          </LuminaCardContent>
+        </LuminaCard>
       )}
     </div>
   );

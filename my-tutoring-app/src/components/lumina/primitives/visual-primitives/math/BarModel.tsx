@@ -1,12 +1,23 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaPanel,
+  LuminaButton,
+  LuminaPrompt,
+  LuminaChallengeCounter,
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  LuminaSectionLabel,
+  answerStateClass,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type BarModelMetrics,
@@ -171,12 +182,15 @@ const BarsArea: React.FC<BarsAreaProps> = ({
             const isHighlighted = highlightedIndex === i;
             const isSelected = selectedIndex === i;
             const fb = feedbackIndex?.index === i ? feedbackIndex : null;
+            // Grading state (selected/correct/incorrect) is FRAME → tokenized
+            // via answerStateClass so it matches the eval language everywhere.
+            // The amber "look-here" highlight is a bespoke hint cue, kept local.
             const ringClass = fb
               ? fb.correct
-                ? 'border-emerald-400 ring-2 ring-emerald-400/40'
-                : 'border-rose-400 ring-2 ring-rose-400/40'
+                ? answerStateClass('correct')
+                : answerStateClass('incorrect')
               : isSelected
-                ? 'border-cyan-400 ring-2 ring-cyan-400/40'
+                ? answerStateClass('selected')
                 : isHighlighted
                   ? 'border-amber-400 ring-2 ring-amber-400/40'
                   : 'border-white/10';
@@ -271,7 +285,7 @@ const PictureBar: React.FC<PictureBarProps> = ({ value, iconEmoji, iconValue, ax
     >
       {Array.from({ length: maxIconCount }).map((_, i) => (
         <span key={i} className="text-2xl text-center leading-none select-none">
-          {i < iconCount ? iconEmoji : ' '}
+          {i < iconCount ? iconEmoji : ' '}
         </span>
       ))}
     </button>
@@ -310,52 +324,50 @@ const BuildControls: React.FC<BuildControlsProps> = ({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-wider text-slate-400 font-mono">Adjust each bar</p>
+        <LuminaSectionLabel accent="cyan" size="sm">Adjust each bar</LuminaSectionLabel>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {values.map((v, i) => (
-            <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-800/50 border border-white/10">
+            <LuminaPanel key={i} className="flex items-center justify-between gap-3 px-3 py-2">
               <span className="text-sm text-slate-200">{v.label}</span>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
+                <LuminaButton
                   size="sm"
                   disabled={disabled || v.value === 0}
-                  className="h-7 w-7 p-0 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+                  className="h-7 w-7 p-0"
                   onClick={() => adjust(i, -1)}
                   aria-label={`Decrease ${v.label}`}
                 >
                   −
-                </Button>
+                </LuminaButton>
                 <span className="font-mono text-slate-100 w-8 text-center">{v.value}</span>
-                <Button
-                  variant="ghost"
+                <LuminaButton
                   size="sm"
                   disabled={disabled}
-                  className="h-7 w-7 p-0 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+                  className="h-7 w-7 p-0"
                   onClick={() => adjust(i, 1)}
                   aria-label={`Increase ${v.label}`}
                 >
                   +
-                </Button>
+                </LuminaButton>
               </div>
-            </div>
+            </LuminaPanel>
           ))}
         </div>
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-wider text-slate-400 font-mono">Choose a scale step</p>
+        <LuminaSectionLabel accent="cyan" size="sm">Choose a scale step</LuminaSectionLabel>
         <div className="flex flex-wrap gap-2">
           {scaleSteps.map((s) => (
-            <Button
+            <LuminaButton
               key={s}
-              variant="ghost"
+              tone={chosenStep === s ? 'primary' : 'ghost'}
               disabled={disabled}
               onClick={() => { SoundManager.select(); onChooseStep(s); }}
-              className={`px-4 py-2 border ${chosenStep === s ? 'bg-cyan-500/20 border-cyan-400 text-cyan-100' : 'bg-white/5 border-white/20 text-slate-100 hover:bg-white/10'}`}
+              className="px-4 py-2"
             >
               Step of {s}
-            </Button>
+            </LuminaButton>
           ))}
         </div>
       </div>
@@ -699,9 +711,9 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
   if (challenges.length === 0) {
     return (
       <div className={`w-full max-w-5xl mx-auto my-12 ${className || ''}`}>
-        <div className="backdrop-blur-xl bg-slate-900/40 rounded-3xl border border-white/10 p-6 text-center">
+        <LuminaCard className="rounded-3xl p-6 text-center">
           <p className="text-slate-300">No bar-model challenges available.</p>
-        </div>
+        </LuminaCard>
       </div>
     );
   }
@@ -726,7 +738,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
         </div>
       </div>
 
-      <div className="backdrop-blur-xl bg-slate-900/40 rounded-3xl border border-white/10 p-6 md:p-10 relative overflow-hidden">
+      <LuminaCard className="rounded-3xl p-6 md:p-10 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(#10b981 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         />
@@ -740,35 +752,22 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
 
           {/* Progress bar */}
           {!isComplete && challenges.length > 1 ? (
-            <div className="flex items-center justify-center gap-3 text-xs text-emerald-300 font-mono uppercase tracking-wider">
-              <span>Challenge {Math.min(currentIndex + 1, challenges.length)} of {challenges.length}</span>
-              <div className="flex gap-1.5">
-                {challenges.map((ch, idx) => {
-                  const done = results.some((r) => r.challengeId === ch.id);
-                  const isCurrent = idx === currentIndex && !isComplete;
-                  return (
-                    <div
-                      key={ch.id}
-                      className={`w-2.5 h-2.5 rounded-full border ${
-                        done
-                          ? 'bg-green-400/70 border-green-300/80 shadow-[0_0_8px_rgba(34,197,94,0.5)]'
-                          : isCurrent
-                          ? 'bg-emerald-400/70 border-emerald-300/80 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
-                          : 'bg-slate-700/40 border-slate-600/50'
-                      }`}
-                    />
-                  );
-                })}
-              </div>
+            <div className="flex justify-center">
+              <LuminaChallengeCounter
+                current={Math.min(currentIndex + 1, challenges.length)}
+                total={challenges.length}
+                variant="dots"
+                accent="emerald"
+              />
             </div>
           ) : null}
 
           {/* Per-challenge UI */}
           {!isComplete && currentChallenge ? (
             <>
-              <div className="rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-center">
-                <p className="text-cyan-100 text-base font-medium">{currentChallenge.prompt}</p>
-              </div>
+              <LuminaPrompt accent="cyan" center>
+                <span className="text-base">{currentChallenge.prompt}</span>
+              </LuminaPrompt>
 
               <div className="px-2">
                 <BarsArea
@@ -788,23 +787,23 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                   {currentChallenge.options.map((opt) => {
                     const isSelected = selectedOption === opt;
                     const isAnswer = currentChallenge.expectedValue === opt;
-                    const variantClass = isSelected
+                    const choiceState = isSelected
                       ? feedback === 'correct'
-                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-100'
-                        : 'bg-rose-500/20 border-rose-400 text-rose-100'
+                        ? 'correct'
+                        : 'incorrect'
                       : feedback === 'correct' && isAnswer
-                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-100'
-                        : 'bg-white/5 border-white/20 text-slate-100 hover:bg-white/10';
+                        ? 'correct'
+                        : 'idle';
                     return (
-                      <Button
+                      <LuminaAnswerChoice
                         key={opt}
-                        variant="ghost"
+                        state={choiceState}
                         disabled={feedback === 'correct'}
                         onClick={() => handleOptionClick(opt)}
-                        className={`min-w-[64px] px-4 py-2 border font-mono text-lg ${variantClass}`}
+                        className="w-auto min-w-[64px] px-4 py-2 text-center font-mono text-lg"
                       >
                         {opt}
-                      </Button>
+                      </LuminaAnswerChoice>
                     );
                   })}
                 </div>
@@ -821,46 +820,38 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                     disabled={feedback === 'correct'}
                   />
                   <div className="flex justify-center">
-                    <Button
-                      variant="ghost"
+                    <LuminaActionButton
+                      action="check"
                       disabled={feedback === 'correct' || chosenStep == null}
                       onClick={handleBuildSubmit}
-                      className="px-6 py-2 bg-cyan-500/20 border border-cyan-400 text-cyan-100 hover:bg-cyan-500/30 disabled:opacity-50"
                     >
                       Submit graph
-                    </Button>
+                    </LuminaActionButton>
                   </div>
                 </div>
               ) : null}
 
               {feedback ? (
-                <div className={`rounded-xl px-4 py-3 text-center border ${
-                  feedback === 'correct'
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100'
-                    : 'bg-rose-500/15 border-rose-400/40 text-rose-100'
-                }`}>
-                  {feedback === 'correct' ? (
-                    <p className="text-sm font-medium">Nice work — that&apos;s correct.</p>
-                  ) : (
-                    <div className="space-y-1 text-sm">
-                      <p className="font-medium">Not quite — try again.</p>
-                      {showHint && currentChallenge.hint ? (
-                        <p className="text-rose-100/80 font-light">{currentChallenge.hint}</p>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
+                <LuminaFeedbackCard
+                  status={feedback === 'correct' ? 'correct' : 'incorrect'}
+                  label={feedback === 'correct' ? 'Nice work' : 'Not quite'}
+                  teachingNote={
+                    feedback === 'incorrect' && showHint && currentChallenge.hint
+                      ? currentChallenge.hint
+                      : undefined
+                  }
+                >
+                  {feedback === 'correct'
+                    ? "That's correct."
+                    : 'Take another look and try again.'}
+                </LuminaFeedbackCard>
               ) : null}
 
               {feedback === 'correct' ? (
                 <div className="text-center">
-                  <Button
-                    variant="ghost"
-                    onClick={advanceToNextChallenge}
-                    className="px-6 py-2 bg-emerald-500/30 border border-emerald-400/60 text-emerald-100 hover:bg-emerald-500/40"
-                  >
+                  <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                     {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
-                  </Button>
+                  </LuminaActionButton>
                 </div>
               ) : null}
             </>
@@ -878,7 +869,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
             />
           ) : null}
         </div>
-      </div>
+      </LuminaCard>
     </div>
   );
 };

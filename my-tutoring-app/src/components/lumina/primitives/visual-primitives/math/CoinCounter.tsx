@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -586,14 +594,15 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
         {renderCoinGroup(coins)}
         <div className="flex items-center gap-3 justify-center">
           <span className="text-slate-400 text-sm">Total:</span>
-          <input
+          <LuminaInput
             type="number"
+            inputMode="numeric"
             min={0}
             value={countInput}
             onChange={(e) => setCountInput(e.target.value)}
             disabled={isCurrentChallengeCorrect}
             placeholder="¢"
-            className="w-24 bg-slate-800/50 border border-white/10 rounded-lg px-3 py-2 text-center text-slate-100 text-lg placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+            className="w-24 px-3 py-2 text-center text-lg"
           />
           <span className="text-slate-400">cents</span>
         </div>
@@ -761,14 +770,15 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
           </div>
         </div>
         <div className="flex items-center gap-3 justify-center">
-          <input
+          <LuminaInput
             type="number"
+            inputMode="numeric"
             min={0}
             value={changeInput}
             onChange={(e) => setChangeInput(e.target.value)}
             disabled={isCurrentChallengeCorrect}
             placeholder="¢"
-            className="w-24 bg-slate-800/50 border border-white/10 rounded-lg px-3 py-2 text-center text-slate-100 text-lg placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+            className="w-24 px-3 py-2 text-center text-lg"
           />
           <span className="text-slate-400">cents</span>
         </div>
@@ -778,25 +788,25 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
 
   // ── Main Render ────────────────────────────────────────────────────
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
+            <LuminaBadge accent="emerald" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`}
-            </Badge>
+            </LuminaBadge>
             {challenges.length > 0 && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+              <LuminaBadge accent="blue" className="text-xs">
                 {currentChallengeIndex + 1}/{challenges.length}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase badges */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -805,16 +815,17 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
               if (!hasThisType) return null;
               const isActive = currentChallenge?.type === type;
               return (
-                <Badge
+                <LuminaBadge
                   key={type}
+                  accent={isActive ? 'emerald' : undefined}
                   className={`text-xs ${
                     isActive
-                      ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
+                      ? 'bg-emerald-500/20 border-emerald-400/50'
                       : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
                   }`}
                 >
                   {config.icon} {config.label}
-                </Badge>
+                </LuminaBadge>
               );
             })}
           </div>
@@ -836,9 +847,9 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
         {currentChallenge && !allChallengesComplete && (
           <div className="space-y-4">
             {/* Instruction */}
-            <div className="p-3 rounded-xl bg-slate-800/30 border border-white/5">
+            <LuminaPanel className="p-3 rounded-xl">
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-            </div>
+            </LuminaPanel>
 
             {/* Challenge-type-specific UI */}
             {currentChallenge.type === 'identify' && renderIdentifyChallenge()}
@@ -865,8 +876,8 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
             {/* Action buttons */}
             <div className="flex items-center justify-center gap-3">
               {!isCurrentChallengeCorrect ? (
-                <Button
-                  variant="ghost"
+                <LuminaActionButton
+                  action="check"
                   onClick={handleCheckAnswer}
                   disabled={
                     (currentChallenge.type === 'identify' && !selectedCoin) ||
@@ -875,18 +886,14 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                     (currentChallenge.type === 'compare' && !selectedGroup) ||
                     (currentChallenge.type === 'make-change' && !changeInput)
                   }
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
-                >
-                  Check Answer
-                </Button>
+                />
               ) : (
-                <Button
-                  variant="ghost"
+                <LuminaActionButton
+                  action="next"
                   onClick={advanceToNextChallenge}
-                  className="bg-emerald-500/20 border border-emerald-400/50 hover:bg-emerald-500/30 text-emerald-300"
                 >
                   {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                </Button>
+                </LuminaActionButton>
               )}
             </div>
           </div>
@@ -899,8 +906,8 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
             <p className="text-slate-400 mt-2">No challenges loaded</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

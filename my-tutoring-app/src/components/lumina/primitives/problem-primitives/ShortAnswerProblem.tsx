@@ -8,6 +8,28 @@ import {
   type ShortAnswerMetrics,
   type PrimitiveEvaluationResult,
 } from '../../evaluation';
+// Eval-loop chrome from the Lumina UI kit (see lumina/ui/index.ts for the full list).
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaFeedbackCard,
+  LuminaActionButton,
+} from '../../ui';
+
+/**
+ * Short Answer Problem Component
+ *
+ * EVALUATION INTEGRATION:
+ * - Captures a free-text response and submits it for backend AI scoring
+ * - Submits a neutral score; the backend AI overrides it
+ * - Supports competency tracking via skillId/subskillId/objectiveId
+ * - Enables retry mechanism with resetAttempt
+ *
+ * UI: the free-text answer surface (textarea) is the bespoke "painting" and
+ * stays custom. The response echo card, guidance banner, and action buttons
+ * come from the Lumina UI kit (LuminaCard / LuminaFeedbackCard /
+ * LuminaActionButton).
+ */
 
 interface ShortAnswerProblemProps {
   data: ShortAnswerProblemData;
@@ -86,7 +108,7 @@ export const ShortAnswerProblem: React.FC<ShortAnswerProblemProps> = ({ data }) 
       {/* Inset (rich inline content) */}
       {data.inset && <InsetRenderer inset={data.inset} />}
 
-      {/* Answer Input */}
+      {/* Answer Input — bespoke free-text surface (the "painting"), left untouched */}
       <div className="mb-8">
         <textarea
           value={userAnswer}
@@ -101,39 +123,38 @@ export const ShortAnswerProblem: React.FC<ShortAnswerProblemProps> = ({ data }) 
       {/* Action Area */}
       <div className="flex flex-col items-center">
         {!isSubmitted ? (
-          <button
-            onClick={handleSubmit}
+          <LuminaActionButton
+            action="check"
             disabled={!userAnswer.trim()}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 hover:shadow-blue-500/40 hover:-translate-y-0.5"
+            onClick={handleSubmit}
           >
             Submit Answer
-          </button>
+          </LuminaActionButton>
         ) : (
-          <div className="w-full space-y-6">
-            {/* User's Answer */}
-            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-              <div className="flex items-center gap-3 mb-3 font-bold uppercase tracking-wider text-blue-400 text-sm">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-                <span>Your Response</span>
-              </div>
-              <p className="text-slate-300 leading-relaxed font-light">
-                {userAnswer}
-              </p>
-            </div>
+          <div className="w-full space-y-4">
+            {/* User's Answer echo */}
+            <LuminaCard surface="nested" className="animate-fade-in">
+              <LuminaCardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3 font-bold uppercase tracking-wider text-blue-400 text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                  <span>Your Response</span>
+                </div>
+                <p className="text-slate-300 leading-relaxed font-light">
+                  {userAnswer}
+                </p>
+              </LuminaCardContent>
+            </LuminaCard>
 
-            {/* Feedback */}
-            <div className="bg-emerald-900/10 rounded-2xl p-6 border border-emerald-500/20">
-              <div className="flex items-center gap-3 mb-3 font-bold uppercase tracking-wider text-emerald-400 text-sm">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span>Guidance</span>
-              </div>
-              <p className="text-slate-300 leading-relaxed font-light mb-3">
-                {data.rationale}
-              </p>
+            {/* Guidance — short answers are AI-scored on the backend, so this is
+                always the softer "insight" banner rather than correct/incorrect. */}
+            <LuminaFeedbackCard
+              status="insight"
+              label="Guidance"
+              teachingNote={data.teachingNote}
+            >
+              <p className="mb-3">{data.rationale}</p>
               {data.successCriteria && data.successCriteria.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-white/5">
                   <div className="text-xs font-mono uppercase tracking-widest text-slate-400 mb-2">Success Criteria</div>
@@ -147,22 +168,9 @@ export const ShortAnswerProblem: React.FC<ShortAnswerProblemProps> = ({ data }) 
                   </ul>
                 </div>
               )}
-            </div>
+            </LuminaFeedbackCard>
 
-            {data.teachingNote && (
-              <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
-                <p className="text-sm text-slate-400 italic">
-                  💡 {data.teachingNote}
-                </p>
-              </div>
-            )}
-
-            <button
-              onClick={handleReset}
-              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
-            >
-              Try Again
-            </button>
+            <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
         )}
       </div>

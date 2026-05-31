@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -59,21 +66,21 @@ export interface OrdinalLineData {
 // ============================================================================
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'identify':          { label: 'Identify',    icon: '\uD83D\uDC46', accentColor: 'orange' },
-  'match':             { label: 'Match',       icon: '\uD83D\uDD17', accentColor: 'purple' },
-  'relative-position': { label: 'Position',    icon: '\u2194\uFE0F', accentColor: 'blue' },
-  'sequence-story':    { label: 'Story',       icon: '\uD83D\uDCD6', accentColor: 'emerald' },
-  'build-sequence':    { label: 'Build',       icon: '\uD83E\uDDF1', accentColor: 'amber' },
+  'identify':          { label: 'Identify',    icon: '👆', accentColor: 'orange' },
+  'match':             { label: 'Match',       icon: '🔗', accentColor: 'purple' },
+  'relative-position': { label: 'Position',    icon: '↔️', accentColor: 'blue' },
+  'sequence-story':    { label: 'Story',       icon: '📖', accentColor: 'emerald' },
+  'build-sequence':    { label: 'Build',       icon: '🧱', accentColor: 'amber' },
 };
 
 const ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
 
 const CONTEXT_THEME: Record<string, { bgEmoji: string; startLabel: string; endLabel: string }> = {
-  'race':        { bgEmoji: '\uD83C\uDFC1', startLabel: 'START', endLabel: 'FINISH' },
-  'parade':      { bgEmoji: '\uD83C\uDF89', startLabel: 'Beginning', endLabel: 'End' },
-  'lunch-line':  { bgEmoji: '\uD83C\uDF7D\uFE0F', startLabel: 'Beginning', endLabel: 'End' },
-  'train':       { bgEmoji: '\uD83D\uDE82', startLabel: 'Engine', endLabel: 'Caboose' },
-  'bookshelf':   { bgEmoji: '\uD83D\uDCDA', startLabel: 'Left', endLabel: 'Right' },
+  'race':        { bgEmoji: '🏁', startLabel: 'START', endLabel: 'FINISH' },
+  'parade':      { bgEmoji: '🎉', startLabel: 'Beginning', endLabel: 'End' },
+  'lunch-line':  { bgEmoji: '🍽️', startLabel: 'Beginning', endLabel: 'End' },
+  'train':       { bgEmoji: '🚂', startLabel: 'Engine', endLabel: 'Caboose' },
+  'bookshelf':   { bgEmoji: '📚', startLabel: 'Left', endLabel: 'Right' },
 };
 
 // ============================================================================
@@ -542,7 +549,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
     <div className="flex items-end justify-center gap-1 sm:gap-2 py-4 px-2">
       {contextTheme.startLabel && (
         <div className="flex flex-col items-center mr-2">
-          <span className="text-lg">{context === 'race' ? '\uD83C\uDFC1' : ''}</span>
+          <span className="text-lg">{context === 'race' ? '🏁' : ''}</span>
           <span className="text-[10px] text-slate-500 mt-1">{contextTheme.startLabel}</span>
         </div>
       )}
@@ -590,7 +597,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
 
       {contextTheme.endLabel && (
         <div className="flex flex-col items-center ml-2">
-          <span className="text-lg">{context === 'race' ? '\uD83C\uDFC1' : ''}</span>
+          <span className="text-lg">{context === 'race' ? '🏁' : ''}</span>
           <span className="text-[10px] text-slate-500 mt-1">{contextTheme.endLabel}</span>
         </div>
       )}
@@ -627,7 +634,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                 {pair.word}
                 {matchSelections.has(pair.word) && (
                   <span className="ml-auto text-xs text-emerald-400">
-                    {'\u2192'} {matchSelections.get(pair.word)}
+                    {'→'} {matchSelections.get(pair.word)}
                   </span>
                 )}
               </Button>
@@ -726,7 +733,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
       <div className="space-y-4">
         {/* Clues (hidden for story mode — the story text serves as the clue) */}
         {showClueText && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Clues</p>
             <ul className="space-y-1">
               {clues.map((clue, idx) => (
@@ -736,7 +743,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                 </li>
               ))}
             </ul>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Slots */}
@@ -836,25 +843,25 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300 text-xs">
+            <LuminaBadge accent="orange" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-purple-300 text-xs">
+            </LuminaBadge>
+            <LuminaBadge accent="purple" className="text-xs">
               {contextTheme.bgEmoji} {context}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -863,16 +870,13 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
               if (!hasChallengesOfType) return null;
               const isCurrent = currentChallenge?.type === type;
               return (
-                <Badge
+                <LuminaBadge
                   key={type}
-                  className={`text-xs ${
-                    isCurrent
-                      ? 'bg-orange-500/20 border-orange-400/50 text-orange-300'
-                      : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                  }`}
+                  accent={isCurrent ? 'orange' : undefined}
+                  className={`text-xs ${isCurrent ? '' : 'opacity-60'}`}
                 >
                   {config.icon} {config.label}
-                </Badge>
+                </LuminaBadge>
               );
             })}
             <span className="text-slate-500 text-xs ml-auto">
@@ -885,18 +889,18 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
         {currentChallenge?.storyText && !allChallengesComplete && (
           <div className="bg-emerald-500/5 rounded-lg p-4 border border-emerald-400/10">
             <p className="text-slate-200 text-sm leading-relaxed">
-              {'\uD83D\uDCD6'} {currentChallenge.storyText}
+              {'📖'} {currentChallenge.storyText}
             </p>
           </div>
         )}
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">
               {currentChallenge.instruction}
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Character Line (for identify and relative-position phases) */}
@@ -948,23 +952,19 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckAnswer}
                 disabled={!canCheck}
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -981,7 +981,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
 
         {/* Hint after multiple attempts */}
         {feedbackType === 'error' && currentAttempts >= 2 && currentChallenge && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">
               {currentChallenge.type === 'identify'
                 ? `Count from the front: ${ORDINAL_WORDS.slice(0, currentChallenge.characters.length).join(', ')}...`
@@ -993,7 +993,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                       ? 'Read the story again and drag each character to their spot.'
                       : 'Think about the order carefully.'}
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Phase Summary */}
@@ -1007,8 +1007,8 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

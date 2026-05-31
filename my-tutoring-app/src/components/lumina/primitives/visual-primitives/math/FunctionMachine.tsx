@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -504,14 +511,14 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   if (!challenges || challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-red-500/20 ${className || ''}`}>
-        <CardHeader>
-          <CardTitle className="text-red-300">Configuration Error</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <LuminaCard className={`border-red-500/20 ${className || ''}`}>
+        <LuminaCardHeader>
+          <LuminaCardTitle className="text-red-300">Configuration Error</LuminaCardTitle>
+        </LuminaCardHeader>
+        <LuminaCardContent>
           <p className="text-red-200/80">No function machine challenges provided.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -527,33 +534,33 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   return (
     <div className={`w-full max-w-6xl mx-auto my-8 space-y-6 ${className || ''}`}>
       {/* Header Card */}
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardHeader className="pb-4">
+      <LuminaCard>
+        <LuminaCardHeader className="pb-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center border border-blue-400/40">
                 <span className="text-xl">{PHASE_TYPE_CONFIG[challengeType].icon}</span>
               </div>
               <div>
-                <CardTitle className="text-slate-100">{title}</CardTitle>
+                <LuminaCardTitle>{title}</LuminaCardTitle>
                 <p className="text-sm text-slate-400 mt-1">{description}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-blue-400/40 text-blue-300 text-xs">
+              <LuminaBadge accent="blue" className="text-xs">
                 {CHALLENGE_TYPE_LABEL[challengeType]}
-              </Badge>
-              <Badge variant="outline" className="border-purple-400/40 text-purple-300 text-xs">
+              </LuminaBadge>
+              <LuminaBadge accent="purple" className="text-xs">
                 {ruleComplexity === 'oneStep' ? 'One-Step' : ruleComplexity === 'twoStep' ? 'Two-Step' : 'Expression'}
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
-        </CardHeader>
-      </Card>
+        </LuminaCardHeader>
+      </LuminaCard>
 
       {/* Challenge Progress Dots */}
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardContent className="py-3">
+      <LuminaCard>
+        <LuminaCardContent className="py-3">
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs uppercase tracking-wider text-slate-400 font-mono">
               Function {currentIndex + 1} of {challenges.length}
@@ -577,8 +584,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
               })}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
 
       {/* Phase Summary Panel (final) */}
       {hasSubmittedEvaluation && phaseResults.length > 0 && (
@@ -594,8 +601,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
 
       {/* Between-challenge interstitial */}
       {challengeDone && !allChallengesComplete && (
-        <Card className="backdrop-blur-xl bg-emerald-500/10 border-emerald-400/40">
-          <CardContent className="py-6 text-center">
+        <LuminaCard className="bg-emerald-500/10 border-emerald-400/40">
+          <LuminaCardContent className="py-6 text-center">
             <div className="text-3xl mb-2">✅</div>
             <h3 className="text-emerald-100 font-semibold text-lg mb-1">
               Function {currentIndex + 1} Complete!
@@ -603,23 +610,19 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
             <p className="text-sm text-emerald-200/80 mb-4">
               Rule was <span className="font-mono font-bold text-white">f(x) = {currentChallenge.rule}</span>. Ready for the next one?
             </p>
-            <Button
-              variant="ghost"
-              onClick={() => advance()}
-              className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-100"
-            >
+            <LuminaActionButton action="next" onClick={() => advance()}>
               Next Function →
-            </Button>
-          </CardContent>
-        </Card>
+            </LuminaActionButton>
+          </LuminaCardContent>
+        </LuminaCard>
       )}
 
       {/* Active interaction (hidden once challenge is done or all done) */}
       {!challengeDone && !allChallengesComplete && (
         <>
           {/* Machine Visualization */}
-          <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-            <CardContent className="py-8">
+          <LuminaCard>
+            <LuminaCardContent className="py-8">
               <div className="flex items-center justify-center gap-6 md:gap-8">
                 {/* Input Hopper */}
                 <div className="flex flex-col items-center">
@@ -677,32 +680,33 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </LuminaCardContent>
+          </LuminaCard>
 
           {/* Prediction Panel (predict mode only) */}
           {challengeType === 'predict' && (
-            <Card className="backdrop-blur-xl bg-amber-500/10 border-amber-400/30">
-              <CardContent className="py-5">
+            <LuminaCard className="bg-amber-500/10 border-amber-400/30">
+              <LuminaCardContent className="py-5">
                 <h4 className="text-amber-200 font-semibold mb-3">Predict the Output</h4>
                 <p className="text-sm text-amber-100/80 mb-4">
                   Type your prediction first, then click an input below to feed it through the machine.
                 </p>
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-amber-300 text-sm">My prediction:</span>
-                  <input
+                  <LuminaInput
                     type="text"
+                    inputMode="numeric"
                     value={prediction}
                     onChange={(e) => { setPrediction(e.target.value); setPredictionFeedback(null); }}
                     placeholder="?"
                     disabled={isProcessing}
-                    className="w-24 px-3 py-2 bg-slate-800/50 text-white rounded-lg border border-amber-400/40 focus:border-amber-400 focus:outline-none text-center font-mono"
+                    className="w-24 text-center font-mono"
                   />
                   {predictionFeedback === 'correct' && (
-                    <Badge className="bg-green-500/20 text-green-300 border-green-400/40">Correct!</Badge>
+                    <LuminaBadge accent="emerald">Correct!</LuminaBadge>
                   )}
                   {predictionFeedback === 'incorrect' && (
-                    <Badge className="bg-red-500/20 text-red-300 border-red-400/40">Not quite</Badge>
+                    <LuminaBadge accent="rose">Not quite</LuminaBadge>
                   )}
                   {predictionsTotal > 0 && (
                     <span className="text-xs text-amber-300/70 ml-auto">
@@ -710,34 +714,34 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                     </span>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
 
           {/* Available Inputs (observe / predict / discover_rule) */}
           {challengeType !== 'create_rule' && (
-            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-              <CardContent className="py-5">
+            <LuminaCard>
+              <LuminaCardContent className="py-5">
                 <div className="flex items-center gap-3 mb-4">
                   <h4 className="text-sm font-mono uppercase tracking-wider text-blue-400">Available Inputs</h4>
                   {availableInputs.length > 0 && (
-                    <Badge variant="outline" className="border-blue-400/30 text-blue-300 text-xs">
+                    <LuminaBadge accent="blue" className="text-xs">
                       {availableInputs.length} remaining
-                    </Badge>
+                    </LuminaBadge>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {availableInputs.length > 0 ? (
                     availableInputs.map((value, idx) => (
-                      <Button
+                      <button
                         key={idx}
-                        variant="ghost"
+                        type="button"
                         disabled={isProcessing || (challengeType === 'predict' && !prediction.trim())}
                         onClick={() => processValue(value)}
-                        className="bg-blue-500/15 border border-blue-400/40 hover:bg-blue-500/30 text-white font-bold"
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-blue-500/15 border border-blue-400/40 hover:bg-blue-500/30 text-white font-bold"
                       >
                         {value}
-                      </Button>
+                      </button>
                     ))
                   ) : (
                     <p className="text-slate-400 text-sm">
@@ -747,14 +751,14 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                     </p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
 
           {/* Processed Pairs (observe / predict / discover_rule) */}
           {challengeType !== 'create_rule' && processedPairs.length > 0 && (
-            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-              <CardContent className="py-5">
+            <LuminaCard>
+              <LuminaCardContent className="py-5">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-sm font-mono uppercase tracking-wider text-purple-400">Input → Output Pairs</h4>
                   <span className="text-xs text-purple-300/70">{processedPairs.length} so far</span>
@@ -773,14 +777,14 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
 
           {/* Pre-populated I/O Table (create_rule only) */}
           {challengeType === 'create_rule' && (
-            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-              <CardContent className="py-5">
+            <LuminaCard>
+              <LuminaCardContent className="py-5">
                 <h4 className="text-sm font-mono uppercase tracking-wider text-purple-400 mb-4">
                   Input → Output Table
                 </h4>
@@ -801,36 +805,36 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                 <p className="mt-4 text-sm text-slate-400">
                   Look at the pattern. What rule transforms each input into its output?
                 </p>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
 
           {/* Rule Guess (discover_rule / create_rule) */}
           {(challengeType === 'discover_rule' || challengeType === 'create_rule')
             && (challengeType === 'create_rule' || processedPairs.length >= 2)
             && (
-            <Card className="backdrop-blur-xl bg-amber-500/10 border-amber-400/30">
-              <CardContent className="py-5">
+            <LuminaCard className="bg-amber-500/10 border-amber-400/30">
+              <LuminaCardContent className="py-5">
                 <h4 className="text-amber-200 font-semibold mb-3 text-center">
                   {challengeType === 'discover_rule' ? 'Can you guess the rule?' : 'Write the rule'}
                 </h4>
                 <div className="flex items-center gap-3 justify-center flex-wrap">
                   <span className="text-amber-300 font-mono">f(x) =</span>
-                  <input
+                  <LuminaInput
                     type="text"
                     value={guessedRule}
                     onChange={(e) => { setGuessedRule(e.target.value); setGuessResult(null); }}
                     onKeyDown={(e) => e.key === 'Enter' && checkRuleGuess()}
                     placeholder="e.g., x + 3"
-                    className="flex-1 max-w-xs px-4 py-2 bg-slate-800/50 text-white rounded-lg border border-amber-400/40 focus:border-amber-400 focus:outline-none font-mono"
+                    className="flex-1 max-w-xs font-mono"
                   />
-                  <Button
-                    variant="ghost"
+                  <button
+                    type="button"
                     onClick={checkRuleGuess}
-                    className="bg-amber-500/20 border border-amber-400/40 hover:bg-amber-500/30 text-amber-200"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-amber-500/20 border border-amber-400/40 hover:bg-amber-500/30 text-amber-200"
                   >
                     Check
-                  </Button>
+                  </button>
                 </div>
                 {guessResult === 'incorrect' && (
                   <div className="mt-3 p-3 bg-red-500/15 border border-red-400/30 rounded-lg text-center">
@@ -842,27 +846,26 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
 
           {/* Observe completion button */}
           {challengeType === 'observe' && processedPairs.length >= 3 && (
             <div className="flex justify-center">
-              <Button
-                variant="ghost"
+              <LuminaButton
                 onClick={completeObserve}
                 className="bg-blue-500/20 border border-blue-400/40 hover:bg-blue-500/30 text-blue-100"
               >
                 Continue →
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
           {/* How to Use (first challenge only) */}
           {currentIndex === 0 && processedPairs.length === 0 && challengeType !== 'create_rule' && (
-            <Card className="backdrop-blur-xl bg-amber-500/5 border-amber-400/20">
-              <CardContent className="py-4">
+            <LuminaCard className="bg-amber-500/5 border-amber-400/20">
+              <LuminaCardContent className="py-4">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/30 flex-shrink-0 mt-0.5">
                     <svg className="w-4 h-4 text-amber-300" fill="currentColor" viewBox="0 0 24 24">
@@ -896,8 +899,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                     </ol>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
         </>
       )}

@@ -1,9 +1,22 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaInput,
+  interactive,
+  answerStateClass,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -702,7 +715,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
         <div className="flex flex-wrap gap-2 justify-center">
           {unplaced.map(piece => (
             <button key={piece.id}
-              className="p-2 rounded-lg bg-white/5 border border-white/20 hover:bg-white/10 transition-colors"
+              className={`p-2 rounded-lg transition-colors ${interactive.ghost}`}
               onClick={() => addPieceToCanvas(piece)}>
               <svg width={40} height={40} viewBox={`0 0 ${piece.width} ${piece.height}`}>
                 <ShapeSVG shape={piece.shape} color={piece.color || SHAPE_COLORS[piece.shape] || '#8B5CF6'}
@@ -724,7 +737,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
             const remaining = s.count - placedCount;
             return (
               <button key={i}
-                className={`p-2 rounded-lg border transition-colors ${remaining > 0 ? 'bg-white/5 border-white/20 hover:bg-white/10' : 'bg-white/2 border-white/5 opacity-50'}`}
+                className={`p-2 rounded-lg transition-colors ${remaining > 0 ? interactive.ghost : 'bg-white/2 border border-white/5 opacity-50'}`}
                 disabled={remaining <= 0}
                 onClick={() => addShapeFromPalette(s.shape, s.color || SHAPE_COLORS[s.shape] || '#8B5CF6', 50, s.shape === 'rectangle' ? 35 : 50)}>
                 <svg width={36} height={36} viewBox="0 0 50 50">
@@ -746,7 +759,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
         <div className="flex flex-wrap gap-2 justify-center">
           {allowedShapes.map(shape => (
             <button key={shape}
-              className="p-2 rounded-lg bg-white/5 border border-white/20 hover:bg-white/10 transition-colors"
+              className={`p-2 rounded-lg transition-colors ${interactive.ghost}`}
               onClick={() => addShapeFromPalette(shape, SHAPE_COLORS[shape] || '#8B5CF6', 50, shape === 'rectangle' ? 35 : 50)}>
               <svg width={36} height={36} viewBox="0 0 50 50">
                 <ShapeSVG shape={shape} color={SHAPE_COLORS[shape] || '#8B5CF6'} width={50} height={50} />
@@ -841,26 +854,23 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
             return (
               <button key={shape}
                 className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-                  count >= expectedCount
-                    ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300'
-                    : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-300'
+                  answerStateClass(count >= expectedCount ? 'correct' : 'idle')
                 }`}
                 onClick={() => handleDecomposeTap(shape)}>
                 <svg width={24} height={24} viewBox="0 0 50 50">
                   <ShapeSVG shape={shape} color={SHAPE_COLORS[shape] || '#8B5CF6'} width={50} height={50} />
                 </svg>
                 <span className="text-sm">{shape}</span>
-                {count > 0 && <Badge variant="secondary" className="bg-white/10 text-xs">{count}</Badge>}
+                {count > 0 && <LuminaBadge className="text-xs">{count}</LuminaBadge>}
               </button>
             );
           })}
         </div>
         {decomposeTaps.length > 0 && (
-          <Button variant="ghost" size="sm"
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-xs"
+          <LuminaButton size="sm" className="text-xs"
             onClick={() => setDecomposeTaps([])}>
             Reset Selections
-          </Button>
+          </LuminaButton>
         )}
       </div>
     );
@@ -875,13 +885,14 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
           How many pieces do you need?
         </p>
         <div className="flex items-center gap-3 justify-center">
-          <input
+          <LuminaInput
             type="number"
+            inputMode="numeric"
             min={1}
             max={20}
             value={howManyAnswer}
             onChange={(e) => setHowManyAnswer(e.target.value)}
-            className="w-16 px-3 py-2 rounded-lg bg-white/5 border border-white/20 text-slate-100 text-center text-lg"
+            className="w-16 text-center text-lg"
             placeholder="?"
           />
           <span className="text-slate-400 text-sm">pieces</span>
@@ -895,35 +906,35 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-        <CardHeader><CardTitle className="text-slate-100">{title}</CardTitle></CardHeader>
-        <CardContent><p className="text-slate-400">No challenges available.</p></CardContent>
-      </Card>
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-slate-400">No challenges available.</p></LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
             {!allChallengesComplete && (
-              <Badge variant="secondary" className="bg-white/10 text-slate-300">
+              <LuminaBadge>
                 {currentChallengeIndex + 1} / {challenges.length}
-              </Badge>
+              </LuminaBadge>
             )}
             {isConnected && (
-              <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 text-xs">
+              <LuminaBadge accent="purple" className="text-xs">
                 AI Tutor
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && <p className="text-sm text-slate-400 mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Summary */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -940,7 +951,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
         {!allChallengesComplete && currentChallenge && (
           <>
             {/* Instruction */}
-            <div className="rounded-lg bg-white/5 border border-white/10 px-4 py-3">
+            <LuminaPrompt>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">{CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon ?? '🧩'}</span>
                 <span className="text-sm font-medium text-slate-300">
@@ -948,7 +959,7 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
                 </span>
               </div>
               <p className="text-slate-100">{currentChallenge.instruction}</p>
-            </div>
+            </LuminaPrompt>
 
             {/* Canvas */}
             {(currentChallenge.type !== 'decompose' || currentChallenge.compositeShapePath) && (
@@ -957,16 +968,16 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
                 {/* Shape controls */}
                 {selectedShapeId && !showingCorrectFeedback && (
                   <div className="absolute top-2 right-2 flex gap-1">
-                    <Button variant="ghost" size="sm"
-                      className="bg-slate-900/80 border border-white/20 hover:bg-white/10 text-xs h-7 px-2"
+                    <LuminaButton size="sm"
+                      className="text-xs h-7 px-2"
                       onClick={() => rotateSelected(rotationSnap)}>
                       ↻ {rotationSnap}°
-                    </Button>
-                    <Button variant="ghost" size="sm"
-                      className="bg-slate-900/80 border border-white/20 hover:bg-red-500/20 text-xs h-7 px-2"
+                    </LuminaButton>
+                    <LuminaButton tone="danger" size="sm"
+                      className="text-xs h-7 px-2"
                       onClick={removeSelected}>
                       ✕
-                    </Button>
+                    </LuminaButton>
                   </div>
                 )}
               </div>
@@ -974,10 +985,10 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
 
             {/* Palette */}
             {!showingCorrectFeedback && currentChallenge.type !== 'decompose' && (
-              <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-                <p className="text-xs text-slate-500 mb-2">Shape Palette — click to add</p>
+              <LuminaPanel className="p-3">
+                <LuminaSectionLabel accent="cyan" size="sm" className="mb-2">Shape Palette — click to add</LuminaSectionLabel>
                 {renderPalette()}
-              </div>
+              </LuminaPanel>
             )}
 
             {/* Decompose buttons */}
@@ -988,35 +999,27 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
 
             {/* Feedback */}
             {feedback && (
-              <div className={`rounded-lg px-4 py-3 text-sm font-medium ${
-                feedbackType === 'success' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' :
-                feedbackType === 'error' ? 'bg-red-500/20 text-red-300 border border-red-400/30' :
-                'bg-blue-500/20 text-blue-300 border border-blue-400/30'
-              }`}>
+              <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}>
                 {feedback}
-              </div>
+              </LuminaFeedbackCard>
             )}
 
             {/* Action buttons */}
             <div className="flex gap-2 justify-end">
               {showingCorrectFeedback ? (
-                <Button variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10"
-                  onClick={advanceToNextChallenge}>
+                <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                   {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge →' : 'See Results →'}
-                </Button>
+                </LuminaActionButton>
               ) : (
-                <Button variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10"
-                  onClick={handleCheckAnswer}>
+                <LuminaActionButton action="check" onClick={handleCheckAnswer}>
                   Check Answer
-                </Button>
+                </LuminaActionButton>
               )}
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

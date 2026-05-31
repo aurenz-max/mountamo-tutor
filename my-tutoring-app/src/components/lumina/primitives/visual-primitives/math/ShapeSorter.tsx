@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -453,9 +461,9 @@ const SortView: React.FC<SortViewProps> = ({
                   : 'border-white/20 bg-white/5 cursor-default'
               }`}>
               <div className="text-sm font-medium text-slate-200">{binLabel}</div>
-              <Badge className="mt-1 bg-slate-800/50 border-slate-700/50 text-slate-400 text-xs">
+              <LuminaBadge className="mt-1 text-xs">
                 {count} shape{count !== 1 ? 's' : ''}
-              </Badge>
+              </LuminaBadge>
             </button>
           );
         })}
@@ -833,25 +841,25 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
 
   // ── Render ─────────────────────────────────────────────────────
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-purple-300 text-xs">
+            <LuminaBadge accent="purple" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
+            </LuminaBadge>
             {currentChallenge && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs capitalize">
+              <LuminaBadge accent="cyan" className="text-xs capitalize">
                 {currentChallenge.type}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Challenge progress badges */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -876,9 +884,9 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Challenge content */}
@@ -933,18 +941,13 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                onClick={handleCheckAnswer} disabled={!canCheck}>
-                Check Answer
-              </Button>
+              <LuminaActionButton action="check"
+                onClick={handleCheckAnswer} disabled={!canCheck} />
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={advanceToNextChallenge}>
+              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -959,7 +962,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
 
         {/* Hint on repeated failure */}
         {currentChallenge && feedbackType === 'error' && currentAttempts >= 3 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">
               {currentChallenge.type === 'count'
                 ? 'Try tapping each side one at a time, then count the corners where sides meet.'
@@ -967,7 +970,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
                 ? 'Look carefully at each shape. Does it match the rule?'
                 : 'Take your time and think about what makes each shape different.'}
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Phase Summary */}
@@ -981,8 +984,8 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

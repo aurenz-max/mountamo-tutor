@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -691,26 +698,26 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-purple-300 text-xs">
+            <LuminaBadge accent="purple" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
+            </LuminaBadge>
             {currentChallenge && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
+              <LuminaBadge accent="cyan" className="text-xs">
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Progress */}
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -749,23 +756,23 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
             </div>
 
             {/* Instruction */}
-            <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+            <LuminaPanel className="p-3">
               <p className="text-slate-200 text-sm font-medium text-center">
                 {currentChallenge.instruction}
               </p>
-            </div>
+            </LuminaPanel>
 
             {/* Strategy Steps (guided-strategy, try-another) */}
             {(currentChallenge.type === 'guided-strategy' || currentChallenge.type === 'try-another') &&
               currentChallenge.strategySteps && currentChallenge.strategySteps.length > 0 && (
-              <div className="bg-slate-800/20 rounded-lg p-3 border border-white/5 space-y-1.5">
+              <LuminaPanel className="p-3 space-y-1.5">
                 {currentChallenge.strategySteps.map((step, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <span className="text-purple-400 text-xs font-mono mt-0.5">{i + 1}.</span>
                     <span className="text-slate-300 text-sm">{step}</span>
                   </div>
                 ))}
-              </div>
+              </LuminaPanel>
             )}
 
             {/* Strategy Visualization */}
@@ -797,9 +804,9 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                 ))}
                 {/* Same answer badge */}
                 <div className="col-span-2 text-center">
-                  <Badge className="bg-emerald-500/20 border-emerald-400/50 text-emerald-300 text-xs">
+                  <LuminaBadge accent="emerald" className="text-xs">
                     Same answer: {currentChallenge.problem.result}
-                  </Badge>
+                  </LuminaBadge>
                 </div>
               </div>
             )}
@@ -836,11 +843,11 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
             {currentChallenge.type === 'match-strategy' && (
               <>
                 {currentChallenge.workedSolution && (
-                  <div className="bg-slate-800/20 rounded-lg p-4 border border-white/5">
+                  <LuminaPanel>
                     <p className="text-slate-300 text-sm whitespace-pre-line">
                       {currentChallenge.workedSolution}
                     </p>
-                  </div>
+                  </LuminaPanel>
                 )}
                 <div className="flex flex-wrap gap-2 justify-center">
                   {(currentChallenge.strategyOptions ?? []).map((opt) => (
@@ -946,23 +953,19 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckAnswer}
                 disabled={isCheckDisabled}
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -978,11 +981,11 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
 
         {/* Hint */}
         {currentChallenge?.strategySteps && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">
               Follow the steps above carefully — each step brings you closer to the answer.
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Phase Summary */}
@@ -996,8 +999,8 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

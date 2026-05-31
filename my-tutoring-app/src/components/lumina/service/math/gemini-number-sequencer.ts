@@ -8,6 +8,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -158,6 +159,10 @@ export const generateNumberSequencer = async (
     targetEvalMode?: string;
     /** Intent or title from the manifest item. */
     intent?: string;
+    /** Learning objective this component serves (injected by flattenManifestToLayout). */
+    objectiveText?: string;
+    /** Bloom's verb for the objective. */
+    objectiveVerb?: string;
   }
 ): Promise<NumberSequencerData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -179,9 +184,13 @@ export const generateNumberSequencer = async (
   const challengeCount = config?.challengeCount || 5;
   const difficulty = config?.difficulty || 1;
 
+  // ── Pedagogical scope — binds output to the lesson objective (topic wins over grade band) ──
+  const scope = resolvePedagogicalScope(topic, config, config?.intent);
+  const scopeSection = buildScopePromptSection(scope);
+
   const prompt = `
 Create an educational number sequencing activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 CONTEXT:
 - A number sequencer helps students build sequential number understanding
 - Students practice recognizing number order, finding missing numbers, and counting forward/backward

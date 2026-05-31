@@ -1,9 +1,22 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPrompt,
+  LuminaModeTabs,
+  LuminaChallengeCounter,
+  LuminaSlider,
+  LuminaInput,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaPanel,
+  type LuminaModeTab,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -53,10 +66,10 @@ export interface RatioTableData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'missing-value': { label: 'Missing Value', icon: '\u2753', accentColor: 'purple' },
-  'find-multiplier': { label: 'Find Multiplier', icon: '\u2716\uFE0F', accentColor: 'blue' },
-  'build-ratio': { label: 'Build Ratio', icon: '\uD83D\uDD28', accentColor: 'emerald' },
-  'unit-rate': { label: 'Unit Rate', icon: '\uD83D\uDCCF', accentColor: 'amber' },
+  'missing-value': { label: 'Missing Value', icon: '❓', accentColor: 'purple' },
+  'find-multiplier': { label: 'Find Multiplier', icon: '✖️', accentColor: 'blue' },
+  'build-ratio': { label: 'Build Ratio', icon: '🔨', accentColor: 'emerald' },
+  'unit-rate': { label: 'Unit Rate', icon: '📏', accentColor: 'amber' },
 };
 
 // ============================================================================
@@ -267,19 +280,19 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
 
       if (correct) {
         SoundManager.playCorrect();
-        setFeedback(`Great! You built the correct equivalent ratio (\u00D7${formatNum(sliderMultiplier)}).`);
+        setFeedback(`Great! You built the correct equivalent ratio (×${formatNum(sliderMultiplier)}).`);
         setFeedbackType('success');
         sendText(
-          `[ANSWER_CORRECT] Student built ratio \u00D7${formatNum(sliderMultiplier)} (target: \u00D7${targetMultiplier}). `
+          `[ANSWER_CORRECT] Student built ratio ×${formatNum(sliderMultiplier)} (target: ×${targetMultiplier}). `
           + `Attempts: ${currentAttempts + 1}. Celebrate briefly!`,
           { silent: true },
         );
       } else {
         SoundManager.playIncorrect();
-        setFeedback(`Your multiplier \u00D7${formatNum(sliderMultiplier)} doesn't match yet. Keep adjusting!`);
+        setFeedback(`Your multiplier ×${formatNum(sliderMultiplier)} doesn't match yet. Keep adjusting!`);
         setFeedbackType('error');
         sendText(
-          `[ANSWER_INCORRECT] Student slider at \u00D7${formatNum(sliderMultiplier)} but target is \u00D7${targetMultiplier}. `
+          `[ANSWER_INCORRECT] Student slider at ×${formatNum(sliderMultiplier)} but target is ×${targetMultiplier}. `
           + `Attempt ${currentAttempts + 1}. Encourage adjusting.`,
           { silent: true },
         );
@@ -302,7 +315,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
 
       if (correct) {
         const label = currentChallenge.type === 'find-multiplier'
-          ? `The multiplier is \u00D7${formatNum(targetValue)}.`
+          ? `The multiplier is ×${formatNum(targetValue)}.`
           : currentChallenge.type === 'unit-rate'
           ? `The unit rate is ${formatNum(unitRate)} ${rowLabels[1]} per ${rowLabels[0]}.`
           : `${hiddenValue === 'scaled-first' ? rowLabels[0] : rowLabels[1]} = ${formatNum(targetValue)}`;
@@ -321,7 +334,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         setFeedbackType('error');
         sendText(
           `[ANSWER_CLOSE] Student answered ${formatNum(parsed)} but target is ${formatNum(targetValue)} (${percentError.toFixed(1)}% off). `
-          + `Encourage them \u2014 they\u2019re close.`,
+          + `Encourage them — they’re close.`,
           { silent: true },
         );
       } else {
@@ -371,7 +384,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
       if (currentChallenge.type === 'find-multiplier') {
         setFeedback(`Hint: Divide the scaled value by the base value to find the multiplier.`);
       } else if (currentChallenge.type === 'unit-rate') {
-        setFeedback(`Hint: Divide ${baseRatio[1]} \u00F7 ${baseRatio[0]}.`);
+        setFeedback(`Hint: Divide ${baseRatio[1]} ÷ ${baseRatio[0]}.`);
       } else {
         setFeedback(`Hint: Multiply the unit rate (${formatNum(unitRate)}) by the known quantity.`);
       }
@@ -501,62 +514,66 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     );
   }, [allChallengesComplete, challenges, challengeResults]);
 
+  // Eval-mode pill row — challenge types present in this session.
+  const modeTabs: LuminaModeTab[] = useMemo(
+    () =>
+      Object.entries(CHALLENGE_TYPE_CONFIG)
+        .filter(([type]) => challenges.some(c => c.type === type))
+        .map(([type, config]) => ({ value: type, label: `${config.icon} ${config.label}` })),
+    [challenges],
+  );
+
+  // Themed feedback text color (grading language stays consistent).
+  const feedbackColor =
+    feedbackType === 'success' ? 'text-emerald-400'
+    : feedbackType === 'error' ? 'text-rose-400'
+    : feedbackType === 'hint' ? 'text-amber-400'
+    : 'text-slate-300';
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-teal-300 text-xs">
+            <LuminaBadge accent="cyan" className="text-xs">
               Ratios
-            </Badge>
+            </LuminaBadge>
             {challenges.length > 0 && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-300 text-xs">
+              <LuminaBadge className="text-xs">
                 {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Phase Progress Badges */}
+      <LuminaCardContent className="space-y-4">
+        {/* Phase Progress Pills + Challenge Counter */}
         {challenges.length > 1 && (
           <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(CHALLENGE_TYPE_CONFIG).map(([type, config]) => {
-              const hasType = challenges.some(c => c.type === type);
-              if (!hasType) return null;
-              const isActive = currentChallenge?.type === type;
-              return (
-                <Badge
-                  key={type}
-                  className={`text-xs ${
-                    isActive
-                      ? 'bg-teal-500/20 border-teal-400/50 text-teal-300'
-                      : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                  }`}
-                >
-                  {config.icon} {config.label}
-                </Badge>
-              );
-            })}
-            <span className="text-slate-500 text-xs ml-auto">
-              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
-            </span>
+            <LuminaModeTabs
+              tabs={modeTabs}
+              active={currentChallenge?.type ?? ''}
+              accent="cyan"
+            />
+            <LuminaChallengeCounter
+              current={Math.min(currentChallengeIndex + 1, challenges.length)}
+              total={challenges.length}
+              className="ml-auto"
+            />
           </div>
         )}
 
         {/* Challenge Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-            <p className="text-slate-200 text-sm font-medium">
-              {currentChallenge.instruction}
-            </p>
-          </div>
+          <LuminaPrompt>
+            <span className="text-sm">{currentChallenge.instruction}</span>
+          </LuminaPrompt>
         )}
 
         {/* Ratio Table Visualization */}
@@ -584,12 +601,12 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
               <div className="text-center">
                 <span className="text-purple-400 font-mono text-xs uppercase tracking-wider">
                   {currentChallenge.type === 'build-ratio'
-                    ? `Scaled \u00D7${formatNum(sliderMultiplier)}`
+                    ? `Scaled ×${formatNum(sliderMultiplier)}`
                     : currentChallenge.type === 'find-multiplier'
-                    ? 'Scaled \u00D7?'
+                    ? 'Scaled ×?'
                     : currentChallenge.type === 'unit-rate'
                     ? 'Unit Rate'
-                    : `Scaled \u00D7${targetMultiplier}`
+                    : `Scaled ×${targetMultiplier}`
                   }
                 </span>
               </div>
@@ -715,21 +732,14 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
               <span className="text-sm text-purple-300 font-medium">Adjust Multiplier</span>
               <span className="text-sm text-purple-200 font-mono font-bold">&times;{formatNum(sliderMultiplier)}</span>
             </div>
-            <input
-              type="range"
-              min="0.5"
+            <LuminaSlider
+              accent="purple"
+              min={0.5}
               max={maxMultiplier}
-              step="0.1"
-              value={sliderMultiplier}
-              onChange={(e) => {
-                SoundManager.tick();
-                setSliderMultiplier(parseFloat(e.target.value));
-              }}
+              step={0.1}
+              value={[sliderMultiplier]}
+              onValueChange={([v]) => setSliderMultiplier(v)}
               disabled={hasSubmittedEvaluation}
-              className="w-full h-2 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-purple-500"
-              style={{
-                background: `linear-gradient(to right, rgba(168,85,247,0.4) 0%, rgba(168,85,247,0.4) ${((sliderMultiplier - 0.5) / (maxMultiplier - 0.5)) * 100}%, rgba(51,65,85,0.5) ${((sliderMultiplier - 0.5) / (maxMultiplier - 0.5)) * 100}%, rgba(51,65,85,0.5) 100%)`
-              }}
             />
             <div className="flex justify-between text-xs text-slate-500 font-mono">
               <span>&times;0.5</span>
@@ -741,7 +751,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         {/* Answer Input (for non-slider challenges) */}
         {currentChallenge && currentChallenge.type !== 'build-ratio' && !isCurrentChallengeComplete && !allChallengesComplete && (
           <div className="flex items-center gap-3">
-            <input
+            <LuminaInput
               type="number"
               step="0.01"
               value={studentAnswer}
@@ -752,28 +762,23 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
                 : currentChallenge.type === 'unit-rate' ? 'Enter the unit rate'
                 : 'Enter the missing value'
               }
-              className="flex-1 px-4 py-2 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center font-mono focus:outline-none focus:border-teal-400/50 disabled:opacity-50"
+              className="flex-1 text-center font-mono"
               onKeyDown={(e) => e.key === 'Enter' && checkAnswer()}
             />
-            <Button
-              variant="ghost"
-              className="bg-yellow-500/10 border border-yellow-400/30 hover:bg-yellow-500/20 text-yellow-300 text-xs"
+            <LuminaButton
+              tone="subtle"
+              className="text-xs"
               onClick={provideHint}
               disabled={hasSubmittedEvaluation || hintsUsed >= 3}
             >
               Hint ({hintsUsed}/3)
-            </Button>
+            </LuminaButton>
           </div>
         )}
 
         {/* Feedback */}
         {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' :
-            feedbackType === 'hint' ? 'text-yellow-400' :
-            'text-slate-300'
-          }`}>
+          <div className={`text-center text-sm font-medium ${feedbackColor}`}>
             {feedback}
           </div>
         )}
@@ -782,35 +787,31 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={checkAnswer}
                 disabled={
                   hasSubmittedEvaluation ||
                   (currentChallenge?.type !== 'build-ratio' && !studentAnswer)
                 }
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {isCurrentChallengeComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
           </div>
         )}
 
         {/* Hint on multiple failed attempts */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* All Complete Message */}
@@ -834,8 +835,8 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

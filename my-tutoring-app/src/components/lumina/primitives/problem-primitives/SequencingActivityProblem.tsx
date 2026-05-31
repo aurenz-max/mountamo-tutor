@@ -9,6 +9,16 @@ import {
   type SequencingActivityMetrics,
   type PrimitiveEvaluationResult,
 } from '../../evaluation';
+// Eval-loop chrome from the Lumina UI kit (see lumina/ui/index.ts for the full list).
+import { LuminaFeedbackCard, LuminaActionButton, answerStateClasses } from '../../ui';
+
+/**
+ * Sequencing Activity Problem Component
+ *
+ * UI: the drag-and-drop ordering surface is the bespoke "painting" and stays
+ * custom. Only the eval-loop chrome (feedback banner, action buttons) comes
+ * from the Lumina UI kit (LuminaFeedbackCard / LuminaActionButton).
+ */
 
 interface SequencingActivityProblemProps {
   data: SequencingActivityProblemData;
@@ -124,20 +134,19 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
         Drag and drop to arrange items in the correct order.
       </p>
 
-      {/* Sequencing Items */}
+      {/* Sequencing Items — bespoke drag surface, left untouched */}
       <div className="space-y-3 mb-8">
         {orderedItems.map((item, index) => {
           const isCorrectPosition = isSubmitted && data.items[index] === item;
           const isWrongPosition = isSubmitted && data.items[index] !== item;
 
-          let statusClass = "border-white/10 bg-white/5";
+          // Graded position colors are tokenized; the drag-in-progress state is bespoke.
+          let statusClass = answerStateClasses.idle;
           if (draggedIndex === index) {
-            statusClass = "border-blue-500 bg-blue-500/20 opacity-50";
+            statusClass = "border-blue-500 bg-blue-500/20 opacity-50"; // bespoke: dragging
           }
           if (isSubmitted) {
-            statusClass = isCorrectPosition
-              ? "border-emerald-500 bg-emerald-500/20"
-              : "border-red-500 bg-red-500/20";
+            statusClass = isCorrectPosition ? answerStateClasses.correct : answerStateClasses.incorrect;
           }
 
           return (
@@ -175,41 +184,19 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
       {/* Action Area */}
       <div className="flex flex-col items-center">
         {!isSubmitted ? (
-          <button
-            onClick={handleSubmit}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-500/40 hover:-translate-y-0.5"
-          >
+          <LuminaActionButton action="check" onClick={handleSubmit}>
             Verify Order
-          </button>
+          </LuminaActionButton>
         ) : (
           <div className="w-full space-y-4">
-            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-              <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${isCorrectOrder ? 'text-emerald-400' : 'text-slate-300'}`}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {isCorrectOrder ?
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  }
-                </svg>
-                <span>{isCorrectOrder ? 'Perfect Order!' : 'Review the Sequence'}</span>
-              </div>
-              <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-                {data.rationale}
-              </p>
-              {data.teachingNote && (
-                <div className="mt-3 pt-3 border-t border-white/5">
-                  <p className="text-sm text-slate-400 italic">
-                    💡 {data.teachingNote}
-                  </p>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleReset}
-              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+            <LuminaFeedbackCard
+              status={isCorrectOrder ? 'correct' : 'insight'}
+              label={isCorrectOrder ? 'Perfect Order!' : 'Review the Sequence'}
+              teachingNote={data.teachingNote}
             >
-              Try Again
-            </button>
+              {data.rationale}
+            </LuminaFeedbackCard>
+            <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
         )}
       </div>

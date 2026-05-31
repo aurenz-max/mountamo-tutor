@@ -1,11 +1,24 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  LuminaChallengeCounter,
+  answerStateClass,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -71,18 +84,18 @@ export interface EquationWorkspaceData {
 // ============================================================================
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'guided-solve': { label: 'Guided Solve', icon: '\uD83D\uDCA1', accentColor: 'blue' },
-  'solve': { label: 'Solve', icon: '\uD83E\uDDE9', accentColor: 'purple' },
-  'multi-step': { label: 'Multi-Step', icon: '\uD83D\uDD17', accentColor: 'emerald' },
-  'identify-operation': { label: 'Identify Operation', icon: '\uD83C\uDFAF', accentColor: 'amber' },
+  'guided-solve': { label: 'Guided Solve', icon: '💡', accentColor: 'blue' },
+  'solve': { label: 'Solve', icon: '🧩', accentColor: 'purple' },
+  'multi-step': { label: 'Multi-Step', icon: '🔗', accentColor: 'emerald' },
+  'identify-operation': { label: 'Identify Operation', icon: '🎯', accentColor: 'amber' },
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  arithmetic: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  algebraic: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-  trigonometric: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  logarithmic: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  radical: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+const CATEGORY_ACCENTS: Record<string, LuminaAccent> = {
+  arithmetic: 'blue',
+  algebraic: 'purple',
+  trigonometric: 'emerald',
+  logarithmic: 'amber',
+  radical: 'rose',
 };
 
 // ============================================================================
@@ -405,14 +418,14 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
 
   if (!currentChallenge) {
     return (
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-slate-100">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <LuminaCard>
+        <LuminaCardHeader>
+          <LuminaCardTitle>{title}</LuminaCardTitle>
+        </LuminaCardHeader>
+        <LuminaCardContent>
           <p className="text-slate-400">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -423,29 +436,24 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
   const hintOperationId = isGuidedMode && expectedStep ? expectedStep.operationId : null;
 
   return (
-    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-      <CardHeader>
+    <LuminaCard>
+      <LuminaCardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
+            <LuminaCardTitle>{title}</LuminaCardTitle>
             {context && <p className="text-slate-400 text-sm mt-1">{context}</p>}
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="border-white/20 text-slate-300">
-              {currentChallengeIndex + 1} / {challenges.length}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="border-white/20 text-slate-300"
-            >
+            <LuminaChallengeCounter current={currentChallengeIndex + 1} total={challenges.length} />
+            <LuminaBadge>
               {PHASE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
               {PHASE_TYPE_CONFIG[currentChallenge.type]?.label}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-6">
+      <LuminaCardContent className="space-y-6">
         {/* Summary panel when complete */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -462,7 +470,7 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
         {!allChallengesComplete && (
           <>
             {/* Instruction */}
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+            <LuminaPrompt>
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
               {variableDefinitions && variableDefinitions.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -473,15 +481,15 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
                   ))}
                 </div>
               )}
-            </div>
+            </LuminaPrompt>
 
-            {/* Equation display / Step history */}
-            <div className="bg-slate-800/60 border border-white/10 rounded-lg p-6 space-y-3">
+            {/* Equation display / Step history — bespoke KaTeX readout surface */}
+            <LuminaPanel className="p-6 space-y-3">
               {/* Original equation */}
               <div className="flex items-center gap-3">
-                <Badge variant="outline" className="border-white/20 text-slate-500 text-xs shrink-0">
+                <LuminaBadge className="text-slate-500 text-xs shrink-0">
                   Start
-                </Badge>
+                </LuminaBadge>
                 <div className={completedSteps.length > 0 ? 'text-slate-500' : 'text-slate-100'}>
                   <MathDisplay latex={currentChallenge.equation} display />
                 </div>
@@ -494,9 +502,9 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
                     <span className="text-xs text-emerald-400 italic">{step.operation}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs shrink-0">
+                    <LuminaBadge accent="emerald" className="text-xs shrink-0">
                       Step {idx + 1}
-                    </Badge>
+                    </LuminaBadge>
                     <div className={idx === completedSteps.length - 1 && !challengeSolved ? 'text-slate-100' : 'text-slate-400'}>
                       <MathDisplay latex={step.resultLatex} display />
                     </div>
@@ -507,9 +515,9 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
               {/* Solved indicator */}
               {challengeSolved && !isIdentifyMode && (
                 <div className="flex items-center gap-3 mt-2">
-                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs">
+                  <LuminaBadge accent="emerald" className="text-xs">
                     Solved!
-                  </Badge>
+                  </LuminaBadge>
                   <span className="text-emerald-300 text-sm">
                     <MathDisplay latex={`${currentChallenge.targetVariable}`} /> is isolated
                   </span>
@@ -523,17 +531,13 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
                   <MathDisplay latex={currentChallenge.targetVariable} className="text-amber-300 text-sm" />
                 </div>
               )}
-            </div>
+            </LuminaPanel>
 
             {/* Feedback */}
             {feedback && (
-              <div className={`rounded-lg p-3 text-sm ${
-                feedback.correct
-                  ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-300'
-                  : 'bg-rose-500/10 border border-rose-500/20 text-rose-300'
-              }`}>
+              <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'}>
                 {feedback.message}
-              </div>
+              </LuminaFeedbackCard>
             )}
 
             {/* Identify-operation mode: show partial solution + MC */}
@@ -544,32 +548,25 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {currentChallenge.availableOperations.map((op) => (
-                    <Button
+                    <LuminaAnswerChoice
                       key={op.id}
-                      variant="ghost"
-                      className={`justify-start text-left h-auto py-3 px-4 border ${
-                        selectedAnswer === op.id
-                          ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
-                      }`}
+                      state={selectedAnswer === op.id ? 'selected' : 'idle'}
+                      className="flex items-center !p-3"
                       onClick={() => { SoundManager.select(); setSelectedAnswer(op.id); }}
                     >
-                      <Badge variant="outline" className={`mr-2 text-xs ${CATEGORY_COLORS[op.category] ?? ''}`}>
+                      <LuminaBadge accent={CATEGORY_ACCENTS[op.category]} className="mr-2 text-xs">
                         {op.category}
-                      </Badge>
+                      </LuminaBadge>
                       {op.label}
-                    </Button>
+                    </LuminaAnswerChoice>
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    className="bg-purple-500/20 border border-purple-500/40 hover:bg-purple-500/30 text-purple-200"
+                  <LuminaActionButton
+                    action="check"
                     disabled={!selectedAnswer}
                     onClick={handleCheckIdentify}
-                  >
-                    Check Answer
-                  </Button>
+                  />
                 </div>
               </div>
             )}
@@ -582,45 +579,44 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
                     Select the next operation:
                   </p>
                   {!isGuidedMode && (
-                    <Button
-                      variant="ghost"
-                      className="text-xs bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
+                    <LuminaButton
+                      tone="subtle"
+                      className="text-xs"
                       onClick={handleUseHint}
                     >
                       Hint ({hintsUsed})
-                    </Button>
+                    </LuminaButton>
                   )}
                 </div>
 
                 {/* Show hint */}
                 {showHint && expectedStep && (
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm text-amber-200">
+                  <LuminaPanel accent="amber" className="p-3 text-sm text-amber-200">
                     Think about: what operation would help move terms away from <MathDisplay latex={currentChallenge.targetVariable} />?
                     <br />
                     <span className="text-xs text-amber-400">Category: {expectedStep.operationId.split('_')[0]}</span>
-                  </div>
+                  </LuminaPanel>
                 )}
 
-                {/* Operation buttons */}
+                {/* Operation buttons — applying an op is a direct action, not a
+                    gradeable answer choice. Guided mode highlights the expected
+                    op via the shared "selected" grading-color token. */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {currentChallenge.availableOperations.map((op) => {
                     const isHinted = hintOperationId === op.id;
                     return (
-                      <Button
+                      <LuminaButton
                         key={op.id}
-                        variant="ghost"
-                        className={`justify-start text-left h-auto py-3 px-4 border transition-all ${
-                          isHinted
-                            ? 'bg-emerald-500/15 border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-200 ring-1 ring-emerald-500/20'
-                            : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
+                        className={`justify-start text-left h-auto py-3 px-4 ${
+                          isHinted ? answerStateClass('selected') : ''
                         }`}
                         onClick={() => handleSelectOperation(op.id)}
                       >
-                        <Badge variant="outline" className={`mr-2 text-xs ${CATEGORY_COLORS[op.category] ?? ''}`}>
+                        <LuminaBadge accent={CATEGORY_ACCENTS[op.category]} className="mr-2 text-xs">
                           {op.category}
-                        </Badge>
+                        </LuminaBadge>
                         {op.label}
-                      </Button>
+                      </LuminaButton>
                     );
                   })}
                 </div>
@@ -630,19 +626,15 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
             {/* Advance button when solved */}
             {challengeSolved && (
               <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-200"
-                  onClick={handleAdvance}
-                >
+                <LuminaActionButton action="next" onClick={handleAdvance}>
                   {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-                </Button>
+                </LuminaActionButton>
               </div>
             )}
 
             {/* Known values reference */}
             {currentChallenge.knownValues && Object.keys(currentChallenge.knownValues).length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+              <LuminaPanel className="p-3">
                 <p className="text-xs text-slate-500 mb-1">Known values:</p>
                 <div className="flex flex-wrap gap-3">
                   {Object.entries(currentChallenge.knownValues).map(([sym, val]) => (
@@ -651,12 +643,12 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
                     </span>
                   ))}
                 </div>
-              </div>
+              </LuminaPanel>
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

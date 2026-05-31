@@ -10,9 +10,16 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardDescription,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaActionButton,
+  LuminaInput,
+} from '../../../ui';
 
 /**
  * Array Grid — multi-challenge array builder / counter / multiplier.
@@ -486,14 +493,14 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           <h2 className="text-2xl font-bold text-white tracking-tight">Array Builder</h2>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-            <Badge className="bg-green-500/20 border-green-500/30 text-green-400 text-xs font-mono uppercase tracking-wider">
+            <LuminaBadge accent="emerald" className="text-xs font-mono uppercase tracking-wider">
               {isMultiplyMode ? 'Multiply' : isPreBuilt ? 'Count' : 'Build & Multiply'}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
       </div>
 
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl">
+      <LuminaCard className="relative overflow-hidden shadow-2xl">
         <div
           className="absolute inset-0 opacity-10 rounded-3xl"
           style={{
@@ -502,12 +509,12 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           }}
         ></div>
 
-        <CardHeader className="relative z-10 text-center">
-          <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
-          <CardDescription className="text-slate-300">{description}</CardDescription>
-        </CardHeader>
+        <LuminaCardHeader className="relative z-10 text-center">
+          <LuminaCardTitle>{title}</LuminaCardTitle>
+          <LuminaCardDescription className="text-slate-300">{description}</LuminaCardDescription>
+        </LuminaCardHeader>
 
-        <CardContent className="relative z-10">
+        <LuminaCardContent className="relative z-10">
           {/* Session progress dots */}
           <div className="flex items-center justify-center gap-2 mb-6">
             {challenges.map((c, idx) => {
@@ -654,12 +661,13 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
               </h4>
               <div className="flex justify-center items-center gap-4">
                 <label className="text-slate-300 font-semibold">Total:</label>
-                <input
+                <LuminaInput
                   type="number"
+                  inputMode="numeric"
                   value={totalAnswer}
                   onChange={(e) => setTotalAnswer(e.target.value)}
                   placeholder="?"
-                  className="px-4 py-2 w-32 bg-slate-800 border border-slate-600 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-purple-400"
+                  className="w-32 text-center font-mono text-xl"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && canSubmit) handleSubmit();
                   }}
@@ -676,28 +684,31 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                 Write the multiplication sentence
               </h4>
               <div className="flex justify-center items-center gap-3 flex-wrap">
-                <input
+                <LuminaInput
                   type="number"
+                  inputMode="numeric"
                   value={rowsAnswer}
                   onChange={(e) => setRowsAnswer(e.target.value)}
                   placeholder="rows"
-                  className="px-3 py-2 w-24 bg-slate-800 border border-green-500/40 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-green-400"
+                  className="w-24 text-center font-mono text-xl"
                 />
                 <span className="text-2xl text-slate-300 font-bold">×</span>
-                <input
+                <LuminaInput
                   type="number"
+                  inputMode="numeric"
                   value={columnsAnswer}
                   onChange={(e) => setColumnsAnswer(e.target.value)}
                   placeholder="cols"
-                  className="px-3 py-2 w-24 bg-slate-800 border border-blue-500/40 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-blue-400"
+                  className="w-24 text-center font-mono text-xl"
                 />
                 <span className="text-2xl text-slate-300 font-bold">=</span>
-                <input
+                <LuminaInput
                   type="number"
+                  inputMode="numeric"
                   value={totalAnswer}
                   onChange={(e) => setTotalAnswer(e.target.value)}
                   placeholder="total"
-                  className="px-3 py-2 w-28 bg-slate-800 border border-purple-500/40 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-purple-400"
+                  className="w-28 text-center font-mono text-xl"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && canSubmit) handleSubmit();
                   }}
@@ -714,12 +725,13 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
               </h4>
               <div className="flex justify-center items-center gap-4">
                 <label className="text-slate-300 font-semibold">Total:</label>
-                <input
+                <LuminaInput
                   type="number"
+                  inputMode="numeric"
                   value={totalAnswer}
                   onChange={(e) => setTotalAnswer(e.target.value)}
                   placeholder="?"
-                  className="px-4 py-2 w-32 bg-slate-800 border border-slate-600 rounded-lg text-white text-center font-mono text-xl focus:outline-none focus:border-purple-400"
+                  className="w-32 text-center font-mono text-xl"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && canSubmit) handleSubmit();
                   }}
@@ -747,33 +759,26 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
           {/* Submit Control */}
           {!challengeDone && (
             <div className="flex justify-center gap-4 mb-8">
-              <Button
+              <LuminaActionButton
+                action="check"
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                variant="ghost"
-                className="bg-gradient-to-r from-green-500 to-blue-500 text-white border border-green-400/30 hover:from-green-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all px-8 py-3"
-              >
-                Check Answer
-              </Button>
+              />
             </div>
           )}
 
           {/* Between-challenge interstitial */}
           {challengeDone && (
-            <Card className="mt-2 bg-green-900/20 border-green-500/30">
-              <CardContent className="pt-6">
+            <LuminaCard surface="nested" className="mt-2 border-green-500/30">
+              <LuminaCardContent className="pt-6">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-lg font-bold text-green-400">
                     ✓ Array {currentIndex + 1} complete!
                   </h4>
                   {hasNextChallenge ? (
-                    <Button
-                      onClick={handleNextChallenge}
-                      variant="ghost"
-                      className="bg-blue-500/80 text-white border border-blue-400/30 hover:bg-blue-500"
-                    >
+                    <LuminaActionButton action="next" onClick={handleNextChallenge}>
                       Next Array →
-                    </Button>
+                    </LuminaActionButton>
                   ) : (
                     <span className="text-sm text-slate-400 font-mono uppercase tracking-wider">
                       Last array
@@ -784,11 +789,11 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
                   {targetRows} × {targetColumns} ={' '}
                   <span className="font-bold text-white">{targetProduct}</span>
                 </p>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

@@ -1,0 +1,72 @@
+[
+  {
+    "topic": "Counting to 10",
+    "gradeLevel": "elementary",
+    "rows": [
+      {
+        "type": "curator-brief",
+        "objectiveText": "Identify numbers 1 through 10 in order.",
+        "ceiling": 10,
+        "maxValue": null,
+        "status": "N/A",
+        "overshoot": 0
+      },
+      {
+        "type": "number-sequencer",
+        "objectiveText": "Identify numbers 1 through 10 in order.",
+        "ceiling": 10,
+        "maxValue": 50,
+        "status": "FAIL",
+        "overshoot": 40
+      },
+      {
+        "type": "number-line",
+        "objectiveText": "Identify numbers 1 through 10 in order.",
+        "ceiling": 10,
+        "maxValue": 20,
+        "status": "FAIL",
+        "overshoot": 10
+      },
+      {
+        "type": "counting-board",
+        "objectiveText": "Apply counting to a collection of up to 10 objects by touching each one.",
+        "ceiling": 10,
+        "maxValue": 12,
+        "status": "FAIL",
+        "overshoot": 2
+      },
+      {
+        "type": "ten-frame",
+        "objectiveText": "Apply counting to a collection of up to 10 objects by touching each one.",
+        "ceiling": 10,
+        "maxValue": 9,
+        "status": "PASS",
+        "overshoot": 0
+      },
+      {
+        "type": "deep-dive",
+        "objectiveText": "Explain that the last number we say tells us the total amount.",
+        "ceiling": 10,
+        "maxValue": 11,
+        "status": "FAIL",
+        "overshoot": 1
+      },
+      {
+        "type": "sorting-station",
+        "objectiveText": "Explain that the last number we say tells us the total amount.",
+        "ceiling": 10,
+        "maxValue": 3,
+        "status": "PASS",
+        "overshoot": 0
+      },
+      {
+        "type": "knowledge-check",
+        "objectiveText": "Identify numbers 1 through 10 in order.",
+        "ceiling": 10,
+        "maxValue": 10,
+        "status": "PASS",
+        "overshoot": 0
+      }
+    ]
+  }
+]

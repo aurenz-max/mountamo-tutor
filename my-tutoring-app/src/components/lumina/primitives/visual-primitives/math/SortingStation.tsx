@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -67,12 +75,12 @@ export interface SortingStationData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'sort-by-one':       { label: 'Sort by One',     icon: '\uD83C\uDFA8', accentColor: 'orange' },
-  'sort-by-attribute': { label: 'Pick & Sort',     icon: '\uD83D\uDD0D', accentColor: 'purple' },
-  'count-and-compare': { label: 'Count & Compare', icon: '\uD83D\uDCCA', accentColor: 'blue' },
-  'two-attributes':    { label: 'Two Attributes',  icon: '\uD83D\uDD17', accentColor: 'emerald' },
-  'odd-one-out':       { label: 'Odd One Out',     icon: '\uD83E\uDD14', accentColor: 'amber' },
-  'tally-record':      { label: 'Tally Record',    icon: '\uD83D\uDCDD', accentColor: 'cyan' },
+  'sort-by-one':       { label: 'Sort by One',     icon: '🎨', accentColor: 'orange' },
+  'sort-by-attribute': { label: 'Pick & Sort',     icon: '🔍', accentColor: 'purple' },
+  'count-and-compare': { label: 'Count & Compare', icon: '📊', accentColor: 'blue' },
+  'two-attributes':    { label: 'Two Attributes',  icon: '🔗', accentColor: 'emerald' },
+  'odd-one-out':       { label: 'Odd One Out',     icon: '🤔', accentColor: 'amber' },
+  'tally-record':      { label: 'Tally Record',    icon: '📝', accentColor: 'cyan' },
 };
 
 const BIN_COLORS = [
@@ -1169,18 +1177,18 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   // ─── Main render ───────────────────────────────────────────────
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
-          <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300 text-xs">
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+          <LuminaBadge accent="orange" className="text-xs">
             {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-          </Badge>
+          </LuminaBadge>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Challenge progress badges */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -1188,14 +1196,17 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
               const hasType = challenges.some(c => c.type === type);
               if (!hasType) return null;
               const isActive = currentChallenge?.type === type;
-              return (
+              return isActive ? (
                 <Badge
                   key={type}
-                  className={`text-xs ${
-                    isActive
-                      ? 'bg-orange-500/20 border-orange-400/50 text-orange-300'
-                      : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                  }`}
+                  className="text-xs bg-orange-500/20 border-orange-400/50 text-orange-300"
+                >
+                  {config.icon} {config.label}
+                </Badge>
+              ) : (
+                <Badge
+                  key={type}
+                  className="text-xs bg-slate-800/30 border-slate-700/30 text-slate-500"
                 >
                   {config.icon} {config.label}
                 </Badge>
@@ -1209,7 +1220,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
 
         {/* Instruction (phase-aware) */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel>
             <p className="text-slate-200 text-sm font-medium">
               {currentChallenge.type === 'count-and-compare' && countComparePhase === 'count'
                 ? 'First, count how many are in each group!'
@@ -1240,7 +1251,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                 </Badge>
               </div>
             )}
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Challenge-specific UI */}
@@ -1261,9 +1272,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckAnswer}
                 disabled={!canCheck || hasSubmittedEvaluation}
               >
@@ -1274,16 +1284,12 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                   : currentChallenge?.type === 'tally-record' && tallyRecordPhase === 'tally'
                   ? 'Check Tallies'
                   : 'Check Answer'}
-              </Button>
+              </LuminaActionButton>
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={advanceToNextChallenge}
-              >
+              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -1307,8 +1313,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

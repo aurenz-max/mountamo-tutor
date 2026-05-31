@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPrompt,
+  LuminaFeedbackCard,
+  LuminaActionButton,
+  LuminaButton,
+  LuminaCallout,
+  LuminaChallengeCounter,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -96,6 +107,10 @@ function formatProbability(p: number): string {
 
 // ============================================================================
 // Frequency Table Renderer (read-only with mode-gated totals)
+//
+// BESPOKE PAINTING: this is the primitive's core visual surface — a
+// pedagogically color-coded contingency table (purple columns, blue rows,
+// amber totals) the student reads counts out of. Left intentionally untouched.
 // ============================================================================
 
 interface FrequencyTableProps {
@@ -419,11 +434,11 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
   // ── Early return ──────────────────────────────────────────────────
   if (!challenges || challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400">No two-way table challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -434,18 +449,19 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
     : '';
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
-          <Badge variant="outline" className="border-white/20 text-slate-300">
-            {Math.min(currentIndex + 1, challenges.length)} / {challenges.length}
-          </Badge>
+          <LuminaCardTitle>{title}</LuminaCardTitle>
+          <LuminaChallengeCounter
+            current={Math.min(currentIndex + 1, challenges.length)}
+            total={challenges.length}
+          />
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Summary panel (when complete) */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -462,20 +478,17 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
         {!allChallengesComplete && currentChallenge && (
           <>
             {/* Scenario + question */}
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+            <LuminaPrompt>
               <div className="flex items-center gap-2 mb-2">
-                <Badge
-                  variant="outline"
-                  className="border-purple-400/40 text-purple-200 text-[10px] uppercase tracking-wider"
-                >
+                <LuminaBadge accent="purple" className="text-[10px] uppercase tracking-wider">
                   {phaseLabel}
-                </Badge>
+                </LuminaBadge>
                 <span className="text-xs text-slate-400">{currentChallenge.scenario}</span>
               </div>
               <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
-            </div>
+            </LuminaPrompt>
 
-            {/* Frequency table (mode-gated totals) */}
+            {/* Frequency table (mode-gated totals) — bespoke painting */}
             <FrequencyTable challenge={currentChallenge} />
 
             {/* Answer input */}
@@ -486,7 +499,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
               >
                 P =
               </label>
-              <input
+              <LuminaInput
                 id="twt-answer"
                 type="text"
                 inputMode="decimal"
@@ -497,7 +510,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
                 }}
                 disabled={!!feedback?.correct}
                 placeholder="0.25"
-                className="w-40 h-12 text-center text-lg font-mono rounded-lg bg-slate-800/60 border-2 border-emerald-500/40 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30 text-white outline-none font-semibold disabled:opacity-70"
+                className="w-40 h-12 text-center text-lg font-mono font-semibold border-2 border-emerald-500/40 focus:border-emerald-400 focus:ring-emerald-500/30"
               />
               <span className="text-xs text-slate-500 italic">
                 Decimal 0-1 (e.g., 0.25). Percentages accepted with %.
@@ -506,15 +519,9 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
 
             {/* Feedback */}
             {feedback && (
-              <div
-                className={`p-3 rounded-lg border text-sm ${
-                  feedback.correct
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
-                    : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
-                }`}
-              >
+              <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'}>
                 {feedback.message}
-              </div>
+              </LuminaFeedbackCard>
             )}
 
             {/* Hint reveal */}
@@ -528,41 +535,26 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
             {/* Controls */}
             <div className="flex flex-wrap items-center gap-2">
               {!feedback?.correct && (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-100"
+                <LuminaActionButton
+                  action="check"
                   onClick={handleCheck}
                   disabled={!canSubmit}
-                >
-                  Check Answer
-                </Button>
+                />
               )}
               {!showHint && !feedback?.correct && (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleShowHint}
-                >
+                <LuminaButton tone="ghost" onClick={handleShowHint}>
                   Show hint
-                </Button>
+                </LuminaButton>
               )}
               {feedback?.correct && (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleNext}
-                >
+                <LuminaActionButton action="next" onClick={handleNext}>
                   {currentIndex + 1 < challenges.length ? 'Next Table →' : 'Finish'}
-                </Button>
+                </LuminaActionButton>
               )}
               {!feedback?.correct && currentAttempts >= 3 && (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
-                  onClick={handleNext}
-                >
+                <LuminaButton tone="subtle" onClick={handleNext}>
                   Skip →
-                </Button>
+                </LuminaButton>
               )}
             </div>
           </>
@@ -570,12 +562,12 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
 
         {/* Educational context (session-level) */}
         {educationalContext && !allChallengesComplete && (
-          <div className="mt-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-            <p className="text-xs text-slate-300 leading-relaxed">{educationalContext}</p>
-          </div>
+          <LuminaCallout accent="purple" label="In Context">
+            {educationalContext}
+          </LuminaCallout>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

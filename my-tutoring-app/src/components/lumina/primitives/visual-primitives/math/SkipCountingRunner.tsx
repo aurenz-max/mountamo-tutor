@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -747,37 +755,37 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
   const charEmoji = CHARACTER_EMOJI[character.type] || '⭐';
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">
+          <LuminaCardTitle className="text-lg">
             <span className="mr-2">{charEmoji}</span>{title}
-          </CardTitle>
+          </LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300 text-xs">
+            <LuminaBadge accent="orange" className="text-xs">
               {gradeBand === '1-2' ? 'Grades 1-2' : 'Grades 2-3'}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
+            </LuminaBadge>
+            <LuminaBadge accent="emerald" className="text-xs">
               Count by {skipValue}s
-            </Badge>
+            </LuminaBadge>
             {direction === 'backward' && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-purple-300 text-xs">
+              <LuminaBadge accent="purple" className="text-xs">
                 Backward
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             {Object.entries(PHASE_CONFIG).map(([phase, config]) => (
-              <Badge
+              <LuminaBadge
                 key={phase}
                 className={`text-xs ${
                   currentPhase === phase
@@ -786,7 +794,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
                 }`}
               >
                 {config.label}
-              </Badge>
+              </LuminaBadge>
             ))}
             <span className="text-slate-500 text-xs ml-auto">
               Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
@@ -796,11 +804,11 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">
               {currentChallenge.instruction}
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Number Line SVG */}
@@ -994,11 +1002,12 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
         {currentPhase === 'predict' && !isCurrentChallengeComplete && nextExpectedPosition !== null && (
           <div className="flex items-center justify-center gap-3">
             <span className="text-slate-300 text-sm">Next landing:</span>
-            <input
+            <LuminaInput
               type="number"
+              inputMode="numeric"
               value={predictionInput}
               onChange={e => setPredictionInput(e.target.value)}
-              className="w-20 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-orange-400/50"
+              className="w-20 text-center text-lg"
               onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
               autoFocus
             />
@@ -1011,11 +1020,12 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
             <span className="text-slate-300 text-sm">
               {currentChallenge.type === 'find_skip_value' ? 'Skip value:' : 'Missing number:'}
             </span>
-            <input
+            <LuminaInput
               type="number"
+              inputMode="numeric"
               value={fillInput}
               onChange={e => setFillInput(e.target.value)}
-              className="w-20 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-orange-400/50"
+              className="w-20 text-center text-lg"
               onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
               autoFocus
             />
@@ -1026,12 +1036,13 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
         {currentChallenge?.type === 'connect_multiplication' && !isCurrentChallengeComplete && (
           <div className="flex items-center justify-center gap-3">
             <span className="text-slate-300 text-sm">{jumpCount} × {skipValue} =</span>
-            <input
+            <LuminaInput
               type="text"
+              inputMode="numeric"
               value={multiplicationInput}
               onChange={e => setMultiplicationInput(e.target.value)}
               placeholder="?"
-              className="w-20 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-orange-400/50"
+              className="w-20 text-center text-lg"
               onKeyDown={e => e.key === 'Enter' && handleCheckAnswer()}
               autoFocus
             />
@@ -1052,9 +1063,9 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
         {/* Streak indicator */}
         {currentStreak >= 3 && (
           <div className="text-center">
-            <Badge className="bg-orange-500/10 border-orange-400/30 text-orange-300 text-xs">
+            <LuminaBadge accent="orange" className="text-xs">
               Streak: {currentStreak} correct in a row!
-            </Badge>
+            </LuminaBadge>
           </div>
         )}
 
@@ -1065,37 +1076,32 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
               <>
                 {/* Jump button for watch/jump phases */}
                 {(currentPhase === 'watch' || currentPhase === 'jump') && nextExpectedPosition !== null && !autoPlay && (
-                  <Button
-                    variant="ghost"
+                  <LuminaButton
                     className="bg-orange-500/10 border border-orange-400/30 hover:bg-orange-500/20 text-orange-300"
                     onClick={performJump}
                     disabled={isAnimating || hasSubmittedEvaluation}
                   >
                     {charEmoji} Jump! (+{skipValue})
-                  </Button>
+                  </LuminaButton>
                 )}
 
                 {/* Check Answer button */}
                 {(isCountAlongComplete || currentChallenge?.type === 'predict' || currentChallenge?.type === 'fill_missing' || currentChallenge?.type === 'find_skip_value' || currentChallenge?.type === 'connect_multiplication') && (
-                  <Button
-                    variant="ghost"
-                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                  <LuminaActionButton
+                    action="check"
                     onClick={handleCheckAnswer}
                     disabled={hasSubmittedEvaluation}
-                  >
-                    Check Answer
-                  </Button>
+                  />
                 )}
               </>
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -1109,9 +1115,9 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
 
         {/* Hint */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Phase Summary */}
@@ -1125,8 +1131,8 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

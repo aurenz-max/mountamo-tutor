@@ -1,9 +1,15 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -670,25 +676,25 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
 
   // ── Main Render ────────────────────────────────────────────────────
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
+            <LuminaBadge accent="emerald" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
+            </LuminaBadge>
             {challenges.length > 0 && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+              <LuminaBadge accent="blue" className="text-xs">
                 {currentChallengeIndex + 1}/{challenges.length}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase badges */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -752,32 +758,27 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
             <div className="flex items-center justify-center gap-3">
               {currentChallenge.type !== 'follow_directions' && (
                 !isCurrentChallengeCorrect ? (
-                  <Button
-                    variant="ghost"
+                  <LuminaActionButton
+                    action="check"
                     onClick={handleCheckAnswer}
                     disabled={!canCheck}
-                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
-                  >
-                    Check Answer
-                  </Button>
+                  />
                 ) : (
-                  <Button
-                    variant="ghost"
+                  <LuminaActionButton
+                    action="next"
                     onClick={advanceToNextChallenge}
-                    className="bg-emerald-500/20 border border-emerald-400/50 hover:bg-emerald-500/30 text-emerald-300"
                   >
                     {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                  </Button>
+                  </LuminaActionButton>
                 )
               )}
               {currentChallenge.type === 'follow_directions' && isCurrentChallengeCorrect && (
-                <Button
-                  variant="ghost"
+                <LuminaActionButton
+                  action="next"
                   onClick={advanceToNextChallenge}
-                  className="bg-emerald-500/20 border border-emerald-400/50 hover:bg-emerald-500/30 text-emerald-300"
                 >
                   {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                </Button>
+                </LuminaActionButton>
               )}
             </div>
           </div>
@@ -790,8 +791,8 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
             <p className="text-slate-400 mt-2">No challenges loaded</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

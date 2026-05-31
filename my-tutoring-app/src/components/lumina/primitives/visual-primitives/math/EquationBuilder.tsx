@@ -1,9 +1,22 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaInput,
+  LuminaActionButton,
+  LuminaChallengeCounter,
+  LuminaFeedbackCard,
+  answerStateClass,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -76,7 +89,7 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   rewrite:         { label: 'Rewrite',          icon: '🔄', accentColor: 'cyan' },
 };
 
-// Tile appearance
+// Tile appearance — bespoke interaction-surface styling for the equation tiles.
 const TILE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   number: { bg: 'bg-indigo-500/20', border: 'border-indigo-400/40', text: 'text-indigo-200' },
   operator: { bg: 'bg-amber-500/20', border: 'border-amber-400/40', text: 'text-amber-200' },
@@ -92,7 +105,7 @@ function getTileType(tile: string): keyof typeof TILE_COLORS {
 }
 
 // ============================================================================
-// Sub-components
+// Sub-components — bespoke equation-tile interaction surface (the painting)
 // ============================================================================
 
 /** A single equation tile (draggable from pool or placed in workspace) */
@@ -773,7 +786,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     return (
       <div className="space-y-6">
         {/* Workspace */}
-        <div className="bg-slate-800/30 rounded-2xl p-4 border border-white/5">
+        <LuminaPanel>
           <p className="text-xs text-slate-500 mb-2 text-center">Your equation</p>
           <BuildWorkspace
             slots={workspaceSlots}
@@ -781,7 +794,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
             onRemoveSlot={handleRemoveSlot}
             disabled={disabled}
           />
-        </div>
+        </LuminaPanel>
 
         {/* Tile pool */}
         <div>
@@ -791,22 +804,19 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
 
         {/* Actions */}
         <div className="flex justify-center gap-3">
-          <Button
-            variant="ghost"
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
+          <LuminaButton
             onClick={handleClearWorkspace}
             disabled={disabled || workspaceSlots.length === 0}
           >
             Clear
-          </Button>
-          <Button
-            variant="ghost"
-            className="bg-indigo-500/20 border border-indigo-400/30 hover:bg-indigo-500/30 text-indigo-200"
+          </LuminaButton>
+          <LuminaActionButton
+            action="check"
             onClick={handleCheckBuild}
             disabled={disabled || workspaceSlots.length === 0}
           >
             Check
-          </Button>
+          </LuminaActionButton>
         </div>
       </div>
     );
@@ -823,37 +833,34 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         {/* Display equation with blank */}
         <EquationDisplay parts={tokens} blankIndex={blankIdx} size="lg" />
 
-        {/* MC options */}
+        {/* MC options — bespoke compact tiles, grading colors tokenized */}
         <div className="flex justify-center gap-3 flex-wrap">
           {options.map((opt) => (
-            <Button
+            <button
               key={opt}
-              variant="ghost"
+              type="button"
               className={`
-                w-16 h-16 text-2xl font-bold rounded-xl border
-                ${selectedOption === opt
-                  ? 'bg-indigo-500/30 border-indigo-400/50 text-indigo-100'
-                  : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'}
+                w-16 h-16 text-2xl font-bold rounded-xl border transition-all
+                ${answerStateClass(selectedOption === opt ? 'selected' : 'idle')}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
               onClick={() => { if (!disabled) { SoundManager.select(); setSelectedOption(opt); } }}
               disabled={disabled}
             >
               {opt}
-            </Button>
+            </button>
           ))}
         </div>
 
         {/* Check */}
         <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            className="bg-indigo-500/20 border border-indigo-400/30 hover:bg-indigo-500/30 text-indigo-200"
+          <LuminaActionButton
+            action="check"
             onClick={handleCheckMissingValue}
             disabled={disabled || selectedOption === null}
           >
             Check
-          </Button>
+          </LuminaActionButton>
         </div>
       </div>
     );
@@ -868,48 +875,43 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         {/* Display equation */}
         <EquationDisplay parts={tokens} size="lg" />
 
-        {/* True / False buttons */}
+        {/* True / False buttons — bespoke pills, grading colors tokenized */}
         <div className="flex justify-center gap-4">
-          <Button
-            variant="ghost"
+          <button
+            type="button"
             className={`
-              px-8 py-4 text-lg font-bold rounded-xl border
-              ${selectedTruthValue === true
-                ? 'bg-emerald-500/30 border-emerald-400/50 text-emerald-100'
-                : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'}
+              px-8 py-4 text-lg font-bold rounded-xl border transition-all
+              ${answerStateClass(selectedTruthValue === true ? 'selected' : 'idle')}
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             `}
             onClick={() => { if (!disabled) { SoundManager.select(); setSelectedTruthValue(true); } }}
             disabled={disabled}
           >
             True
-          </Button>
-          <Button
-            variant="ghost"
+          </button>
+          <button
+            type="button"
             className={`
-              px-8 py-4 text-lg font-bold rounded-xl border
-              ${selectedTruthValue === false
-                ? 'bg-red-500/30 border-red-400/50 text-red-100'
-                : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'}
+              px-8 py-4 text-lg font-bold rounded-xl border transition-all
+              ${answerStateClass(selectedTruthValue === false ? 'selected' : 'idle')}
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             `}
             onClick={() => { if (!disabled) { SoundManager.select(); setSelectedTruthValue(false); } }}
             disabled={disabled}
           >
             False
-          </Button>
+          </button>
         </div>
 
         {/* Check */}
         <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            className="bg-indigo-500/20 border border-indigo-400/30 hover:bg-indigo-500/30 text-indigo-200"
+          <LuminaActionButton
+            action="check"
             onClick={handleCheckTrueFalse}
             disabled={disabled || selectedTruthValue === null}
           >
             Check
-          </Button>
+          </LuminaActionButton>
         </div>
       </div>
     );
@@ -937,34 +939,31 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
           </div>
         </div>
 
-        {/* Number input */}
+        {/* Number input — generic answer entry */}
         <div className="flex justify-center items-center gap-3">
           <span className="text-slate-400 text-sm">? =</span>
-          <input
+          <LuminaInput
             type="number"
+            inputMode="numeric"
             min={0}
             max={maxNumber * 2}
             value={balanceAnswer}
             onChange={(e) => !disabled && setBalanceAnswer(e.target.value)}
             disabled={disabled}
-            className="w-20 h-14 text-center text-2xl font-bold rounded-xl
-                       bg-slate-800/50 border border-white/20 text-slate-100
-                       focus:outline-none focus:ring-2 focus:ring-indigo-400/50
-                       disabled:opacity-50"
+            className="w-20 h-14 text-center text-2xl font-bold"
             placeholder="?"
           />
         </div>
 
         {/* Check */}
         <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            className="bg-indigo-500/20 border border-indigo-400/30 hover:bg-indigo-500/30 text-indigo-200"
+          <LuminaActionButton
+            action="check"
             onClick={handleCheckBalance}
             disabled={disabled || balanceAnswer === ''}
           >
             Check
-          </Button>
+          </LuminaActionButton>
         </div>
       </div>
     );
@@ -983,7 +982,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
         </div>
 
         {/* Workspace */}
-        <div className="bg-slate-800/30 rounded-2xl p-4 border border-white/5">
+        <LuminaPanel>
           <p className="text-xs text-slate-500 mb-2 text-center">Build a different way to write it</p>
           <BuildWorkspace
             slots={workspaceSlots}
@@ -991,7 +990,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
             onRemoveSlot={handleRemoveSlot}
             disabled={disabled}
           />
-        </div>
+        </LuminaPanel>
 
         {/* Tile pool */}
         <div>
@@ -1001,22 +1000,19 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
 
         {/* Actions */}
         <div className="flex justify-center gap-3">
-          <Button
-            variant="ghost"
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
+          <LuminaButton
             onClick={handleClearWorkspace}
             disabled={disabled || workspaceSlots.length === 0}
           >
             Clear
-          </Button>
-          <Button
-            variant="ghost"
-            className="bg-indigo-500/20 border border-indigo-400/30 hover:bg-indigo-500/30 text-indigo-200"
+          </LuminaButton>
+          <LuminaActionButton
+            action="check"
             onClick={handleCheckRewrite}
             disabled={disabled || workspaceSlots.length === 0}
           >
             Check
-          </Button>
+          </LuminaActionButton>
         </div>
       </div>
     );
@@ -1027,28 +1023,33 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-        <CardContent className="p-6 text-center text-slate-400">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6 text-center text-slate-400">
           No challenges available.
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
+  const currentTypeConfig = currentChallenge
+    ? CHALLENGE_TYPE_CONFIG[currentChallenge.type]
+    : undefined;
+
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-2">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
-          <Badge variant="outline" className="border-white/20 text-slate-400 text-xs">
-            {currentChallengeIndex + 1} / {challenges.length}
-          </Badge>
+          <LuminaCardTitle>{title}</LuminaCardTitle>
+          <LuminaChallengeCounter
+            current={currentChallengeIndex + 1}
+            total={challenges.length}
+          />
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
-      <CardContent className="space-y-6">
+      </LuminaCardHeader>
+      <LuminaCardContent className="space-y-6">
         {/* Phase Summary — shown when all complete */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -1066,47 +1067,39 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
           <>
             {/* Challenge type badge */}
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-white/20 text-slate-300 text-xs">
-                {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
-                {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              <LuminaBadge accent={currentTypeConfig?.accentColor as LuminaAccent}>
+                {currentTypeConfig?.icon}{' '}
+                {currentTypeConfig?.label}
+              </LuminaBadge>
             </div>
 
             {/* Instruction */}
-            <p className="text-slate-200 text-lg text-center font-medium">
+            <LuminaPrompt center className="text-lg">
               {currentChallenge.instruction}
-            </p>
+            </LuminaPrompt>
 
             {/* Challenge content */}
             {renderChallenge()}
 
             {/* Feedback */}
             {feedback && (
-              <div className={`text-center text-sm font-medium p-3 rounded-xl ${
-                feedbackType === 'success'
-                  ? 'bg-emerald-500/10 border border-emerald-400/20 text-emerald-300'
-                  : 'bg-red-500/10 border border-red-400/20 text-red-300'
-              }`}>
+              <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
                 {feedback}
-              </div>
+              </LuminaFeedbackCard>
             )}
 
             {/* Next button — shown when current challenge is solved */}
             {challengeSolved && !allChallengesComplete && (
               <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/20 border border-emerald-400/30 hover:bg-emerald-500/30 text-emerald-200"
-                  onClick={handleNext}
-                >
+                <LuminaActionButton action="next" onClick={handleNext}>
                   Next Challenge
-                </Button>
+                </LuminaActionButton>
               </div>
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

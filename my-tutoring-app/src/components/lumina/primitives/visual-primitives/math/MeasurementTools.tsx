@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -1008,34 +1017,28 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
   // -- Render ---------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{getModeIcon()}</span>
             <div>
-              <CardTitle className="text-slate-100 text-xl">
+              <LuminaCardTitle>
                 {title || 'Measurement Tools'}
-              </CardTitle>
+              </LuminaCardTitle>
               <p className="text-sm text-slate-400 mt-0.5">{getSubtitle()}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300">
-              {unit}
-            </Badge>
+            <LuminaBadge accent="blue">{unit}</LuminaBadge>
             {challengeType === 'convert' && (
-              <Badge className="bg-amber-900/30 border-amber-700/50 text-amber-300">
-                → {effectiveConvertToUnit}
-              </Badge>
+              <LuminaBadge accent="amber">→ {effectiveConvertToUnit}</LuminaBadge>
             )}
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-300">
-              Grades {gradeBand}
-            </Badge>
+            <LuminaBadge>Grades {gradeBand}</LuminaBadge>
           </div>
         </div>
 
-        {/* Progress dots */}
+        {/* Progress dots — bespoke interaction-state strip (per-shape + compare phase) */}
         <div className="flex items-center gap-2 mt-4">
           {challenges.map((c, i) => (
             <div
@@ -1061,9 +1064,9 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
             />
           )}
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Results panel */}
         {isFullyComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -1079,12 +1082,12 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
         {/* COMPARE — Comparison phase (after all shapes measured) */}
         {challengeType === 'compare' && measureComplete && !comparisonDone && !isFullyComplete && (
           <div className="space-y-4">
-            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+            <LuminaPrompt accent="purple">
               <p className="text-purple-200 font-medium mb-1">Order the shapes from shortest to longest</p>
-              <p className="text-slate-400 text-sm">
+              <p className="text-slate-400 text-sm font-normal">
                 Each shape is shown at the size you measured. Click the shortest first, then the next shortest, and so on.
               </p>
-            </div>
+            </LuminaPrompt>
 
             {selectedOrder.length > 0 && (
               <div className="space-y-1.5">
@@ -1094,14 +1097,15 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                     const c = challenges.find((c) => c.id === id);
                     if (!c) return null;
                     return (
-                      <div
+                      <LuminaPanel
                         key={id}
-                        className="flex items-center gap-3 bg-purple-500/10 border border-purple-400/30 rounded-lg pl-3 pr-4 py-1.5"
+                        accent="purple"
+                        className="flex items-center gap-3 pl-3 pr-4 py-1.5"
                       >
                         <span className="text-purple-300 text-sm font-bold w-5 flex-shrink-0">{i + 1}.</span>
                         <ShapePreview challenge={c} />
                         <span className="text-slate-200 text-sm">{c.label}</span>
-                      </div>
+                      </LuminaPanel>
                     );
                   })}
                 </div>
@@ -1119,15 +1123,15 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   {challenges
                     .filter((c) => !selectedOrder.includes(c.id))
                     .map((c) => (
-                      <button
+                      <LuminaButton
                         key={c.id}
                         type="button"
                         onClick={() => { SoundManager.select(); setSelectedOrder((prev) => [...prev, c.id]); }}
-                        className="w-full flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/20 hover:border-purple-400/40 rounded-lg pl-3 pr-4 py-1.5 text-left transition-colors"
+                        className="w-full flex items-center justify-start gap-3 h-auto pl-3 pr-4 py-1.5 text-left hover:border-purple-400/40"
                       >
                         <ShapePreview challenge={c} interactive />
                         <span className="text-slate-200 text-sm">{c.label}</span>
-                      </button>
+                      </LuminaButton>
                     ))}
                 </div>
               </div>
@@ -1135,37 +1139,24 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
             <div className="flex gap-2 justify-center">
               {selectedOrder.length > 0 && (
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
+                <LuminaButton
+                  tone="subtle"
                   onClick={() => { setSelectedOrder([]); setCompareFeedback(null); }}
                 >
                   Reset Order
-                </Button>
+                </LuminaButton>
               )}
               {selectedOrder.length === challenges.length && (
-                <Button
-                  variant="ghost"
-                  className="bg-purple-500/10 border border-purple-400/30 hover:bg-purple-500/20 text-purple-300"
-                  onClick={handleComparisonCheck}
-                >
+                <LuminaActionButton action="check" onClick={handleComparisonCheck}>
                   Check Order
-                </Button>
+                </LuminaActionButton>
               )}
             </div>
 
             {compareFeedback && (
-              <div
-                className={`rounded-lg p-3 border ${
-                  compareFeedback.correct
-                    ? 'bg-emerald-500/10 border-emerald-500/30'
-                    : 'bg-red-500/10 border-red-500/30'
-                }`}
-              >
-                <p className={`text-sm font-medium ${compareFeedback.correct ? 'text-emerald-300' : 'text-red-300'}`}>
-                  {compareFeedback.message}
-                </p>
-              </div>
+              <LuminaFeedbackCard status={compareFeedback.correct ? 'correct' : 'incorrect'}>
+                {compareFeedback.message}
+              </LuminaFeedbackCard>
             )}
           </div>
         )}
@@ -1173,12 +1164,12 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
         {/* ACTIVE WORKSPACE — Measure phase (all modes) */}
         {currentChallenge && !measureComplete && (
           <>
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+            <LuminaPrompt accent="blue">
               <p className="text-blue-200 text-sm font-medium">
                 Shape {currentIndex + 1} of {challenges.length}
               </p>
-              <p className="text-slate-200 mt-1">{getInstructionText()}</p>
-            </div>
+              <p className="text-slate-200 mt-1 font-normal">{getInstructionText()}</p>
+            </LuminaPrompt>
 
             {!convertStep && (
               <div className="flex justify-center">
@@ -1242,9 +1233,8 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-slate-300 text-sm">How many {unit} long?</span>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      className="h-11 w-11 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+                    <LuminaButton
+                      className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
                       onClick={() => {
                         SoundManager.tick();
                         const cur = parseFloat(answerInput) || 0;
@@ -1253,13 +1243,12 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                       disabled={hasSubmitted || (parseFloat(answerInput) || 0) <= 0}
                     >
                       &minus;
-                    </Button>
+                    </LuminaButton>
                     <span className="w-16 text-center text-3xl font-bold text-blue-300 tabular-nums select-none">
                       {parseFloat(answerInput) || 0}
                     </span>
-                    <Button
-                      variant="ghost"
-                      className="h-11 w-11 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+                    <LuminaButton
+                      className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
                       onClick={() => {
                         SoundManager.tick();
                         const cur = parseFloat(answerInput) || 0;
@@ -1268,47 +1257,35 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                       disabled={hasSubmitted}
                     >
                       +
-                    </Button>
+                    </LuminaButton>
                   </div>
-                  <Button
-                    variant="ghost"
-                    className="bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300 mt-1"
+                  <LuminaActionButton
+                    action="check"
+                    className="mt-1"
                     onClick={checkAnswer}
                     disabled={hasSubmitted || (parseFloat(answerInput) || 0) <= 0}
                   >
                     Check Answer
-                  </Button>
+                  </LuminaActionButton>
                 </div>
 
                 {feedback && (
-                  <div
-                    className={`rounded-lg p-3 border ${
-                      feedback.correct
-                        ? 'bg-emerald-500/10 border-emerald-500/30'
-                        : 'bg-red-500/10 border-red-500/30'
-                    }`}
-                  >
-                    <p className={`text-sm font-medium ${feedback.correct ? 'text-emerald-300' : 'text-red-300'}`}>
-                      {feedback.message}
-                    </p>
-                  </div>
+                  <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'}>
+                    {feedback.message}
+                  </LuminaFeedbackCard>
                 )}
 
                 {showHint && (
-                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                    <p className="text-amber-200 text-sm">{currentChallenge.hint}</p>
-                  </div>
+                  <LuminaPrompt accent="amber">
+                    <p className="text-amber-200 text-sm font-normal">{currentChallenge.hint}</p>
+                  </LuminaPrompt>
                 )}
 
                 {!feedback?.correct && measureAttempts >= 2 && !showHint && (
                   <div className="flex justify-center">
-                    <Button
-                      variant="ghost"
-                      className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-                      onClick={showHintHandler}
-                    >
+                    <LuminaButton tone="subtle" onClick={showHintHandler}>
                       Need a Hint?
-                    </Button>
+                    </LuminaButton>
                   </div>
                 )}
               </div>
@@ -1317,26 +1294,25 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
             {/* CONVERT step (after correct measurement in convert mode) */}
             {convertStep && currentChallenge && (
               <div className="space-y-3">
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                <LuminaPrompt accent="amber">
                   <p className="text-amber-200 font-medium mb-1">Convert your measurement!</p>
-                  <p className="text-slate-200 mt-1">
+                  <p className="text-slate-200 mt-1 font-normal">
                     The <span className="text-amber-300 font-medium">{currentChallenge.label}</span> is{' '}
                     <span className="text-blue-300 font-bold">{measuredValue} {unit}</span>.{' '}
                     How many <span className="text-amber-300 font-medium">{effectiveConvertToUnit}</span> is that?
                   </p>
-                  <p className="text-slate-500 text-xs mt-2">
+                  <p className="text-slate-500 text-xs mt-2 font-normal">
                     {unit === 'inches'
                       ? `Hint: 1 inch = ${INCH_TO_CM} centimeters`
                       : `Hint: 1 inch = ${INCH_TO_CM} centimeters (divide to get inches)`}
                   </p>
-                </div>
+                </LuminaPrompt>
 
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-slate-300 text-sm">How many {effectiveConvertToUnit}?</span>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      className="h-11 w-11 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+                    <LuminaButton
+                      className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
                       onClick={() => {
                         SoundManager.tick();
                         const cur = parseFloat(convertInput) || 0;
@@ -1345,13 +1321,12 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                       disabled={(parseFloat(convertInput) || 0) <= 0}
                     >
                       &minus;
-                    </Button>
+                    </LuminaButton>
                     <span className="w-16 text-center text-3xl font-bold text-amber-300 tabular-nums select-none">
                       {parseFloat(convertInput) || 0}
                     </span>
-                    <Button
-                      variant="ghost"
-                      className="h-11 w-11 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold p-0"
+                    <LuminaButton
+                      className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
                       onClick={() => {
                         SoundManager.tick();
                         const cur = parseFloat(convertInput) || 0;
@@ -1359,30 +1334,22 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                       }}
                     >
                       +
-                    </Button>
+                    </LuminaButton>
                   </div>
-                  <Button
-                    variant="ghost"
-                    className="bg-amber-500/10 border border-amber-400/30 hover:bg-amber-500/20 text-amber-300 mt-1"
+                  <LuminaActionButton
+                    action="check"
+                    className="mt-1"
                     onClick={checkConversion}
                     disabled={(parseFloat(convertInput) || 0) <= 0}
                   >
                     Check Conversion
-                  </Button>
+                  </LuminaActionButton>
                 </div>
 
                 {convertFeedback && (
-                  <div
-                    className={`rounded-lg p-3 border ${
-                      convertFeedback.correct
-                        ? 'bg-emerald-500/10 border-emerald-500/30'
-                        : 'bg-red-500/10 border-red-500/30'
-                    }`}
-                  >
-                    <p className={`text-sm font-medium ${convertFeedback.correct ? 'text-emerald-300' : 'text-red-300'}`}>
-                      {convertFeedback.message}
-                    </p>
-                  </div>
+                  <LuminaFeedbackCard status={convertFeedback.correct ? 'correct' : 'incorrect'}>
+                    {convertFeedback.message}
+                  </LuminaFeedbackCard>
                 )}
               </div>
             )}
@@ -1391,17 +1358,11 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
         {isFullyComplete && (
           <div className="flex justify-center">
-            <Button
-              onClick={handleReset}
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-            >
-              Try Again
-            </Button>
+            <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

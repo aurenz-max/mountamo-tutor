@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPrompt,
+  LuminaInput,
+  LuminaModeTabs,
+  LuminaChallengeCounter,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  answerStateClass,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -595,68 +607,69 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     }
   }, [currentChallenge, isCurrentChallengeComplete, countAnswer, equationTiles, solveAnswer, createSelection]);
 
+  // Eval-mode / phase tabs (chrome)
+  const phaseTabs = useMemo(
+    () => Object.entries(PHASE_TYPE_CONFIG).map(([value, cfg]) => ({
+      value,
+      label: `${cfg.icon} ${cfg.label}`,
+    })),
+    [],
+  );
+
   // ── Render ──────────────────────────────────────────────────────
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-        <CardHeader><CardTitle className="text-slate-100">{title}</CardTitle></CardHeader>
-        <CardContent><p className="text-slate-400 text-sm">No challenges configured.</p></CardContent>
-      </Card>
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-slate-400 text-sm">No challenges configured.</p></LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300 text-xs">
+            <LuminaBadge accent="orange" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
+            </LuminaBadge>
             {currentChallenge && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
+              <LuminaBadge accent="cyan" className="text-xs">
                 {currentChallenge.operation}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         <div className="flex items-center gap-2 flex-wrap">
-          {Object.entries(PHASE_TYPE_CONFIG).map(([type, config]) => {
-            const isActive = currentChallenge?.type === type;
-            return (
-              <Badge
-                key={type}
-                className={`text-xs ${
-                  isActive
-                    ? 'bg-orange-500/20 border-orange-400/50 text-orange-300'
-                    : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                }`}
-              >
-                {config.icon} {config.label}
-              </Badge>
-            );
-          })}
-          <span className="text-slate-500 text-xs ml-auto">
-            {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-          </span>
+          <LuminaModeTabs
+            tabs={phaseTabs}
+            active={currentChallenge?.type ?? ''}
+            accent="orange"
+          />
+          <LuminaChallengeCounter
+            current={Math.min(currentChallengeIndex + 1, challenges.length)}
+            total={challenges.length}
+            className="ml-auto"
+          />
         </div>
 
         {/* Story Text */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPrompt>
             <p className="text-slate-200 text-sm font-medium mb-1">
               {currentChallenge.storyText}
             </p>
-            <p className="text-slate-400 text-xs italic">
+            <p className="text-slate-400 text-xs italic font-normal">
               {currentChallenge.instruction}
             </p>
-          </div>
+          </LuminaPrompt>
         )}
 
         {/* Scene Visualization */}
@@ -668,9 +681,9 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
             >
               {/* Scene label */}
               <div className="absolute top-2 left-2">
-                <Badge className="bg-black/30 border-white/10 text-white/70 text-[10px]">
+                <LuminaBadge className="bg-black/30 border-white/10 text-white/70 text-[10px]">
                   {sceneConfig.label}
-                </Badge>
+                </LuminaBadge>
               </div>
 
               {/* Objects */}
@@ -740,13 +753,13 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
         {/* Ten-frame toggle */}
         {showTenFrame && currentChallenge && !allChallengesComplete && (
           <div className="flex items-center justify-center gap-3">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 text-xs h-7 px-2"
+            <LuminaButton
+              tone="subtle"
+              className="text-slate-400 text-xs h-7 px-2"
               onClick={() => setShowTenFrameHelper((v) => !v)}
             >
               {showTenFrameHelper ? 'Hide' : 'Show'} Ten Frame
-            </Button>
+            </LuminaButton>
             {showTenFrameHelper && (
               <TenFrameHelper filled={currentChallenge.resultCount} max={maxNumber <= 5 ? 5 : 10} />
             )}
@@ -759,13 +772,14 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
         {currentChallenge?.type === 'act-out' && !isCurrentChallengeComplete && !allChallengesComplete && (
           <div className="flex items-center justify-center gap-3">
             <span className="text-slate-300 text-sm">How many {currentChallenge.objectType} are there now?</span>
-            <input
+            <LuminaInput
               type="number"
+              inputMode="numeric"
               min={0}
               max={maxNumber}
               value={countAnswer}
               onChange={(e) => setCountAnswer(e.target.value)}
-              className="w-16 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-orange-400/50"
+              className="w-16 text-center text-lg"
               onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
             />
           </div>
@@ -780,15 +794,14 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                 <span className="text-slate-600 text-sm">Drag tiles here to build the equation</span>
               ) : (
                 equationTiles.map((tile, i) => (
-                  <Button
+                  <LuminaButton
                     key={i}
-                    variant="ghost"
                     className="bg-purple-500/20 border border-purple-400/30 text-purple-200 text-lg font-mono h-9 w-9 p-0 hover:bg-red-500/20 hover:border-red-400/30"
                     onClick={() => removeTile(i)}
                     title="Click to remove"
                   >
                     {tile}
-                  </Button>
+                  </LuminaButton>
                 ))
               )}
             </div>
@@ -798,14 +811,13 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                 const num = parseInt(t, 10);
                 return isNaN(num) || num <= maxNumber;
               }).map((tile) => (
-                <Button
+                <LuminaButton
                   key={tile}
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-sm font-mono h-8 w-8 p-0"
+                  className="text-slate-200 text-sm font-mono h-8 w-8 p-0"
                   onClick={() => addTile(tile)}
                 >
                   {tile}
-                </Button>
+                </LuminaButton>
               ))}
             </div>
           </div>
@@ -819,13 +831,14 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
               {currentChallenge.unknownPosition === 'start' && ' (How many at the start?)'}
               {currentChallenge.unknownPosition === 'change' && ' (How many came or left?)'}
             </span>
-            <input
+            <LuminaInput
               type="number"
+              inputMode="numeric"
               min={0}
               max={maxNumber}
               value={solveAnswer}
               onChange={(e) => setSolveAnswer(e.target.value)}
-              className="w-16 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-blue-400/50"
+              className="w-16 text-center text-lg"
               onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
             />
           </div>
@@ -841,34 +854,32 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               {Object.entries(SCENE_BACKGROUNDS).map(([key, cfg]) => (
-                <Button
+                <LuminaButton
                   key={key}
-                  variant="ghost"
                   className={`text-xs h-8 ${
                     createSelection?.scene === key
-                      ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
-                      : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'
+                      ? answerStateClass('selected')
+                      : ''
                   }`}
                   onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: key, object: prev?.object || '' })); }}
                 >
                   {cfg.label}
-                </Button>
+                </LuminaButton>
               ))}
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               {Object.entries(OBJECT_EMOJI).map(([key, emoji]) => (
-                <Button
+                <LuminaButton
                   key={key}
-                  variant="ghost"
                   className={`text-xs h-8 ${
                     createSelection?.object === key
-                      ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
-                      : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'
+                      ? answerStateClass('selected')
+                      : ''
                   }`}
                   onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: prev?.scene || '', object: key })); }}
                 >
                   {emoji} {key}
-                </Button>
+                </LuminaButton>
               ))}
             </div>
           </div>
@@ -876,33 +887,27 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
         {/* Feedback */}
         {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' : feedbackType === 'error' ? 'text-red-400' : 'text-slate-300'
-          }`}>
+          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Action Buttons */}
         <div className="flex justify-center gap-3">
           {!isCurrentChallengeComplete && !allChallengesComplete && (
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+            <LuminaActionButton
+              action="check"
               onClick={handleCheckAnswer}
               disabled={!canCheck || hasSubmittedEvaluation}
-            >
-              Check Answer
-            </Button>
+            />
           )}
           {isCurrentChallengeComplete && !allChallengesComplete && (
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+            <LuminaActionButton
+              action="next"
               onClick={advanceToNextChallenge}
             >
               Next Challenge
-            </Button>
+            </LuminaActionButton>
           )}
           {allChallengesComplete && !hasSubmittedEvaluation && (
             <div className="text-center">
@@ -922,7 +927,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
             className="mt-4"
           />
         )}
-      </CardContent>
+      </LuminaCardContent>
 
       {/* CSS animation for object entrance */}
       <style jsx>{`
@@ -934,7 +939,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
           animation: fadeIn 0.5s ease-out;
         }
       `}</style>
-    </Card>
+    </LuminaCard>
   );
 };
 

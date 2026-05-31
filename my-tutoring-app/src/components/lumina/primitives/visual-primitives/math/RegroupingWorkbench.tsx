@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -620,39 +627,40 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300 text-xs">
+            <LuminaBadge accent="orange" className="text-xs">
               {gradeBand === '1-2' ? 'Grades 1-2' : 'Grades 3-4'}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs capitalize">
+            </LuminaBadge>
+            <LuminaBadge accent="emerald" className="text-xs capitalize">
               {operation}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             {Object.entries(UI_PHASE_CONFIG).map(([phase, config]) => (
-              <Badge
+              <LuminaBadge
                 key={phase}
+                accent={currentPhase === phase ? 'orange' : undefined}
                 className={`text-xs ${
                   currentPhase === phase
-                    ? 'bg-orange-500/20 border-orange-400/50 text-orange-300'
+                    ? 'bg-orange-500/20 border-orange-400/50'
                     : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
                 }`}
               >
                 {config.label}
-              </Badge>
+              </LuminaBadge>
             ))}
             <span className="text-slate-500 text-xs ml-auto">
               Problem {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
@@ -662,9 +670,9 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
 
         {/* Word Problem Context */}
         {wordProblemContext?.enabled && wordProblemContext.story && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-300 text-sm italic">{wordProblemContext.story}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Problem Display */}
@@ -677,7 +685,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         {/* Main Split View */}
         <div className={`grid ${showAlgorithm ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
           {/* Left: Base-Ten Blocks */}
-          <div className="bg-slate-800/20 rounded-lg p-4 border border-white/5">
+          <LuminaPanel>
             <p className="text-slate-500 text-xs mb-3 text-center font-medium">Base-Ten Blocks</p>
 
             {showPlaceColumns && (
@@ -722,14 +730,13 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
 
                   {/* Regroup button */}
                   {!isCurrentChallengeComplete && !allChallengesComplete && needsRegroup(placeIdx) && placeIdx < places - 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-1 text-[10px] px-2 py-0.5 h-auto bg-orange-500/10 border border-orange-400/30 hover:bg-orange-500/20 text-orange-300"
+                    <button
+                      type="button"
+                      className="mt-1 text-[10px] px-2 py-0.5 h-auto rounded-md bg-orange-500/10 border border-orange-400/30 hover:bg-orange-500/20 text-orange-300 transition-colors"
                       onClick={() => handleRegroup(placeIdx)}
                     >
                       {operation === 'addition' ? '↑ Carry' : '↓ Borrow'}
-                    </Button>
+                    </button>
                   )}
                 </div>
               ))}
@@ -749,11 +756,11 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                 </span>
               )}
             </div>
-          </div>
+          </LuminaPanel>
 
           {/* Right: Written Algorithm */}
           {showAlgorithm && (
-            <div className="bg-slate-800/20 rounded-lg p-4 border border-white/5">
+            <LuminaPanel>
               <p className="text-slate-500 text-xs mb-3 text-center font-medium">Written Algorithm</p>
 
               <div className="flex flex-col items-center gap-1 font-mono">
@@ -808,12 +815,13 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                       {isCurrentChallengeComplete || allChallengesComplete ? (
                         <span className="text-emerald-400 text-lg font-bold">{answerDisplay[placeIdx]}</span>
                       ) : (
-                        <input
+                        <LuminaInput
                           type="text"
+                          inputMode="numeric"
                           maxLength={1}
                           value={answerDigits[placeIdx] !== null ? String(answerDigits[placeIdx]) : ''}
                           onChange={e => handleDigitChange(placeIdx, e.target.value)}
-                          className="w-7 h-8 text-center bg-slate-800/50 border border-white/20 rounded text-slate-100 text-lg font-bold focus:outline-none focus:border-orange-400/50"
+                          className="w-7 h-8 text-center text-lg font-bold"
                         />
                       )}
                     </div>
@@ -835,7 +843,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                   </div>
                 )}
               </div>
-            </div>
+            </LuminaPanel>
           )}
         </div>
 
@@ -854,32 +862,28 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckAnswer}
                 disabled={hasSubmittedEvaluation || answerDigits.every(d => d === null)}
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Problem
-              </Button>
+              </LuminaActionButton>
             )}
           </div>
         )}
 
         {/* Hint */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Phase Summary Panel */}
@@ -893,8 +897,8 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

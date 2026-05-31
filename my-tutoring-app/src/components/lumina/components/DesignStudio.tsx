@@ -40,6 +40,10 @@ import {
   LuminaActionButton,
   LuminaHintDisclosure,
   LuminaScoreRing,
+  LuminaFillBlankSlot,
+  LuminaChip,
+  LuminaChipBank,
+  LuminaInput,
   type AnswerChoiceState,
   LUMINA_ACCENTS,
   accentText,
@@ -381,6 +385,53 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ onBack }) => {
                 ['Doped Borosilicate', '0.008 - 0.015', '250 - 400', '1.2 - 2.0'],
               ]}
             />
+          </Section>
+
+          {/* Answer input */}
+          <Section title="Answer input" blurb="LuminaInput — glassy typed-answer entry (no native spinners) + on-brand submit">
+            <LuminaCard>
+              <LuminaCardContent className="pt-6 space-y-3">
+                <p className="text-sm text-slate-300">What is 200 × 20?</p>
+                <div className="flex gap-2">
+                  <LuminaInput
+                    type="number"
+                    inputMode="numeric"
+                    defaultValue={4000}
+                    placeholder="Enter answer"
+                    className="flex-1 font-mono"
+                  />
+                  <LuminaButton tone="primary">Check</LuminaButton>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Replaces the generic native input (ugly spinner arrows) + solid-blue button.
+                </p>
+              </LuminaCardContent>
+            </LuminaCard>
+          </Section>
+
+          {/* Chip bank */}
+          <Section title="Chip bank" blurb="LuminaChip + LuminaChipBank — selectable tokens, grade via answerStateClasses">
+            <LuminaChipBank label="Word Bank">
+              <LuminaChip state="idle">photosynthesis</LuminaChip>
+              <LuminaChip state="idle">glucose</LuminaChip>
+              <LuminaChip state="selected">sunlight</LuminaChip>
+              <LuminaChip state="dimmed">water</LuminaChip>
+              <LuminaChip state="correct">starch</LuminaChip>
+              <LuminaChip state="incorrect">oxygen</LuminaChip>
+            </LuminaChipBank>
+          </Section>
+
+          {/* Fill-in-the-blank slot */}
+          <Section title="Fill-in-the-blank" blurb="LuminaFillBlankSlot — grades via the shared answerStateClasses token">
+            <LuminaCard>
+              <LuminaCardContent className="pt-6 text-lg text-slate-200 leading-loose">
+                Plants make food through
+                <LuminaFillBlankSlot state="correct" value="photosynthesis" />, using energy from
+                <LuminaFillBlankSlot state="empty" /> and water from
+                <LuminaFillBlankSlot state="incorrect" value="the air" />, while glucose is stored as
+                <LuminaFillBlankSlot state="filled" value="starch" />.
+              </LuminaCardContent>
+            </LuminaCard>
           </Section>
 
           {/* Multi-phase scaffold (Tier 3) */}

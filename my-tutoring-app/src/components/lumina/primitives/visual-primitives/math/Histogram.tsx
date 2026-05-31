@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaPanel,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -669,20 +678,18 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
 
   // -- Render ---------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{modeIcon}</span>
             <div>
-              <CardTitle className="text-slate-100 text-xl">{title || 'Reading Histograms'}</CardTitle>
+              <LuminaCardTitle>{title || 'Reading Histograms'}</LuminaCardTitle>
               <p className="text-sm text-slate-400 mt-0.5">{modeLabel}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300">
-              Grades {gradeBand}
-            </Badge>
+            <LuminaBadge accent="emerald">Grades {gradeBand}</LuminaBadge>
           </div>
         </div>
 
@@ -701,9 +708,9 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
             />
           ))}
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Results panel */}
         {isComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -728,7 +735,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
             </div>
 
             {/* Chart */}
-            <div className="bg-slate-800/30 rounded-xl p-4">
+            <LuminaPanel>
               <HistogramChart
                 bins={bins}
                 xAxisLabel={currentChallenge.xAxisLabel}
@@ -748,7 +755,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
                   {showFrequencyLabels && <>— frequency {bins[hoveredBinIndex].count}</>}
                 </div>
               )}
-            </div>
+            </LuminaPanel>
 
             {/* Statistics panel — hidden in estimate_center to avoid revealing the answer */}
             {showStatistics && stats && (
@@ -799,12 +806,13 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
                       ? 'How many values are in that bin?'
                       : `Your estimate for the ${currentChallenge.targetStatistic ?? 'center'}:`}
                   </label>
-                  <input
+                  <LuminaInput
                     type="number"
+                    inputMode="numeric"
                     value={numericInput}
                     onChange={(e) => setNumericInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                    className="w-32 px-3 py-2 bg-slate-800/60 border border-white/20 rounded-lg text-white text-center text-lg font-mono focus:border-emerald-400 focus:outline-none"
+                    className="w-32 text-center text-lg font-mono"
                     placeholder="?"
                   />
                 </div>
@@ -812,14 +820,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
 
               {/* Check button */}
               <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                  onClick={handleSubmit}
-                  disabled={hasSubmitted}
-                >
-                  Check Answer
-                </Button>
+                <LuminaActionButton action="check" onClick={handleSubmit} disabled={hasSubmitted} />
               </div>
 
               {feedback && (
@@ -844,13 +845,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
 
               {!feedback?.correct && attempts >= 2 && !showHint && currentChallenge.hint && (
                 <div className="flex justify-center">
-                  <Button
-                    variant="ghost"
-                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-                    onClick={handleShowHint}
-                  >
-                    Need a Hint?
-                  </Button>
+                  <LuminaButton onClick={handleShowHint}>Need a Hint?</LuminaButton>
                 </div>
               )}
             </div>
@@ -859,17 +854,11 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
 
         {isComplete && (
           <div className="flex justify-center">
-            <Button
-              onClick={handleReset}
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-            >
-              Try Again
-            </Button>
+            <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 
@@ -886,10 +875,10 @@ interface StatCardProps {
 const StatCard: React.FC<StatCardProps> = ({ label, value, accent }) => {
   const accentText = accent === 'emerald' ? 'text-emerald-300' : 'text-slate-200';
   return (
-    <div className="p-3 rounded-lg border border-white/10 bg-slate-800/40">
+    <LuminaPanel>
       <div className="text-xs text-slate-500 uppercase tracking-wider">{label}</div>
       <div className={`text-xl font-bold ${accentText} tabular-nums`}>{Math.round(value * 100) / 100}</div>
-    </div>
+    </LuminaPanel>
   );
 };
 

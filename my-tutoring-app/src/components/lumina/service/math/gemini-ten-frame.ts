@@ -8,6 +8,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
@@ -275,6 +276,12 @@ export const generateTenFrame = async (
     twoColorEnabled?: boolean;
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
+    /** Intent from the manifest item. */
+    intent?: string;
+    /** Learning objective this component serves (injected by flattenManifestToLayout). */
+    objectiveText?: string;
+    /** Bloom's verb for the objective. */
+    objectiveVerb?: string;
   }
 ): Promise<TenFrameData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -301,9 +308,13 @@ export const generateTenFrame = async (
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Pedagogical scope — binds output to the lesson objective (topic wins over grade band) ──
+  const scope = resolvePedagogicalScope(topic, config, config?.intent);
+  const scopeSection = buildScopePromptSection(scope);
+
   const prompt = `
 Create an educational ten frame activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 CONTEXT:
 - A ten frame is a 2×5 rectangular grid used to build number sense
 - Students place counters (colored circles) on the grid to represent numbers

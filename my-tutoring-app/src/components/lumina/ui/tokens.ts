@@ -210,3 +210,21 @@ export const TIERS: Record<PerformanceTier, TierStyle> = {
     text: 'text-rose-400',
   },
 };
+
+// ── Answer-choice state colors ──────────────────────────────────────────
+// The grading-state color language shared by LuminaAnswerChoice AND the
+// interaction surfaces that grade their own items (matching, categorize,
+// sequence). The drag/click MECHANICS stay bespoke per primitive; these
+// COLORS come from here so "selected / correct / incorrect" looks identical
+// everywhere. Retune a state once → it changes across the whole system.
+export type AnswerChoiceState = 'idle' | 'selected' | 'correct' | 'incorrect' | 'dimmed';
+
+export const answerStateClasses: Record<AnswerChoiceState, string> = {
+  idle: 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:border-white/20',
+  selected: 'border-blue-500 bg-blue-500/20 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+  correct: 'border-emerald-500 bg-emerald-500/20 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]',
+  incorrect: 'border-rose-500 bg-rose-500/20 text-white opacity-60',
+  dimmed: 'border-transparent bg-black/20 text-slate-400 opacity-40',
+};
+
+export const answerStateClass = (state: AnswerChoiceState): string => answerStateClasses[state];

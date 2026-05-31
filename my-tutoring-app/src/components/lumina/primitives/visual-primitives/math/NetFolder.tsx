@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaInput,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -903,18 +911,17 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
         return (
           <div className="flex flex-wrap gap-2">
             {(currentChallenge.options || []).map(opt => (
-              <Button
+              <LuminaButton
                 key={opt}
-                variant="ghost"
                 onClick={() => { SoundManager.select(); setSelectedAnswer(opt); }}
-                className={`border transition-all ${
+                className={
                   selectedAnswer === opt
                     ? 'bg-indigo-600/40 border-indigo-400 text-white'
-                    : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
-                }`}
+                    : ''
+                }
               >
                 {opt}
-              </Button>
+              </LuminaButton>
             ))}
           </div>
         );
@@ -929,18 +936,17 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
             )}
             <div className="flex flex-wrap gap-2">
               {(currentChallenge.faceOptions || net.faceLabels || []).map(opt => (
-                <Button
+                <LuminaButton
                   key={opt}
-                  variant="ghost"
                   onClick={() => { SoundManager.select(); setSelectedAnswer(opt); }}
-                  className={`border transition-all ${
+                  className={
                     selectedAnswer === opt
                       ? 'bg-indigo-600/40 border-indigo-400 text-white'
-                      : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
-                  }`}
+                      : ''
+                  }
                 >
                   {opt}
-                </Button>
+                </LuminaButton>
               ))}
             </div>
           </div>
@@ -949,28 +955,26 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
       case 'valid_net':
         return (
           <div className="flex gap-3">
-            <Button
-              variant="ghost"
+            <LuminaButton
               onClick={() => { SoundManager.select(); setSelectedAnswer('valid'); }}
-              className={`border transition-all flex-1 ${
+              className={`flex-1 ${
                 selectedAnswer === 'valid'
                   ? 'bg-emerald-600/40 border-emerald-400 text-white'
-                  : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
+                  : ''
               }`}
             >
               Valid Net ✓
-            </Button>
-            <Button
-              variant="ghost"
+            </LuminaButton>
+            <LuminaButton
               onClick={() => { SoundManager.select(); setSelectedAnswer('invalid'); }}
-              className={`border transition-all flex-1 ${
+              className={`flex-1 ${
                 selectedAnswer === 'invalid'
                   ? 'bg-red-600/40 border-red-400 text-white'
-                  : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
+                  : ''
               }`}
             >
               Invalid Net ✗
-            </Button>
+            </LuminaButton>
           </div>
         );
 
@@ -980,19 +984,20 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
             {currentChallenge.faceDimensions && (
               <div className="flex flex-wrap gap-2">
                 {currentChallenge.faceDimensions.map((fd, i) => (
-                  <Badge key={i} variant="outline" className="text-slate-300 border-white/20">
+                  <LuminaBadge key={i}>
                     Face {i + 1}: {fd.width} × {fd.height} = {fd.width * fd.height}
-                  </Badge>
+                  </LuminaBadge>
                 ))}
               </div>
             )}
             <div className="flex items-center gap-2">
-              <input
+              <LuminaInput
                 type="number"
+                inputMode="numeric"
                 value={numericInput}
                 onChange={e => setNumericInput(e.target.value)}
                 placeholder="Total surface area"
-                className="bg-white/5 border border-white/20 rounded-md px-3 py-2 text-slate-100 w-40 focus:outline-none focus:border-indigo-400"
+                className="w-40"
               />
               <span className="text-slate-400 text-sm">{currentChallenge.unitLabel || 'square units'}</span>
             </div>
@@ -1004,29 +1009,32 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-slate-400 mb-1 block">Faces</label>
-              <input
+              <LuminaInput
                 type="number"
+                inputMode="numeric"
                 value={facesInput}
                 onChange={e => setFacesInput(e.target.value)}
-                className="bg-white/5 border border-white/20 rounded-md px-3 py-2 text-slate-100 w-full focus:outline-none focus:border-indigo-400"
+                className="w-full"
               />
             </div>
             <div>
               <label className="text-xs text-slate-400 mb-1 block">Edges</label>
-              <input
+              <LuminaInput
                 type="number"
+                inputMode="numeric"
                 value={edgesInput}
                 onChange={e => setEdgesInput(e.target.value)}
-                className="bg-white/5 border border-white/20 rounded-md px-3 py-2 text-slate-100 w-full focus:outline-none focus:border-indigo-400"
+                className="w-full"
               />
             </div>
             <div>
               <label className="text-xs text-slate-400 mb-1 block">Vertices</label>
-              <input
+              <LuminaInput
                 type="number"
+                inputMode="numeric"
                 value={verticesInput}
                 onChange={e => setVerticesInput(e.target.value)}
-                className="bg-white/5 border border-white/20 rounded-md px-3 py-2 text-slate-100 w-full focus:outline-none focus:border-indigo-400"
+                className="w-full"
               />
             </div>
           </div>
@@ -1045,41 +1053,41 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
     : 0;
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
+            <LuminaCardTitle>{title}</LuminaCardTitle>
             {description && <p className="text-sm text-slate-400 mt-1">{description}</p>}
           </div>
           <div className="flex items-center gap-2">
             {challenges.length > 0 && (
-              <Badge variant="outline" className="text-slate-300 border-white/20">
+              <LuminaBadge>
                 {currentChallengeIndex + 1} / {challenges.length}
-              </Badge>
+              </LuminaBadge>
             )}
-            <Badge variant="outline" className="text-slate-300 border-white/20">
+            <LuminaBadge>
               {solid.name}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Solid info */}
         {showDimensions && (
           <div className="flex flex-wrap gap-2">
             {solid.dimensions.length != null && (
-              <Badge variant="outline" className="text-slate-400 border-white/10">L: {solid.dimensions.length}</Badge>
+              <LuminaBadge>L: {solid.dimensions.length}</LuminaBadge>
             )}
             {solid.dimensions.width != null && (
-              <Badge variant="outline" className="text-slate-400 border-white/10">W: {solid.dimensions.width}</Badge>
+              <LuminaBadge>W: {solid.dimensions.width}</LuminaBadge>
             )}
             {solid.dimensions.height != null && (
-              <Badge variant="outline" className="text-slate-400 border-white/10">H: {solid.dimensions.height}</Badge>
+              <LuminaBadge>H: {solid.dimensions.height}</LuminaBadge>
             )}
             {solid.dimensions.radius != null && (
-              <Badge variant="outline" className="text-slate-400 border-white/10">R: {solid.dimensions.radius}</Badge>
+              <LuminaBadge>R: {solid.dimensions.radius}</LuminaBadge>
             )}
           </div>
         )}
@@ -1087,7 +1095,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
         {/* 3D Solid + Net side by side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 3D View */}
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5">
+          <LuminaPanel>
             <div className="text-xs text-slate-400 text-center mb-2 font-medium">3D Solid</div>
             <SolidViewer
               solid={solid}
@@ -1098,20 +1106,19 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
               allowRotation={allowRotation}
               onRotate={handleRotate}
             />
-          </div>
+          </LuminaPanel>
 
           {/* Net View */}
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5">
+          <LuminaPanel>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-slate-400 font-medium">2D Net</span>
-              <Button
-                variant="ghost"
+              <LuminaButton
                 size="sm"
                 onClick={() => { SoundManager.toggle(isFolded); setIsFolded(prev => !prev); }}
-                className="text-xs bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 h-6 px-2"
+                className="text-xs text-slate-300 h-6 px-2"
               >
                 {isFolded ? 'Unfold' : 'Fold'}
-              </Button>
+              </LuminaButton>
             </div>
             <div
               className="transition-all"
@@ -1138,17 +1145,17 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
                 />
               )}
             </div>
-          </div>
+          </LuminaPanel>
         </div>
 
         {/* Challenge area */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-4 border border-white/5 space-y-3">
+          <LuminaPanel className="space-y-3">
             <div className="flex items-center gap-2">
-              <Badge className="bg-indigo-600/30 text-indigo-300 border-indigo-400/30">
+              <LuminaBadge accent="blue">
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
             </div>
             <p className="text-slate-200 font-medium">{currentChallenge.instruction}</p>
 
@@ -1172,26 +1179,22 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
             {/* Action buttons */}
             <div className="flex gap-2">
               {!showNextButton && (
-                <Button
-                  variant="ghost"
+                <LuminaActionButton
+                  action="check"
                   onClick={handleCheckAnswer}
                   disabled={!canCheck || hasSubmittedEvaluation}
-                  className="bg-indigo-600/20 border border-indigo-400/30 hover:bg-indigo-600/40 text-indigo-200 disabled:opacity-40"
-                >
-                  Check Answer
-                </Button>
+                />
               )}
               {showNextButton && (
-                <Button
-                  variant="ghost"
+                <LuminaActionButton
+                  action="next"
                   onClick={advanceToNextChallenge}
-                  className="bg-emerald-600/20 border border-emerald-400/30 hover:bg-emerald-600/40 text-emerald-200"
                 >
                   {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish!'}
-                </Button>
+                </LuminaActionButton>
               )}
             </div>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Summary */}
@@ -1205,8 +1208,8 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

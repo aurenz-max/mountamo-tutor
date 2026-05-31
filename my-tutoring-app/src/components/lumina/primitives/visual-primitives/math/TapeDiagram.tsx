@@ -11,6 +11,18 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCallout,
+  LuminaPrompt,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaSectionLabel,
+  interactive,
+} from '../../../ui';
 
 // ---------------------------------------------------------------------------
 // Data Interfaces
@@ -122,6 +134,8 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 // ---------------------------------------------------------------------------
 // SegmentStepper — compact numeric input with −/+ steppers and type-in
 // support. Used for unknown-segment values and the part-whole "Total =" input.
+// This is part of the bespoke interaction surface: the type-in cell, orange
+// grading affordance, and steppers are tied to a specific diagram segment.
 // ---------------------------------------------------------------------------
 
 interface SegmentStepperProps {
@@ -162,7 +176,7 @@ const SegmentStepper: React.FC<SegmentStepperProps> = ({
           type="button"
           onClick={() => adjust(-1)}
           disabled={disabled || safeValue === 0}
-          className="w-9 h-9 flex-shrink-0 rounded-lg bg-white/5 border border-white/20 text-slate-100 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed text-lg font-bold flex items-center justify-center"
+          className={`w-9 h-9 flex-shrink-0 rounded-lg ${interactive.ghost} text-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-lg font-bold flex items-center justify-center`}
           aria-label="Decrease"
         >
           −
@@ -190,7 +204,7 @@ const SegmentStepper: React.FC<SegmentStepperProps> = ({
           type="button"
           onClick={() => adjust(1)}
           disabled={disabled}
-          className="w-9 h-9 flex-shrink-0 rounded-lg bg-white/5 border border-white/20 text-slate-100 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed text-lg font-bold flex items-center justify-center"
+          className={`w-9 h-9 flex-shrink-0 rounded-lg ${interactive.ghost} text-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-lg font-bold flex items-center justify-center`}
           aria-label="Increase"
         >
           +
@@ -540,7 +554,9 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   };
 
   // =========================================================================
-  // Shared bar visualization
+  // Shared bar visualization — BESPOKE INTERACTION SURFACE (left untouched).
+  // The bar segments, bracket SVG, gradient fills, unknown "?" cells and the
+  // per-segment SegmentStepper are the manipulable diagram, not chrome.
   // =========================================================================
 
   const renderBar = (
@@ -707,15 +723,14 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     return (
       <>
         {wordProblem && (
-          <div className="mb-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-            <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">Read the Problem</div>
+          <LuminaCallout accent="blue" label="Read the Problem" className="mb-8">
             <p className="text-lg text-blue-100 leading-relaxed">{wordProblem}</p>
-          </div>
+          </LuminaCallout>
         )}
 
-        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-center">
-          <p className="text-sm text-yellow-200">Fill in each segment value from the word problem above.</p>
-        </div>
+        <LuminaPrompt accent="amber" center className="mb-4">
+          Fill in each segment value from the word problem above.
+        </LuminaPrompt>
 
         <div className="space-y-16">
           {bars.map((bar, barIndex) =>
@@ -728,14 +743,14 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         </div>
 
         {Object.values(feedback).some((f) => f === 'incorrect') && !allCorrect && (
-          <div className="mt-4 text-center">
-            <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
+          <div className="mt-4 text-center space-y-3">
+            <LuminaButton tone="subtle" onClick={handleShowHints} className="rounded-lg">
               {showHints ? 'Hide Hint' : 'Need a Hint?'}
-            </button>
+            </LuminaButton>
             {showHints && wordProblem && (
-              <div className="mt-3 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-sm text-blue-200">
+              <LuminaFeedbackCard status="insight" label="Hint" className="text-left">
                 Re-read the word problem carefully. Each number mentioned corresponds to one segment on the diagram.
-              </div>
+              </LuminaFeedbackCard>
             )}
           </div>
         )}
@@ -845,7 +860,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
     return (
       <>
-        {/* Phase progress (within-challenge) */}
+        {/* Phase progress (within-challenge) — bespoke FSM step indicator */}
         <div className="flex items-center justify-center gap-4 mb-8">
           {(['explore', 'practice', 'apply'] as LearningPhase[]).map((phase, i) => {
             const isActive = currentPhase === phase;
@@ -871,7 +886,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
         {/* Phase instructions */}
         {!isComplete && (
-          <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl text-center">
+          <LuminaPrompt accent="blue" center className="mb-6">
             <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">
               {currentPhase === 'explore' && 'Step 1: Find the Whole'}
               {currentPhase === 'practice' && 'Step 2: Find the Unknown Part'}
@@ -882,7 +897,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
               {currentPhase === 'practice' && 'Use the total and known part to find the unknown part'}
               {currentPhase === 'apply' && 'Use all the parts to find the missing values'}
             </p>
-          </div>
+          </LuminaPrompt>
         )}
 
         {/* Bars (phase-filtered) */}
@@ -901,10 +916,9 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         {/* Phase 1: Find the whole */}
         {currentPhase === 'explore' && !isComplete && (
           <div className="mt-8">
-            <div className="flex items-center gap-4 mb-6">
-              <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">Phase 1: Explore</span>
-              <div className="h-px flex-1 bg-gradient-to-r from-orange-700 to-transparent"></div>
-            </div>
+            <LuminaSectionLabel accent="orange" size="sm" className="mb-6">
+              Phase 1: Explore
+            </LuminaSectionLabel>
             <div className="mb-6 text-center">
               <h5 className="text-2xl font-bold text-white">
                 What is the <span className="text-orange-400">total</span> of all the known parts?
@@ -920,10 +934,9 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
               />
             </div>
             {feedback.explore === 'correct' && (
-              <div className="p-4 bg-green-500/20 border-2 border-green-500/50 rounded-xl text-center">
-                <div className="text-green-400 font-bold text-lg">Perfect!</div>
-                <div className="text-green-300/80 text-sm">You found the whole. Now let&apos;s find the unknowns!</div>
-              </div>
+              <LuminaFeedbackCard status="correct" label="Perfect!">
+                You found the whole. Now let&apos;s find the unknowns!
+              </LuminaFeedbackCard>
             )}
             {feedback.explore === 'incorrect' && renderFeedbackIncorrect('Try adding all the known values together.')}
           </div>
@@ -931,12 +944,9 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
         {(currentPhase === 'practice' || currentPhase === 'apply') && !isComplete && visibleUnknowns.length > 0 && (
           <div className="mt-8">
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-orange-400 text-sm font-mono uppercase tracking-widest">
-                {currentPhase === 'practice' ? 'Phase 2: Practice' : 'Phase 3: Apply'}
-              </span>
-              <div className="h-px flex-1 bg-gradient-to-r from-orange-700 to-transparent"></div>
-            </div>
+            <LuminaSectionLabel accent="orange" size="sm" className="mb-4">
+              {currentPhase === 'practice' ? 'Phase 2: Practice' : 'Phase 3: Apply'}
+            </LuminaSectionLabel>
           </div>
         )}
       </>
@@ -977,10 +987,9 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     return (
       <>
         {wordProblem && (
-          <div className="mb-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-            <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">Comparison Problem</div>
+          <LuminaCallout accent="blue" label="Comparison Problem" className="mb-8">
             <p className="text-lg text-blue-100 leading-relaxed">{wordProblem}</p>
-          </div>
+          </LuminaCallout>
         )}
 
         <div className="space-y-8">
@@ -994,28 +1003,26 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         </div>
 
         {comparisonData && (
-          <div className="mt-6 p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl text-center">
-            <p className="text-sm text-purple-200">
-              {comparisonData.unknownPart === 'difference'
-                ? `How many ${comparisonData.comparisonWord} does the first group have?`
-                : `Find the missing quantity.`}
-            </p>
-          </div>
+          <LuminaPrompt accent="purple" center className="mt-6">
+            {comparisonData.unknownPart === 'difference'
+              ? `How many ${comparisonData.comparisonWord} does the first group have?`
+              : `Find the missing quantity.`}
+          </LuminaPrompt>
         )}
 
         {Object.values(feedback).some((f) => f === 'incorrect') && (
-          <div className="mt-4 text-center">
-            <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
+          <div className="mt-4 text-center space-y-3">
+            <LuminaButton tone="subtle" onClick={handleShowHints} className="rounded-lg">
               {showHints ? 'Hide Hint' : 'Need a Hint?'}
-            </button>
+            </LuminaButton>
             {showHints && comparisonData && (
-              <div className="mt-3 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-sm text-blue-200">
+              <LuminaFeedbackCard status="insight" label="Hint" className="text-left">
                 {comparisonData.unknownPart === 'difference'
                   ? `Subtract the smaller value (${comparisonData.quantity2}) from the larger value (${comparisonData.quantity1}).`
                   : comparisonData.unknownPart === 'quantity2'
                     ? `The difference is ${comparisonData.difference}. Subtract it from the larger value.`
                     : `The difference is ${comparisonData.difference}. Add it to the smaller value.`}
-              </div>
+              </LuminaFeedbackCard>
             )}
           </div>
         )}
@@ -1076,12 +1083,12 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     return (
       <>
         {wordProblem && (
-          <div className="mb-8 p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-            <div className="text-sm font-mono uppercase tracking-wider text-blue-400 mb-2">Multi-Step Problem</div>
+          <LuminaCallout accent="blue" label="Multi-Step Problem" className="mb-8">
             <p className="text-lg text-blue-100 leading-relaxed">{wordProblem}</p>
-          </div>
+          </LuminaCallout>
         )}
 
+        {/* Step progress — bespoke FSM step indicator */}
         <div className="flex items-center justify-center gap-4 mb-8">
           {solveOrder.map((_, i) => (
             <React.Fragment key={i}>
@@ -1098,7 +1105,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         </div>
 
         {!isComplete && (
-          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-center">
+          <LuminaPrompt accent="amber" center className="mb-6">
             <div className="text-sm font-mono uppercase tracking-wider text-yellow-400 mb-1">
               Step {currentStepIndex + 1} of {totalSteps}
             </div>
@@ -1107,7 +1114,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                 {bars[0]?.segments[currentSolveSegIdx]?.label || 'the unknown'}
               </span>
             </p>
-          </div>
+          </LuminaPrompt>
         )}
 
         <div className="space-y-16">
@@ -1123,14 +1130,14 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         </div>
 
         {Object.values(feedback).some((f) => f === 'incorrect') && !isComplete && (
-          <div className="mt-4 text-center">
-            <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
+          <div className="mt-4 text-center space-y-3">
+            <LuminaButton tone="subtle" onClick={handleShowHints} className="rounded-lg">
               {showHints ? 'Hide Hint' : 'Need a Hint?'}
-            </button>
+            </LuminaButton>
             {showHints && currentHint && (
-              <div className="mt-3 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl text-sm text-blue-200">
+              <LuminaFeedbackCard status="insight" label="Hint" className="text-left">
                 {currentHint}
-              </div>
+              </LuminaFeedbackCard>
             )}
           </div>
         )}
@@ -1144,14 +1151,13 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
   const renderFeedbackIncorrect = (message: string) => (
     <div className="space-y-3">
-      <div className="p-4 bg-red-500/20 border-2 border-red-500/50 rounded-xl text-center">
-        <div className="text-red-400 font-bold text-lg">Not Quite</div>
-        <div className="text-red-300/80 text-sm">{message}</div>
-      </div>
+      <LuminaFeedbackCard status="incorrect" label="Not Quite">
+        {message}
+      </LuminaFeedbackCard>
       <div className="text-center">
-        <button onClick={handleShowHints} className="px-6 py-2 bg-blue-600/20 border-2 border-blue-500/40 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-all text-sm font-semibold">
+        <LuminaButton tone="subtle" onClick={handleShowHints} className="rounded-lg">
           {showHints ? 'Hide Hint' : 'Need a Hint?'}
-        </button>
+        </LuminaButton>
       </div>
     </div>
   );
@@ -1174,9 +1180,11 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   if (challenges.length === 0) {
     return (
       <div className={`w-full max-w-6xl mx-auto my-12 ${className || ''}`}>
-        <div className="backdrop-blur-xl bg-slate-900/40 rounded-3xl border border-white/10 p-6 text-center">
-          <p className="text-slate-300">No tape-diagram challenges available.</p>
-        </div>
+        <LuminaCard className="rounded-3xl">
+          <LuminaCardContent className="p-6 text-center">
+            <p className="text-slate-300">No tape-diagram challenges available.</p>
+          </LuminaCardContent>
+        </LuminaCard>
       </div>
     );
   }
@@ -1256,12 +1264,9 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
               {/* Per-challenge advance CTA */}
               {currentChallengeSolved && (
                 <div className="mt-8 text-center">
-                  <button
-                    onClick={advanceToNextChallenge}
-                    className="px-6 py-2 bg-emerald-500/30 border-2 border-emerald-400/60 text-emerald-100 rounded-lg hover:bg-emerald-500/40 transition-all font-semibold"
-                  >
+                  <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                     {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
-                  </button>
+                  </LuminaActionButton>
                 </div>
               )}
             </>
@@ -1285,8 +1290,10 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
           {/* Instructions */}
           {!isComplete && (
-            <div className="mt-8 p-6 bg-slate-800/30 rounded-xl border border-slate-700">
-              <h4 className="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Interactive Controls</h4>
+            <LuminaPanel className="mt-8 p-6">
+              <LuminaSectionLabel accent="orange" size="sm" className="mb-3">
+                Interactive Controls
+              </LuminaSectionLabel>
               <ul className="text-sm text-slate-300 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-orange-400 mt-1">▸</span>
@@ -1305,7 +1312,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                   <span>Yellow dashed segments with &ldquo;?&rdquo; represent values to solve for</span>
                 </li>
               </ul>
-            </div>
+            </LuminaPanel>
           )}
         </div>
       </div>

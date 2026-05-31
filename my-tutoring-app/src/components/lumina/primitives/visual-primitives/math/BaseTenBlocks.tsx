@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaPanel,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -517,28 +525,28 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
+            <LuminaBadge accent="emerald" className="text-xs">
               {gradeBand}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+            </LuminaBadge>
+            <LuminaBadge accent="blue" className="text-xs">
               {interactionMode}
-            </Badge>
+            </LuminaBadge>
             {decimalMode && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
+              <LuminaBadge accent="cyan" className="text-xs">
                 Decimal
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         <p className="text-slate-400 text-sm mt-1">{description}</p>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Challenge Progress */}
         {challengesWithIds.length > 0 && (
           <div className="flex items-center justify-between">
@@ -559,9 +567,9 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Place Value Columns */}
@@ -646,10 +654,10 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
         {/* Running Total from blocks (helper display) — hidden for read_blocks (BT-2) */}
         {!hideBlockCounts && (
-          <div className="flex items-center justify-center gap-4 bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="flex items-center justify-center gap-4 p-3">
             <span className="text-slate-400 text-sm">Blocks Total:</span>
             <span className="text-white font-bold text-2xl font-mono">{currentTotal}</span>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Calculator Input for answer submission */}
@@ -680,26 +688,21 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
         {/* Next Challenge Button */}
         {isCurrentComplete && !allChallengesComplete && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-              onClick={advanceChallenge}
-            >
+            <LuminaActionButton action="next" onClick={advanceChallenge}>
               Next Challenge
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
         {/* Reset Button */}
         <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
+          <LuminaButton
+            tone="subtle"
             onClick={resetColumns}
             disabled={hasSubmittedEvaluation}
           >
             Reset
-          </Button>
+          </LuminaButton>
         </div>
 
         {/* Phase Summary Panel (replaces manual "All challenges complete!" text) */}
@@ -716,9 +719,9 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
 
         {/* Hint */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* No-challenge mode: display info */}
@@ -727,8 +730,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
             Add and remove blocks to explore place value. Use regroup buttons to trade between places.
           </p>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

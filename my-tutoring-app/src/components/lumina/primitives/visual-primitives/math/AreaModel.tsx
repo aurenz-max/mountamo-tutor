@@ -9,10 +9,20 @@ import {
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardDescription,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaButton,
+  LuminaInput,
+  LuminaFeedbackCard,
+} from '../../../ui';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { SoundManager } from '../../../utils/SoundManager';
 
 /**
@@ -646,7 +656,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
           <h2 className="text-2xl font-bold text-white tracking-tight">Area Model</h2>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-            <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 text-xs font-mono uppercase tracking-wider">
+            <LuminaBadge accent="blue" className="text-xs font-mono uppercase tracking-wider">
               {isFactorMode
                 ? 'Factor Discovery'
                 : isPerimeterMode
@@ -654,23 +664,23 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                   : algebraicMode
                     ? 'Algebraic Multiplication'
                     : 'Interactive Multiplication'}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
       </div>
 
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl">
+      <LuminaCard className="shadow-2xl">
         <div
           className="absolute inset-0 opacity-10 rounded-3xl"
           style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <CardHeader className="relative z-10 text-center">
-          <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
-          <CardDescription className="text-slate-300">{description}</CardDescription>
-        </CardHeader>
+        <LuminaCardHeader className="relative z-10 text-center">
+          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
+          <LuminaCardDescription className="text-slate-300">{description}</LuminaCardDescription>
+        </LuminaCardHeader>
 
-        <CardContent className="relative z-10">
+        <LuminaCardContent className="relative z-10">
           {/* Session progress dots */}
           <div className="flex items-center justify-center gap-2 mb-6">
             {challenges.map((c, idx) => {
@@ -699,7 +709,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
           {/* Forward mode progress */}
           {!isFactorMode && !isPerimeterMode && !challengeDone && (
-            <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700">
+            <LuminaPanel className="mb-6 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-300">Progress</span>
                 <span className="text-sm font-mono text-blue-400">
@@ -712,12 +722,12 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                   style={{ width: `${(correctCells / totalCells) * 100}%` }}
                 ></div>
               </div>
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Perimeter mode progress */}
           {isPerimeterMode && !challengeDone && (
-            <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700">
+            <LuminaPanel className="mb-6 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-300">
                   Find the perimeter of this rectangle
@@ -731,12 +741,12 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                   Attempts: {perimeterAttempts}
                 </div>
               )}
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Factor mode progress */}
           {isFactorMode && !challengeDone && (
-            <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700">
+            <LuminaPanel className="mb-6 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-300">
                   Find the dimensions that produce these partial products
@@ -750,7 +760,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                   Attempts: {factorAttempts}
                 </div>
               )}
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Equation Display */}
@@ -814,15 +824,13 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                       className="flex items-center justify-center"
                       style={{ width: `${cellWidthForPart(part)}px` }}
                     >
-                      <input
+                      <LuminaInput
                         type="number"
+                        inputMode="numeric"
                         value={factorTopInputs[index] ?? ''}
                         onChange={(e) => handleFactorTopChange(index, e.target.value)}
                         disabled={challengeDone || factorAllCorrect}
-                        className={`w-16 px-2 py-1 text-center font-mono font-bold text-sm rounded-lg
-                          bg-slate-700/80 text-blue-300 border ${getFactorInputStyle(factorTopCorrect[index] ?? null)}
-                          focus:outline-none focus:ring-1 focus:ring-blue-400
-                          disabled:opacity-60`}
+                        className={`w-16 px-2 py-1 text-center font-mono font-bold text-sm bg-slate-700/80 text-blue-300 ${getFactorInputStyle(factorTopCorrect[index] ?? null)}`}
                         placeholder="?"
                       />
                     </div>
@@ -852,15 +860,13 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                         className="flex items-center justify-center"
                         style={{ height: `${cellHeightForPart(part)}px` }}
                       >
-                        <input
+                        <LuminaInput
                           type="number"
+                          inputMode="numeric"
                           value={factorLeftInputs[index] ?? ''}
                           onChange={(e) => handleFactorLeftChange(index, e.target.value)}
                           disabled={challengeDone || factorAllCorrect}
-                          className={`w-16 px-2 py-1 text-center font-mono font-bold text-sm rounded-lg
-                            bg-slate-700/80 text-purple-300 border ${getFactorInputStyle(factorLeftCorrect[index] ?? null)}
-                            focus:outline-none focus:ring-1 focus:ring-purple-400
-                            disabled:opacity-60`}
+                          className={`w-16 px-2 py-1 text-center font-mono font-bold text-sm bg-slate-700/80 text-purple-300 ${getFactorInputStyle(factorLeftCorrect[index] ?? null)}`}
                           placeholder="?"
                         />
                       </div>
@@ -957,53 +963,53 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
           {/* Cell input — forward mode */}
           {!isFactorMode && !isPerimeterMode && selectedCell && !challengeDone && (
-            <Card className="mt-8 bg-blue-900/20 border-blue-500/30">
-              <CardHeader>
-                <CardTitle className="text-sm font-mono uppercase tracking-wider text-blue-400">
+            <LuminaCard surface="nested" className="mt-8 border-blue-500/30">
+              <LuminaCardHeader>
+                <LuminaCardTitle className="text-sm font-mono uppercase tracking-wider text-blue-400">
                   Step 1: Calculate Partial Product
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                </LuminaCardTitle>
+              </LuminaCardHeader>
+              <LuminaCardContent className="space-y-4">
                 <div>
                   <label className="block text-sm text-slate-300 mb-2">
                     What is {formatCellEquation(selectedCell[0], selectedCell[1])}?
                   </label>
                   <div className="flex gap-2">
-                    <input
+                    <LuminaInput
                       id="cell-input"
                       type="number"
+                      inputMode="numeric"
                       value={currentInput}
                       onChange={(e) => setCurrentInput(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleCellSubmit();
                       }}
-                      className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white font-mono"
+                      className="flex-1 font-mono"
                       placeholder="Enter answer"
                       disabled={challengeDone}
                     />
-                    <Button
+                    <LuminaButton
+                      tone="primary"
                       onClick={handleCellSubmit}
                       disabled={!currentInput || challengeDone}
-                      variant="ghost"
-                      className="bg-blue-500/80 text-white border border-blue-400/30 hover:bg-blue-500"
                     >
                       Check
-                    </Button>
+                    </LuminaButton>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
 
           {/* Sum section — forward mode */}
           {showSumSection && !challengeDone && (
-            <Card className="mt-8 bg-purple-900/20 border-purple-500/30">
-              <CardHeader>
-                <CardTitle className="text-sm font-mono uppercase tracking-wider text-purple-400">
+            <LuminaCard surface="nested" className="mt-8 border-purple-500/30">
+              <LuminaCardHeader>
+                <LuminaCardTitle className="text-sm font-mono uppercase tracking-wider text-purple-400">
                   Step 2: Add All Partial Products
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                </LuminaCardTitle>
+              </LuminaCardHeader>
+              <LuminaCardContent className="space-y-4">
                 <div className="text-center font-mono text-slate-300">
                   {Array.from(cellStates.values())
                     .filter((s) => s.isCorrect)
@@ -1015,24 +1021,24 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                     What is the sum of all partial products?
                   </label>
                   <div className="flex gap-2">
-                    <input
+                    <LuminaInput
                       type="number"
+                      inputMode="numeric"
                       value={sumInput}
                       onChange={(e) => setSumInput(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleSumSubmit();
                       }}
-                      className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white font-mono"
+                      className="flex-1 font-mono"
                       placeholder="Enter sum"
                     />
-                    <Button
+                    <LuminaButton
+                      tone="primary"
                       onClick={handleSumSubmit}
                       disabled={!sumInput || challengeDone}
-                      variant="ghost"
-                      className="bg-purple-500/80 text-white border border-purple-400/30 hover:bg-purple-500"
                     >
                       Submit Final Answer
-                    </Button>
+                    </LuminaButton>
                   </div>
                   {sumAttempted && sumCorrect === false && (
                     <div className="mt-2 text-sm text-red-400">
@@ -1040,19 +1046,19 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
 
           {/* Perimeter input */}
           {isPerimeterMode && !challengeDone && (
-            <Card className="mt-8 bg-emerald-900/20 border-emerald-500/30">
-              <CardHeader>
-                <CardTitle className="text-sm font-mono uppercase tracking-wider text-emerald-400">
+            <LuminaCard surface="nested" className="mt-8 border-emerald-500/30">
+              <LuminaCardHeader>
+                <LuminaCardTitle className="text-sm font-mono uppercase tracking-wider text-emerald-400">
                   Find the Perimeter
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                </LuminaCardTitle>
+              </LuminaCardHeader>
+              <LuminaCardContent className="space-y-4">
                 <div className="text-center font-mono text-slate-300">
                   The rectangle has sides of {factor1Total} and {factor2Total}.
                   <br />
@@ -1063,8 +1069,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                     What is the perimeter of this rectangle?
                   </label>
                   <div className="flex gap-2">
-                    <input
+                    <LuminaInput
                       type="number"
+                      inputMode="numeric"
                       value={perimeterInput}
                       onChange={(e) => {
                         setPerimeterInput(e.target.value);
@@ -1073,24 +1080,23 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handlePerimeterSubmit();
                       }}
-                      className={`flex-1 px-4 py-2 bg-slate-700 border rounded-lg text-white font-mono ${
+                      className={`flex-1 font-mono ${
                         perimeterCorrect === true
-                          ? 'border-green-400'
+                          ? 'border-emerald-400'
                           : perimeterCorrect === false
-                            ? 'border-red-400'
-                            : 'border-slate-600'
+                            ? 'border-rose-400'
+                            : ''
                       }`}
                       placeholder="Enter perimeter"
                       disabled={challengeDone}
                     />
-                    <Button
+                    <LuminaButton
+                      tone="primary"
                       onClick={handlePerimeterSubmit}
                       disabled={!perimeterInput || challengeDone}
-                      variant="ghost"
-                      className="bg-emerald-500/80 text-white border border-emerald-400/30 hover:bg-emerald-500"
                     >
                       Submit
-                    </Button>
+                    </LuminaButton>
                   </div>
                   {perimeterCorrect === false && !challengeDone && (
                     <div className="mt-2 text-sm text-red-400">
@@ -1098,81 +1104,71 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
 
           {/* Factor mode: Check Factors button */}
           {isFactorMode && !challengeDone && !factorAllCorrect && (
             <div className="mt-8 flex justify-center">
-              <Button
+              <LuminaButton
+                tone="primary"
                 onClick={handleFactorCheck}
                 disabled={!allFactorInputsFilled}
-                variant="ghost"
-                className="bg-purple-500/80 text-white border border-purple-400/30 hover:bg-purple-500 px-8 py-3 text-lg"
+                className="px-8 py-3 text-lg"
               >
                 Check My Factors
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
           {/* Factor mode: hint after wrong attempt */}
           {isFactorMode && factorChecked && !factorAllCorrect && !challengeDone && (
-            <Card className="mt-6 bg-yellow-900/20 border-yellow-500/30">
-              <CardContent className="pt-6">
+            <LuminaCard surface="nested" className="mt-6 border-yellow-500/30">
+              <LuminaCardContent className="pt-6">
                 <p className="text-sm text-yellow-300">
                   Not quite! Look at the partial products in the grid. Each cell equals
                   its column header &times; its row header. Try using one cell to figure out
                   a dimension, then check the others.
                 </p>
-              </CardContent>
-            </Card>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
 
           {/* Between-challenge interstitial: shown after the current challenge is done */}
           {challengeDone && (
-            <Card className="mt-8 bg-green-900/20 border-green-500/30">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-bold text-green-400">
-                    &#x2713; Problem {currentIndex + 1} complete!
-                  </h4>
-                  {hasNextChallenge ? (
-                    <Button
-                      onClick={handleNextChallenge}
-                      variant="ghost"
-                      className="bg-blue-500/80 text-white border border-blue-400/30 hover:bg-blue-500"
-                    >
-                      Next Problem →
-                    </Button>
-                  ) : (
-                    <span className="text-sm text-slate-400 font-mono uppercase tracking-wider">
-                      Last problem
-                    </span>
-                  )}
+            <div className="mt-8 space-y-4">
+              <LuminaFeedbackCard status="correct" label={`Problem ${currentIndex + 1} Complete`}>
+                {isPerimeterMode ? (
+                  <p>
+                    Perimeter = 2 &times; ({factor1Total} + {factor2Total}) ={' '}
+                    <span className="font-bold text-white">{totalPerimeter}</span>
+                  </p>
+                ) : isFactorMode ? (
+                  <p>
+                    The factors are ({factor1Parts.join(' + ')}) &times; ({factor2Parts.join(' + ')})
+                    = {factor1Total} &times; {factor2Total} ={' '}
+                    <span className="font-bold text-white">{totalProduct}</span>
+                  </p>
+                ) : (
+                  <p>
+                    You found <span className="font-bold text-white">{totalProduct}</span> from{' '}
+                    {factor1Total} &times; {factor2Total}.
+                  </p>
+                )}
+              </LuminaFeedbackCard>
+              {hasNextChallenge ? (
+                <div className="flex justify-end">
+                  <LuminaActionButton action="next" onClick={handleNextChallenge}>
+                    Next Problem →
+                  </LuminaActionButton>
                 </div>
-
-                <div className="text-sm text-slate-300 space-y-2">
-                  {isPerimeterMode ? (
-                    <p>
-                      Perimeter = 2 &times; ({factor1Total} + {factor2Total}) ={' '}
-                      <span className="font-bold text-white">{totalPerimeter}</span>
-                    </p>
-                  ) : isFactorMode ? (
-                    <p>
-                      The factors are ({factor1Parts.join(' + ')}) &times; ({factor2Parts.join(' + ')})
-                      = {factor1Total} &times; {factor2Total} ={' '}
-                      <span className="font-bold text-white">{totalProduct}</span>
-                    </p>
-                  ) : (
-                    <p>
-                      You found <span className="font-bold text-white">{totalProduct}</span> from{' '}
-                      {factor1Total} &times; {factor2Total}.
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              ) : (
+                <p className="text-right text-sm text-slate-400 font-mono uppercase tracking-wider">
+                  Last problem
+                </p>
+              )}
+            </div>
           )}
 
           {/* Instructions */}
@@ -1189,57 +1185,57 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                 {isFactorMode ? (
                   <ul className="text-sm text-slate-300 space-y-2">
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-purple-500/20 border-purple-500/30 text-purple-400 mt-0.5">1</Badge>
+                      <LuminaBadge accent="purple" className="mt-0.5">1</LuminaBadge>
                       <span>Look at the partial products shown in each cell of the grid</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-purple-500/20 border-purple-500/30 text-purple-400 mt-0.5">2</Badge>
+                      <LuminaBadge accent="purple" className="mt-0.5">2</LuminaBadge>
                       <span>Figure out what numbers go on top and on the left side</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-purple-500/20 border-purple-500/30 text-purple-400 mt-0.5">3</Badge>
+                      <LuminaBadge accent="purple" className="mt-0.5">3</LuminaBadge>
                       <span>Each cell = its column header &times; its row header</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-purple-500/20 border-purple-500/30 text-purple-400 mt-0.5">4</Badge>
+                      <LuminaBadge accent="purple" className="mt-0.5">4</LuminaBadge>
                       <span>Type your answers into the input fields and click &quot;Check My Factors&quot;</span>
                     </li>
                   </ul>
                 ) : isPerimeterMode ? (
                   <ul className="text-sm text-slate-300 space-y-2">
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-400 mt-0.5">1</Badge>
+                      <LuminaBadge accent="emerald" className="mt-0.5">1</LuminaBadge>
                       <span>Look at the two side lengths labeled on the rectangle</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-400 mt-0.5">2</Badge>
+                      <LuminaBadge accent="emerald" className="mt-0.5">2</LuminaBadge>
                       <span>Perimeter is the total distance around the outside of a shape</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-400 mt-0.5">3</Badge>
+                      <LuminaBadge accent="emerald" className="mt-0.5">3</LuminaBadge>
                       <span>Rectangle shortcut: Perimeter = 2 &times; (length + width)</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-400 mt-0.5">4</Badge>
+                      <LuminaBadge accent="emerald" className="mt-0.5">4</LuminaBadge>
                       <span>Type your answer and press Submit</span>
                     </li>
                   </ul>
                 ) : (
                   <ul className="text-sm text-slate-300 space-y-2">
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 mt-0.5">1</Badge>
+                      <LuminaBadge accent="blue" className="mt-0.5">1</LuminaBadge>
                       <span>Click on each cell and calculate the partial product (e.g., 30 &times; 4 = 120)</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 mt-0.5">2</Badge>
+                      <LuminaBadge accent="blue" className="mt-0.5">2</LuminaBadge>
                       <span>Complete all cells to unlock Step 2</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 mt-0.5">3</Badge>
+                      <LuminaBadge accent="blue" className="mt-0.5">3</LuminaBadge>
                       <span>Add all your partial products together to get the final answer</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Badge className="bg-blue-500/20 border-blue-500/30 text-blue-400 mt-0.5">4</Badge>
+                      <LuminaBadge accent="blue" className="mt-0.5">4</LuminaBadge>
                       <span>This demonstrates the Distributive Property of multiplication</span>
                     </li>
                   </ul>
@@ -1247,8 +1243,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

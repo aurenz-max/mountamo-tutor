@@ -1,9 +1,15 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -74,17 +80,17 @@ export interface LengthLabData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  compare:        { label: 'Compare',        icon: '\u2194\uFE0F', accentColor: 'blue' },
-  tile_and_count: { label: 'Tile & Count',   icon: '\uD83E\uDDF1', accentColor: 'emerald' },
-  order:          { label: 'Order',           icon: '\uD83D\uDCCF', accentColor: 'purple' },
-  indirect:       { label: 'Indirect',        icon: '\uD83D\uDD0D', accentColor: 'amber' },
+  compare:        { label: 'Compare',        icon: '↔️', accentColor: 'blue' },
+  tile_and_count: { label: 'Tile & Count',   icon: '🧱', accentColor: 'emerald' },
+  order:          { label: 'Order',           icon: '📏', accentColor: 'purple' },
+  indirect:       { label: 'Indirect',        icon: '🔍', accentColor: 'amber' },
 };
 
 const UNIT_EMOJI: Record<string, string> = {
-  cubes: '\uD83D\uDFE6',
-  paper_clips: '\uD83D\uDCCE',
-  bears: '\uD83E\uDDF8',
-  erasers: '\u25AC',
+  cubes: '🟦',
+  paper_clips: '📎',
+  bears: '🧸',
+  erasers: '▬',
 };
 
 const UNIT_WIDTH = 36; // px per unit cell
@@ -144,7 +150,7 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
   const [placedUnits, setPlacedUnits] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const objectWidthPx = Math.min(objectLength, MAX_BAR_UNITS) * UNIT_WIDTH;
-  const unitEmoji = UNIT_EMOJI[unitType] || '\uD83D\uDFE6';
+  const unitEmoji = UNIT_EMOJI[unitType] || '🟦';
 
   const addUnit = useCallback(() => {
     if (disabled || submitted) return;
@@ -793,29 +799,29 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
   // ── Empty state ──
   if (!challenges.length) {
     return (
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardContent className="p-8 text-center text-slate-400">
+      <LuminaCard>
+        <LuminaCardContent className="p-8 text-center text-slate-400">
           No challenges available.
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-      <CardHeader className="pb-3">
+    <LuminaCard>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
+          <LuminaCardTitle>{title}</LuminaCardTitle>
           {currentChallenge && (
-            <Badge variant="outline" className="border-white/20 text-slate-300">
+            <LuminaBadge>
               {currentIndex + 1} / {challenges.length}
-            </Badge>
+            </LuminaBadge>
           )}
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-5">
+      <LuminaCardContent className="space-y-5">
         {/* Phase summary when complete */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -833,10 +839,10 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
           <div className="space-y-4">
             {/* Challenge type badge */}
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-white/20 text-slate-300">
+              <LuminaBadge>
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
             </div>
 
             {/* Instruction */}
@@ -854,18 +860,14 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
 
             {/* Next button */}
             {showFeedback && !allChallengesComplete && currentIndex < challenges.length - 1 && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                onClick={handleNext}
-              >
+              <LuminaActionButton action="next" onClick={handleNext}>
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

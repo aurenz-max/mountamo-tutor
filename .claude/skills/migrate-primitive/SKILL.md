@@ -87,7 +87,11 @@ The kit is the **chrome/frame**: cards, buttons, badges, nested panels, text hie
     ```bash
     grep -nE "backdrop-blur-xl bg-slate-900/40|bg-white/5 border border-white/20|bg-slate-800/50 border-slate-700/50|bg-blue-600|border-blue-500 bg-blue-500/20|bg-black/20 rounded-2xl" <file>
     ```
-    A clean migration returns nothing (outside the interaction surface). The added patterns catch the eval-loop debt: `bg-blue-600` (off-brand solid button → `LuminaActionButton`), the answer-FSM selected state, and the hand-rolled feedback banner.
+    The added patterns catch the eval-loop debt: `bg-blue-600` (off-brand solid button → `LuminaActionButton`), the answer-FSM selected state, and the hand-rolled feedback banner.
+
+    **Scoping caveat for INTERACTION-BASED primitives (matching/categorize/sequence):** the grep is chrome-focused but can't distinguish chrome from the interaction surface, so it will match legitimate grading-state strings *on the draggable/clickable items themselves*. For those:
+    - **Grading colors (selected/correct/incorrect) ARE frame** — tokenize them via `answerStateClasses` from the kit (the same map `LuminaAnswerChoice` uses), so green/red/blue look identical system-wide. Do NOT leave raw `border-emerald-500 bg-emerald-500/20` etc. on graded items.
+    - **Transient interaction states stay bespoke** — e.g. a drag-in-progress highlight or a "paired pre-submit" color is part of the mechanics; a remaining match there is acceptable. Judge each leftover; don't blindly delete.
 
 14. **Report results** — original vs new line count, glass-string instances removed, UI state/handlers removed, kit components now used, any shadcn parts retained (and why), any patterns flagged for kit promotion.
 
@@ -193,7 +197,12 @@ The kit now covers far more than containers. When you see these hand-rolled patt
 | −/value/+ number entry | `LuminaStepper` |
 | Eval-mode pill row · "Challenge X of Y" · task banner | `LuminaModeTabs` · `LuminaChallengeCounter` · `LuminaPrompt` |
 | Thin progress bar | `LuminaProgress` |
+| **Generic typed-answer input** (`<input type="number">` with native spinners, `bg-slate-700`/`bg-slate-800`) | `LuminaInput` (glassy, spinners suppressed; grading borders via `className`) |
+| ⚠️ NOT every `<input>` → only the generic answer-entry ones. **LEAVE grid-cell / transparent interaction inputs** (e.g. NumberSequencer's `bg-transparent` sequence cells that already do `[appearance:textfield]`, MatrixDisplay's matrix-grid cells) — they're the painting, already spinner-free. | (leave as-is) |
+| **Solid-color submit button** paired with an answer input (`bg-blue-500/80` "Check") | on-brand `LuminaButton tone="primary"` (inline) or `LuminaActionButton action="check"` (page-level) |
+| **"Problem N complete / You found X" completion banner** | `LuminaFeedbackCard status="correct" label="…"` + a `LuminaActionButton action="next"` below |
 | **Answer option with selected/correct/incorrect states** | `LuminaAnswerChoice` (5-state FSM) |
+| **Per-item grading colors on a drag/match/sort surface** (interaction-based) | `answerStateClasses[state]` / `answerStateClass(state)` — share the grading color language without forcing button mechanics |
 | **Post-answer result banner** | `LuminaFeedbackCard` (`status="correct"\|"incorrect"\|"insight"`) |
 | **Check Answer / Try Again / Next buttons** | `LuminaActionButton` (`action="check"\|"retry"\|"next"`) |
 | **"Need a hint?" reveal** | `LuminaHintDisclosure` |
@@ -239,12 +248,14 @@ This also retires the off-brand solid-`bg-blue-600` button — `LuminaActionButt
 Prefer kit components and the exported tokens. The raw strings below are what `tokens.ts` encodes — reach for them directly only when no token covers the case:
 
 - **Surfaces:** `surface.glass` / `surface.nested` / `surface.elevated`
+- ⚠️ **Gotcha:** only `LuminaCard` takes a `surface` prop (`glass`/`nested`/`elevated`). `LuminaPanel` is ALWAYS nested and has NO `surface` prop — it takes `accent` only. `<LuminaPanel surface="nested">` is a type error; use `<LuminaPanel>` (or `<LuminaCard surface="nested">` if it's a card).
 - **Text:** `text.primary` (slate-100) / `text.secondary` (slate-400) / `text.muted` (slate-600)
 - **Interactive:** `interactive.ghost` / `interactive.hover`
 - **Accents (label weight):** `accentText[accent]` (-300), `accentBorder[accent]`, `accentGlow[accent]`
 - **Accents (callout/strong weight):** `accentSolidBg` (bars/dots), `accentSoftBg` (-500/5 panels), `accentChipBg` (-500/20 icon chips), `accentSoftBorder` (-500/20), `accentStrongText` (-400)
 - Accent union: `'orange'|'emerald'|'cyan'|'amber'|'blue'|'purple'|'pink'|'rose'`
 - **Performance tiers:** `getPerformanceTier(score)` + `TIERS` (perfect/great/good/needs-work) — for results/score chrome; never re-declare a local TIER_CONFIG.
+- **Answer-state colors:** `answerStateClasses[state]` / `answerStateClass(state)` (idle/selected/correct/incorrect/dimmed) — the grading color language shared by `LuminaAnswerChoice` and interaction surfaces. Use on graded drag/match/sort items so colors stay consistent; never hand-roll `border-emerald-500 bg-emerald-500/20` for a graded item.
 
 ## Priority Migration Order
 

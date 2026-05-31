@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaInput,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaHintDisclosure,
+  LuminaChallengeCounter,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -536,11 +547,11 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
   // -------------------------------------------------------------------------
   if (!currentChallenge) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6 text-center text-slate-400">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6 text-center text-slate-400">
           No systems-of-equations challenges in this session.
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -550,16 +561,17 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     : 'Elimination';
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">{modeLabel}</Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">{gradeBand}</Badge>
-            <span className="text-slate-500 text-xs">
-              {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-            </span>
+            <LuminaBadge accent="blue" className="text-xs">{modeLabel}</LuminaBadge>
+            <LuminaBadge accent="emerald" className="text-xs">{gradeBand}</LuminaBadge>
+            <LuminaChallengeCounter
+              current={Math.min(currentChallengeIndex + 1, challenges.length)}
+              total={challenges.length}
+            />
           </div>
         </div>
         <p className="text-slate-400 text-sm mt-1">
@@ -568,30 +580,30 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
         {description && (
           <p className="text-slate-500 text-xs mt-0.5">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Equation banners */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-blue-500/30">
+          <LuminaPanel accent="blue" className="flex items-center gap-3 p-3">
             <span
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: currentChallenge.equationA.color || '#3b82f6' }}
             />
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">{currentChallenge.equationA.label || 'A'}</span>
             <span className="text-base font-mono font-bold text-blue-300">{currentChallenge.equationA.display}</span>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-emerald-500/30">
+          </LuminaPanel>
+          <LuminaPanel accent="emerald" className="flex items-center gap-3 p-3">
             <span
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: currentChallenge.equationB.color || '#10b981' }}
             />
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">{currentChallenge.equationB.label || 'B'}</span>
             <span className="text-base font-mono font-bold text-emerald-300">{currentChallenge.equationB.display}</span>
-          </div>
+          </LuminaPanel>
         </div>
 
-        {/* Progress dots */}
+        {/* Progress dots — bespoke per-challenge state visual tied to results. */}
         <div className="flex items-center justify-center gap-1.5">
           {challenges.map((ch, idx) => {
             const result = challengeResults.find((r) => r.challengeId === ch.id);
@@ -612,8 +624,8 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
           })}
         </div>
 
-        {/* Canvas */}
-        <div className="p-3 bg-slate-800/30 rounded-2xl border border-blue-500/20">
+        {/* Canvas — bespoke interaction surface (left untouched). */}
+        <LuminaPanel accent="blue" className="p-3 rounded-2xl">
           <canvas
             ref={canvasRef}
             width={canvasWidth}
@@ -623,21 +635,21 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
           />
           {!revealLines && challengeType !== 'graph' && (
             <div className="mt-2 flex justify-center">
-              <Button
-                variant="ghost"
+              <LuminaButton
+                tone="subtle"
                 size="sm"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 text-xs"
+                className="text-xs"
                 onClick={() => { SoundManager.tap(); setRevealLines(true); }}
               >
                 Peek at the graph
-              </Button>
+              </LuminaButton>
             </div>
           )}
-        </div>
+        </LuminaPanel>
 
         {/* Answer panel */}
         {!isCurrentComplete && !allChallengesComplete && (
-          <div className="bg-slate-800/20 rounded-lg p-4 border border-white/5 space-y-3">
+          <LuminaPanel className="space-y-3">
             <p className="text-slate-300 text-sm font-medium text-center">
               {challengeType === 'graph'
                 ? 'Enter the intersection coordinates:'
@@ -648,79 +660,65 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
             <div className="flex flex-wrap items-center justify-center gap-3">
               <label className="flex items-center gap-2 text-slate-300 text-sm">
                 <span className="text-blue-300 font-mono">x =</span>
-                <input
+                <LuminaInput
                   type="number"
                   value={xInput}
                   onChange={(e) => setXInput(e.target.value)}
-                  className="w-20 px-2 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-blue-400/50"
+                  className="w-20 px-2 py-1.5 text-center"
                   placeholder="?"
                   onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
                 />
               </label>
               <label className="flex items-center gap-2 text-slate-300 text-sm">
                 <span className="text-emerald-300 font-mono">y =</span>
-                <input
+                <LuminaInput
                   type="number"
                   value={yInput}
                   onChange={(e) => setYInput(e.target.value)}
-                  className="w-20 px-2 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-emerald-400/50"
+                  className="w-20 px-2 py-1.5 text-center"
                   placeholder="?"
                   onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
                 />
               </label>
-              <Button
-                variant="ghost"
-                className="bg-blue-500/10 border border-blue-400/30 text-blue-300"
-                onClick={handleCheck}
-              >
+              <LuminaActionButton action="check" onClick={handleCheck}>
                 Check
-              </Button>
+              </LuminaActionButton>
             </div>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Feedback */}
         {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' :
-            'text-slate-300'
-          }`}>
+          <LuminaFeedbackCard
+            status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}
+          >
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Hint */}
         {showHint && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-            <p className="text-amber-200 text-sm">
-              <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
-              {currentChallenge.hint}
-            </p>
-          </div>
+          <LuminaHintDisclosure defaultOpen label="Hint">
+            {currentChallenge.hint}
+          </LuminaHintDisclosure>
         )}
 
         {/* Controls */}
         <div className="flex justify-center gap-2 flex-wrap">
           {isCurrentComplete && !allChallengesComplete && (
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-              onClick={advanceChallenge}
-            >
+            <LuminaActionButton action="next" onClick={advanceChallenge}>
               Next System →
-            </Button>
+            </LuminaActionButton>
           )}
           {!isCurrentComplete && !allChallengesComplete && (
-            <Button
-              variant="ghost"
+            <LuminaButton
+              tone="subtle"
               size="sm"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
               onClick={handleShowHint}
               disabled={showHint}
             >
               {showHint ? 'Hint shown' : 'Show hint'}
-            </Button>
+            </LuminaButton>
           )}
         </div>
 
@@ -734,8 +732,8 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

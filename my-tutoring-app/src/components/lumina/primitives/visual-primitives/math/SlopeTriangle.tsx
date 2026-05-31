@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaInput,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaChallengeCounter,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -151,7 +162,6 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [showHint, setShowHint] = useState(false);
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [draggingHandle, setDraggingHandle] = useState<'base' | 'right' | null>(null);
 
   // Refs
@@ -709,41 +719,42 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   if (!currentChallenge) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6 text-center text-slate-400">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6 text-center text-slate-400">
           No slope-triangle challenges in this session.
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   const notation = currentChallenge.triangle.notation;
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-green-300 text-xs">{gradeBand}</Badge>
-            <span className="text-slate-500 text-xs">
-              {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-            </span>
+            <LuminaBadge accent="emerald" className="text-xs">{gradeBand}</LuminaBadge>
+            <LuminaChallengeCounter
+              current={Math.min(currentChallengeIndex + 1, challenges.length)}
+              total={challenges.length}
+            />
           </div>
         </div>
-        <p className="text-slate-400 text-sm mt-1">
+        <LuminaPrompt className="mt-2" center>
           {currentChallenge.instruction}
-        </p>
-      </CardHeader>
+        </LuminaPrompt>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Equation banner */}
-        <div className="flex items-center justify-center gap-3 p-3 bg-slate-800/30 rounded-lg border border-white/5">
+        <LuminaPanel className="flex items-center justify-center gap-3 py-3">
           <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Line</span>
           <span className="text-lg font-mono font-bold text-blue-300">{currentChallenge.attachedLine.label}</span>
-        </div>
+        </LuminaPanel>
 
-        {/* Progress dots */}
+        {/* Progress dots — bespoke pedagogical done/active/pending indicator */}
         <div className="flex items-center justify-center gap-1.5">
           {challenges.map((ch, idx) => {
             const result = challengeResults.find((r) => r.challengeId === ch.id);
@@ -764,7 +775,7 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
           })}
         </div>
 
-        {/* Canvas */}
+        {/* Canvas — bespoke interaction surface (painting), left untouched */}
         <div className="p-3 bg-slate-800/30 rounded-2xl border border-green-500/20">
           <canvas
             ref={canvasRef}
@@ -781,7 +792,7 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
 
         {/* Answer panel — varies by challenge type */}
         {!isCurrentComplete && !allChallengesComplete && (
-          <div className="bg-slate-800/20 rounded-lg p-4 border border-white/5 space-y-3">
+          <LuminaPanel className="space-y-3">
             {challengeType === 'identify_slope' && (
               <>
                 <p className="text-slate-300 text-sm font-medium">
@@ -790,31 +801,27 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <label className="flex items-center gap-2 text-slate-300 text-sm">
                     <span className="text-green-300 font-mono">{notation === 'deltaNotation' ? 'Δy =' : 'rise ='}</span>
-                    <input
+                    <LuminaInput
                       type="number"
                       value={riseInput}
                       onChange={(e) => setRiseInput(e.target.value)}
-                      className="w-20 px-2 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-green-400/50"
+                      className="w-20 py-1.5 text-center"
                       placeholder="?"
                     />
                   </label>
                   <label className="flex items-center gap-2 text-slate-300 text-sm">
                     <span className="text-green-300 font-mono">{notation === 'deltaNotation' ? 'Δx =' : 'run ='}</span>
-                    <input
+                    <LuminaInput
                       type="number"
                       value={runInput}
                       onChange={(e) => setRunInput(e.target.value)}
-                      className="w-20 px-2 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-green-400/50"
+                      className="w-20 py-1.5 text-center"
                       placeholder="?"
                     />
                   </label>
-                  <Button
-                    variant="ghost"
-                    className="bg-green-500/10 border border-green-400/30 text-green-300"
-                    onClick={handleSubmitIdentifySlope}
-                  >
+                  <LuminaActionButton action="check" onClick={handleSubmitIdentifySlope}>
                     Check
-                  </Button>
+                  </LuminaActionButton>
                 </div>
               </>
             )}
@@ -826,21 +833,17 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <span className="text-purple-300 font-mono font-bold">m =</span>
-                  <input
+                  <LuminaInput
                     type="text"
                     value={slopeInput}
                     onChange={(e) => setSlopeInput(e.target.value)}
-                    className="w-28 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center focus:outline-none focus:border-green-400/50"
+                    className="w-28 py-1.5 text-center"
                     placeholder="e.g. 2/3"
                     onKeyDown={(e) => e.key === 'Enter' && handleSubmitCalculate()}
                   />
-                  <Button
-                    variant="ghost"
-                    className="bg-green-500/10 border border-green-400/30 text-green-300"
-                    onClick={handleSubmitCalculate}
-                  >
+                  <LuminaActionButton action="check" onClick={handleSubmitCalculate}>
                     Check
-                  </Button>
+                  </LuminaActionButton>
                 </div>
               </>
             )}
@@ -855,61 +858,50 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
                   <span className="text-green-300 font-mono">run = {trianglePos.size}</span>
                   <span className="text-slate-400">·</span>
                   <span className="text-cyan-300 font-mono">base x = {trianglePos.x}</span>
-                  <Button
-                    variant="ghost"
-                    className="bg-green-500/10 border border-green-400/30 text-green-300"
-                    onClick={handleSubmitDrawTriangle}
-                  >
+                  <LuminaActionButton action="check" onClick={handleSubmitDrawTriangle}>
                     Check
-                  </Button>
+                  </LuminaActionButton>
                 </div>
               </>
             )}
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Feedback */}
         {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' :
-            'text-slate-300'
-          }`}>
+          <LuminaFeedbackCard
+            status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}
+          >
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Hint */}
         {showHint && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+          <LuminaPanel accent="amber" className="bg-amber-500/10">
             <p className="text-amber-200 text-sm">
               <span className="font-mono uppercase text-amber-300 text-xs mr-2">Hint</span>
               {currentChallenge.hint}
             </p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Controls */}
         <div className="flex justify-center gap-2 flex-wrap">
           {isCurrentComplete && !allChallengesComplete && (
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-              onClick={advanceChallenge}
-            >
+            <LuminaActionButton action="next" onClick={advanceChallenge}>
               Next Triangle →
-            </Button>
+            </LuminaActionButton>
           )}
           {!isCurrentComplete && !allChallengesComplete && (
-            <Button
-              variant="ghost"
+            <LuminaButton
+              tone="subtle"
               size="sm"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
               onClick={handleShowHint}
               disabled={showHint}
             >
               {showHint ? 'Hint shown' : 'Show hint'}
-            </Button>
+            </LuminaButton>
           )}
         </div>
 
@@ -923,8 +915,8 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

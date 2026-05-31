@@ -76,6 +76,19 @@ export {
   type LuminaHintDisclosureProps,
 } from './LuminaHintDisclosure';
 export { LuminaScoreRing, type LuminaScoreRingProps } from './LuminaScoreRing';
+export {
+  LuminaFillBlankSlot,
+  type LuminaFillBlankSlotProps,
+  type FillBlankState,
+} from './LuminaFillBlankSlot';
+export {
+  LuminaChip,
+  LuminaChipBank,
+  type LuminaChipProps,
+  type LuminaChipBankProps,
+  type ChipState,
+} from './LuminaChip';
+export { LuminaInput, type LuminaInputProps } from './LuminaInput';
 
 export {
   surface,
@@ -89,6 +102,8 @@ export {
   accentChipBg,
   accentSoftBorder,
   accentStrongText,
+  answerStateClasses,
+  answerStateClass,
   getPerformanceTier,
   TIERS,
   LUMINA_ACCENTS,

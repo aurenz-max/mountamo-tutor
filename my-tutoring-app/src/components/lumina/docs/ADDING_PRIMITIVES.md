@@ -116,6 +116,9 @@ A primitive built with the multi-phase hooks **plus** this scaffold is ~90% kit 
 | `LuminaActionButton` | 129+ Check/Try Again/Next buttons (on-brand glass, not solid blue) | `action="check"\|"retry"\|"next"` |
 | `LuminaHintDisclosure` | 40+ "Need a hint?" reveals | `label`, `accent`, `defaultOpen` |
 | `LuminaScoreRing` | results score rings | `score` (0–100), `size`, `showTier` |
+| `LuminaFillBlankSlot` | inline cloze blank (empty/filled/correct/incorrect, grades via `answerStateClasses`) | `state`, `value`, `placeholder` |
+| `LuminaChip` / `LuminaChipBank` | selectable word/token chips + their tray (grade via `answerStateClasses`) | chip: `state`; bank: `label` |
+| `LuminaInput` | glassy typed-answer input (no native spinner arrows) — replaces generic `<input type="number" className="bg-slate-700 …">` | all native input props; grading borders via `className` |
 
 Tiers live in `tokens.ts`: `getPerformanceTier(score)` + `TIERS` (perfect/great/good/needs-work) — single source of truth, was duplicated across 3 files.
 

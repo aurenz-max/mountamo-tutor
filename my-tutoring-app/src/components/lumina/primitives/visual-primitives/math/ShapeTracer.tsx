@@ -1,9 +1,15 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -66,10 +72,10 @@ export interface ShapeTracerData {
 // ============================================================================
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  trace: { label: 'Trace', icon: '\u270F\uFE0F', accentColor: 'blue' },
-  complete: { label: 'Complete', icon: '\uD83E\uDDE9', accentColor: 'purple' },
-  'draw-from-description': { label: 'Draw', icon: '\uD83C\uDFA8', accentColor: 'emerald' },
-  'connect-dots': { label: 'Connect', icon: '\uD83D\uDD17', accentColor: 'orange' },
+  trace: { label: 'Trace', icon: '✏️', accentColor: 'blue' },
+  complete: { label: 'Complete', icon: '🧩', accentColor: 'purple' },
+  'draw-from-description': { label: 'Draw', icon: '🎨', accentColor: 'emerald' },
+  'connect-dots': { label: 'Connect', icon: '🔗', accentColor: 'orange' },
 };
 
 const CANVAS_WIDTH = 500;
@@ -720,7 +726,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
                   className="pointer-events-none select-none"
                   fill="#4ade80"
                 >
-                  {'\u2713'}
+                  {'✓'}
                 </text>
               )}
             </g>
@@ -840,7 +846,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
                   fontSize={10} fill="#c084fc"
                   className="pointer-events-none select-none"
                 >
-                  {'\u2713'}
+                  {'✓'}
                 </text>
               )}
             </g>
@@ -1028,34 +1034,34 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
   // ── Main Render ───────────────────────────────────────────────────
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+            <LuminaBadge accent="blue" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
+            </LuminaBadge>
             {currentChallenge && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-purple-300 text-xs">
+              <LuminaBadge accent="purple" className="text-xs">
                 {currentChallenge.targetShape}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Challenge Type Badges */}
         {challenges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             {Object.entries(CHALLENGE_TYPE_CONFIG).map(([type, config]) => {
               if (!challenges.some(c => c.type === type)) return null;
               return (
-                <Badge
+                <LuminaBadge
                   key={type}
                   className={`text-xs ${
                     currentChallenge?.type === type
@@ -1064,7 +1070,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
                   }`}
                 >
                   {config.icon} {config.label}
-                </Badge>
+                </LuminaBadge>
               );
             })}
             <span className="text-slate-500 text-xs ml-auto">
@@ -1088,19 +1094,19 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
             <span className="text-slate-500 text-xs uppercase tracking-wider">Needs:</span>
             <div className="flex gap-2 flex-wrap">
               {currentChallenge.requiredProperties.sides !== undefined && (
-                <Badge className="bg-emerald-500/10 border-emerald-400/30 text-emerald-300 text-xs">
+                <LuminaBadge className="bg-emerald-500/10 border-emerald-400/30 text-emerald-300 text-xs">
                   {currentChallenge.requiredProperties.sides} sides
-                </Badge>
+                </LuminaBadge>
               )}
               {currentChallenge.requiredProperties.corners !== undefined && (
-                <Badge className="bg-blue-500/10 border-blue-400/30 text-blue-300 text-xs">
+                <LuminaBadge className="bg-blue-500/10 border-blue-400/30 text-blue-300 text-xs">
                   {currentChallenge.requiredProperties.corners} corners
-                </Badge>
+                </LuminaBadge>
               )}
               {currentChallenge.requiredProperties.allSidesEqual && (
-                <Badge className="bg-purple-500/10 border-purple-400/30 text-purple-300 text-xs">
+                <LuminaBadge className="bg-purple-500/10 border-purple-400/30 text-purple-300 text-xs">
                   All sides equal
-                </Badge>
+                </LuminaBadge>
               )}
             </div>
           </div>
@@ -1162,7 +1168,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
                     : 'bg-slate-800/30 text-slate-500 border border-white/5'
                 }`}
               >
-                Side {i + 1} {i < sidesCompleted ? '\u2713' : ''}
+                Side {i + 1} {i < sidesCompleted ? '✓' : ''}
               </div>
             ))}
           </div>
@@ -1183,34 +1189,25 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {canUndo && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
-                onClick={handleUndo}
-              >
+              <LuminaButton tone="subtle" onClick={handleUndo}>
                 Undo
-              </Button>
+              </LuminaButton>
             )}
 
             {currentChallenge?.type === 'draw-from-description' && !isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckShape}
                 disabled={selectedGridPoints.length < 3}
               >
                 Check Shape
-              </Button>
+              </LuminaActionButton>
             )}
 
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={advanceToNextChallenge}
-              >
+              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
 
             {allChallengesComplete && (
@@ -1237,8 +1234,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

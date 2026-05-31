@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaInput,
+  LuminaSectionLabel,
+  LuminaChallengeCounter,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -656,39 +666,44 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-green-300 text-xs">{gradeBand}</Badge>
+            <LuminaBadge accent="emerald" className="text-xs">{gradeBand}</LuminaBadge>
             {challenges.length > 0 && (
-              <span className="text-slate-500 text-xs">
-                {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
-              </span>
+              <LuminaChallengeCounter
+                current={Math.min(currentChallengeIndex + 1, challenges.length)}
+                total={challenges.length}
+              />
             )}
           </div>
         </div>
         <p className="text-slate-400 text-sm mt-1">
           {currentChallenge?.instruction ?? description}
         </p>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         <div className="flex items-center gap-2 flex-wrap">
           {Object.entries(PHASE_CONFIG).map(([p, config]) => (
-            <Badge key={p} className={`text-xs ${
-              phase === p
-                ? 'bg-green-500/20 border-green-400/50 text-green-300'
-                : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-            }`}>
+            <LuminaBadge
+              key={p}
+              accent={phase === p ? 'emerald' : undefined}
+              className={`text-xs ${
+                phase === p
+                  ? 'bg-green-500/20 border-green-400/50'
+                  : 'text-slate-500'
+              }`}
+            >
               {config.label}
-            </Badge>
+            </LuminaBadge>
           ))}
         </div>
 
-        {/* Balance Status */}
+        {/* Balance Status — bespoke simulation readout */}
         <div className="flex justify-center">
           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono ${
             isBalanced
@@ -701,7 +716,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
           </div>
         </div>
 
-        {/* Scale Visual */}
+        {/* Scale Visual — bespoke interaction surface (drag/click) */}
         <div className="relative flex justify-center" style={{ minHeight: 220 }}>
           {/* Beam */}
           <div
@@ -771,7 +786,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
         </div>
 
         {/* Equation Display */}
-        <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+        <LuminaPanel className="p-3">
           <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1">Equation</p>
           <div className="flex items-center justify-center gap-3 text-lg font-mono font-bold">
             <span className="text-blue-300">{currentLeft.map(formatObj).join(' + ') || '0'}</span>
@@ -782,9 +797,9 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
             <span>Left: <span className="text-blue-300 font-mono">{leftValue}</span></span>
             <span>Right: <span className="text-cyan-300 font-mono">{rightValue}</span></span>
           </div>
-        </div>
+        </LuminaPanel>
 
-        {/* Block Palette */}
+        {/* Block Palette — bespoke drag source */}
         <div className="flex items-center gap-2 justify-center">
           <span className="text-slate-500 text-xs">Drag blocks:</span>
           {availableBlocks.map((block, i) => (
@@ -801,68 +816,59 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
 
         {/* Operations Panel */}
         {phase === 'solve' && (
-          <div className="bg-slate-800/20 rounded-lg p-3 border border-white/5 space-y-2">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500">Operations (apply to both sides)</p>
+          <LuminaPanel accent="cyan" className="p-3 space-y-2">
+            <LuminaSectionLabel accent="cyan" size="sm">Operations (apply to both sides)</LuminaSectionLabel>
             <div className="flex items-center gap-2 flex-wrap justify-center">
               {allowOperations.map(op => (
-                <Button
+                <LuminaButton
                   key={op}
-                  variant="ghost"
+                  tone={selectedOp === op ? 'primary' : 'ghost'}
                   size="sm"
-                  className={`text-xs ${selectedOp === op ? 'bg-green-500/20 border-green-400/50 text-green-300' : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'}`}
+                  className={`text-xs ${selectedOp === op ? 'bg-green-500/20 border-green-400/50 text-green-300' : 'text-slate-400'}`}
                   onClick={() => setSelectedOp(selectedOp === op ? null : op)}
                   disabled={hasSubmittedEvaluation}
                 >
                   {op}
-                </Button>
+                </LuminaButton>
               ))}
               {selectedOp && (
                 <>
-                  <input
+                  <LuminaInput
                     type="number"
                     min={1}
                     value={opValue}
                     onChange={e => setOpValue(e.target.value)}
-                    className="w-14 px-2 py-1 bg-slate-800/50 border border-white/20 rounded text-slate-100 text-center text-sm focus:outline-none focus:border-green-400/50"
+                    className="w-14 px-2 py-1 text-center text-sm"
                     placeholder="#"
                     onKeyDown={e => e.key === 'Enter' && applyOperation()}
                   />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="bg-green-500/10 border border-green-400/30 text-green-300 text-xs"
-                    onClick={applyOperation}
-                  >
+                  <LuminaButton tone="primary" size="sm" className="text-xs" onClick={applyOperation}>
                     Apply
-                  </Button>
+                  </LuminaButton>
                 </>
               )}
             </div>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Verify Phase */}
         {phase === 'verify' && !isCurrentComplete && !allChallengesComplete && (
-          <div className="bg-slate-800/20 rounded-lg p-3 border border-white/5 space-y-2">
+          <LuminaPanel className="p-3 space-y-2">
             <p className="text-slate-300 text-sm">What is the value of x?</p>
             <div className="flex items-center justify-center gap-3">
               <span className="text-purple-300 font-mono font-bold">x =</span>
-              <input
+              <LuminaInput
                 type="number"
                 value={verifyInput}
                 onChange={e => setVerifyInput(e.target.value)}
-                className="w-20 px-3 py-1.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-100 text-center text-lg focus:outline-none focus:border-green-400/50"
+                className="w-20 px-3 py-1.5 text-center text-lg"
                 onKeyDown={e => e.key === 'Enter' && handleVerify()}
               />
-              <Button
-                variant="ghost"
-                className="bg-green-500/10 border border-green-400/30 text-green-300"
-                onClick={handleVerify}
-              >
+              <LuminaActionButton action="check" onClick={handleVerify}>
                 Check
-              </Button>
+              </LuminaActionButton>
             </div>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Feedback */}
@@ -879,14 +885,14 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
         {/* Solution reveal */}
         {isSolved && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
+            <LuminaButton
+              tone="subtle"
               size="sm"
-              className="bg-purple-500/10 border border-purple-400/30 text-purple-300 text-xs"
+              className="text-xs text-purple-300"
               onClick={toggleShowSolution}
             >
               {showSolution ? 'Hide' : 'Show'} Answer
-            </Button>
+            </LuminaButton>
           </div>
         )}
         {showSolution && (
@@ -897,7 +903,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
 
         {/* Steps History */}
         {userSteps.length > 0 && (
-          <div className="bg-slate-800/20 rounded-lg p-3 border border-white/5 max-h-32 overflow-y-auto">
+          <LuminaPanel className="p-3 max-h-32 overflow-y-auto">
             <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">
               Steps ({userSteps.length})
             </p>
@@ -914,38 +920,34 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
                 </div>
               ))}
             </div>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Controls */}
         <div className="flex justify-center gap-2">
           {isCurrentComplete && !allChallengesComplete && (
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-              onClick={advanceChallenge}
-            >
+            <LuminaActionButton action="next" onClick={advanceChallenge}>
               Next Equation →
-            </Button>
+            </LuminaActionButton>
           )}
-          <Button
-            variant="ghost"
+          <LuminaButton
+            tone="ghost"
             size="sm"
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
+            className="text-slate-400"
             onClick={handleReset}
             disabled={hasSubmittedEvaluation}
           >
             Reset
-          </Button>
+          </LuminaButton>
           {phase === 'explore' && (
-            <Button
-              variant="ghost"
+            <LuminaButton
+              tone="primary"
               size="sm"
-              className="bg-blue-500/10 border border-blue-400/30 text-blue-300"
+              className="text-xs"
               onClick={() => { setPhase('solve'); sendText('[PHASE_TRANSITION] Student ready to solve. Guide first step.', { silent: true }); }}
             >
               Start Solving
-            </Button>
+            </LuminaButton>
           )}
         </div>
 
@@ -966,8 +968,8 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
             Click blocks to remove from both sides. Drag blocks from palette. Use operations panel to apply to both sides.
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

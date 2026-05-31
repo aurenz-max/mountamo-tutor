@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -53,11 +60,11 @@ export interface NumberSequencerData {
 // ============================================================================
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'fill-missing': { label: 'Fill Missing', icon: '\uD83D\uDD22', accentColor: 'purple' },
-  'before-after': { label: 'Before & After', icon: '\u2194\uFE0F', accentColor: 'blue' },
-  'order-cards':  { label: 'Order Cards', icon: '\uD83C\uDCCF', accentColor: 'amber' },
-  'count-from':   { label: 'Count From', icon: '\uD83D\uDE80', accentColor: 'emerald' },
-  'decade-fill':  { label: 'Decade Fill', icon: '\uD83D\uDCAF', accentColor: 'cyan' },
+  'fill-missing': { label: 'Fill Missing', icon: '🔢', accentColor: 'purple' },
+  'before-after': { label: 'Before & After', icon: '↔️', accentColor: 'blue' },
+  'order-cards':  { label: 'Order Cards', icon: '🃏', accentColor: 'amber' },
+  'count-from':   { label: 'Count From', icon: '🚀', accentColor: 'emerald' },
+  'decade-fill':  { label: 'Decade Fill', icon: '💯', accentColor: 'cyan' },
 };
 
 const TRAIN_CAR_COLORS = [
@@ -489,26 +496,26 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
   // ── RENDER ────────────────────────────────────────────────────
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-indigo-300 text-xs">
+            <LuminaBadge accent="blue" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </Badge>
+            </LuminaBadge>
             {currentChallenge && !allChallengesComplete && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-amber-300 text-xs">
+              <LuminaBadge accent="amber" className="text-xs">
                 {PHASE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                 {PHASE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Challenge Progress Dots */}
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -526,7 +533,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
                         : 'bg-slate-800/30 border border-slate-700/30 text-slate-500'
                   }`}
                 >
-                  {isDone ? '\u2713' : i + 1}
+                  {isDone ? '✓' : i + 1}
                 </div>
               );
             })}
@@ -538,9 +545,9 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* ═══════════════════════════════════════════════════════════
@@ -666,22 +673,22 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
             {/* Undo / Reset */}
             {orderedCards.length > 0 && !isCurrentChallengeComplete && (
               <div className="flex justify-center gap-2">
-                <Button
-                  variant="ghost"
+                <LuminaButton
+                  tone="subtle"
                   size="sm"
-                  className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 text-xs"
+                  className="text-xs"
                   onClick={handleUndoCard}
                 >
                   Undo
-                </Button>
-                <Button
-                  variant="ghost"
+                </LuminaButton>
+                <LuminaButton
+                  tone="subtle"
                   size="sm"
-                  className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 text-xs"
+                  className="text-xs"
                   onClick={handleResetCards}
                 >
                   Reset
-                </Button>
+                </LuminaButton>
               </div>
             )}
           </div>
@@ -704,7 +711,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
 
               {/* Direction arrow */}
               <span className="text-slate-500 text-lg select-none">
-                {currentChallenge.direction === 'backward' ? '\u2190' : '\u2192'}
+                {currentChallenge.direction === 'backward' ? '←' : '→'}
               </span>
 
               {/* Input slots */}
@@ -823,23 +830,20 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheckAnswer}
                 disabled={!canCheckAnswer || hasSubmittedEvaluation}
-              >
-                Check Answer
-              </Button>
+              />
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaButton
+                tone="primary"
+                className="bg-emerald-500/10 border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -865,8 +869,8 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

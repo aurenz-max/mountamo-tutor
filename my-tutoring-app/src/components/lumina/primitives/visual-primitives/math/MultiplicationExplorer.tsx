@@ -1,10 +1,18 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardDescription,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MultiplicationExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
@@ -347,9 +355,9 @@ const FactFamilyDisplay: React.FC<{
       `${p} ÷ ${f1} = ${f2}`,
       `${p} ÷ ${f2} = ${f1}`,
     ].map((eq) => (
-      <Badge key={eq} className="bg-slate-800/50 border-slate-700/50 text-slate-200 text-xs font-mono">
+      <LuminaBadge key={eq} className="text-slate-200 text-xs font-mono">
         {eq}
-      </Badge>
+      </LuminaBadge>
     ))}
   </div>
 );
@@ -365,7 +373,7 @@ const DistributiveDisplay: React.FC<{
   const b = factor1 - a;
 
   return (
-    <div className="space-y-2 p-3 bg-black/20 rounded-lg border border-white/10">
+    <LuminaPanel className="space-y-2 p-3">
       <p className="text-sm text-slate-300 text-center font-medium">
         Distributive Property
       </p>
@@ -386,7 +394,7 @@ const DistributiveDisplay: React.FC<{
           <span className="text-emerald-300 font-bold">{product}</span>
         </p>
       </div>
-    </div>
+    </LuminaPanel>
   );
 };
 
@@ -771,63 +779,63 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {representations.equalGroups && (
-          <div className="p-3 bg-black/20 rounded-lg border border-white/10">
+          <LuminaPanel className="p-3">
             <p className="text-xs font-medium text-violet-400 mb-2">Equal Groups</p>
             <EqualGroupsPanel {...panelProps} />
-          </div>
+          </LuminaPanel>
         )}
         {representations.array && (
-          <div className="p-3 bg-black/20 rounded-lg border border-white/10">
+          <LuminaPanel className="p-3">
             <p className="text-xs font-medium text-emerald-400 mb-2">Array</p>
             <ArrayPanel {...panelProps} />
-          </div>
+          </LuminaPanel>
         )}
         {representations.repeatedAddition && (
-          <div className="p-3 bg-black/20 rounded-lg border border-white/10">
+          <LuminaPanel className="p-3">
             <p className="text-xs font-medium text-amber-400 mb-2">Repeated Addition</p>
             <RepeatedAdditionPanel {...panelProps} />
-          </div>
+          </LuminaPanel>
         )}
         {representations.numberLine && (
-          <div className="p-3 bg-black/20 rounded-lg border border-white/10">
+          <LuminaPanel className="p-3">
             <p className="text-xs font-medium text-sky-400 mb-2">Number Line</p>
             <NumberLinePanel {...panelProps} />
-          </div>
+          </LuminaPanel>
         )}
         {representations.areaModel && (
-          <div className="p-3 bg-black/20 rounded-lg border border-white/10">
+          <LuminaPanel className="p-3">
             <p className="text-xs font-medium text-rose-400 mb-2">Area Model</p>
             <AreaModelPanel {...panelProps} />
-          </div>
+          </LuminaPanel>
         )}
       </div>
     );
   };
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-slate-100 text-xl">
+            <LuminaCardTitle>
               {data.title || `${fact.factor1} × ${fact.factor2}`}
-            </CardTitle>
-            <p className="text-sm text-slate-400 mt-1">
+            </LuminaCardTitle>
+            <LuminaCardDescription className="mt-1">
               {data.description || 'Explore multiplication through multiple representations'}
-            </p>
+            </LuminaCardDescription>
           </div>
-          <Badge className="bg-slate-800/50 border-slate-700/50 text-violet-300">
+          <LuminaBadge accent="purple">
             Grades {gradeBand}
-          </Badge>
+          </LuminaBadge>
         </div>
 
         {/* Phase Indicator */}
         <div className="mt-3">
           <PhaseIndicator current={currentPhase} />
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Fact Display */}
         <div className="text-center py-2">
           <p className="text-3xl font-bold text-slate-100 font-mono tracking-wider">
@@ -839,13 +847,9 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         {/* Commutative Flip Button */}
         {showOptions.showCommutativeFlip && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-sm"
-              onClick={handleFlip}
-            >
+            <LuminaButton className="text-sm" onClick={handleFlip}>
               Flip: {fact.factor1} &times; {fact.factor2} ↔ {fact.factor2} &times; {fact.factor1}
-            </Button>
+            </LuminaButton>
           </div>
         )}
 
@@ -880,13 +884,9 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         {/* Fact Family */}
         {showOptions.showFactFamily && (
           <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-xs w-full"
-              onClick={handleShowFactFamily}
-            >
+            <LuminaButton className="text-xs w-full" onClick={handleShowFactFamily}>
               Show Fact Family (× and ÷)
-            </Button>
+            </LuminaButton>
             {factFamilyCompleted && (
               <FactFamilyDisplay f1={fact.factor1} f2={fact.factor2} p={fact.product} />
             )}
@@ -896,13 +896,9 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         {/* Distributive Property (Strategy phase) */}
         {showOptions.showDistributiveBreakdown && currentPhase === 'strategy' && (
           <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-xs w-full"
-              onClick={handleShowDistributive}
-            >
+            <LuminaButton className="text-xs w-full" onClick={handleShowDistributive}>
               Break It Up! (Distributive Property)
-            </Button>
+            </LuminaButton>
             {distributiveUsed && (
               <DistributiveDisplay
                 factor1={fact.factor1}
@@ -915,14 +911,14 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
 
         {/* Challenge Area */}
         {currentChallenge && (
-          <div className="p-4 bg-black/20 rounded-xl border border-white/10 space-y-3">
+          <LuminaPanel className="rounded-xl space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-slate-200">
                 {currentChallenge.instruction}
               </p>
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-400 text-[10px]">
+              <LuminaBadge className="text-slate-400 text-[10px]">
                 {challengeIndex + 1}/{challenges.length}
-              </Badge>
+              </LuminaBadge>
             </div>
 
             {/* Answer Input */}
@@ -953,47 +949,43 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
 
             {/* Next Challenge Button */}
             {feedback?.correct && challengeIndex < challenges.length - 1 && (
-              <Button
-                variant="ghost"
-                className="w-full bg-white/5 border border-white/20 hover:bg-white/10"
+              <LuminaActionButton
+                action="next"
+                className="w-full"
                 onClick={handleNextChallenge}
               >
                 Next Challenge →
-              </Button>
+              </LuminaActionButton>
             )}
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Phase Navigation */}
         <div className="flex flex-wrap gap-2 justify-center pt-2">
-          <Button
-            variant="ghost"
-            className={`text-xs ${currentPhase === 'groups' ? 'bg-violet-500/20 border-violet-400/30' : 'bg-white/5 border-white/20'} border hover:bg-white/10`}
+          <LuminaButton
+            className={`text-xs ${currentPhase === 'groups' ? 'bg-violet-500/20 border-violet-400/30' : ''}`}
             onClick={() => handlePhaseTransition('groups')}
           >
             1. Groups
-          </Button>
-          <Button
-            variant="ghost"
-            className={`text-xs ${currentPhase === 'array' ? 'bg-violet-500/20 border-violet-400/30' : 'bg-white/5 border-white/20'} border hover:bg-white/10`}
+          </LuminaButton>
+          <LuminaButton
+            className={`text-xs ${currentPhase === 'array' ? 'bg-violet-500/20 border-violet-400/30' : ''}`}
             onClick={() => handlePhaseTransition('array')}
           >
             2. Array
-          </Button>
-          <Button
-            variant="ghost"
-            className={`text-xs ${currentPhase === 'connect' ? 'bg-violet-500/20 border-violet-400/30' : 'bg-white/5 border-white/20'} border hover:bg-white/10`}
+          </LuminaButton>
+          <LuminaButton
+            className={`text-xs ${currentPhase === 'connect' ? 'bg-violet-500/20 border-violet-400/30' : ''}`}
             onClick={() => handlePhaseTransition('connect')}
           >
             3. Connect
-          </Button>
-          <Button
-            variant="ghost"
-            className={`text-xs ${currentPhase === 'strategy' ? 'bg-violet-500/20 border-violet-400/30' : 'bg-white/5 border-white/20'} border hover:bg-white/10`}
+          </LuminaButton>
+          <LuminaButton
+            className={`text-xs ${currentPhase === 'strategy' ? 'bg-violet-500/20 border-violet-400/30' : ''}`}
             onClick={() => handlePhaseTransition('strategy')}
           >
             4. Strategy
-          </Button>
+          </LuminaButton>
         </div>
 
         {/* Score Summary */}
@@ -1008,26 +1000,19 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
 
         {/* Submit / Reset */}
         <div className="flex gap-2 justify-center">
-          <Button
-            variant="ghost"
-            className="bg-emerald-500/20 border border-emerald-400/30 hover:bg-emerald-500/30 text-emerald-200"
+          <LuminaActionButton
+            action="check"
             onClick={handleComplete}
             disabled={hasSubmitted || factsTotal === 0}
           >
             {hasSubmitted ? 'Submitted!' : 'Submit Results'}
-          </Button>
+          </LuminaActionButton>
           {hasSubmitted && (
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10"
-              onClick={handleReset}
-            >
-              Try Again
-            </Button>
+            <LuminaActionButton action="retry" onClick={handleReset} />
           )}
         </div>
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

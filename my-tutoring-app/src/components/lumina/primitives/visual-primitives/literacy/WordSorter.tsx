@@ -14,6 +14,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { LuminaChip } from '../../../ui';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -435,20 +436,14 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
               <p className="text-slate-500 text-sm">All words sorted!</p>
             )}
             {unsortedWords.map(word => (
-              <button
+              <LuminaChip
                 key={word.id}
                 onClick={() => handleWordClick(word.id)}
-                className={`
-                  px-4 py-2.5 rounded-xl border text-sm font-medium transition-all cursor-pointer
-                  ${selectedWordId === word.id
-                    ? 'bg-white/20 border-white/40 text-white ring-2 ring-white/30 scale-105'
-                    : 'bg-white/5 border-white/15 text-slate-200 hover:bg-white/10 hover:border-white/25'
-                  }
-                `}
+                state={selectedWordId === word.id ? 'selected' : 'idle'}
               >
                 {word.emoji && <span className="mr-1.5">{word.emoji}</span>}
                 {word.word}
-              </button>
+              </LuminaChip>
             ))}
           </div>
         </div>

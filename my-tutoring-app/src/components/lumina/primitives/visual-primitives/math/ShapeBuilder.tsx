@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -1331,23 +1340,23 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-violet-300 text-xs">
+            <LuminaBadge accent="purple" className="text-xs">
               {gradeBand}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs capitalize">
+            </LuminaBadge>
+            <LuminaBadge accent="emerald" className="text-xs capitalize">
               {mode}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Challenge Progress */}
         {challenges.length > 1 && (
           <div className="flex items-center gap-2">
@@ -1371,9 +1380,9 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
+          <LuminaPanel className="p-3">
             <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Measurement Tools Bar */}
@@ -1590,7 +1599,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
         {/* Shape Properties Panel */}
         {isShapeClosed && currentShapeProps && currentShapeName && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5 space-y-2">
+          <LuminaPanel className="p-3 space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge className="bg-violet-500/20 border-violet-400/40 text-violet-300 text-xs">
                 {currentShapeName}
@@ -1628,7 +1637,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
                           : 'Quadrilateral'}
               </p>
             )}
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Classify Categories */}
@@ -1690,33 +1699,28 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
             {!isCurrentChallengeComplete && !allChallengesComplete && (
               <>
                 {(activeMode === 'build' || activeMode === 'coordinate_shape') && (
-                  <Button
-                    variant="ghost"
+                  <LuminaButton
                     size="sm"
-                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 text-xs"
+                    className="text-slate-400 text-xs"
                     onClick={handleReset}
                   >
                     Clear Shape
-                  </Button>
+                  </LuminaButton>
                 )}
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                <LuminaActionButton
+                  action="check"
                   onClick={handleCheckAnswer}
                   disabled={hasSubmittedEvaluation}
-                >
-                  Check Answer
-                </Button>
+                />
               </>
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+              <LuminaActionButton
+                action="next"
                 onClick={advanceToNextChallenge}
               >
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
           </div>
         )}
@@ -1735,12 +1739,12 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
         {/* Hint */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPanel>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

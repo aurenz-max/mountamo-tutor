@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaModeTabs,
+  LuminaChoiceChip,
+  LuminaFeedbackCard,
+  LuminaActionButton,
+  LuminaButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -83,11 +94,20 @@ const PHASE_LABELS: Record<InteractionPhase, string> = {
   compare: 'Compare',
 };
 
+const PHASE_TABS = (['explore', 'plot', 'operate', 'compare'] as InteractionPhase[]).map(
+  (phase) => ({ value: phase, label: PHASE_LABELS[phase] })
+);
+
+const NUMBER_TYPE_TABS = (['integer', 'fraction', 'decimal', 'mixed'] as const).map((nt) => ({
+  value: nt,
+  label: nt,
+}));
+
 const CHALLENGE_PHASE_CONFIG: Record<string, PhaseConfig> = {
-  plot_point: { label: 'Plot', icon: '\uD83D\uDCCD', accentColor: 'blue' },
-  show_jump: { label: 'Operate', icon: '\uD83E\uDD98', accentColor: 'orange' },
-  order_values: { label: 'Compare', icon: '\uD83D\uDCCA', accentColor: 'purple' },
-  find_between: { label: 'Find Between', icon: '\uD83D\uDD0D', accentColor: 'emerald' },
+  plot_point: { label: 'Plot', icon: '📍', accentColor: 'blue' },
+  show_jump: { label: 'Operate', icon: '🦘', accentColor: 'orange' },
+  order_values: { label: 'Compare', icon: '📊', accentColor: 'purple' },
+  find_between: { label: 'Find Between', icon: '🔍', accentColor: 'emerald' },
 };
 
 // ============================================================================
@@ -742,12 +762,12 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   // Display-only fallback (backward compatibility with old data)
   if (!isInteractive) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+      <LuminaCard className={className}>
+        <LuminaCardHeader className="pb-3">
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-        </CardHeader>
-        <CardContent>
+        </LuminaCardHeader>
+        <LuminaCardContent>
           <div className="flex justify-center">
             <svg
               width={SVG_WIDTH}
@@ -795,8 +815,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
               })}
             </svg>
           </div>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -804,39 +824,26 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   // Interactive Mode Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-emerald-300 text-xs">
+            <LuminaBadge accent="emerald" className="text-xs">
               {gradeBand}
-            </Badge>
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+            </LuminaBadge>
+            <LuminaBadge accent="blue" className="text-xs">
               {activeNumberType}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
         {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase + Progress */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {(['explore', 'plot', 'operate', 'compare'] as InteractionPhase[]).map(phase => (
-              <Badge
-                key={phase}
-                className={`text-xs ${
-                  currentPhase === phase
-                    ? 'bg-orange-500/20 border-orange-400/50 text-orange-300'
-                    : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                }`}
-              >
-                {PHASE_LABELS[phase]}
-              </Badge>
-            ))}
-          </div>
+          <LuminaModeTabs tabs={PHASE_TABS} active={currentPhase} accent="orange" />
           {challenges.length > 1 && (
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
@@ -862,16 +869,16 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-            <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+          <LuminaPrompt>
+            <p className="text-sm font-medium">{currentChallenge.instruction}</p>
             {currentChallenge.type === 'show_jump' && activeOperations.length > 1 && (
-              <p className="text-slate-400 text-xs mt-1">
+              <p className="text-slate-400 text-xs mt-1 font-normal">
                 {jumpEndPoints.length < activeOperations.length
                   ? `Click to place jump ${jumpEndPoints.length + 1} of ${activeOperations.length}`
                   : `All ${activeOperations.length} jumps placed — check your answer!`}
               </p>
             )}
-          </div>
+          </LuminaPrompt>
         )}
 
         {/* Order Mode: Value Chips */}
@@ -882,22 +889,15 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
               const isPlaced = orderedPlacements.has(val);
               const isSelected = selectedOrderValue === val;
               return (
-                <Button
+                <LuminaChoiceChip
                   key={val}
-                  variant="ghost"
-                  size="sm"
-                  className={`text-sm px-3 py-1 ${
-                    isPlaced
-                      ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-300'
-                      : isSelected
-                        ? 'bg-orange-500/20 border-orange-400/50 text-orange-300 ring-1 ring-orange-400/50'
-                        : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
-                  }`}
+                  accent={isPlaced ? 'emerald' : 'orange'}
+                  selected={isPlaced || isSelected}
+                  label={formatValue(val, activeNumberType)}
+                  className="px-3 py-1.5"
                   onClick={() => { if (!isPlaced) { SoundManager.select(); setSelectedOrderValue(val); } }}
                   disabled={isPlaced}
-                >
-                  {formatValue(val, activeNumberType)}
-                </Button>
+                />
               );
             })}
           </div>
@@ -1093,33 +1093,19 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
         {/* Number Type Toggle (3-5 mode only) */}
         {!isK2 && (
-          <div className="flex items-center gap-1">
-            {(['integer', 'fraction', 'decimal', 'mixed'] as const).map(nt => (
-              <Button
-                key={nt}
-                variant="ghost"
-                size="sm"
-                className={`text-xs px-2 py-0.5 h-7 ${
-                  activeNumberType === nt
-                    ? 'bg-blue-500/20 border-blue-400/40 text-blue-300'
-                    : 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400'
-                }`}
-                onClick={() => setActiveNumberType(nt)}
-              >
-                {nt}
-              </Button>
-            ))}
-          </div>
+          <LuminaModeTabs
+            tabs={NUMBER_TYPE_TABS}
+            active={activeNumberType}
+            accent="blue"
+            onSelect={(nt) => setActiveNumberType(nt as typeof activeNumberType)}
+          />
         )}
 
         {/* Feedback */}
         {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' : 'text-slate-300'
-          }`}>
+          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Action Buttons */}
@@ -1127,18 +1113,14 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
               <>
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                <LuminaActionButton
+                  action="check"
                   onClick={checkAnswer}
                   disabled={!canCheck}
-                >
-                  Check Answer
-                </Button>
+                />
                 {(placedPoints.length > 0 || jumpEndPoints.length > 0 || orderedPlacements.size > 0) && (
-                  <Button
-                    variant="ghost"
-                    className="bg-slate-800/30 border border-white/10 hover:bg-white/5 text-slate-400"
+                  <LuminaButton
+                    tone="subtle"
                     onClick={() => {
                       setPlacedPoints([]);
                       setJumpEndPoints([]);
@@ -1147,18 +1129,14 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
                     }}
                   >
                     Clear
-                  </Button>
+                  </LuminaButton>
                 )}
               </>
             )}
             {isCurrentChallengeComplete && !allChallengesComplete && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={advanceToNextChallenge}
-              >
+              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                 Next Challenge
-              </Button>
+              </LuminaActionButton>
             )}
             {allChallengesComplete && (
               <div className="text-center">
@@ -1173,9 +1151,9 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
 
         {/* Hint after 2 failed attempts */}
         {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <div className="bg-slate-800/20 rounded-lg p-2 border border-white/5 text-center">
+          <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Phase Summary Panel — shown when all challenges complete */}
@@ -1188,8 +1166,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
             celebrationMessage={`You completed all ${challenges.length} challenges!`}
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

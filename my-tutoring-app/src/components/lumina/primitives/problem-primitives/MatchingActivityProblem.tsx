@@ -9,6 +9,8 @@ import {
   type MatchingActivityMetrics,
   type PrimitiveEvaluationResult,
 } from '../../evaluation';
+// Eval-loop chrome from the Lumina UI kit (see lumina/ui/index.ts for the full list).
+import { LuminaFeedbackCard, LuminaActionButton, answerStateClasses } from '../../ui';
 
 /** Fisher-Yates shuffle (returns new array) */
 function shuffle<T>(arr: T[]): T[] {
@@ -168,7 +170,7 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
         Click a term on the left, then click one or more matching items on the right.
       </p>
 
-      {/* Matching Grid */}
+      {/* Matching Grid — bespoke click-to-match interaction surface (the painting). */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Left Column */}
         <div className="space-y-3">
@@ -177,17 +179,17 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
             const isCorrect = checkMatch(item.id);
             const hasMatches = (matches[item.id] || []).length > 0;
 
-            let statusClass = "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20";
+            // Grading colors are tokenized (answerStateClasses); the "matched"
+            // pairing state is bespoke to this matching interaction.
+            let statusClass = answerStateClasses.idle;
             if (isSelected) {
-              statusClass = "border-blue-500 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]";
+              statusClass = answerStateClasses.selected;
             } else if (hasMatches && !isSubmitted) {
-              statusClass = "border-purple-500/50 bg-purple-500/10";
+              statusClass = "border-purple-500/50 bg-purple-500/10"; // bespoke: paired, pre-submit
             }
 
             if (isSubmitted && isCorrect !== null) {
-              statusClass = isCorrect
-                ? "border-emerald-500 bg-emerald-500/20"
-                : "border-red-500 bg-red-500/20";
+              statusClass = isCorrect ? answerStateClasses.correct : answerStateClasses.incorrect;
             }
 
             return (
@@ -221,15 +223,15 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
             const isMatchedToSelected = selectedLeft && (matches[selectedLeft] || []).includes(item.id);
             const isMatched = isRightMatched(item.id);
 
-            let statusClass = "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20";
+            let statusClass = answerStateClasses.idle;
             if (isMatchedToSelected) {
-              statusClass = "border-blue-500 bg-blue-500/20";
+              statusClass = answerStateClasses.selected;
             } else if (isMatched && !isSubmitted) {
-              statusClass = "border-purple-500/50 bg-purple-500/10";
+              statusClass = "border-purple-500/50 bg-purple-500/10"; // bespoke: paired, pre-submit
             }
 
             if (isSubmitted && isMatched) {
-              statusClass = "border-slate-600 bg-slate-800/40";
+              statusClass = "border-slate-600 bg-slate-800/40"; // bespoke: neutral resolved
             }
 
             return (
@@ -249,42 +251,23 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
       {/* Action Area */}
       <div className="flex flex-col items-center">
         {!isSubmitted ? (
-          <button
-            onClick={handleSubmit}
+          <LuminaActionButton
+            action="check"
             disabled={Object.keys(matches).length === 0}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 hover:shadow-blue-500/40 hover:-translate-y-0.5"
+            onClick={handleSubmit}
           >
             Verify Matches
-          </button>
+          </LuminaActionButton>
         ) : (
           <div className="w-full space-y-4">
-            <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-              <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${allCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {allCorrect ?
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  }
-                </svg>
-                <span>{allCorrect ? 'All Correct!' : 'Review Your Matches'}</span>
-              </div>
-              <p className="text-slate-300 leading-relaxed text-lg font-light mb-3">
-                {data.rationale}
-              </p>
-              {data.teachingNote && (
-                <div className="mt-3 pt-3 border-t border-white/5">
-                  <p className="text-sm text-slate-400 italic">
-                    💡 {data.teachingNote}
-                  </p>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleReset}
-              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+            <LuminaFeedbackCard
+              status={allCorrect ? 'correct' : 'insight'}
+              label={allCorrect ? 'Correct Analysis' : undefined}
+              teachingNote={data.teachingNote}
             >
-              Try Again
-            </button>
+              {data.rationale}
+            </LuminaFeedbackCard>
+            <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
         )}
       </div>
