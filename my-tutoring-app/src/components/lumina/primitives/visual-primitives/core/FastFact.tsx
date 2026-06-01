@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaAnswerChoice,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -615,24 +622,26 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
         const showAsCorrect = showCorrectAnswer && isCorrectOption;
         const showAsWrong = showCorrectAnswer && isSelected && !isCorrectOption;
 
+        const state: AnswerChoiceState = showAsCorrect
+          ? 'correct'
+          : showAsWrong
+            ? 'incorrect'
+            : isSelected
+              ? 'selected'
+              : 'idle';
+
         return (
-          <Button
+          <LuminaAnswerChoice
             key={opt}
-            variant="ghost"
-            className={`min-w-16 h-14 text-lg font-bold border transition-all duration-200 px-6 ${
-              showAsCorrect
-                ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300 scale-110'
-                : showAsWrong
-                  ? 'bg-red-500/20 border-red-400/50 text-red-300 animate-pulse'
-                  : isSelected
-                    ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
-                    : 'bg-white/5 border-white/20 hover:bg-white/10 text-slate-200'
+            state={state}
+            className={`min-w-16 w-auto h-14 text-lg font-bold px-6 text-center flex items-center justify-center ${
+              showAsCorrect ? 'scale-110' : showAsWrong ? 'animate-pulse' : ''
             }`}
             onClick={() => handleSelectOption(opt)}
             disabled={isCurrentChallengeComplete || allChallengesComplete}
           >
             {opt}
-          </Button>
+          </LuminaAnswerChoice>
         );
       })}
     </div>
@@ -642,27 +651,27 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
             {gradeBand && (
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+              <LuminaBadge accent="blue" className="text-xs">
                 {gradeBand}
-              </Badge>
+              </LuminaBadge>
             )}
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-amber-300 text-xs">
+            <LuminaBadge accent="amber" className="text-xs">
               {subject}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Waiting — Start Button Screen */}
         {gamePhase === 'waiting' && challenges.length > 0 && (
           <div className="flex flex-col items-center justify-center py-12 space-y-6">
@@ -672,13 +681,13 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
             <p className="text-slate-400 text-sm">
               {challenges.length} challenges &middot; {subject}
             </p>
-            <Button
-              variant="ghost"
-              className="h-14 px-10 text-lg font-bold bg-emerald-500/10 border-2 border-emerald-400/40 hover:bg-emerald-500/20 hover:border-emerald-400/60 text-emerald-300 transition-all duration-200 hover:scale-105"
+            <LuminaButton
+              tone="primary"
+              className="h-14 px-10 text-lg font-bold hover:scale-105"
               onClick={handleStart}
             >
               Start
-            </Button>
+            </LuminaButton>
             <p className="text-slate-600 text-xs">
               Answer as fast and accurately as you can!
             </p>
@@ -716,10 +725,10 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
                 {currentChallengeIndex + 1} / {challenges.length}
               </span>
               {currentChallenge && phaseConfig[currentChallenge.type] && (
-                <Badge className="text-xs bg-slate-800/30 border-slate-700/30 text-slate-400">
+                <LuminaBadge className="text-xs">
                   {phaseConfig[currentChallenge.type].icon}{' '}
                   {phaseConfig[currentChallenge.type].label}
-                </Badge>
+                </LuminaBadge>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -789,13 +798,12 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
         {/* Next Challenge Button */}
         {isCurrentChallengeComplete && !allChallengesComplete && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
+            <LuminaButton
+              tone="primary"
               onClick={advanceToNextChallenge}
             >
               Next Challenge
-            </Button>
+            </LuminaButton>
           </div>
         )}
 
@@ -821,8 +829,8 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

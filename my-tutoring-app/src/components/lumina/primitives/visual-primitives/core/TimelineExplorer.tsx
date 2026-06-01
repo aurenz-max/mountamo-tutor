@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaPanel,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  LuminaSectionLabel,
+  answerStateClass,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -577,13 +589,13 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
 
       {/* Selected event detail card */}
       {selectedEvent ? (
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3 transition-all duration-200">
+        <LuminaPanel className="space-y-3 transition-all duration-200">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-slate-100 text-sm font-semibold">{selectedEvent.title}</h3>
-              <Badge className="bg-blue-500/10 border-blue-400/20 text-blue-300 text-[10px] mt-1">
+              <LuminaBadge accent="blue" className="text-[10px] mt-1">
                 {selectedEvent.date}
-              </Badge>
+              </LuminaBadge>
             </div>
             <span className="text-slate-600 text-xs shrink-0">
               {(selectedEventIndex ?? 0) + 1} of {totalEvents}
@@ -593,14 +605,14 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
           <p className="text-slate-300 text-sm leading-relaxed">{selectedEvent.description}</p>
 
           {selectedEvent.impact && (
-            <div className="p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/10">
+            <LuminaPanel accent="amber" className="p-2.5">
               <div className="flex items-start gap-2">
-                <Badge className="bg-amber-500/20 border-amber-400/30 text-amber-300 text-[10px] shrink-0">
+                <LuminaBadge accent="amber" className="text-[10px] shrink-0">
                   Impact
-                </Badge>
+                </LuminaBadge>
                 <p className="text-slate-300 text-xs leading-relaxed">{selectedEvent.impact}</p>
               </div>
-            </div>
+            </LuminaPanel>
           )}
 
           {selectedEvent.connection && (
@@ -611,28 +623,26 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
 
           {/* Prev/Next navigation */}
           <div className="flex justify-between pt-1">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 text-xs h-7 px-3"
+            <LuminaButton
+              className="text-slate-400 text-xs h-7 px-3"
               onClick={() => handleEventSelect((selectedEventIndex ?? 0) - 1)}
               disabled={selectedEventIndex === 0}
             >
               Previous
-            </Button>
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 text-xs h-7 px-3"
+            </LuminaButton>
+            <LuminaButton
+              className="text-slate-400 text-xs h-7 px-3"
               onClick={() => handleEventSelect((selectedEventIndex ?? 0) + 1)}
               disabled={selectedEventIndex === totalEvents - 1}
             >
               Next
-            </Button>
+            </LuminaButton>
           </div>
-        </div>
+        </LuminaPanel>
       ) : (
-        <div className="p-6 rounded-xl bg-white/5 border border-white/5 text-center">
+        <LuminaPanel className="p-6 text-center">
           <p className="text-slate-500 text-sm">Click an event on the timeline to explore it</p>
-        </div>
+        </LuminaPanel>
       )}
     </div>
   );
@@ -649,9 +659,9 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
           <p className="text-slate-400 text-xs">
             Challenge {currentChallengeIndex + 1} of {challenges.length}
           </p>
-          <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-400 text-xs">
+          <LuminaBadge className="text-xs">
             {currentChallenge.type.replace('_', ' ')}
-          </Badge>
+          </LuminaBadge>
         </div>
 
         <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
@@ -662,33 +672,31 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
             {currentChallenge.options.map((opt, i) => {
               const isSelected = selectedOption === i;
               const isCorrectOption = i === currentChallenge.correctIndex;
-              const showAsCorrect = showChallengeFeedback && isCorrectOption;
-              const showAsWrong = showChallengeFeedback && isSelected && !isCorrectOption;
+              let state: AnswerChoiceState = 'idle';
+              if (showChallengeFeedback) {
+                if (isCorrectOption) state = 'correct';
+                else if (isSelected) state = 'incorrect';
+                else state = 'dimmed';
+              } else if (isSelected) {
+                state = 'selected';
+              }
 
               return (
-                <Button
+                <LuminaAnswerChoice
                   key={i}
-                  variant="ghost"
-                  className={`w-full justify-start text-left h-auto py-3 px-4 text-sm transition-all duration-200 ${
-                    showAsCorrect
-                      ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300'
-                      : showAsWrong
-                        ? 'bg-red-500/20 border border-red-400/50 text-red-300'
-                        : isSelected
-                          ? 'bg-blue-500/20 border border-blue-400/50 text-blue-300'
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200'
-                  }`}
+                  state={state}
+                  className="p-3 text-sm"
                   onClick={() => handleMCAnswer(i)}
                   disabled={showChallengeFeedback}
                 >
                   {opt}
-                </Button>
+                </LuminaAnswerChoice>
               );
             })}
           </div>
         )}
 
-        {/* Order challenge */}
+        {/* Order challenge — graded sort surface (bespoke reorder mechanics) */}
         {currentChallenge.type === 'order' && currentChallenge.orderItems && (
           <div className="space-y-2">
             {orderSequence.map((id, position) => {
@@ -697,16 +705,17 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
 
               const isCorrectPos = orderChecked && currentChallenge.correctOrder?.[position] === id;
               const isWrongPos = orderChecked && !orderCorrect && currentChallenge.correctOrder?.[position] !== id;
+              const gradedState: AnswerChoiceState | null = isCorrectPos
+                ? 'correct'
+                : isWrongPos
+                  ? 'incorrect'
+                  : null;
 
               return (
                 <div
                   key={id}
-                  className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
-                    isCorrectPos
-                      ? 'bg-emerald-500/20 border border-emerald-400/50'
-                      : isWrongPos
-                        ? 'bg-red-500/20 border border-red-400/50'
-                        : 'bg-white/5 border border-white/10'
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
+                    gradedState ? answerStateClass(gradedState) : 'bg-white/5 border-white/10'
                   }`}
                 >
                   <span className="text-slate-500 text-xs font-mono w-4">{position + 1}.</span>
@@ -734,13 +743,9 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
             })}
             {!showChallengeFeedback && (
               <div className="flex justify-center pt-2">
-                <Button
-                  variant="ghost"
-                  className="bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300"
-                  onClick={handleOrderCheck}
-                >
+                <LuminaActionButton action="check" onClick={handleOrderCheck}>
                   Check Order
-                </Button>
+                </LuminaActionButton>
               </div>
             )}
             {orderChecked && !orderCorrect && !showChallengeFeedback && (
@@ -749,7 +754,7 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
           </div>
         )}
 
-        {/* Cause-effect challenge */}
+        {/* Cause-effect challenge — graded match surface (bespoke pairing mechanics) */}
         {currentChallenge.type === 'cause_effect' && currentChallenge.causes && currentChallenge.effects && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -765,22 +770,24 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
                   );
                   const isWrongPair = ceChecked && !ceCorrect && isMatched && !isCorrectPair;
 
+                  // Graded states use the system color language; transient
+                  // selection/matched pairing colors stay bespoke.
+                  const gradedClass = isCorrectPair
+                    ? answerStateClass('correct')
+                    : isWrongPair
+                      ? answerStateClass('incorrect')
+                      : isActive
+                        ? 'bg-blue-500/20 border border-blue-400/50 text-blue-300'
+                        : isMatched
+                          ? 'bg-purple-500/10 border border-purple-400/30 text-purple-300'
+                          : 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200';
+
                   return (
                     <button
                       key={i}
                       onClick={() => handleCauseSelect(i)}
                       disabled={ceChecked || isMatched}
-                      className={`w-full text-left p-2.5 rounded-lg text-xs transition-all duration-200 ${
-                        isCorrectPair
-                          ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300'
-                          : isWrongPair
-                            ? 'bg-red-500/20 border border-red-400/50 text-red-300'
-                            : isActive
-                              ? 'bg-blue-500/20 border border-blue-400/50 text-blue-300'
-                              : isMatched
-                                ? 'bg-purple-500/10 border border-purple-400/30 text-purple-300'
-                                : 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200'
-                      }`}
+                      className={`w-full text-left p-2.5 rounded-lg text-xs transition-all duration-200 ${gradedClass}`}
                     >
                       {isMatched && <span className="text-purple-400 mr-1">{pairIdx + 1}.</span>}
                       {cause}
@@ -800,22 +807,22 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
                   );
                   const isWrongPair = ceChecked && !ceCorrect && isMatched && !isCorrectPair;
 
+                  const gradedClass = isCorrectPair
+                    ? answerStateClass('correct')
+                    : isWrongPair
+                      ? answerStateClass('incorrect')
+                      : isMatched
+                        ? 'bg-purple-500/10 border border-purple-400/30 text-purple-300'
+                        : selectedCause !== null
+                          ? 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 ring-1 ring-blue-400/20'
+                          : 'bg-white/5 border border-white/10 text-slate-400';
+
                   return (
                     <button
                       key={i}
                       onClick={() => handleEffectSelect(i)}
                       disabled={ceChecked || isMatched || selectedCause === null}
-                      className={`w-full text-left p-2.5 rounded-lg text-xs transition-all duration-200 ${
-                        isCorrectPair
-                          ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300'
-                          : isWrongPair
-                            ? 'bg-red-500/20 border border-red-400/50 text-red-300'
-                            : isMatched
-                              ? 'bg-purple-500/10 border border-purple-400/30 text-purple-300'
-                              : selectedCause !== null
-                                ? 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 ring-1 ring-blue-400/20'
-                                : 'bg-white/5 border border-white/10 text-slate-400'
-                      }`}
+                      className={`w-full text-left p-2.5 rounded-lg text-xs transition-all duration-200 ${gradedClass}`}
                     >
                       {isMatched && <span className="text-purple-400 mr-1">{pairIdx + 1}.</span>}
                       {effect}
@@ -831,13 +838,9 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
 
             {!showChallengeFeedback && matchedPairs.length > 0 && matchedPairs.length >= (currentChallenge.correctPairs?.length || 0) && (
               <div className="flex justify-center pt-2">
-                <Button
-                  variant="ghost"
-                  className="bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300"
-                  onClick={handleCECheck}
-                >
+                <LuminaActionButton action="check" onClick={handleCECheck}>
                   Check Matches
-                </Button>
+                </LuminaActionButton>
               </div>
             )}
             {ceChecked && !ceCorrect && !showChallengeFeedback && (
@@ -849,20 +852,16 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
         {/* Feedback */}
         {showChallengeFeedback && (
           <div className="space-y-3">
-            <p className={`text-sm font-medium ${
-              challengeAnswers[challengeAnswers.length - 1]?.correct ? 'text-emerald-400' : 'text-amber-400'
-            }`}>
-              {challengeAnswers[challengeAnswers.length - 1]?.correct ? 'Correct!' : 'Not quite, but let\'s keep going.'}
-            </p>
-            <p className="text-slate-400 text-xs">{currentChallenge.explanation}</p>
+            <LuminaFeedbackCard
+              status={challengeAnswers[challengeAnswers.length - 1]?.correct ? 'correct' : 'insight'}
+              label={challengeAnswers[challengeAnswers.length - 1]?.correct ? 'Correct!' : 'Not quite, but let\'s keep going.'}
+            >
+              {currentChallenge.explanation}
+            </LuminaFeedbackCard>
             <div className="flex justify-center">
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={handleNextChallenge}
-              >
+              <LuminaActionButton action="next" onClick={handleNextChallenge}>
                 {currentChallengeIndex + 1 >= challenges.length ? 'See Results' : 'Next Challenge'}
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -888,15 +887,15 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
           {elapsedMs > 0 && <span>{Math.round(elapsedMs / 1000)}s total</span>}
         </div>
         {summary && (
-          <div className="mt-4 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-left space-y-2">
+          <LuminaPanel accent="emerald" className="mt-4 text-left space-y-2">
             <p className="text-slate-200 text-sm">{summary.text}</p>
-            <Badge className="bg-emerald-500/10 border-emerald-400/20 text-emerald-300 text-xs">
+            <LuminaBadge accent="emerald" className="text-xs">
               Theme: {summary.keyTheme}
-            </Badge>
+            </LuminaBadge>
             {summary.lookingForward && (
               <p className="text-slate-400 text-xs italic">{summary.lookingForward}</p>
             )}
-          </div>
+          </LuminaPanel>
         )}
       </div>
     );
@@ -906,31 +905,29 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
   // Main Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">&#128336;</span>
-            <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           </div>
           {timeSpan && (
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
+            <LuminaBadge accent="cyan" className="text-xs">
               {timeSpan.start} — {timeSpan.end}
-            </Badge>
+            </LuminaBadge>
           )}
         </div>
         {subtitle && <p className="text-slate-400 text-sm mt-1">{subtitle}</p>}
         <p className="text-slate-500 text-xs mt-1">{overview}</p>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-5">
+      <LuminaCardContent className="space-y-5">
         {allChallengesComplete ? (
           renderResults()
         ) : showChallenges ? (
-          <div className="border-t border-white/10 pt-4">
-            <p className="text-slate-300 text-xs font-medium mb-3 uppercase tracking-wider">
-              Chronology Check
-            </p>
+          <div className="border-t border-white/10 pt-4 space-y-3">
+            <LuminaSectionLabel accent="cyan" size="sm">Chronology Check</LuminaSectionLabel>
             {renderChallenge()}
           </div>
         ) : (
@@ -941,12 +938,12 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
             {/* Summary (shown after all events explored) */}
             {showSummary && summary && (
               <div className="border-t border-white/10 pt-4 space-y-3">
-                <p className="text-slate-300 text-xs font-medium uppercase tracking-wider">Timeline Summary</p>
+                <LuminaSectionLabel accent="cyan" size="sm">Timeline Summary</LuminaSectionLabel>
                 <p className="text-slate-200 text-sm leading-relaxed">{summary.text}</p>
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-cyan-500/10 border-cyan-400/20 text-cyan-300 text-xs">
+                  <LuminaBadge accent="cyan" className="text-xs">
                     Theme
-                  </Badge>
+                  </LuminaBadge>
                   <span className="text-slate-300 text-xs">{summary.keyTheme}</span>
                 </div>
                 {summary.lookingForward && (
@@ -961,13 +958,12 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
             <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-white/5">
               <span>{eventsExplored} of {totalEvents} events explored</span>
               {allEventsExplored && challenges.length > 0 && !showChallenges && (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300 text-xs h-8"
+                <LuminaButton
+                  className="text-xs h-8"
                   onClick={handleStartChallenges}
                 >
                   Start Challenges ({challenges.length})
-                </Button>
+                </LuminaButton>
               )}
               {!allEventsExplored && (
                 <span className="text-slate-600">Explore all events to unlock challenges</span>
@@ -975,8 +971,8 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

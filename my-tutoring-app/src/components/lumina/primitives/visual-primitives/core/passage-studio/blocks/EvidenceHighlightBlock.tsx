@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import BlockShell from './BlockShell';
 import PassageRenderer, { type AnchorTone } from '../PassageRenderer';
 import { SoundManager } from '../../../../../utils/SoundManager';
+import {
+  LuminaActionButton,
+  LuminaBadge,
+  LuminaFeedbackCard,
+  LuminaSectionLabel,
+} from '../../../../../ui';
 import type { EvidenceHighlightBlockData, PassageStimulus } from '../types';
 
 interface EvidenceHighlightBlockProps {
@@ -100,13 +104,17 @@ const EvidenceHighlightBlock: React.FC<EvidenceHighlightBlockProps> = ({
 
   const submitLabel = answered ? 'Done' : `Submit (${selectedKeys.size} selected)`;
 
+  const allSelectedAreEvidence =
+    Array.from(selectedKeys).every((k) => candidateMap.get(k)?.isEvidence) &&
+    selectedKeys.size >= minRequired;
+
   return (
     <BlockShell innerRef={innerRef} blockId={data.id} label={data.label} accent="emerald">
       <div className="space-y-4">
         <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold">
+          <LuminaSectionLabel accent="emerald" size="sm">
             Find evidence for this claim
-          </p>
+          </LuminaSectionLabel>
           <p className="text-slate-100 font-medium text-[15px] leading-relaxed">{data.claim}</p>
           <p className="text-xs text-slate-500 italic">
             Tap underlined phrases in the passage below. Pick {minRequired === 1 ? '1 piece of evidence' : `${minRequired} pieces of evidence`}.
@@ -122,29 +130,22 @@ const EvidenceHighlightBlock: React.FC<EvidenceHighlightBlockProps> = ({
         </div>
 
         {!answered && (
-          <Button
-            variant="ghost"
-            className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 hover:bg-emerald-500/20"
+          <LuminaActionButton
+            action="check"
             onClick={handleSubmit}
             disabled={selectedKeys.size === 0}
           >
             {submitLabel}
-          </Button>
+          </LuminaActionButton>
         )}
 
         {answered && (
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge
-              className={
-                attempts === 1 && Array.from(selectedKeys).every((k) => candidateMap.get(k)?.isEvidence) && selectedKeys.size >= minRequired
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                  : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-              }
-            >
-              {Array.from(selectedKeys).every((k) => candidateMap.get(k)?.isEvidence) && selectedKeys.size >= minRequired
+            <LuminaBadge accent={allSelectedAreEvidence ? 'emerald' : 'amber'}>
+              {allSelectedAreEvidence
                 ? attempts === 1 ? 'Strong evidence!' : 'Got there'
                 : 'Some misses revealed'}
-            </Badge>
+            </LuminaBadge>
             <span className="text-xs text-slate-500">
               {attempts} {attempts === 1 ? 'attempt' : 'attempts'}
             </span>
@@ -152,14 +153,16 @@ const EvidenceHighlightBlock: React.FC<EvidenceHighlightBlockProps> = ({
         )}
 
         {showExplanation && (
-          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-2">
-            <p className="text-sm text-blue-200/90 leading-relaxed">{data.explanation}</p>
-            <div className="flex flex-wrap gap-3 text-[10px] uppercase tracking-wider pt-1">
-              <span className="text-emerald-300/80">▎ correct</span>
-              <span className="text-rose-300/80">▎ off-claim</span>
-              <span className="text-amber-300/80">▎ missed evidence</span>
+          <LuminaFeedbackCard status="insight" label="In context">
+            <div className="space-y-2">
+              <p className="text-sm text-slate-300 leading-relaxed">{data.explanation}</p>
+              <div className="flex flex-wrap gap-3 text-[10px] uppercase tracking-wider pt-1">
+                <span className="text-emerald-300/80">▎ correct</span>
+                <span className="text-rose-300/80">▎ off-claim</span>
+                <span className="text-amber-300/80">▎ missed evidence</span>
+              </div>
             </div>
-          </div>
+          </LuminaFeedbackCard>
         )}
       </div>
     </BlockShell>

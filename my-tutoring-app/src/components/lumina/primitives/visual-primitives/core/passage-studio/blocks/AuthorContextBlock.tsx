@@ -2,6 +2,7 @@
 
 import React from 'react';
 import BlockShell from './BlockShell';
+import { LuminaBadge } from '../../../../../ui';
 import type { AuthorContextBlockData } from '../types';
 
 interface AuthorContextBlockProps {
@@ -16,14 +17,14 @@ const AuthorContextBlock: React.FC<AuthorContextBlockProps> = ({ data, innerRef 
         {(data.era || data.genre) && (
           <div className="flex items-center gap-2 flex-wrap">
             {data.era && (
-              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+              <LuminaBadge accent="blue" className="text-[10px] font-mono uppercase tracking-wider">
                 {data.era}
-              </span>
+              </LuminaBadge>
             )}
             {data.genre && (
-              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-slate-700/50 text-slate-400 border border-slate-600/50">
+              <LuminaBadge className="text-[10px] font-mono uppercase tracking-wider">
                 {data.genre}
-              </span>
+              </LuminaBadge>
             )}
           </div>
         )}

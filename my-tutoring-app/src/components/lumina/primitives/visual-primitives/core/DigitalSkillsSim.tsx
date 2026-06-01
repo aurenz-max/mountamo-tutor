@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -537,10 +541,10 @@ const DigitalSkillsSim: React.FC<DigitalSkillsSimProps> = ({ data, className }) 
                 const isTarget = key === targetKey;
                 const isTyped = typedKey === key;
                 return (
-                  <Button
+                  <button
                     key={key}
-                    variant="ghost"
-                    className={`w-8 h-10 sm:w-10 sm:h-11 p-0 text-xs sm:text-sm font-mono transition-all duration-150
+                    type="button"
+                    className={`w-8 h-10 sm:w-10 sm:h-11 p-0 rounded-md text-xs sm:text-sm font-mono transition-all duration-150
                       ${isTarget && !showFeedback
                         ? 'bg-blue-500/20 border border-blue-400/50 text-blue-200 ring-2 ring-blue-400/30'
                         : isTyped && showFeedback === 'correct'
@@ -552,7 +556,7 @@ const DigitalSkillsSim: React.FC<DigitalSkillsSimProps> = ({ data, className }) 
                     onClick={() => handleKeyPress(key)}
                   >
                     {key}
-                  </Button>
+                  </button>
                 );
               })}
             </div>
@@ -566,23 +570,23 @@ const DigitalSkillsSim: React.FC<DigitalSkillsSimProps> = ({ data, className }) 
   // Main Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">🖥️</span>
-            <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           </div>
           {!allChallengesComplete && currentChallenge && (
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+            <LuminaBadge accent="blue" className="text-xs">
               {PHASE_TYPE_CONFIG[currentChallenge.type]?.icon} {PHASE_TYPE_CONFIG[currentChallenge.type]?.label}
-            </Badge>
+            </LuminaBadge>
           )}
         </div>
         <p className="text-slate-400 text-sm mt-1">{description}</p>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Completion summary */}
         {allChallengesComplete && phaseResults.length > 0 ? (
           <PhaseSummaryPanel
@@ -631,8 +635,8 @@ const DigitalSkillsSim: React.FC<DigitalSkillsSimProps> = ({ data, className }) 
         ) : (
           <p className="text-slate-500 text-sm text-center py-8">No challenges available.</p>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

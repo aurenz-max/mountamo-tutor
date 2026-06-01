@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { LuminaCard, LuminaCardContent } from '../../../../../ui';
 
 export type BlockAccent = 'slate' | 'indigo' | 'amber' | 'emerald' | 'rose' | 'cyan';
 
+// Bespoke left-accent rail — a structural accent border the kit doesn't yet
+// expose. 'slate' and 'indigo' are intentionally outside the kit accent union.
 const ACCENT_BORDER: Record<BlockAccent, string> = {
   slate: 'border-l-slate-400/50',
   indigo: 'border-l-indigo-400/60',
@@ -43,18 +45,18 @@ const BlockShell: React.FC<BlockShellProps> = ({
 }) => {
   return (
     <div ref={innerRef} data-block-id={blockId}>
-      <Card
-        className={`backdrop-blur-xl bg-slate-900/40 border-white/10 border-l-2 ${ACCENT_BORDER[accent]} shadow-lg overflow-hidden ${className || ''}`}
+      <LuminaCard
+        className={`border-l-2 ${ACCENT_BORDER[accent]} shadow-lg overflow-hidden ${className || ''}`}
       >
-        <CardContent className="p-5">
+        <LuminaCardContent className="p-5">
           {label && (
             <div className={`text-[10px] font-mono uppercase tracking-widest ${ACCENT_LABEL[accent]} mb-3`}>
               {label}
             </div>
           )}
           {children}
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

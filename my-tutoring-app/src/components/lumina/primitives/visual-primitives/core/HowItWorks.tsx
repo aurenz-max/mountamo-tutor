@@ -1,15 +1,26 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaSectionLabel,
+  LuminaAnswerChoice,
+  LuminaActionButton,
+  answerStateClasses,
+  surface,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -614,13 +625,12 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
         <div className="rounded-xl overflow-hidden bg-black/20 backdrop-blur-sm border border-dashed border-white/20 p-6 flex flex-col items-center justify-center min-h-[180px]">
           <p className="text-slate-400 text-sm text-center mb-3 italic max-w-sm">{imagePrompt}</p>
           {!hasError && (
-            <Button
+            <LuminaButton
               onClick={() => handleGenerateImage(stepIndex, imagePrompt)}
-              variant="ghost"
-              className={`bg-white/5 ${colors.text} border border-white/20 hover:bg-white/10 text-xs`}
+              className={`${colors.text} text-xs`}
             >
               Generate Visual
-            </Button>
+            </LuminaButton>
           )}
           {hasError && (
             <p className="text-xs text-slate-600">Image generation unavailable</p>
@@ -727,9 +737,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             {step.funFact && (
               <div className="p-2.5 rounded-lg bg-purple-500/5 border border-purple-500/10">
                 <div className="flex items-start gap-2">
-                  <Badge className="bg-purple-500/20 border-purple-400/30 text-purple-300 text-[10px] shrink-0">
+                  <LuminaBadge accent="purple" className="text-[10px] shrink-0">
                     Fun Fact
-                  </Badge>
+                  </LuminaBadge>
                   <p className="text-slate-300 text-xs leading-relaxed">{step.funFact}</p>
                 </div>
               </div>
@@ -752,9 +762,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
           <p className="text-slate-400 text-xs">
             Challenge {currentChallengeIndex + 1} of {challenges.length}
           </p>
-          <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-400 text-xs">
+          <LuminaBadge className="text-xs">
             {currentChallenge.type}
-          </Badge>
+          </LuminaBadge>
         </div>
 
         <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
@@ -765,27 +775,28 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             {currentChallenge.options.map((opt, i) => {
               const isSelected = selectedOption === i;
               const isCorrectOption = i === currentChallenge.correctIndex;
-              const showAsCorrect = showChallengeFeedback && isCorrectOption;
-              const showAsWrong = showChallengeFeedback && isSelected && !isCorrectOption;
+
+              let state: AnswerChoiceState;
+              if (!showChallengeFeedback) {
+                state = isSelected ? 'selected' : 'idle';
+              } else if (isCorrectOption) {
+                state = 'correct';
+              } else if (isSelected) {
+                state = 'incorrect';
+              } else {
+                state = 'dimmed';
+              }
 
               return (
-                <Button
+                <LuminaAnswerChoice
                   key={i}
-                  variant="ghost"
-                  className={`w-full justify-start text-left h-auto py-3 px-4 text-sm transition-all duration-200 ${
-                    showAsCorrect
-                      ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300'
-                      : showAsWrong
-                        ? 'bg-red-500/20 border border-red-400/50 text-red-300'
-                        : isSelected
-                          ? 'bg-blue-500/20 border border-blue-400/50 text-blue-300'
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200'
-                  }`}
+                  state={state}
+                  className="p-3 text-sm"
                   onClick={() => handleMCAnswer(i)}
                   disabled={showChallengeFeedback}
                 >
                   {opt}
-                </Button>
+                </LuminaAnswerChoice>
               );
             })}
           </div>
@@ -801,16 +812,16 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
               const isCorrectPosition = sequenceChecked && currentChallenge.correctOrder?.[position] === id;
               const isWrongPosition = sequenceChecked && !sequenceCorrect && currentChallenge.correctOrder?.[position] !== id;
 
+              const itemState: AnswerChoiceState = isCorrectPosition
+                ? 'correct'
+                : isWrongPosition
+                  ? 'incorrect'
+                  : 'idle';
+
               return (
                 <div
                   key={id}
-                  className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
-                    isCorrectPosition
-                      ? 'bg-emerald-500/20 border border-emerald-400/50'
-                      : isWrongPosition
-                        ? 'bg-red-500/20 border border-red-400/50'
-                        : 'bg-white/5 border border-white/10'
-                  }`}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${answerStateClasses[itemState]}`}
                 >
                   <span className="text-slate-500 text-xs font-mono w-4">{position + 1}.</span>
                   <span className="text-slate-200 text-sm flex-1">{item.text}</span>
@@ -837,13 +848,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             })}
             {!showChallengeFeedback && (
               <div className="flex justify-center pt-2">
-                <Button
-                  variant="ghost"
-                  className="bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300"
-                  onClick={handleSequenceCheck}
-                >
+                <LuminaActionButton action="check" onClick={handleSequenceCheck}>
                   Check Order
-                </Button>
+                </LuminaActionButton>
               </div>
             )}
             {sequenceChecked && !sequenceCorrect && !showChallengeFeedback && (
@@ -862,13 +869,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             </p>
             <p className="text-slate-400 text-xs">{currentChallenge.explanation}</p>
             <div className="flex justify-center">
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={handleNextChallenge}
-              >
+              <LuminaActionButton action="next" onClick={handleNextChallenge}>
                 {currentChallengeIndex + 1 >= challenges.length ? 'See Results' : 'Next Challenge'}
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -909,28 +912,28 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   return (
     <div className={`space-y-6 ${className || ''}`}>
       {/* ── Header Card ── */}
-      <Card className="relative overflow-hidden backdrop-blur-xl bg-gradient-to-br from-slate-900/90 to-slate-800/90 border-white/10 shadow-2xl">
+      <LuminaCard className="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90">
         {/* Ambient glow orb */}
         <div
           className="absolute -top-20 -right-20 w-60 h-60 rounded-full blur-[120px] opacity-20 pointer-events-none"
           style={{ backgroundColor: colors.accent }}
         />
 
-        <CardHeader className="relative z-10 pb-3">
+        <LuminaCardHeader className="relative z-10 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-2xl">{colors.icon}</span>
               <div>
-                <CardTitle className="text-slate-100 text-xl font-bold">
+                <LuminaCardTitle className="text-xl font-bold">
                   How It Works: {title}
-                </CardTitle>
+                </LuminaCardTitle>
                 {subtitle && <p className="text-slate-400 text-sm mt-0.5">{subtitle}</p>}
               </div>
             </div>
             <div className="flex items-center gap-2">
               {category && (
-                <Badge
-                  className="text-xs border"
+                <LuminaBadge
+                  className="text-xs"
                   style={{
                     backgroundColor: `${colors.accent}15`,
                     borderColor: `${colors.accent}40`,
@@ -938,35 +941,35 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                   }}
                 >
                   {category}
-                </Badge>
+                </LuminaBadge>
               )}
-              <Badge className="bg-slate-800/50 border-slate-700/50 text-cyan-300 text-xs">
+              <LuminaBadge accent="cyan" className="text-xs">
                 {totalSteps} Steps
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
           <p className="text-slate-400 text-sm mt-2 leading-relaxed">{overview}</p>
-        </CardHeader>
-      </Card>
+        </LuminaCardHeader>
+      </LuminaCard>
 
       {allChallengesComplete ? (
         /* ── Results ── */
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl">
-          <CardContent className="pt-6">
+        <LuminaCard>
+          <LuminaCardContent className="pt-6">
             {renderResults()}
-          </CardContent>
-        </Card>
+          </LuminaCardContent>
+        </LuminaCard>
       ) : showChallenges ? (
         /* ── Challenge Section ── */
         <SpotlightCard color={colors.rgb}>
-          <Card className="backdrop-blur-xl bg-slate-900/40 border-0 shadow-2xl">
-            <CardContent className="pt-6">
-              <p className="text-slate-300 text-xs font-medium mb-3 uppercase tracking-wider">
+          <LuminaCard className="border-0">
+            <LuminaCardContent className="pt-6">
+              <LuminaSectionLabel accent="cyan" size="sm" className="mb-3">
                 Comprehension Check
-              </p>
+              </LuminaSectionLabel>
               {renderChallenge()}
-            </CardContent>
-          </Card>
+            </LuminaCardContent>
+          </LuminaCard>
         </SpotlightCard>
       ) : (
         <>
@@ -982,8 +985,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
               {/* Quick Facts */}
               {quickFactEntries.length > 0 && (
                 <SpotlightCard color={colors.rgb}>
-                  <Card className="backdrop-blur-xl bg-slate-900/40 border-0">
-                    <CardContent className="pt-5 pb-4">
+                  <LuminaCard className="border-0">
+                    <LuminaCardContent className="pt-5 pb-4">
                       <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>
                         Quick Facts
                       </p>
@@ -1000,16 +1003,16 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                           </div>
                         ))}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </LuminaCardContent>
+                  </LuminaCard>
                 </SpotlightCard>
               )}
 
               {/* Process Summary */}
               {summary && (
                 <SpotlightCard color={colors.rgb}>
-                  <Card className="backdrop-blur-xl bg-slate-900/40 border-0">
-                    <CardContent className="pt-5 pb-4">
+                  <LuminaCard className="border-0">
+                    <LuminaCardContent className="pt-5 pb-4">
                       <Accordion type="multiple" defaultValue={['summary']}>
                         <AccordionItem value="summary" className="border-white/10">
                           <AccordionTrigger className={`${colors.text} text-xs font-medium uppercase tracking-wider py-2`}>
@@ -1019,9 +1022,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                             <p className="text-slate-200 text-sm leading-relaxed">{summary.text}</p>
                             {summary.totalTime && (
                               <div className="flex items-center gap-2">
-                                <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-400 text-xs">
+                                <LuminaBadge className="text-xs">
                                   Duration
-                                </Badge>
+                                </LuminaBadge>
                                 <span className="text-slate-300 text-xs">{summary.totalTime}</span>
                               </div>
                             )}
@@ -1032,16 +1035,16 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                           </AccordionContent>
                         </AccordionItem>
                       </Accordion>
-                    </CardContent>
-                  </Card>
+                    </LuminaCardContent>
+                  </LuminaCard>
                 </SpotlightCard>
               )}
 
               {/* Glossary (promoted key terms) */}
               {allKeyTerms.length > 0 && (
                 <SpotlightCard color={colors.rgb}>
-                  <Card className="backdrop-blur-xl bg-slate-900/40 border-0">
-                    <CardContent className="pt-5 pb-4">
+                  <LuminaCard className="border-0">
+                    <LuminaCardContent className="pt-5 pb-4">
                       <Accordion type="multiple">
                         <AccordionItem value="glossary" className="border-white/10">
                           <AccordionTrigger className="text-amber-300 text-xs font-medium uppercase tracking-wider py-2">
@@ -1060,20 +1063,20 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                           </AccordionContent>
                         </AccordionItem>
                       </Accordion>
-                    </CardContent>
-                  </Card>
+                    </LuminaCardContent>
+                  </LuminaCard>
                 </SpotlightCard>
               )}
 
               {/* Exploration Progress */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardContent className="pt-4 pb-3">
+              <LuminaCard>
+                <LuminaCardContent className="pt-4 pb-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-slate-500 text-xs">{stepsExplored} of {totalSteps} steps explored</span>
                     {allStepsExplored && (
-                      <Badge className="bg-emerald-500/15 border-emerald-400/30 text-emerald-300 text-[10px]">
+                      <LuminaBadge accent="emerald" className="text-[10px]">
                         Complete
-                      </Badge>
+                      </LuminaBadge>
                     )}
                   </div>
                   {/* Progress bar */}
@@ -1087,19 +1090,19 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                     />
                   </div>
                   {allStepsExplored && challenges.length > 0 && !showChallenges && (
-                    <Button
-                      variant="ghost"
-                      className="w-full mt-3 bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300 text-xs h-8"
+                    <LuminaActionButton
+                      action="next"
+                      className="w-full mt-3 text-xs h-8"
                       onClick={handleStartChallenges}
                     >
                       Start Challenges ({challenges.length})
-                    </Button>
+                    </LuminaActionButton>
                   )}
                   {!allStepsExplored && (
                     <p className="text-slate-600 text-[10px] mt-2">Scroll through all steps to unlock challenges</p>
                   )}
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
             </div>
           </div>
 
@@ -1114,7 +1117,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {allFunFacts.map((ff, i) => (
                   <SpotlightCard key={i} color={colors.rgb}>
-                    <div className="p-4 backdrop-blur-xl bg-slate-900/40 rounded-xl">
+                    <div className={`p-4 rounded-xl ${surface.glass}`}>
                       <div className="flex items-start gap-2">
                         <span className="text-purple-400 text-sm shrink-0">✨</span>
                         <div>
@@ -1132,23 +1135,23 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
           {/* Real World Examples */}
           {realWorldExamples && realWorldExamples.length > 0 && (
             <SpotlightCard color={colors.rgb}>
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-0">
-                <CardContent className="pt-5 pb-4">
+              <LuminaCard className="border-0">
+                <LuminaCardContent className="pt-5 pb-4">
                   <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>
                     Real World Examples
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {realWorldExamples.map((ex, i) => (
-                      <Badge
+                      <LuminaBadge
                         key={i}
-                        className="bg-white/5 border border-white/10 text-slate-200 text-xs font-normal px-3 py-1"
+                        className="text-slate-200 text-xs font-normal px-3 py-1"
                       >
                         {ex}
-                      </Badge>
+                      </LuminaBadge>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
             </SpotlightCard>
           )}
 
@@ -1157,18 +1160,17 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             <div className="flex items-center gap-3 flex-wrap pt-1">
               <span className="text-slate-600 text-xs uppercase tracking-wider">Explore next:</span>
               {relatedProcesses.map((rp, i) => (
-                <Badge
+                <LuminaBadge
                   key={i}
                   className="text-xs font-normal px-3 py-1 cursor-default"
                   style={{
                     backgroundColor: `${colors.accent}10`,
                     borderColor: `${colors.accent}30`,
                     color: colors.accent,
-                    borderWidth: '1px',
                   }}
                 >
                   {rp}
-                </Badge>
+                </LuminaBadge>
               ))}
             </div>
           )}

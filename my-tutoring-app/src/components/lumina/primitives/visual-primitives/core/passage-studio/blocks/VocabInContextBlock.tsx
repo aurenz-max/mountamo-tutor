@@ -1,10 +1,16 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import BlockShell from './BlockShell';
 import { SoundManager } from '../../../../../utils/SoundManager';
+import {
+  LuminaSectionLabel,
+  LuminaAnswerChoice,
+  LuminaActionButton,
+  LuminaBadge,
+  LuminaFeedbackCard,
+  type AnswerChoiceState,
+} from '../../../../../ui';
 import type { VocabInContextBlockData } from '../types';
 
 interface VocabInContextBlockProps {
@@ -49,9 +55,9 @@ const VocabInContextBlock: React.FC<VocabInContextBlockProps> = ({
     <BlockShell innerRef={innerRef} blockId={data.id} label={data.label} accent="cyan">
       <div className="space-y-4">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-cyan-300/80 font-semibold mb-1">
+          <LuminaSectionLabel accent="cyan" size="sm" className="mb-1">
             Vocabulary in context
-          </p>
+          </LuminaSectionLabel>
           <p className="text-slate-100 text-[15px] leading-relaxed">
             In the highlighted passage, what does{' '}
             <span className="font-bold italic text-cyan-200 px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/30">
@@ -63,66 +69,63 @@ const VocabInContextBlock: React.FC<VocabInContextBlockProps> = ({
 
         <div className="space-y-2">
           {data.meanings.map((meaning, i) => {
-            let cls = 'w-full text-left px-4 py-2.5 rounded-lg border transition-all text-sm ';
+            let state: AnswerChoiceState;
             if (answered) {
-              if (i === data.correctIndex) cls += 'bg-emerald-500/20 border-emerald-500/40 text-emerald-200';
-              else if (i === selectedIndex) cls += 'bg-rose-500/20 border-rose-500/40 text-rose-200';
-              else cls += 'bg-white/5 border-white/10 text-slate-500';
+              if (i === data.correctIndex) state = 'correct';
+              else if (i === selectedIndex) state = 'incorrect';
+              else state = 'dimmed';
             } else if (i === selectedIndex) {
-              cls += 'bg-cyan-500/15 border-cyan-500/40 text-cyan-100';
+              state = 'selected';
             } else {
-              cls += 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 cursor-pointer';
+              state = 'idle';
             }
             return (
-              <button
+              <LuminaAnswerChoice
                 key={i}
+                state={state}
                 onClick={() => {
                   if (answered) return;
                   SoundManager.select();
                   setSelectedIndex(i);
                 }}
                 disabled={answered}
-                className={cls}
               >
                 {meaning}
-              </button>
+              </LuminaAnswerChoice>
             );
           })}
         </div>
 
         {!answered && (
-          <Button
-            variant="ghost"
-            className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-500/20"
+          <LuminaActionButton
+            action="check"
             onClick={handleSubmit}
             disabled={selectedIndex === null}
-          >
-            Check Answer
-          </Button>
+          />
         )}
 
         {answered && (
           <div className="flex items-center gap-2">
-            <Badge
-              className={
+            <LuminaBadge
+              accent={
                 selectedIndex === data.correctIndex && attempts === 1
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                  ? 'emerald'
                   : selectedIndex === data.correctIndex
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                    : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                    ? 'amber'
+                    : 'rose'
               }
             >
               {selectedIndex === data.correctIndex
                 ? attempts === 1 ? 'Correct!' : 'Correct (2nd try)'
                 : 'Revealed'}
-            </Badge>
+            </LuminaBadge>
           </div>
         )}
 
         {showExplanation && (
-          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <p className="text-sm text-blue-200/90 leading-relaxed">{data.explanation}</p>
-          </div>
+          <LuminaFeedbackCard status="insight">
+            {data.explanation}
+          </LuminaFeedbackCard>
         )}
       </div>
     </BlockShell>

@@ -1,15 +1,28 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaSectionLabel,
+  LuminaAnswerChoice,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaScoreRing,
+  interactive,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -417,10 +430,10 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
         return (
           <div className="space-y-3">
             {quickFacts.map((item, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/5">
+              <LuminaPanel key={i} className="flex items-start gap-3 p-3">
                 {item.icon && <span className="text-lg shrink-0 mt-0.5">{item.icon}</span>}
                 <p className="text-slate-200 text-sm leading-relaxed">{item.fact}</p>
-              </div>
+              </LuminaPanel>
             ))}
           </div>
         );
@@ -450,12 +463,12 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
         return (
           <div className="space-y-3">
             {records.map((record, i) => (
-              <div key={i} className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                <div className="text-amber-300 text-xs font-semibold uppercase tracking-wider mb-1">
+              <LuminaPanel key={i} accent="amber">
+                <LuminaSectionLabel accent="amber" size="sm" className="mb-1">
                   {record.label}
-                </div>
+                </LuminaSectionLabel>
                 <p className="text-slate-200 text-sm">{record.value}</p>
-              </div>
+              </LuminaPanel>
             ))}
           </div>
         );
@@ -464,12 +477,12 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
         return (
           <div className="space-y-3">
             {didYouKnow.map((item, i) => (
-              <div key={i} className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/10">
+              <LuminaPanel key={i} accent="purple">
                 <p className="text-slate-200 text-sm leading-relaxed">{item.text}</p>
                 {item.source && (
                   <p className="text-slate-500 text-xs mt-2">— {item.source}</p>
                 )}
-              </div>
+              </LuminaPanel>
             ))}
           </div>
         );
@@ -491,9 +504,9 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
           <p className="text-slate-400 text-xs">
             Question {currentCheckIndex + 1} of {selfChecks.length}
           </p>
-          <Badge className="bg-slate-800/50 border-slate-700/50 text-slate-400 text-xs">
+          <LuminaBadge className="text-xs">
             {currentCheck.difficulty}
-          </Badge>
+          </LuminaBadge>
         </div>
 
         <p className="text-slate-100 text-sm font-medium">{currentCheck.question}</p>
@@ -502,47 +515,41 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
           {currentCheck.options.map((opt, i) => {
             const isSelected = selectedOption === i;
             const isCorrectOption = i === currentCheck.correctIndex;
-            const showAsCorrect = showCheckFeedback && isCorrectOption;
-            const showAsWrong = showCheckFeedback && isSelected && !isCorrectOption;
+
+            let state: AnswerChoiceState;
+            if (showCheckFeedback) {
+              if (isCorrectOption) state = 'correct';
+              else if (isSelected) state = 'incorrect';
+              else state = 'dimmed';
+            } else {
+              state = isSelected ? 'selected' : 'idle';
+            }
 
             return (
-              <Button
+              <LuminaAnswerChoice
                 key={i}
-                variant="ghost"
-                className={`w-full justify-start text-left h-auto py-3 px-4 text-sm transition-all duration-200 ${
-                  showAsCorrect
-                    ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300'
-                    : showAsWrong
-                      ? 'bg-red-500/20 border border-red-400/50 text-red-300'
-                      : isSelected
-                        ? 'bg-blue-500/20 border border-blue-400/50 text-blue-300'
-                        : 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200'
-                }`}
+                state={state}
+                className="p-3 text-sm"
                 onClick={() => handleCheckAnswer(i)}
                 disabled={showCheckFeedback}
               >
                 {opt}
-              </Button>
+              </LuminaAnswerChoice>
             );
           })}
         </div>
 
         {showCheckFeedback && (
           <div className="space-y-3">
-            <p className={`text-sm font-medium ${
-              selectedOption === currentCheck.correctIndex ? 'text-emerald-400' : 'text-red-400'
-            }`}>
-              {selectedOption === currentCheck.correctIndex ? 'Correct!' : 'Not quite.'}
-            </p>
-            <p className="text-slate-400 text-xs">{currentCheck.explanation}</p>
+            <LuminaFeedbackCard
+              status={selectedOption === currentCheck.correctIndex ? 'correct' : 'incorrect'}
+            >
+              {currentCheck.explanation}
+            </LuminaFeedbackCard>
             <div className="flex justify-center">
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                onClick={handleNextCheck}
-              >
+              <LuminaActionButton action="next" onClick={handleNextCheck}>
                 {currentCheckIndex + 1 >= selfChecks.length ? 'See Results' : 'Next Question'}
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -559,8 +566,8 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
     const score = submittedResult?.score ?? accuracy;
 
     return (
-      <div className="text-center space-y-4 py-4">
-        <div className="text-3xl font-bold text-emerald-400">{score}%</div>
+      <div className="flex flex-col items-center text-center space-y-4 py-4">
+        <LuminaScoreRing score={score} />
         <p className="text-slate-200 text-sm font-medium">Fact File Complete!</p>
         <div className="flex justify-center gap-4 text-xs text-slate-400">
           <span>{sectionsExplored}/{totalSections} sections explored</span>
@@ -575,21 +582,21 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   // Main Render
   // -------------------------------------------------------------------------
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className} topAccent="blue">
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">🗂️</span>
-            <CardTitle className="text-slate-100 text-lg">Fact File: {title}</CardTitle>
+            <LuminaCardTitle className="text-lg">Fact File: {title}</LuminaCardTitle>
           </div>
-          <Badge className="bg-slate-800/50 border-slate-700/50 text-blue-300 text-xs">
+          <LuminaBadge accent="blue" className="text-xs">
             {category}
-          </Badge>
+          </LuminaBadge>
         </div>
         <p className="text-slate-400 text-sm mt-1">{description}</p>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-5">
+      <LuminaCardContent className="space-y-5">
         {/* Key Stats */}
         {keyStats.length > 0 && (
           <div className="grid grid-cols-3 gap-3">
@@ -600,7 +607,7 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
                 className={`p-3 rounded-xl text-center transition-all duration-200 cursor-pointer
                   ${tappedStats.has(i)
                     ? 'bg-blue-500/10 border border-blue-400/20 scale-[1.02]'
-                    : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-[1.02]'
+                    : `${interactive.ghost} hover:scale-[1.02]`
                   }`}
               >
                 <div className="text-xl font-bold text-slate-100">{stat.value}</div>
@@ -617,9 +624,9 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
         ) : showSelfChecks ? (
           <>
             <div className="border-t border-white/10 pt-4">
-              <p className="text-slate-300 text-xs font-medium mb-3 uppercase tracking-wider">
+              <LuminaSectionLabel accent="cyan" size="sm" className="mb-3">
                 Self-Check
-              </p>
+              </LuminaSectionLabel>
               {renderSelfCheck()}
             </div>
           </>
@@ -632,22 +639,22 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
                 const isVisited = visitedTabs.has(tab.key);
 
                 return (
-                  <Button
+                  <LuminaButton
                     key={tab.key}
-                    variant="ghost"
-                    className={`shrink-0 text-xs px-3 py-2 h-auto transition-all duration-200 ${
+                    tone={isActive ? 'ghost' : 'subtle'}
+                    className={`shrink-0 text-xs px-3 py-2 h-auto ${
                       isActive
-                        ? 'bg-white/10 border border-white/20 text-slate-100'
+                        ? 'text-slate-100'
                         : isVisited
-                          ? 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10'
-                          : 'bg-transparent border border-transparent text-slate-500 hover:bg-white/5 hover:text-slate-300'
+                          ? 'text-slate-300'
+                          : 'text-slate-500'
                     }`}
                     onClick={() => handleTabChange(tab.key)}
                   >
                     <span className="mr-1">{tab.icon}</span>
                     {tab.label}
                     {isVisited && !isActive && <span className="ml-1 text-emerald-400">✓</span>}
-                  </Button>
+                  </LuminaButton>
                 );
               })}
             </div>
@@ -659,13 +666,13 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
             <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-white/5">
               <span>{sectionsExplored} of {totalSections} sections explored</span>
               {allSectionsExplored && selfChecks.length > 0 && !showSelfChecks && (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300 text-xs h-8"
+                <LuminaButton
+                  tone="primary"
+                  className="text-xs h-8"
                   onClick={handleStartChecks}
                 >
                   Start Self-Check ({selfChecks.length} questions)
-                </Button>
+                </LuminaButton>
               )}
               {!allSectionsExplored && (
                 <span className="text-slate-600">Explore all sections to unlock self-check</span>
@@ -673,8 +680,8 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

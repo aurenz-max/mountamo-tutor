@@ -2,10 +2,18 @@
 
 import React, { useCallback, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import BlockShell from './BlockShell';
 import { SoundManager } from '../../../../../utils/SoundManager';
+import {
+  LuminaButton,
+  LuminaActionButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaFeedbackCard,
+  LuminaSectionLabel,
+  type LuminaAccent,
+  type FeedbackStatus,
+} from '../../../../../ui';
 import type {
   ThemeStatementBlockData,
   ThemeRubricVerdict,
@@ -27,10 +35,13 @@ type Phase =
   | { kind: 'judge-error'; message: string }
   | { kind: 'reveal'; verdict: ThemeRubricVerdict };
 
-const VERDICT_TO_LABEL: Record<ThemeRubricVerdict['verdict'], { label: string; color: string }> = {
-  strong: { label: 'Strong response', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
-  partial: { label: 'Partial response', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
-  weak: { label: 'Needs more', color: 'bg-rose-500/20 text-rose-300 border-rose-500/30' },
+const VERDICT_TO_LABEL: Record<
+  ThemeRubricVerdict['verdict'],
+  { label: string; accent: LuminaAccent; status: FeedbackStatus }
+> = {
+  strong: { label: 'Strong response', accent: 'emerald', status: 'correct' },
+  partial: { label: 'Partial response', accent: 'amber', status: 'insight' },
+  weak: { label: 'Needs more', accent: 'rose', status: 'incorrect' },
 };
 
 const ThemeStatementBlock: React.FC<ThemeStatementBlockProps> = ({
@@ -109,10 +120,10 @@ const ThemeStatementBlock: React.FC<ThemeStatementBlockProps> = ({
         </div>
 
         {/* Rubric criteria preview — student knows what they're being judged on */}
-        <div className="rounded-xl bg-slate-950/40 border border-white/5 p-3 space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+        <LuminaPanel className="p-3 space-y-1.5">
+          <LuminaSectionLabel size="sm" accent="rose">
             Looking for
-          </p>
+          </LuminaSectionLabel>
           <ul className="space-y-1">
             {data.rubric.map((criterion, i) => (
               <li key={i} className="text-xs text-slate-300 flex items-start gap-2">
@@ -124,7 +135,7 @@ const ThemeStatementBlock: React.FC<ThemeStatementBlockProps> = ({
               </li>
             ))}
           </ul>
-        </div>
+        </LuminaPanel>
 
         {phase.kind !== 'reveal' && (
           <>
@@ -142,54 +153,44 @@ const ThemeStatementBlock: React.FC<ThemeStatementBlockProps> = ({
                 {charCount}/{maxLength} characters
                 {tooShort && <span className="ml-2 text-amber-400/70">— minimum {minLength}</span>}
               </span>
-              <Button
-                variant="ghost"
+              <LuminaActionButton
+                action="check"
                 size="sm"
                 onClick={handleSubmit}
                 disabled={tooShort || phase.kind === 'judging'}
-                className="bg-rose-500/10 border border-rose-500/30 text-rose-200 hover:bg-rose-500/20 disabled:opacity-40 gap-2"
+                className="gap-2"
               >
                 {phase.kind === 'judging' && <Loader2 size={14} className="animate-spin" />}
                 {phase.kind === 'judging' ? 'Evaluating…' : 'Submit response'}
-              </Button>
+              </LuminaActionButton>
             </div>
           </>
         )}
 
         {phase.kind === 'judge-error' && (
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+          <LuminaPanel accent="amber" className="flex items-start gap-3">
             <AlertTriangle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm text-amber-200 font-medium">Couldn&apos;t evaluate your response</p>
               <p className="text-xs text-amber-300/70 mt-0.5">{phase.message}</p>
               <div className="mt-2 flex gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleSubmit}
-                  className="bg-amber-500/15 border border-amber-500/30 text-amber-200 hover:bg-amber-500/25"
-                >
+                <LuminaActionButton action="retry" size="sm" onClick={handleSubmit}>
                   Try again
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={cancelJudge}
-                  className="bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10"
-                >
+                </LuminaActionButton>
+                <LuminaButton size="sm" onClick={cancelJudge}>
                   Back to writing
-                </Button>
+                </LuminaButton>
               </div>
             </div>
-          </div>
+          </LuminaPanel>
         )}
 
         {phase.kind === 'reveal' && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge className={VERDICT_TO_LABEL[phase.verdict.verdict].color}>
+              <LuminaBadge accent={VERDICT_TO_LABEL[phase.verdict.verdict].accent}>
                 {VERDICT_TO_LABEL[phase.verdict.verdict].label}
-              </Badge>
+              </LuminaBadge>
               <span className="text-xs text-slate-500 font-mono">{phase.verdict.score}/100</span>
               <span className="text-xs text-slate-600">·</span>
               <span className="text-xs text-slate-500">
@@ -197,19 +198,16 @@ const ThemeStatementBlock: React.FC<ThemeStatementBlockProps> = ({
               </span>
             </div>
 
-            <div className="rounded-xl bg-slate-950/40 border border-white/5 p-4 space-y-2">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+            <LuminaPanel className="space-y-2">
+              <LuminaSectionLabel size="sm" accent="rose">
                 Your response
-              </p>
+              </LuminaSectionLabel>
               <p className="text-sm text-slate-200 leading-relaxed italic">&ldquo;{response}&rdquo;</p>
-            </div>
+            </LuminaPanel>
 
             <div className="space-y-2">
               {phase.verdict.criterionScores.map((cs, i) => (
-                <div
-                  key={i}
-                  className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-xs"
-                >
+                <LuminaPanel key={i} className="px-3 py-2 text-xs">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-medium text-slate-200">{cs.label}</span>
                     <span
@@ -221,26 +219,26 @@ const ThemeStatementBlock: React.FC<ThemeStatementBlockProps> = ({
                     </span>
                   </div>
                   <p className="text-slate-400 leading-relaxed">{cs.feedback}</p>
-                </div>
+                </LuminaPanel>
               ))}
             </div>
 
-            <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4 space-y-2">
-              <p className="text-[10px] uppercase tracking-wider text-blue-400/80 font-semibold">
-                Overall feedback
-              </p>
-              <p className="text-sm text-blue-200/90 leading-relaxed">{phase.verdict.summary}</p>
-            </div>
+            <LuminaFeedbackCard
+              status={VERDICT_TO_LABEL[phase.verdict.verdict].status}
+              label="Overall feedback"
+            >
+              {phase.verdict.summary}
+            </LuminaFeedbackCard>
 
-            <div className="rounded-xl bg-slate-950/40 border border-emerald-500/20 p-4 space-y-2">
+            <LuminaPanel accent="emerald" className="space-y-2">
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-emerald-400" />
-                <p className="text-[10px] uppercase tracking-wider text-emerald-400/80 font-semibold">
+                <LuminaSectionLabel size="sm" accent="emerald">
                   Exemplar response
-                </p>
+                </LuminaSectionLabel>
               </div>
               <p className="text-sm text-slate-200 leading-relaxed italic">&ldquo;{data.exemplar}&rdquo;</p>
-            </div>
+            </LuminaPanel>
           </div>
         )}
       </div>

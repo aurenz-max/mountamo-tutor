@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaBadge } from '../../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -503,14 +502,14 @@ const PassageStudio: React.FC<PassageStudioProps> = ({ data, className }) => {
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr),minmax(0,1fr)] gap-5">
       {/* Pinned passage */}
       <div className="lg:sticky lg:top-4 lg:self-start">
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-lg overflow-hidden">
+        <LuminaCard className="shadow-lg overflow-hidden">
           <div className="p-5 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-end mb-3 -mt-1">
               <ReadAloudButton onClick={handleReadAloud} stimulusKind={stimulus.kind} />
             </div>
             <PassageRenderer stimulus={stimulus} overlays={passageOverlays} />
           </div>
-        </Card>
+        </LuminaCard>
       </div>
 
       {/* Block column */}
@@ -577,12 +576,12 @@ const PassageStudio: React.FC<PassageStudioProps> = ({ data, className }) => {
   return (
     <div className={`space-y-5 ${className || ''}`}>
       {/* Header */}
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-        <CardHeader className="pb-4">
+      <LuminaCard className="overflow-hidden">
+        <LuminaCardHeader className="pb-4">
           <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <Badge className="bg-pink-500/20 text-pink-300 border-pink-500/30 text-xs">
+            <LuminaBadge accent="pink" className="text-xs">
               {LAYOUT_LABELS[layout]}
-            </Badge>
+            </LuminaBadge>
             <span className="text-slate-600 text-xs">{blocks.length} blocks</span>
             {hasEval && (
               <>
@@ -595,13 +594,13 @@ const PassageStudio: React.FC<PassageStudioProps> = ({ data, className }) => {
             <span className="text-slate-700">&middot;</span>
             <span className="text-cyan-400/70 text-xs uppercase tracking-wider">{stimulus.kind}</span>
           </div>
-          <CardTitle className="text-2xl font-light text-white tracking-tight">{title}</CardTitle>
+          <LuminaCardTitle className="text-2xl font-light text-white tracking-tight">{title}</LuminaCardTitle>
           {subtitle && <p className="text-slate-400 text-sm mt-1 font-light">{subtitle}</p>}
           <div className="mt-4">
             <ProgressBar blocks={blocks} answeredIds={answeredIds} />
           </div>
-        </CardHeader>
-      </Card>
+        </LuminaCardHeader>
+      </LuminaCard>
 
       {/* Layout */}
       {renderLayout()}
@@ -804,14 +803,14 @@ const AnnotatedPassageLayout: React.FC<AnnotatedPassageLayoutProps> = ({
       {/* Passage column — wider, sticky on large screens */}
       <div className="lg:col-span-3">
         <div className="lg:sticky lg:top-4">
-          <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-lg overflow-hidden">
+          <LuminaCard className="shadow-lg overflow-hidden">
             <div className="p-6 max-h-[85vh] overflow-y-auto">
               <div className="flex justify-end mb-3 -mt-1">
                 <ReadAloudButton onClick={onReadAloud} stimulusKind={stimulus.kind} />
               </div>
               <PassageRenderer stimulus={stimulus} overlays={overlays} />
             </div>
-          </Card>
+          </LuminaCard>
         </div>
       </div>
 
