@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { LuminaCard, LuminaCardContent } from '../../../../../ui';
 import {
   layoutParagraphsAroundFigure,
   layoutBalancedColumns,
@@ -490,11 +490,11 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index }) => {
   }, [layoutMode, paragraphs, hasFigure, hasInsetFacts, containerWidth, reveal]);
 
   return (
-    <Card
+    <LuminaCard
       data-block-index={index}
-      className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-lg overflow-hidden"
+      className="shadow-lg overflow-hidden"
     >
-      <CardContent className="p-6" ref={containerRef}>
+      <LuminaCardContent className="p-6" ref={containerRef}>
         {label && (
           <div className="text-xs font-mono uppercase tracking-widest text-slate-500 mb-4">
             {label}
@@ -512,8 +512,8 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index }) => {
         ) : (
           <SimpleProse paragraphs={paragraphs} reveal={reveal} />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

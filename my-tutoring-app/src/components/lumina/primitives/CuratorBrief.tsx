@@ -4,11 +4,22 @@ import React, { useState, useEffect } from 'react';
 import { Target, Lightbulb, Clock, ChevronRight, CheckCircle2, Sparkles, Brain, Compass, Map, ChevronLeft } from 'lucide-react';
 import { IntroBriefingData, IntroData } from '../types';
 import { SoundManager } from '../utils/SoundManager';
+import { LuminaBadge, LuminaCallout, LuminaPanel, LuminaButton, type LuminaAccent } from '../ui';
 
 interface CuratorBriefProps {
   data: IntroBriefingData | IntroData;
   className?: string;
 }
+
+// Map an objective verb to a kit accent (kit palette: no green/red).
+const verbAccent: Record<string, LuminaAccent> = {
+  identify: 'blue',
+  explain: 'purple',
+  create: 'amber',
+  analyze: 'rose',
+  compare: 'cyan',
+  apply: 'emerald',
+};
 
 // Helper function to convert old IntroData to new IntroBriefingData format
 const convertToIntroBriefing = (data: IntroData, topic: string = 'Learning Topic'): IntroBriefingData => {
@@ -23,7 +34,7 @@ const convertToIntroBriefing = (data: IntroData, topic: string = 'Learning Topic
       content: data.hook,
       visual: '📚'
     },
-    bigIdea: {             
+    bigIdea: {
       statement: 'Understanding this concept will help you grow as a learner.',
       whyItMatters: 'This topic connects to many areas of learning and helps build important skills.'
     },
@@ -175,17 +186,11 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
         </div>
       </div>
 
-      <div className="glass-panel rounded-xl border border-white/10 p-6 relative overflow-hidden hover:border-white/20 transition-colors">
-        <div className="relative z-10">
-          <h4 className="text-[10px] uppercase tracking-widest text-emerald-400 font-mono mb-3 flex items-center gap-2">
-            <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
-            Why This Matters
-          </h4>
-          <p className="text-slate-300 leading-relaxed font-light">
-            {briefingData.bigIdea.whyItMatters}
-          </p>
-        </div>
-      </div>
+      <LuminaCallout accent="emerald" label="Why This Matters">
+        <p className="leading-relaxed font-light">
+          {briefingData.bigIdea.whyItMatters}
+        </p>
+      </LuminaCallout>
     </div>
   );
 
@@ -214,17 +219,9 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
           <span className={`flex-1 font-light ${objectivesChecked[obj.id] ? 'text-white' : 'text-slate-200'}`}>
             {obj.text}
           </span>
-          <span className={`text-[10px] px-2 py-1 rounded-full uppercase tracking-widest font-mono border ${
-            obj.verb === 'identify' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
-            obj.verb === 'explain' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
-            obj.verb === 'create' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
-            obj.verb === 'analyze' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
-            obj.verb === 'compare' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' :
-            obj.verb === 'apply' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
-            'bg-pink-500/20 text-pink-300 border-pink-500/30'
-          }`}>
+          <LuminaBadge accent={verbAccent[obj.verb] ?? 'pink'} className="uppercase tracking-widest font-mono">
             {obj.verb}
-          </span>
+          </LuminaBadge>
         </button>
       ))}
       <p className="text-slate-500 text-xs mt-2 italic font-light">
@@ -235,7 +232,7 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
 
   const renderPrerequisites = () => (
     <div className="space-y-4">
-      <div className="glass-panel rounded-xl border border-white/10 p-6 hover:border-white/20 transition-colors">
+      <LuminaPanel className="p-6">
         <h4 className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-4 flex items-center gap-2">
           <span className="w-1 h-4 bg-slate-600 rounded-full"></span>
           You should already know:
@@ -248,7 +245,7 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
             </li>
           ))}
         </ul>
-      </div>
+      </LuminaPanel>
 
       <div className="glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden hover:border-white/20 transition-all duration-300 shadow-xl">
         <div className="absolute top-0 left-0 w-48 h-48 rounded-full blur-[80px] opacity-20 bg-cyan-500" />
@@ -523,13 +520,14 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
 
           {/* Ready button */}
           <div className="text-center">
-            <button
+            <LuminaButton
+              tone="primary"
               onClick={canGoNext ? goToNextSection : undefined}
-              className="px-10 py-4 bg-emerald-600/90 hover:bg-emerald-500 text-white font-medium rounded-xl transition-all duration-300 inline-flex items-center gap-3 shadow-xl hover:shadow-2xl hover:scale-105 border border-white/10"
+              className="px-10 py-4 rounded-xl inline-flex items-center gap-3 hover:scale-105"
             >
               {canGoNext ? 'Next Step' : "I'm Ready to Start!"}
               <ChevronRight size={20} />
-            </button>
+            </LuminaButton>
           </div>
         </div>
       </div>

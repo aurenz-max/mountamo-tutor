@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeftRight } from 'lucide-react';
 import { ImageComparisonData } from '../types';
 import { SoundManager } from '../utils/SoundManager';
+import { LuminaPanel } from '../ui';
 
 interface ImageComparisonProps {
   data: ImageComparisonData;
@@ -178,15 +179,15 @@ const ImageComparison: React.FC<ImageComparisonProps> = ({ data, className = '' 
 
       {/* Detailed Explanation */}
       {data.detailedExplanation && (
-        <div className="mt-6 p-6 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700">
+        <LuminaPanel className="mt-6 p-6">
           <h4 className="text-lg font-semibold text-white mb-3">Understanding the Change</h4>
           <p className="text-slate-300 leading-relaxed">{data.detailedExplanation}</p>
-        </div>
+        </LuminaPanel>
       )}
 
       {/* Key Takeaways */}
       {data.keyTakeaways && data.keyTakeaways.length > 0 && (
-        <div className="mt-4 p-6 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700">
+        <LuminaPanel className="mt-4 p-6">
           <h4 className="text-lg font-semibold text-white mb-3">Key Takeaways</h4>
           <ul className="space-y-2">
             {data.keyTakeaways.map((takeaway, index) => (
@@ -196,7 +197,7 @@ const ImageComparison: React.FC<ImageComparisonProps> = ({ data, className = '' 
               </li>
             ))}
           </ul>
-        </div>
+        </LuminaPanel>
       )}
     </div>
   );

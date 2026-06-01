@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { ItemDetailData } from '@/types/lumina';
 import { generateItemDetail, generateConceptImage } from '@/lib/lumina/geminiClient-api';
+import { LuminaCallout } from '../ui';
 
 interface DetailDrawerProps {
   isOpen: boolean;
@@ -112,22 +113,14 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({ isOpen, onClose, con
                     </div>
 
                     {/* Application */}
-                    <div className="p-4 bg-blue-900/10 border border-blue-500/20 rounded-xl">
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                            <h4 className="text-xs font-bold text-blue-300 uppercase tracking-widest">Real World Application</h4>
-                        </div>
-                        <p className="text-slate-300 text-sm leading-relaxed">{data.realWorldApplication}</p>
-                    </div>
+                    <LuminaCallout accent="blue" label="Real World Application">
+                        {data.realWorldApplication}
+                    </LuminaCallout>
 
                     {/* Fun Fact */}
-                    <div>
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Curiosity Note</h4>
-                        <div className="flex gap-4">
-                            <div className="w-1 bg-gradient-to-b from-purple-500 to-transparent rounded-full"></div>
-                            <p className="text-slate-400 text-sm italic">"{data.funFact}"</p>
-                        </div>
-                    </div>
+                    <LuminaCallout accent="purple" label="Curiosity Note" italic>
+                        "{data.funFact}"
+                    </LuminaCallout>
 
                 </div>
             ) : null}

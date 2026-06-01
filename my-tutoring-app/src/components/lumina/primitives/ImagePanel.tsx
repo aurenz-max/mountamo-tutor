@@ -4,6 +4,7 @@ import { generateConceptImage } from '../service/geminiClient-api';
 import { usePrimitiveEvaluation, type ImagePanelMetrics } from '../evaluation';
 import { SoundManager } from '../utils/SoundManager';
 import html2canvas from 'html2canvas';
+import { LuminaBadge, LuminaButton } from '../ui';
 
 // Annotation data structure
 export interface ImageAnnotation {
@@ -499,9 +500,9 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
                                     {annotation.description}
                                   </p>
                                   {annotation.category && (
-                                    <span className="inline-block mt-2 px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-xs">
+                                    <LuminaBadge className="mt-2">
                                       {annotation.category}
-                                    </span>
+                                    </LuminaBadge>
                                   )}
                                 </div>
                                 {placed && (
@@ -560,17 +561,14 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
 
                       {/* Evaluate Button */}
                       {isInteractive && studentPlacements.length === data.annotations?.length && !hasSubmitted && (
-                        <button
+                        <LuminaButton
+                          tone="primary"
                           onClick={handleEvaluateAnnotations}
                           disabled={isEvaluating}
-                          className={`w-full mt-4 p-3 rounded-lg font-bold transition-all ${
-                            isEvaluating
-                              ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                              : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white'
-                          }`}
+                          className="w-full mt-4 p-3 font-bold"
                         >
                           {isEvaluating ? 'Evaluating with AI...' : 'Submit for Evaluation'}
-                        </button>
+                        </LuminaButton>
                       )}
                     </div>
 

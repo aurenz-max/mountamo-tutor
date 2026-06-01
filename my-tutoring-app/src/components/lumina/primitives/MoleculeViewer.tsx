@@ -3,6 +3,7 @@ import { Atom, FlaskConical, Sparkles } from 'lucide-react';
 import { MoleculeViewerData, MoleculeAtom } from '../types';
 import { MoleculeScene } from './visual-primitives/chemistry/MoleculeScene';
 import { useLuminaAI } from '../hooks/useLuminaAI';
+import { LuminaBadge, LuminaPanel, LuminaCallout } from '../ui';
 
 interface MoleculeViewerProps {
   data: MoleculeViewerData;
@@ -127,29 +128,25 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ data, className = '' })
 
           {/* Molecule Info */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 shadow-inner">
+            <LuminaPanel>
               <div className="flex flex-wrap gap-2 mb-3">
-                <span className="text-xs px-2 py-1 bg-slate-700 rounded-full text-slate-300 border border-slate-600">
-                  {data.category.toUpperCase()}
-                </span>
-                <span className="text-xs px-2 py-1 bg-slate-700 rounded-full text-slate-300 border border-slate-600">
-                  {data.atoms.length} Atoms
-                </span>
-                <span className="text-xs px-2 py-1 bg-slate-700 rounded-full text-slate-300 border border-slate-600">
-                  {data.bonds.length} Bonds
-                </span>
+                <LuminaBadge>{data.category.toUpperCase()}</LuminaBadge>
+                <LuminaBadge>{data.atoms.length} Atoms</LuminaBadge>
+                <LuminaBadge>{data.bonds.length} Bonds</LuminaBadge>
               </div>
               <p className="text-sm text-slate-300 leading-relaxed opacity-90">
                 {data.description}
               </p>
-            </div>
+            </LuminaPanel>
 
             {/* Selected Atom Info */}
             {selectedAtom && (
-              <div className="bg-gradient-to-br from-indigo-900/50 to-slate-900/50 p-4 rounded-xl border border-indigo-500/30 animate-fade-in">
-                <h4 className="text-sm font-semibold text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <Sparkles size={14} /> Selected Atom
-                </h4>
+              <LuminaCallout
+                accent="purple"
+                label="Selected Atom"
+                icon={<Sparkles size={14} />}
+                className="animate-fade-in"
+              >
                 <div className="flex items-center gap-4 mb-3">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold bg-slate-800 border-2 border-indigo-400 shadow-lg shadow-indigo-500/20">
                     {selectedAtom.element}
@@ -174,11 +171,11 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ data, className = '' })
                     {selectedAtom.description}
                   </p>
                 )}
-              </div>
+              </LuminaCallout>
             )}
 
             {/* Bond Statistics */}
-            <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
+            <LuminaPanel>
               <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                 <FlaskConical size={14} /> Bond Analysis
               </h4>
@@ -219,7 +216,7 @@ const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ data, className = '' })
                   );
                 })()}
               </div>
-            </div>
+            </LuminaPanel>
           </div>
 
           {/* Controls Help */}

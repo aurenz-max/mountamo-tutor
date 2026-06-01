@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { LuminaCard, LuminaCardHeader, LuminaCardTitle, LuminaBadge } from '../../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -621,12 +620,12 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
   return (
     <div ref={containerRef} className={`space-y-5 ${className || ''}`}>
       {/* Header */}
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-        <CardHeader className="pb-4">
+      <LuminaCard className="overflow-hidden">
+        <LuminaCardHeader className="pb-4">
           <div className="flex items-center gap-2 mb-3">
-            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-xs">
+            <LuminaBadge accent="indigo" className="text-xs">
               {LAYOUT_LABELS[wrapperLayout] || 'Deep Dive'}
-            </Badge>
+            </LuminaBadge>
             <span className="text-slate-600 text-xs">
               {blocks.length} sections
             </span>
@@ -639,7 +638,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
               </>
             )}
           </div>
-          <CardTitle className="text-2xl font-light text-white tracking-tight">{title}</CardTitle>
+          <LuminaCardTitle className="text-2xl font-light text-white tracking-tight">{title}</LuminaCardTitle>
           {subtitle && (
             <p className="text-slate-400 text-sm mt-1 font-light">{subtitle}</p>
           )}
@@ -647,8 +646,8 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
           <div className="mt-4">
             <ProgressBar blocks={blocks} answeredIds={answeredBlockIds} />
           </div>
-        </CardHeader>
-      </Card>
+        </LuminaCardHeader>
+      </LuminaCard>
 
       {/* Blocks in chosen layout */}
       {renderLayout()}

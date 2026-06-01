@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ScaleSpectrumData } from '../types';
 import { BookOpen } from 'lucide-react';
+import { LuminaPanel } from '../ui';
 
 interface ScaleSpectrumProps {
   data: ScaleSpectrumData;
@@ -126,9 +127,9 @@ export default function ScaleSpectrum({ data, className = '' }: ScaleSpectrumPro
                       <p className="text-xs text-slate-500 italic mb-2">
                         <span className="font-semibold text-amber-500/80">Significance: </span>
                       </p>
-                      <p className="text-sm text-slate-300 bg-slate-900/50 p-4 rounded-lg leading-relaxed">
+                      <LuminaPanel className="text-sm text-slate-300 leading-relaxed">
                         {item.explanation}
-                      </p>
+                      </LuminaPanel>
                     </div>
                   )}
                 </div>
@@ -139,7 +140,7 @@ export default function ScaleSpectrum({ data, className = '' }: ScaleSpectrumPro
       </div>
 
       {/* Summary Stats at bottom */}
-      <div className="mt-16 max-w-4xl mx-auto bg-slate-900/50 border border-slate-700 rounded-lg p-6">
+      <LuminaPanel className="mt-16 max-w-4xl mx-auto p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BookOpen className="w-5 h-5 text-slate-400" />
@@ -151,7 +152,7 @@ export default function ScaleSpectrum({ data, className = '' }: ScaleSpectrumPro
             Click any card to see significance
           </div>
         </div>
-      </div>
+      </LuminaPanel>
     </div>
   );
 }

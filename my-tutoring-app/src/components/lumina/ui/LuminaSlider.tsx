@@ -38,6 +38,8 @@ const rangeFill: Record<LuminaAccent, string> = {
   purple: 'bg-purple-400',
   pink: 'bg-pink-400',
   rose: 'bg-rose-400',
+  indigo: 'bg-indigo-400',
+  teal: 'bg-teal-400',
 };
 
 const thumbBorder: Record<LuminaAccent, string> = {
@@ -49,6 +51,8 @@ const thumbBorder: Record<LuminaAccent, string> = {
   purple: 'border-purple-400',
   pink: 'border-pink-400',
   rose: 'border-rose-400',
+  indigo: 'border-indigo-400',
+  teal: 'border-teal-400',
 };
 
 const thumbGlow: Record<LuminaAccent, string> = {
@@ -60,6 +64,8 @@ const thumbGlow: Record<LuminaAccent, string> = {
   purple: 'ring-purple-400/30',
   pink: 'ring-pink-400/30',
   rose: 'ring-rose-400/30',
+  indigo: 'ring-indigo-400/30',
+  teal: 'ring-teal-400/30',
 };
 
 type RootProps = React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>;

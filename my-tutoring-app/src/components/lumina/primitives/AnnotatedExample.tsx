@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bug, ChevronDown, Lock } from 'lucide-react';
 import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
+import { LuminaBadge } from '../ui';
 import { KaTeX, MixedContent } from './annotated-example/StepContentRenderer';
 import { RichStepCard, LayerIconMap } from './annotated-example/RichStepCard';
 import { InsetRenderer, isGateableInset } from './problem-primitives/insets/InsetRenderer';
@@ -90,9 +90,9 @@ export const AnnotatedExample: React.FC<AnnotatedExampleProps> = ({ data, classN
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="mb-6 space-y-4">
         <div>
-          <Badge variant="outline" className="mb-2 text-blue-400 border-blue-500/30 bg-blue-500/10">
+          <LuminaBadge accent="blue" className="mb-2">
             {data.subject}
-          </Badge>
+          </LuminaBadge>
           <h1 className="text-2xl font-serif font-bold text-white tracking-tight">{data.title}</h1>
         </div>
 

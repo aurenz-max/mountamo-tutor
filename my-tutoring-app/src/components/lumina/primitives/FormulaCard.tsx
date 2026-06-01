@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { EquationData } from '../types';
 import { SoundManager } from '../utils/SoundManager';
+import { LuminaBadge, LuminaCallout, type LuminaAccent } from '../ui';
 import {
   usePrimitiveEvaluation,
   type FormulaCardMetrics,
@@ -31,6 +32,12 @@ interface FormulaCardData extends EquationData {
 interface FormulaCardProps {
   data: FormulaCardData;
 }
+
+// Map relationship types to the shared Lumina accent palette.
+const RELATIONSHIP_ACCENT: Record<string, LuminaAccent> = {
+  proportional: 'emerald',
+  inverse: 'rose',
+};
 
 export const FormulaCard: React.FC<FormulaCardProps> = ({ data }) => {
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
@@ -400,13 +407,12 @@ export const FormulaCard: React.FC<FormulaCardProps> = ({ data }) => {
               {relationships.map((rel, idx) => (
                 <div key={idx} className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
                   <div className="flex items-start gap-3">
-                    <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                      rel.type === 'proportional' ? 'bg-emerald-500/30 text-emerald-200' :
-                      rel.type === 'inverse' ? 'bg-rose-500/30 text-rose-200' :
-                      'bg-purple-500/30 text-purple-200'
-                    }`}>
+                    <LuminaBadge
+                      accent={RELATIONSHIP_ACCENT[rel.type ?? ''] ?? 'purple'}
+                      className="uppercase tracking-wider"
+                    >
                       {rel.type || 'relationship'}
-                    </div>
+                    </LuminaBadge>
                     <p className="text-sm text-slate-200 leading-relaxed flex-1">{rel.description}</p>
                   </div>
                 </div>
@@ -446,17 +452,13 @@ export const FormulaCard: React.FC<FormulaCardProps> = ({ data }) => {
         {/* Application Context */}
         {data.applicationContext && (
           <div className="relative z-10">
-            <div className="p-5 bg-indigo-900/30 border border-indigo-500/30 rounded-xl">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/30 flex items-center justify-center flex-shrink-0">
-                  <span className="text-indigo-300 text-lg">📚</span>
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-bold text-indigo-300 uppercase tracking-wide mb-2">When to Use This Formula</h4>
-                  <p className="text-sm text-slate-300 leading-relaxed">{data.applicationContext}</p>
-                </div>
-              </div>
-            </div>
+            <LuminaCallout
+              accent="blue"
+              label="When to Use This Formula"
+              icon={<span className="text-lg">📚</span>}
+            >
+              <p className="leading-relaxed">{data.applicationContext}</p>
+            </LuminaCallout>
           </div>
         )}
       </div>

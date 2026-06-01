@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { FlashcardDeckData, FlashcardItem } from '../types';
 import { Check, X, BookOpen, Shuffle, AlertCircle } from 'lucide-react';
 import { SoundManager } from '../utils/SoundManager';
+import { LuminaButton, LuminaPanel } from '../ui';
 
 interface FlashcardDeckProps {
   data: FlashcardDeckData;
@@ -143,19 +144,21 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
           </div>
 
           <div className="flex gap-4">
-            <button
+            <LuminaButton
               onClick={handleStart}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg shadow-indigo-500/20"
+              tone="primary"
+              className="px-8 py-4 h-auto rounded-xl font-bold text-lg"
             >
               Start Studying
-            </button>
-            <button
+            </LuminaButton>
+            <LuminaButton
               onClick={handleShuffle}
-              className="px-8 py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold text-lg transition-all flex items-center gap-2"
+              tone="ghost"
+              className="px-8 py-4 h-auto rounded-xl font-bold text-lg flex items-center gap-2"
             >
               <Shuffle size={20} />
               Shuffle
-            </button>
+            </LuminaButton>
           </div>
 
           <p className="mt-8 text-slate-500 text-sm">
@@ -314,32 +317,34 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
           <h2 className="text-3xl font-bold text-white mb-8">Session Complete!</h2>
 
           <div className="grid grid-cols-2 gap-4 w-full mb-8">
-            <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl flex flex-col items-center">
+            <LuminaPanel className="p-6 rounded-2xl flex flex-col items-center">
               <AlertCircle className="text-yellow-400 mb-2" size={32} />
               <span className="text-3xl font-bold text-white">{percentage}%</span>
               <span className="text-slate-400 text-sm">Accuracy</span>
-            </div>
-            <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl flex flex-col items-center">
+            </LuminaPanel>
+            <LuminaPanel className="p-6 rounded-2xl flex flex-col items-center">
               <Check className="text-emerald-400 mb-2" size={32} />
               <span className="text-3xl font-bold text-white">{stats.correct}/{total}</span>
               <span className="text-slate-400 text-sm">Correct Cards</span>
-            </div>
+            </LuminaPanel>
           </div>
 
           <div className="flex flex-col gap-3 w-full">
-            <button
+            <LuminaButton
               onClick={handleShuffle}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2"
+              tone="primary"
+              className="w-full py-4 h-auto rounded-xl font-bold text-lg flex items-center justify-center gap-2"
             >
               <Shuffle size={20} />
               Shuffle & Review Again
-            </button>
-            <button
+            </LuminaButton>
+            <LuminaButton
               onClick={() => setPhase('ready')}
-              className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl font-bold text-lg transition-all border border-slate-700"
+              tone="subtle"
+              className="w-full py-4 h-auto rounded-xl font-bold text-lg"
             >
               Back to Start
-            </button>
+            </LuminaButton>
           </div>
         </div>
       </div>

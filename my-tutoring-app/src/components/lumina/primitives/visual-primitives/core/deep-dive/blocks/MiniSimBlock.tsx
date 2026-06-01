@@ -1,11 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import type { MiniSimBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
+import {
+  LuminaSlider,
+  LuminaAnswerChoice,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaBadge,
+  type AnswerChoiceState,
+} from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 
 interface MiniSimBlockProps {
@@ -101,6 +107,8 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
   const renderPrediction = () => {
     if (!prediction) return null;
 
+    const wasCorrect = predictionAnswer === prediction.correctIndex;
+
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2 mb-1">
@@ -114,70 +122,56 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
         </p>
         <div className="grid gap-2">
           {prediction.options.map((opt, i) => {
-            const isSelected = predictionAnswer === i;
-            const isCorrect = i === prediction.correctIndex;
-            const showResult = predictionSubmitted;
-
-            let optionStyle =
-              'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 cursor-pointer';
-            if (isSelected && !showResult) {
-              optionStyle = 'bg-cyan-500/15 border-cyan-400/40 text-cyan-100';
-            }
-            if (showResult && isCorrect) {
-              optionStyle = 'bg-emerald-500/15 border-emerald-400/40 text-emerald-200';
-            }
-            if (showResult && isSelected && !isCorrect) {
-              optionStyle = 'bg-rose-500/15 border-rose-400/40 text-rose-200';
+            let state: AnswerChoiceState;
+            if (!predictionSubmitted) {
+              state = predictionAnswer === i ? 'selected' : 'idle';
+            } else if (i === prediction.correctIndex) {
+              state = 'correct';
+            } else if (i === predictionAnswer) {
+              state = 'incorrect';
+            } else {
+              state = 'dimmed';
             }
 
             return (
-              <button
+              <LuminaAnswerChoice
                 key={i}
-                onClick={() => handlePredictionSelect(i)}
+                state={state}
                 disabled={predictionSubmitted}
-                className={`text-left px-4 py-2.5 rounded-lg border text-sm transition-all ${optionStyle}`}
+                onClick={() => handlePredictionSelect(i)}
+                className="p-2.5 text-sm"
               >
                 <span className="text-slate-500 mr-2 font-mono text-xs">
                   {String.fromCharCode(65 + i)}.
                 </span>
                 {opt}
-              </button>
+              </LuminaAnswerChoice>
             );
           })}
         </div>
 
         {!predictionSubmitted && (
-          <button
+          <LuminaActionButton
+            action="check"
             onClick={handlePredictionSubmit}
             disabled={predictionAnswer === null}
-            className="px-4 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-500/20 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Lock In Prediction
-          </button>
+          </LuminaActionButton>
         )}
 
         {predictionSubmitted && (
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Badge
-                className={
-                  predictionAnswer === prediction.correctIndex
-                    ? predictionAttempts === 1
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                      : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                    : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                }
-              >
-                {predictionAnswer === prediction.correctIndex
-                  ? predictionAttempts === 1
-                    ? 'Correct!'
-                    : 'Correct (2nd try)'
-                  : 'Incorrect'}
-              </Badge>
-            </div>
-            <p className="text-sm text-slate-400 leading-relaxed">
+            <LuminaFeedbackCard
+              status={wasCorrect ? 'correct' : 'incorrect'}
+              label={
+                wasCorrect
+                  ? predictionAttempts === 1 ? 'Correct!' : 'Correct (2nd try)'
+                  : 'Answer revealed'
+              }
+            >
               {prediction.explanation}
-            </p>
+            </LuminaFeedbackCard>
             <p className="text-xs text-cyan-400/60 mt-2 font-mono uppercase tracking-wider">
               Now try it yourself below
             </p>
@@ -231,16 +225,13 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <Slider
+              <LuminaSlider
+                accent="cyan"
                 value={[sliderValue]}
-                onValueChange={([v]) => {
-                  SoundManager.tick();
-                  setSliderValue(v);
-                }}
+                onValueChange={([v]) => setSliderValue(v)}
                 min={sliderMin}
                 max={sliderMax}
                 step={sliderStep}
-                className="[&_[role=slider]]:bg-cyan-400 [&_[role=slider]]:border-cyan-500 [&_.range]:bg-cyan-500/40"
               />
               <div className="flex justify-between text-xs text-slate-500">
                 <span>
@@ -296,13 +287,13 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
             <span className="font-medium text-slate-300">Your prediction:</span>{' '}
             {prediction.options[predictionAnswer ?? prediction.correctIndex]}
             {predictionAnswer === prediction.correctIndex ? (
-              <Badge className="ml-2 bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs">
+              <LuminaBadge accent="emerald" className="ml-2 text-xs">
                 Correct
-              </Badge>
+              </LuminaBadge>
             ) : (
-              <Badge className="ml-2 bg-rose-500/20 text-rose-300 border-rose-500/30 text-xs">
+              <LuminaBadge accent="rose" className="ml-2 text-xs">
                 Revised
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
         )}

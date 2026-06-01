@@ -12,11 +12,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
+
+import { LuminaButton, LuminaBadge, LuminaCallout } from '../ui';
 
 interface MediaPlayerProps {
   data: MediaPlayerData;
@@ -140,7 +141,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
         score,
         attempts: Math.max(attempts, 1),
         firstTry: correct && attempts === 1,
-        icon: correct ? '\u2705' : '\u274C',
+        icon: correct ? '✅' : '❌',
         accentColor: correct ? 'emerald' : 'amber',
       });
     }
@@ -449,14 +450,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
           />
 
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
+            <LuminaButton
               onClick={handleReset}
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 rounded-xl gap-2"
+              className="rounded-xl gap-2"
             >
               <RotateCcw className="h-4 w-4" />
               Try Again
-            </Button>
+            </LuminaButton>
           </div>
         </div>
       </div>
@@ -733,16 +733,17 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
                       {/* Error Feedback */}
                       {feedback[currentIndex] && (
-                        <Alert className="bg-red-900/20 border-red-500/30 text-red-400">
-                          <XCircle className="h-4 w-4" />
-                          <AlertTitle className="text-red-400">Incorrect</AlertTitle>
-                          <AlertDescription>
-                            <p className="text-red-400/90 text-sm">{feedback[currentIndex]}</p>
-                            <Badge variant="outline" className="mt-2 border-red-500/30 text-red-400/80 text-xs">
-                              Attempt {segmentAttempts[currentIndex] || 0} of {MAX_ATTEMPTS_PER_SEGMENT}
-                            </Badge>
-                          </AlertDescription>
-                        </Alert>
+                        <LuminaCallout
+                          accent="rose"
+                          label="Incorrect"
+                          icon={<XCircle className="h-4 w-4" />}
+                          className="p-4"
+                        >
+                          <p className="text-sm">{feedback[currentIndex]}</p>
+                          <LuminaBadge accent="rose" className="mt-2 text-xs">
+                            Attempt {segmentAttempts[currentIndex] || 0} of {MAX_ATTEMPTS_PER_SEGMENT}
+                          </LuminaBadge>
+                        </LuminaCallout>
                       )}
                     </CardContent>
                   </Card>
@@ -750,24 +751,28 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
                 {/* Success Feedback — completed phase */}
                 {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'completed' && (
-                  <Alert className="mt-6 bg-emerald-900/20 border-emerald-500/30">
-                    <CheckCircle className="h-4 w-4 text-emerald-400" />
-                    <AlertTitle className="text-emerald-400">Correct!</AlertTitle>
+                  <LuminaCallout
+                    accent="emerald"
+                    label="Correct!"
+                    icon={<CheckCircle className="h-4 w-4" />}
+                    className="mt-6 p-4"
+                  >
                     {currentSegment.knowledgeCheck.explanation && (
-                      <AlertDescription className="text-slate-300 text-sm">
-                        {currentSegment.knowledgeCheck.explanation}
-                      </AlertDescription>
+                      <p className="text-sm">{currentSegment.knowledgeCheck.explanation}</p>
                     )}
-                  </Alert>
+                  </LuminaCallout>
                 )}
 
                 {/* Max Attempts Reached — show correct answer */}
                 {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'max-attempts-reached' && (
-                  <Alert className="mt-6 bg-amber-900/20 border-amber-500/30">
-                    <AlertCircle className="h-4 w-4 text-amber-400" />
-                    <AlertTitle className="text-amber-400">Maximum Attempts Reached</AlertTitle>
-                    <AlertDescription className="space-y-3">
-                      <p className="text-slate-300 text-sm">
+                  <LuminaCallout
+                    accent="amber"
+                    label="Maximum Attempts Reached"
+                    icon={<AlertCircle className="h-4 w-4" />}
+                    className="mt-6 p-4"
+                  >
+                    <div className="space-y-3">
+                      <p className="text-sm">
                         The correct answer is:{' '}
                         <strong className="text-white">
                           {currentSegment.knowledgeCheck.options[currentSegment.knowledgeCheck.correctOptionIndex]}
@@ -778,19 +783,15 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
                           {currentSegment.knowledgeCheck.explanation}
                         </p>
                       )}
-                      <Button
-                        variant="ghost"
+                      <LuminaButton
                         size="lg"
                         onClick={() => handleSkipAfterMaxAttempts(currentIndex)}
-                        className="group w-full py-3 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 text-white font-semibold transition-all transform hover:scale-[1.02] active:scale-95 relative overflow-hidden"
+                        className="w-full py-3 rounded-xl font-semibold"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                        <span className="relative z-10">
-                          {currentIndex < data.segments.length - 1 ? 'Continue to Next Segment' : 'Complete Lesson'}
-                        </span>
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
+                        {currentIndex < data.segments.length - 1 ? 'Continue to Next Segment' : 'Complete Lesson'}
+                      </LuminaButton>
+                    </div>
+                  </LuminaCallout>
                 )}
               </div>
             </ScrollArea>

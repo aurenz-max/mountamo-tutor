@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { LuminaBadge, LuminaButton, LuminaPanel } from '../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -244,21 +244,21 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-4">
-              <Badge variant="outline" className="border-white/20 text-slate-300 text-sm">
+              <LuminaBadge className="text-sm">
                 {correct}/{results.length} words built
-              </Badge>
-              <Badge variant="outline" className="border-white/20 text-slate-300 text-sm">
+              </LuminaBadge>
+              <LuminaBadge className="text-sm">
                 {accuracy}% accuracy
-              </Badge>
+              </LuminaBadge>
             </div>
             {/* Word review */}
             <div className="space-y-2 mt-3">
               {targets.map((target) => {
                 const r = results.find((res) => res.challengeId === target.word);
                 return (
-                  <div
+                  <LuminaPanel
                     key={target.word}
-                    className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5"
+                    className="flex items-center gap-3 p-2"
                   >
                     {r?.correct ? (
                       <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -268,11 +268,11 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
                     <span className="font-semibold text-slate-100">{target.word}</span>
                     <span className="text-slate-400 text-sm truncate">{target.definition}</span>
                     {r && (
-                      <Badge variant="outline" className="ml-auto border-white/10 text-slate-400 text-xs shrink-0">
+                      <LuminaBadge className="ml-auto text-xs shrink-0">
                         {r.attempts === 1 ? '1st try' : `${r.attempts} tries`}
-                      </Badge>
+                      </LuminaBadge>
                     )}
-                  </div>
+                  </LuminaPanel>
                 );
               })}
             </div>
@@ -297,9 +297,9 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
               <Puzzle className="w-5 h-5 text-purple-400" />
               {data.title}
             </CardTitle>
-            <Badge variant="outline" className="border-white/20 text-slate-400">
+            <LuminaBadge>
               {currentIndex + 1} / {targets.length}
-            </Badge>
+            </LuminaBadge>
           </div>
         </CardHeader>
         <CardContent>
@@ -316,24 +316,24 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
           </div>
 
           {/* Clue — definition-based hint, never the word itself */}
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-4">
+          <LuminaPanel className="mb-4">
             <p className="text-sm text-slate-400 font-mono uppercase tracking-wider mb-1">
               Build the word that means:
             </p>
             <p className="text-slate-100 text-lg font-medium">{currentTarget.hint}</p>
-          </div>
+          </LuminaPanel>
 
           {/* Hint toggle */}
           {!revealedHint && !showCorrect && (
-            <Button
-              variant="ghost"
+            <LuminaButton
+              tone="subtle"
               size="sm"
-              className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 mb-4"
+              className="text-slate-400 mb-4"
               onClick={() => setRevealedHint(true)}
             >
               <Lightbulb className="w-3.5 h-3.5 mr-1.5" />
               Show context
-            </Button>
+            </LuminaButton>
           )}
           <AnimatePresence>
             {revealedHint && !showCorrect && (
@@ -440,11 +440,7 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
           {/* Action buttons */}
           <div className="flex gap-3">
             {showCorrect ? (
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
-                onClick={handleNext}
-              >
+              <LuminaButton onClick={handleNext}>
                 {currentIndex + 1 < targets.length ? (
                   <>
                     Next Word <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -452,26 +448,25 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
                 ) : (
                   'See Results'
                 )}
-              </Button>
+              </LuminaButton>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100 disabled:opacity-40"
+                <LuminaButton
+                  className="disabled:opacity-40"
                   disabled={!allSlotsFilled}
                   onClick={handleCheck}
                 >
                   Check
-                </Button>
+                </LuminaButton>
                 {showIncorrect && (
-                  <Button
-                    variant="ghost"
-                    className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400"
+                  <LuminaButton
+                    tone="subtle"
+                    className="text-slate-400"
                     onClick={handleRetry}
                   >
                     <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                     Clear
-                  </Button>
+                  </LuminaButton>
                 )}
               </>
             )}

@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Badge } from '@/components/ui/badge';
 import type { FillInBlankBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
+import {
+  LuminaChip,
+  LuminaChipBank,
+  LuminaFillBlankSlot,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  type FillBlankState,
+} from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 
 interface FillInBlankBlockProps {
@@ -28,6 +35,8 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
   // Split sentence into words for rendering with blank
   const words = sentence.split(' ');
 
+  const isCorrect = selectedWord?.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+
   const handleWordSelect = useCallback(
     (word: string) => {
       if (answered) return;
@@ -42,9 +51,9 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
 
-    const isCorrect = selectedWord.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+    const correct = selectedWord.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
 
-    if (isCorrect) {
+    if (correct) {
       SoundManager.playCorrect();
       setAnswered(true);
       setShowResult(true);
@@ -71,24 +80,23 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
             // Render the blank slot — word may be "______" or "______," with trailing punct
             const trailingPunct = word.replace(/^_+/, '');
             const displayWord = answered ? correctAnswer : selectedWord;
-            const isCorrectAnswer = answered && selectedWord?.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
-            const isWrongRevealed = answered && !isCorrectAnswer;
+            const isWrongRevealed = answered && !isCorrect;
+
+            let slotState: FillBlankState;
+            if (answered) {
+              slotState = isCorrect ? 'correct' : 'incorrect';
+            } else {
+              slotState = selectedWord ? 'filled' : 'empty';
+            }
 
             return (
               <span key={i}>
-                <span
-                  className={`inline-block min-w-[80px] px-3 py-0.5 mx-1 rounded-lg border-b-2 text-center font-medium transition-all ${
-                    answered
-                      ? isCorrectAnswer
-                        ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200'
-                        : 'bg-purple-500/20 border-purple-400/50 text-purple-200'
-                      : displayWord
-                        ? 'bg-purple-500/15 border-purple-400/40 text-purple-100'
-                        : 'bg-white/5 border-white/20 text-slate-500'
-                  }`}
-                >
-                  {displayWord || '______'}
-                </span>
+                <LuminaFillBlankSlot
+                  state={slotState}
+                  value={displayWord ?? undefined}
+                  placeholder="______"
+                  className="min-w-[80px] px-3 py-0.5"
+                />
                 {trailingPunct && <span>{trailingPunct}</span>}
                 {isWrongRevealed && (
                   <span className="text-xs text-slate-500 ml-1">(correct)</span>
@@ -113,57 +121,43 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
 
         {/* Word bank */}
         {!answered && (
-          <div>
-            <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-mono">Word Bank</p>
-            <div className="flex flex-wrap gap-2">
-              {wordBank.map((word, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleWordSelect(word)}
-                  disabled={answered}
-                  className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
-                    selectedWord === word
-                      ? 'bg-purple-500/20 border-purple-400/40 text-purple-100'
-                      : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 cursor-pointer'
-                  }`}
-                >
-                  {word}
-                </button>
-              ))}
-            </div>
-          </div>
+          <LuminaChipBank label="Word Bank">
+            {wordBank.map((word, i) => (
+              <LuminaChip
+                key={i}
+                state={selectedWord === word ? 'selected' : 'idle'}
+                onClick={() => handleWordSelect(word)}
+                disabled={answered}
+              >
+                {word}
+              </LuminaChip>
+            ))}
+          </LuminaChipBank>
         )}
 
         {/* Submit button */}
         {!answered && (
-          <button
-            onClick={handleSubmit}
-            disabled={!selectedWord}
-            className="px-4 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-200 hover:bg-purple-500/20 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Check Answer
-          </button>
+          <LuminaActionButton action="check" onClick={handleSubmit} disabled={!selectedWord} />
         )}
 
-        {/* Result badge */}
+        {/* Result */}
         {showResult && (
-          <div className="flex items-center gap-2">
-            <Badge
-              className={
-                selectedWord?.toLowerCase().trim() === correctAnswer.toLowerCase().trim() && attempts <= 1
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                  : selectedWord?.toLowerCase().trim() === correctAnswer.toLowerCase().trim()
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                    : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+          <div className="space-y-1">
+            <LuminaFeedbackCard
+              status={isCorrect ? 'correct' : 'incorrect'}
+              label={
+                isCorrect
+                  ? attempts === 1 ? 'Correct!' : 'Correct (2nd try)'
+                  : 'Answer revealed'
               }
             >
-              {selectedWord?.toLowerCase().trim() === correctAnswer.toLowerCase().trim()
-                ? attempts === 1 ? 'Correct!' : 'Correct (2nd try)'
-                : 'Incorrect'}
-            </Badge>
-            <span className="text-xs text-slate-500">
+              {isCorrect
+                ? 'You completed the sentence correctly.'
+                : `The correct word was “${correctAnswer}”.`}
+            </LuminaFeedbackCard>
+            <p className="text-xs text-slate-500 px-1">
               {attempts} {attempts === 1 ? 'attempt' : 'attempts'}
-            </span>
+            </p>
           </div>
         )}
       </div>

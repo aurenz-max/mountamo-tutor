@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Printer, Clock, Package, CheckCircle2, Circle, ChevronDown, ChevronUp, Lightbulb, Camera, MessageSquare, AlertTriangle, Sparkles, BookOpen } from 'lucide-react';
+import { Printer, Clock, Package, CheckCircle2, ChevronDown, ChevronUp, Lightbulb, Camera, MessageSquare, AlertTriangle, Sparkles, BookOpen } from 'lucide-react';
 import { TakeHomeActivityData } from '../types';
+import { LuminaBadge, LuminaPanel, LuminaCallout, LuminaButton } from '../ui';
 
 interface TakeHomeActivityProps {
   data: TakeHomeActivityData;
@@ -75,13 +76,10 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
               <h1 className="text-3xl font-bold text-slate-50 mb-2">{data.title}</h1>
               <p className="text-slate-400">{data.topic}</p>
             </div>
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 glass-panel border border-white/10 hover:border-white/30 rounded-xl text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-            >
+            <LuminaButton onClick={handlePrint} size="sm" className="gap-2 rounded-xl">
               <Printer size={16} />
               Print
-            </button>
+            </LuminaButton>
           </div>
 
           <div className="flex flex-wrap gap-4 text-sm">
@@ -130,7 +128,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-slate-200">{material.item}</span>
-                    <span className="text-xs bg-emerald-900/50 text-emerald-400 px-2 py-0.5 rounded">Required</span>
+                    <LuminaBadge accent="emerald" className="text-xs">Required</LuminaBadge>
                   </div>
                   {material.substitutes && material.substitutes.length > 0 && (
                     <p className="text-xs text-slate-500 mt-1">
@@ -165,7 +163,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-slate-300">{material.item}</span>
-                          <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded">Optional</span>
+                          <LuminaBadge className="text-xs">Optional</LuminaBadge>
                         </div>
                       </div>
                       <span className="text-slate-500 text-sm">{material.quantity}</span>
@@ -179,11 +177,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
 
         {/* Safety Notes */}
         {data.safetyNotes && data.safetyNotes.length > 0 && (
-          <div className="bg-amber-950/30 rounded-xl p-5 mb-6 border border-amber-900/50">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-amber-400 mb-3">
-              <AlertTriangle size={18} />
-              Safety Notes
-            </h2>
+          <LuminaCallout accent="amber" label="Safety Notes" icon={<AlertTriangle size={18} />} className="mb-6">
             <ul className="space-y-2">
               {data.safetyNotes.map((note, idx) => (
                 <li key={idx} className="flex items-start gap-3 text-amber-200/80">
@@ -192,7 +186,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
                 </li>
               ))}
             </ul>
-          </div>
+          </LuminaCallout>
         )}
 
         {/* Progress Bar */}
@@ -253,17 +247,15 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
                     <p className="text-slate-300 mb-4">{step.instruction}</p>
 
                     {step.tip && (
-                      <div className="flex items-start gap-2 text-sm text-sky-400 bg-sky-950/30 rounded-lg p-3 mb-3">
-                        <Lightbulb size={16} className="flex-shrink-0 mt-0.5" />
-                        <span>{step.tip}</span>
-                      </div>
+                      <LuminaCallout accent="cyan" label="Tip" icon={<Lightbulb size={16} />} className="mb-3 p-4">
+                        {step.tip}
+                      </LuminaCallout>
                     )}
 
                     {step.scienceNote && (
-                      <div className="flex items-start gap-2 text-sm text-violet-400 bg-violet-950/30 rounded-lg p-3 mb-3">
-                        <Sparkles size={16} className="flex-shrink-0 mt-0.5" />
-                        <span><strong>Science:</strong> {step.scienceNote}</span>
-                      </div>
+                      <LuminaCallout accent="purple" label="Science" icon={<Sparkles size={16} />} className="mb-3 p-4">
+                        {step.scienceNote}
+                      </LuminaCallout>
                     )}
 
                     {step.checkpoint && (
@@ -345,11 +337,11 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
               Document Your Work
             </h2>
             <p className="text-slate-300 mb-3">{data.documentationPrompt.instruction}</p>
-            <div className="glass-panel rounded-lg p-3 border border-white/10">
+            <LuminaPanel>
               <p className="text-sm text-slate-400 italic">
                 Suggested caption: "{data.documentationPrompt.suggestedCaption}"
               </p>
-            </div>
+            </LuminaPanel>
           </div>
         )}
 
@@ -362,19 +354,15 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
             </h2>
             <div className="space-y-4">
               {data.extensions.map((ext, idx) => (
-                <div key={idx} className="p-4 glass-panel rounded-xl border border-white/10">
+                <LuminaPanel key={idx}>
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="font-medium text-slate-200">{ext.title}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      ext.difficulty === 'advanced'
-                        ? 'bg-rose-900/50 text-rose-400'
-                        : 'bg-amber-900/50 text-amber-400'
-                    }`}>
+                    <LuminaBadge accent={ext.difficulty === 'advanced' ? 'rose' : 'amber'} className="text-xs">
                       {ext.difficulty}
-                    </span>
+                    </LuminaBadge>
                   </div>
                   <p className="text-sm text-slate-400">{ext.description}</p>
-                </div>
+                </LuminaPanel>
               ))}
             </div>
           </div>

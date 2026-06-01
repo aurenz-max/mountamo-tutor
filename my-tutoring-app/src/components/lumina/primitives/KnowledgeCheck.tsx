@@ -6,11 +6,11 @@ import { ProblemRenderer } from '../config/problemTypeRegistry';
 import { useLuminaAI } from '../hooks/useLuminaAI';
 import { ScratchPadDrawer } from '../components/scratch-pad/ScratchPadDrawer';
 import type { AIAnalysisResult } from '../components/scratch-pad/types';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Lightbulb, ChevronDown, ChevronUp, Sparkles, Loader2, PenLine } from 'lucide-react';
 import { SoundManager } from '../utils/SoundManager';
+import { LuminaPanel, LuminaButton } from '../ui';
 
 /**
  * KnowledgeCheck Component
@@ -151,57 +151,54 @@ const AIHelperCard: React.FC<AIHelperCardProps> = ({
       </CollapsibleTrigger>
 
       <CollapsibleContent>
-        <Card className="mt-2 backdrop-blur-xl bg-slate-900/40 border-amber-500/10">
-          <CardContent className="pt-4 pb-4 space-y-3">
-            {/* Existing hints */}
-            {hintMessages.map((hint, i) => (
-              hint && (
-                <div key={i} className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center mt-0.5">
-                    <Sparkles className="w-3 h-3 text-amber-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-mono text-amber-500/60 mb-1">
-                      Hint {i + 1}
-                    </p>
-                    <p className="text-sm text-slate-300 leading-relaxed">
-                      {hint}
-                    </p>
-                  </div>
+        <LuminaPanel className="mt-2 space-y-3 border-amber-500/10">
+          {/* Existing hints */}
+          {hintMessages.map((hint, i) => (
+            hint && (
+              <div key={i} className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center mt-0.5">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
                 </div>
-              )
-            ))}
-
-            {/* Loading state */}
-            {isAIResponding && hintLevel > 0 && !hintMessages[hintLevel - 1] && (
-              <div className="flex items-center gap-2 text-amber-400/60">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Thinking...</span>
+                <div className="flex-1">
+                  <p className="text-xs font-mono text-amber-500/60 mb-1">
+                    Hint {i + 1}
+                  </p>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    {hint}
+                  </p>
+                </div>
               </div>
-            )}
+            )
+          ))}
 
-            {/* Request hint button */}
-            {hintLevel < maxHintLevel ? (
-              <Button
-                onClick={handleRequestHint}
-                disabled={isAIResponding}
-                variant="ghost"
-                className="w-full bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 text-amber-300 text-sm rounded-lg"
-              >
-                <Lightbulb className="w-4 h-4 mr-2" />
-                {hintLevel === 0
-                  ? 'Get a hint'
-                  : hintLevel === 1
-                    ? 'I need more help'
-                    : 'Walk me through it'}
-              </Button>
-            ) : (
-              <p className="text-xs text-slate-500 text-center italic">
-                All hints used. Give it your best try!
-              </p>
-            )}
-          </CardContent>
-        </Card>
+          {/* Loading state */}
+          {isAIResponding && hintLevel > 0 && !hintMessages[hintLevel - 1] && (
+            <div className="flex items-center gap-2 text-amber-400/60">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Thinking...</span>
+            </div>
+          )}
+
+          {/* Request hint button */}
+          {hintLevel < maxHintLevel ? (
+            <LuminaButton
+              onClick={handleRequestHint}
+              disabled={isAIResponding}
+              className="w-full"
+            >
+              <Lightbulb className="w-4 h-4 mr-2" />
+              {hintLevel === 0
+                ? 'Get a hint'
+                : hintLevel === 1
+                  ? 'I need more help'
+                  : 'Walk me through it'}
+            </LuminaButton>
+          ) : (
+            <p className="text-xs text-slate-500 text-center italic">
+              All hints used. Give it your best try!
+            </p>
+          )}
+        </LuminaPanel>
       </CollapsibleContent>
     </Collapsible>
   );
@@ -450,19 +447,18 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
                         totalProblems={problemCount}
                       />
                     </div>
-                    <Button
-                      variant="ghost"
+                    <LuminaButton
                       onClick={() => {
                         SoundManager.tap();
                         setScratchPadProblemTopic(getQuestionText(problem));
                         setIsScratchPadOpen(o => !o);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-2.5 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 hover:border-purple-500/50 rounded-xl transition-all shrink-0"
+                      className="flex items-center gap-1.5 shrink-0"
                       title="Open Scratch Pad"
                     >
                       <PenLine className="w-4 h-4 text-purple-400" />
                       <span className="text-xs font-medium text-purple-300">Scratch Pad</span>
-                    </Button>
+                    </LuminaButton>
                   </div>
                 </div>
 

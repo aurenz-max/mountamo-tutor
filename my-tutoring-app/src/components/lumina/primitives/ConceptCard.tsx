@@ -3,6 +3,7 @@ import { ConceptCardData } from '../types';
 import { generateConceptImage } from '../service/geminiClient-api';
 import { useLuminaAI } from '../hooks/useLuminaAI';
 import { SoundManager } from '../utils/SoundManager';
+import { LuminaPanel, LuminaBadge, LuminaCallout } from '../ui';
 
 interface ConceptCardProps {
   data: ConceptCardData;
@@ -220,31 +221,27 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceI
                   </h3>
                   <div className="space-y-3">
                     {data.conceptElements.map((el, i) => (
-                      <div key={i} className="bg-white/5 rounded-lg p-3 border border-white/10 hover:border-white/20 transition-colors">
+                      <LuminaPanel key={i} className="p-3">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-base font-bold text-white">{el.label}</span>
-                          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                            el.type === 'primary' ? 'bg-blue-500/20 text-blue-300' :
-                            el.type === 'highlight' ? 'bg-purple-500/20 text-purple-300' :
-                            'bg-slate-500/20 text-slate-300'
-                          }`}>
+                          <LuminaBadge
+                            accent={el.type === 'primary' ? 'blue' : el.type === 'highlight' ? 'purple' : undefined}
+                            className="text-[10px] uppercase tracking-wider"
+                          >
                             {el.type}
-                          </span>
+                          </LuminaBadge>
                         </div>
                         <p className="text-sm text-slate-300 leading-relaxed">{el.detail}</p>
-                      </div>
+                      </LuminaPanel>
                     ))}
                   </div>
                 </div>
               )}
 
               {/* Curiosity Note */}
-              <div>
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Curiosity Note</h3>
-                <p className="text-sm text-emerald-300 leading-relaxed border-l-2 border-emerald-500/50 pl-4 font-mono">
-                  {data.curiosityNote}
-                </p>
-              </div>
+              <LuminaCallout accent="emerald" label="Curiosity Note">
+                {data.curiosityNote}
+              </LuminaCallout>
             </div>
 
             <div className="mt-auto pt-4 text-center border-t border-white/5">

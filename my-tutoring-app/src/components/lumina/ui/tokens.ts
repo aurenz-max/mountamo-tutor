@@ -49,6 +49,8 @@ export const LUMINA_ACCENTS = [
   'purple',
   'pink',
   'rose',
+  'indigo',
+  'teal',
 ] as const;
 
 export type LuminaAccent = (typeof LUMINA_ACCENTS)[number];
@@ -63,6 +65,8 @@ export const accentText: Record<LuminaAccent, string> = {
   purple: 'text-purple-300',
   pink: 'text-pink-300',
   rose: 'text-rose-300',
+  indigo: 'text-indigo-300',
+  teal: 'text-teal-300',
 };
 
 export const accentBorder: Record<LuminaAccent, string> = {
@@ -74,6 +78,8 @@ export const accentBorder: Record<LuminaAccent, string> = {
   purple: 'border-purple-400/30',
   pink: 'border-pink-400/30',
   rose: 'border-rose-400/30',
+  indigo: 'border-indigo-400/30',
+  teal: 'border-teal-400/30',
 };
 
 export const accentGlow: Record<LuminaAccent, string> = {
@@ -85,6 +91,8 @@ export const accentGlow: Record<LuminaAccent, string> = {
   purple: 'bg-purple-500/10',
   pink: 'bg-pink-500/10',
   rose: 'bg-rose-500/10',
+  indigo: 'bg-indigo-500/10',
+  teal: 'bg-teal-500/10',
 };
 
 // ── Callout treatment ───────────────────────────────────────────────────
@@ -103,6 +111,8 @@ export const accentSolidBg: Record<LuminaAccent, string> = {
   purple: 'bg-purple-500',
   pink: 'bg-pink-500',
   rose: 'bg-rose-500',
+  indigo: 'bg-indigo-500',
+  teal: 'bg-teal-500',
 };
 
 // Soft tinted panel background — the callout body.
@@ -115,6 +125,8 @@ export const accentSoftBg: Record<LuminaAccent, string> = {
   purple: 'bg-purple-500/5',
   pink: 'bg-pink-500/5',
   rose: 'bg-rose-500/5',
+  indigo: 'bg-indigo-500/5',
+  teal: 'bg-teal-500/5',
 };
 
 // Icon-chip background — the rounded square holding the callout icon.
@@ -127,6 +139,8 @@ export const accentChipBg: Record<LuminaAccent, string> = {
   purple: 'bg-purple-500/20',
   pink: 'bg-pink-500/20',
   rose: 'bg-rose-500/20',
+  indigo: 'bg-indigo-500/20',
+  teal: 'bg-teal-500/20',
 };
 
 // Soft border — the callout panel edge.
@@ -139,6 +153,8 @@ export const accentSoftBorder: Record<LuminaAccent, string> = {
   purple: 'border-purple-500/20',
   pink: 'border-pink-500/20',
   rose: 'border-rose-500/20',
+  indigo: 'border-indigo-500/20',
+  teal: 'border-teal-500/20',
 };
 
 // Strong accent text — callout labels and icons (-400, brighter than -300).
@@ -151,6 +167,8 @@ export const accentStrongText: Record<LuminaAccent, string> = {
   purple: 'text-purple-400',
   pink: 'text-pink-400',
   rose: 'text-rose-400',
+  indigo: 'text-indigo-400',
+  teal: 'text-teal-400',
 };
 
 // ── Performance tiers ───────────────────────────────────────────────────

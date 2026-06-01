@@ -8,6 +8,7 @@ import {
   type FeatureExhibitMetrics,
   type PrimitiveEvaluationResult,
 } from '../evaluation';
+import { LuminaButton, LuminaPanel, LuminaCallout } from '../ui';
 
 /**
  * Feature Exhibit - Interactive deep-dive editorial with 3-phase comprehension evaluation
@@ -490,11 +491,11 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
                       <p className="text-slate-400 text-sm">Based on what you read, determine if this statement is true or false.</p>
                     </div>
 
-                    <div className="p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl mb-8">
+                    <LuminaPanel accent="blue" className="mb-8">
                       <p className="text-xl text-white font-medium leading-relaxed">
                         {data.exploreStatement}
                       </p>
-                    </div>
+                    </LuminaPanel>
 
                     {/* True/False Buttons */}
                     <div className="grid grid-cols-2 gap-4 mb-8">
@@ -544,31 +545,27 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
 
                     {/* Submit or Feedback */}
                     {!exploreSubmitted ? (
-                      <button
+                      <LuminaButton
+                        tone="primary"
                         onClick={handleExploreSubmit}
                         disabled={exploreAnswer === null}
-                        className="w-full px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 hover:shadow-blue-500/40"
+                        className="w-full px-8 py-3 rounded-full font-bold tracking-wide"
                       >
                         Check Answer
-                      </button>
+                      </LuminaButton>
                     ) : (
-                      <div className="animate-fade-in bg-black/20 rounded-2xl p-6 border border-white/5">
-                        <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${exploreCorrect ? 'text-emerald-400' : 'text-slate-300'}`}>
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {exploreCorrect ?
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            }
-                          </svg>
-                          <span>{exploreCorrect ? 'Correct!' : 'Learning Moment'}</span>
-                        </div>
+                      <LuminaCallout
+                        accent={exploreCorrect ? 'emerald' : 'amber'}
+                        label={exploreCorrect ? 'Correct!' : 'Learning Moment'}
+                        className="animate-fade-in"
+                      >
                         <p className="text-slate-300 leading-relaxed text-lg font-light">
                           {data.exploreRationale}
                         </p>
                         <p className="text-slate-400 text-sm mt-4 italic">
                           Moving to Phase 2...
                         </p>
-                      </div>
+                      </LuminaCallout>
                     )}
                   </div>
                 )}
@@ -688,7 +685,7 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
                       {/* Section Tabs */}
                       {typeof practiceViewTab === 'number' && (
                         <div className="animate-fade-in">
-                          <div className="mb-6 p-6 bg-slate-800/40 rounded-xl border border-white/10">
+                          <LuminaPanel className="mb-6">
                             <div className="flex items-center justify-between mb-4">
                               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                                 Section {practiceViewTab + 1}
@@ -709,31 +706,30 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
                             <p className="text-slate-300 text-lg leading-relaxed">
                               {data.sections[practiceViewTab].content}
                             </p>
-                          </div>
+                          </LuminaPanel>
                         </div>
                       )}
                     </div>
 
                     {!practiceSubmitted ? (
-                      <button
+                      <LuminaButton
+                        tone="primary"
                         onClick={handlePracticeSubmit}
                         disabled={claimMatches.some(m => m.selectedSectionIndex === null)}
-                        className="w-full px-8 py-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-full font-bold tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        className="w-full px-8 py-3 rounded-full font-bold tracking-wide"
                       >
                         Check Matches
-                      </button>
+                      </LuminaButton>
                     ) : (
-                      <div className="animate-fade-in bg-green-500/10 rounded-2xl p-6 border border-green-500/30">
-                        <div className="flex items-center gap-3 mb-2 font-bold uppercase tracking-wider text-green-400">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                          </svg>
-                          <span>All Matches Correct!</span>
-                        </div>
+                      <LuminaCallout
+                        accent="emerald"
+                        label="All Matches Correct!"
+                        className="animate-fade-in"
+                      >
                         <p className="text-slate-300 leading-relaxed">
                           Excellent! You've identified the supporting evidence for each claim. Moving to Phase 3...
                         </p>
-                      </div>
+                      </LuminaCallout>
                     )}
                   </div>
                 )}
@@ -746,11 +742,11 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
                       <p className="text-slate-400 text-sm">Synthesize your understanding to answer this question.</p>
                     </div>
 
-                    <div className="p-6 bg-purple-500/10 border border-purple-500/30 rounded-xl mb-8">
+                    <LuminaPanel accent="purple" className="mb-8">
                       <p className="text-xl text-white font-medium leading-relaxed">
                         {data.synthesisQuestion}
                       </p>
-                    </div>
+                    </LuminaPanel>
 
                     {/* Multiple Choice Options */}
                     <div className="space-y-3 mb-8">
@@ -804,42 +800,33 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
 
                     {/* Submit or Feedback */}
                     {!synthesisSubmitted ? (
-                      <button
+                      <LuminaButton
+                        tone="primary"
                         onClick={handleSynthesisSubmit}
                         disabled={synthesisAnswer === null}
-                        className="w-full px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-full font-bold tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-600/20 hover:shadow-purple-500/40"
+                        className="w-full px-8 py-3 rounded-full font-bold tracking-wide"
                       >
                         Submit Final Answer
-                      </button>
+                      </LuminaButton>
                     ) : (
                       <div className="space-y-4">
-                        <div className={`animate-fade-in rounded-2xl p-6 border ${
-                          synthesisCorrect
-                            ? 'bg-green-500/10 border-green-500/30'
-                            : 'bg-slate-800/60 border-slate-700/50'
-                        }`}>
-                          <div className={`flex items-center gap-3 mb-2 font-bold uppercase tracking-wider ${
-                            synthesisCorrect ? 'text-emerald-400' : 'text-slate-300'
-                          }`}>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              {synthesisCorrect ?
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> :
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                              }
-                            </svg>
-                            <span>{synthesisCorrect ? 'Excellent Analysis!' : 'Insight'}</span>
-                          </div>
+                        <LuminaCallout
+                          accent={synthesisCorrect ? 'emerald' : 'amber'}
+                          label={synthesisCorrect ? 'Excellent Analysis!' : 'Insight'}
+                          className="animate-fade-in"
+                        >
                           <p className="text-slate-300 leading-relaxed text-lg font-light">
                             {data.synthesisRationale}
                           </p>
-                        </div>
+                        </LuminaCallout>
 
-                        <button
+                        <LuminaButton
+                          tone="subtle"
                           onClick={handleReset}
-                          className="w-full px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-full font-medium tracking-wide transition-all shadow-lg"
+                          className="w-full px-6 py-3 rounded-full font-medium tracking-wide"
                         >
                           Try Again
-                        </button>
+                        </LuminaButton>
                       </div>
                     )}
                   </div>

@@ -81,7 +81,13 @@ The kit is the **chrome/frame**: cards, buttons, badges, nested panels, text hie
 
 11. **Write the complete migrated file in one operation** (Write tool) to avoid broken JSX.
 
-12. **Run type check:** `cd my-tutoring-app && npx tsc --noEmit`. The kit is fully typed; fix any errors from prop changes (e.g., `variant` → `tone`, `className` glass → removed). Ignore the known pre-existing `ManifestViewer.tsx` `Record<ComponentId,string>` error.
+12. **Run type check — use the LOCAL compiler with an absolute path, NEVER `npx tsc`:**
+    ```bash
+    cd "<repo>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit
+    ```
+    ⚠️ **Verification-integrity trap (has caused false passes twice):** `npx tsc` from the repo root prints *"This is not the tsc command you are looking for"* (npx grabs the wrong package — TypeScript is only installed under `my-tutoring-app/node_modules`). It emits **no `error TS` lines**, so a `| grep "error TS"` pipe returns empty and reads as "0 errors / clean" when **tsc never ran**. Likewise `cd my-tutoring-app && …` silently short-circuits if cwd is already elsewhere. Defenses: (a) invoke `./node_modules/.bin/tsc` directly, (b) `cd` with an **absolute** path in the same command, (c) sanity-check against a **known baseline** — capture the global `grep -cE "error TS[0-9]"` count BEFORE migrating; if it later reads `0` or the tool exits "tsc not found", tsc didn't run. A real conservative migration leaves the global count **unchanged**, not zero.
+
+    The kit is fully typed; fix any errors from prop changes (e.g., `variant` → `tone`, `className` glass → removed). Ignore the known pre-existing `ManifestViewer.tsx` `Record<ComponentId,string>` error.
 
 13. **Grep-confirm the strings are gone:**
     ```bash

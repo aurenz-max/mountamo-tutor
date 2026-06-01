@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Badge } from '@/components/ui/badge';
 import type { DiagramBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
+import { LuminaActionButton, LuminaBadge } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 
 // ── Shared types ───────────────────────────────────────────────────
@@ -483,26 +483,21 @@ const LabelMode: React.FC<{
           </div>
 
           {!submitted && (
-            <button
+            <LuminaActionButton
+              action="check"
               onClick={handleSubmit}
               disabled={!allPlaced || isEvaluating}
-              className="w-full px-4 py-2.5 rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-200 hover:bg-teal-500/20 transition-all text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full"
             >
               {isEvaluating ? 'Evaluating...' : 'Check Placement'}
-            </button>
+            </LuminaActionButton>
           )}
 
           {feedback && (
             <div className="space-y-2">
-              <Badge
-                className={
-                  feedback.score >= 70
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                    : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                }
-              >
+              <LuminaBadge accent={feedback.score >= 70 ? 'emerald' : 'rose'}>
                 {feedback.score}% — {feedback.score >= 70 ? 'Well done!' : 'Keep practicing'}
-              </Badge>
+              </LuminaBadge>
               {feedback.overall && (
                 <p className="text-xs text-slate-400 leading-relaxed">{feedback.overall}</p>
               )}

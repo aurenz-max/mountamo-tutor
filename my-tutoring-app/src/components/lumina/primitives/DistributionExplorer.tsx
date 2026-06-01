@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Card } from '../../ui/card';
 import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
+import { LuminaBadge } from '../ui';
 import { KaTeX } from './annotated-example/StepContentRenderer';
 import { getFamily, resolveParameters } from '../lib/probability';
 import { DistributionPlot } from './distribution-explorer/DistributionPlot';
@@ -79,12 +79,8 @@ export const DistributionExplorer: React.FC<DistributionExplorerProps> = ({ data
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="mb-6 space-y-3">
         <div className="flex items-baseline gap-3 flex-wrap">
-          <Badge variant="outline" className="text-indigo-300 border-indigo-500/30 bg-indigo-500/10">
-            {data.subject}
-          </Badge>
-          <Badge variant="outline" className="text-fuchsia-300 border-fuchsia-500/30 bg-fuchsia-500/10">
-            {data.evalMode.replace(/_/g, ' ')}
-          </Badge>
+          <LuminaBadge accent="blue">{data.subject}</LuminaBadge>
+          <LuminaBadge accent="pink">{data.evalMode.replace(/_/g, ' ')}</LuminaBadge>
         </div>
         <h1 className="text-2xl font-serif font-bold text-white tracking-tight">{data.title}</h1>
         {data.lessonContext && (

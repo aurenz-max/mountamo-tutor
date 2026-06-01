@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { SentenceSchemaData } from '../types';
+import { LuminaCallout } from '../ui';
 
 interface SentenceAnalyzerProps {
   data: SentenceSchemaData;
@@ -25,11 +26,11 @@ export const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data }) => {
       </div>
 
       <div className="glass-panel p-8 md:p-12 rounded-3xl border border-pink-500/30 relative overflow-hidden flex flex-col items-center text-center shadow-[0_0_50px_rgba(236,72,153,0.1)]">
-        
+
         {/* Background Grid Decoration */}
-        <div className="absolute inset-0 z-0 opacity-10" style={{ 
+        <div className="absolute inset-0 z-0 opacity-10" style={{
             backgroundImage: 'linear-gradient(0deg, transparent 24%, #ffffff 25%, #ffffff 26%, transparent 27%, transparent 74%, #ffffff 75%, #ffffff 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, #ffffff 25%, #ffffff 26%, transparent 27%, transparent 74%, #ffffff 75%, #ffffff 76%, transparent 77%, transparent)',
-            backgroundSize: '30px 30px' 
+            backgroundSize: '30px 30px'
         }}></div>
 
         <div className="relative z-10 mb-10">
@@ -40,7 +41,7 @@ export const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data }) => {
         {/* The Sentence Display */}
         <div className="relative z-10 flex flex-wrap justify-center items-start gap-3 md:gap-6 p-8 bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl w-full">
             {parts.length > 0 ? parts.map((part, index) => (
-                <div 
+                <div
                     key={index}
                     className="relative group flex flex-col items-center"
                     onMouseEnter={() => setHoveredIndex(index)}
@@ -52,7 +53,7 @@ export const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data }) => {
                     >
                         {part.text}
                     </span>
-                    
+
                     {/* Connector Line (Syntactic Tree Metaphor) */}
                     <div className={`h-8 w-px bg-gradient-to-b from-slate-600 to-transparent transition-all duration-300 ${hoveredIndex === index ? 'from-pink-500 h-12' : ''}`}></div>
 
@@ -75,21 +76,15 @@ export const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data }) => {
 
         {/* Dynamic Explanation Box based on hover */}
         <div className="min-h-[80px] mt-16 relative z-10 w-full flex justify-center items-center">
-             <div className={`transition-all duration-500 w-full max-w-lg ${hoveredIndex !== null ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-4'}`}>
+             <div className={`transition-all duration-500 w-full max-w-lg text-left ${hoveredIndex !== null ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-4'}`}>
                  {hoveredIndex !== null && parts[hoveredIndex] && (
-                     <div className="bg-pink-900/20 border border-pink-500/30 p-4 rounded-xl flex items-start gap-4 text-left">
-                         <div className="w-8 h-8 rounded-full bg-pink-500/20 text-pink-300 flex items-center justify-center shrink-0 text-lg font-serif italic">
-                             i
-                         </div>
-                         <div>
-                             <h4 className="text-pink-200 font-bold text-sm mb-1">
-                                 {parts[hoveredIndex].partOfSpeech} Analysis
-                             </h4>
-                             <p className="text-slate-300 text-sm leading-snug">
-                                 {parts[hoveredIndex].definition}
-                             </p>
-                         </div>
-                     </div>
+                     <LuminaCallout
+                         accent="pink"
+                         label={`${parts[hoveredIndex].partOfSpeech} Analysis`}
+                         icon={<span className="text-lg font-serif italic">i</span>}
+                     >
+                         {parts[hoveredIndex].definition}
+                     </LuminaCallout>
                  )}
              </div>
              {hoveredIndex === null && (

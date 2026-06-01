@@ -3,6 +3,7 @@ import { InteractivePassageData, PassageSection, VocabularyTerm } from '../types
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, CheckCircle, HelpCircle, Highlighter, X } from 'lucide-react';
 import { SoundManager } from '../utils/SoundManager';
+import { LuminaBadge, LuminaPanel } from '../ui';
 
 interface InteractivePassageProps {
   data: InteractivePassageData;
@@ -30,8 +31,8 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
     if (selectedText.length < 5) return; // Ignore accidental small selections
 
     // Check if selection matches any target
-    const match = data.highlightTask.targets.find(t => 
-      selectedText.toLowerCase().includes(t.textSegment.toLowerCase()) || 
+    const match = data.highlightTask.targets.find(t =>
+      selectedText.toLowerCase().includes(t.textSegment.toLowerCase()) ||
       t.textSegment.toLowerCase().includes(selectedText.toLowerCase())
     );
 
@@ -67,7 +68,7 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
     SoundManager.pop(); // tooltip opens
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const containerRect = containerRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
-    
+
     setSelectedVocab({
       term,
       x: rect.left - containerRect.left + (rect.width / 2),
@@ -118,9 +119,9 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
           <div className="flex items-center gap-4 text-sm text-slate-400">
             {data.author && <span>By {data.author}</span>}
             {data.readingLevel && (
-              <span className="px-2 py-0.5 bg-slate-800 rounded-full border border-slate-700">
+              <LuminaBadge className="rounded-full">
                 {data.readingLevel}
-              </span>
+              </LuminaBadge>
             )}
           </div>
         </div>
@@ -131,7 +132,7 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
 
       {/* Highlight Task Banner */}
       {data.highlightTask && showHighlightTask && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className={`mb-8 p-4 rounded-xl border ${
@@ -156,8 +157,8 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
                   selectionStatus === 'error' ? 'text-red-400' :
                   'text-blue-400'
               }`}>
-                {selectionStatus === 'success' ? 'Evidence Found!' : 
-                 selectionStatus === 'error' ? 'Try Again' : 
+                {selectionStatus === 'success' ? 'Evidence Found!' :
+                 selectionStatus === 'error' ? 'Try Again' :
                  'Find the Evidence'}
               </h3>
               <p className="text-slate-300 text-sm">
@@ -165,7 +166,7 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
               </p>
             </div>
             {selectionStatus === 'success' && (
-                <button 
+                <button
                     onClick={() => setShowHighlightTask(false)}
                     className="text-slate-400 hover:text-white"
                 >
@@ -177,7 +178,7 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
       )}
 
       {/* Main Content */}
-      <div 
+      <div
         className="space-y-8 font-serif text-lg leading-relaxed text-slate-200"
         onMouseUp={handleMouseUp}
       >
@@ -200,7 +201,7 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
 
             {/* Inline Question */}
             {section.inlineQuestion && (
-              <div className="my-8 ml-8 p-6 bg-slate-800/50 rounded-xl border border-slate-700/50 backdrop-blur-sm">
+              <LuminaPanel className="my-8 ml-8 p-6 rounded-xl backdrop-blur-sm">
                 <div className="flex items-center gap-2 mb-4 text-purple-400 font-sans text-sm font-bold uppercase tracking-wider">
                   <HelpCircle className="w-4 h-4" />
                   Check Your Understanding
@@ -236,7 +237,7 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
                     );
                   })}
                 </div>
-              </div>
+              </LuminaPanel>
             )}
           </motion.div>
         ))}
@@ -246,9 +247,9 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
       <AnimatePresence>
         {selectedVocab && (
           <>
-            <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setSelectedVocab(null)} 
+            <div
+                className="fixed inset-0 z-40"
+                onClick={() => setSelectedVocab(null)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 10 }}

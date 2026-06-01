@@ -5,7 +5,8 @@ import { FoundationExplorerData, FoundationConcept } from '../types';
 import { generateConceptImage } from '../service/geminiClient-api';
 import { useLuminaAI } from '../hooks/useLuminaAI';
 import { SoundManager } from '../utils/SoundManager';
-import { Target, CheckCircle2, Lightbulb, HelpCircle, ChevronRight } from 'lucide-react';
+import { Target, CheckCircle2, Lightbulb, HelpCircle } from 'lucide-react';
+import { LuminaBadge, LuminaPanel, type LuminaAccent } from '../ui';
 
 /**
  * FoundationExplorer - Objective-driven concept exploration
@@ -23,12 +24,12 @@ interface FoundationExplorerProps {
   className?: string;
 }
 
-const VERB_CONFIG: Record<string, { label: string; color: string; bgColor: string; borderColor: string }> = {
-  identify: { label: 'IDENTIFY', color: 'text-blue-300', bgColor: 'bg-blue-500/20', borderColor: 'border-blue-500/30' },
-  explain: { label: 'EXPLAIN', color: 'text-purple-300', bgColor: 'bg-purple-500/20', borderColor: 'border-purple-500/30' },
-  apply: { label: 'APPLY', color: 'text-green-300', bgColor: 'bg-green-500/20', borderColor: 'border-green-500/30' },
-  analyze: { label: 'ANALYZE', color: 'text-red-300', bgColor: 'bg-red-500/20', borderColor: 'border-red-500/30' },
-  compare: { label: 'COMPARE', color: 'text-cyan-300', bgColor: 'bg-cyan-500/20', borderColor: 'border-cyan-500/30' },
+const VERB_CONFIG: Record<string, { label: string; accent: LuminaAccent }> = {
+  identify: { label: 'IDENTIFY', accent: 'blue' },
+  explain: { label: 'EXPLAIN', accent: 'purple' },
+  apply: { label: 'APPLY', accent: 'emerald' },
+  analyze: { label: 'ANALYZE', accent: 'rose' },
+  compare: { label: 'COMPARE', accent: 'cyan' },
 };
 
 const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className }) => {
@@ -181,9 +182,9 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
           {/* Header with objective */}
           <div className="flex items-center gap-3 mb-6">
             <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Learning:</span>
-            <span className={`text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border ${verbConfig.bgColor} ${verbConfig.color} ${verbConfig.borderColor}`}>
+            <LuminaBadge accent={verbConfig.accent} className="text-[10px] uppercase tracking-widest font-mono rounded-full">
               {verbConfig.label}
-            </span>
+            </LuminaBadge>
             {allCompleted && (
               <span className="ml-auto flex items-center gap-2 text-emerald-400 text-sm">
                 <CheckCircle2 size={16} />
@@ -280,14 +281,14 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
                     </div>
 
                     {/* In Context */}
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <LuminaPanel className="rounded-xl">
                       <h4 className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-2 flex items-center gap-2">
                         <Lightbulb size={12} />
                         In Context
                       </h4>
                       <p className="text-white text-sm font-light mb-2">{selectedConcept.inContext.scenario}</p>
                       <p className="text-slate-400 text-sm">{selectedConcept.inContext.whereToFind}</p>
-                    </div>
+                    </LuminaPanel>
 
                     {/* Where in diagram */}
                     <div className="text-sm text-slate-400">

@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import type {
   HypothesisLabBlockData,
   HypothesisVariable,
   HypothesisVariableRole,
 } from '../types';
 import BlockWrapper from './BlockWrapper';
+import { LuminaActionButton, LuminaBadge, LuminaFeedbackCard } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 
 type Zone = 'pool' | 'iv' | 'dv' | 'control';
@@ -306,14 +305,13 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
         {/* Submit */}
         {!answered && (
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              className="bg-teal-500/10 border border-teal-500/30 text-teal-200 hover:bg-teal-500/20"
+            <LuminaActionButton
+              action="check"
               onClick={handleSubmit}
               disabled={!canSubmit}
             >
               Check My Design
-            </Button>
+            </LuminaActionButton>
             {!canSubmit && (
               <span className="text-xs text-slate-500 italic">
                 Place an Independent and Dependent Variable to check.
@@ -330,21 +328,15 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
         {/* Result */}
         {answered && (
           <div className="flex items-center gap-2">
-            <Badge
-              className={
-                wasCorrect && attempts === 1
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                  : wasCorrect
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                    : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-              }
+            <LuminaBadge
+              accent={wasCorrect && attempts === 1 ? 'emerald' : wasCorrect ? 'amber' : 'rose'}
             >
               {wasCorrect
                 ? attempts === 1
                   ? 'Designed correctly!'
                   : 'Correct (2nd try)'
                 : 'Revealed'}
-            </Badge>
+            </LuminaBadge>
             <span className="text-xs text-slate-500">
               {attempts} {attempts === 1 ? 'attempt' : 'attempts'}
             </span>
@@ -363,9 +355,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
 
         {/* Explanation */}
         {showExplanation && (
-          <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <p className="text-sm text-blue-200/90 leading-relaxed">{explanation}</p>
-          </div>
+          <LuminaFeedbackCard status="insight">{explanation}</LuminaFeedbackCard>
         )}
       </div>
     </BlockWrapper>

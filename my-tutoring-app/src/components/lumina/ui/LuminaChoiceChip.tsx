@@ -23,6 +23,8 @@ const dotRing: Record<LuminaAccent, string> = {
   purple: 'border-purple-400',
   pink: 'border-pink-400',
   rose: 'border-rose-400',
+  indigo: 'border-indigo-400',
+  teal: 'border-teal-400',
 };
 
 export interface LuminaChoiceChipProps

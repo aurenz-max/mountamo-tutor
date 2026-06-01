@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { LetterTracingData } from '../../types';
+import { LuminaCallout } from '../ui';
 
 interface LetterTracingProps {
   data: LetterTracingData;
@@ -124,26 +125,25 @@ export const LetterTracing: React.FC<LetterTracingProps> = ({ data }) => {
         </div>
 
         {/* Practice tips */}
-        <div className="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-400/20">
-          <div className="flex items-start gap-3">
-            <div className="text-blue-400 mt-0.5">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-slate-300 font-medium mb-1">Tracing Tip</p>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Use your finger or a stylus to trace the letter. {showDirectionArrows && 'Follow the numbered arrows in order.'} {showDottedGuide && 'Stay inside the dotted outline.'}
-              </p>
-            </div>
-          </div>
-        </div>
+        <LuminaCallout
+          accent="blue"
+          label="Tracing Tip"
+          className="mt-4"
+          icon={
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          }
+        >
+          Use your finger or a stylus to trace the letter.{' '}
+          {showDirectionArrows && 'Follow the numbered arrows in order. '}
+          {showDottedGuide && 'Stay inside the dotted outline.'}
+        </LuminaCallout>
       </div>
     </div>
   );
