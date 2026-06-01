@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -14,7 +11,16 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { LuminaChip } from '../../../ui';
+import {
+  LuminaChip,
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -473,14 +479,13 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
                 </h3>
                 <div className="flex flex-wrap gap-1.5 justify-center">
                   {wordsHere.map(w => (
-                    <Badge
+                    <LuminaBadge
                       key={w.id}
-                      variant="secondary"
-                      className="bg-white/10 text-slate-200 border-white/10 text-xs"
+                      className="bg-white/10 border-white/10 text-slate-200 text-xs"
                     >
                       {w.emoji && <span className="mr-1">{w.emoji}</span>}
                       {w.word}
-                    </Badge>
+                    </LuminaBadge>
                   ))}
                 </div>
               </button>
@@ -572,29 +577,29 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
   // ─── Main Render ───────────────────────────────────────────────
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-        <CardContent className="p-6 text-center text-slate-400">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6 text-center text-slate-400">
           No challenges available.
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className ?? ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-lg font-semibold">{title}</CardTitle>
-          <Badge variant="outline" className="border-white/20 text-slate-300 text-xs">
+          <LuminaCardTitle className="text-lg font-semibold">{title}</LuminaCardTitle>
+          <LuminaBadge className="text-xs">
             {currentChallengeIndex + 1} / {challenges.length}
-          </Badge>
+          </LuminaBadge>
         </div>
         {description && (
           <p className="text-sm text-slate-400 mt-1">{description}</p>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-5">
+      <LuminaCardContent className="space-y-5">
         {/* Phase Summary (when complete) */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -611,22 +616,22 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
         {!allChallengesComplete && currentChallenge && (
           <>
             {/* Challenge instruction */}
-            <div className="p-3 rounded-lg bg-white/[0.03] border border-white/5">
+            <LuminaPanel>
               <p className="text-slate-200 text-sm font-medium">
                 {currentChallenge.instruction}
               </p>
-            </div>
+            </LuminaPanel>
 
             {/* Challenge type badge */}
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-white/5 border-white/10 text-slate-300 text-xs">
+              <LuminaBadge className="text-xs">
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                 {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </Badge>
+              </LuminaBadge>
               {currentAttempts > 0 && (
-                <Badge variant="secondary" className="bg-amber-500/10 border-amber-400/20 text-amber-300 text-xs">
+                <LuminaBadge accent="amber" className="text-xs">
                   {currentAttempts} wrong
-                </Badge>
+                </LuminaBadge>
               )}
             </div>
 
@@ -650,19 +655,15 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
             {/* Next button (appears when challenge is fully sorted) */}
             {isChallengeAllSorted && !allChallengesComplete && (
               <div className="flex justify-center pt-2">
-                <Button
-                  onClick={advanceToNextChallenge}
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
-                >
+                <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                   Next Challenge →
-                </Button>
+                </LuminaActionButton>
               </div>
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

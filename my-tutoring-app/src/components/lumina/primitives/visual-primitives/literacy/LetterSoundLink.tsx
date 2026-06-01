@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaProgress,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaChallengeCounter,
+  answerStateClasses,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -50,15 +60,22 @@ export interface LetterSoundLinkData {
 // ============================================================================
 
 const MODE_CONFIG: Record<string, { label: string; description: string; icon: string }> = {
-  'see-hear': { label: 'See \u2192 Hear', description: 'See a letter, pick its sound', icon: '\uD83D\uDC41\uFE0F' },
-  'hear-see': { label: 'Hear \u2192 See', description: 'Hear a sound, find the letter', icon: '\uD83D\uDC42' },
-  'keyword-match': { label: 'Keyword Match', description: 'Match letter to keyword', icon: '\uD83D\uDDBC\uFE0F' },
+  'see-hear': { label: 'See → Hear', description: 'See a letter, pick its sound', icon: '👁️' },
+  'hear-see': { label: 'Hear → See', description: 'Hear a sound, find the letter', icon: '👂' },
+  'keyword-match': { label: 'Keyword Match', description: 'Match letter to keyword', icon: '🖼️' },
 };
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'see-hear': { label: 'See \u2192 Hear', accentColor: 'blue' },
-  'hear-see': { label: 'Hear \u2192 See', accentColor: 'purple' },
+  'see-hear': { label: 'See → Hear', accentColor: 'blue' },
+  'hear-see': { label: 'Hear → See', accentColor: 'purple' },
   'keyword-match': { label: 'Keyword Match', accentColor: 'emerald' },
+};
+
+/** Mode → accent for chrome badges. */
+const MODE_ACCENT: Record<string, LuminaAccent> = {
+  'see-hear': 'blue',
+  'hear-see': 'purple',
+  'keyword-match': 'emerald',
 };
 
 /** Vowels for color-coding: vowels = red, consonants = blue */
@@ -66,10 +83,10 @@ const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 
 /** Keyword image emoji/icon mapping */
 const KEYWORD_IMAGES: Record<string, string> = {
-  sun: '\u2600\uFE0F', apple: '\uD83C\uDF4E', top: '\uD83D\uDD1D', itch: '\uD83E\uDD0F', pig: '\uD83D\uDC37', net: '\uD83E\uDD45',
-  cat: '\uD83D\uDC31', kite: '\uD83E\uDE81', egg: '\uD83E\uDD5A', hat: '\uD83C\uDFA9', run: '\uD83C\uDFC3', map: '\uD83D\uDDFA\uFE0F', dog: '\uD83D\uDC36',
-  go: '\uD83D\uDFE2', octopus: '\uD83D\uDC19', up: '\u2B06\uFE0F', lip: '\uD83D\uDC44', fan: '\uD83C\uDF2C\uFE0F', bat: '\uD83E\uDD87',
-  jam: '\uD83C\uDF6F', zip: '\u26A1', web: '\uD83D\uDD78\uFE0F', van: '\uD83D\uDE90', yes: '\u2705', box: '\uD83D\uDCE6', queen: '\uD83D\uDC51',
+  sun: '☀️', apple: '🍎', top: '🔝', itch: '🤏', pig: '🐷', net: '🥅',
+  cat: '🐱', kite: '🪁', egg: '🥚', hat: '🎩', run: '🏃', map: '🗺️', dog: '🐶',
+  go: '🟢', octopus: '🐙', up: '⬆️', lip: '👄', fan: '🌬️', bat: '🦇',
+  jam: '🍯', zip: '⚡', web: '🕸️', van: '🚐', yes: '✅', box: '📦', queen: '👑',
 };
 
 /** Speaker bubble colors for the two binary options */
@@ -292,7 +309,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
   /** Get the emoji for a keyword */
   const getKeywordEmoji = useCallback((keyword: string) => {
-    return KEYWORD_IMAGES[keyword.toLowerCase()] || '\uD83D\uDCDD';
+    return KEYWORD_IMAGES[keyword.toLowerCase()] || '📝';
   }, []);
 
   /** Track confused sound pairs */
@@ -401,7 +418,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
       sendText(
         `[ANSWER_CORRECT] The student correctly identified the letter-sound link! `
-        + `Letter "${currentChallenge.targetLetter.toUpperCase()}" \u2192 sound ${currentChallenge.targetSound}. `
+        + `Letter "${currentChallenge.targetLetter.toUpperCase()}" → sound ${currentChallenge.targetSound}. `
         + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} `
         + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. `
         + `Say "Yes! The letter ${currentChallenge.targetLetter.toUpperCase()} makes the sound ${currentChallenge.targetSound}!" `
@@ -434,7 +451,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
       sendText(
         `[ANSWER_INCORRECT] The student chose ${wrongDisplay} but the correct answer is `
-        + `letter "${currentChallenge.targetLetter.toUpperCase()}" \u2192 sound ${currentChallenge.targetSound}. `
+        + `letter "${currentChallenge.targetLetter.toUpperCase()}" → sound ${currentChallenge.targetSound}. `
         + `Attempt ${currentAttempts + 1}. `
         + `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
         + `Give a brief hint connecting the letter to its keyword.`,
@@ -487,7 +504,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
     // Deduplicate confused pairs
     const uniquePairs = Array.from(
-      new Set(confusedPairs.map(([a, b]) => [a, b].sort().join('\u2194')))
+      new Set(confusedPairs.map(([a, b]) => [a, b].sort().join('↔')))
     );
 
     const metrics: LetterSoundLinkMetrics = {
@@ -573,7 +590,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
     sendText(
       `[NEXT_CHALLENGE] Challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `${modeLabel}. Target: letter "${nextChallenge.targetLetter.toUpperCase()}" \u2192 sound ${nextChallenge.targetSound}. `
+      + `${modeLabel}. Target: letter "${nextChallenge.targetLetter.toUpperCase()}" → sound ${nextChallenge.targetSound}. `
       + `[SAY_KEYWORD] ${nextChallenge.targetSound} as in ${nextChallenge.keywordWord}. `
       + `Briefly introduce the new challenge.`,
       { silent: true },
@@ -600,9 +617,9 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           w-28 h-28 sm:w-32 sm:h-32 rounded-full
           border-2 transition-all duration-300
           ${showCorrect
-            ? 'bg-emerald-500/30 border-emerald-400/60 scale-110'
+            ? `${answerStateClasses.correct} scale-110`
             : showWrong
-              ? 'bg-red-500/20 border-red-500/40 scale-95'
+              ? `${answerStateClasses.incorrect} scale-95`
               : isListened
                 ? `${colorConfig.activeBg} ${colorConfig.activeBorder} ring-2 ${colorConfig.ring} scale-105`
                 : `${colorConfig.bg} ${colorConfig.border} ${colorConfig.hoverBg} hover:scale-105`
@@ -613,7 +630,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       >
         <SpeakerIcon
           className={`w-10 h-10 sm:w-12 sm:h-12 ${
-            showCorrect ? 'text-emerald-300' : showWrong ? 'text-red-300' : colorConfig.iconColor
+            showCorrect ? 'text-emerald-300' : showWrong ? 'text-rose-300' : colorConfig.iconColor
           }`}
           playing={isPlaying}
         />
@@ -731,9 +748,8 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
             const letterColor = getLetterColorClass(letter);
 
             return (
-              <Button
+              <button
                 key={idx}
-                variant="ghost"
                 onClick={() => {
                   if (isLocked) return;
                   setSelectedOption(idx);
@@ -796,17 +812,17 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                 }}
                 disabled={isLocked}
                 className={`
-                  w-28 h-28 sm:w-32 sm:h-32 rounded-2xl text-5xl font-bold transition-all
+                  w-28 h-28 sm:w-32 sm:h-32 rounded-2xl text-5xl font-bold border-2 transition-all
                   ${showCorrect
-                    ? 'bg-emerald-500/30 border-2 border-emerald-400/60 text-emerald-200 scale-110'
+                    ? `${answerStateClasses.correct} scale-110`
                     : showWrong
-                      ? 'bg-red-500/20 border-2 border-red-500/40 text-red-300 scale-95'
-                      : `bg-white/5 border-2 border-white/20 hover:bg-white/10 hover:scale-105 ${letterColor}`
+                      ? `${answerStateClasses.incorrect} scale-95`
+                      : `bg-white/5 border-white/20 hover:bg-white/10 hover:scale-105 ${letterColor}`
                   }
                 `}
               >
                 {letter.toUpperCase()}
-              </Button>
+              </button>
             );
           })}
         </div>
@@ -856,9 +872,9 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                   w-28 h-28 sm:w-32 sm:h-32 rounded-2xl
                   border-2 transition-all duration-300
                   ${showCorrect
-                    ? 'bg-emerald-500/30 border-emerald-400/60 scale-110'
+                    ? `${answerStateClasses.correct} scale-110`
                     : showWrong
-                      ? 'bg-red-500/20 border-red-500/40 scale-95'
+                      ? `${answerStateClasses.incorrect} scale-95`
                       : isListened
                         ? `${colorConfig.activeBg} ${colorConfig.activeBorder} ring-2 ${colorConfig.ring} scale-105`
                         : `${colorConfig.bg} ${colorConfig.border} ${colorConfig.hoverBg} hover:scale-105`
@@ -896,58 +912,43 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   const elapsedMs = Date.now() - startTimeRef.current;
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
+              <LuminaBadge className="text-xs">
                 Group {letterGroup}
-              </Badge>
+              </LuminaBadge>
               {currentChallenge && (
-                <Badge
-                  variant="outline"
-                  className={`text-xs ${
-                    currentChallenge.mode === 'see-hear'
-                      ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                      : currentChallenge.mode === 'hear-see'
-                        ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                        : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                  }`}
-                >
+                <LuminaBadge accent={MODE_ACCENT[currentChallenge.mode]} className="text-xs">
                   {MODE_CONFIG[currentChallenge.mode]?.label || currentChallenge.mode}
-                </Badge>
+                </LuminaBadge>
               )}
             </div>
           </div>
-          <span className="text-xs text-slate-500">
-            {currentChallengeIndex + 1} / {challenges.length}
-          </span>
+          <LuminaChallengeCounter current={currentChallengeIndex + 1} total={challenges.length} />
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Progress bar */}
-        <div className="w-full h-1.5 bg-slate-700/40 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-500/60 rounded-full transition-all duration-500"
-            style={{
-              width: `${((currentChallengeIndex + (isLocked ? 1 : 0)) / challenges.length) * 100}%`,
-            }}
-          />
-        </div>
+        <LuminaProgress
+          accent="blue"
+          value={((currentChallengeIndex + (isLocked ? 1 : 0)) / challenges.length) * 100}
+        />
 
         {/* Challenge content */}
         {!allChallengesComplete && currentChallenge && (
@@ -960,29 +961,17 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
         {/* Feedback */}
         {feedback && (
-          <div
-            className={`
-              px-4 py-2 rounded-lg text-sm font-medium text-center
-              ${feedbackType === 'success'
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-                : 'bg-red-500/20 border border-red-500/40 text-red-300'
-              }
-            `}
-          >
+          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Next / Finish button */}
         {isLocked && !allChallengesComplete && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              onClick={handleNextChallenge}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-            >
+            <LuminaActionButton action="next" onClick={handleNextChallenge}>
               {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -997,8 +986,8 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaInput,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -82,16 +90,23 @@ interface StudentRelationship {
 // Constants
 // ============================================================================
 
+// Relationship-type colors on the student-built relationship chips. These are
+// part of the bespoke builder surface (the character-web the student assembles),
+// so the color language stays local rather than borrowing answer-state grading.
 const RELATIONSHIP_COLORS: Record<string, string> = {
   friend: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
   rival: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
   family: 'bg-amber-500/20 border-amber-500/40 text-amber-300',
   mentor: 'bg-blue-500/20 border-blue-500/40 text-blue-300',
-  enemy: 'bg-red-500/20 border-red-500/40 text-red-300',
-  ally: 'bg-teal-500/20 border-teal-500/40 text-teal-300',
+  enemy: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
+  ally: 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300',
 };
 
 const RELATIONSHIP_TYPES = ['friend', 'rival', 'family', 'mentor', 'enemy', 'ally'];
+
+// Shared styling for the bespoke builder selects (relationship pickers).
+const SELECT_CLASS =
+  'px-2 py-1.5 rounded-lg border border-white/10 bg-white/5 text-slate-200 text-sm';
 
 // ============================================================================
 // Component
@@ -269,27 +284,27 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
   const activeTraits = activeChar ? (studentTraits[activeChar.characterId] || []) : [];
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
-              <Badge variant="outline" className="bg-violet-500/10 border-violet-500/30 text-violet-300 text-xs">{characters.length} Characters</Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge accent="purple" className="text-xs">{characters.length} Characters</LuminaBadge>
             </div>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
         {/* Story Context */}
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+        <LuminaPanel className="p-3">
           <p className="text-xs text-slate-500 mb-1">Story:</p>
           <p className="text-slate-300 text-sm">{storyContext}</p>
-        </div>
+        </LuminaPanel>
 
         {/* Phase 1: Profile */}
         {currentPhase === 'profile' && (
@@ -319,18 +334,18 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
             {/* Active character profile */}
             {activeChar && (
               <div className="space-y-3">
-                <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+                <LuminaPanel className="p-3">
                   <p className="text-sm text-slate-300">{activeChar.description}</p>
                   <p className="text-xs text-slate-500 mt-2">Hint: Look for traits like: {activeChar.suggestedTraits.join(', ')}</p>
-                </div>
+                </LuminaPanel>
 
-                {/* Existing traits */}
+                {/* Existing traits — student-built builder surface */}
                 {activeTraits.length > 0 && (
                   <div className="space-y-1.5">
                     {activeTraits.map((t, i) => (
-                      <div key={i} className="flex items-start gap-2 rounded-lg bg-violet-500/10 border border-violet-500/30 p-2">
+                      <div key={i} className="flex items-start gap-2 rounded-lg bg-purple-500/10 border border-purple-500/30 p-2">
                         <div className="flex-1">
-                          <p className="text-sm text-violet-200 font-medium">{t.trait}</p>
+                          <p className="text-sm text-purple-200 font-medium">{t.trait}</p>
                           {t.evidence && <p className="text-xs text-slate-400 mt-0.5 italic">&ldquo;{t.evidence}&rdquo;</p>}
                         </div>
                         <button onClick={() => removeTrait(activeChar.characterId, i)} className="text-white/30 hover:text-white/60 text-xs">x</button>
@@ -339,13 +354,13 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
                   </div>
                 )}
 
-                {/* Add trait */}
+                {/* Add trait — student production inputs */}
                 <div className="space-y-2">
-                  <input
+                  <LuminaInput
                     value={newTraitText}
                     onChange={e => setNewTraitText(e.target.value)}
                     placeholder="Character trait (e.g. brave, selfish, curious)..."
-                    className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40"
+                    className="w-full py-2 text-sm"
                   />
                   <textarea
                     value={newEvidenceText}
@@ -354,20 +369,18 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
                     rows={2}
                     className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
                   />
-                  <Button variant="ghost" onClick={addTrait} disabled={!newTraitText.trim()}
-                    className="bg-violet-500/20 border border-violet-500/40 hover:bg-violet-500/30 text-violet-300 text-xs">
+                  <LuminaButton tone="primary" onClick={addTrait} disabled={!newTraitText.trim()} className="text-xs">
                     Add Trait
-                  </Button>
+                  </LuminaButton>
                 </div>
               </div>
             )}
 
             <div className="flex justify-end">
-              <Button variant="ghost" onClick={nextPhase}
-                disabled={Object.values(studentTraits).flat().length < 2}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="primary" onClick={nextPhase}
+                disabled={Object.values(studentTraits).flat().length < 2}>
                 Next: Connect Characters
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -377,7 +390,7 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Define how the characters relate to each other:</p>
 
-            {/* Existing relationships */}
+            {/* Existing relationships — student-built web surface */}
             {studentRelationships.length > 0 && (
               <div className="space-y-1.5">
                 {studentRelationships.map((rel, i) => {
@@ -398,47 +411,42 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
               </div>
             )}
 
-            {/* Add relationship */}
+            {/* Add relationship — bespoke builder controls */}
             {characters.length >= 2 && (
               <div className="flex flex-wrap gap-2 items-end">
                 <div>
                   <p className="text-xs text-slate-500 mb-1">From:</p>
-                  <select value={connectFromId} onChange={e => setConnectFromId(e.target.value)}
-                    className="px-2 py-1.5 rounded-lg border border-white/10 bg-white/5 text-slate-200 text-sm">
+                  <select value={connectFromId} onChange={e => setConnectFromId(e.target.value)} className={SELECT_CLASS}>
                     <option value="">Select...</option>
                     {characters.map(c => <option key={c.characterId} value={c.characterId}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Relationship:</p>
-                  <select value={connectType} onChange={e => setConnectType(e.target.value)}
-                    className="px-2 py-1.5 rounded-lg border border-white/10 bg-white/5 text-slate-200 text-sm">
+                  <select value={connectType} onChange={e => setConnectType(e.target.value)} className={SELECT_CLASS}>
                     {RELATIONSHIP_TYPES.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">To:</p>
-                  <select value={connectToId} onChange={e => setConnectToId(e.target.value)}
-                    className="px-2 py-1.5 rounded-lg border border-white/10 bg-white/5 text-slate-200 text-sm">
+                  <select value={connectToId} onChange={e => setConnectToId(e.target.value)} className={SELECT_CLASS}>
                     <option value="">Select...</option>
                     {characters.filter(c => c.characterId !== connectFromId).map(c => (
                       <option key={c.characterId} value={c.characterId}>{c.name}</option>
                     ))}
                   </select>
                 </div>
-                <Button variant="ghost" onClick={addRelationship} disabled={!connectFromId || !connectToId}
-                  className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 text-xs">
+                <LuminaButton tone="primary" onClick={addRelationship} disabled={!connectFromId || !connectToId} className="text-xs">
                   Add
-                </Button>
+                </LuminaButton>
               </div>
             )}
 
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase} disabled={studentRelationships.length === 0}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaButton tone="primary" onClick={nextPhase} disabled={studentRelationships.length === 0}>
                 Next: Analyze Change
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -446,9 +454,9 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
         {/* Phase 3: Analyze */}
         {currentPhase === 'analyze' && (
           <div className="space-y-3">
-            <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+            <LuminaPanel className="p-3">
               <p className="text-sm text-slate-300">{changePrompt}</p>
-            </div>
+            </LuminaPanel>
             <textarea
               value={changeText}
               onChange={e => setChangeText(e.target.value)}
@@ -457,11 +465,10 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
               className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
             />
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase} disabled={changeText.trim().length < 10}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaButton tone="primary" onClick={nextPhase} disabled={changeText.trim().length < 10}>
                 Review
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -469,13 +476,13 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
         {/* Phase 4: Review */}
         {currentPhase === 'review' && (
           <div className="space-y-4">
-            {/* Character nodes visualization */}
+            {/* Character nodes visualization — the character-web canvas */}
             <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(characters.length, 3)}, 1fr)` }}>
               {characters.map(c => {
                 const traits = studentTraits[c.characterId] || [];
                 return (
-                  <div key={c.characterId} className="rounded-lg bg-violet-500/10 border border-violet-500/30 p-3">
-                    <p className="text-sm font-bold text-violet-200">{c.name}</p>
+                  <div key={c.characterId} className="rounded-lg bg-purple-500/10 border border-purple-500/30 p-3">
+                    <p className="text-sm font-bold text-purple-200">{c.name}</p>
                     {traits.length > 0 ? (
                       <ul className="mt-1 space-y-0.5">
                         {traits.map((t, i) => (
@@ -494,7 +501,7 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
 
             {/* Relationships */}
             {studentRelationships.length > 0 && (
-              <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+              <LuminaPanel className="p-3">
                 <p className="text-xs text-slate-500 mb-1">Relationships:</p>
                 {studentRelationships.map((rel, i) => {
                   const from = characters.find(c => c.characterId === rel.fromId);
@@ -505,35 +512,34 @@ const CharacterWeb: React.FC<CharacterWebProps> = ({ data, className }) => {
                     </p>
                   );
                 })}
-              </div>
+              </LuminaPanel>
             )}
 
             {/* Change analysis */}
-            <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+            <LuminaPanel className="p-3">
               <p className="text-xs text-slate-500 mb-1">Character Change:</p>
               <p className="text-sm text-slate-300">{changeText || <span className="italic text-slate-600">Not written</span>}</p>
-            </div>
+            </LuminaPanel>
 
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
+              <LuminaButton onClick={prevPhase}>Edit</LuminaButton>
               {!hasSubmittedEvaluation ? (
-                <Button variant="ghost" onClick={submitFinalEvaluation}
-                  className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">
+                <LuminaActionButton action="check" onClick={submitFinalEvaluation}>
                   Submit
-                </Button>
+                </LuminaActionButton>
               ) : (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
+                <LuminaPanel accent="emerald" className="p-4 text-center w-full">
                   <p className="text-emerald-300 font-semibold">Character Web Complete!</p>
                   <p className="text-slate-400 text-sm mt-1">
                     {Object.values(studentTraits).flat().length} traits | {studentRelationships.length} relationships | {changeText.trim() ? 'Change identified' : 'No change'}
                   </p>
-                </div>
+                </LuminaPanel>
               )}
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

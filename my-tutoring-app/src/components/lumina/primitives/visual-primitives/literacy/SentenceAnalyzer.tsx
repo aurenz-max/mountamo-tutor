@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  type LuminaAccent,
+  type AnswerChoiceState,
+  answerStateClass,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -92,6 +104,16 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   parse_structure: { label: 'Parse Structure', icon: 'Ps', accentColor: 'emerald' },
 };
 
+// Accent (kit union) for the header challenge-type badge.
+const TYPE_BADGE_ACCENT: Record<string, LuminaAccent> = {
+  identify_pos: 'blue',
+  identify_role: 'purple',
+  label_all: 'amber',
+  parse_structure: 'emerald',
+};
+
+// Bespoke POS tile coloring for the label-all interaction surface (the chips
+// the student arranges on words). Stays bespoke per the painting boundary.
 const POS_COLORS: Record<string, string> = {
   Noun: 'bg-blue-500/20 border-blue-500/40 text-blue-300',
   Verb: 'bg-red-500/20 border-red-500/40 text-red-300',
@@ -409,6 +431,8 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
   // Render Helpers
   // ============================================================================
 
+  // Bespoke interaction surface: the sentence-display canvas with the
+  // highlightable word spans the student reads. Left untouched (painting).
   const renderSentenceDisplay = (highlightIndex?: number) => {
     if (!currentChallenge) return null;
     return (
@@ -437,23 +461,19 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
   const renderFeedback = () => {
     if (!feedback) return null;
     return (
-      <div className={`px-4 py-2 rounded-lg text-sm font-medium text-center ${
-        feedbackType === 'success'
-          ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-          : 'bg-red-500/20 border border-red-500/40 text-red-300'
-      }`}>
+      <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
         {feedback}
-      </div>
+      </LuminaFeedbackCard>
     );
   };
 
   const renderExplanation = () => {
     if (!showExplanation || !currentChallenge) return null;
     return (
-      <div className="rounded-lg bg-violet-500/10 border border-violet-500/30 p-3 space-y-1">
-        <p className="text-xs text-violet-400 uppercase tracking-wide font-semibold">Explanation</p>
+      <LuminaPanel accent="purple" className="space-y-1">
+        <p className="text-xs text-purple-400 uppercase tracking-wide font-semibold">Explanation</p>
         <p className="text-sm text-slate-200">{currentChallenge.explanation}</p>
-      </div>
+      </LuminaPanel>
     );
   };
 
@@ -467,12 +487,12 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
     return (
       <div className="space-y-4">
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+        <LuminaPanel>
           <p className="text-slate-400 text-sm">
             What is the <span className="text-amber-300 font-semibold">{isPos ? 'part of speech' : 'grammatical role'}</span> of
             the highlighted word <span className="font-bold text-amber-300">&ldquo;{targetWord?.text}&rdquo;</span>?
           </p>
-        </div>
+        </LuminaPanel>
 
         {renderSentenceDisplay(currentChallenge.targetWordIndex ?? 0)}
 
@@ -480,25 +500,27 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
           {(options || []).map((option) => {
             const isSelected = selectedOption === option;
             const correct = isPos ? currentChallenge.correctPos : currentChallenge.correctRole;
-            const showResult = showExplanation;
             const isCorrectOption = option === correct;
 
+            let state: AnswerChoiceState;
+            if (showExplanation) {
+              if (isCorrectOption) state = 'correct';
+              else if (isSelected) state = 'incorrect';
+              else state = 'dimmed';
+            } else {
+              state = isSelected ? 'selected' : 'idle';
+            }
+
             return (
-              <button
+              <LuminaAnswerChoice
                 key={option}
+                state={state}
                 onClick={() => !showExplanation && setSelectedOption(option)}
                 disabled={showExplanation}
-                className={`
-                  text-left px-4 py-3 rounded-lg border transition-all text-sm
-                  ${showResult && isSelected && isCorrectOption ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : ''}
-                  ${showResult && isSelected && !isCorrectOption ? 'bg-red-500/20 border-red-500/40 text-red-300' : ''}
-                  ${showResult && !isSelected && isCorrectOption ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''}
-                  ${!showResult && isSelected ? 'bg-blue-500/20 border-blue-500/40 text-blue-300' : ''}
-                  ${!showResult && !isSelected ? 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10' : ''}
-                `}
+                className="p-4 text-sm"
               >
                 {option}
-              </button>
+              </LuminaAnswerChoice>
             );
           })}
         </div>
@@ -508,22 +530,18 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
         <div className="flex justify-end">
           {!showExplanation ? (
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="check"
               onClick={handleCheckIdentify}
               disabled={!selectedOption}
-              className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
-            >
-              Check Answer
-            </Button>
+            />
           ) : (
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="next"
               onClick={handleNext}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
             >
-              {currentChallengeIndex < challenges.length - 1 ? 'Next' : 'Finish'}
-            </Button>
+              {currentChallengeIndex < challenges.length - 1 ? 'Next →' : 'Finish'}
+            </LuminaActionButton>
           )}
         </div>
       </div>
@@ -540,16 +558,16 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
     return (
       <div className="space-y-4">
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+        <LuminaPanel>
           <p className="text-slate-400 text-sm">
             Label the <span className="text-amber-300 font-semibold">part of speech</span> for each word.
             {!labelAllChecked && (
               <span className="text-slate-500"> Click a word, then select its POS.</span>
             )}
           </p>
-        </div>
+        </LuminaPanel>
 
-        {/* Words with labels */}
+        {/* Words with labels — bespoke label-arrange interaction surface */}
         <div className="rounded-xl bg-slate-800/40 border border-white/5 p-5">
           <div className="flex flex-wrap gap-3 justify-center">
             {words.map((word, idx) => {
@@ -572,23 +590,20 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
                     {word.text}
                   </span>
                   {label ? (
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] ${
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
                         labelAllChecked
-                          ? isCorrect
-                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                            : 'bg-red-500/20 border-red-500/40 text-red-300'
+                          ? answerStateClass(isCorrect ? 'correct' : 'incorrect')
                           : getPosColor(label)
                       }`}
                     >
                       {label}
                       {isWrong && <span className="ml-1 text-[9px] opacity-70">({word.partOfSpeech})</span>}
-                    </Badge>
+                    </span>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] bg-white/5 border-white/10 text-slate-500">
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium bg-white/5 border-white/10 text-slate-500">
                       ?
-                    </Badge>
+                    </span>
                   )}
                 </div>
               );
@@ -596,14 +611,12 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
           </div>
         </div>
 
-        {/* POS selector */}
+        {/* POS selector — bespoke chip bank for the label-arrange surface */}
         {!labelAllChecked && (
           <div className="flex flex-wrap gap-2 justify-center">
             {allPOS.map(pos => (
-              <Button
+              <button
                 key={pos}
-                variant="ghost"
-                size="sm"
                 onClick={() => {
                   setLabeledWords(prev => ({ ...prev, [words[activeLabelIndex].id]: pos }));
                   // Auto-advance to next unlabeled word
@@ -615,10 +628,10 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
                     if (firstUnlabeled >= 0) setActiveLabelIndex(firstUnlabeled);
                   }
                 }}
-                className={`text-xs ${getPosColor(pos)}`}
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-all ${getPosColor(pos)}`}
               >
                 {pos}
-              </Button>
+              </button>
             ))}
           </div>
         )}
@@ -628,22 +641,20 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
         <div className="flex justify-end">
           {!labelAllChecked ? (
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="check"
               onClick={handleCheckLabelAll}
               disabled={!allLabeled}
-              className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
             >
               Check Labels
-            </Button>
+            </LuminaActionButton>
           ) : (
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="next"
               onClick={handleNext}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
             >
-              {currentChallengeIndex < challenges.length - 1 ? 'Next' : 'Finish'}
-            </Button>
+              {currentChallengeIndex < challenges.length - 1 ? 'Next →' : 'Finish'}
+            </LuminaActionButton>
           )}
         </div>
       </div>
@@ -658,7 +669,7 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
     return (
       <div className="space-y-4">
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+        <LuminaPanel>
           <p className="text-slate-400 text-sm">
             {parseStep === 1 ? (
               <>Group each word as <span className="text-blue-300 font-semibold">Subject</span> or <span className="text-emerald-300 font-semibold">Predicate</span>. Click words to toggle.</>
@@ -666,9 +677,9 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
               <>Now classify the <span className="text-amber-300 font-semibold">sentence type</span>.</>
             )}
           </p>
-        </div>
+        </LuminaPanel>
 
-        {/* Words with subject/predicate grouping */}
+        {/* Words with subject/predicate grouping — bespoke toggle surface */}
         <div className="rounded-xl bg-slate-800/40 border border-white/5 p-5">
           <div className="flex flex-wrap gap-2 justify-center">
             {words.map((word) => {
@@ -720,25 +731,27 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
           <div className="grid grid-cols-2 gap-2">
             {(currentChallenge.sentenceTypeOptions || []).map((option) => {
               const isSelected = selectedOption === option;
-              const showResult = showExplanation;
               const isCorrectOption = option.toLowerCase() === currentChallenge.sentenceType?.toLowerCase();
 
+              let state: AnswerChoiceState;
+              if (showExplanation) {
+                if (isCorrectOption) state = 'correct';
+                else if (isSelected) state = 'incorrect';
+                else state = 'dimmed';
+              } else {
+                state = isSelected ? 'selected' : 'idle';
+              }
+
               return (
-                <button
+                <LuminaAnswerChoice
                   key={option}
+                  state={state}
                   onClick={() => !showExplanation && setSelectedOption(option)}
                   disabled={showExplanation}
-                  className={`
-                    text-left px-4 py-3 rounded-lg border transition-all text-sm
-                    ${showResult && isSelected && isCorrectOption ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : ''}
-                    ${showResult && isSelected && !isCorrectOption ? 'bg-red-500/20 border-red-500/40 text-red-300' : ''}
-                    ${showResult && !isSelected && isCorrectOption ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''}
-                    ${!showResult && isSelected ? 'bg-blue-500/20 border-blue-500/40 text-blue-300' : ''}
-                    ${!showResult && !isSelected ? 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10' : ''}
-                  `}
+                  className="p-4 text-sm"
                 >
                   {option}
-                </button>
+                </LuminaAnswerChoice>
               );
             })}
           </div>
@@ -749,26 +762,24 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
         <div className="flex justify-end">
           {!showExplanation ? (
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="check"
               onClick={handleCheckParseStructure}
               disabled={
                 parseStep === 1
                   ? Object.keys(wordGroups).length < words.length
                   : !selectedOption
               }
-              className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
             >
               {parseStep === 1 ? 'Check Groups' : 'Check Type'}
-            </Button>
+            </LuminaActionButton>
           ) : (
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="next"
               onClick={handleNext}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
             >
-              {currentChallengeIndex < challenges.length - 1 ? 'Next' : 'Finish'}
-            </Button>
+              {currentChallengeIndex < challenges.length - 1 ? 'Next →' : 'Finish'}
+            </LuminaActionButton>
           )}
         </div>
       </div>
@@ -781,11 +792,11 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
 
   if (!currentChallenge) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -794,36 +805,28 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
     : 0;
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <p className="text-sm text-slate-400">{description}</p>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
+              <LuminaBadge className="text-xs">
                 Grade {gradeLevel}
-              </Badge>
-              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-300 text-xs">
+              </LuminaBadge>
+              <LuminaBadge accent="amber" className="text-xs">
                 {currentChallengeIndex + 1} of {challenges.length}
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-xs ${
-              currentChallenge.type === 'identify_pos' ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-              : currentChallenge.type === 'identify_role' ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-              : currentChallenge.type === 'label_all' ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-              : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-            }`}
-          >
+          <LuminaBadge accent={TYPE_BADGE_ACCENT[currentChallenge.type] ?? 'cyan'} className="text-xs">
             {PHASE_TYPE_CONFIG[currentChallenge.type]?.label || currentChallenge.type}
-          </Badge>
+          </LuminaBadge>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase summary when complete */}
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -843,8 +846,8 @@ const SentenceAnalyzer: React.FC<SentenceAnalyzerProps> = ({ data, className }) 
             {currentChallenge.type === 'parse_structure' && renderParseStructureChallenge()}
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

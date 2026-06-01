@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaChip,
+  LuminaFeedbackCard,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -187,45 +195,47 @@ const StoryPlanner: React.FC<StoryPlannerProps> = ({ data, className }) => {
     </div>
   );
 
+  // Arc band tints — interaction-surface visuals for the story-arc compose board.
   const ARC_COLORS = ['bg-blue-500/15 border-blue-500/30', 'bg-amber-500/15 border-amber-500/30', 'bg-rose-500/15 border-rose-500/30', 'bg-amber-500/15 border-amber-500/30', 'bg-emerald-500/15 border-emerald-500/30'];
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
-            <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+            <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
         {/* Writing prompt */}
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+        <LuminaPanel className="p-3">
           <p className="text-xs text-slate-500 mb-1">Writing Prompt:</p>
           <p className="text-slate-200 text-sm font-medium">{writingPrompt}</p>
-        </div>
+        </LuminaPanel>
 
         {/* Phase 1: Plan Elements */}
         {currentPhase === 'plan' && (
           <div className="space-y-3">
             {elements.map(elem => (
-              <div key={elem.elementId} className="rounded-lg bg-white/5 border border-white/10 p-3 space-y-1.5">
+              <LuminaPanel key={elem.elementId} className="p-3 space-y-1.5">
                 <div className="flex items-center gap-2">
                   <p className="text-xs font-bold text-slate-300">{elem.label}</p>
                   {elem.required && <span className="text-xs text-rose-400">*</span>}
                 </div>
                 <p className="text-xs text-slate-500">{elem.prompt}</p>
+                {/* Compose surface — bespoke edit field */}
                 <textarea
                   value={elementTexts[elem.elementId] || ''}
                   onChange={e => setElementTexts(prev => ({ ...prev, [elem.elementId]: e.target.value }))}
                   rows={2}
                   className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
                 />
-              </div>
+              </LuminaPanel>
             ))}
 
             {conflictTypes && conflictTypes.length > 0 && (
@@ -233,23 +243,24 @@ const StoryPlanner: React.FC<StoryPlannerProps> = ({ data, className }) => {
                 <p className="text-xs text-slate-500">Conflict type:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {conflictTypes.map(ct => (
-                    <button key={ct} onClick={() => { SoundManager.select(); setSelectedConflict(ct); }}
-                      className={`px-2 py-1 rounded text-xs border transition-all ${
-                        selectedConflict === ct ? 'bg-rose-500/20 border-rose-500/40 text-rose-300' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
-                      }`}>
+                    <LuminaChip
+                      key={ct}
+                      state={selectedConflict === ct ? 'selected' : 'idle'}
+                      onClick={() => { SoundManager.select(); setSelectedConflict(ct); }}
+                      className="px-2 py-1 text-xs"
+                    >
                       {ct}
-                    </button>
+                    </LuminaChip>
                   ))}
                 </div>
               </div>
             )}
 
             <div className="flex justify-end">
-              <Button variant="ghost" onClick={nextPhase}
-                disabled={elements.filter(e => e.required).every(e => !(elementTexts[e.elementId] || '').trim())}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="primary" onClick={nextPhase}
+                disabled={elements.filter(e => e.required).every(e => !(elementTexts[e.elementId] || '').trim())}>
                 Next: Story Arc
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -259,10 +270,11 @@ const StoryPlanner: React.FC<StoryPlannerProps> = ({ data, className }) => {
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Plan what happens at each part of your story:</p>
             {dialoguePrompt && (
-              <div className="rounded-lg bg-violet-500/10 border border-violet-500/30 p-2">
-                <p className="text-xs text-violet-300">{dialoguePrompt}</p>
-              </div>
+              <LuminaPanel accent="purple" className="p-2">
+                <p className="text-xs text-purple-300">{dialoguePrompt}</p>
+              </LuminaPanel>
             )}
+            {/* Story-arc compose board — bespoke edit surface */}
             <div className="space-y-2">
               {storyArcLabels.map((label, i) => (
                 <div key={label} className={`rounded-lg border p-3 ${ARC_COLORS[i % ARC_COLORS.length]}`}>
@@ -278,12 +290,11 @@ const StoryPlanner: React.FC<StoryPlannerProps> = ({ data, className }) => {
               ))}
             </div>
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase}
-                disabled={!storyArcLabels.some(l => (arcTexts[l] || '').trim())}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaButton tone="primary" onClick={nextPhase}
+                disabled={!storyArcLabels.some(l => (arcTexts[l] || '').trim())}>
                 Review
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -294,14 +305,14 @@ const StoryPlanner: React.FC<StoryPlannerProps> = ({ data, className }) => {
             {/* Elements summary */}
             <div className="grid gap-2 grid-cols-2">
               {elements.map(elem => (
-                <div key={elem.elementId} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                <LuminaPanel key={elem.elementId} className="p-2">
                   <p className="text-xs font-bold text-slate-400">{elem.label}</p>
                   <p className="text-xs text-slate-300 mt-0.5">{elementTexts[elem.elementId] || <span className="italic text-slate-600">Empty</span>}</p>
-                </div>
+                </LuminaPanel>
               ))}
             </div>
 
-            {/* Arc visualization */}
+            {/* Arc visualization — story-mountain compose board */}
             <div className="flex items-end gap-1" style={{ height: '80px' }}>
               {storyArcLabels.map((label, i) => {
                 const heights = [30, 50, 80, 50, 35]; // story mountain shape
@@ -320,22 +331,19 @@ const StoryPlanner: React.FC<StoryPlannerProps> = ({ data, className }) => {
             </div>
 
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
+              <LuminaButton onClick={prevPhase}>Edit</LuminaButton>
               {!hasSubmittedEvaluation ? (
-                <Button variant="ghost" onClick={submitFinalEvaluation}
-                  className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">
+                <LuminaButton tone="primary" onClick={submitFinalEvaluation}>
                   Finish
-                </Button>
+                </LuminaButton>
               ) : (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
-                  <p className="text-emerald-300 font-semibold">Story Plan Complete!</p>
-                </div>
+                <LuminaFeedbackCard status="correct" label="Story Plan Complete!" className="w-full" />
               )}
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

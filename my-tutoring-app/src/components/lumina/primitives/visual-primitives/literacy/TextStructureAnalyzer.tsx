@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  type LuminaAccent,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -76,12 +87,24 @@ interface TextStructureAnalyzerProps {
 
 type AnalysisPhase = 'signal-words' | 'identify' | 'map' | 'review';
 
+// Pedagogical color identity per structure type — reused on the template
+// regions (the interaction surface) in Phase 3. Kept bespoke (this is the
+// painting's color language, not chrome).
 const STRUCTURE_COLORS: Record<StructureType, string> = {
   'cause-effect': 'bg-orange-500/20 border-orange-500/40 text-orange-200',
   'compare-contrast': 'bg-blue-500/20 border-blue-500/40 text-blue-200',
   'problem-solution': 'bg-emerald-500/20 border-emerald-500/40 text-emerald-200',
   'chronological': 'bg-amber-500/20 border-amber-500/40 text-amber-200',
   'description': 'bg-violet-500/20 border-violet-500/40 text-violet-200',
+};
+
+// Structure type -> kit accent (for the category badge in the header).
+const STRUCTURE_ACCENTS: Record<StructureType, LuminaAccent> = {
+  'cause-effect': 'orange',
+  'compare-contrast': 'blue',
+  'problem-solution': 'emerald',
+  'chronological': 'amber',
+  'description': 'purple',
 };
 
 const STRUCTURE_ICONS: Record<StructureType, string> = {
@@ -252,7 +275,8 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
     signalWords, mappingAccuracy, attemptsCount, submitEvaluation, ideaMapping,
   ]);
 
-  // Render progress
+  // Render progress — phase navigation chrome (no kit equivalent for the
+  // labeled multi-phase chip rail; grading-state colors mark completed/active).
   const renderProgress = () => (
     <div className="flex items-center gap-2 mb-4">
       {phases.map((phase, i) => {
@@ -275,7 +299,9 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
     </div>
   );
 
-  // Render template for Phase 3 (Map)
+  // Render template for Phase 3 (Map) — THE PAINTING. The structure-template
+  // diagram with drag-to-sort key-idea chips. Color identity per structure
+  // type and the in-progress drag tokens stay bespoke.
   const renderTemplate = () => {
     const unmappedIdeas = keyIdeas.filter(idea => !ideaMapping[idea.ideaId]);
     const structureColor = STRUCTURE_COLORS[structureType] || STRUCTURE_COLORS['description'];
@@ -351,39 +377,39 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
   // ============================================================================
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
-              <Badge variant="outline" className={`${STRUCTURE_COLORS[structureType] || ''} text-xs`}>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge accent={STRUCTURE_ACCENTS[structureType]} className="text-xs">
                 {structureType.replace('-', ' ')}
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
         {/* Phase 1: Signal Words */}
         {currentPhase === 'signal-words' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Tap the signal words that help you understand how this passage is organized:</p>
-            <div className="rounded-lg bg-white/5 border border-white/10 p-4">
+            {/* PAINTING: clickable signal-word spans inside the readout panel */}
+            <LuminaPanel>
               {renderPassageWithSignalWords}
-            </div>
+            </LuminaPanel>
             <div className="flex items-center justify-between">
               <p className="text-xs text-slate-400">
                 Found: {highlightedWords.size} / {signalWords.length} signal words
               </p>
-              <Button variant="ghost" onClick={nextPhase} disabled={highlightedWords.size === 0}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaActionButton action="next" onClick={nextPhase} disabled={highlightedWords.size === 0}>
                 Next: Identify Structure
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -395,27 +421,25 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
             <div className="grid gap-2">
               {structureOptions.map(opt => {
                 const isSelected = selectedStructure === opt.type;
-                const colorClass = STRUCTURE_COLORS[opt.type] || '';
+                const state: AnswerChoiceState = isSelected ? 'selected' : 'idle';
                 return (
-                  <button
+                  <LuminaAnswerChoice
                     key={opt.type}
+                    state={state}
                     onClick={() => { SoundManager.select(); setSelectedStructure(opt.type); }}
-                    className={`text-left rounded-lg border p-3 transition-all ${
-                      isSelected ? colorClass : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                    }`}
+                    className="p-3"
                   >
                     <p className="text-sm font-medium">{opt.label}</p>
                     <p className="text-xs opacity-70 mt-0.5">{opt.description}</p>
-                  </button>
+                  </LuminaAnswerChoice>
                 );
               })}
             </div>
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase} disabled={!selectedStructure}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
+              <LuminaActionButton action="next" onClick={nextPhase} disabled={!selectedStructure}>
                 Next: Map Ideas
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -426,12 +450,11 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
             <p className="text-xs text-slate-500">Place each key idea into the correct part of the {structureType.replace('-', ' ')} template:</p>
             {renderTemplate()}
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase}
-                disabled={Object.keys(ideaMapping).length < keyIdeas.length}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
+              <LuminaActionButton action="next" onClick={nextPhase}
+                disabled={Object.keys(ideaMapping).length < keyIdeas.length}>
                 Review
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -441,7 +464,7 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
           <div className="space-y-4">
             {/* Summary */}
             <div className="space-y-2">
-              <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+              <LuminaPanel className="p-3">
                 <p className="text-xs text-slate-500 mb-1">Signal Words Found:</p>
                 <div className="flex flex-wrap gap-1">
                   {signalWords.map((sw, i) => (
@@ -452,16 +475,16 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
                     </span>
                   ))}
                 </div>
-              </div>
+              </LuminaPanel>
 
-              <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+              <LuminaPanel className="p-3">
                 <p className="text-xs text-slate-500 mb-1">Selected Structure:</p>
                 <p className={`text-sm font-medium ${selectedStructure === structureType ? 'text-emerald-300' : 'text-slate-200'}`}>
                   {structureOptions.find(o => o.type === selectedStructure)?.label || 'None selected'}
                 </p>
-              </div>
+              </LuminaPanel>
 
-              <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+              <LuminaPanel className="p-3">
                 <p className="text-xs text-slate-500 mb-1">Template Mapping:</p>
                 {templateRegions.map(region => {
                   const mapped = keyIdeas.filter(i => ideaMapping[i.ideaId] === region.regionId);
@@ -476,35 +499,35 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
                     </div>
                   );
                 })}
-              </div>
+              </LuminaPanel>
             </div>
 
             {/* Submit / Feedback */}
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
+              <LuminaButton tone="subtle" onClick={prevPhase}>Edit</LuminaButton>
               {!hasSubmittedEvaluation ? (
-                <Button variant="ghost" onClick={submitFinalEvaluation}
-                  className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">
+                <LuminaActionButton action="check" onClick={submitFinalEvaluation}>
                   Submit
-                </Button>
+                </LuminaActionButton>
               ) : (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
-                  <p className="text-emerald-300 font-semibold">Analysis Complete!</p>
-                  <p className="text-slate-400 text-sm mt-1">
+                <LuminaFeedbackCard
+                  status={selectedStructure === structureType ? 'correct' : 'insight'}
+                  label="Analysis Complete!"
+                  className="w-full text-center"
+                  teachingNote={authorPurposeExplanation || undefined}
+                >
+                  <span className="text-sm text-slate-400">
                     Structure: {selectedStructure === structureType ? 'Correct' : 'Incorrect'} |
                     Signal Words: {highlightedWords.size}/{signalWords.length} |
                     Mapping: {mappingAccuracy}%
-                  </p>
-                  {authorPurposeExplanation && (
-                    <p className="text-slate-400 text-xs mt-2 italic">{authorPurposeExplanation}</p>
-                  )}
-                </div>
+                  </span>
+                </LuminaFeedbackCard>
               )}
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

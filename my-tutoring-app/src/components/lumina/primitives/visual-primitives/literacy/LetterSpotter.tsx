@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaProgress,
+  LuminaChallengeCounter,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  answerStateClass,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -69,6 +78,13 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'find-it': { label: 'Find It', accentColor: 'purple' },
   'match-it': { label: 'Match It', accentColor: 'emerald' },
 };
+
+/** Mode → kit accent for the mode badge. */
+const MODE_ACCENT = {
+  'name-it': 'blue',
+  'find-it': 'purple',
+  'match-it': 'emerald',
+} as const;
 
 /** Rotate font families so students see letters in varied visual forms. */
 const FONT_CLASSES = ['font-sans', 'font-serif', 'font-mono'];
@@ -593,7 +609,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-6">
-        {/* Sentence display with emoji replacing the full target word */}
+        {/* Sentence display with emoji replacing the full target word — INTERACTION SURFACE */}
         <div className="flex justify-center">
           <div className="bg-white/5 border-2 border-white/15 rounded-2xl px-8 py-6 max-w-lg">
             <p className={`${fontClass} text-3xl font-bold text-slate-100 text-center leading-relaxed`}>
@@ -626,34 +642,31 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
           Listen to the sentence. What letter does the {emoji} replace?
         </p>
 
-        {/* Letter options grid */}
+        {/* Letter options grid — letter tiles (interaction surface); grading colors from kit tokens */}
         <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
           {options.map((option) => {
             const isSelected = selectedOption === option;
             const isCorrectOption = option.toLowerCase() === currentChallenge.targetLetter.toLowerCase();
             const showCorrect = isLocked && isCorrectOption;
             const showWrong = isSelected && feedbackType === 'error' && !isCorrectOption;
+            const stateClass = showCorrect
+              ? answerStateClass('correct')
+              : showWrong
+                ? answerStateClass('incorrect')
+                : isSelected
+                  ? answerStateClass('selected')
+                  : answerStateClass('idle');
 
             return (
-              <Button
+              <button
                 key={option}
-                variant="ghost"
+                type="button"
                 onClick={() => handleOptionSelect(option)}
                 disabled={isLocked}
-                className={`
-                  h-16 text-2xl font-bold transition-all
-                  ${showCorrect
-                    ? 'bg-emerald-500/30 border-2 border-emerald-400/60 text-emerald-200'
-                    : showWrong
-                      ? 'bg-red-500/20 border-2 border-red-500/40 text-red-300'
-                      : isSelected
-                        ? 'bg-blue-500/20 border-2 border-blue-500/40 text-blue-200'
-                        : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
-                  }
-                `}
+                className={`h-16 rounded-xl border-2 text-2xl font-bold transition-all ${stateClass}`}
               >
                 {option.toUpperCase()}
-              </Button>
+              </button>
             );
           })}
         </div>
@@ -679,7 +692,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
           </p>
         </div>
 
-        {/* Letter grid */}
+        {/* Letter grid — interaction surface; grading colors from kit tokens */}
         <div
           className="grid gap-2 max-w-md mx-auto"
           style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
@@ -688,6 +701,11 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
             const isSelected = selectedGridCells.has(i);
             const isTarget = letter.toLowerCase() === target;
             const showCorrect = isLocked && isTarget;
+            const stateClass = showCorrect
+              ? answerStateClass('correct')
+              : isSelected
+                ? answerStateClass('selected')
+                : answerStateClass('idle');
 
             return (
               <button
@@ -697,12 +715,8 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
                 className={`
                   aspect-square rounded-xl border-2 font-bold text-2xl
                   transition-all select-none
-                  ${showCorrect
-                    ? 'bg-emerald-500/30 border-emerald-400/60 text-emerald-200 scale-105'
-                    : isSelected
-                      ? 'bg-blue-500/25 border-blue-400/50 text-blue-200 scale-105'
-                      : 'bg-slate-800/40 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20'
-                  }
+                  ${stateClass}
+                  ${(showCorrect || isSelected) ? 'scale-105' : ''}
                   ${isLocked ? 'cursor-default' : 'cursor-pointer'}
                 `}
               >
@@ -715,14 +729,13 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
         {/* Check button */}
         {!isLocked && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="check"
               onClick={handleCheckFindIt}
               disabled={selectedGridCells.size === 0}
-              className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 px-8"
             >
               Check
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
       </div>
@@ -739,7 +752,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-6">
-        {/* Large uppercase letter */}
+        {/* Large uppercase letter — interaction surface */}
         <div className="flex justify-center">
           <div className={`
             ${fontClass} text-8xl font-bold text-slate-100
@@ -752,34 +765,31 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
 
         <p className="text-center text-slate-400 text-sm">Which lowercase letter matches?</p>
 
-        {/* Lowercase options */}
+        {/* Lowercase options — letter tiles (interaction surface); grading colors from kit tokens */}
         <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
           {options.map((option) => {
             const isSelected = selectedOption === option;
             const isCorrectOption = option.toLowerCase() === currentChallenge.targetLetter.toLowerCase();
             const showCorrect = isLocked && isCorrectOption;
             const showWrong = isSelected && feedbackType === 'error' && !isCorrectOption;
+            const stateClass = showCorrect
+              ? answerStateClass('correct')
+              : showWrong
+                ? answerStateClass('incorrect')
+                : isSelected
+                  ? answerStateClass('selected')
+                  : answerStateClass('idle');
 
             return (
-              <Button
+              <button
                 key={option}
-                variant="ghost"
+                type="button"
                 onClick={() => handleOptionSelect(option)}
                 disabled={isLocked}
-                className={`
-                  h-16 text-3xl font-bold transition-all
-                  ${showCorrect
-                    ? 'bg-emerald-500/30 border-2 border-emerald-400/60 text-emerald-200'
-                    : showWrong
-                      ? 'bg-red-500/20 border-2 border-red-500/40 text-red-300'
-                      : isSelected
-                        ? 'bg-blue-500/20 border-2 border-blue-500/40 text-blue-200'
-                        : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200'
-                  }
-                `}
+                className={`h-16 rounded-xl border-2 text-3xl font-bold transition-all ${stateClass}`}
               >
                 {option}
-              </Button>
+              </button>
             );
           })}
         </div>
@@ -793,63 +803,51 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
 
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   const elapsedMs = Date.now() - startTimeRef.current;
+  const isNewLetterChallenge =
+    currentChallenge && newLetters.includes(currentChallenge.targetLetter.toLowerCase());
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-                Group {letterGroup}
-              </Badge>
+              <LuminaBadge className="text-xs">Group {letterGroup}</LuminaBadge>
               {currentChallenge && (
-                <Badge
-                  variant="outline"
-                  className={`text-xs ${
-                    currentChallenge.mode === 'name-it'
-                      ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                      : currentChallenge.mode === 'find-it'
-                        ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                        : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                  }`}
-                >
+                <LuminaBadge accent={MODE_ACCENT[currentChallenge.mode]} className="text-xs">
                   {MODE_CONFIG[currentChallenge.mode]?.label || currentChallenge.mode}
-                </Badge>
+                </LuminaBadge>
               )}
-              {currentChallenge && newLetters.includes(currentChallenge.targetLetter.toLowerCase()) && (
-                <Badge variant="outline" className="bg-amber-500/20 border-amber-500/40 text-amber-300 text-xs">
+              {isNewLetterChallenge && (
+                <LuminaBadge accent="amber" className="text-xs">
                   New Letter
-                </Badge>
+                </LuminaBadge>
               )}
             </div>
           </div>
-          <span className="text-xs text-slate-500">
-            {currentChallengeIndex + 1} / {challenges.length}
-          </span>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Progress bar */}
-        <div className="w-full h-1.5 bg-slate-700/40 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-500/60 rounded-full transition-all duration-500"
-            style={{
-              width: `${((currentChallengeIndex + (isLocked ? 1 : 0)) / challenges.length) * 100}%`,
-            }}
+          <LuminaChallengeCounter
+            current={currentChallengeIndex + 1}
+            total={challenges.length}
           />
         </div>
+      </LuminaCardHeader>
+
+      <LuminaCardContent className="space-y-4">
+        {/* Progress bar */}
+        <LuminaProgress
+          accent="blue"
+          value={((currentChallengeIndex + (isLocked ? 1 : 0)) / challenges.length) * 100}
+        />
 
         {/* Challenge content */}
         {!allChallengesComplete && currentChallenge && (
@@ -862,29 +860,17 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
 
         {/* Feedback */}
         {feedback && (
-          <div
-            className={`
-              px-4 py-2 rounded-lg text-sm font-medium text-center
-              ${feedbackType === 'success'
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-                : 'bg-red-500/20 border border-red-500/40 text-red-300'
-              }
-            `}
-          >
+          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Next / Finish button */}
         {isLocked && !allChallengesComplete && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              onClick={handleNextChallenge}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-            >
+            <LuminaActionButton action="next" onClick={handleNextChallenge}>
               {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -899,8 +885,8 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

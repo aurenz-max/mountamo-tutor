@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  answerStateClass,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -65,7 +75,19 @@ const SKILL_LABELS: Record<RevisionSkill, string> = {
   'concision': 'Cut Unnecessary Words',
 };
 
-const SKILL_COLORS: Record<RevisionSkill, string> = {
+// Accent per skill — drives chrome (badges, pills) through the kit palette.
+const SKILL_ACCENTS: Record<RevisionSkill, LuminaAccent> = {
+  'add-details': 'blue',
+  'word-choice': 'purple',
+  'combine-sentences': 'emerald',
+  'transitions': 'amber',
+  'reorganize': 'rose',
+  'concision': 'cyan',
+};
+
+// In-passage highlight tint for the dashed underline on the draft text body
+// (the bespoke interaction/reading surface — NOT chrome).
+const SKILL_HIGHLIGHT: Record<RevisionSkill, string> = {
   'add-details': 'bg-blue-500/10 border-blue-500/30 text-blue-300',
   'word-choice': 'bg-violet-500/10 border-violet-500/30 text-violet-300',
   'combine-sentences': 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
@@ -89,6 +111,8 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
   const [beforeAfterCompared, setBeforeAfterCompared] = useState(false);
   // Reorganize mode: track sentence order as array of target indices
   const [sentenceOrder, setSentenceOrder] = useState<number[]>(() => targets.map((_, i) => i));
+
+  const skillAccent = SKILL_ACCENTS[revisionSkill];
 
   const {
     submitResult: submitEvaluation,
@@ -217,7 +241,7 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
     </div>
   );
 
-  // Render draft with targets highlighted
+  // Render draft with targets highlighted (bespoke reading surface)
   const renderDraftWithHighlights = () => {
     let remaining = draft;
     const elements: React.ReactNode[] = [];
@@ -237,7 +261,7 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
 
       // Highlighted target
       elements.push(
-        <span key={key++} className={`rounded px-0.5 border-b-2 border-dashed ${SKILL_COLORS[revisionSkill]}`}>
+        <span key={key++} className={`rounded px-0.5 border-b-2 border-dashed ${SKILL_HIGHLIGHT[revisionSkill]}`}>
           {target.originalText}
         </span>
       );
@@ -254,22 +278,22 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
   };
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
-              <Badge variant="outline" className={`${SKILL_COLORS[revisionSkill]} text-xs`}>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge accent={skillAccent} className="text-xs">
                 {SKILL_LABELS[revisionSkill]}
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
         {/* Phase 1: Read */}
@@ -280,19 +304,19 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
                 ? 'Read this passage — the sentences are out of order. Your job is to put them in the right order:'
                 : 'Read this draft and notice the highlighted areas that need revision:'}
             </p>
+            {/* Bespoke reading surface — the draft text body with highlightable spans. */}
             <div className="rounded-lg bg-white/5 border border-white/10 p-4">
               {isReorganize
                 ? <p className="text-sm leading-relaxed text-slate-200">{draft}</p>
                 : renderDraftWithHighlights()}
             </div>
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2">
+            <LuminaPanel accent="amber" className="p-2">
               <p className="text-xs text-amber-300">Focus: <span className="font-bold">{SKILL_LABELS[revisionSkill]}</span> — {isReorganize ? `${targets.length} sentences to reorder` : `${targets.length} areas to improve`}</p>
-            </div>
+            </LuminaPanel>
             <div className="flex justify-end">
-              <Button variant="ghost" onClick={nextPhase}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="primary" onClick={nextPhase}>
                 Start Revising
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -303,6 +327,7 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
             {isReorganize ? (
               <>
                 <p className="text-xs text-slate-500">Reorder these sentences so they flow logically. Use the arrows to move sentences up or down:</p>
+                {/* Bespoke arrange surface — sentence reorder rows. */}
                 <div className="space-y-1.5">
                   {sentenceOrder.map((origIdx, pos) => {
                     const target = targets[origIdx];
@@ -337,10 +362,11 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
             ) : (
               <>
                 <p className="text-xs text-slate-500">Revise each highlighted section:</p>
+                {/* Bespoke edit surface — per-target revision composers. */}
                 {targets.map(target => (
                   <div key={target.targetId} className="rounded-lg bg-white/5 border border-white/10 p-3 space-y-2">
                     <div className="flex items-start gap-2">
-                      <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded ${SKILL_COLORS[revisionSkill]}`}>Original</span>
+                      <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded ${SKILL_HIGHLIGHT[revisionSkill]}`}>Original</span>
                       <p className="text-sm text-slate-400 line-through">{target.originalText}</p>
                     </div>
                     <p className="text-xs text-slate-500">{target.suggestion}</p>
@@ -349,11 +375,9 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
                       <div className="flex flex-wrap gap-1.5">
                         {target.alternatives.map((alt, i) => (
                           <button key={i} onClick={() => { SoundManager.select(); setRevisions(prev => ({ ...prev, [target.targetId]: alt })); }}
-                            className={`px-2 py-1 rounded text-xs border transition-all ${
-                              revisions[target.targetId] === alt
-                                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
-                            }`}>
+                            className={`px-2 py-1 rounded text-xs border transition-all ${answerStateClass(
+                              revisions[target.targetId] === alt ? 'selected' : 'idle'
+                            )}`}>
                             {alt}
                           </button>
                         ))}
@@ -372,12 +396,11 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
               </>
             )}
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase}
-                disabled={!isReorganize && !targets.some(t => (revisions[t.targetId] || '').trim())}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaButton tone="primary" onClick={nextPhase}
+                disabled={!isReorganize && !targets.some(t => (revisions[t.targetId] || '').trim())}>
                 Compare
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -385,6 +408,7 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
         {/* Phase 3: Compare */}
         {currentPhase === 'compare' && (
           <div className="space-y-4">
+            {/* Bespoke before/after comparison surface. */}
             <div className={`grid ${isReorganize ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
               <div className="rounded-lg bg-rose-500/5 border border-rose-500/20 p-3">
                 <p className="text-xs font-bold text-rose-400 mb-2">{isReorganize ? 'Scrambled' : 'Before'}</p>
@@ -403,32 +427,28 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
             </div>
 
             {!beforeAfterCompared && (
-              <Button variant="ghost" onClick={() => setBeforeAfterCompared(true)}
-                className="bg-violet-500/20 border border-violet-500/40 hover:bg-violet-500/30 text-violet-300 text-xs w-full">
+              <LuminaButton tone="primary" onClick={() => setBeforeAfterCompared(true)}
+                className="text-xs w-full">
                 I&apos;ve compared both versions
-              </Button>
+              </LuminaButton>
             )}
 
-            <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
+            <div className="flex justify-between items-center gap-3">
+              <LuminaButton onClick={prevPhase}>Edit</LuminaButton>
               {!hasSubmittedEvaluation ? (
-                <Button variant="ghost" onClick={submitFinalEvaluation}
-                  className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">
+                <LuminaActionButton action="check" onClick={submitFinalEvaluation}>
                   Submit
-                </Button>
+                </LuminaActionButton>
               ) : (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
-                  <p className="text-emerald-300 font-semibold">Revision Complete!</p>
-                  <p className="text-slate-400 text-sm mt-1">
-                    {targets.filter(t => (revisions[t.targetId] || '').trim()).length}/{targets.length} revisions applied
-                  </p>
-                </div>
+                <LuminaFeedbackCard status="correct" label="Revision Complete!" className="flex-1">
+                  {targets.filter(t => (revisions[t.targetId] || '').trim()).length}/{targets.length} revisions applied
+                </LuminaFeedbackCard>
               )}
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -65,12 +75,15 @@ interface EvidenceFinderProps {
 
 type FinderPhase = 'find' | 'evaluate' | 'reason';
 
-const PHASE_CONFIG: Record<FinderPhase, { label: string; description: string }> = {
-  find: { label: 'Find', description: 'Highlight evidence in the passage' },
-  evaluate: { label: 'Evaluate', description: 'Rate evidence strength' },
-  reason: { label: 'Reason', description: 'Explain how evidence supports the claim' },
+const PHASE_CONFIG: Record<FinderPhase, { label: string; description: string; accent: LuminaAccent }> = {
+  find: { label: 'Find', description: 'Highlight evidence in the passage', accent: 'blue' },
+  evaluate: { label: 'Evaluate', description: 'Rate evidence strength', accent: 'amber' },
+  reason: { label: 'Reason', description: 'Explain how evidence supports the claim', accent: 'emerald' },
 };
 
+// Claim-identity colors for the interaction surface (passage highlights + claim
+// selector). These mark WHICH claim a piece of evidence belongs to — they are
+// part of the bespoke interaction, not grading colors.
 const CLAIM_COLORS = [
   { bg: 'bg-blue-500/20', border: 'border-blue-500/40', text: 'text-blue-300', highlight: 'bg-blue-500/30' },
   { bg: 'bg-violet-500/20', border: 'border-violet-500/40', text: 'text-violet-300', highlight: 'bg-violet-500/30' },
@@ -78,6 +91,8 @@ const CLAIM_COLORS = [
   { bg: 'bg-amber-500/20', border: 'border-amber-500/40', text: 'text-amber-300', highlight: 'bg-amber-500/30' },
 ];
 
+// Strength-rating colors — domain meaning (how strong is this evidence), part
+// of the evaluate-phase interaction surface, not eval-loop grading.
 const STRENGTH_CONFIG = {
   strong: { label: 'Strong', bg: 'bg-emerald-500/20', border: 'border-emerald-500/40', text: 'text-emerald-300' },
   moderate: { label: 'Moderate', bg: 'bg-amber-500/20', border: 'border-amber-500/40', text: 'text-amber-300' },
@@ -301,7 +316,8 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
   // Render Helpers
   // ============================================================================
 
-  // Phase progress
+  // Phase progress — a bespoke horizontal step indicator (no kit equivalent for
+  // a multi-step progress rail). Colors tokenized via accent maps.
   const renderPhaseProgress = () => {
     const phases: FinderPhase[] = cerEnabled ? ['find', 'evaluate', 'reason'] : ['find', 'evaluate'];
     return (
@@ -328,7 +344,7 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
                     }
                   `}
                 >
-                  {isCompleted ? '\u2713' : index + 1}
+                  {isCompleted ? '✓' : index + 1}
                 </div>
                 <span
                   className={`text-xs font-medium ${
@@ -345,7 +361,9 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
     );
   };
 
-  // Claim selector
+  // Claim selector — the interaction control that picks which claim subsequent
+  // highlights attach to. Claim-identity colors stay bespoke; the count chip
+  // and neutral idle state use kit tokens.
   const renderClaimSelector = () => (
     <div className="space-y-2 mb-4">
       <p className="text-xs text-slate-500">
@@ -356,6 +374,7 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
           const colorSet = CLAIM_COLORS[i % CLAIM_COLORS.length];
           const isActive = i === activeClaimIndex && currentPhase === 'find';
           const highlightCount = Object.values(highlightedSentences).filter(ci => ci === i).length;
+          const claimAccent: LuminaAccent = (['blue', 'purple', 'emerald', 'amber'] as const)[i % 4];
           return (
             <button
               key={claim.id}
@@ -373,9 +392,9 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
               <div className="flex items-center justify-between">
                 <span className="text-sm">{claim.text}</span>
                 {highlightCount > 0 && (
-                  <Badge variant="outline" className={`text-xs ml-2 ${colorSet.text} ${colorSet.border}`}>
+                  <LuminaBadge accent={claimAccent} className="text-xs ml-2">
                     {highlightCount}
-                  </Badge>
+                  </LuminaBadge>
                 )}
               </div>
             </button>
@@ -385,7 +404,8 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
     </div>
   );
 
-  // Render passage with highlight support
+  // Render passage with highlight support — THE INTERACTION SURFACE. Clickable,
+  // highlightable spans with claim-identity highlight colors. Left bespoke.
   const renderPassage = (interactive: boolean) => (
     <div className="rounded-xl bg-slate-800/40 border border-white/5 p-5 space-y-2">
       {passage.sentences.map(sentence => {
@@ -416,39 +436,32 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
   // Find phase
   const renderFindPhase = () => (
     <div className="space-y-4">
-      <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-        <p className="text-slate-400 text-sm">
+      <LuminaPrompt>
+        <span className="text-sm text-slate-400">
           Read the passage and <span className="text-amber-300">click on sentences</span> that provide evidence for the claim.
-        </p>
-      </div>
+        </span>
+      </LuminaPrompt>
 
       {renderClaimSelector()}
       {renderPassage(true)}
 
       {/* Feedback */}
       {feedback && (
-        <div
-          className={`px-4 py-2 rounded-lg text-sm font-medium text-center ${
-            feedbackType === 'success'
-              ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-              : feedbackType === 'error'
-                ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-                : 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
-          }`}
+        <LuminaFeedbackCard
+          status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}
         >
           {feedback}
-        </div>
+        </LuminaFeedbackCard>
       )}
 
       <div className="flex justify-end">
-        <Button
-          variant="ghost"
+        <LuminaActionButton
+          action="check"
           onClick={handleCheckFind}
           disabled={Object.keys(highlightedSentences).length === 0}
-          className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
         >
           Check Evidence
-        </Button>
+        </LuminaActionButton>
       </div>
     </div>
   );
@@ -462,15 +475,16 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-4">
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-          <p className="text-slate-400 text-sm">
+        <LuminaPrompt>
+          <span className="text-sm text-slate-400">
             Rate how <span className="text-amber-300">strong</span> each piece of evidence is.
-          </p>
-        </div>
+          </span>
+        </LuminaPrompt>
 
         {renderClaimSelector()}
 
-        {/* Evidence items with strength rating */}
+        {/* Evidence items with strength rating — interaction surface. Claim
+            color + strength-rating colors are domain meaning, kept bespoke. */}
         <div className="space-y-3">
           {evidenceSentences.map(sentence => {
             const rating = strengthRatings[sentence.id];
@@ -509,13 +523,12 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
         </div>
 
         <div className="flex justify-end">
-          <Button
-            variant="ghost"
+          <LuminaActionButton
+            action={cerEnabled ? 'next' : 'check'}
             onClick={handleDoneEvaluate}
-            className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
           >
             {cerEnabled ? 'Next: Reasoning' : 'Finish'}
-          </Button>
+          </LuminaActionButton>
         </div>
       </div>
     );
@@ -524,45 +537,48 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
   // Reason phase (CER)
   const renderReasonPhase = () => (
     <div className="space-y-4">
-      <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-        <p className="text-slate-400 text-sm">
+      <LuminaPrompt>
+        <span className="text-sm text-slate-400">
           Explain <span className="text-amber-300">how</span> the evidence supports each claim (1-2 sentences).
-        </p>
-      </div>
+        </span>
+      </LuminaPrompt>
 
       {/* CER scaffold */}
       {claims.map((claim, i) => {
         const colorSet = CLAIM_COLORS[i % CLAIM_COLORS.length];
+        const claimAccent: LuminaAccent = (['blue', 'purple', 'emerald', 'amber'] as const)[i % 4];
         const evidenceForClaim = Object.entries(highlightedSentences)
           .filter(([, ci]) => ci === i)
           .map(([id]) => passage.sentences.find(s => s.id === id))
           .filter(Boolean);
 
         return (
-          <div key={claim.id} className={`rounded-xl border p-4 space-y-3 ${colorSet.border} bg-slate-800/40`}>
+          <LuminaPanel key={claim.id} accent={claimAccent} className="space-y-3">
             {/* Claim */}
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide">Claim</p>
-              <p className={`text-sm font-medium ${colorSet.text}`}>{claim.text}</p>
+              <LuminaSectionLabel size="sm" accent={claimAccent}>Claim</LuminaSectionLabel>
+              <p className={`text-sm font-medium mt-1 ${colorSet.text}`}>{claim.text}</p>
             </div>
 
             {/* Evidence summary */}
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide">Evidence</p>
-              {evidenceForClaim.length > 0 ? (
-                evidenceForClaim.map(s => s && (
-                  <p key={s.id} className="text-sm text-slate-300 italic">
-                    &ldquo;{s.text}&rdquo;
-                  </p>
-                ))
-              ) : (
-                <p className="text-sm text-slate-500">No evidence highlighted for this claim.</p>
-              )}
+              <LuminaSectionLabel size="sm" accent={claimAccent}>Evidence</LuminaSectionLabel>
+              <div className="mt-1">
+                {evidenceForClaim.length > 0 ? (
+                  evidenceForClaim.map(s => s && (
+                    <p key={s.id} className="text-sm text-slate-300 italic">
+                      &ldquo;{s.text}&rdquo;
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500">No evidence highlighted for this claim.</p>
+                )}
+              </div>
             </div>
 
-            {/* Reasoning */}
+            {/* Reasoning — student production surface (free-text), kept bespoke. */}
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide">Reasoning</p>
+              <LuminaSectionLabel size="sm" accent={claimAccent}>Reasoning</LuminaSectionLabel>
               <textarea
                 value={reasoningTexts[i] || ''}
                 onChange={(e) => handleReasoningChange(i, e.target.value)}
@@ -571,31 +587,27 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
                 className="w-full mt-1 px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
               />
             </div>
-          </div>
+          </LuminaPanel>
         );
       })}
 
       <div className="flex justify-end">
-        <Button
-          variant="ghost"
+        <LuminaActionButton
+          action="check"
           onClick={submitFinalEvaluation}
           disabled={hasSubmittedEvaluation}
-          className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
         >
           Finish
-        </Button>
+        </LuminaActionButton>
       </div>
 
       {/* Final results */}
       {hasSubmittedEvaluation && (
-        <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center space-y-2">
-          <p className="text-emerald-300 font-semibold text-lg">Session Complete!</p>
-          <p className="text-slate-400 text-sm">
-            You found {Object.keys(highlightedSentences).filter(id =>
-              passage.sentences.find(s => s.id === id)?.isEvidence
-            ).length} of {totalEvidence} evidence sentences.
-          </p>
-        </div>
+        <LuminaFeedbackCard status="correct" label="Session Complete!">
+          You found {Object.keys(highlightedSentences).filter(id =>
+            passage.sentences.find(s => s.id === id)?.isEvidence
+          ).length} of {totalEvidence} evidence sentences.
+        </LuminaFeedbackCard>
       )}
     </div>
   );
@@ -606,54 +618,41 @@ const EvidenceFinder: React.FC<EvidenceFinderProps> = ({ data, className }) => {
 
   if (!passage || passage.sentences.length === 0 || claims.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No passage or claims available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-                Grade {gradeLevel}
-              </Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
               {cerEnabled && (
-                <Badge variant="outline" className="bg-violet-500/10 border-violet-500/30 text-violet-300 text-xs">
-                  CER Framework
-                </Badge>
+                <LuminaBadge accent="purple" className="text-xs">CER Framework</LuminaBadge>
               )}
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-xs ${
-              currentPhase === 'find'
-                ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                : currentPhase === 'evaluate'
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                  : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-            }`}
-          >
+          <LuminaBadge accent={PHASE_CONFIG[currentPhase].accent} className="text-xs">
             {PHASE_CONFIG[currentPhase].description}
-          </Badge>
+          </LuminaBadge>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderPhaseProgress()}
 
         {currentPhase === 'find' && renderFindPhase()}
         {currentPhase === 'evaluate' && renderEvaluatePhase()}
         {currentPhase === 'reason' && renderReasonPhase()}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

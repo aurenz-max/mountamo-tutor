@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaChallengeCounter,
+  LuminaProgress,
+  LuminaFeedbackCard,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -71,9 +81,9 @@ const OPERATION_LABELS: Record<string, string> = {
 };
 
 const OPERATION_ICONS: Record<string, string> = {
-  addition: '\u2795',
-  deletion: '\u2796',
-  substitution: '\uD83D\uDD04',
+  addition: '➕',
+  deletion: '➖',
+  substitution: '🔄',
 };
 
 const OPERATION_DESCRIPTIONS: Record<string, string> = {
@@ -82,10 +92,16 @@ const OPERATION_DESCRIPTIONS: Record<string, string> = {
   substitution: 'Change one sound to make a new word',
 };
 
+const OPERATION_ACCENTS: Record<string, LuminaAccent> = {
+  addition: 'blue',
+  deletion: 'purple',
+  substitution: 'emerald',
+};
+
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  addition: { label: 'Addition', icon: '\u2795', accentColor: 'blue' },
-  deletion: { label: 'Deletion', icon: '\u2796', accentColor: 'purple' },
-  substitution: { label: 'Substitution', icon: '\uD83D\uDD04', accentColor: 'emerald' },
+  addition: { label: 'Addition', icon: '➕', accentColor: 'blue' },
+  deletion: { label: 'Deletion', icon: '➖', accentColor: 'purple' },
+  substitution: { label: 'Substitution', icon: '🔄', accentColor: 'emerald' },
 };
 
 const MAX_ATTEMPTS = 3;
@@ -432,7 +448,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     } else {
       SoundManager.playIncorrect();
       const tappedPhoneme = currentChallenge.originalPhonemes[tappedIndex];
-      setFeedback(`That's ${tappedPhoneme} \u2014 look for the ${currentChallenge.deletePhoneme} sound.`);
+      setFeedback(`That's ${tappedPhoneme} — look for the ${currentChallenge.deletePhoneme} sound.`);
       setFeedbackType('error');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
@@ -551,7 +567,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_CORRECT] Student correctly changed ${currentChallenge.oldPhoneme} to ${phoneme} in `
         + `"${currentChallenge.originalWord}" to make "${currentChallenge.resultWord}". `
-        + `Celebrate \u2014 "When we change ${currentChallenge.oldPhoneme} to ${phoneme}, ${currentChallenge.originalWord} becomes ${currentChallenge.resultWord}!"`,
+        + `Celebrate — "When we change ${currentChallenge.oldPhoneme} to ${phoneme}, ${currentChallenge.originalWord} becomes ${currentChallenge.resultWord}!"`,
         { silent: true },
       );
     } else {
@@ -601,6 +617,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   }, [advanceProgress, currentIndex, challenges.length, sendText, submitFinalEvaluation]);
 
   // ── Render: Phoneme tile row ──────────────────────────────────────
+  // INTERACTION SURFACE — the phoneme tiles the student taps/manipulates.
   const renderPhonemeTiles = (
     phonemes: string[],
     options?: {
@@ -701,6 +718,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   };
 
   // ── Render: Phoneme option buttons (addition / substitution) ──────
+  // INTERACTION SURFACE — the sound choice tiles the student picks from.
   const renderPhonemeOptions = (
     onPick: (phoneme: string, isCorrect: boolean) => void,
   ) => (
@@ -863,11 +881,11 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
 
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -877,80 +895,67 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   if (!hasStarted) {
     const operations = Array.from(new Set(challenges.map(ch => ch.operation)));
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-8 flex flex-col items-center text-center space-y-5">
-          <div className="text-4xl">{'\uD83D\uDD04'}</div>
-          <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
-          <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-            Grade {gradeLevel}
-          </Badge>
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
+          <div className="text-4xl">{'🔄'}</div>
+          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
+          <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
           <p className="text-slate-400 text-sm max-w-sm">
             {challenges.length} challenges across{' '}
             {operations.map(o => OPERATION_LABELS[o]).join(', ')} modes.
             Change sounds in words to make new words!
           </p>
-          <Button
-            variant="ghost"
+          <LuminaButton
+            tone="primary"
             onClick={() => {
               startTimeRef.current = Date.now();
               setHasStarted(true);
             }}
-            className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 px-8 py-3 text-lg"
+            className="px-8 py-3 text-lg"
           >
             Start Activity
-          </Button>
-        </CardContent>
-      </Card>
+          </LuminaButton>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-                Grade {gradeLevel}
-              </Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
             </div>
           </div>
           {currentChallenge && !showSummary && (
-            <Badge
-              variant="outline"
-              className={`text-xs ${
-                currentChallenge.operation === 'addition'
-                  ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                  : currentChallenge.operation === 'deletion'
-                    ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                    : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-              }`}
-            >
+            <LuminaBadge accent={OPERATION_ACCENTS[currentChallenge.operation]} className="text-xs">
               {OPERATION_ICONS[currentChallenge.operation]} {OPERATION_LABELS[currentChallenge.operation]}
-            </Badge>
+            </LuminaBadge>
           )}
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Progress indicator */}
         {!showSummary && (
           <>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">
-                Challenge {currentIndex + 1} of {challenges.length}
-              </span>
+              <LuminaChallengeCounter
+                current={currentIndex + 1}
+                total={challenges.length}
+                className="text-slate-400"
+              />
               <span className="text-slate-500 text-xs">
                 {challengeResults.filter(r => r.correct).length} correct
               </span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 transition-all duration-500"
-                style={{ width: `${((showResult ? currentIndex + 1 : currentIndex) / challenges.length) * 100}%` }}
-              />
-            </div>
+            <LuminaProgress
+              accent="purple"
+              value={((showResult ? currentIndex + 1 : currentIndex) / challenges.length) * 100}
+            />
           </>
         )}
 
@@ -965,31 +970,17 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
 
         {/* Feedback banner */}
         {feedback && !showSummary && (
-          <div
-            className={`
-              px-4 py-3 rounded-lg text-sm font-medium text-center transition-all
-              ${feedbackType === 'success'
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-                : feedbackType === 'error'
-                  ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-                  : ''
-              }
-            `}
-          >
+          <LuminaFeedbackCard status={feedbackType === 'error' ? 'incorrect' : 'correct'}>
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Next / Finish button */}
         {showResult && !showSummary && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              onClick={handleNext}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-            >
+            <LuminaActionButton action="next" onClick={handleNext}>
               {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -1004,8 +995,8 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaScoreRing,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -59,9 +69,15 @@ interface PhonicsBlenderProps {
 type LearningPhase = 'listen' | 'build' | 'blend';
 
 const PHASE_CONFIG: Record<LearningPhase, { label: string; description: string; icon: string }> = {
-  listen: { label: 'Listen', description: 'Hear each sound', icon: '\uD83D\uDD0A' },
-  build: { label: 'Build', description: 'Arrange the sounds', icon: '\uD83E\uDDE9' },
-  blend: { label: 'Blend', description: 'Blend the word', icon: '\u2728' },
+  listen: { label: 'Listen', description: 'Hear each sound', icon: '🔊' },
+  build: { label: 'Build', description: 'Arrange the sounds', icon: '🧩' },
+  blend: { label: 'Blend', description: 'Blend the word', icon: '✨' },
+};
+
+const PHASE_ACCENT: Record<LearningPhase, LuminaAccent> = {
+  listen: 'blue',
+  build: 'amber',
+  blend: 'emerald',
 };
 
 const PATTERN_LABELS: Record<string, string> = {
@@ -467,7 +483,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
                     }
                   `}
                 >
-                  {isCompleted ? '\u2713' : config.icon}
+                  {isCompleted ? '✓' : config.icon}
                 </div>
                 <span
                   className={`text-xs font-medium ${
@@ -523,14 +539,14 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       <div className="space-y-4">
         {/* Word visual hint */}
         {currentWord.emoji && (
-          <div className="flex items-center justify-center rounded-xl bg-white/5 border border-white/10 px-5 py-4">
+          <LuminaPanel className="flex items-center justify-center px-5 py-4">
             <span className="text-6xl" role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
               {currentWord.emoji}
             </span>
-          </div>
+          </LuminaPanel>
         )}
 
-        <div className="rounded-lg bg-white/5 border border-white/10 p-4 text-center">
+        <LuminaPanel className="text-center">
           <p className="text-slate-400 text-sm mb-3">Tap each sound to hear it:</p>
           <div className="flex flex-wrap gap-3 justify-center">
             {currentWord.phonemes.map(phoneme =>
@@ -542,33 +558,29 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
               )
             )}
           </div>
-        </div>
+        </LuminaPanel>
 
         {/* Slow blend display */}
-        <div className="rounded-lg bg-slate-800/40 border border-white/5 p-4 text-center">
+        <LuminaPanel className="text-center">
           <p className="text-slate-500 text-xs mb-2">Blended together:</p>
           <div className="flex items-center justify-center gap-1">
             {currentWord.phonemes.map((phoneme, i) => (
               <React.Fragment key={phoneme.id}>
                 <span className="text-2xl font-bold text-slate-200">{phoneme.letters}</span>
                 {i < currentWord.phonemes.length - 1 && (
-                  <span className="text-slate-600 text-lg mx-0.5">{'\u00B7'}</span>
+                  <span className="text-slate-600 text-lg mx-0.5">{'·'}</span>
                 )}
               </React.Fragment>
             ))}
-            <span className="text-slate-500 mx-2">{'\u2192'}</span>
+            <span className="text-slate-500 mx-2">{'→'}</span>
             <span className="text-2xl font-bold text-emerald-300">{currentWord.targetWord}</span>
           </div>
-        </div>
+        </LuminaPanel>
 
         <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            onClick={handleStartBuild}
-            className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-          >
+          <LuminaButton tone="primary" onClick={handleStartBuild}>
             Ready to Build!
-          </Button>
+          </LuminaButton>
         </div>
       </div>
     );
@@ -584,12 +596,12 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       <div className="space-y-4">
         {/* Word visual hint */}
         {currentWord.emoji && (
-          <div className="flex items-center justify-center gap-3 rounded-lg bg-white/5 border border-white/10 px-4 py-2">
+          <LuminaPanel className="flex items-center justify-center gap-3 px-4 py-2">
             <span className="text-3xl" role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
               {currentWord.emoji}
             </span>
             <span className="text-slate-400 text-xs italic">Build this word</span>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Build area */}
@@ -625,25 +637,15 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
         {/* Feedback */}
         {feedback && (
-          <div
-            className={`
-              px-4 py-2 rounded-lg text-sm font-medium text-center
-              ${feedbackType === 'success'
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-                : feedbackType === 'error'
-                  ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-                  : 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
-              }
-            `}
-          >
+          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}>
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Sound bank */}
         <div>
           <p className="text-xs text-slate-500 mb-2">Sound Bank:</p>
-          <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4">
+          <LuminaPanel>
             {availablePhonemes.length > 0 ? (
               <div className="flex flex-wrap gap-3 justify-center">
                 {availablePhonemes.map(phoneme =>
@@ -660,27 +662,25 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
                 All sounds placed! Check your answer.
               </p>
             )}
-          </div>
+          </LuminaPanel>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
+          <LuminaButton
             onClick={handleClearAll}
             disabled={placedPhonemeIds.length === 0}
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
           >
             Clear
-          </Button>
-          <Button
-            variant="ghost"
+          </LuminaButton>
+          <LuminaActionButton
+            action="check"
             onClick={handleCheckBuild}
             disabled={placedPhonemeIds.length !== currentWord.phonemes.length}
-            className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 ml-auto"
+            className="ml-auto"
           >
             Check
-          </Button>
+          </LuminaActionButton>
         </div>
       </div>
     );
@@ -717,7 +717,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
           </div>
 
           {/* Arrow */}
-          <div className="text-slate-500 text-2xl">{'\u2193'}</div>
+          <div className="text-slate-500 text-2xl">{'↓'}</div>
 
           {/* The blended word */}
           <button
@@ -755,21 +755,17 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
         {/* Blend button or next */}
         <div className="flex justify-center gap-3">
           {!isBlended ? (
-            <Button
-              variant="ghost"
+            <LuminaButton
+              tone="primary"
               onClick={handleBlendComplete}
-              className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 text-lg px-8 py-3"
+              className="text-lg px-8 py-3"
             >
               Blend!
-            </Button>
+            </LuminaButton>
           ) : (
-            <Button
-              variant="ghost"
-              onClick={handleNextWord}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-            >
+            <LuminaActionButton action="next" onClick={handleNextWord}>
               {currentWordIndex < words.length - 1 ? 'Next Word' : 'Finish'}
-            </Button>
+            </LuminaActionButton>
           )}
         </div>
       </div>
@@ -782,45 +778,36 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
   if (!currentWord) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No words available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
+              <LuminaBadge className="text-xs">
                 Grade {gradeLevel}
-              </Badge>
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
+              </LuminaBadge>
+              <LuminaBadge className="text-xs">
                 {PATTERN_LABELS[patternType] || patternType}
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-xs ${
-              currentPhase === 'listen'
-                ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                : currentPhase === 'build'
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                  : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-            }`}
-          >
+          <LuminaBadge accent={PHASE_ACCENT[currentPhase]} className="text-xs">
             {PHASE_CONFIG[currentPhase].description}
-          </Badge>
+          </LuminaBadge>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         {renderPhaseProgress()}
 
@@ -841,11 +828,16 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
         {/* Final Results */}
         {hasSubmittedEvaluation && (
-          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center space-y-2">
-            <p className="text-emerald-300 font-semibold text-lg">Session Complete!</p>
-            <p className="text-slate-400 text-sm">
-              You blended {completedWords.size} out of {words.length} words!
-            </p>
+          <LuminaPanel accent="emerald" className="flex flex-col items-center text-center gap-3">
+            <LuminaScoreRing
+              score={words.length > 0 ? Math.round((completedWords.size / words.length) * 100) : 0}
+            />
+            <div className="space-y-1">
+              <p className="text-emerald-300 font-semibold text-lg">Session Complete!</p>
+              <p className="text-slate-400 text-sm">
+                You blended {completedWords.size} out of {words.length} words!
+              </p>
+            </div>
             <div className="flex justify-center gap-4 text-xs text-slate-500">
               <span>
                 Attempts: {Object.values(attemptsPerWord).reduce((s, v) => s + v, 0)}
@@ -854,10 +846,10 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
                 First try: {correctOnFirstTry.size}
               </span>
             </div>
-          </div>
+          </LuminaPanel>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

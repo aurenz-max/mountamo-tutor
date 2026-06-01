@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaProgress,
+  LuminaFeedbackCard,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -63,9 +71,9 @@ const SYLLABLE_COLORS = [
 ];
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  easy: { label: 'Easy Words', icon: '\uD83D\uDC4F', accentColor: 'blue' },
-  medium: { label: 'Medium Words', icon: '\uD83D\uDC4F\uD83D\uDC4F', accentColor: 'purple' },
-  hard: { label: 'Hard Words', icon: '\uD83D\uDC4F\uD83D\uDC4F\uD83D\uDC4F', accentColor: 'emerald' },
+  easy: { label: 'Easy Words', icon: '👏', accentColor: 'blue' },
+  medium: { label: 'Medium Words', icon: '👏👏', accentColor: 'purple' },
+  hard: { label: 'Hard Words', icon: '👏👏👏', accentColor: 'emerald' },
 };
 
 const MAX_CLAPS = 6;
@@ -275,7 +283,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
           setFeedback(
             `"${currentChallenge.word}" has ${currentChallenge.syllableCount} `
             + `part${currentChallenge.syllableCount > 1 ? 's' : ''}: `
-            + `${currentChallenge.syllables.join(' \u00B7 ')}`,
+            + `${currentChallenge.syllables.join(' · ')}`,
           );
           setFeedbackType('success');
           recordResult({
@@ -378,11 +386,11 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
 
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -391,54 +399,47 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
   // ── Start screen ──────────────────────────────────────────────
   if (!hasStarted) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-8 flex flex-col items-center text-center space-y-5">
-          <div className="text-4xl">{'\uD83D\uDC4F'}</div>
-          <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
-          <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-            Kindergarten
-          </Badge>
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
+          <div className="text-4xl">{'👏'}</div>
+          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
+          <LuminaBadge className="text-xs">Kindergarten</LuminaBadge>
           <p className="text-slate-400 text-sm max-w-sm">
             {challenges.length} words to clap. Listen to each word and clap once
             for each part you hear!
           </p>
-          <Button
-            variant="ghost"
+          <LuminaButton
+            tone="primary"
             onClick={() => {
               startTimeRef.current = Date.now();
               setHasStarted(true);
             }}
-            className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 px-8 py-3 text-lg"
+            className="px-8 py-3 text-lg"
           >
             Start Clapping!
-          </Button>
-        </CardContent>
-      </Card>
+          </LuminaButton>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
-            <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-              Kindergarten
-            </Badge>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+            <LuminaBadge className="text-xs">Kindergarten</LuminaBadge>
           </div>
           {currentChallenge && !showSummary && (
-            <Badge
-              variant="outline"
-              className="bg-purple-500/20 border-purple-500/40 text-purple-300 text-xs"
-            >
-              {'\uD83D\uDC4F'} Syllable Clapping
-            </Badge>
+            <LuminaBadge accent="purple" className="text-xs">
+              {'👏'} Syllable Clapping
+            </LuminaBadge>
           )}
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Progress indicator */}
         {!showSummary && (
           <>
@@ -450,12 +451,10 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
                 {challengeResults.filter(r => r.correct).length} correct
               </span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 transition-all duration-500"
-                style={{ width: `${((hasChecked ? currentIndex + 1 : currentIndex) / challenges.length) * 100}%` }}
-              />
-            </div>
+            <LuminaProgress
+              accent="purple"
+              value={((hasChecked ? currentIndex + 1 : currentIndex) / challenges.length) * 100}
+            />
           </>
         )}
 
@@ -529,7 +528,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
                       }
                     `}
                   >
-                    {idx < clapCount ? '\uD83D\uDC4F' : ''}
+                    {idx < clapCount ? '👏' : ''}
                   </div>
                 ))}
               </div>
@@ -538,37 +537,32 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
             {/* Clap + Check buttons */}
             {!hasChecked && (
               <div className="flex flex-col items-center gap-3">
-                <Button
-                  variant="ghost"
+                <button
                   onClick={handleClap}
                   disabled={clapCount >= MAX_CLAPS}
                   className={`
-                    bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-300
-                    px-10 py-6 text-2xl transition-transform
+                    rounded-xl bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-300
+                    px-10 py-6 text-2xl transition-transform disabled:opacity-50
                     ${isClapping ? 'scale-110' : 'scale-100'}
                   `}
                 >
-                  {'\uD83D\uDC4F'} Clap!
-                </Button>
+                  {'👏'} Clap!
+                </button>
 
                 <div className="flex gap-3">
                   {clapCount > 0 && (
-                    <Button
-                      variant="ghost"
+                    <LuminaButton
+                      tone="subtle"
                       onClick={handleUndoClap}
-                      className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 text-sm"
+                      className="text-sm"
                     >
                       Undo
-                    </Button>
+                    </LuminaButton>
                   )}
                   {clapCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      onClick={handleCheck}
-                      className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-                    >
+                    <LuminaActionButton action="check" onClick={handleCheck}>
                       Check ({clapCount} clap{clapCount !== 1 ? 's' : ''})
-                    </Button>
+                    </LuminaActionButton>
                   )}
                 </div>
               </div>
@@ -578,31 +572,20 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
 
         {/* Feedback banner */}
         {feedback && !showSummary && (
-          <div
-            className={`
-              px-4 py-3 rounded-lg text-sm font-medium text-center transition-all
-              ${feedbackType === 'success'
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-                : feedbackType === 'error'
-                  ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-                  : ''
-              }
-            `}
+          <LuminaFeedbackCard
+            status={feedbackType === 'error' ? 'incorrect' : 'correct'}
+            className="text-center"
           >
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Next / Finish button */}
         {hasChecked && !showSummary && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              onClick={handleNext}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-            >
+            <LuminaActionButton action="next" onClick={handleNext}>
               {currentIndex < challenges.length - 1 ? 'Next Word' : 'Finish'}
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -617,8 +600,8 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

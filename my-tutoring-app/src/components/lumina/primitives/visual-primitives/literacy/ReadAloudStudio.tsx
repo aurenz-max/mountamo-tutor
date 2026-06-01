@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaPanel,
+  LuminaCallout,
+  LuminaStat,
+  LuminaFeedbackCard,
+  answerStateClasses,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -325,6 +336,11 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     );
   }, [hasSubmittedEvaluation, modelListened, recordingMade, recordingDuration, estimatedWPM, comparisonUsed, selfAssessment, targetWPM, lexileLevel, submitEvaluation, title, sendText]);
 
+  // ---------------------------------------------------------------------------
+  // INTERACTION SURFACE (the painting): the passage text body with expression
+  // markers + the karaoke transcript spans. These stay bespoke.
+  // ---------------------------------------------------------------------------
+
   // Static passage (used during Practice / Record so the student has something to read from).
   const renderPassage = (showMarkers: boolean) => (
     <div className="text-sm leading-relaxed">
@@ -373,7 +389,7 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
     );
   };
 
-  // Render progress
+  // Render progress — phase stepper chrome (tokenized).
   const renderProgress = () => (
     <div className="flex items-center gap-2 mb-4">
       {phases.map((phase, i) => {
@@ -397,50 +413,49 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
   );
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
-              <Badge variant="outline" className="bg-blue-500/10 border-blue-500/30 text-blue-300 text-xs">{lexileLevel}</Badge>
-              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-300 text-xs">Target: {targetWPM} WPM</Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge accent="blue" className="text-xs">{lexileLevel}</LuminaBadge>
+              <LuminaBadge accent="amber" className="text-xs">Target: {targetWPM} WPM</LuminaBadge>
             </div>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
         {/* Phase 1: Listen */}
         {currentPhase === 'listen' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Listen to the model reading. Words appear as the tutor speaks them:</p>
-            <div className="rounded-lg bg-white/5 border border-white/10 p-4 min-h-[8rem]">
+            {/* Painting: live karaoke transcript spans */}
+            <LuminaPanel className="min-h-[8rem]">
               {renderLiveTranscript()}
-            </div>
+            </LuminaPanel>
             <div className="flex items-center gap-3">
-              <Button variant="ghost" onClick={playModel} disabled={isPlaying}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="primary" onClick={playModel} disabled={isPlaying}>
                 {isPlaying ? 'Playing...' : modelListened ? 'Replay' : 'Play Model'}
-              </Button>
+              </LuminaButton>
               <div className="flex items-center gap-1">
                 <span className="text-xs text-slate-500">Speed:</span>
                 {[0.75, 1.0, 1.25].map(speed => (
                   <button key={speed} onClick={() => setPlaybackSpeed(speed)}
-                    className={`text-xs px-1.5 py-0.5 rounded ${playbackSpeed === speed ? 'bg-blue-500/20 text-blue-300' : 'bg-white/5 text-slate-500'}`}>
+                    className={`text-xs px-1.5 py-0.5 rounded border ${playbackSpeed === speed ? answerStateClasses.selected : answerStateClasses.idle}`}>
                     {speed}x
                   </button>
                 ))}
               </div>
             </div>
             <div className="flex justify-end">
-              <Button variant="ghost" onClick={nextPhase} disabled={!modelListened}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaActionButton action="next" onClick={nextPhase} disabled={!modelListened}>
                 Next: Practice
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -449,22 +464,21 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
         {currentPhase === 'practice' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Practice reading along. Notice the expression markers:</p>
-            <div className="rounded-lg bg-white/5 border border-white/10 p-4">
+            {/* Painting: passage body with expression markers */}
+            <LuminaPanel>
               {renderPassage(true)}
-            </div>
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2">
-              <p className="text-xs text-amber-300">Expression tips:</p>
-              <div className="flex flex-wrap gap-2 mt-1">
+            </LuminaPanel>
+            <LuminaCallout accent="amber" label="Expression tips">
+              <div className="flex flex-wrap gap-2">
                 <span className="text-xs text-slate-400"><span className="text-amber-500">|</span> = pause</span>
                 <span className="text-xs text-slate-400"><span className="font-bold">bold</span> = emphasize</span>
               </div>
-            </div>
+            </LuminaCallout>
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
+              <LuminaActionButton action="next" onClick={nextPhase}>
                 Next: Record
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -473,42 +487,39 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
         {currentPhase === 'record' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Record yourself reading the passage:</p>
-            <div className="rounded-lg bg-white/5 border border-white/10 p-4">
+            {/* Painting: passage body to read from */}
+            <LuminaPanel>
               {renderPassage(false)}
-            </div>
+            </LuminaPanel>
             <div className="flex items-center gap-3">
               {!isRecording ? (
-                <Button variant="ghost" onClick={startRecording} disabled={recordingMade}
-                  className="bg-rose-500/20 border border-rose-500/40 hover:bg-rose-500/30 text-rose-300">
+                <LuminaButton tone="danger" onClick={startRecording} disabled={recordingMade}>
                   {recordingMade ? 'Recorded' : 'Start Recording'}
-                </Button>
+                </LuminaButton>
               ) : (
-                <Button variant="ghost" onClick={stopRecording}
-                  className="bg-rose-500/30 border border-rose-500/50 hover:bg-rose-500/40 text-rose-200 animate-pulse">
+                <LuminaButton tone="danger" onClick={stopRecording} className="animate-pulse">
                   Stop Recording
-                </Button>
+                </LuminaButton>
               )}
               {recordingMade && (
                 <>
                   <span className="text-xs text-slate-400">{recordingDuration.toFixed(1)}s | {estimatedWPM} WPM</span>
-                  <Button variant="ghost" onClick={handleComparison}
-                    className="bg-violet-500/20 border border-violet-500/40 hover:bg-violet-500/30 text-violet-300 text-xs">
+                  <LuminaButton onClick={handleComparison} className="text-xs">
                     Compare with Model
-                  </Button>
+                  </LuminaButton>
                 </>
               )}
             </div>
             {comparisonUsed && (
-              <div className="rounded-lg bg-violet-500/10 border border-violet-500/30 p-2">
-                <p className="text-xs text-violet-300">Side-by-side comparison mode active. Listen to both readings to compare fluency.</p>
-              </div>
+              <LuminaPanel accent="purple">
+                <p className="text-xs text-purple-300">Side-by-side comparison mode active. Listen to both readings to compare fluency.</p>
+              </LuminaPanel>
             )}
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase} disabled={!recordingMade}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
+              <LuminaActionButton action="next" onClick={nextPhase} disabled={!recordingMade}>
                 Review
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -517,21 +528,16 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
         {currentPhase === 'review' && (
           <div className="space-y-4">
             <div className="grid gap-2 grid-cols-3">
-              <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-center">
-                <p className="text-xs text-slate-500">Your WPM</p>
-                <p className={`text-lg font-bold ${Math.abs(estimatedWPM - targetWPM) < 20 ? 'text-emerald-300' : 'text-slate-300'}`}>{estimatedWPM}</p>
-              </div>
-              <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-center">
-                <p className="text-xs text-slate-500">Target WPM</p>
-                <p className="text-lg font-bold text-blue-300">{targetWPM}</p>
-              </div>
-              <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-center">
-                <p className="text-xs text-slate-500">Duration</p>
-                <p className="text-lg font-bold text-slate-300">{recordingDuration.toFixed(1)}s</p>
-              </div>
+              <LuminaStat
+                label="Your WPM"
+                value={estimatedWPM}
+                accent={Math.abs(estimatedWPM - targetWPM) < 20 ? 'emerald' : undefined}
+              />
+              <LuminaStat label="Target WPM" value={targetWPM} accent="blue" />
+              <LuminaStat label="Duration" value={`${recordingDuration.toFixed(1)}s`} />
             </div>
 
-            {/* Self assessment */}
+            {/* Self assessment — rating selection (tokenized selected state) */}
             <div className="space-y-2">
               <p className="text-xs text-slate-500">How did your reading sound? Rate yourself:</p>
               <div className="flex gap-2">
@@ -539,8 +545,8 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
                   <button key={rating} onClick={() => handleSelfAssessment(rating)}
                     className={`w-10 h-10 rounded-lg border text-sm font-bold transition-all ${
                       selfAssessment === rating
-                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                        : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                        ? answerStateClasses.selected
+                        : answerStateClasses.idle
                     }`}>
                     {rating}
                   </button>
@@ -549,23 +555,21 @@ const ReadAloudStudio: React.FC<ReadAloudStudioProps> = ({ data, className }) =>
             </div>
 
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
+              <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
               {!hasSubmittedEvaluation ? (
-                <Button variant="ghost" onClick={submitFinalEvaluation}
-                  className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">
+                <LuminaActionButton action="check" onClick={submitFinalEvaluation}>
                   Submit
-                </Button>
+                </LuminaActionButton>
               ) : (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
-                  <p className="text-emerald-300 font-semibold">Read-Aloud Complete!</p>
-                  <p className="text-slate-400 text-sm mt-1">{estimatedWPM} WPM (target: {targetWPM})</p>
-                </div>
+                <LuminaFeedbackCard status="correct" label="Read-Aloud Complete!" className="w-full text-center">
+                  {estimatedWPM} WPM (target: {targetWPM})
+                </LuminaFeedbackCard>
               )}
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

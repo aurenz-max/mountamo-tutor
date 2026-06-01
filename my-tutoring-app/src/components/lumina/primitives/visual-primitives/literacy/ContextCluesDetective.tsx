@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaCallout,
+  LuminaAnswerChoice,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaInput,
+  type AnswerChoiceState,
+  type FeedbackStatus,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -81,10 +93,17 @@ const PHASE_CONFIG: Record<DetectivePhase, { label: string; description: string 
 
 const CLUE_TYPE_CONFIG: Record<string, { label: string; icon: string; description: string }> = {
   definition: { label: 'Definition', icon: '=', description: 'The word is defined in the text' },
-  synonym: { label: 'Synonym', icon: '\u2194', description: 'A similar word is nearby' },
-  antonym: { label: 'Antonym', icon: '\u2260', description: 'An opposite word shows the contrast' },
-  example: { label: 'Example', icon: '\u2022', description: 'Examples help explain the meaning' },
-  inference: { label: 'Inference', icon: '\uD83D\uDD0D', description: 'Figure it out from the broader context' },
+  synonym: { label: 'Synonym', icon: '↔', description: 'A similar word is nearby' },
+  antonym: { label: 'Antonym', icon: '≠', description: 'An opposite word shows the contrast' },
+  example: { label: 'Example', icon: '•', description: 'Examples help explain the meaning' },
+  inference: { label: 'Inference', icon: '🔍', description: 'Figure it out from the broader context' },
+};
+
+// Map the legacy feedbackType -> kit feedback status.
+const FEEDBACK_STATUS: Record<'success' | 'error' | 'info', FeedbackStatus> = {
+  success: 'correct',
+  error: 'incorrect',
+  info: 'insight',
 };
 
 // ============================================================================
@@ -325,7 +344,7 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
   // Render Helpers
   // ============================================================================
 
-  // Phase progress
+  // Phase progress — bespoke step indicator (not a glass surface).
   const renderPhaseProgress = () => {
     const phases: DetectivePhase[] = ['find', 'classify', 'define'];
     const phaseOrder = phases.indexOf(currentPhase);
@@ -352,7 +371,7 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
                     }
                   `}
                 >
-                  {isCompleted ? '\u2713' : index + 1}
+                  {isCompleted ? '✓' : index + 1}
                 </div>
                 <span
                   className={`text-xs font-medium ${
@@ -369,7 +388,9 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
     );
   };
 
-  // Render the passage with highlighted target word and clickable sentences
+  // Render the passage with highlighted target word and clickable sentences.
+  // INTERACTION SURFACE — the clickable / highlightable evidence text body
+  // stays bespoke (selection + clue-reveal highlights are the painting).
   const renderPassage = () => {
     if (!currentChallenge) return null;
     return (
@@ -416,37 +437,36 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
     );
   };
 
+  // Shared feedback banner.
+  const renderFeedback = () =>
+    feedback && feedbackType ? (
+      <LuminaFeedbackCard status={FEEDBACK_STATUS[feedbackType]}>
+        {feedback}
+      </LuminaFeedbackCard>
+    ) : null;
+
   // Find phase
   const renderFindPhase = () => (
     <div className="space-y-4">
-      <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+      <LuminaPanel>
         <p className="text-slate-400 text-sm">
           The word <span className="font-bold text-amber-300">&ldquo;{currentChallenge?.targetWord}&rdquo;</span> is
           highlighted in the passage. <span className="text-blue-300">Click on a sentence</span> that gives you a clue about what it means.
         </p>
-      </div>
+      </LuminaPanel>
 
       {renderPassage()}
 
-      {feedback && (
-        <div className={`px-4 py-2 rounded-lg text-sm font-medium text-center ${
-          feedbackType === 'success' ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-            : feedbackType === 'error' ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-              : 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
-        }`}>
-          {feedback}
-        </div>
-      )}
+      {renderFeedback()}
 
       <div className="flex justify-end">
-        <Button
-          variant="ghost"
+        <LuminaActionButton
+          action="check"
           onClick={handleCheckFind}
           disabled={highlightedSentenceIds.size === 0}
-          className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
         >
           Check Clue
-        </Button>
+        </LuminaActionButton>
       </div>
     </div>
   );
@@ -454,30 +474,25 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
   // Classify phase
   const renderClassifyPhase = () => (
     <div className="space-y-4">
-      <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+      <LuminaPanel>
         <p className="text-slate-400 text-sm">
           What <span className="text-amber-300">type</span> of context clue helps you understand
           <span className="font-bold text-amber-300"> &ldquo;{currentChallenge?.targetWord}&rdquo;</span>?
         </p>
-      </div>
+      </LuminaPanel>
 
       {renderPassage()}
 
       {/* Clue type options */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {Object.entries(CLUE_TYPE_CONFIG).map(([type, config]) => {
-          const isSelected = selectedClueType === type;
+          const state: AnswerChoiceState = selectedClueType === type ? 'selected' : 'idle';
           return (
-            <button
+            <LuminaAnswerChoice
               key={type}
+              state={state}
               onClick={() => setSelectedClueType(type)}
-              className={`
-                text-left px-3 py-2.5 rounded-lg border transition-all
-                ${isSelected
-                  ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                  : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                }
-              `}
+              className="p-3"
             >
               <div className="flex items-center gap-2">
                 <span className="text-lg w-6 text-center">{config.icon}</span>
@@ -486,30 +501,21 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
                   <p className="text-xs text-slate-500">{config.description}</p>
                 </div>
               </div>
-            </button>
+            </LuminaAnswerChoice>
           );
         })}
       </div>
 
-      {feedback && (
-        <div className={`px-4 py-2 rounded-lg text-sm font-medium text-center ${
-          feedbackType === 'success' ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-            : feedbackType === 'error' ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-              : 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
-        }`}>
-          {feedback}
-        </div>
-      )}
+      {renderFeedback()}
 
       <div className="flex justify-end">
-        <Button
-          variant="ghost"
+        <LuminaActionButton
+          action="check"
           onClick={handleCheckClassify}
           disabled={!selectedClueType}
-          className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
         >
           Check Type
-        </Button>
+        </LuminaActionButton>
       </div>
     </div>
   );
@@ -517,96 +523,81 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
   // Define phase
   const renderDefinePhase = () => (
     <div className="space-y-4">
-      <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+      <LuminaPanel>
         <p className="text-slate-400 text-sm">
           Based on the context clues, what does
           <span className="font-bold text-amber-300"> &ldquo;{currentChallenge?.targetWord}&rdquo;</span> mean?
         </p>
-      </div>
+      </LuminaPanel>
 
       {renderPassage()}
 
       {/* Answer input */}
       {currentChallenge?.meaningOptions ? (
         <div className="space-y-2">
-          {currentChallenge.meaningOptions.map((option, i) => (
-            <button
-              key={i}
-              onClick={() => !showDictionary && setSelectedMeaning(option)}
-              disabled={showDictionary}
-              className={`
-                w-full text-left px-4 py-3 rounded-lg border transition-all
-                ${selectedMeaning === option
-                  ? showDictionary
-                    ? option === currentChallenge.correctMeaning
-                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                      : 'bg-red-500/20 border-red-500/40 text-red-300'
-                    : 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                  : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                }
-              `}
-            >
-              <span className="text-sm">{option}</span>
-            </button>
-          ))}
+          {currentChallenge.meaningOptions.map((option, i) => {
+            const isCorrectOption = option === currentChallenge.correctMeaning;
+            const isPicked = selectedMeaning === option;
+            let state: AnswerChoiceState;
+            if (showDictionary) {
+              state = isCorrectOption ? 'correct' : isPicked ? 'incorrect' : 'dimmed';
+            } else {
+              state = isPicked ? 'selected' : 'idle';
+            }
+            return (
+              <LuminaAnswerChoice
+                key={i}
+                state={state}
+                onClick={() => !showDictionary && setSelectedMeaning(option)}
+                disabled={showDictionary}
+                className="p-4"
+              >
+                <span className="text-sm">{option}</span>
+              </LuminaAnswerChoice>
+            );
+          })}
         </div>
       ) : (
-        <input
+        <LuminaInput
           type="text"
           value={typedMeaning}
           onChange={(e) => setTypedMeaning(e.target.value)}
           disabled={showDictionary}
           placeholder="Type the meaning..."
-          className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40"
+          className="w-full text-sm"
         />
       )}
 
       {/* Feedback */}
-      {feedback && (
-        <div className={`px-4 py-2 rounded-lg text-sm font-medium text-center ${
-          feedbackType === 'success' ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-            : feedbackType === 'error' ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-              : 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
-        }`}>
-          {feedback}
-        </div>
-      )}
+      {renderFeedback()}
 
       {/* Dictionary comparison */}
       {showDictionary && currentChallenge && (
-        <div className="rounded-lg bg-violet-500/10 border border-violet-500/30 p-3 space-y-1">
-          <p className="text-xs text-violet-400 uppercase tracking-wide">Dictionary Definition</p>
-          <p className="text-sm text-slate-200">
-            <span className="font-bold">{currentChallenge.targetWord}</span>: {currentChallenge.dictionaryDefinition}
-          </p>
-        </div>
+        <LuminaCallout accent="purple" label="Dictionary Definition">
+          <span className="font-bold">{currentChallenge.targetWord}</span>: {currentChallenge.dictionaryDefinition}
+        </LuminaCallout>
       )}
 
       {/* Actions */}
       <div className="flex justify-end gap-2">
         {!showDictionary ? (
-          <Button
-            variant="ghost"
+          <LuminaActionButton
+            action="check"
             onClick={handleCheckDefine}
             disabled={!selectedMeaning && !typedMeaning.trim()}
-            className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
           >
             Check Meaning
-          </Button>
+          </LuminaActionButton>
         ) : (
-          <Button
-            variant="ghost"
-            onClick={handleNext}
-            className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-          >
+          <LuminaActionButton action="next" onClick={handleNext}>
             {currentChallengeIndex < challenges.length - 1 ? 'Next Word' : 'Finish'}
-          </Button>
+          </LuminaActionButton>
         )}
       </div>
 
       {/* Final results */}
       {hasSubmittedEvaluation && (
-        <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center space-y-2">
+        <LuminaPanel accent="emerald" className="text-center space-y-2">
           <p className="text-emerald-300 font-semibold text-lg">Session Complete!</p>
           <p className="text-slate-400 text-sm">
             You defined {challengeResults.filter(r => r.meaningCorrect).length} of {challenges.length} words correctly from context.
@@ -615,7 +606,7 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
             <span>Clues found: {challengeResults.filter(r => r.clueCorrect).length}</span>
             <span>Types correct: {challengeResults.filter(r => r.typeCorrect).length}</span>
           </div>
-        </div>
+        </LuminaPanel>
       )}
     </div>
   );
@@ -626,52 +617,52 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
 
   if (!currentChallenge) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
+              <LuminaBadge className="text-xs">
                 Grade {gradeLevel}
-              </Badge>
-              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-300 text-xs">
+              </LuminaBadge>
+              <LuminaBadge accent="amber" className="text-xs">
                 Word {currentChallengeIndex + 1} of {challenges.length}
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-xs ${
+          <LuminaBadge
+            accent={
               currentPhase === 'find'
-                ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+                ? 'blue'
                 : currentPhase === 'classify'
-                  ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                  : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-            }`}
+                  ? 'purple'
+                  : 'emerald'
+            }
+            className="text-xs"
           >
             {PHASE_CONFIG[currentPhase].description}
-          </Badge>
+          </LuminaBadge>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderPhaseProgress()}
 
         {currentPhase === 'find' && renderFindPhase()}
         {currentPhase === 'classify' && renderClassifyPhase()}
         {currentPhase === 'define' && renderDefinePhase()}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

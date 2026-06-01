@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPrompt,
+  LuminaFeedbackCard,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -183,7 +190,8 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
     usedStarters, submitEvaluation,
   ]);
 
-  // Render sentence starters as chips
+  // Render sentence starters as compose-assist chips (bespoke writing surface —
+  // clicking drops the frame into the active textarea).
   const renderStarters = (starters: string[], field: 'claim' | 'reason' | 'counter' | 'conclusion', reasonIndex?: number) => (
     <div className="flex flex-wrap gap-1.5 mt-1">
       {starters.map((s, i) => (
@@ -230,7 +238,7 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
     </div>
   );
 
-  // Visual argument stack (OREO/CER visualization)
+  // Visual argument stack (OREO/CER visualization) — bespoke composed-output canvas.
   const renderArgumentStack = () => {
     const layers = [
       { key: 'claim', label: scaffold.claimLabel, text: claimText, style: OREO_COLORS.claim },
@@ -255,27 +263,27 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
   // ============================================================================
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
-              <Badge variant="outline" className="bg-violet-500/10 border-violet-500/30 text-violet-300 text-xs uppercase">{framework}</Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge accent="purple" className="text-xs uppercase">{framework}</LuminaBadge>
             </div>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
         {/* Prompt */}
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-          <p className="text-xs text-slate-500 mb-1">Writing Prompt:</p>
+        <LuminaPrompt>
+          <p className="text-xs text-slate-500 mb-1 font-normal">Writing Prompt:</p>
           <p className="text-slate-200 text-sm font-medium">{prompt}</p>
-        </div>
+        </LuminaPrompt>
 
         {/* Claim Phase */}
         {currentPhase === 'claim' && (
@@ -292,9 +300,9 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
               {renderStarters(scaffold.claimStarters, 'claim')}
             </div>
             <div className="flex justify-end">
-              <Button variant="ghost" onClick={nextPhase} disabled={!claimText.trim()} className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="primary" onClick={nextPhase} disabled={!claimText.trim()}>
                 Next: {scaffold.reasonLabel}
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -321,10 +329,10 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
             ))}
             {renderLinkingWords()}
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase} disabled={!reasonTexts.some(r => r.trim())} className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaButton tone="primary" onClick={nextPhase} disabled={!reasonTexts.some(r => r.trim())}>
                 Next
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -344,8 +352,8 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
               {scaffold.counterArgumentStarters && renderStarters(scaffold.counterArgumentStarters, 'counter')}
             </div>
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase} className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">Next</Button>
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaButton tone="primary" onClick={nextPhase}>Next</LuminaButton>
             </div>
           </div>
         )}
@@ -365,8 +373,8 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
               {renderStarters(scaffold.conclusionStarters, 'conclusion')}
             </div>
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase} disabled={!conclusionText.trim()} className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">Review</Button>
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaButton tone="primary" onClick={nextPhase} disabled={!conclusionText.trim()}>Review</LuminaButton>
             </div>
           </div>
         )}
@@ -376,23 +384,20 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
           <div className="space-y-4">
             {renderArgumentStack()}
             {renderLinkingWords()}
-            <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
-              {!hasSubmittedEvaluation ? (
-                <Button variant="ghost" onClick={submitFinalEvaluation} className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">Finish</Button>
-              ) : (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
-                  <p className="text-emerald-300 font-semibold">Argument Complete!</p>
-                  <p className="text-slate-400 text-sm mt-1">
-                    {reasonTexts.filter(r => r.trim()).length} reasons with {countLinkingWords()} linking words.
-                  </p>
-                </div>
-              )}
-            </div>
+            {!hasSubmittedEvaluation ? (
+              <div className="flex justify-between">
+                <LuminaButton onClick={prevPhase}>Edit</LuminaButton>
+                <LuminaButton tone="primary" onClick={submitFinalEvaluation}>Finish</LuminaButton>
+              </div>
+            ) : (
+              <LuminaFeedbackCard status="correct" label="Argument Complete!">
+                {reasonTexts.filter(r => r.trim()).length} reasons with {countLinkingWords()} linking words.
+              </LuminaFeedbackCard>
+            )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

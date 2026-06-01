@@ -129,8 +129,11 @@ Use age-appropriate language and relatable examples.`;
 /**
  * Generate image for a specific prompt
  * Returns base64 data URL or null if generation fails
+ *
+ * Exported as `generateMediaImage` for on-demand ("Generate Visual") generation
+ * triggered by the student at runtime via /api/lumina, mirroring MachineProfile.
  */
-const generateImageSegment = async (
+export const generateMediaImage = async (
   prompt: string,
   resolution: '1K' | '2K' | '4K' = '1K'
 ): Promise<string | null> => {
@@ -165,7 +168,14 @@ const generateImageSegment = async (
 };
 
 /**
- * Generate complete media player content with lesson plan and images
+ * Generate complete media player content with lesson plan.
+ *
+ * Images are NOT generated here — each segment ships with an `imagePrompt` and a
+ * null `imageUrl`. The student generates visuals on-demand via the "Generate Visual"
+ * button at runtime (see MediaPlayer.tsx → /api/lumina action `generateMediaImage`).
+ * This mirrors the MachineProfile pattern and avoids slow/expensive upfront image
+ * generation for segments the student may never reach.
+ *
  * Audio narration is handled natively by Lumina AI at runtime.
  */
 export const generateMediaPlayer = async (
@@ -177,24 +187,14 @@ export const generateMediaPlayer = async (
   try {
     console.log('🎬 Generating Media Player content for:', topic);
 
-    // Step 1: Generate the lesson plan (text only)
+    // Generate the lesson plan (text only). Visuals are generated on-demand.
     const lessonPlan = await generateLessonPlan(topic, gradeLevel, segmentCount);
 
-    // Step 2: Generate images for all segments in parallel
-    const fullSegments: FullLessonSegment[] = await Promise.all(
-      lessonPlan.map(async (segment: LessonSegment) => {
-        const imageUrl = await generateImageSegment(segment.imagePrompt, imageResolution).catch(e => {
-          console.error("Image generation failed for segment:", segment.title, e);
-          return null;
-        });
-
-        return {
-          ...segment,
-          audioBase64: null,
-          imageUrl
-        };
-      })
-    );
+    const fullSegments: FullLessonSegment[] = lessonPlan.map((segment: LessonSegment) => ({
+      ...segment,
+      audioBase64: null,
+      imageUrl: null,
+    }));
 
     const result: MediaPlayerData = {
       title: `Interactive Lesson: ${topic}`,

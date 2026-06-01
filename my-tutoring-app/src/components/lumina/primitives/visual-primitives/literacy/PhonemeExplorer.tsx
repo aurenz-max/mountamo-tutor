@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaChallengeCounter,
+  LuminaProgress,
+  LuminaPanel,
+  LuminaFeedbackCard,
+  answerStateClass,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -77,32 +89,36 @@ interface PhonemeExplorerProps {
 // ============================================================================
 
 const PHASE_CONFIG: Record<string, PhaseConfig> = {
-  isolate: { label: 'Sound Match', icon: '\uD83D\uDD0A', accentColor: 'blue' },
-  blend: { label: 'Sound Blend', icon: '\uD83E\uDDE9', accentColor: 'purple' },
-  segment: { label: 'Sound Split', icon: '\u2702\uFE0F', accentColor: 'emerald' },
-  manipulate: { label: 'Sound Swap', icon: '\uD83D\uDD00', accentColor: 'amber' },
+  isolate: { label: 'Sound Match', icon: '🔊', accentColor: 'blue' },
+  blend: { label: 'Sound Blend', icon: '🧩', accentColor: 'purple' },
+  segment: { label: 'Sound Split', icon: '✂️', accentColor: 'emerald' },
+  manipulate: { label: 'Sound Swap', icon: '🔀', accentColor: 'amber' },
 };
 
-const MODE_LABELS: Record<string, { badge: string; icon: string; instruction: string }> = {
+const MODE_LABELS: Record<string, { badge: string; icon: string; instruction: string; accent: LuminaAccent }> = {
   isolate: {
     badge: 'Sound Match',
-    icon: '\uD83D\uDD0A',
+    icon: '🔊',
     instruction: 'Which word starts with the same sound?',
+    accent: 'blue',
   },
   blend: {
     badge: 'Sound Blend',
-    icon: '\uD83E\uDDE9',
+    icon: '🧩',
     instruction: 'What word do these sounds make?',
+    accent: 'purple',
   },
   segment: {
     badge: 'Sound Split',
-    icon: '\u2702\uFE0F',
+    icon: '✂️',
     instruction: 'How do you break this word into sounds?',
+    accent: 'emerald',
   },
   manipulate: {
     badge: 'Sound Swap',
-    icon: '\uD83D\uDD00',
+    icon: '🔀',
     instruction: 'What new word do you get?',
+    accent: 'amber',
   },
 };
 
@@ -439,7 +455,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   const renderIsolateChallenge = (ch: PhonemeChallenge) => (
     <div className="space-y-5">
-      {/* Phoneme display */}
+      {/* Phoneme display — interaction surface (sound object) */}
       <div className="flex flex-col items-center gap-3">
         <div className="rounded-2xl bg-blue-500/15 border-2 border-blue-500/30 px-10 py-6 text-center">
           <div className="text-5xl font-black text-blue-200 tracking-wide">
@@ -451,7 +467,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         </div>
       </div>
 
-      {/* Example word */}
+      {/* Example word — interaction surface (sound object) */}
       <div className="flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3">
         <span className="text-3xl">{ch.exampleEmoji}</span>
         <div className="text-center">
@@ -475,7 +491,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   const renderBlendChallenge = (ch: PhonemeChallenge) => (
     <div className="space-y-5">
-      {/* Phoneme tiles */}
+      {/* Phoneme tiles — interaction surface (sound objects) */}
       <div className="flex flex-col items-center gap-3">
         <p className="text-sm text-purple-400/70 font-medium">Blend these sounds together:</p>
         <div className="flex items-center gap-2">
@@ -504,7 +520,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   const renderSegmentChallenge = (ch: PhonemeChallenge) => (
     <div className="space-y-5">
-      {/* Target word display */}
+      {/* Target word display — interaction surface (sound object) */}
       <div className="flex flex-col items-center gap-3">
         <div className="rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/30 px-10 py-6 text-center">
           <span className="text-4xl">{ch.targetEmoji}</span>
@@ -519,11 +535,12 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         How do you break <span className="text-emerald-300 font-bold">&ldquo;{ch.targetWord}&rdquo;</span> into sounds?
       </p>
 
-      {/* 4 segmentation options */}
+      {/* 4 segmentation options — graded answer surface */}
       <div className={`grid grid-cols-1 gap-2 ${isShaking ? 'animate-shake' : ''}`}>
         {ch.segmentOptions?.map((option, idx) => {
           const isCorrectOption = showResult && idx === ch.correctSegmentation;
           const isWrongSelected = showResult && selectedIndex === idx && idx !== ch.correctSegmentation;
+          const state = isCorrectOption ? 'correct' : isWrongSelected ? 'incorrect' : 'idle';
 
           return (
             <button
@@ -532,22 +549,12 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
               disabled={showResult}
               className={`
                 rounded-xl border-2 p-4 text-center transition-all duration-200 cursor-pointer
-                ${isCorrectOption
-                  ? 'bg-emerald-500/20 border-emerald-500/50 ring-2 ring-emerald-400/40'
-                  : isWrongSelected
-                    ? 'bg-red-500/10 border-red-500/30'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-                }
+                ${answerStateClass(state)}
+                ${isCorrectOption ? 'ring-2 ring-emerald-400/40' : ''}
                 ${isCelebrating && isCorrectOption ? 'animate-bounce' : ''}
               `}
             >
-              <span className={`text-lg font-mono font-bold ${
-                isCorrectOption
-                  ? 'text-emerald-200'
-                  : isWrongSelected
-                    ? 'text-red-300'
-                    : 'text-slate-200'
-              }`}>
+              <span className="text-lg font-mono font-bold">
                 {option}
               </span>
             </button>
@@ -559,7 +566,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   const renderManipulateChallenge = (ch: PhonemeChallenge) => (
     <div className="space-y-5">
-      {/* Original word */}
+      {/* Original word — interaction surface (sound object) */}
       <div className="flex flex-col items-center gap-3">
         <div className="rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 px-10 py-6 text-center">
           <span className="text-4xl">{ch.originalEmoji}</span>
@@ -570,11 +577,11 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       </div>
 
       {/* Operation instruction */}
-      <div className="rounded-xl bg-white/5 border border-white/10 px-5 py-3 text-center">
+      <LuminaPanel className="text-center">
         <p className="text-base text-slate-200 font-medium">
           {ch.operationDescription}
         </p>
-      </div>
+      </LuminaPanel>
 
       {/* Question */}
       <p className="text-center text-base text-slate-300 font-medium">
@@ -591,9 +598,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       {shuffledChoices.map((choice, idx) => {
         const isCorrectChoice = showResult && choice.correct;
         const isWrongSelected = showResult && selectedIndex === idx && !choice.correct;
-        const modeColor = currentChallenge?.mode === 'blend' ? 'purple'
-          : currentChallenge?.mode === 'manipulate' ? 'amber'
-          : 'emerald';
+        const state = isCorrectChoice ? 'correct' : isWrongSelected ? 'incorrect' : 'idle';
 
         return (
           <button
@@ -603,23 +608,13 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
             className={`
               rounded-xl border-2 p-4 flex flex-col items-center gap-2
               transition-all duration-200 cursor-pointer
-              ${isCorrectChoice
-                ? `bg-${modeColor}-500/20 border-${modeColor}-500/50 ring-2 ring-${modeColor}-400/40 bg-emerald-500/20 border-emerald-500/50 ring-2 ring-emerald-400/40`
-                : isWrongSelected
-                  ? 'bg-red-500/10 border-red-500/30'
-                  : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-              }
+              ${answerStateClass(state)}
+              ${isCorrectChoice ? 'ring-2 ring-emerald-400/40' : ''}
               ${isCelebrating && isCorrectChoice ? 'animate-bounce' : ''}
             `}
           >
             <span className="text-3xl">{choice.emoji}</span>
-            <span className={`text-lg font-bold ${
-              isCorrectChoice
-                ? 'text-emerald-200'
-                : isWrongSelected
-                  ? 'text-red-300'
-                  : 'text-slate-200'
-            }`}>
+            <span className="text-lg font-bold">
               {choice.word}
             </span>
           </button>
@@ -634,11 +629,11 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -648,71 +643,63 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
   // ── Start screen ──────────────────────────────────────────────
   if (!hasStarted) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-8 flex flex-col items-center text-center space-y-5">
-          <div className="text-5xl">{'\uD83D\uDD0A'}</div>
-          <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
-          <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
+          <div className="text-5xl">{'🔊'}</div>
+          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
+          <LuminaBadge className="text-xs">
             Phoneme Explorer
-          </Badge>
+          </LuminaBadge>
           <p className="text-slate-400 text-sm max-w-sm">
             Listen to sounds and explore how words are built!
             {' '}{challenges.length} challenges to complete.
           </p>
-          <Button
-            variant="ghost"
+          <LuminaButton
+            tone="primary"
             onClick={() => {
               startTimeRef.current = Date.now();
               setHasStarted(true);
             }}
-            className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 px-8 py-3 text-lg"
+            className="px-8 py-3 text-lg"
           >
             Start Activity
-          </Button>
-        </CardContent>
-      </Card>
+          </LuminaButton>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           {!showSummary && (
-            <Badge
-              variant="outline"
-              className={`text-xs ${
-                currentChallenge?.mode === 'blend' ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                : currentChallenge?.mode === 'segment' ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                : currentChallenge?.mode === 'manipulate' ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                : 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-              }`}
-            >
+            <LuminaBadge accent={modeInfo.accent} className="text-xs">
               {modeInfo.icon} {modeInfo.badge}
-            </Badge>
+            </LuminaBadge>
           )}
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Progress indicator */}
         {!showSummary && (
           <>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">
-                Challenge {currentIndex + 1} of {challenges.length}
-              </span>
+              <LuminaChallengeCounter
+                current={currentIndex + 1}
+                total={challenges.length}
+                className="text-slate-400 text-sm"
+              />
               <span className="text-slate-500 text-xs">
                 {challengeResults.filter(r => r.correct).length} correct
               </span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 transition-all duration-500"
-                style={{ width: `${((showResult ? currentIndex + 1 : currentIndex) / challenges.length) * 100}%` }}
-              />
-            </div>
+            <LuminaProgress
+              accent={modeInfo.accent}
+              value={((showResult ? currentIndex + 1 : currentIndex) / challenges.length) * 100}
+            />
           </>
         )}
 
@@ -728,31 +715,20 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
         {/* Feedback banner */}
         {feedback && !showSummary && (
-          <div
-            className={`
-              px-4 py-3 rounded-lg text-sm font-medium text-center transition-all
-              ${feedbackType === 'success'
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-                : feedbackType === 'error'
-                  ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-                  : ''
-              }
-            `}
+          <LuminaFeedbackCard
+            status={feedbackType === 'success' ? 'correct' : 'incorrect'}
+            className="text-center"
           >
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Next / Finish button */}
         {showResult && !showSummary && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              onClick={handleNext}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-            >
+            <LuminaActionButton action="next" onClick={handleNext}>
               {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -767,8 +743,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

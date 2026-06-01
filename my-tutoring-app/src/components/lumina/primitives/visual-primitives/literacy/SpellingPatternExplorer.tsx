@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaStat,
+  LuminaFeedbackCard,
+  answerStateClasses,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -58,13 +69,13 @@ interface SpellingPatternExplorerProps {
 
 type SpellingPhase = 'observe' | 'rule' | 'apply' | 'review';
 
-const PATTERN_COLORS: Record<PatternType, string> = {
-  'short-vowel': 'bg-blue-500/10 border-blue-500/30 text-blue-300',
-  'long-vowel': 'bg-violet-500/10 border-violet-500/30 text-violet-300',
-  'r-controlled': 'bg-rose-500/10 border-rose-500/30 text-rose-300',
-  'suffix-change': 'bg-amber-500/10 border-amber-500/30 text-amber-300',
-  'latin-root': 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
-  'silent-letter': 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300',
+const PATTERN_ACCENTS: Record<PatternType, LuminaAccent> = {
+  'short-vowel': 'blue',
+  'long-vowel': 'purple',
+  'r-controlled': 'rose',
+  'suffix-change': 'amber',
+  'latin-root': 'emerald',
+  'silent-letter': 'cyan',
 };
 
 // ============================================================================
@@ -165,51 +176,58 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
   }, [hasSubmittedEvaluation, patternIdentified, studentRule, wordsCorrect, dictationWords, patternType, submitEvaluation, spellings]);
 
   // Render progress
-  const renderProgress = () => (
-    <div className="flex items-center gap-2 mb-4">
-      {phases.map((phase, i) => {
-        const isActive = phase === currentPhase;
-        const phaseIdx = phases.indexOf(currentPhase);
-        const isCompleted = i < phaseIdx;
-        return (
-          <React.Fragment key={phase}>
-            {i > 0 && <div className={`h-0.5 w-6 ${isCompleted || isActive ? 'bg-emerald-500/60' : 'bg-slate-600/40'}`} />}
-            <div className={`px-2 py-1 rounded text-xs font-medium border ${
-              isCompleted ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-              : isActive ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-              : 'bg-slate-700/20 border-slate-600/30 text-slate-500'
-            }`}>
-              {phaseLabels[phase]}
-            </div>
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
+  const renderProgress = () => {
+    const phaseIdx = phases.indexOf(currentPhase);
+    return (
+      <div className="flex items-center gap-2 mb-4">
+        {phases.map((phase, i) => {
+          const isActive = phase === currentPhase;
+          const isCompleted = i < phaseIdx;
+          return (
+            <React.Fragment key={phase}>
+              {i > 0 && (
+                <div className={`h-0.5 w-6 ${isCompleted || isActive ? 'bg-emerald-500/60' : 'bg-slate-600/40'}`} />
+              )}
+              <div className={`px-2 py-1 rounded text-xs font-medium border ${
+                isCompleted ? 'border-emerald-500/40 text-emerald-300 bg-emerald-500/20'
+                : isActive ? 'border-blue-500/40 text-blue-300 bg-blue-500/20'
+                : 'border-slate-600/30 text-slate-500 bg-slate-700/20'
+              }`}>
+                {phaseLabels[phase]}
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const accuracyPct = dictationWords.length > 0 ? Math.round((wordsCorrect / dictationWords.length) * 100) : 0;
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
-              <Badge variant="outline" className={`${PATTERN_COLORS[patternType]} text-xs`}>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge accent={PATTERN_ACCENTS[patternType]} className="text-xs">
                 {patternType.replace('-', ' ')}
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
         {/* Phase 1: Observe */}
         {currentPhase === 'observe' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Look at these words. What pattern do they share?</p>
+            {/* Interaction surface: word tiles with highlighted grapheme pattern */}
             <div className="flex flex-wrap gap-3">
               {patternWords.map((word, i) => (
                 <div key={i} className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-lg">
@@ -217,13 +235,16 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
                 </div>
               ))}
             </div>
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2">
+            <LuminaPanel accent="amber" className="p-2">
               <p className="text-xs text-amber-300">Pattern: <span className="font-bold text-yellow-300">{highlightPattern}</span></p>
-            </div>
-            <Button variant="ghost" onClick={() => { SoundManager.select(); setPatternIdentified(true); setCurrentPhase('rule'); }}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 w-full">
+            </LuminaPanel>
+            <LuminaActionButton
+              action="next"
+              onClick={() => { SoundManager.select(); setPatternIdentified(true); setCurrentPhase('rule'); }}
+              className="w-full"
+            >
               I see the pattern! Next: Write the Rule
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -231,9 +252,10 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
         {currentPhase === 'rule' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Complete the spelling rule:</p>
-            <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+            <LuminaPanel>
               <p className="text-sm text-slate-300 italic">{ruleTemplate}</p>
-            </div>
+            </LuminaPanel>
+            {/* Interaction surface: student writes the rule in their own words */}
             <textarea
               value={studentRule}
               onChange={e => setStudentRule(e.target.value)}
@@ -242,11 +264,10 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
               className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
             />
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase} disabled={!studentRule.trim()}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
+              <LuminaActionButton action="next" onClick={nextPhase} disabled={!studentRule.trim()}>
                 Next: Apply the Rule
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -262,6 +283,7 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
               return (
                 <div key={i} className="flex items-center gap-2">
                   <span className="text-xs text-slate-500 w-6">{i + 1}.</span>
+                  {/* Interaction surface: spelling-entry box (graded via answerStateClasses) */}
                   <input
                     value={spellings[i] || ''}
                     onChange={e => {
@@ -272,7 +294,7 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
                     placeholder="Type the word..."
                     disabled={isRevealed}
                     className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                      isRevealed ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                      isRevealed ? answerStateClasses.correct
                       : spellings[i] && isCorrect ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-200'
                       : 'bg-white/5 border-white/10 text-slate-200 focus:border-blue-500/40'
                     }`}
@@ -295,12 +317,14 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
               );
             })}
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase}
+              <LuminaButton tone="subtle" onClick={prevPhase}>Back</LuminaButton>
+              <LuminaActionButton
+                action="next"
+                onClick={nextPhase}
                 disabled={!spellings.some(s => s.trim())}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              >
                 Review
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -309,47 +333,37 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
         {currentPhase === 'review' && (
           <div className="space-y-4">
             <div className="grid gap-2 grid-cols-3">
-              <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-center">
-                <p className="text-xs text-slate-500">Pattern</p>
-                <p className="text-sm font-bold text-yellow-300">{highlightPattern}</p>
-              </div>
-              <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-center">
-                <p className="text-xs text-slate-500">Spelling</p>
-                <p className="text-sm font-bold text-slate-300">{wordsCorrect}/{dictationWords.length}</p>
-              </div>
-              <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-center">
-                <p className="text-xs text-slate-500">Accuracy</p>
-                <p className={`text-sm font-bold ${wordsCorrect >= dictationWords.length * 0.7 ? 'text-emerald-300' : 'text-slate-300'}`}>
-                  {dictationWords.length > 0 ? Math.round((wordsCorrect / dictationWords.length) * 100) : 0}%
-                </p>
-              </div>
+              <LuminaStat label="Pattern" value={<span className="text-yellow-300">{highlightPattern}</span>} className="p-2" />
+              <LuminaStat label="Spelling" value={`${wordsCorrect}/${dictationWords.length}`} className="p-2" />
+              <LuminaStat
+                label="Accuracy"
+                value={`${accuracyPct}%`}
+                accent={wordsCorrect >= dictationWords.length * 0.7 ? 'emerald' : undefined}
+                className="p-2"
+              />
             </div>
 
-            <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+            <LuminaPanel>
               <p className="text-xs text-slate-500 mb-1">Your Rule:</p>
               <p className="text-sm text-slate-300">{studentRule}</p>
-            </div>
+            </LuminaPanel>
 
-            <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
-              {!hasSubmittedEvaluation ? (
-                <Button variant="ghost" onClick={submitFinalEvaluation}
-                  className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">
+            {!hasSubmittedEvaluation ? (
+              <div className="flex justify-between">
+                <LuminaButton tone="subtle" onClick={prevPhase}>Edit</LuminaButton>
+                <LuminaActionButton action="check" onClick={submitFinalEvaluation}>
                   Submit
-                </Button>
-              ) : (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
-                  <p className="text-emerald-300 font-semibold">Spelling Practice Complete!</p>
-                  <p className="text-slate-400 text-sm mt-1">
-                    {wordsCorrect}/{dictationWords.length} words correct ({dictationWords.length > 0 ? Math.round((wordsCorrect / dictationWords.length) * 100) : 0}%)
-                  </p>
-                </div>
-              )}
-            </div>
+                </LuminaActionButton>
+              </div>
+            ) : (
+              <LuminaFeedbackCard status="correct" label="Spelling Practice Complete!">
+                {wordsCorrect}/{dictationWords.length} words correct ({accuracyPct}%)
+              </LuminaFeedbackCard>
+            )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

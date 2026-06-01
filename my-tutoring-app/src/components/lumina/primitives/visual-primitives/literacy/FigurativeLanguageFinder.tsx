@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaActionButton,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -63,6 +70,9 @@ interface FigurativeLanguageFinderProps {
 
 type FinderPhase = 'find' | 'classify' | 'interpret' | 'review';
 
+// Figurative-language tagging color language — this is the bespoke interaction
+// surface's "ink" (what color each figurative type is highlighted/tagged with
+// on the passage and classify chips), not chrome. Kept verbatim.
 const TYPE_COLORS: Record<FigurativeType, string> = {
   simile: 'bg-blue-500/20 border-blue-500/40 text-blue-300',
   metaphor: 'bg-violet-500/20 border-violet-500/40 text-violet-300',
@@ -290,36 +300,36 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
   );
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
-              <Badge variant="outline" className="bg-pink-500/10 border-pink-500/30 text-pink-300 text-xs">{instances.length} Instances</Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge accent="pink" className="text-xs">{instances.length} Instances</LuminaBadge>
             </div>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
         {/* Phase 1: Find */}
         {currentPhase === 'find' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Tap each figurative language phrase you find in the passage:</p>
+            {/* Interaction surface: clickable/highlightable passage spans — left bespoke */}
             <div className="rounded-lg bg-white/5 border border-white/10 p-4">
               {renderPassage}
             </div>
             {renderTypeLegend()}
             <div className="flex items-center justify-between">
               <p className="text-xs text-slate-400">Found: {foundInstances.size} / {instances.length}</p>
-              <Button variant="ghost" onClick={nextPhase} disabled={foundInstances.size === 0}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaActionButton action="next" onClick={nextPhase} disabled={foundInstances.size === 0}>
                 Next: Classify
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -334,8 +344,9 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
                 if (!inst) return null;
                 const currentClassification = classifications[idx];
                 return (
-                  <div key={idx} className="rounded-lg bg-white/5 border border-white/10 p-3">
+                  <LuminaPanel key={idx} className="p-3">
                     <p className="text-sm text-yellow-200 font-medium mb-2">&ldquo;{inst.text}&rdquo;</p>
+                    {/* Figurative-tagging chips — bespoke interaction surface (color = the "ink") */}
                     <div className="flex flex-wrap gap-1.5">
                       {availableTypes.map(t => (
                         <button
@@ -349,17 +360,16 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </LuminaPanel>
                 );
               })}
             </div>
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase}
-                disabled={Array.from(foundInstances).some(idx => !classifications[idx])}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaActionButton action="next" onClick={nextPhase}
+                disabled={Array.from(foundInstances).some(idx => !classifications[idx])}>
                 Next: Interpret
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -372,9 +382,10 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
               const inst = instances.find(i => i.instanceId === id);
               if (!inst) return null;
               return (
-                <div key={id} className="rounded-lg bg-white/5 border border-white/10 p-3 space-y-2">
+                <LuminaPanel key={id} className="p-3 space-y-2">
                   <p className="text-sm text-yellow-200">&ldquo;{inst.text}&rdquo;</p>
                   <p className="text-xs text-slate-500">Type: {TYPE_LABELS[inst.type]}</p>
+                  {/* Free-response interpretation entry — bespoke interaction surface */}
                   <textarea
                     value={translations[id] || ''}
                     onChange={e => setTranslations(prev => ({ ...prev, [id]: e.target.value }))}
@@ -382,15 +393,14 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
                     rows={2}
                     className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
                   />
-                </div>
+                </LuminaPanel>
               );
             })}
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaActionButton action="next" onClick={nextPhase}>
                 Review
-              </Button>
+              </LuminaActionButton>
             </div>
           </div>
         )}
@@ -398,6 +408,7 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
         {/* Phase 4: Review */}
         {currentPhase === 'review' && (
           <div className="space-y-4">
+            {/* Interaction surface: passage with tagged spans — left bespoke */}
             <div className="rounded-lg bg-white/5 border border-white/10 p-4">
               {renderPassage}
             </div>
@@ -421,25 +432,24 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
             </div>
 
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
+              <LuminaButton onClick={prevPhase}>Edit</LuminaButton>
               {!hasSubmittedEvaluation ? (
-                <Button variant="ghost" onClick={submitFinalEvaluation}
-                  className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">
+                <LuminaActionButton action="check" onClick={submitFinalEvaluation}>
                   Submit
-                </Button>
+                </LuminaActionButton>
               ) : (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
+                <LuminaPanel accent="emerald" className="p-4 text-center w-full">
                   <p className="text-emerald-300 font-semibold">Analysis Complete!</p>
                   <p className="text-slate-400 text-sm mt-1">
                     Found: {foundInstances.size}/{instances.length} | Classified: {Object.values(classifications).filter((c, i) => c === instances[Array.from(foundInstances)[i]]?.type).length} correct
                   </p>
-                </div>
+                </LuminaPanel>
               )}
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

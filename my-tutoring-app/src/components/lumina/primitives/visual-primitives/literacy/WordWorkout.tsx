@@ -1,9 +1,18 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaProgress,
+  LuminaFeedbackCard,
+  answerStateClasses,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -84,31 +93,31 @@ const MODE_CONFIG: Record<
 > = {
   'real-vs-nonsense': {
     label: 'Real vs. Nonsense',
-    icon: '\uD83D\uDD24',
+    icon: '🔤',
     instruction: 'Which is a real word?',
   },
   'picture-match': {
     label: 'Picture Match',
-    icon: '\uD83D\uDDBC\uFE0F',
+    icon: '🖼️',
     instruction: 'Which picture matches this word?',
   },
   'word-chains': {
     label: 'Word Chains',
-    icon: '\uD83D\uDD17',
+    icon: '🔗',
     instruction: 'Read each word as it changes',
   },
   'sentence-reading': {
     label: 'Sentence Reading',
-    icon: '\uD83D\uDCD6',
+    icon: '📖',
     instruction: 'Read this sentence',
   },
 };
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'real-vs-nonsense': { label: 'Real vs. Nonsense', icon: '\uD83D\uDD24', accentColor: 'blue' },
-  'picture-match': { label: 'Picture Match', icon: '\uD83D\uDDBC\uFE0F', accentColor: 'purple' },
-  'word-chains': { label: 'Word Chains', icon: '\uD83D\uDD17', accentColor: 'emerald' },
-  'sentence-reading': { label: 'Sentence Reading', icon: '\uD83D\uDCD6', accentColor: 'amber' },
+  'real-vs-nonsense': { label: 'Real vs. Nonsense', icon: '🔤', accentColor: 'blue' },
+  'picture-match': { label: 'Picture Match', icon: '🖼️', accentColor: 'purple' },
+  'word-chains': { label: 'Word Chains', icon: '🔗', accentColor: 'emerald' },
+  'sentence-reading': { label: 'Sentence Reading', icon: '📖', accentColor: 'amber' },
 };
 
 /** Attempt-based scoring: first try = 100, 2nd = 80, 3+ = 60 */
@@ -242,7 +251,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     const isMultiMode = modeCount > 1;
 
     sendText(
-      `[ACTIVITY_START] CVC Word Workout${isMultiMode ? ' \u2014 multi-mode session with ' + modeCount + ' activity types' : ' \u2014 ' + MODE_CONFIG[currentMode].label + ' mode'}. `
+      `[ACTIVITY_START] CVC Word Workout${isMultiMode ? ' — multi-mode session with ' + modeCount + ' activity types' : ' — ' + MODE_CONFIG[currentMode].label + ' mode'}. `
       + `${challenges.length} challenges. Mastered vowels: ${masteredVowels.join(', ') || 'all'}. `
       + `Introduce warmly for a young reader. 2-3 sentences.`,
       { silent: true }
@@ -523,7 +532,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       const posLabel =
         changedIdx === 0 ? 'first' : changedIdx === 2 ? 'last' : 'middle';
       sendText(
-        `[CHAIN_WORD] "${nextWord}" \u2014 changed the ${posLabel} letter from "${prevWord}". Say it.`,
+        `[CHAIN_WORD] "${nextWord}" — changed the ${posLabel} letter from "${prevWord}". Say it.`,
         { silent: true }
       );
     } else {
@@ -710,6 +719,13 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
             const isSelected = selectedAnswer === word;
             const isCorrectWord = word === currentChallenge.realWord;
             const showResult = showNext;
+            const choiceState = showResult
+              ? isCorrectWord
+                ? 'correct'
+                : 'dimmed'
+              : isSelected
+                ? 'selected'
+                : 'idle';
 
             return (
               <div
@@ -725,15 +741,9 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                 className={`
                   relative px-6 py-8 rounded-2xl border-2 text-center
                   transition-all duration-200 select-none
-                  ${
-                    showResult && isCorrectWord
-                      ? 'bg-emerald-500/20 border-emerald-400/50 scale-105'
-                      : showResult && !isCorrectWord
-                        ? 'bg-red-500/10 border-red-400/30 opacity-60'
-                        : isSelected
-                          ? 'bg-blue-500/20 border-blue-400/50'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
-                  }
+                  ${answerStateClasses[choiceState]}
+                  ${!showResult && choiceState === 'idle' ? 'hover:scale-[1.02] cursor-pointer' : ''}
+                  ${showResult && isCorrectWord ? 'scale-105' : ''}
                   ${isShaking && isSelected ? 'animate-pulse' : ''}
                   ${isCelebrating && isSelected && isCorrectWord ? 'animate-bounce' : ''}
                 `}
@@ -749,7 +759,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                   className="absolute top-2 right-2 p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 text-sm"
                   aria-label={`Hear ${word}`}
                 >
-                  {'\uD83D\uDD0A'}
+                  {'🔊'}
                 </button>
               </div>
             );
@@ -778,7 +788,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
               className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-400"
               aria-label="Hear the word"
             >
-              {'\uD83D\uDD0A'}
+              {'🔊'}
             </button>
           </div>
         </div>
@@ -787,6 +797,15 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
             const isSelected = selectedAnswer === opt.word;
             const isCorrect = opt.word === currentChallenge.targetWord;
             const showResult = showNext;
+            const choiceState = showResult
+              ? isCorrect
+                ? 'correct'
+                : isSelected
+                  ? 'incorrect'
+                  : 'dimmed'
+              : isSelected
+                ? 'selected'
+                : 'idle';
 
             return (
               <div
@@ -802,15 +821,9 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                 className={`
                   flex flex-col items-center gap-2 p-4 rounded-2xl border-2
                   transition-all duration-200 select-none
-                  ${
-                    showResult && isCorrect
-                      ? 'bg-emerald-500/20 border-emerald-400/50 scale-105'
-                      : showResult && isSelected && !isCorrect
-                        ? 'bg-red-500/10 border-red-400/30 opacity-60'
-                        : isSelected
-                          ? 'bg-blue-500/20 border-blue-400/50'
-                          : 'bg-white/5 border-white/20 hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
-                  }
+                  ${answerStateClasses[choiceState]}
+                  ${!showResult && choiceState === 'idle' ? 'hover:scale-[1.02] cursor-pointer' : ''}
+                  ${showResult && isCorrect ? 'scale-105' : ''}
                   ${isCelebrating && isSelected && isCorrect ? 'animate-bounce' : ''}
                 `}
               >
@@ -893,16 +906,16 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                   changedIdx !== undefined &&
                   (isActive || isRead || isChainComplete) && (
                     <span className="text-xs text-slate-500 ml-auto">
-                      {prevWord[changedIdx]} {'\u2192'} {word[changedIdx]}
+                      {prevWord[changedIdx]} {'→'} {word[changedIdx]}
                     </span>
                   )}
                 {isActive && (
                   <span className="ml-auto text-blue-400 animate-pulse">
-                    {'\u25C0'}
+                    {'◀'}
                   </span>
                 )}
                 {isRead && (
-                  <span className="ml-auto text-emerald-400">{'\u2713'}</span>
+                  <span className="ml-auto text-emerald-400">{'✓'}</span>
                 )}
               </div>
             );
@@ -910,21 +923,17 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
         </div>
         {!isChainComplete && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
+            <LuminaButton
+              tone={!isStarted ? 'primary' : 'ghost'}
               onClick={handleChainAdvance}
-              className={`px-8 py-3 text-lg ${
-                !isStarted
-                  ? 'bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300'
-                  : 'bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300'
-              }`}
+              className="px-8 py-3 text-lg"
             >
               {!isStarted
                 ? 'Start Reading'
                 : chainPosition < chain.length - 1
                   ? 'Next Word'
                   : 'Finish Chain'}
-            </Button>
+            </LuminaButton>
           </div>
         )}
       </div>
@@ -973,21 +982,13 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
           </p>
         </div>
         <div className="flex justify-center gap-3">
-          <Button
-            variant="ghost"
-            onClick={handleModelRead}
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-          >
-            {'\uD83D\uDD0A'} Hear the Sentence
-          </Button>
+          <LuminaButton onClick={handleModelRead}>
+            {'🔊'} Hear the Sentence
+          </LuminaButton>
           {!showComprehension && !showNext && (
-            <Button
-              variant="ghost"
-              onClick={handleSentenceDone}
-              className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
-            >
+            <LuminaButton tone="primary" onClick={handleSentenceDone}>
               I Read It!
-            </Button>
+            </LuminaButton>
           )}
         </div>
         {showComprehension && (
@@ -1016,6 +1017,15 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                   const isSelected = comprehensionSelected === word;
                   const isCorrect = word === answer;
                   const showResult = showNext;
+                  const choiceState = showResult
+                    ? isCorrect
+                      ? 'correct'
+                      : isSelected
+                        ? 'incorrect'
+                        : 'dimmed'
+                    : isSelected
+                      ? 'selected'
+                      : 'idle';
                   return (
                     <button
                       key={word}
@@ -1024,15 +1034,9 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                       className={`
                         px-5 py-2.5 rounded-xl border-2 text-lg font-bold
                         transition-all duration-200 select-none
-                        ${
-                          showResult && isCorrect
-                            ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200 scale-105'
-                            : showResult && isSelected && !isCorrect
-                              ? 'bg-red-500/10 border-red-400/30 text-red-300 opacity-60'
-                              : isSelected
-                                ? 'bg-purple-500/20 border-purple-400/50 text-purple-200'
-                                : 'bg-white/5 border-white/20 text-slate-200 hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
-                        }
+                        ${answerStateClasses[choiceState]}
+                        ${!showResult && choiceState === 'idle' ? 'hover:scale-[1.02] cursor-pointer' : ''}
+                        ${showResult && isCorrect ? 'scale-105' : ''}
                       `}
                     >
                       {word}
@@ -1053,79 +1057,55 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
   if (!currentChallenge) {
     return (
-      <Card
-        className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}
-      >
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">
             No challenges available.
           </p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card
-      className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}
-    >
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className="bg-white/5 border-white/20 text-slate-400 text-xs"
-              >
+              <LuminaBadge className="text-xs">
                 {MODE_CONFIG[currentMode].icon} {MODE_CONFIG[currentMode].label}
-              </Badge>
+              </LuminaBadge>
               {masteredVowels.length > 0 && (
-                <Badge
-                  variant="outline"
-                  className="bg-white/5 border-white/20 text-slate-400 text-xs"
-                >
+                <LuminaBadge className="text-xs">
                   Vowels: {masteredVowels.join(', ')}
-                </Badge>
+                </LuminaBadge>
               )}
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className="bg-blue-500/20 border-blue-500/40 text-blue-300 text-xs"
-          >
+          <LuminaBadge accent="blue" className="text-xs">
             {currentIndex + 1} / {challenges.length}
-          </Badge>
+          </LuminaBadge>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Progress bar */}
         {!allChallengesComplete && (
-          <div className="w-full h-1.5 rounded-full bg-slate-700/40 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-emerald-500/60 transition-all duration-500"
-              style={{
-                width: `${(currentIndex / Math.max(challenges.length, 1)) * 100}%`,
-              }}
-            />
-          </div>
+          <LuminaProgress
+            accent="emerald"
+            value={(currentIndex / Math.max(challenges.length, 1)) * 100}
+          />
         )}
 
         {/* Feedback */}
         {!allChallengesComplete && feedback && (
-          <div
-            className={`
-              px-4 py-2 rounded-lg text-sm font-medium text-center
-              ${
-                feedbackType === 'success'
-                  ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-                  : 'bg-red-500/20 border border-red-500/40 text-red-300'
-              }
-            `}
+          <LuminaFeedbackCard
+            status={feedbackType === 'success' ? 'correct' : 'incorrect'}
           >
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Mode content */}
@@ -1137,15 +1117,14 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
         {/* Next button */}
         {!allChallengesComplete && showNext && (
           <div className="flex justify-center pt-2">
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="next"
               onClick={handleNextChallenge}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 px-8"
             >
               {currentIndex < challenges.length - 1
                 ? 'Next Challenge'
                 : 'Finish'}
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -1172,8 +1151,8 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

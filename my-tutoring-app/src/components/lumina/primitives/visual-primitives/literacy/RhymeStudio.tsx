@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaPrompt,
+  LuminaProgress,
+  LuminaChallengeCounter,
+  LuminaFeedbackCard,
+  answerStateClasses,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -72,9 +83,9 @@ const MODE_LABELS: Record<string, string> = {
 };
 
 const MODE_ICONS: Record<string, string> = {
-  recognition: '\uD83D\uDC42',
-  identification: '\uD83D\uDD0D',
-  production: '\u270F\uFE0F',
+  recognition: '👂',
+  identification: '🔍',
+  production: '✏️',
 };
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
@@ -83,10 +94,16 @@ const MODE_DESCRIPTIONS: Record<string, string> = {
   production: 'Think of a rhyming word!',
 };
 
+const MODE_ACCENT: Record<string, 'blue' | 'purple' | 'emerald'> = {
+  recognition: 'blue',
+  identification: 'purple',
+  production: 'emerald',
+};
+
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  recognition: { label: 'Recognition', icon: '\uD83D\uDC42', accentColor: 'blue' },
-  identification: { label: 'Identification', icon: '\uD83D\uDD0D', accentColor: 'purple' },
-  production: { label: 'Production', icon: '\u270F\uFE0F', accentColor: 'emerald' },
+  recognition: { label: 'Recognition', icon: '👂', accentColor: 'blue' },
+  identification: { label: 'Identification', icon: '🔍', accentColor: 'purple' },
+  production: { label: 'Production', icon: '✏️', accentColor: 'emerald' },
 };
 
 const MAX_ATTEMPTS = 3;
@@ -435,7 +452,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       );
     } else {
       SoundManager.playIncorrect();
-      setFeedback('Not quite \u2014 listen to the ending sounds...');
+      setFeedback('Not quite — listen to the ending sounds...');
       setFeedbackType('error');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
@@ -480,7 +497,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       SoundManager.playCorrect();
       setFeedback(
         `Yes! "${option.word}" rhymes with "${currentChallenge.targetWord}" `
-        + `\u2014 they both end in ${currentChallenge.rhymeFamily}!`,
+        + `— they both end in ${currentChallenge.rhymeFamily}!`,
       );
       setFeedbackType('success');
       setShowResult(true);
@@ -495,7 +512,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
 
       sendText(
         `[ANSWER_CORRECT] Student picked "${option.word}" which rhymes with "${currentChallenge.targetWord}" `
-        + `(${currentChallenge.rhymeFamily}). Brief celebration \u2014 emphasize the shared ending.`,
+        + `(${currentChallenge.rhymeFamily}). Brief celebration — emphasize the shared ending.`,
         { silent: true },
       );
     } else {
@@ -517,7 +534,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         setTimeout(() => {
           setShowResult(true);
           setFeedback(
-            `The answer is "${correct?.word}" \u2014 it ends in ${currentChallenge.rhymeFamily} `
+            `The answer is "${correct?.word}" — it ends in ${currentChallenge.rhymeFamily} `
             + `like "${currentChallenge.targetWord}"!`,
           );
           setFeedbackType('success');
@@ -542,7 +559,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       SoundManager.playCorrect();
       setFeedback(
         `Great! "${word}" rhymes with "${currentChallenge.targetWord}" `
-        + `\u2014 they both end in ${currentChallenge.rhymeFamily}!`,
+        + `— they both end in ${currentChallenge.rhymeFamily}!`,
       );
       setFeedbackType('success');
       setShowResult(true);
@@ -609,6 +626,8 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   }, [advanceProgress, currentIndex, challenges.length, sendText, submitFinalEvaluation]);
 
   // ── Render: word card with rhyme-family highlighting ──────────────
+  // INTERACTION SURFACE (painting): the rhyme tile that visually splits the
+  // word into prefix + highlighted rhyme-family suffix. Bespoke by design.
   const renderWordCard = (
     word: string,
     rhymeFamily: string,
@@ -661,22 +680,22 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
           Do these words rhyme?
         </p>
 
+        {/* Recognition answer buttons — the binary YES/NO interaction surface.
+            Semantic green=rhyme / rose=no-rhyme affordance, bespoke by design. */}
         {!showResult && (
           <div className={`flex justify-center gap-4 ${isShaking ? 'animate-shake' : ''}`}>
-            <Button
-              variant="ghost"
+            <button
               onClick={() => handleRecognition(true)}
-              className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 px-8 py-3 text-lg"
+              className="rounded-xl bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 px-8 py-3 text-lg font-medium transition-colors"
             >
               Yes!
-            </Button>
-            <Button
-              variant="ghost"
+            </button>
+            <button
               onClick={() => handleRecognition(false)}
-              className="bg-rose-500/20 border border-rose-500/40 hover:bg-rose-500/30 text-rose-300 px-8 py-3 text-lg"
+              className="rounded-xl bg-rose-500/20 border border-rose-500/40 hover:bg-rose-500/30 text-rose-300 px-8 py-3 text-lg font-medium transition-colors"
             >
               No
-            </Button>
+            </button>
           </div>
         )}
       </div>
@@ -702,9 +721,16 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
           <span className="text-amber-300">{currentChallenge.targetWord}</span>?
         </p>
 
+        {/* Rhyme word tiles — bespoke interaction surface; grading colors
+            come from the shared answerStateClasses token. */}
         <div className={`grid ${gridClass} gap-3 ${isShaking ? 'animate-shake' : ''}`}>
           {shuffledIdentificationOptions.map((option, idx) => {
             const isCorrectOption = showResult && option.isCorrect;
+            const state = isCorrectOption
+              ? 'correct'
+              : showResult && selectedOption === idx && !option.isCorrect
+                ? 'incorrect'
+                : 'idle';
             return (
               <button
                 key={idx}
@@ -712,12 +738,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
                 disabled={showResult}
                 className={`
                   rounded-xl border-2 p-4 text-center transition-all duration-200 cursor-pointer
-                  ${isCorrectOption
-                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200 ring-2 ring-emerald-400/40'
-                    : showResult && selectedOption === idx && !option.isCorrect
-                      ? 'bg-red-500/10 border-red-500/30 text-red-300'
-                      : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20'
-                  }
+                  ${answerStateClasses[state]}
                   ${isCelebrating && isCorrectOption ? 'animate-bounce' : ''}
                 `}
               >
@@ -751,9 +772,16 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
           <span className="text-amber-300">{currentChallenge.targetWord}</span>
         </p>
 
+        {/* Rhyme word tiles — bespoke interaction surface; grading colors
+            come from the shared answerStateClasses token. */}
         <div className={`grid ${gridClass} gap-3 ${isShaking ? 'animate-shake' : ''}`}>
           {productionWordBank.map((option, idx) => {
             const isCorrectOption = showResult && option.isCorrect;
+            const state = isCorrectOption
+              ? 'correct'
+              : showResult && selectedOption === idx && !option.isCorrect
+                ? 'incorrect'
+                : 'idle';
             return (
               <button
                 key={idx}
@@ -761,12 +789,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
                 disabled={showResult}
                 className={`
                   rounded-xl border-2 p-4 text-center transition-all duration-200 cursor-pointer
-                  ${isCorrectOption
-                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200 ring-2 ring-emerald-400/40'
-                    : showResult && selectedOption === idx && !option.isCorrect
-                      ? 'bg-red-500/10 border-red-500/30 text-red-300'
-                      : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20'
-                  }
+                  ${answerStateClasses[state]}
                   ${isCelebrating && isCorrectOption ? 'animate-bounce' : ''}
                 `}
               >
@@ -785,11 +808,11 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
 
   if (challenges.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -799,81 +822,67 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   if (!hasStarted) {
     const modes = Array.from(new Set(challenges.map(ch => ch.mode)));
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-8 flex flex-col items-center text-center space-y-5">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
           <div className="text-4xl">🎵</div>
-          <CardTitle className="text-xl text-slate-100">{title}</CardTitle>
-          <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-            Grade {gradeLevel}
-          </Badge>
+          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
+          <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
           <p className="text-slate-400 text-sm max-w-sm">
             {challenges.length} challenges across{' '}
             {modes.map(m => MODE_LABELS[m]).join(', ')} modes.
             Listen carefully and find the rhyming words!
           </p>
-          <Button
-            variant="ghost"
+          <LuminaActionButton
+            action="next"
             onClick={() => {
               SoundManager.tap();
               startTimeRef.current = Date.now();
               setHasStarted(true);
             }}
-            className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 px-8 py-3 text-lg"
           >
             Start Activity
-          </Button>
-        </CardContent>
-      </Card>
+          </LuminaActionButton>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-                Grade {gradeLevel}
-              </Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
             </div>
           </div>
           {currentChallenge && !showSummary && (
-            <Badge
-              variant="outline"
-              className={`text-xs ${
-                currentChallenge.mode === 'recognition'
-                  ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                  : currentChallenge.mode === 'identification'
-                    ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                    : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-              }`}
-            >
+            <LuminaBadge accent={MODE_ACCENT[currentChallenge.mode]} className="text-xs">
               {MODE_ICONS[currentChallenge.mode]} {MODE_LABELS[currentChallenge.mode]}
-            </Badge>
+            </LuminaBadge>
           )}
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Progress indicator */}
         {!showSummary && (
           <>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">
-                Challenge {currentIndex + 1} of {challenges.length}
-              </span>
+              <LuminaChallengeCounter
+                current={currentIndex + 1}
+                total={challenges.length}
+                className="text-slate-400"
+              />
               <span className="text-slate-500 text-xs">
                 {challengeResults.filter(r => r.correct).length} correct
               </span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 transition-all duration-500"
-                style={{ width: `${((showResult ? currentIndex + 1 : currentIndex) / challenges.length) * 100}%` }}
-              />
-            </div>
+            <LuminaProgress
+              accent="purple"
+              value={((showResult ? currentIndex + 1 : currentIndex) / challenges.length) * 100}
+            />
           </>
         )}
 
@@ -888,31 +897,17 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
 
         {/* Feedback banner */}
         {feedback && !showSummary && (
-          <div
-            className={`
-              px-4 py-3 rounded-lg text-sm font-medium text-center transition-all
-              ${feedbackType === 'success'
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-                : feedbackType === 'error'
-                  ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-                  : ''
-              }
-            `}
-          >
+          <LuminaFeedbackCard status={feedbackType === 'error' ? 'incorrect' : 'correct'}>
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Next / Finish button */}
         {showResult && !showSummary && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              onClick={handleNext}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
-            >
+            <LuminaActionButton action="next" onClick={handleNext}>
               {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -927,8 +922,8 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
             className="mb-6"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

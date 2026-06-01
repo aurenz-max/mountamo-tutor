@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaChallengeCounter,
+  LuminaPrompt,
+  LuminaCallout,
+  LuminaChipBank,
+  LuminaFeedbackCard,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -65,6 +77,9 @@ interface SentenceBuilderProps {
 type TileRole = 'subject' | 'predicate' | 'object' | 'modifier' | 'conjunction' | 'punctuation';
 type LearningPhase = 'explore' | 'practice' | 'apply';
 
+// Pedagogical role color-coding for the build tiles (the interaction surface).
+// These tints intentionally match the role legend so students can map a word
+// to its grammatical role — they are NOT grading colors.
 const ROLE_STYLES: Record<TileRole, string> = {
   subject: 'bg-blue-500/20 border-blue-500/40 text-blue-300',
   predicate: 'bg-red-500/20 border-red-500/40 text-red-300',
@@ -89,10 +104,16 @@ const PHASE_LABELS: Record<LearningPhase, { label: string; description: string }
   apply: { label: 'Apply', description: 'Create your own sentence' },
 };
 
+const PHASE_ACCENT: Record<LearningPhase, LuminaAccent> = {
+  explore: 'blue',
+  practice: 'amber',
+  apply: 'emerald',
+};
+
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  explore:  { label: 'Explore',  icon: '\uD83D\uDD0D', accentColor: 'blue' },
-  practice: { label: 'Practice', icon: '\u270F\uFE0F',  accentColor: 'amber' },
-  apply:    { label: 'Apply',    icon: '\uD83D\uDE80', accentColor: 'emerald' },
+  explore:  { label: 'Explore',  icon: '🔍', accentColor: 'blue' },
+  practice: { label: 'Practice', icon: '✏️',  accentColor: 'amber' },
+  apply:    { label: 'Apply',    icon: '🚀', accentColor: 'emerald' },
 };
 
 // ============================================================================
@@ -494,6 +515,8 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
 
   // ── Render helpers ──
 
+  // The build tile — the bespoke interaction object. Role-tinted (pedagogy),
+  // picked up from the bank and placed into the sentence frame.
   const renderTile = (
     tile: { id: string; text: string; role: TileRole },
     onClick: () => void,
@@ -541,7 +564,7 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
                     }
                   `}
                 >
-                  {isCompleted ? '\u2713' : index + 1}
+                  {isCompleted ? '✓' : index + 1}
                 </div>
                 <span
                   className={`text-xs font-medium ${
@@ -563,16 +586,17 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     const usedRoles = new Set(currentChallenge?.tiles.map(t => t.role) || []);
     const relevantRoles = roles.filter(r => usedRoles.has(r));
 
+    // Role chips mirror the tile color-coding (pedagogy), so they stay bespoke
+    // rather than using LuminaBadge's grading palette.
     return (
       <div className="flex flex-wrap gap-2 mb-3">
         {relevantRoles.map(role => (
-          <Badge
+          <span
             key={role}
-            variant="outline"
-            className={`text-xs ${ROLE_STYLES[role]}`}
+            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${ROLE_STYLES[role]}`}
           >
             {ROLE_LABELS[role]}
-          </Badge>
+          </span>
         ))}
       </div>
     );
@@ -681,20 +705,15 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
 
   const renderFeedback = () => {
     if (!feedback) return null;
+    const status = feedbackType === 'success'
+      ? 'correct'
+      : feedbackType === 'error'
+        ? 'incorrect'
+        : 'insight';
     return (
-      <div
-        className={`
-          px-4 py-2 rounded-lg text-sm font-medium text-center
-          ${feedbackType === 'success'
-            ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-            : feedbackType === 'error'
-              ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-              : 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
-          }
-        `}
-      >
+      <LuminaFeedbackCard status={status} label={feedbackType === 'success' ? 'Correct!' : undefined}>
         {feedback}
-      </div>
+      </LuminaFeedbackCard>
     );
   };
 
@@ -702,78 +721,61 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
 
   if (!currentChallenge) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   // ── Main render ──
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-                Grade {gradeLevel}
-              </Badge>
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs capitalize">
-                {sentenceType} sentences
-              </Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge className="text-xs capitalize">{sentenceType} sentences</LuminaBadge>
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-xs ${
-              currentPhase === 'explore'
-                ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                : currentPhase === 'practice'
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                  : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-            }`}
-          >
+          <LuminaBadge accent={PHASE_ACCENT[currentPhase]} className="text-xs">
             {PHASE_LABELS[currentPhase].description}
-          </Badge>
+          </LuminaBadge>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* Phase Progress */}
         {renderPhaseProgress()}
 
         {/* Challenge Counter (within current phase) */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-400">
-            Challenge {withinPhaseIndex + 1} of {challenges.length}
-          </span>
+        <div className="flex items-center justify-between">
+          <LuminaChallengeCounter current={withinPhaseIndex + 1} total={challenges.length} />
           {currentChallenge.hint && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <LuminaButton
               onClick={handleHint}
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 text-xs h-7 px-2"
+              className="text-xs h-7 px-2"
             >
               Hint
-            </Button>
+            </LuminaButton>
           )}
         </div>
 
         {/* Target Meaning */}
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-          <p className="text-xs text-slate-500 mb-1">Build a sentence that means:</p>
+        <LuminaPrompt>
+          <p className="text-xs text-slate-500 mb-1 font-normal">Build a sentence that means:</p>
           <p className="text-slate-200 text-sm font-medium">{currentChallenge.targetMeaning}</p>
-        </div>
+        </LuminaPrompt>
 
         {/* Hint */}
         {showHint && currentChallenge.hint && (
-          <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
-            <p className="text-amber-300 text-sm">{currentChallenge.hint}</p>
-          </div>
+          <LuminaCallout accent="amber" label="Hint">
+            {currentChallenge.hint}
+          </LuminaCallout>
         )}
 
         {/* Role Legend */}
@@ -789,50 +791,45 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
         {renderFeedback()}
 
         {/* Word Bank */}
-        <div>
-          <p className="text-xs text-slate-500 mb-2">Word Bank:</p>
-          <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4">
-            {renderWordBank()}
-          </div>
-        </div>
+        <LuminaChipBank label="Word Bank">
+          {renderWordBank()}
+        </LuminaChipBank>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 pt-2">
           {!currentChallengeCompleted ? (
             <>
-              <Button
-                variant="ghost"
+              <LuminaButton
                 onClick={handleClearAll}
                 disabled={placedTileIds.length === 0}
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
               >
                 Clear
-              </Button>
-              <Button
-                variant="ghost"
+              </LuminaButton>
+              <LuminaActionButton
+                action="check"
                 onClick={handleCheck}
                 disabled={
                   currentPhase === 'explore'
                     ? placedTileIds.length !== 1
                     : placedTileIds.length === 0
                 }
-                className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 ml-auto"
+                className="ml-auto"
               >
                 Check
-              </Button>
+              </LuminaActionButton>
             </>
           ) : (
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="next"
               onClick={handleNext}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 ml-auto"
+              className="ml-auto"
             >
               {currentPhase === 'apply' && withinPhaseIndex === challenges.length - 1
                 ? hasSubmittedEvaluation
                   ? 'Complete!'
                   : 'Finish'
                 : 'Next'}
-            </Button>
+            </LuminaActionButton>
           )}
         </div>
 
@@ -847,8 +844,8 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

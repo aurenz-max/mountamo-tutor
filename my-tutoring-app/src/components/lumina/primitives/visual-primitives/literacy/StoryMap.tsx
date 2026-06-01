@@ -1,10 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { StoryMapMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaPanel,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  answerStateClasses,
+  accentChipBg,
+  accentText,
+  accentSoftBorder,
+  accentSolidBg,
+} from '../../../ui';
 
 // =============================================================================
 // Type Definitions
@@ -108,14 +124,16 @@ const CONFLICT_LABELS: Record<string, string> = {
   'person-vs-society': 'Character vs. Society',
 };
 
-const ROLE_COLORS: Record<string, string> = {
-  protagonist: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  antagonist: 'bg-red-500/20 text-red-300 border-red-500/30',
-  supporting: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+// Role chips use the shared accent palette: protagonist→emerald,
+// antagonist→rose, supporting→blue.
+const ROLE_ACCENT: Record<string, 'emerald' | 'rose' | 'blue'> = {
+  protagonist: 'emerald',
+  antagonist: 'rose',
+  supporting: 'blue',
 };
 
 // =============================================================================
-// SVG Story Arc Components
+// SVG Story Arc Components  (bespoke interaction-surface canvas — left intact)
 // =============================================================================
 
 function BMEArc({
@@ -454,14 +472,14 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
   // Defensive check
   if (!data || !data.events || !Array.isArray(data.events) || data.events.length === 0) {
     return (
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardContent className="p-8">
-          <h3 className="text-lg font-semibold text-red-400 mb-2">Invalid Data</h3>
+      <LuminaCard>
+        <LuminaCardContent className="p-8">
+          <h3 className="text-lg font-semibold text-rose-400 mb-2">Invalid Data</h3>
           <p className="text-slate-300">
             The story map received invalid data. Please regenerate the content.
           </p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -859,18 +877,20 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
 
   const currentPhaseLabel = phaseSteps.find((ps) => ps.key === phase)?.activeLabel || '';
 
+  // Phase 1 success condition (reused by feedback + advance button).
+  const phase1Success =
+    characterOptions.every((c) => selectedCharacters.has(c.name)) &&
+    selectedCharacters.size === characterOptions.length &&
+    selectedSetting === 'correct';
+
   return (
-    <Card
-      className={`backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl ${className}`}
-    >
-      <CardHeader className="pb-4">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="text-2xl text-slate-100">{data.title}</CardTitle>
+          <LuminaCardTitle className="text-2xl">{data.title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
-            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30">
-              {data.gradeLevel}
-            </Badge>
-            <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30">
+            <LuminaBadge accent="blue">{data.gradeLevel}</LuminaBadge>
+            <LuminaBadge accent="purple">
               {data.structureType === 'bme'
                 ? 'Beginning-Middle-End'
                 : data.structureType === 'story-mountain'
@@ -878,60 +898,64 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                 : data.structureType === 'plot-diagram'
                 ? 'Plot Diagram'
                 : "Hero's Journey"}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
 
         {/* Phase Progress Indicator */}
         <div className="flex items-center gap-2 mt-4">
-          {phaseSteps.map((step, idx) => (
-            <React.Fragment key={step.key}>
-              <div
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
-                  phase === step.key
-                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
-                    : isPhaseComplete(step.key)
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'bg-slate-800/50 text-slate-500 border border-slate-700/30'
-                }`}
-              >
-                {isPhaseComplete(step.key) && (
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-                {step.label}
-              </div>
-              {idx < phaseSteps.length - 1 && (
-                <div
-                  className={`h-px w-6 ${
-                    isPhaseComplete(step.key)
-                      ? 'bg-emerald-500/40'
-                      : 'bg-slate-700/40'
-                  }`}
-                />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </CardHeader>
+          {phaseSteps.map((step, idx) => {
+            const isActive = phase === step.key;
+            const isComplete = isPhaseComplete(step.key);
+            const pillAccent: 'blue' | 'emerald' | null = isActive
+              ? 'blue'
+              : isComplete
+              ? 'emerald'
+              : null;
 
-      <CardContent className="space-y-6">
+            return (
+              <React.Fragment key={step.key}>
+                <div
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
+                    pillAccent
+                      ? `${accentChipBg[pillAccent]} ${accentText[pillAccent]} ${accentSoftBorder[pillAccent]}`
+                      : 'bg-black/20 text-slate-500 border-white/10'
+                  }`}
+                >
+                  {isComplete && (
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                  {step.label}
+                </div>
+                {idx < phaseSteps.length - 1 && (
+                  <div
+                    className={`h-px w-6 ${
+                      isComplete ? accentSolidBg.emerald : 'bg-white/10'
+                    }`}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </LuminaCardHeader>
+
+      <LuminaCardContent className="space-y-6">
         {/* Phase Instructions */}
-        <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-          <p className="text-sm text-indigo-200 font-medium">
-            {currentPhaseLabel}
-          </p>
+        <LuminaPrompt accent="blue">
+          <p className="text-sm text-blue-200 font-medium">{currentPhaseLabel}</p>
           <p className="text-xs text-slate-400 mt-1">
             {phase === 'identify' &&
               'Read the passage below, then select all the characters and the correct setting.'}
@@ -940,14 +964,13 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
             {phase === 'analyze' &&
               'Based on the story, select the type of conflict the main character faces.'}
           </p>
-        </div>
+        </LuminaPrompt>
 
         {/* Passage Section */}
         <div>
-          <Button
-            variant="ghost"
+          <LuminaButton
             onClick={() => setShowPassage(!showPassage)}
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 mb-2 text-sm"
+            className="mb-2 text-sm"
           >
             {showPassage ? 'Hide' : 'Show'} Passage
             <svg
@@ -965,24 +988,23 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                 d="M19 9l-7 7-7-7"
               />
             </svg>
-          </Button>
+          </LuminaButton>
 
           {showPassage && (
-            <Card className="backdrop-blur-sm bg-slate-800/30 border-white/5">
-              <CardContent className="p-4">
-                <h4 className="text-base font-semibold text-slate-100 mb-1">
-                  {data.passage.title}
-                </h4>
-                {data.passage.author && (
-                  <p className="text-xs text-slate-500 mb-3">
-                    by {data.passage.author}
-                  </p>
-                )}
-                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
-                  {data.passage.text}
+            <LuminaPanel>
+              {/* Passage body — the reading surface; text kept bespoke. */}
+              <h4 className="text-base font-semibold text-slate-100 mb-1">
+                {data.passage.title}
+              </h4>
+              {data.passage.author && (
+                <p className="text-xs text-slate-500 mb-3">
+                  by {data.passage.author}
                 </p>
-              </CardContent>
-            </Card>
+              )}
+              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                {data.passage.text}
+              </p>
+            </LuminaPanel>
           )}
         </div>
 
@@ -993,38 +1015,34 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
           <div className="space-y-5">
             {/* Characters */}
             <div>
-              <h4 className="text-sm font-semibold text-slate-200 mb-3 uppercase tracking-wider">
+              <LuminaSectionLabel accent="blue" size="sm" className="mb-3">
                 Who are the characters?{' '}
                 <span className="text-slate-500 normal-case font-normal">
                   (Select all)
                 </span>
-              </h4>
+              </LuminaSectionLabel>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {characterOptions.map((char) => {
                   const isSelected = selectedCharacters.has(char.name);
                   const showResult = phase1Checked;
-                  const isCorrect = showResult && isSelected;
                   const isMissed = showResult && !isSelected;
+
+                  // Graded selection tile — use the shared answer-state colors.
+                  const stateClass = isSelected
+                    ? showResult
+                      ? answerStateClasses.correct
+                      : answerStateClasses.selected
+                    : showResult && isMissed
+                    ? `${accentSoftBorder.amber} bg-amber-500/5`
+                    : answerStateClasses.idle;
 
                   return (
                     <div
                       key={char.name}
                       onClick={() => toggleCharacter(char.name)}
-                      className={`
-                        p-3 rounded-lg border-2 cursor-pointer transition-all duration-200
-                        ${
-                          isSelected
-                            ? showResult
-                              ? isCorrect
-                                ? 'border-emerald-500 bg-emerald-500/10'
-                                : 'border-red-500 bg-red-500/10'
-                              : 'border-indigo-500 bg-indigo-500/10'
-                            : showResult && isMissed
-                            ? 'border-yellow-500/50 bg-yellow-500/5'
-                            : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
-                        }
-                        ${phase1Checked ? 'cursor-default' : 'cursor-pointer'}
-                      `}
+                      className={`p-3 rounded-lg border-2 transition-all duration-200 ${stateClass} ${
+                        phase1Checked ? 'cursor-default' : 'cursor-pointer'
+                      }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-slate-100">
@@ -1048,11 +1066,12 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                       </div>
                       <p className="text-xs text-slate-400">{char.description}</p>
                       {showResult && (
-                        <Badge
-                          className={`mt-2 text-xs ${ROLE_COLORS[char.role]}`}
+                        <LuminaBadge
+                          accent={ROLE_ACCENT[char.role]}
+                          className="mt-2 text-xs"
                         >
                           {char.role}
-                        </Badge>
+                        </LuminaBadge>
                       )}
                     </div>
                   );
@@ -1062,33 +1081,32 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
 
             {/* Setting */}
             <div>
-              <h4 className="text-sm font-semibold text-slate-200 mb-3 uppercase tracking-wider">
+              <LuminaSectionLabel accent="blue" size="sm" className="mb-3">
                 Where and when does the story take place?
-              </h4>
+              </LuminaSectionLabel>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {settingOptions.map((opt) => {
                   const isSelected = selectedSetting === opt.id;
                   const showResult = phase1Checked;
 
+                  // Graded single-select option — shared answer-state colors.
+                  const stateClass = isSelected
+                    ? showResult
+                      ? opt.isCorrect
+                        ? answerStateClasses.correct
+                        : answerStateClasses.incorrect
+                      : answerStateClasses.selected
+                    : showResult && opt.isCorrect
+                    ? `${accentSoftBorder.emerald} bg-emerald-500/5`
+                    : answerStateClasses.idle;
+
                   return (
                     <div
                       key={opt.id}
                       onClick={() => selectSetting(opt.id)}
-                      className={`
-                        p-3 rounded-lg border-2 transition-all duration-200
-                        ${
-                          isSelected
-                            ? showResult
-                              ? opt.isCorrect
-                                ? 'border-emerald-500 bg-emerald-500/10'
-                                : 'border-red-500 bg-red-500/10'
-                              : 'border-indigo-500 bg-indigo-500/10'
-                            : showResult && opt.isCorrect
-                            ? 'border-emerald-500/50 bg-emerald-500/5'
-                            : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
-                        }
-                        ${phase1Checked ? 'cursor-default' : 'cursor-pointer'}
-                      `}
+                      className={`p-3 rounded-lg border-2 transition-all duration-200 ${stateClass} ${
+                        phase1Checked ? 'cursor-default' : 'cursor-pointer'
+                      }`}
                     >
                       <span className="text-sm text-slate-200">{opt.text}</span>
                     </div>
@@ -1104,80 +1122,52 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
 
             {/* Phase 1 Check Button */}
             {!phase1Checked && (
-              <Button
+              <LuminaActionButton
+                action="check"
                 onClick={checkPhase1}
                 disabled={
                   selectedCharacters.size === 0 || selectedSetting === null
                 }
-                variant="ghost"
-                className="bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Check Answers
-              </Button>
+              </LuminaActionButton>
             )}
 
             {/* Phase 1 result feedback */}
             {phase1Checked && (
               <div className="space-y-2">
-                {characterOptions.every((c) =>
-                  selectedCharacters.has(c.name)
-                ) &&
-                selectedCharacters.size === characterOptions.length &&
-                selectedSetting === 'correct' ? (
-                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                    <p className="text-sm text-emerald-300 font-medium">
-                      Great job! You identified all the characters and the setting correctly.
-                    </p>
-                  </div>
+                {phase1Success ? (
+                  <LuminaFeedbackCard status="correct">
+                    Great job! You identified all the characters and the setting
+                    correctly.
+                  </LuminaFeedbackCard>
                 ) : (
-                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                    <p className="text-sm text-amber-300 font-medium">
-                      Not quite right. Look at the passage again carefully.
-                    </p>
-                    <Button
-                      onClick={() => {
-                        setPhase1Checked(false);
-                        setSelectedCharacters(new Set());
-                        setSelectedSetting(null);
-                      }}
-                      variant="ghost"
-                      className="mt-2 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 text-xs"
-                    >
-                      Try Again
-                    </Button>
-                  </div>
+                  <LuminaFeedbackCard status="incorrect">
+                    Not quite right. Look at the passage again carefully.
+                    <div className="mt-3">
+                      <LuminaActionButton
+                        action="retry"
+                        onClick={() => {
+                          setPhase1Checked(false);
+                          setSelectedCharacters(new Set());
+                          setSelectedSetting(null);
+                        }}
+                      />
+                    </div>
+                  </LuminaFeedbackCard>
                 )}
               </div>
             )}
 
             {/* Manual advance button (if they got it right) */}
-            {phase1Checked &&
-              characterOptions.every((c) =>
-                selectedCharacters.has(c.name)
-              ) &&
-              selectedCharacters.size === characterOptions.length &&
-              selectedSetting === 'correct' && (
-                <Button
-                  onClick={() => setPhase('sequence')}
-                  variant="ghost"
-                  className="bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-500/30"
-                >
-                  Continue to Sequencing
-                  <svg
-                    className="w-4 h-4 ml-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Button>
-              )}
+            {phase1Checked && phase1Success && (
+              <LuminaActionButton
+                action="next"
+                onClick={() => setPhase('sequence')}
+              >
+                Continue to Sequencing →
+              </LuminaActionButton>
+            )}
           </div>
         )}
 
@@ -1186,32 +1176,30 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
         {/* ================================================================== */}
         {phase === 'sequence' && (
           <div className="space-y-5">
-            {/* Story Arc SVG */}
-            <Card className="backdrop-blur-sm bg-slate-800/20 border-white/5 overflow-hidden">
-              <CardContent className="p-4">
-                {data.structureType === 'bme' ? (
-                  <BMEArc
-                    placedEvents={placedEvents}
-                    events={data.events}
-                    activeDropZone={activeDropZone}
-                    isChecked={phase2Checked}
-                  />
-                ) : (
-                  <StoryMountainArc
-                    placedEvents={placedEvents}
-                    events={data.events}
-                    activeDropZone={activeDropZone}
-                    isChecked={phase2Checked}
-                  />
-                )}
-              </CardContent>
-            </Card>
+            {/* Story Arc SVG — bespoke interaction-surface canvas. */}
+            <LuminaPanel className="overflow-hidden">
+              {data.structureType === 'bme' ? (
+                <BMEArc
+                  placedEvents={placedEvents}
+                  events={data.events}
+                  activeDropZone={activeDropZone}
+                  isChecked={phase2Checked}
+                />
+              ) : (
+                <StoryMountainArc
+                  placedEvents={placedEvents}
+                  events={data.events}
+                  activeDropZone={activeDropZone}
+                  isChecked={phase2Checked}
+                />
+              )}
+            </LuminaPanel>
 
-            {/* Arc Drop Zones (clickable buttons) */}
+            {/* Arc Drop Zones (bespoke click-to-place placement targets) */}
             <div>
-              <h4 className="text-sm font-semibold text-slate-200 mb-3 uppercase tracking-wider">
+              <LuminaSectionLabel accent="blue" size="sm" className="mb-3">
                 Story Arc Positions
-              </h4>
+              </LuminaSectionLabel>
               <div
                 className={`grid gap-2 ${
                   data.structureType === 'bme'
@@ -1263,19 +1251,17 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                               eventData &&
                               eventData.arcPosition !== pe.arcPosition;
 
+                            // Graded placed-event chip — shared answer-state colors.
+                            const chipClass = isCorrect
+                              ? answerStateClasses.correct
+                              : isWrong
+                              ? answerStateClasses.incorrect
+                              : 'bg-blue-500/15 border-blue-500/30 text-blue-200';
+
                             return (
                               <div
                                 key={pe.eventId}
-                                className={`
-                                  relative p-2 rounded text-xs text-left
-                                  ${
-                                    isCorrect
-                                      ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-200'
-                                      : isWrong
-                                      ? 'bg-red-500/15 border border-red-500/40 text-red-200'
-                                      : 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-200'
-                                  }
-                                `}
+                                className={`relative p-2 rounded text-xs text-left border ${chipClass}`}
                               >
                                 <span className="line-clamp-2">
                                   {eventData?.text || pe.eventId}
@@ -1286,7 +1272,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                                       e.stopPropagation();
                                       handleRemoveEvent(pe.eventId);
                                     }}
-                                    className="absolute top-1 right-1 w-4 h-4 rounded-full bg-slate-700 text-slate-400 hover:text-white hover:bg-red-500/50 flex items-center justify-center text-xs"
+                                    className="absolute top-1 right-1 w-4 h-4 rounded-full bg-slate-700 text-slate-400 hover:text-white hover:bg-rose-500/50 flex items-center justify-center text-xs"
                                   >
                                     x
                                   </button>
@@ -1306,14 +1292,14 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
               </div>
             </div>
 
-            {/* Available Event Cards */}
+            {/* Available Event Cards — bespoke selectable tokens to place. */}
             <div>
-              <h4 className="text-sm font-semibold text-slate-200 mb-3 uppercase tracking-wider">
+              <LuminaSectionLabel accent="blue" size="sm" className="mb-3">
                 Event Cards{' '}
                 <span className="text-slate-500 normal-case font-normal">
                   ({unplacedEvents.length} remaining)
                 </span>
-              </h4>
+              </LuminaSectionLabel>
               {unplacedEvents.length === 0 ? (
                 <div className="text-center py-4 text-emerald-400 text-sm">
                   <svg
@@ -1373,14 +1359,13 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
 
             {/* Phase 2 Check Button */}
             {!phase2Checked && (
-              <Button
+              <LuminaActionButton
+                action="check"
                 onClick={checkPhase2}
                 disabled={placedEvents.length !== data.events.length}
-                variant="ghost"
-                className="bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Check Sequence
-              </Button>
+              </LuminaActionButton>
             )}
 
             {/* Phase 2 result feedback */}
@@ -1404,30 +1389,25 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                     placedEvents.length === data.events.length;
 
                   return allCorrect ? (
-                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                      <p className="text-sm text-emerald-300 font-medium">
-                        Perfect! You placed all events in the correct positions
-                        on the story arc.
-                      </p>
-                    </div>
+                    <LuminaFeedbackCard status="correct">
+                      Perfect! You placed all events in the correct positions on
+                      the story arc.
+                    </LuminaFeedbackCard>
                   ) : (
-                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                      <p className="text-sm text-amber-300 font-medium">
-                        {correct} of {data.events.length} events are in the
-                        right place. Try again!
-                      </p>
-                      <Button
-                        onClick={() => {
-                          setPhase2Checked(false);
-                          setPlacedEvents([]);
-                          setSelectedEventId(null);
-                        }}
-                        variant="ghost"
-                        className="mt-2 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 text-xs"
-                      >
-                        Try Again
-                      </Button>
-                    </div>
+                    <LuminaFeedbackCard status="incorrect">
+                      {correct} of {data.events.length} events are in the right
+                      place. Try again!
+                      <div className="mt-3">
+                        <LuminaActionButton
+                          action="retry"
+                          onClick={() => {
+                            setPhase2Checked(false);
+                            setPlacedEvents([]);
+                            setSelectedEventId(null);
+                          }}
+                        />
+                      </div>
+                    </LuminaFeedbackCard>
                   );
                 })()}
               </div>
@@ -1454,26 +1434,12 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                   placedEvents.length === data.events.length
                 );
               })() && (
-                <Button
+                <LuminaActionButton
+                  action="next"
                   onClick={() => setPhase('analyze')}
-                  variant="ghost"
-                  className="bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-500/30"
                 >
-                  Continue to Analysis
-                  <svg
-                    className="w-4 h-4 ml-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Button>
+                  Continue to Analysis →
+                </LuminaActionButton>
               )}
           </div>
         )}
@@ -1484,9 +1450,9 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
         {phase === 'analyze' && showConflictPhase && (
           <div className="space-y-5">
             <div>
-              <h4 className="text-sm font-semibold text-slate-200 mb-3 uppercase tracking-wider">
+              <LuminaSectionLabel accent="blue" size="sm" className="mb-3">
                 What type of conflict does the main character face?
-              </h4>
+              </LuminaSectionLabel>
               {data.elements.conflict && (
                 <p className="text-sm text-slate-400 mb-4">
                   {data.elements.conflict.description}
@@ -1496,37 +1462,36 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                 {Object.entries(CONFLICT_LABELS).map(([type, label]) => {
                   const isSelected = selectedConflict === type;
                   const showResult = phase3Checked;
-                  const isCorrect =
-                    showResult && type === data.elements.conflict?.type;
-                  const isWrong =
-                    showResult && isSelected && type !== data.elements.conflict?.type;
+                  const isCorrectAnswer = type === data.elements.conflict?.type;
+
+                  let choiceState:
+                    | 'idle'
+                    | 'selected'
+                    | 'correct'
+                    | 'incorrect'
+                    | 'dimmed';
+                  if (!showResult) {
+                    choiceState = isSelected ? 'selected' : 'idle';
+                  } else if (isCorrectAnswer) {
+                    choiceState = 'correct';
+                  } else if (isSelected) {
+                    choiceState = 'incorrect';
+                  } else {
+                    choiceState = 'dimmed';
+                  }
 
                   return (
-                    <div
+                    <LuminaAnswerChoice
                       key={type}
+                      state={choiceState}
+                      disabled={phase3Checked}
                       onClick={() => selectConflictType(type)}
-                      className={`
-                        p-4 rounded-lg border-2 transition-all duration-200
-                        ${
-                          isSelected
-                            ? showResult
-                              ? isCorrect
-                                ? 'border-emerald-500 bg-emerald-500/10'
-                                : isWrong
-                                ? 'border-red-500 bg-red-500/10'
-                                : 'border-indigo-500 bg-indigo-500/10'
-                              : 'border-indigo-500 bg-indigo-500/10'
-                            : showResult && isCorrect
-                            ? 'border-emerald-500/50 bg-emerald-500/5'
-                            : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
-                        }
-                        ${phase3Checked ? 'cursor-default' : 'cursor-pointer'}
-                      `}
+                      className="p-4"
                     >
                       <span className="text-sm font-medium text-slate-200">
                         {label}
                       </span>
-                    </div>
+                    </LuminaAnswerChoice>
                   );
                 })}
               </div>
@@ -1534,33 +1499,28 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
 
             {/* Phase 3 Check Button */}
             {!phase3Checked && (
-              <Button
+              <LuminaActionButton
+                action="check"
                 onClick={checkPhase3}
                 disabled={selectedConflict === null}
-                variant="ghost"
-                className="bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Check Answer
-              </Button>
+              </LuminaActionButton>
             )}
 
             {/* Phase 3 result feedback */}
             {phase3Checked && (
               <div className="space-y-2">
                 {selectedConflict === data.elements.conflict?.type ? (
-                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                    <p className="text-sm text-emerald-300 font-medium">
-                      Correct! This is a{' '}
-                      {CONFLICT_LABELS[data.elements.conflict?.type || '']} conflict.
-                    </p>
-                  </div>
+                  <LuminaFeedbackCard status="correct">
+                    Correct! This is a{' '}
+                    {CONFLICT_LABELS[data.elements.conflict?.type || '']} conflict.
+                  </LuminaFeedbackCard>
                 ) : (
-                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                    <p className="text-sm text-amber-300 font-medium">
-                      Not quite. The correct answer is{' '}
-                      {CONFLICT_LABELS[data.elements.conflict?.type || '']}.
-                    </p>
-                  </div>
+                  <LuminaFeedbackCard status="incorrect">
+                    Not quite. The correct answer is{' '}
+                    {CONFLICT_LABELS[data.elements.conflict?.type || '']}.
+                  </LuminaFeedbackCard>
                 )}
               </div>
             )}
@@ -1571,61 +1531,23 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
         {/* Success / Final Section */}
         {/* ================================================================== */}
         {hasSubmitted && (
-          <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-            <div className="flex items-center gap-3">
-              <svg
-                className="w-6 h-6 text-emerald-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div>
-                <h4 className="text-lg font-semibold text-emerald-300">
-                  Story Map Complete!
-                </h4>
-                <p className="text-sm text-slate-300">
-                  You analyzed &quot;{data.passage.title}&quot; and mapped its
-                  story structure.
-                </p>
-              </div>
-            </div>
-          </div>
+          <LuminaFeedbackCard
+            status="correct"
+            label="Story Map Complete!"
+          >
+            You analyzed &quot;{data.passage.title}&quot; and mapped its story
+            structure.
+          </LuminaFeedbackCard>
         )}
 
         {/* Action Buttons */}
         {hasSubmitted && (
           <div className="flex gap-3">
-            <Button
-              onClick={handleReset}
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
-            >
-              <svg
-                className="w-4 h-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Try Again
-            </Button>
+            <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

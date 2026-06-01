@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  LuminaInput,
+  accentSoftBg,
+  accentSoftBorder,
+  accentText,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -304,12 +316,12 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
     <div className="space-y-4">
       {renderProgress(['mood', 'figurative', 'rhyme', 'review'], analysisPhase)}
 
-      {/* Poem display */}
-      <div className="rounded-lg bg-white/5 border border-white/10 p-4 font-serif">
+      {/* Poem display — the readable poem surface; clickable spans stay bespoke */}
+      <LuminaPanel className="font-serif">
         {analysisPhase === 'figurative' ? renderPoemWithHighlights : (
           (poemLines || []).map((line, i) => <p key={i} className="text-slate-200 text-sm">{line}</p>)
         )}
-      </div>
+      </LuminaPanel>
 
       {/* Phase 1: Mood */}
       {analysisPhase === 'mood' && (
@@ -319,17 +331,18 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
             {(moodOptions || []).map(mood => (
               <button key={mood} onClick={() => { SoundManager.select(); setSelectedMood(mood); }}
                 className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
-                  selectedMood === mood ? 'bg-violet-500/20 border-violet-500/40 text-violet-300' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                  selectedMood === mood
+                    ? `${accentSoftBg.purple} ${accentSoftBorder.purple} ${accentText.purple}`
+                    : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                 }`}>
                 {mood}
               </button>
             ))}
           </div>
           <div className="flex justify-end">
-            <Button variant="ghost" onClick={nextAnalysis} disabled={!selectedMood}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+            <LuminaButton tone="primary" onClick={nextAnalysis} disabled={!selectedMood}>
               Next: Find Figurative Language
-            </Button>
+            </LuminaButton>
           </div>
         </div>
       )}
@@ -340,11 +353,10 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
           <p className="text-xs text-slate-500">Tap the figurative language in the poem ({figurativeInstances?.length || 0} to find):</p>
           <p className="text-xs text-slate-400">Found: {foundFigurative.size} / {figurativeInstances?.length || 0}</p>
           <div className="flex justify-between">
-            <Button variant="ghost" onClick={prevAnalysis} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-            <Button variant="ghost" onClick={nextAnalysis} disabled={foundFigurative.size === 0}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+            <LuminaButton onClick={prevAnalysis}>Back</LuminaButton>
+            <LuminaButton tone="primary" onClick={nextAnalysis} disabled={foundFigurative.size === 0}>
               Next: Rhyme Scheme
-            </Button>
+            </LuminaButton>
           </div>
         </div>
       )}
@@ -354,26 +366,27 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
         <div className="space-y-3">
           <p className="text-xs text-slate-500">What is the rhyme scheme of this poem?</p>
           {selectedRhymeScheme && (
-            <div className="rounded-lg bg-white/5 border border-white/10 p-3 space-y-1">
+            <LuminaPanel className="space-y-1">
               {renderRhymeLines()}
-            </div>
+            </LuminaPanel>
           )}
           <div className="flex flex-wrap gap-2">
             {(rhymeSchemeOptions || []).map(scheme => (
               <button key={scheme} onClick={() => setSelectedRhymeScheme(scheme)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-mono border transition-all ${
-                  selectedRhymeScheme === scheme ? 'bg-blue-500/20 border-blue-500/40 text-blue-300' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                  selectedRhymeScheme === scheme
+                    ? `${accentSoftBg.blue} ${accentSoftBorder.blue} ${accentText.blue}`
+                    : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                 }`}>
                 {scheme}
               </button>
             ))}
           </div>
           <div className="flex justify-between">
-            <Button variant="ghost" onClick={prevAnalysis} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-            <Button variant="ghost" onClick={nextAnalysis} disabled={!selectedRhymeScheme}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+            <LuminaButton onClick={prevAnalysis}>Back</LuminaButton>
+            <LuminaButton tone="primary" onClick={nextAnalysis} disabled={!selectedRhymeScheme}>
               Review
-            </Button>
+            </LuminaButton>
           </div>
         </div>
       )}
@@ -382,29 +395,29 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
       {analysisPhase === 'review' && (
         <div className="space-y-3">
           <div className="grid gap-2 grid-cols-3">
-            <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-center">
+            <LuminaPanel className="p-2 text-center">
               <p className="text-xs text-slate-500">Mood</p>
               <p className={`text-sm font-medium ${selectedMood === correctMood ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedMood}</p>
-            </div>
-            <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-center">
+            </LuminaPanel>
+            <LuminaPanel className="p-2 text-center">
               <p className="text-xs text-slate-500">Figurative</p>
               <p className="text-sm font-medium text-slate-300">{foundFigurative.size}/{figurativeInstances?.length || 0}</p>
-            </div>
-            <div className="rounded-lg bg-white/5 border border-white/10 p-2 text-center">
+            </LuminaPanel>
+            <LuminaPanel className="p-2 text-center">
               <p className="text-xs text-slate-500">Rhyme</p>
               <p className={`text-sm font-mono font-medium ${selectedRhymeScheme === rhymeScheme ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedRhymeScheme}</p>
+            </LuminaPanel>
+          </div>
+          {!hasSubmittedEvaluation ? (
+            <div className="flex justify-between">
+              <LuminaButton onClick={prevAnalysis}>Edit</LuminaButton>
+              <LuminaActionButton action="check" onClick={submitAnalysis}>Submit</LuminaActionButton>
             </div>
-          </div>
-          <div className="flex justify-between">
-            <Button variant="ghost" onClick={prevAnalysis} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
-            {!hasSubmittedEvaluation ? (
-              <Button variant="ghost" onClick={submitAnalysis} className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">Submit</Button>
-            ) : (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
-                <p className="text-emerald-300 font-semibold">Poetry Analysis Complete!</p>
-              </div>
-            )}
-          </div>
+          ) : (
+            <LuminaFeedbackCard status="correct" label="Poetry Analysis Complete!">
+              Great work breaking down the mood, figurative language, and rhyme of this poem.
+            </LuminaFeedbackCard>
+          )}
         </div>
       )}
     </div>
@@ -418,15 +431,15 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
     <div className="space-y-4">
       {renderProgress(['write', 'review'], compositionPhase)}
 
-      <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+      <LuminaPanel>
         <p className="text-sm text-slate-300">{compositionPrompt}</p>
         {templateConstraints?.syllablesPerLine && (
           <p className="text-xs text-slate-500 mt-1">Syllables per line: {templateConstraints.syllablesPerLine.join('-')}</p>
         )}
         {templateConstraints?.acrosticWord && (
-          <p className="text-xs text-slate-500 mt-1">Acrostic word: <span className="font-bold text-violet-300">{templateConstraints.acrosticWord}</span></p>
+          <p className="text-xs text-slate-500 mt-1">Acrostic word: <span className={`font-bold ${accentText.purple}`}>{templateConstraints.acrosticWord}</span></p>
         )}
-      </div>
+      </LuminaPanel>
 
       {compositionPhase === 'write' && (
         <div className="space-y-2">
@@ -439,7 +452,7 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
                 {acrosticLetter && (
                   <span className="w-6 h-6 rounded bg-violet-500/20 text-violet-300 text-sm font-bold flex items-center justify-center">{acrosticLetter}</span>
                 )}
-                <input
+                <LuminaInput
                   value={line}
                   onChange={e => {
                     const next = [...compositionLines];
@@ -447,7 +460,7 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
                     setCompositionLines(next);
                   }}
                   placeholder={`Line ${i + 1}${targetSyllables ? ` (${targetSyllables} syllables)` : ''}...`}
-                  className="flex-1 px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40"
+                  className="flex-1 text-sm"
                 />
                 {targetSyllables !== undefined && (
                   <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -460,32 +473,32 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
             );
           })}
           <div className="flex justify-end">
-            <Button variant="ghost" onClick={() => setCompositionPhase('review')}
-              disabled={!compositionLines.some(l => l.trim())}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+            <LuminaButton tone="primary" onClick={() => setCompositionPhase('review')}
+              disabled={!compositionLines.some(l => l.trim())}>
               Review
-            </Button>
+            </LuminaButton>
           </div>
         </div>
       )}
 
       {compositionPhase === 'review' && (
         <div className="space-y-3">
+          {/* The composed poem surface — the student's writing artifact stays bespoke */}
           <div className="rounded-lg bg-violet-500/10 border border-violet-500/30 p-4 font-serif">
             {compositionLines.map((line, i) => (
               <p key={i} className="text-slate-200 text-sm">{line || <span className="italic text-slate-600">Empty line</span>}</p>
             ))}
           </div>
-          <div className="flex justify-between">
-            <Button variant="ghost" onClick={() => setCompositionPhase('write')} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
-            {!hasSubmittedEvaluation ? (
-              <Button variant="ghost" onClick={submitComposition} className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">Finish</Button>
-            ) : (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
-                <p className="text-emerald-300 font-semibold">Poem Complete!</p>
-              </div>
-            )}
-          </div>
+          {!hasSubmittedEvaluation ? (
+            <div className="flex justify-between">
+              <LuminaButton onClick={() => setCompositionPhase('write')}>Edit</LuminaButton>
+              <LuminaActionButton action="check" onClick={submitComposition}>Finish</LuminaActionButton>
+            </div>
+          ) : (
+            <LuminaFeedbackCard status="correct" label="Poem Complete!">
+              You wrote and shaped your own poem — nice work bringing it together.
+            </LuminaFeedbackCard>
+          )}
         </div>
       )}
     </div>
@@ -496,26 +509,26 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
   // ============================================================================
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
-              <Badge variant="outline" className="bg-violet-500/10 border-violet-500/30 text-violet-300 text-xs capitalize">{mode}</Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge accent="purple" className="text-xs capitalize">{mode}</LuminaBadge>
               {templateType && (
-                <Badge variant="outline" className="bg-pink-500/10 border-pink-500/30 text-pink-300 text-xs capitalize">{templateType}</Badge>
+                <LuminaBadge accent="pink" className="text-xs capitalize">{templateType}</LuminaBadge>
               )}
             </div>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent>
+      <LuminaCardContent>
         {mode === 'analysis' ? renderAnalysis() : renderComposition()}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

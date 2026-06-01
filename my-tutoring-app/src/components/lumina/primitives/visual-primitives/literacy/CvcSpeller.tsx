@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -59,11 +67,11 @@ export interface CvcSpellerData {
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 
 const VOWEL_LABELS: Record<string, string> = {
-  'short-a': 'Short A (/\u0103/)',
-  'short-e': 'Short E (/\u0115/)',
-  'short-i': 'Short I (/\u012D/)',
-  'short-o': 'Short O (/\u014F/)',
-  'short-u': 'Short U (/\u016D/)',
+  'short-a': 'Short A (/ă/)',
+  'short-e': 'Short E (/ĕ/)',
+  'short-i': 'Short I (/ĭ/)',
+  'short-o': 'Short O (/ŏ/)',
+  'short-u': 'Short U (/ŭ/)',
 };
 
 const VOWEL_KEYWORDS: Record<string, string> = {
@@ -71,9 +79,9 @@ const VOWEL_KEYWORDS: Record<string, string> = {
 };
 
 const TASK_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
-  'fill-vowel': { label: 'Fill the Vowel', icon: '\uD83D\uDD24' },
-  'spell-word': { label: 'Spell It', icon: '\uD83D\uDCDD' },
-  'word-sort': { label: 'Sort by Sound', icon: '\uD83D\uDCE5' },
+  'fill-vowel': { label: 'Fill the Vowel', icon: '🔤' },
+  'spell-word': { label: 'Spell It', icon: '📝' },
+  'word-sort': { label: 'Sort by Sound', icon: '📥' },
 };
 
 const PHASE_CONFIG: Record<string, PhaseConfig> = {
@@ -816,12 +824,12 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     return (
       <div className="space-y-5">
         {/* Word hint: emoji */}
-        <div className="flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3">
+        <LuminaPanel className="flex items-center justify-center gap-3 px-5 py-3">
           {currentChallenge.emoji && <span className="text-4xl">{currentChallenge.emoji}</span>}
           {currentChallenge.imageDescription && (
             <p className="text-slate-400 text-sm italic">{currentChallenge.imageDescription}</p>
           )}
-        </div>
+        </LuminaPanel>
 
         {/* Elkonin box slots */}
         <div className="flex items-center justify-center gap-3">
@@ -864,7 +872,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
         {/* Letter Bank */}
         {!wordComplete && (
-          <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4">
+          <LuminaPanel className="p-4">
             <div className="flex flex-wrap gap-2 justify-center">
               {letterBank.map((letter, index) => {
                 const isVowel = VOWELS.has(letter);
@@ -889,28 +897,27 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
                 );
               })}
             </div>
-          </div>
+          </LuminaPanel>
         )}
 
         {/* Check / Clear buttons */}
         {!wordComplete && (
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
+            <LuminaButton
+              tone="subtle"
               onClick={handleClearAll}
               disabled={slots.every(s => s === null)}
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300"
             >
               Clear
-            </Button>
-            <Button
-              variant="ghost"
+            </LuminaButton>
+            <LuminaActionButton
+              action="check"
               onClick={handleCheckSpelling}
               disabled={slots.some(s => s === null)}
-              className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 ml-auto"
+              className="ml-auto"
             >
               Check Spelling
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
       </div>
@@ -1001,49 +1008,49 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
   if (!currentChallenge && !allChallengesComplete) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No spelling challenges available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
+              <LuminaBadge className="text-xs">
                 {VOWEL_LABELS[vowelFocus] || vowelFocus}
-              </Badge>
+              </LuminaBadge>
               {currentChallenge && (
-                <Badge
-                  variant="outline"
-                  className={`text-xs ${
+                <LuminaBadge
+                  className="text-xs"
+                  accent={
                     currentChallenge.taskType === 'fill-vowel'
-                      ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+                      ? 'purple'
                       : currentChallenge.taskType === 'word-sort'
-                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                        : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                  }`}
+                        ? 'amber'
+                        : 'emerald'
+                  }
                 >
                   {TASK_TYPE_CONFIG[currentChallenge.taskType]?.label || currentChallenge.taskType}
-                </Badge>
+                </LuminaBadge>
               )}
             </div>
           </div>
           {!allChallengesComplete && (
-            <Badge variant="outline" className="bg-blue-500/20 border-blue-500/40 text-blue-300 text-xs">
+            <LuminaBadge accent="blue" className="text-xs">
               {currentChallengeIndex + 1} / {challenges.length}
-            </Badge>
+            </LuminaBadge>
           )}
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-5">
+      <LuminaCardContent className="space-y-5">
         {/* Progress dots */}
         {!allChallengesComplete && (
           <div className="flex items-center justify-center gap-1.5">
@@ -1062,23 +1069,21 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Audio controls — shared across all modes */}
+        {/* Audio controls — phonics sound buttons, shared across all modes */}
         {!allChallengesComplete && (
           <div className="flex items-center justify-center gap-3">
-            <Button
-              variant="ghost"
+            <button
               onClick={handleHearAgain}
-              className="bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-amber-300"
+              className="flex items-center rounded-md px-4 py-2 text-sm font-medium bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-amber-300 transition-colors cursor-pointer"
             >
               <SpeakerIcon className="text-amber-300 mr-1.5" size="w-4 h-4" /> Hear It
-            </Button>
-            <Button
-              variant="ghost"
+            </button>
+            <button
               onClick={handleStretch}
-              className="bg-purple-500/15 border border-purple-500/30 hover:bg-purple-500/25 text-purple-300"
+              className="flex items-center rounded-md px-4 py-2 text-sm font-medium bg-purple-500/15 border border-purple-500/30 hover:bg-purple-500/25 text-purple-300 transition-colors cursor-pointer"
             >
-              <span className="mr-1.5">{'\uD83D\uDC0C'}</span> Stretch It
-            </Button>
+              <span className="mr-1.5">{'🐌'}</span> Stretch It
+            </button>
           </div>
         )}
 
@@ -1093,31 +1098,29 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
         {/* Feedback */}
         {feedback && !allChallengesComplete && (
-          <div
-            className={`
-              px-4 py-2 rounded-lg text-sm font-medium text-center
-              ${feedbackType === 'success'
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+          <LuminaFeedbackCard
+            status={
+              feedbackType === 'success'
+                ? 'correct'
                 : feedbackType === 'error'
-                  ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-                  : 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
-              }
-            `}
+                  ? 'incorrect'
+                  : 'insight'
+            }
+            className="p-4"
           >
             {feedback}
-          </div>
+          </LuminaFeedbackCard>
         )}
 
         {/* Next / Finish button */}
         {wordComplete && !allChallengesComplete && (
           <div className="flex justify-center">
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="next"
               onClick={handleNextWord}
-              className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300"
             >
               {currentChallengeIndex < challenges.length - 1 ? 'Next Word' : 'Finish'}
-            </Button>
+            </LuminaActionButton>
           </div>
         )}
 
@@ -1132,8 +1135,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
             className="mt-4"
           />
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

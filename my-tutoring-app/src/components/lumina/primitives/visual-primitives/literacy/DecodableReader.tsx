@@ -1,9 +1,22 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  LuminaInput,
+  LuminaStat,
+  type AnswerChoiceState,
+  type LuminaAccent,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -71,6 +84,8 @@ interface DecodableReaderProps {
 
 type ReadingPhase = 'reading' | 'comprehension' | 'review';
 
+// Pattern colors are part of the decodable-text INTERACTION SURFACE — they tint
+// each word in the passage body by phonics pattern. Kept bespoke.
 const PATTERN_COLORS: Record<string, string> = {
   cvc: 'text-blue-300',
   cvce: 'text-violet-300',
@@ -102,6 +117,18 @@ const PATTERN_LABELS: Record<string, string> = {
   'r-controlled': 'R-Controlled',
   diphthong: 'Diphthong',
   other: 'Other',
+};
+
+// Pattern → kit accent for the legend badges (chrome). Maps off-union colors.
+const PATTERN_ACCENTS: Record<string, LuminaAccent> = {
+  cvc: 'blue',
+  cvce: 'purple',
+  sight: 'amber',
+  blend: 'cyan',
+  digraph: 'emerald',
+  'r-controlled': 'rose',
+  diphthong: 'orange',
+  other: 'cyan',
 };
 
 // ============================================================================
@@ -394,7 +421,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
                     }
                   `}
                 >
-                  {isCompleted ? '\u2713' : index + 1}
+                  {isCompleted ? '✓' : index + 1}
                 </div>
                 <span
                   className={`text-xs font-medium ${
@@ -419,19 +446,19 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     return (
       <div className="flex flex-wrap gap-1.5 mb-3">
         {patterns.map(pattern => (
-          <Badge
+          <LuminaBadge
             key={pattern}
-            variant="outline"
-            className={`text-xs ${PATTERN_COLORS[pattern]} bg-white/5 border-white/10`}
+            accent={PATTERN_ACCENTS[pattern]}
+            className="text-xs"
           >
             {PATTERN_LABELS[pattern] || pattern}
-          </Badge>
+          </LuminaBadge>
         ))}
       </div>
     );
   };
 
-  // Render a single word
+  // Render a single word — part of the decodable-text interaction surface.
   const renderWord = (
     word: { id: string; text: string; phonicsPattern: string; phonemes?: string[] },
     isInteractive: boolean
@@ -483,16 +510,16 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
   const renderReadingPhase = () => (
     <div className="space-y-4">
       {/* Instructions */}
-      <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+      <LuminaPanel>
         <p className="text-slate-400 text-sm">
           Read the passage below. <span className="text-amber-300">Tap any word</span> to hear it pronounced.
         </p>
-      </div>
+      </LuminaPanel>
 
       {/* Pattern legend */}
       {showPatternColors && renderPatternLegend()}
 
-      {/* Passage */}
+      {/* Passage — the decodable-text interaction surface (bespoke) */}
       <div className="rounded-xl bg-slate-800/40 border border-white/5 p-5 space-y-3">
         {passage.sentences.map(sentence => (
           <p key={sentence.id} className="leading-loose">
@@ -511,25 +538,20 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
         <span>
           Words tapped: {tappedWordIds.size} / {totalWords}
         </span>
-        <Button
-          variant="ghost"
+        <LuminaButton
           size="sm"
           onClick={() => setShowPatternColors(prev => !prev)}
-          className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400 text-xs h-7 px-2"
+          className="text-slate-400 text-xs h-7 px-2"
         >
           {showPatternColors ? 'Hide Colors' : 'Show Colors'}
-        </Button>
+        </LuminaButton>
       </div>
 
       {/* Done reading button */}
       <div className="flex justify-center pt-2">
-        <Button
-          variant="ghost"
-          onClick={handleDoneReading}
-          className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
-        >
+        <LuminaActionButton action="next" onClick={handleDoneReading}>
           Done Reading
-        </Button>
+        </LuminaActionButton>
       </div>
     </div>
   );
@@ -537,79 +559,75 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
   // Comprehension phase
   const renderComprehensionPhase = () => (
     <div className="space-y-4">
-      <div className="rounded-xl bg-gradient-to-br from-blue-500/10 to-violet-500/10 border border-blue-500/20 p-5 space-y-4">
+      <LuminaPanel accent="blue" className="space-y-4">
         <p className="text-slate-200 font-medium">{comprehensionQuestion.question}</p>
 
         {comprehensionQuestion.type === 'multiple-choice' && comprehensionQuestion.options ? (
           <div className="space-y-2">
-            {comprehensionQuestion.options.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => setSelectedAnswer(option.id)}
-                disabled={comprehensionCorrect === true}
-                className={`
-                  w-full text-left px-4 py-3 rounded-lg border transition-all
-                  ${selectedAnswer === option.id
-                    ? comprehensionCorrect === true
-                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                      : comprehensionCorrect === false && comprehensionAttempts > 0
-                        ? 'bg-red-500/20 border-red-500/40 text-red-300'
-                        : 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                  }
-                `}
-              >
-                <span className="text-sm">{option.id}. {option.text}</span>
-              </button>
-            ))}
+            {comprehensionQuestion.options.map((option) => {
+              const isSelected = selectedAnswer === option.id;
+              let state: AnswerChoiceState = 'idle';
+              if (isSelected) {
+                if (comprehensionCorrect === true) state = 'correct';
+                else if (comprehensionCorrect === false && comprehensionAttempts > 0) state = 'incorrect';
+                else state = 'selected';
+              }
+              return (
+                <LuminaAnswerChoice
+                  key={option.id}
+                  state={state}
+                  onClick={() => setSelectedAnswer(option.id)}
+                  disabled={comprehensionCorrect === true}
+                  className="p-4"
+                >
+                  <span className="text-sm">{option.id}. {option.text}</span>
+                </LuminaAnswerChoice>
+              );
+            })}
           </div>
         ) : (
-          <input
+          <LuminaInput
             type="text"
             value={shortAnswer}
             onChange={(e) => setShortAnswer(e.target.value)}
             disabled={comprehensionCorrect === true}
             placeholder="Type your answer..."
-            className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40"
+            className="w-full py-3 text-sm"
           />
         )}
 
         {/* Feedback */}
         {comprehensionCorrect === true && (
-          <div className="px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-sm text-center">
-            Correct! Great comprehension!
-          </div>
+          <LuminaFeedbackCard status="correct" label="Correct! Great comprehension!">
+            You answered the question correctly.
+          </LuminaFeedbackCard>
         )}
         {comprehensionCorrect === false && (
-          <div className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 text-sm text-center">
+          <LuminaFeedbackCard status="incorrect">
             Not quite. Try again or continue to review.
-          </div>
+          </LuminaFeedbackCard>
         )}
-      </div>
+      </LuminaPanel>
 
       {/* Actions */}
       <div className="flex items-center gap-2">
         {comprehensionCorrect !== true && (
           <>
-            <Button
-              variant="ghost"
+            <LuminaActionButton
+              action="check"
               onClick={handleCheckComprehension}
               disabled={
                 (comprehensionQuestion.type === 'multiple-choice' && !selectedAnswer) ||
                 (comprehensionQuestion.type === 'short-answer' && !shortAnswer.trim())
               }
-              className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 ml-auto"
+              className="ml-auto"
             >
               Check
-            </Button>
+            </LuminaActionButton>
             {comprehensionAttempts > 0 && (
-              <Button
-                variant="ghost"
-                onClick={handleContinueToReview}
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
-              >
+              <LuminaButton onClick={handleContinueToReview} className="text-slate-400">
                 Skip to Review
-              </Button>
+              </LuminaButton>
             )}
           </>
         )}
@@ -622,18 +640,12 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     <div className="space-y-4">
       {/* Summary stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3 text-center">
-          <p className="text-2xl font-bold text-slate-100">{tappedWordIds.size}</p>
-          <p className="text-xs text-slate-500">Words Tapped</p>
-        </div>
-        <div className="rounded-lg bg-white/5 border border-white/10 p-3 text-center">
-          <p className="text-2xl font-bold text-slate-100">{totalWords - tappedWordIds.size}</p>
-          <p className="text-xs text-slate-500">Read Independently</p>
-        </div>
+        <LuminaStat label="Words Tapped" value={tappedWordIds.size} />
+        <LuminaStat label="Read Independently" value={totalWords - tappedWordIds.size} />
       </div>
 
       {/* Tapped words indicator */}
-      <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+      <LuminaPanel>
         <p className="text-xs text-slate-500 mb-2">
           Words you tapped for help (these are your practice words):
         </p>
@@ -642,13 +654,13 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
             passage.sentences.flatMap(s =>
               s.words.filter(w => tappedWordIds.has(w.id))
             ).map(word => (
-              <Badge
+              <LuminaBadge
                 key={word.id}
-                variant="outline"
-                className={`text-xs ${PATTERN_COLORS[word.phonicsPattern]} bg-white/5 border-white/10`}
+                accent={PATTERN_ACCENTS[word.phonicsPattern]}
+                className="text-xs"
               >
                 {word.text}
-              </Badge>
+              </LuminaBadge>
             ))
           ) : (
             <span className="text-emerald-400 text-sm">
@@ -656,9 +668,9 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
             </span>
           )}
         </div>
-      </div>
+      </LuminaPanel>
 
-      {/* Show passage in review if desired */}
+      {/* Show passage in review if desired — the decodable text (bespoke) */}
       {showTextInReview && (
         <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4">
           <p className="text-xs text-slate-500 mb-2">Passage text:</p>
@@ -678,11 +690,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
       )}
 
       {/* Comprehension result */}
-      <div className={`rounded-lg p-3 border ${
-        comprehensionCorrect
-          ? 'bg-emerald-500/10 border-emerald-500/30'
-          : 'bg-amber-500/10 border-amber-500/30'
-      }`}>
+      <LuminaPanel accent={comprehensionCorrect ? 'emerald' : 'amber'}>
         <p className="text-xs text-slate-500 mb-1">Comprehension:</p>
         <p className={`text-sm ${comprehensionCorrect ? 'text-emerald-300' : 'text-amber-300'}`}>
           {comprehensionCorrect ? 'Answered correctly' : `Answer: ${
@@ -692,25 +700,21 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
           }`}
           {comprehensionAttempts > 1 && ` (${comprehensionAttempts} attempts)`}
         </p>
-      </div>
+      </LuminaPanel>
 
       {/* Finish button */}
       <div className="flex justify-center">
         {!hasSubmittedEvaluation ? (
-          <Button
-            variant="ghost"
-            onClick={handleFinish}
-            className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300"
-          >
+          <LuminaActionButton action="next" onClick={handleFinish}>
             Finish
-          </Button>
+          </LuminaActionButton>
         ) : (
-          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center space-y-2 w-full">
+          <LuminaPanel accent="emerald" className="text-center space-y-2 w-full">
             <p className="text-emerald-300 font-semibold text-lg">Session Complete!</p>
             <p className="text-slate-400 text-sm">
               You read {totalWords - tappedWordIds.size} of {totalWords} words independently.
             </p>
-          </div>
+          </LuminaPanel>
         )}
       </div>
     </div>
@@ -722,52 +726,48 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
 
   if (!passage || passage.sentences.length === 0) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400 text-center">No passage available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-                Grade {gradeLevel}
-              </Badge>
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">
-                {totalWords} words
-              </Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge className="text-xs">{totalWords} words</LuminaBadge>
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={`text-xs ${
+          <LuminaBadge
+            accent={
               currentPhase === 'reading'
-                ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+                ? 'blue'
                 : currentPhase === 'comprehension'
-                  ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                  : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-            }`}
+                  ? 'purple'
+                  : 'emerald'
+            }
+            className="text-xs"
           >
             {currentPhase === 'reading' ? 'Reading' : currentPhase === 'comprehension' ? 'Comprehension' : 'Review'}
-          </Badge>
+          </LuminaBadge>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderPhaseIndicator()}
 
         {currentPhase === 'reading' && renderReadingPhase()}
         {currentPhase === 'comprehension' && renderComprehensionPhase()}
         {currentPhase === 'review' && renderReviewPhase()}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

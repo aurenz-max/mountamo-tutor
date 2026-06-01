@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, BookOpen, CheckCircle, ChevronLeft, ChevronRight, Play, RotateCcw, Sparkles, XCircle } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle, ChevronLeft, ChevronRight, Image as ImageIcon, Play, RotateCcw, Sparkles, XCircle } from 'lucide-react';
 import { MediaPlayerData } from '../types';
 import { usePrimitiveEvaluation, type MediaPlayerMetrics, type PrimitiveEvaluationResult } from '../evaluation';
 import { useLuminaAI } from '../hooks/useLuminaAI';
@@ -67,6 +67,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
   // Lesson completion state
   const [lessonComplete, setLessonComplete] = useState(false);
+
+  // On-demand visual generation state (per segment) — mirrors MachineProfile.
+  // Segments ship with imagePrompt + null imageUrl; the student clicks "Generate Visual".
+  const [generatedImages, setGeneratedImages] = useState<Record<number, string>>({});
+  const [imageLoading, setImageLoading] = useState<Record<number, boolean>>({});
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
 
   // Submit evaluation via useEffect so all state (segmentCorrect, segmentAttempts, etc.)
   // is current — avoids stale closure when called from setTimeout in handleAnswerSubmit
@@ -422,6 +428,44 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     resetAttempt();
   };
 
+  // ── On-demand visual generation ────────────────────────────────────────────
+  const handleGenerateImage = async (segmentIndex: number) => {
+    const segment = data.segments[segmentIndex];
+    if (!segment?.imagePrompt || imageLoading[segmentIndex] || generatedImages[segmentIndex]) return;
+    SoundManager.tap();
+
+    setImageLoading(prev => ({ ...prev, [segmentIndex]: true }));
+    setImageErrors(prev => ({ ...prev, [segmentIndex]: false }));
+
+    try {
+      const response = await fetch('/api/lumina', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generateMediaImage',
+          params: {
+            imagePrompt: segment.imagePrompt,
+            resolution: data.imageResolution || '1K',
+          },
+        }),
+      });
+
+      if (!response.ok) throw new Error('Image generation request failed');
+
+      const result = await response.json();
+      if (result.imageUrl) {
+        setGeneratedImages(prev => ({ ...prev, [segmentIndex]: result.imageUrl }));
+      } else {
+        setImageErrors(prev => ({ ...prev, [segmentIndex]: true }));
+      }
+    } catch (error) {
+      console.error('Failed to generate segment image:', error);
+      setImageErrors(prev => ({ ...prev, [segmentIndex]: true }));
+    } finally {
+      setImageLoading(prev => ({ ...prev, [segmentIndex]: false }));
+    }
+  };
+
   // ── Progress percentage ────────────────────────────────────────────────────
   const progressPercent = ((currentIndex + 1) / data.segments.length) * 100;
 
@@ -555,31 +599,68 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
             <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
             <div className="absolute inset-0 bg-radial-at-c from-transparent to-slate-900/50 pointer-events-none" />
 
-            {currentSegment.imageUrl ? (
-              <img
-                key={currentIndex}
-                src={currentSegment.imageUrl}
-                alt={currentSegment.imagePrompt}
-                className="relative z-10 max-h-full max-w-full object-contain animate-fade-in shadow-2xl drop-shadow-2xl rounded-lg"
-              />
-            ) : (
-              <div className="relative z-10 w-full max-w-md space-y-4">
-                <Skeleton className="w-full aspect-[16/10] rounded-xl bg-slate-800/60" />
-                <div className="flex items-center justify-center gap-2 text-slate-500">
-                  <Sparkles className="h-4 w-4 animate-pulse" />
-                  <span className="text-sm font-medium tracking-wide">Generating visualization...</span>
-                </div>
-              </div>
-            )}
+            {(() => {
+              const resolvedImage = currentSegment.imageUrl || generatedImages[currentIndex];
+              const isGenerating = imageLoading[currentIndex];
+              const hasError = imageErrors[currentIndex];
 
-            {/* Persistent badge */}
-            <Badge
-              variant="outline"
-              className="absolute top-4 right-4 z-20 bg-slate-800/80 backdrop-blur-md border-white/10 text-white/70 shadow-lg"
-            >
-              <Sparkles className="h-3 w-3 mr-1" />
-              AI Generated
-            </Badge>
+              if (resolvedImage) {
+                return (
+                  <img
+                    key={currentIndex}
+                    src={resolvedImage}
+                    alt={currentSegment.imagePrompt}
+                    className="relative z-10 max-h-full max-w-full object-contain animate-fade-in shadow-2xl drop-shadow-2xl rounded-lg"
+                  />
+                );
+              }
+
+              if (isGenerating) {
+                return (
+                  <div className="relative z-10 w-full max-w-md space-y-4">
+                    <Skeleton className="w-full aspect-[16/10] rounded-xl bg-slate-800/60" />
+                    <div className="flex items-center justify-center gap-2 text-slate-500">
+                      <Sparkles className="h-4 w-4 animate-pulse" />
+                      <span className="text-sm font-medium tracking-wide">Generating visualization...</span>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Default: prompt the student to generate the visual on-demand
+              return (
+                <div className="relative z-10 w-full max-w-md flex flex-col items-center justify-center text-center space-y-4 p-6 rounded-xl border border-dashed border-white/15 bg-white/[0.02]">
+                  <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/15 border border-indigo-500/30">
+                    <ImageIcon className="h-7 w-7 text-indigo-400" />
+                  </div>
+                  <p className="text-sm text-slate-400 leading-relaxed max-w-xs italic">
+                    {currentSegment.imagePrompt}
+                  </p>
+                  <Button
+                    onClick={() => handleGenerateImage(currentIndex)}
+                    variant="ghost"
+                    className="bg-white/5 text-indigo-300 border border-white/20 hover:bg-white/10 hover:text-indigo-200 rounded-xl"
+                  >
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Generate Visual
+                  </Button>
+                  <p className="text-xs text-slate-600">
+                    {hasError ? 'Image generation failed. Please try again.' : 'Click to generate an AI illustration for this segment'}
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* Badge — only once a visual has been generated */}
+            {(currentSegment.imageUrl || generatedImages[currentIndex]) && (
+              <Badge
+                variant="outline"
+                className="absolute top-4 right-4 z-20 bg-slate-800/80 backdrop-blur-md border-white/10 text-white/70 shadow-lg"
+              >
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI Generated
+              </Badge>
+            )}
           </div>
 
           {/* RIGHT: Control Hub */}

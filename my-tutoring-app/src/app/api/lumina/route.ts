@@ -355,6 +355,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ imageUrl: machineImageUrl });
 
       // ============================================
+      // MEDIA PLAYER (on-demand segment visuals)
+      // ============================================
+
+      case 'generateMediaImage':
+        const { generateMediaImage } = await import(
+          '@/components/lumina/service/media-player/gemini-media-player'
+        );
+        const mediaImageUrl = await generateMediaImage(
+          params.imagePrompt,
+          params.resolution || '1K'
+        );
+        return NextResponse.json({ imageUrl: mediaImageUrl });
+
+      // ============================================
       // PRACTICE MANIFEST (Problem + Visual Bridge)
       // ============================================
 

@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  answerStateClass,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -187,20 +198,20 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
   const activeExcerpt = excerpts[activeExcerptIdx];
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400 text-xs">Grade {gradeLevel}</Badge>
-              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-300 text-xs">{excerpts.length} Excerpt{excerpts.length > 1 ? 's' : ''}</Badge>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <LuminaBadge accent="amber" className="text-xs">{excerpts.length} Excerpt{excerpts.length > 1 ? 's' : ''}</LuminaBadge>
             </div>
           </div>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {renderProgress()}
 
         {/* Excerpt tabs (if multiple) */}
@@ -221,14 +232,14 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
         {currentPhase === 'read' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Read the excerpt carefully:</p>
-            <div className="rounded-lg bg-white/5 border border-white/10 p-4">
+            {/* Passage body — the reading surface. Plain readout container; text left bespoke. */}
+            <LuminaPanel>
               <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-line">{activeExcerpt?.text}</p>
-            </div>
+            </LuminaPanel>
             <div className="flex justify-end">
-              <Button variant="ghost" onClick={nextPhase}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton tone="primary" onClick={nextPhase}>
                 Next: Check Features
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -237,6 +248,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
         {currentPhase === 'features' && activeExcerpt && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Which features does this excerpt have?</p>
+            {/* Feature toggle checklist — bespoke interaction surface (pre-submit, not graded in place). */}
             <div className="space-y-1.5">
               {activeExcerpt.features.map(feature => {
                 const isChecked = (checkedFeatures[activeExcerpt.excerptId] || new Set()).has(feature.featureId);
@@ -253,11 +265,10 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
               })}
             </div>
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaButton tone="primary" onClick={nextPhase}>
                 Next: Classify Genre
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -269,43 +280,41 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
             <div className="grid gap-2 grid-cols-2">
               {genreOptions.map(genre => {
                 const isSelected = selectedGenres[activeExcerpt?.excerptId || ''] === genre;
+                const state: AnswerChoiceState = isSelected ? 'selected' : 'idle';
                 return (
-                  <button key={genre}
-                    onClick={() => { if (activeExcerpt) { SoundManager.select(); setSelectedGenres(prev => ({ ...prev, [activeExcerpt.excerptId]: genre })); } }}
-                    className={`px-3 py-2 rounded-lg border text-sm transition-all capitalize ${
-                      isSelected ? 'bg-violet-500/20 border-violet-500/40 text-violet-300' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
-                    }`}>
+                  <LuminaAnswerChoice key={genre}
+                    state={state}
+                    className="p-3 text-sm capitalize text-center"
+                    onClick={() => { if (activeExcerpt) { SoundManager.select(); setSelectedGenres(prev => ({ ...prev, [activeExcerpt.excerptId]: genre })); } }}>
                     {genre}
-                  </button>
+                  </LuminaAnswerChoice>
                 );
               })}
             </div>
 
             {comparisonEnabled && excerpts.length > 1 && (
-              <Button variant="ghost" onClick={() => setComparisonMade(true)}
-                className="bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-300 text-xs w-full">
+              <LuminaButton onClick={() => setComparisonMade(true)} className="w-full text-xs">
                 Compare Excerpts Side by Side
-              </Button>
+              </LuminaButton>
             )}
 
             {comparisonMade && excerpts.length > 1 && (
               <div className="grid grid-cols-2 gap-2">
                 {excerpts.map((ex, i) => (
-                  <div key={ex.excerptId} className="rounded-lg bg-white/5 border border-white/10 p-2">
+                  <LuminaPanel key={ex.excerptId} className="p-2">
                     <p className="text-xs font-bold text-slate-400 mb-1">Excerpt {i + 1}</p>
                     <p className="text-xs text-slate-300 line-clamp-4">{ex.text}</p>
-                  </div>
+                  </LuminaPanel>
                 ))}
               </div>
             )}
 
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Back</Button>
-              <Button variant="ghost" onClick={nextPhase}
-                disabled={!excerpts.every(ex => selectedGenres[ex.excerptId])}
-                className="bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300">
+              <LuminaButton onClick={prevPhase}>Back</LuminaButton>
+              <LuminaButton tone="primary" onClick={nextPhase}
+                disabled={!excerpts.every(ex => selectedGenres[ex.excerptId])}>
                 Review
-              </Button>
+              </LuminaButton>
             </div>
           </div>
         )}
@@ -315,41 +324,42 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ data, className }) => {
           <div className="space-y-4">
             {excerpts.map((ex, i) => {
               const isCorrect = selectedGenres[ex.excerptId] === ex.genre;
+              const hasChoice = !!selectedGenres[ex.excerptId];
               return (
-                <div key={ex.excerptId} className="rounded-lg bg-white/5 border border-white/10 p-3">
+                <LuminaPanel key={ex.excerptId} className="p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-xs font-bold text-slate-400">Excerpt {i + 1}</p>
-                    <span className={`text-xs px-1.5 py-0.5 rounded capitalize ${
-                      isCorrect ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/5 text-slate-400'
+                    <span className={`text-xs px-1.5 py-0.5 rounded border capitalize ${
+                      hasChoice ? answerStateClass(isCorrect ? 'correct' : 'incorrect') : 'border-slate-700/50 bg-slate-800/40 text-slate-400'
                     }`}>
                       {selectedGenres[ex.excerptId] || 'None'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 line-clamp-2">{ex.text}</p>
-                </div>
+                </LuminaPanel>
               );
             })}
 
             <div className="flex justify-between">
-              <Button variant="ghost" onClick={prevPhase} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">Edit</Button>
+              <LuminaButton onClick={prevPhase}>Edit</LuminaButton>
               {!hasSubmittedEvaluation ? (
-                <Button variant="ghost" onClick={submitFinalEvaluation}
-                  className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300">
+                <LuminaActionButton action="check" onClick={submitFinalEvaluation}>
                   Submit
-                </Button>
+                </LuminaActionButton>
               ) : (
-                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center w-full">
-                  <p className="text-emerald-300 font-semibold">Genre Analysis Complete!</p>
-                  <p className="text-slate-400 text-sm mt-1">
-                    {excerpts.filter(ex => selectedGenres[ex.excerptId] === ex.genre).length}/{excerpts.length} genres correct
-                  </p>
-                </div>
+                <LuminaFeedbackCard
+                  status="correct"
+                  label="Genre Analysis Complete!"
+                  className="w-full"
+                >
+                  {excerpts.filter(ex => selectedGenres[ex.excerptId] === ex.genre).length}/{excerpts.length} genres correct
+                </LuminaFeedbackCard>
               )}
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

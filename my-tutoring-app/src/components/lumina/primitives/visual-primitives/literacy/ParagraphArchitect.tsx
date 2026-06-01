@@ -1,10 +1,21 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  LuminaChip,
+  LuminaChipBank,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type ParagraphArchitectMetrics,
@@ -67,6 +78,9 @@ interface SentencePart {
 // =============================================================================
 // Hamburger Layer Component
 // =============================================================================
+// Bespoke interaction surface: the labeled writing-slot that holds the
+// student's sentence (with role color-coding bun/filling). Kept bespoke — the
+// amber/emerald palette is pedagogical structure, not chrome.
 
 function HamburgerLayer({
   role,
@@ -91,12 +105,9 @@ function HamburgerLayer({
       className={`rounded-lg border p-3 transition-all duration-300 ${baseClasses} ${highlightRing}`}
     >
       <div className="flex items-center gap-2 mb-1">
-        <Badge
-          variant="outline"
-          className={`text-xs ${textClasses} border-current/30`}
-        >
+        <LuminaBadge className={`text-xs ${textClasses} border-current/30`}>
           {label}
-        </Badge>
+        </LuminaBadge>
       </div>
       <div className={`${textClasses} text-sm leading-relaxed`}>{children}</div>
     </div>
@@ -123,19 +134,14 @@ function SentenceFrameSelector({
       <p className="text-xs text-slate-400 font-medium">{label}</p>
       <div className="flex flex-wrap gap-2">
         {frames.map((frame, idx) => (
-          <Button
+          <LuminaChip
             key={idx}
-            variant="ghost"
-            size="sm"
-            className={`text-xs border transition-all ${
-              selectedFrame === frame
-                ? 'bg-white/15 border-white/30 text-slate-100'
-                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-200'
-            }`}
+            state={selectedFrame === frame ? 'selected' : 'idle'}
+            className="text-xs px-3 py-1.5"
             onClick={() => onSelect(frame)}
           >
             {frame}
-          </Button>
+          </LuminaChip>
         ))}
       </div>
     </div>
@@ -154,22 +160,18 @@ function LinkingWordChips({
   onInsert: (word: string) => void;
 }) {
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-slate-400 font-medium">Linking Words (click to insert)</p>
-      <div className="flex flex-wrap gap-1.5">
-        {words.map((word, idx) => (
-          <Button
-            key={idx}
-            variant="ghost"
-            size="sm"
-            className="text-xs bg-sky-500/15 border border-sky-500/30 text-sky-200 hover:bg-sky-500/25 px-2 py-1 h-auto"
-            onClick={() => onInsert(word)}
-          >
-            {word}
-          </Button>
-        ))}
-      </div>
-    </div>
+    <LuminaChipBank label="Linking Words (click to insert)">
+      {words.map((word, idx) => (
+        <LuminaChip
+          key={idx}
+          state="idle"
+          className="text-xs px-2 py-1"
+          onClick={() => onInsert(word)}
+        >
+          {word}
+        </LuminaChip>
+      ))}
+    </LuminaChipBank>
   );
 }
 
@@ -190,24 +192,25 @@ function ParagraphPreview({
 
   if (!hasContent) {
     return (
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardContent className="p-4">
+      <LuminaCard>
+        <LuminaCardContent className="p-4">
           <p className="text-slate-600 text-sm italic text-center">
             Your paragraph will appear here as you write...
           </p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
   return (
-    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-      <CardHeader className="pb-2 pt-3 px-4">
-        <CardTitle className="text-sm text-slate-400 font-medium">
+    <LuminaCard>
+      <LuminaCardHeader className="pb-2 pt-3 px-4">
+        <LuminaCardTitle className="text-sm text-slate-400 font-medium">
           Your Paragraph
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
+        </LuminaCardTitle>
+      </LuminaCardHeader>
+      <LuminaCardContent className="px-4 pb-4">
+        {/* Bespoke readout: sentence spans are color-coded by structural role. */}
         <div className="space-y-1">
           {topicSentence && (
             <span className="text-amber-200">{topicSentence} </span>
@@ -219,8 +222,8 @@ function ParagraphPreview({
             <span className="text-amber-200">{concludingSentence}</span>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 }
 
@@ -684,32 +687,27 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
   return (
     <div className={`space-y-4 ${className || ''}`}>
       {/* Header */}
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardHeader className="pb-3">
+      <LuminaCard>
+        <LuminaCardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
             <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className="text-xs text-amber-200 border-amber-500/30"
-              >
+              <LuminaBadge accent="amber" className="text-xs">
                 {paragraphTypeLabel[paragraphType] || paragraphType}
-              </Badge>
-              <Badge
-                variant="outline"
-                className="text-xs text-slate-400 border-white/20"
-              >
+              </LuminaBadge>
+              <LuminaBadge className="text-xs">
                 Grade {gradeLevel}
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
           <p className="text-sm text-slate-400 mt-1">
             Topic: <span className="text-slate-200">{topic}</span>
           </p>
-        </CardHeader>
-      </Card>
+        </LuminaCardHeader>
+      </LuminaCard>
 
-      {/* Phase Navigation */}
+      {/* Phase Navigation — controlled shadcn Tabs (gated via disabled triggers),
+          token-themed instead of hand-rolled glass strings. */}
       <Tabs
         value={currentPhase}
         onValueChange={(val) => setCurrentPhase(val as LearningPhase)}
@@ -747,13 +745,13 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
           {modelParagraph ? (
             <>
               {/* Hamburger model view */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2 pt-3 px-4">
-                  <CardTitle className="text-sm text-slate-400 font-medium">
+              <LuminaCard>
+                <LuminaCardHeader className="pb-2 pt-3 px-4">
+                  <LuminaCardTitle className="text-sm text-slate-400 font-medium">
                     Model Paragraph -- The Hamburger
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-4 pb-4 space-y-2">
+                  </LuminaCardTitle>
+                </LuminaCardHeader>
+                <LuminaCardContent className="px-4 pb-4 space-y-2">
                   {/* Hamburger visualization */}
                   <div className="space-y-1.5">
                     <HamburgerLayer role="topic" label="Top Bun (Topic)">
@@ -772,96 +770,91 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
                       {modelParagraph.concludingSentence}
                     </HamburgerLayer>
                   </div>
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
 
               {/* Identification challenge */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2 pt-3 px-4">
-                  <CardTitle className="text-sm text-slate-100 font-medium">
+              <LuminaCard>
+                <LuminaCardHeader className="pb-2 pt-3 px-4">
+                  <LuminaCardTitle className="text-sm text-slate-100 font-medium">
                     Which sentence is the topic sentence?
-                  </CardTitle>
+                  </LuminaCardTitle>
                   <p className="text-xs text-slate-400">
                     Click the sentence that tells the reader what the paragraph is about.
                   </p>
-                </CardHeader>
-                <CardContent className="px-4 pb-4 space-y-2">
-                  {modelParts.map((part, idx) => (
-                    <Button
-                      key={idx}
-                      variant="ghost"
-                      className={`w-full text-left justify-start h-auto py-2 px-3 text-sm whitespace-normal transition-all ${
-                        selectedModelPart === part.text
-                          ? exploreCorrect
-                            ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-200'
-                            : 'bg-red-500/20 border border-red-500/30 text-red-200'
-                          : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10'
-                      }`}
-                      onClick={() => handleIdentifyTopicSentence(part.text)}
-                      disabled={exploreCorrect}
-                    >
-                      {part.text}
-                    </Button>
-                  ))}
+                </LuminaCardHeader>
+                <LuminaCardContent className="px-4 pb-4 space-y-2">
+                  {modelParts.map((part, idx) => {
+                    let choiceState: AnswerChoiceState = 'idle';
+                    if (selectedModelPart === part.text) {
+                      choiceState = exploreCorrect ? 'correct' : 'incorrect';
+                    }
+                    return (
+                      <LuminaAnswerChoice
+                        key={idx}
+                        state={choiceState}
+                        className="py-2 px-3 text-sm whitespace-normal"
+                        onClick={() => handleIdentifyTopicSentence(part.text)}
+                        disabled={exploreCorrect}
+                      >
+                        {part.text}
+                      </LuminaAnswerChoice>
+                    );
+                  })}
 
                   {feedback && currentPhase === 'explore' && (
-                    <div
-                      className={`p-3 rounded-lg text-sm ${
-                        exploreCorrect
-                          ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-200'
-                          : 'bg-red-500/15 border border-red-500/30 text-red-200'
-                      }`}
+                    <LuminaFeedbackCard
+                      status={exploreCorrect ? 'correct' : 'incorrect'}
                     >
                       {feedback}
-                    </div>
+                    </LuminaFeedbackCard>
                   )}
 
                   {exploreCorrect && (
-                    <Button
-                      variant="ghost"
-                      className="w-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100 mt-2"
+                    <LuminaActionButton
+                      action="next"
+                      className="w-full mt-2"
                       onClick={handleMoveToPhase2}
                     >
                       Continue to Practice
-                    </Button>
+                    </LuminaActionButton>
                   )}
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
             </>
           ) : (
-            <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-              <CardContent className="p-6 text-center">
+            <LuminaCard>
+              <LuminaCardContent className="p-6 text-center">
                 <p className="text-slate-400 text-sm">
                   No model paragraph available. Move directly to Practice.
                 </p>
-                <Button
-                  variant="ghost"
-                  className="mt-3 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+                <LuminaButton
+                  className="mt-3"
                   onClick={() => {
                     setExploreCorrect(true);
                     handleMoveToPhase2();
                   }}
                 >
                   Start Building
-                </Button>
-              </CardContent>
-            </Card>
+                </LuminaButton>
+              </LuminaCardContent>
+            </LuminaCard>
           )}
         </TabsContent>
 
         {/* ============================== PHASE 2: PRACTICE ============================== */}
         <TabsContent value="practice" className="space-y-4 mt-0">
           {/* Sentence frame selectors */}
-          <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-            <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-sm text-slate-100 font-medium">
+          <LuminaCard>
+            <LuminaCardHeader className="pb-2 pt-3 px-4">
+              <LuminaCardTitle className="text-sm text-slate-100 font-medium">
                 Build Your Paragraph with Sentence Frames
-              </CardTitle>
+              </LuminaCardTitle>
               <p className="text-xs text-slate-400">
                 Choose a sentence frame, then fill in the blank with your own ideas.
               </p>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-5">
+            </LuminaCardHeader>
+            <LuminaCardContent className="px-4 pb-4 space-y-5">
               {/* Topic Sentence */}
               <div className="space-y-2">
                 <HamburgerLayer role="topic" label="Topic Sentence">
@@ -872,6 +865,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
                       onSelect={setPracticeTopicFrame}
                       label="Choose a sentence starter:"
                     />
+                    {/* Bespoke writing surface — the student composes here. */}
                     <textarea
                       className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none"
                       rows={2}
@@ -909,6 +903,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
                         }
                         label="Choose a detail starter:"
                       />
+                      {/* Bespoke writing surface */}
                       <textarea
                         className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none"
                         rows={2}
@@ -934,14 +929,13 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
               ))}
 
               {!practiceSubmitted && practiceDetails.length < 5 && (
-                <Button
-                  variant="ghost"
+                <LuminaButton
                   size="sm"
-                  className="w-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 text-xs"
+                  className="w-full text-xs"
                   onClick={handleAddPracticeDetail}
                 >
                   + Add Another Detail
-                </Button>
+                </LuminaButton>
               )}
 
               {/* Concluding Sentence */}
@@ -954,6 +948,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
                       onSelect={setPracticeConclusionFrame}
                       label="Choose a conclusion starter:"
                     />
+                    {/* Bespoke writing surface */}
                     <textarea
                       className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none"
                       rows={2}
@@ -980,18 +975,14 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
               )}
 
               {feedback && currentPhase === 'practice' && (
-                <div
-                  className={`p-3 rounded-lg text-sm ${
-                    practiceSubmitted
-                      ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-200'
-                      : 'bg-amber-500/15 border border-amber-500/30 text-amber-200'
-                  }`}
+                <LuminaFeedbackCard
+                  status={practiceSubmitted ? 'correct' : 'insight'}
                 >
                   {feedback}
-                </div>
+                </LuminaFeedbackCard>
               )}
-            </CardContent>
-          </Card>
+            </LuminaCardContent>
+          </LuminaCard>
 
           {/* Practice paragraph preview */}
           <ParagraphPreview
@@ -1003,32 +994,32 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
           {/* Actions */}
           <div className="flex gap-2">
             {!practiceSubmitted ? (
-              <Button
-                variant="ghost"
-                className="flex-1 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+              <LuminaActionButton
+                action="check"
+                className="flex-1"
                 onClick={handleSubmitPractice}
               >
                 Submit Practice Paragraph
-              </Button>
+              </LuminaActionButton>
             ) : (
-              <Button
-                variant="ghost"
-                className="flex-1 bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+              <LuminaActionButton
+                action="next"
+                className="flex-1"
                 onClick={handleMoveToPhase3}
               >
                 Continue to Apply
-              </Button>
+              </LuminaActionButton>
             )}
           </div>
         </TabsContent>
 
         {/* ============================== PHASE 3: APPLY ============================== */}
         <TabsContent value="apply" className="space-y-4 mt-0">
-          <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-            <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-sm text-slate-100 font-medium">
+          <LuminaCard>
+            <LuminaCardHeader className="pb-2 pt-3 px-4">
+              <LuminaCardTitle className="text-sm text-slate-100 font-medium">
                 Write Your Own Paragraph
-              </CardTitle>
+              </LuminaCardTitle>
               <p className="text-xs text-slate-400">
                 Now write a{' '}
                 <span className="text-slate-200 font-medium">
@@ -1038,10 +1029,11 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
                 <span className="text-slate-200 font-medium">{topic}</span>. Use
                 the hamburger structure you practiced.
               </p>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-4">
+            </LuminaCardHeader>
+            <LuminaCardContent className="px-4 pb-4 space-y-4">
               {/* Topic Sentence */}
               <HamburgerLayer role="topic" label="Topic Sentence">
+                {/* Bespoke writing surface */}
                 <textarea
                   className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none"
                   rows={2}
@@ -1060,6 +1052,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
                   role="detail"
                   label={`Detail ${idx + 1}`}
                 >
+                  {/* Bespoke writing surface */}
                   <textarea
                     className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none"
                     rows={2}
@@ -1079,18 +1072,18 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
               ))}
 
               {!applySubmitted && applyDetails.length < 6 && (
-                <Button
-                  variant="ghost"
+                <LuminaButton
                   size="sm"
-                  className="w-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 text-xs"
+                  className="w-full text-xs"
                   onClick={handleAddApplyDetail}
                 >
                   + Add Another Detail
-                </Button>
+                </LuminaButton>
               )}
 
               {/* Concluding Sentence */}
               <HamburgerLayer role="conclusion" label="Concluding Sentence">
+                {/* Bespoke writing surface */}
                 <textarea
                   className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none"
                   rows={2}
@@ -1111,18 +1104,14 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
               )}
 
               {feedback && currentPhase === 'apply' && (
-                <div
-                  className={`p-3 rounded-lg text-sm ${
-                    applySubmitted
-                      ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-200'
-                      : 'bg-amber-500/15 border border-amber-500/30 text-amber-200'
-                  }`}
+                <LuminaFeedbackCard
+                  status={applySubmitted ? 'correct' : 'insight'}
                 >
                   {feedback}
-                </div>
+                </LuminaFeedbackCard>
               )}
-            </CardContent>
-          </Card>
+            </LuminaCardContent>
+          </LuminaCard>
 
           {/* Live paragraph preview */}
           <ParagraphPreview
@@ -1133,27 +1122,20 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
 
           {/* Submit */}
           {!applySubmitted && (
-            <Button
-              variant="ghost"
-              className="w-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100"
+            <LuminaActionButton
+              action="check"
+              className="w-full"
               onClick={handleSubmitApply}
             >
               Submit My Paragraph
-            </Button>
+            </LuminaActionButton>
           )}
 
           {applySubmitted && (
-            <Card className="backdrop-blur-xl bg-emerald-900/30 border-emerald-500/20">
-              <CardContent className="p-4 text-center">
-                <p className="text-emerald-200 text-sm font-medium mb-1">
-                  Paragraph Complete!
-                </p>
-                <p className="text-slate-400 text-xs">
-                  You successfully wrote a {paragraphTypeLabel[paragraphType]?.toLowerCase()} paragraph
-                  about {topic}.
-                </p>
-              </CardContent>
-            </Card>
+            <LuminaFeedbackCard status="correct" label="Paragraph Complete!">
+              You successfully wrote a {paragraphTypeLabel[paragraphType]?.toLowerCase()} paragraph
+              about {topic}.
+            </LuminaFeedbackCard>
           )}
         </TabsContent>
       </Tabs>
