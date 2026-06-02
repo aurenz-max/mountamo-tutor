@@ -6,6 +6,13 @@ import {
   type TowerStackerMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaPanel,
+  LuminaCallout,
+} from '../../../ui';
 
 /**
  * Tower Stacker - Interactive vertical building challenge for teaching structural engineering
@@ -576,20 +583,20 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-amber-500/20 relative overflow-hidden">
+      <LuminaCard topAccent="amber" className="relative overflow-hidden rounded-3xl">
         {/* Background */}
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-10 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(#f59e0b 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-6 md:p-8">
           {/* Description */}
           <div className="mb-6 text-center max-w-2xl mx-auto">
             <p className="text-slate-300 font-light">{description}</p>
           </div>
 
-          {/* Status Bar */}
+          {/* Status Bar — live simulation readouts (bespoke interaction-surface chrome) */}
           <div className="mb-4 flex justify-center gap-4 flex-wrap">
             {showHeight && (
               <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
@@ -628,7 +635,7 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
             )}
           </div>
 
-          {/* SVG Canvas */}
+          {/* SVG Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
               ref={svgRef}
@@ -882,7 +889,7 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
             </svg>
           </div>
 
-          {/* Piece Selector */}
+          {/* Piece Selector — bespoke build-interaction surface, left untouched */}
           <div className="mb-6 flex flex-wrap justify-center gap-3">
             {availablePieces.map(piece => {
               const available = getAvailableCount(piece.type);
@@ -918,7 +925,7 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
               );
             })}
 
-            {/* Rotate button */}
+            {/* Rotate button — part of the placement interaction */}
             {selectedPieceType && (
               <button
                 onClick={handleRotate}
@@ -933,10 +940,11 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
           {/* Controls */}
           <div className="flex flex-wrap gap-3 justify-center">
             {enableWind && (
-              <button
+              <LuminaButton
+                tone="primary"
                 onClick={runWindTest}
                 disabled={isSimulating || placedPieces.length === 0}
-                className="px-6 py-3 bg-cyan-500/20 hover:bg-cyan-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-cyan-500/50 text-cyan-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center gap-2"
+                className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2"
               >
                 {isSimulating ? (
                   <>
@@ -949,30 +957,33 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
                     Wind Test
                   </>
                 )}
-              </button>
+              </LuminaButton>
             )}
 
-            <button
+            <LuminaButton
+              tone="danger"
               onClick={handleReset}
               disabled={isSimulating}
-              className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2"
             >
               <span>↺</span> Reset
-            </button>
+            </LuminaButton>
           </div>
 
           {/* Hint */}
           {hint && (
-            <div className="mt-6 p-4 bg-amber-500/10 backdrop-blur-sm border border-amber-500/30 rounded-xl animate-fade-in">
-              <div className="flex items-start gap-3">
-                <span className="text-amber-400 text-lg">💡</span>
-                <p className="text-amber-200 text-sm">{hint}</p>
-              </div>
-            </div>
+            <LuminaCallout
+              accent="amber"
+              label="Hint"
+              icon={<span className="text-lg">💡</span>}
+              className="mt-6 p-4 animate-fade-in"
+            >
+              {hint}
+            </LuminaCallout>
           )}
 
           {/* Educational Info */}
-          <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel accent="amber" className="mt-6 p-5 rounded-xl">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -992,9 +1003,9 @@ const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
                 </p>
               )}
             </div>
-          </div>
-        </div>
-      </div>
+          </LuminaPanel>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

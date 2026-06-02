@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { Wrench, Gauge, Zap, Clock, Globe, Ruler, Sparkles, Cog, History as HistoryIcon, Image as ImageIcon, ArrowRight } from 'lucide-react';
 import { SpotlightCard } from '../../../components/SpotlightCard';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardDescription,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaButton,
+  LuminaBadge,
+  surface,
+} from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -65,6 +72,10 @@ export interface MachineProfileData {
 // ============================================================================
 // Category Theming
 // ============================================================================
+// Per-category accent (text + hex) drives the ambient glow, SpotlightCard
+// color, and accent text throughout. These categories don't map 1:1 onto the
+// LUMINA_ACCENTS palette, so this bespoke map stays as the source of category
+// color identity.
 
 const CATEGORY_COLORS = {
   airplane: { text: 'text-sky-300', accent: '#0ea5e9', rgb: '14, 165, 233' },
@@ -161,10 +172,10 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
 
   return (
     <div className={`w-full max-w-6xl mx-auto mb-16 ${className}`}>
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl overflow-hidden">
+      <LuminaCard className="overflow-hidden">
 
         {/* Header Section */}
-        <CardHeader className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl border-b border-white/10">
+        <LuminaCardHeader className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl border-b border-white/10">
           {/* Ambient glow */}
           <div
             className="absolute top-0 right-0 w-96 h-96 rounded-full blur-[120px] opacity-20"
@@ -173,13 +184,13 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
 
           <div className="relative flex items-start justify-between">
             <div className="flex-1">
-              <CardTitle className={`text-4xl font-bold ${colors.text} mb-2 drop-shadow-lg`}>
+              <LuminaCardTitle className={`text-4xl font-bold ${colors.text} mb-2 drop-shadow-lg`}>
                 {data.machineName}
-              </CardTitle>
+              </LuminaCardTitle>
               {data.designation && (
-                <CardDescription className="text-slate-300 italic text-lg mb-1">
+                <LuminaCardDescription className="text-slate-300 italic text-lg mb-1">
                   {data.designation}
-                </CardDescription>
+                </LuminaCardDescription>
               )}
               {data.nameMeaning && (
                 <p className="text-slate-400 text-sm">
@@ -192,16 +203,14 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
                 </p>
               )}
             </div>
-            <Badge className="bg-white/5 backdrop-blur-sm border-white/20">
-              <span className={`text-xs font-bold ${colors.text} uppercase tracking-wider`}>
-                {category}
-              </span>
-            </Badge>
+            <LuminaBadge className={`bg-white/5 backdrop-blur-sm border-white/20 text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+              {category}
+            </LuminaBadge>
           </div>
-        </CardHeader>
+        </LuminaCardHeader>
 
         {/* Main Content Grid */}
-        <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 bg-slate-900/40 backdrop-blur-xl">
+        <LuminaCardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 bg-slate-900/40 backdrop-blur-xl">
 
           {/* Left Column: Image & How It Works */}
           <div className="space-y-4">
@@ -248,14 +257,13 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
                     {data.imagePrompt}
                   </p>
                   {!imageError && (
-                    <Button
+                    <LuminaButton
                       onClick={handleGenerateImage}
-                      variant="ghost"
-                      className={`bg-white/5 ${colors.text} border border-white/20 hover:bg-white/10`}
+                      className={colors.text}
                     >
                       <ImageIcon className="w-4 h-4 mr-2" />
                       Generate Visual
-                    </Button>
+                    </LuminaButton>
                   )}
                   <p className="text-xs text-slate-500 text-center mt-3 italic">
                     {imageError ? 'Image generation failed. Please try again.' : 'Click to generate an AI visualization'}
@@ -267,19 +275,19 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
             {/* How It Works */}
             {data.howItWorks && (
               <SpotlightCard color={colors.rgb}>
-                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                  <CardHeader className="pb-3">
-                    <CardTitle className={`text-sm font-bold ${colors.text} flex items-center gap-2`}>
+                <LuminaCard surface="nested">
+                  <LuminaCardHeader className="pb-3">
+                    <LuminaCardTitle className={`text-sm font-bold ${colors.text} flex items-center gap-2`}>
                       <Cog className="w-4 h-4" />
                       How It Works
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                    </LuminaCardTitle>
+                  </LuminaCardHeader>
+                  <LuminaCardContent>
                     <p className="text-slate-300 text-sm leading-relaxed">
                       {data.howItWorks}
                     </p>
-                  </CardContent>
-                </Card>
+                  </LuminaCardContent>
+                </LuminaCard>
               </SpotlightCard>
             )}
           </div>
@@ -297,7 +305,7 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
               {data.quickStats && (
                 <AccordionItem value="quickStats" className="border-white/10">
                   <SpotlightCard color={colors.rgb}>
-                    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                    <LuminaCard surface="nested">
                       <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
                         <div className="flex items-center gap-2">
                           <Gauge className={`w-5 h-5 ${colors.text}`} />
@@ -320,26 +328,26 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
                               <p className="text-slate-200 font-semibold text-sm mb-2">Kid-Friendly Comparisons</p>
                               <div className="flex flex-wrap gap-2">
                                 {data.quickStats.speedComparison && (
-                                  <Badge className="bg-white/5 border-white/10 text-slate-300 text-xs">
+                                  <LuminaBadge className="text-xs">
                                     {data.quickStats.speedComparison}
-                                  </Badge>
+                                  </LuminaBadge>
                                 )}
                                 {data.quickStats.weightComparison && (
-                                  <Badge className="bg-white/5 border-white/10 text-slate-300 text-xs">
+                                  <LuminaBadge className="text-xs">
                                     {data.quickStats.weightComparison}
-                                  </Badge>
+                                  </LuminaBadge>
                                 )}
                                 {data.quickStats.sizeComparison && (
-                                  <Badge className="bg-white/5 border-white/10 text-slate-300 text-xs">
+                                  <LuminaBadge className="text-xs">
                                     {data.quickStats.sizeComparison}
-                                  </Badge>
+                                  </LuminaBadge>
                                 )}
                               </div>
                             </div>
                           )}
                         </div>
                       </AccordionContent>
-                    </Card>
+                    </LuminaCard>
                   </SpotlightCard>
                 </AccordionItem>
               )}
@@ -348,7 +356,7 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
               {data.keyComponents && data.keyComponents.length > 0 && (
                 <AccordionItem value="keyComponents" className="border-white/10">
                   <SpotlightCard color={colors.rgb}>
-                    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                    <LuminaCard surface="nested">
                       <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
                         <div className="flex items-center gap-2">
                           <Wrench className={`w-5 h-5 ${colors.text}`} />
@@ -375,7 +383,7 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
                           ))}
                         </div>
                       </AccordionContent>
-                    </Card>
+                    </LuminaCard>
                   </SpotlightCard>
                 </AccordionItem>
               )}
@@ -384,7 +392,7 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
               {data.history && (
                 <AccordionItem value="history" className="border-white/10">
                   <SpotlightCard color={colors.rgb}>
-                    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+                    <LuminaCard surface="nested">
                       <AccordionTrigger className="px-4 py-3 text-slate-300 hover:text-slate-100 hover:no-underline">
                         <div className="flex items-center gap-2">
                           <HistoryIcon className={`w-5 h-5 ${colors.text}`} />
@@ -429,23 +437,23 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
                               <p className="text-slate-200 font-semibold text-sm mb-2">Famous Examples</p>
                               <div className="flex flex-wrap gap-2">
                                 {data.history.famousExamples.map((example, idx) => (
-                                  <Badge key={idx} className="bg-white/5 border-white/10 text-slate-300">
+                                  <LuminaBadge key={idx}>
                                     {example}
-                                  </Badge>
+                                  </LuminaBadge>
                                 ))}
                               </div>
                             </div>
                           )}
                         </div>
                       </AccordionContent>
-                    </Card>
+                    </LuminaCard>
                   </SpotlightCard>
                 </AccordionItem>
               )}
 
             </Accordion>
           </div>
-        </CardContent>
+        </LuminaCardContent>
 
         {/* Fascinating Facts Section */}
         {data.fascinatingFacts && data.fascinatingFacts.length > 0 && (
@@ -459,19 +467,19 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
                 const IconComponent = fact.icon ? FACT_ICON_MAP[fact.icon] || Sparkles : Sparkles;
                 return (
                   <SpotlightCard key={idx} color={colors.rgb}>
-                    <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                      <CardHeader className="pb-3">
-                        <CardTitle className={`text-sm font-bold ${colors.text} flex items-center gap-2`}>
+                    <LuminaCard surface="nested">
+                      <LuminaCardHeader className="pb-3">
+                        <LuminaCardTitle className={`text-sm font-bold ${colors.text} flex items-center gap-2`}>
                           <IconComponent className="w-4 h-4" />
                           {fact.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                        </LuminaCardTitle>
+                      </LuminaCardHeader>
+                      <LuminaCardContent>
                         <p className="text-slate-300 text-sm leading-relaxed">
                           {fact.description}
                         </p>
-                      </CardContent>
-                    </Card>
+                      </LuminaCardContent>
+                    </LuminaCard>
                   </SpotlightCard>
                 );
               })}
@@ -499,19 +507,19 @@ const MachineProfile: React.FC<MachineProfileProps> = ({ data, className = '' })
 
         {/* Related Machines Footer */}
         {data.relatedMachines && data.relatedMachines.length > 0 && (
-          <div className="border-t border-white/10 px-6 py-3 bg-black/20">
+          <div className={`border-t px-6 py-3 ${surface.nested}`}>
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-slate-400 text-xs font-semibold">Related Machines:</p>
               {data.relatedMachines.map((machine, idx) => (
-                <Badge key={idx} className="bg-white/5 border-white/10 text-slate-300 italic text-xs">
+                <LuminaBadge key={idx} className="italic text-xs">
                   {machine}
-                </Badge>
+                </LuminaBadge>
               ))}
             </div>
           </div>
         )}
 
-      </Card>
+      </LuminaCard>
     </div>
   );
 };

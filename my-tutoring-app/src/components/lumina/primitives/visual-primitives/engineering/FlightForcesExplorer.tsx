@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaAnswerChoice,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -70,22 +78,22 @@ interface AircraftDef {
 
 const AIRCRAFT_DEFS: Record<AircraftId, AircraftDef> = {
   cessna: {
-    label: 'Light Plane', emoji: '\uD83D\uDEE9\uFE0F',
+    label: 'Light Plane', emoji: '🛩️',
     emptyWeight: 750, maxThrust: 2200, wingArea: 16, stallAngle: 16,
     bodyW: 70, bodyH: 18, wingSpan: 60, color: '#60a5fa',
   },
   jumbo_jet: {
-    label: 'Jumbo Jet', emoji: '\u2708\uFE0F',
+    label: 'Jumbo Jet', emoji: '✈️',
     emptyWeight: 180000, maxThrust: 900000, wingArea: 540, stallAngle: 14,
     bodyW: 90, bodyH: 24, wingSpan: 80, color: '#a78bfa',
   },
   glider: {
-    label: 'Glider', emoji: '\uD83E\uDE82',
+    label: 'Glider', emoji: '🪂',
     emptyWeight: 300, maxThrust: 0, wingArea: 18, stallAngle: 18,
     bodyW: 60, bodyH: 12, wingSpan: 75, color: '#34d399',
   },
   fighter: {
-    label: 'Fighter Jet', emoji: '\uD83D\uDEEB',
+    label: 'Fighter Jet', emoji: '🛫',
     emptyWeight: 10000, maxThrust: 130000, wingArea: 50, stallAngle: 20,
     bodyW: 75, bodyH: 16, wingSpan: 50, color: '#f97316',
   },
@@ -319,8 +327,6 @@ const FlightSimulation: React.FC<{
 
       // Wing geometry
       const wingY = sim.planeY;
-      const wingLeadX = PLANE_X + ac.bodyW * 0.3;
-      const wingTrailX = PLANE_X - ac.bodyW * 0.3;
       const aoaRad = (angle * Math.PI) / 180;
 
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -642,7 +648,7 @@ const FlightSimulation: React.FC<{
         ctx.fillStyle = `rgba(148,197,255,${hintPulse})`;
         ctx.font = '11px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('\u2195 Grab the plane and tilt the nose', PLANE_X, sim.planeY + 70);
+        ctx.fillText('↕ Grab the plane and tilt the nose', PLANE_X, sim.planeY + 70);
       }
 
       ctx.textAlign = 'start';
@@ -1003,26 +1009,26 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
         </div>
       </div>
 
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-        <CardHeader className="pb-4">
+      <LuminaCard className="overflow-hidden">
+        <LuminaCardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-white text-lg">{aircraftName || acDef.label}</CardTitle>
+              <LuminaCardTitle className="text-lg">{aircraftName || acDef.label}</LuminaCardTitle>
               <p className="text-slate-400 text-sm mt-1">{overview}</p>
             </div>
             <div className="flex gap-2">
-              <Badge variant="outline" className={`bg-white/5 border-white/20 text-slate-300 ${flightState === 'stalling' ? 'border-red-500/50 text-red-300' : ''}`}>
+              <LuminaBadge accent={flightState === 'stalling' ? 'rose' : undefined}>
                 {flightState}
-              </Badge>
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-300">
+              </LuminaBadge>
+              <LuminaBadge accent="cyan">
                 Grades {gradeBand}
-              </Badge>
+              </LuminaBadge>
             </div>
           </div>
-        </CardHeader>
+        </LuminaCardHeader>
 
-        <CardContent className="space-y-5">
-          {/* Simulation Canvas */}
+        <LuminaCardContent className="space-y-5">
+          {/* Simulation Canvas — bespoke interaction surface, untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
             <FlightSimulation
               aircraft={acDef}
@@ -1034,7 +1040,7 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
             {!hasGrabbedPlane && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/85 px-4 py-1.5 rounded-full border border-sky-400/30 shadow-lg shadow-sky-500/10">
                 <p className="text-sky-200 text-xs font-medium">
-                  <span className="mr-1">{'\u270B'}</span>
+                  <span className="mr-1">{'✋'}</span>
                   Grab the plane and drag up or down to tilt the nose
                 </p>
               </div>
@@ -1052,16 +1058,14 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
             <div className="flex gap-2 flex-wrap">
               {AIRCRAFT_IDS.map(id => {
                 const def = AIRCRAFT_DEFS[id];
+                const isActive = selectedAircraft === id;
                 return (
-                  <Button key={id} variant="ghost" size="sm"
+                  <LuminaButton key={id} size="sm"
                     onClick={() => handleAircraftChange(id)}
-                    className={`${selectedAircraft === id
-                      ? 'bg-white/15 ring-1 ring-white/30 text-white'
-                      : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'
-                    }`}
+                    className={isActive ? 'bg-white/15 ring-1 ring-white/30 text-white' : 'text-slate-400'}
                   >
                     <span className="mr-1.5">{def.emoji}</span> {def.label}
-                  </Button>
+                  </LuminaButton>
                 );
               })}
             </div>
@@ -1069,11 +1073,12 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
 
           {/* Controls — the plane's tilt is hand-driven; these set flight conditions */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Angle of Attack — readout only (controlled by dragging the plane) */}
-            <div className={`p-4 rounded-xl border ${aoa > acDef.stallAngle ? 'bg-red-500/10 border-red-500/40' : 'bg-slate-800/30 border-slate-700/50'}`}>
+            {/* Angle of Attack — readout only (controlled by dragging the plane).
+                Stall tint is semantic physics feedback, not chrome — kept inline. */}
+            <LuminaPanel className={aoa > acDef.stallAngle ? 'bg-red-500/10 border-red-500/40' : ''}>
               <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 flex items-center justify-between">
                 <span>Angle of Attack</span>
-                <span className="text-[10px] text-sky-400 normal-case tracking-normal">{'\u270B'} hand-driven</span>
+                <span className="text-[10px] text-sky-400 normal-case tracking-normal">{'✋'} hand-driven</span>
               </label>
               <div className="flex items-baseline gap-2">
                 <span className={`text-2xl font-mono font-bold ${aoa > acDef.stallAngle ? 'text-red-300 animate-pulse' : 'text-sky-300'}`}>
@@ -1082,12 +1087,12 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
                 {aoa > acDef.stallAngle && <span className="text-red-300 text-xs font-bold">STALL!</span>}
               </div>
               <p className="text-slate-500 text-[10px] mt-1">
-                Stall angle: {acDef.stallAngle}&deg; {'\u00B7'} Drag the plane to change
+                Stall angle: {acDef.stallAngle}&deg; {'·'} Drag the plane to change
               </p>
-            </div>
+            </LuminaPanel>
 
             {/* Thrust */}
-            <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <LuminaPanel>
               <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
                 Thrust
               </label>
@@ -1103,10 +1108,10 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
                 </span>
                 <span className="text-slate-500 text-xs">100%</span>
               </div>
-            </div>
+            </LuminaPanel>
 
             {/* Cargo Weight */}
-            <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <LuminaPanel>
               <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
                 Cargo
               </label>
@@ -1119,131 +1124,127 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
                 <span className="text-orange-300 text-sm font-mono font-bold">{cargoWeight}kg</span>
                 <span className="text-slate-500 text-xs">{maxCargo}kg</span>
               </div>
-            </div>
+            </LuminaPanel>
           </div>
 
-          {/* Force Readout */}
+          {/* Force Readout — physics values, accent colors carry meaning */}
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: 'Lift', val: forces.lift, color: '#60a5fa', dir: '\u2191' },
-              { label: 'Weight', val: forces.weight, color: '#f87171', dir: '\u2193' },
-              { label: 'Thrust', val: forces.thrust, color: '#4ade80', dir: '\u2192' },
-              { label: 'Drag', val: forces.drag, color: '#fb923c', dir: '\u2190' },
+              { label: 'Lift', val: forces.lift, color: '#60a5fa', dir: '↑' },
+              { label: 'Weight', val: forces.weight, color: '#f87171', dir: '↓' },
+              { label: 'Thrust', val: forces.thrust, color: '#4ade80', dir: '→' },
+              { label: 'Drag', val: forces.drag, color: '#fb923c', dir: '←' },
             ].map(f => (
-              <div key={f.label} className="text-center p-2 bg-slate-800/30 rounded-lg border border-slate-700/50">
+              <LuminaPanel key={f.label} className="text-center p-2">
                 <span className="text-lg" style={{ color: f.color }}>{f.dir}</span>
                 <p className="text-xs text-slate-400">{f.label}</p>
                 <p className="text-sm font-mono font-bold" style={{ color: f.color }}>
                   {f.val >= 1000 ? `${(f.val / 1000).toFixed(1)}kN` : `${f.val.toFixed(0)}N`}
                 </p>
-              </div>
+              </LuminaPanel>
             ))}
           </div>
 
           {/* Discovery Cards */}
           {stallCount > 0 && (
-            <Card className="backdrop-blur-xl bg-red-500/5 border-red-500/20 animate-fade-in">
-              <CardContent className="py-4 space-y-2">
-                <h4 className="text-red-200 font-semibold text-sm flex items-center gap-2">
-                  <span>&#x26A0;&#xFE0F;</span> Stall Discovered!
-                </h4>
-                <p className="text-slate-300 text-sm">
-                  When the angle of attack is too steep, air particles <span className="text-red-300 font-medium">detach from the wing surface</span> and
-                  swirl turbulently. Lift collapses and the plane drops. Real pilots train to recover from stalls!
-                </p>
-              </CardContent>
-            </Card>
+            <LuminaPanel accent="rose" className="animate-fade-in space-y-2 bg-red-500/5">
+              <h4 className="text-red-200 font-semibold text-sm flex items-center gap-2">
+                <span>&#x26A0;&#xFE0F;</span> Stall Discovered!
+              </h4>
+              <p className="text-slate-300 text-sm">
+                When the angle of attack is too steep, air particles <span className="text-red-300 font-medium">detach from the wing surface</span> and
+                swirl turbulently. Lift collapses and the plane drops. Real pilots train to recover from stalls!
+              </p>
+            </LuminaPanel>
           )}
 
           {/* Challenges Section */}
           {!showChallenges && !allChallengesDone && (
             <div className="flex justify-center">
-              <Button variant="ghost"
-                className="bg-purple-500/10 border border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+              <LuminaButton
+                className="bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
                 onClick={() => setShowChallenges(true)}
               >
                 &#x1F9EA; Ready for a Challenge?
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
           {showChallenges && !allChallengesDone && currentChallenge && (
-            <Card className="backdrop-blur-xl bg-purple-500/5 border-purple-500/20 animate-fade-in">
-              <CardContent className="py-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                    Challenge {currentChallengeIdx + 1} of {challenges.length}
-                  </Badge>
-                  <Badge variant="outline" className="bg-white/5 border-white/10 text-slate-400 text-xs">
-                    {currentChallenge.type}
-                  </Badge>
+            <LuminaPanel accent="purple" className="animate-fade-in space-y-4 bg-purple-500/5">
+              <div className="flex items-center justify-between">
+                <LuminaBadge accent="purple">
+                  Challenge {currentChallengeIdx + 1} of {challenges.length}
+                </LuminaBadge>
+                <LuminaBadge className="text-xs">
+                  {currentChallenge.type}
+                </LuminaBadge>
+              </div>
+              <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {currentChallenge.options.map(opt => {
+                  const isSelected = selectedAnswer === opt.id;
+                  const isCorrectOpt = opt.id === currentChallenge.correctOptionId;
+                  // Map the existing FSM onto the shared answer-state colors.
+                  let state: AnswerChoiceState = 'idle';
+                  if (answerFeedback && isSelected) {
+                    state = answerFeedback === 'correct' ? 'correct' : 'incorrect';
+                  } else if (answerFeedback === 'correct' && isCorrectOpt) {
+                    state = 'correct';
+                  }
+                  return (
+                    <LuminaAnswerChoice key={opt.id}
+                      state={state}
+                      className="flex items-center gap-0 p-3 min-h-[3rem]"
+                      disabled={!!answerFeedback}
+                      onClick={() => handleAnswer(opt.id)}
+                    >
+                      <span className="mr-2 text-xs font-mono opacity-50 shrink-0">{opt.id.toUpperCase()}</span>
+                      <span className="text-sm leading-snug whitespace-normal break-words">{opt.text}</span>
+                    </LuminaAnswerChoice>
+                  );
+                })}
+              </div>
+              {showHint && (
+                <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 animate-fade-in">
+                  <p className="text-amber-200 text-sm">
+                    <span className="text-amber-400 font-semibold">Hint: </span>
+                    {currentChallenge.hint}
+                  </p>
                 </div>
-                <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {currentChallenge.options.map(opt => {
-                    const isSelected = selectedAnswer === opt.id;
-                    const isCorrectOpt = opt.id === currentChallenge.correctOptionId;
-                    let optClass = 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10';
-                    if (answerFeedback && isSelected) {
-                      optClass = answerFeedback === 'correct'
-                        ? 'bg-green-500/20 border-green-500/40 text-green-300'
-                        : 'bg-red-500/20 border-red-500/40 text-red-300';
-                    } else if (answerFeedback === 'correct' && isCorrectOpt) {
-                      optClass = 'bg-green-500/20 border-green-500/40 text-green-300';
-                    }
-                    return (
-                      <Button key={opt.id} variant="ghost"
-                        className={`border justify-start text-left h-auto py-3 px-4 whitespace-normal break-words min-h-[3rem] ${optClass}`}
-                        disabled={!!answerFeedback}
-                        onClick={() => handleAnswer(opt.id)}
-                      >
-                        <span className="mr-2 text-xs font-mono opacity-50 shrink-0">{opt.id.toUpperCase()}</span>
-                        <span className="text-sm leading-snug">{opt.text}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-                {showHint && (
-                  <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 animate-fade-in">
-                    <p className="text-amber-200 text-sm">
-                      <span className="text-amber-400 font-semibold">Hint: </span>
-                      {currentChallenge.hint}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+              )}
+            </LuminaPanel>
           )}
 
           {allChallengesDone && showChallenges && (
-            <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/30">
+            <LuminaPanel accent="emerald" className="text-center bg-green-500/10">
               <p className="text-green-300 text-sm font-medium">
                 All challenges complete! {challengeResults.filter(r => r.correct).length}/{challenges.length} correct
               </p>
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Submit */}
           {!hasSubmittedEvaluation && (statesExplored.size > 1 || challengeResults.length > 0) && (
             <div className="flex justify-center pt-2">
-              <Button variant="ghost"
-                className="bg-green-500/10 border border-green-500/30 text-green-300 hover:bg-green-500/20"
+              <LuminaButton
+                className="bg-green-500/10 border-green-500/30 text-green-300 hover:bg-green-500/20"
                 onClick={handleSubmitEvaluation}
               >
                 &#x2713; I&apos;m Done Exploring
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
           {hasSubmittedEvaluation && (
-            <div className="text-center p-3 bg-green-500/10 rounded-lg border border-green-500/30">
+            <LuminaPanel accent="emerald" className="text-center bg-green-500/10">
               <p className="text-green-300 text-sm font-medium">
                 Exploration complete! You discovered how the four forces of flight work!
               </p>
-            </div>
+            </LuminaPanel>
           )}
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

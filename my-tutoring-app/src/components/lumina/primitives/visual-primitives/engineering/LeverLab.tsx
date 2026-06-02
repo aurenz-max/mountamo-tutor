@@ -2,6 +2,12 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaButton,
+  LuminaPanel,
+  LuminaCallout,
+} from '../../../ui';
 
 /**
  * Lever Lab - Interactive lever/fulcrum system for teaching simple machines
@@ -520,9 +526,9 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
 
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      {/* Header - Lumina style */}
+      {/* Header - bespoke decorative chrome (theme-driven icon + status line) */}
       <div className="flex items-center gap-4 mb-8 justify-center">
-        <div className={`w-12 h-12 rounded-xl bg-${themeColor.primary}-500/20 flex items-center justify-center border border-${themeColor.primary}-500/30 shadow-[0_0_20px_rgba(249,115,22,0.2)]`}>
+        <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center border border-orange-500/30 shadow-[0_0_20px_rgba(249,115,22,0.2)]">
           <svg className="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
           </svg>
@@ -538,7 +544,7 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-orange-500/20 relative overflow-hidden">
+      <LuminaCard topAccent="orange" className="p-6 md:p-8 rounded-3xl relative overflow-hidden">
         {/* Background Texture */}
         <div
           className="absolute inset-0 opacity-10"
@@ -551,7 +557,7 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
             <p className="text-slate-300 font-light">{description}</p>
           </div>
 
-          {/* Balance Status */}
+          {/* Balance Status — bespoke simulation readout */}
           <div className="mb-4 flex justify-center">
             <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-500 ${
               isBalanced
@@ -565,7 +571,7 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
             </div>
           </div>
 
-          {/* SVG Canvas */}
+          {/* SVG Canvas — bespoke interaction surface, untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
               ref={svgRef}
@@ -869,9 +875,9 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
           {/* Load List & Actions */}
           <div className="flex flex-wrap gap-3 mb-6">
             {loads.map((load, index) => (
-              <div
+              <LuminaPanel
                 key={index}
-                className="flex items-center gap-2 bg-slate-800/40 backdrop-blur-sm rounded-xl px-4 py-2 border border-slate-700/50 transition-all hover:border-slate-600"
+                className="flex items-center gap-2 rounded-xl px-4 py-2 transition-all hover:border-white/20"
               >
                 <span className="text-lg">{load.icon}</span>
                 <span className="text-white text-sm font-medium">{load.label || `Load ${index + 1}`}</span>
@@ -882,54 +888,45 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
                 >
                   ×
                 </button>
-              </div>
+              </LuminaPanel>
             ))}
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
             {allowAddLoads && (
-              <button
-                onClick={handleAddLoad}
-                className="px-5 py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] flex items-center gap-2"
-              >
+              <LuminaButton tone="primary" onClick={handleAddLoad} className="gap-2">
                 <span>+</span> Add Load
-              </button>
+              </LuminaButton>
             )}
 
-            <button
-              onClick={handleGetHint}
-              className="px-5 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-2"
-            >
+            <LuminaButton onClick={handleGetHint} className="gap-2">
               <span>💡</span> Hint
-            </button>
+            </LuminaButton>
 
-            <button
-              onClick={handleReset}
-              className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
-            >
+            <LuminaButton tone="subtle" onClick={handleReset} className="gap-2">
               <span>↺</span> Reset
-            </button>
+            </LuminaButton>
           </div>
 
           {/* Hint Display */}
           {hint && (
-            <div className="mt-6 p-4 bg-amber-500/10 backdrop-blur-sm border border-amber-500/30 rounded-xl animate-fade-in">
-              <div className="flex items-start gap-3">
-                <span className="text-amber-400 text-lg">💡</span>
-                <p className="text-amber-200 text-sm">{hint}</p>
-              </div>
-            </div>
+            <LuminaCallout accent="amber" label="Hint" icon={<span>💡</span>} className="mt-6">
+              {hint}
+            </LuminaCallout>
           )}
 
           {/* Educational Info */}
-          <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
-            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <LuminaCallout
+            accent="orange"
+            label="How Levers Work"
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              How Levers Work
-            </h4>
+            }
+            className="mt-6"
+          >
             <div className="space-y-2">
               <p className="text-slate-300 text-sm">
                 A lever is a simple machine that helps us lift heavy things with less effort.
@@ -944,9 +941,9 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
                 </p>
               )}
             </div>
-          </div>
+          </LuminaCallout>
         </div>
-      </div>
+      </LuminaCard>
     </div>
   );
 };

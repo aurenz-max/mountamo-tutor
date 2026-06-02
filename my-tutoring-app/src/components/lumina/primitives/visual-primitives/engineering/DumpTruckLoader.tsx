@@ -6,6 +6,16 @@ import {
   type DumpTruckLoaderMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardDescription,
+  LuminaCardContent,
+  LuminaPanel,
+  LuminaFeedbackCard,
+  LuminaActionButton,
+} from '../../../ui';
 
 /**
  * Dump Truck Loader - Interactive dump truck loading and hauling simulation
@@ -919,242 +929,220 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
   };
 
   return (
-    <div className={`w-full max-w-7xl mx-auto my-8 animate-fade-in ${className || ''}`}>
-      {/* Header */}
-      <div className="mb-5 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-          </svg>
+    <LuminaCard className={`w-full max-w-7xl mx-auto my-8 animate-fade-in ${className || ''}`}>
+      <LuminaCardHeader>
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </div>
+          <div>
+            <LuminaCardTitle className="text-2xl font-bold mb-1">{title}</LuminaCardTitle>
+            <LuminaCardDescription className="text-sm">{description}</LuminaCardDescription>
+          </div>
         </div>
-        <div>
-          <h3 className="text-2xl font-bold text-white mb-1">{title}</h3>
-          <p className="text-slate-300 text-sm">{description}</p>
+      </LuminaCardHeader>
+
+      <LuminaCardContent>
+        {/* Canvas — bespoke interaction surface, left untouched */}
+        <div className="relative mb-4 bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_W}
+            height={CANVAS_H}
+            className="w-full"
+            tabIndex={0}
+          />
         </div>
-      </div>
 
-      {/* Canvas */}
-      <div className="relative mb-4 bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_W}
-          height={CANVAS_H}
-          className="w-full"
-          tabIndex={0}
-        />
-      </div>
-
-      {/* On-screen controls */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
-        {/* Driving controls */}
-        <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
-          <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 text-center">Drive</div>
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onMouseDown={() => startHold('ArrowLeft')}
-              onMouseUp={() => stopHold('ArrowLeft')}
-              onMouseLeave={() => stopHold('ArrowLeft')}
-              onTouchStart={(e) => { e.preventDefault(); startHold('ArrowLeft'); }}
-              onTouchEnd={() => stopHold('ArrowLeft')}
-              className="w-14 h-14 rounded-xl bg-slate-700/60 hover:bg-slate-600/60 active:bg-blue-500/30 border border-slate-600/50 active:border-blue-500/50 text-slate-200 text-2xl font-bold transition-all flex items-center justify-center select-none"
-            >
-              ◀
-            </button>
-            <div className="w-14 h-14 rounded-xl bg-slate-800/40 border border-slate-700/30 flex items-center justify-center">
-              <span className="text-slate-500 text-xs font-mono">
-                {Math.round(uiState.truckX)}
-              </span>
+        {/* On-screen controls — the bespoke physics-driving buttons stay custom */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+          {/* Driving controls */}
+          <LuminaPanel accent="blue">
+            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 text-center">Drive</div>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onMouseDown={() => startHold('ArrowLeft')}
+                onMouseUp={() => stopHold('ArrowLeft')}
+                onMouseLeave={() => stopHold('ArrowLeft')}
+                onTouchStart={(e) => { e.preventDefault(); startHold('ArrowLeft'); }}
+                onTouchEnd={() => stopHold('ArrowLeft')}
+                className="w-14 h-14 rounded-xl bg-slate-700/60 hover:bg-slate-600/60 active:bg-blue-500/30 border border-slate-600/50 active:border-blue-500/50 text-slate-200 text-2xl font-bold transition-all flex items-center justify-center select-none"
+              >
+                ◀
+              </button>
+              <div className="w-14 h-14 rounded-xl bg-slate-800/40 border border-slate-700/30 flex items-center justify-center">
+                <span className="text-slate-500 text-xs font-mono">
+                  {Math.round(uiState.truckX)}
+                </span>
+              </div>
+              <button
+                onMouseDown={() => startHold('ArrowRight')}
+                onMouseUp={() => stopHold('ArrowRight')}
+                onMouseLeave={() => stopHold('ArrowRight')}
+                onTouchStart={(e) => { e.preventDefault(); startHold('ArrowRight'); }}
+                onTouchEnd={() => stopHold('ArrowRight')}
+                className="w-14 h-14 rounded-xl bg-slate-700/60 hover:bg-slate-600/60 active:bg-blue-500/30 border border-slate-600/50 active:border-blue-500/50 text-slate-200 text-2xl font-bold transition-all flex items-center justify-center select-none"
+              >
+                ▶
+              </button>
             </div>
-            <button
-              onMouseDown={() => startHold('ArrowRight')}
-              onMouseUp={() => stopHold('ArrowRight')}
-              onMouseLeave={() => stopHold('ArrowRight')}
-              onTouchStart={(e) => { e.preventDefault(); startHold('ArrowRight'); }}
-              onTouchEnd={() => stopHold('ArrowRight')}
-              className="w-14 h-14 rounded-xl bg-slate-700/60 hover:bg-slate-600/60 active:bg-blue-500/30 border border-slate-600/50 active:border-blue-500/50 text-slate-200 text-2xl font-bold transition-all flex items-center justify-center select-none"
-            >
-              ▶
-            </button>
-          </div>
-          <div className="text-center mt-2 text-[10px] text-slate-500 font-mono">← → or A/D keys</div>
-        </div>
+            <div className="text-center mt-2 text-[10px] text-slate-500 font-mono">← → or A/D keys</div>
+          </LuminaPanel>
 
-        {/* Load controls */}
-        <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
-          <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 text-center">Excavator</div>
-          <div className="flex items-center justify-center">
-            <button
-              onMouseDown={() => { SoundManager.tap(); loadPressedRef.current = true; }}
-              disabled={!uiState.nearSource || uiState.isLoading || uiState.sourceRemaining <= 0}
-              className="w-full max-w-[180px] h-14 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 active:bg-blue-500/40 disabled:bg-slate-700/40 disabled:opacity-40 border border-blue-500/40 disabled:border-slate-600/30 text-blue-300 disabled:text-slate-500 font-semibold transition-all flex items-center justify-center gap-2 select-none disabled:cursor-not-allowed"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              {uiState.isLoading ? 'Loading...' : 'Scoop & Load'}
-            </button>
-          </div>
-          <div className="text-center mt-2 text-[10px] text-slate-500 font-mono">
-            {!uiState.nearSource ? 'Drive to load zone first' : uiState.sourceRemaining <= 0 ? 'Source empty' : 'Click to load material'}
-          </div>
-        </div>
-
-        {/* Dump controls */}
-        <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
-          <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 text-center">Bed Tilt</div>
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onMouseDown={() => { SoundManager.tick(); raisePressedRef.current = true; }}
-              onMouseUp={() => { raisePressedRef.current = false; }}
-              onMouseLeave={() => { raisePressedRef.current = false; }}
-              onTouchStart={(e) => { e.preventDefault(); SoundManager.tick(); raisePressedRef.current = true; }}
-              onTouchEnd={() => { raisePressedRef.current = false; }}
-              disabled={!uiState.nearDump || uiState.currentVolume <= 0.1}
-              className="w-14 h-14 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 active:bg-orange-500/40 disabled:bg-slate-700/40 disabled:opacity-40 border border-orange-500/40 disabled:border-slate-600/30 text-orange-300 disabled:text-slate-500 text-2xl font-bold transition-all flex items-center justify-center select-none disabled:cursor-not-allowed"
-            >
-              ▲
-            </button>
-            <div className="w-14 h-14 rounded-xl bg-slate-800/40 border border-slate-700/30 flex items-center justify-center">
-              <span className="text-slate-400 text-xs font-mono">
-                {Math.round(uiState.bedAngle)}°
-              </span>
+          {/* Load controls */}
+          <LuminaPanel accent="blue">
+            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 text-center">Excavator</div>
+            <div className="flex items-center justify-center">
+              <button
+                onMouseDown={() => { SoundManager.tap(); loadPressedRef.current = true; }}
+                disabled={!uiState.nearSource || uiState.isLoading || uiState.sourceRemaining <= 0}
+                className="w-full max-w-[180px] h-14 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 active:bg-blue-500/40 disabled:bg-slate-700/40 disabled:opacity-40 border border-blue-500/40 disabled:border-slate-600/30 text-blue-300 disabled:text-slate-500 font-semibold transition-all flex items-center justify-center gap-2 select-none disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+                {uiState.isLoading ? 'Loading...' : 'Scoop & Load'}
+              </button>
             </div>
-            <button
-              onMouseDown={() => { SoundManager.tick(); lowerPressedRef.current = true; }}
-              onMouseUp={() => { lowerPressedRef.current = false; }}
-              onMouseLeave={() => { lowerPressedRef.current = false; }}
-              onTouchStart={(e) => { e.preventDefault(); SoundManager.tick(); lowerPressedRef.current = true; }}
-              onTouchEnd={() => { lowerPressedRef.current = false; }}
-              className="w-14 h-14 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 active:bg-orange-500/40 disabled:bg-slate-700/40 disabled:opacity-40 border border-orange-500/40 disabled:border-slate-600/30 text-orange-300 disabled:text-slate-500 text-2xl font-bold transition-all flex items-center justify-center select-none disabled:cursor-not-allowed"
-            >
-              ▼
-            </button>
-          </div>
-          <div className="text-center mt-2 text-[10px] text-slate-500 font-mono">
-            {!uiState.nearDump ? 'Drive to dump zone first' : '↑/↓ or W/S keys'}
-          </div>
-        </div>
-      </div>
-
-      {/* Status Display */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-        <div className="group bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 hover:border-amber-500/50 transition-all hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]">
-          <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Source Remaining</div>
-          <div className="text-2xl font-bold text-white group-hover:text-amber-400 transition-colors">
-            {Math.round(uiState.sourceRemaining)}
-            <span className="text-sm text-slate-400 ml-1">units</span>
-          </div>
-        </div>
-
-        {showFillLevel && (
-          <div className="group bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]">
-            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Fill Level</div>
-            <div className="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">
-              {Math.round((uiState.currentVolume / bedVolume) * 100)}
-              <span className="text-sm text-slate-400">%</span>
+            <div className="text-center mt-2 text-[10px] text-slate-500 font-mono">
+              {!uiState.nearSource ? 'Drive to load zone first' : uiState.sourceRemaining <= 0 ? 'Source empty' : 'Click to load material'}
             </div>
-            <div className="mt-2 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
-                style={{ width: `${Math.min(100, (uiState.currentVolume / bedVolume) * 100)}%` }}
-              />
+          </LuminaPanel>
+
+          {/* Dump controls */}
+          <LuminaPanel accent="orange">
+            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-3 text-center">Bed Tilt</div>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onMouseDown={() => { SoundManager.tick(); raisePressedRef.current = true; }}
+                onMouseUp={() => { raisePressedRef.current = false; }}
+                onMouseLeave={() => { raisePressedRef.current = false; }}
+                onTouchStart={(e) => { e.preventDefault(); SoundManager.tick(); raisePressedRef.current = true; }}
+                onTouchEnd={() => { raisePressedRef.current = false; }}
+                disabled={!uiState.nearDump || uiState.currentVolume <= 0.1}
+                className="w-14 h-14 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 active:bg-orange-500/40 disabled:bg-slate-700/40 disabled:opacity-40 border border-orange-500/40 disabled:border-slate-600/30 text-orange-300 disabled:text-slate-500 text-2xl font-bold transition-all flex items-center justify-center select-none disabled:cursor-not-allowed"
+              >
+                ▲
+              </button>
+              <div className="w-14 h-14 rounded-xl bg-slate-800/40 border border-slate-700/30 flex items-center justify-center">
+                <span className="text-slate-400 text-xs font-mono">
+                  {Math.round(uiState.bedAngle)}°
+                </span>
+              </div>
+              <button
+                onMouseDown={() => { SoundManager.tick(); lowerPressedRef.current = true; }}
+                onMouseUp={() => { lowerPressedRef.current = false; }}
+                onMouseLeave={() => { lowerPressedRef.current = false; }}
+                onTouchStart={(e) => { e.preventDefault(); SoundManager.tick(); lowerPressedRef.current = true; }}
+                onTouchEnd={() => { lowerPressedRef.current = false; }}
+                className="w-14 h-14 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 active:bg-orange-500/40 disabled:bg-slate-700/40 disabled:opacity-40 border border-orange-500/40 disabled:border-slate-600/30 text-orange-300 disabled:text-slate-500 text-2xl font-bold transition-all flex items-center justify-center select-none disabled:cursor-not-allowed"
+              >
+                ▼
+              </button>
             </div>
+            <div className="text-center mt-2 text-[10px] text-slate-500 font-mono">
+              {!uiState.nearDump ? 'Drive to dump zone first' : '↑/↓ or W/S keys'}
+            </div>
+          </LuminaPanel>
+        </div>
+
+        {/* Status Display */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+          <LuminaPanel className="group hover:border-amber-500/50 transition-all hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Source Remaining</div>
+            <div className="text-2xl font-bold text-white group-hover:text-amber-400 transition-colors">
+              {Math.round(uiState.sourceRemaining)}
+              <span className="text-sm text-slate-400 ml-1">units</span>
+            </div>
+          </LuminaPanel>
+
+          {showFillLevel && (
+            <LuminaPanel className="group hover:border-blue-500/50 transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+              <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Fill Level</div>
+              <div className="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">
+                {Math.round((uiState.currentVolume / bedVolume) * 100)}
+                <span className="text-sm text-slate-400">%</span>
+              </div>
+              <div className="mt-2 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
+                  style={{ width: `${Math.min(100, (uiState.currentVolume / bedVolume) * 100)}%` }}
+                />
+              </div>
+            </LuminaPanel>
+          )}
+
+          {showWeight && (
+            <LuminaPanel className="group hover:border-purple-500/50 transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]">
+              <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Weight</div>
+              <div className="text-2xl font-bold text-white group-hover:text-purple-400 transition-colors">
+                {Math.round(uiState.currentWeight)}
+                <span className="text-sm text-slate-400">/{truckCapacity}</span>
+              </div>
+              <div className="mt-2 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+                  style={{ width: `${Math.min(100, (uiState.currentWeight / truckCapacity) * 100)}%` }}
+                />
+              </div>
+            </LuminaPanel>
+          )}
+
+          <LuminaPanel className="group hover:border-green-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]">
+            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Loads Completed</div>
+            <div className="text-2xl font-bold text-white group-hover:text-green-400 transition-colors">
+              {uiState.loadsCompleted}
+              {targetLoads && <span className="text-sm text-slate-400">/{targetLoads}</span>}
+            </div>
+          </LuminaPanel>
+        </div>
+
+        {/* Warnings / Status */}
+        {uiState.overloadAttempts > 0 && (
+          <LuminaFeedbackCard status="incorrect" label="Overloaded" className="mb-4">
+            Overload attempts: <span className="font-bold">{uiState.overloadAttempts}</span> — truck is at capacity! Drive to dump zone and raise the bed.
+          </LuminaFeedbackCard>
+        )}
+
+        {timeLimit && (
+          <div className="mb-4 text-sm font-mono text-slate-300 text-center">
+            Time: <span className={elapsedTime > timeLimit ? 'text-red-400' : 'text-green-400'}>
+              {Math.round(elapsedTime)}s
+            </span> / {timeLimit}s
           </div>
         )}
 
-        {showWeight && (
-          <div className="group bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 hover:border-purple-500/50 transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]">
-            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Weight</div>
-            <div className="text-2xl font-bold text-white group-hover:text-purple-400 transition-colors">
-              {Math.round(uiState.currentWeight)}
-              <span className="text-sm text-slate-400">/{truckCapacity}</span>
-            </div>
-            <div className="mt-2 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
-                style={{ width: `${Math.min(100, (uiState.currentWeight / truckCapacity) * 100)}%` }}
-              />
-            </div>
+        {/* Completion */}
+        {isComplete && (
+          <LuminaFeedbackCard status="correct" label="Challenge Complete! 🎉" className="mb-4">
+            You moved <span className="font-semibold">{Math.round(uiState.totalMaterialMoved)}</span> units in{' '}
+            <span className="font-semibold">{uiState.loadsCompleted}</span> loads.
+            Average load: <span className="font-semibold">{efficiency.toFixed(1)}</span> units.
+          </LuminaFeedbackCard>
+        )}
+
+        {!hasSubmitted && isComplete && data.instanceId && (
+          <div className="mb-4 flex justify-center">
+            <LuminaActionButton action="check" onClick={handleSubmitEvaluation}>
+              ✓ Submit Work
+            </LuminaActionButton>
           </div>
         )}
 
-        <div className="group bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 hover:border-green-500/50 transition-all hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]">
-          <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Loads Completed</div>
-          <div className="text-2xl font-bold text-white group-hover:text-green-400 transition-colors">
-            {uiState.loadsCompleted}
-            {targetLoads && <span className="text-sm text-slate-400">/{targetLoads}</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* Warnings / Status */}
-      {uiState.overloadAttempts > 0 && (
-        <div className="mb-4 p-4 bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl animate-fade-in">
-          <div className="flex items-start gap-3">
-            <span className="text-red-400 text-lg">⚠️</span>
-            <p className="text-red-200 text-sm">
-              Overload attempts: <span className="font-bold">{uiState.overloadAttempts}</span> — truck is at capacity! Drive to dump zone and raise the bed.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {timeLimit && (
-        <div className="mb-4 text-sm font-mono text-slate-300 text-center">
-          Time: <span className={elapsedTime > timeLimit ? 'text-red-400' : 'text-green-400'}>
-            {Math.round(elapsedTime)}s
-          </span> / {timeLimit}s
-        </div>
-      )}
-
-      {/* Completion */}
-      {isComplete && (
-        <div className="mb-4 p-5 bg-green-500/10 backdrop-blur-sm border border-green-500/30 rounded-xl animate-fade-in">
-          <div className="flex items-start gap-3">
-            <span className="text-green-400 text-2xl">🎉</span>
-            <div>
-              <div className="text-green-300 font-bold text-lg mb-1">Challenge Complete!</div>
-              <div className="text-sm text-green-200">
-                You moved <span className="font-semibold">{Math.round(uiState.totalMaterialMoved)}</span> units in{' '}
-                <span className="font-semibold">{uiState.loadsCompleted}</span> loads.
-                Average load: <span className="font-semibold">{efficiency.toFixed(1)}</span> units.
-              </div>
+        {hasSubmitted && (
+          <LuminaFeedbackCard status="insight" label="Evaluation Submitted">
+            <div className="flex items-center justify-between gap-4">
+              <span>Your work has been recorded.</span>
+              <LuminaActionButton action="retry" onClick={resetAttempt}>
+                ↺ Try Again
+              </LuminaActionButton>
             </div>
-          </div>
-        </div>
-      )}
-
-      {!hasSubmitted && isComplete && data.instanceId && (
-        <div className="mb-4 flex justify-center">
-          <button
-            onClick={handleSubmitEvaluation}
-            className="px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(168,85,247,0.3)] flex items-center gap-2"
-          >
-            ✓ Submit Work
-          </button>
-        </div>
-      )}
-
-      {hasSubmitted && (
-        <div className="p-5 bg-blue-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl animate-fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-start gap-3">
-              <span className="text-blue-400 text-xl">✓</span>
-              <div>
-                <div className="text-blue-300 font-bold">Evaluation Submitted</div>
-                <div className="text-sm text-blue-200 mt-1">Your work has been recorded.</div>
-              </div>
-            </div>
-            <button
-              onClick={resetAttempt}
-              className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
-            >
-              ↺ Try Again
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+          </LuminaFeedbackCard>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

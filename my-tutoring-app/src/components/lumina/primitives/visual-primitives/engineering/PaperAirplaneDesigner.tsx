@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaAccordion,
+  LuminaAccordionItem,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PaperAirplaneDesignerMetrics,
@@ -804,11 +806,11 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
           {phase === 'build' && (
             <div className="space-y-6">
               {/* Template selection */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-slate-100 text-lg">Choose a Template</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <LuminaCard>
+                <LuminaCardHeader className="pb-3">
+                  <LuminaCardTitle className="text-lg">Choose a Template</LuminaCardTitle>
+                </LuminaCardHeader>
+                <LuminaCardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                     {Object.entries(TEMPLATE_INFO).map(([key, info]) => (
                       <button
@@ -826,17 +828,17 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                       </button>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
 
               {/* Preview + Parameters side by side */}
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Airplane preview */}
-                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-slate-100 text-lg">Your Airplane</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <LuminaCard>
+                  <LuminaCardHeader className="pb-2">
+                    <LuminaCardTitle className="text-lg">Your Airplane</LuminaCardTitle>
+                  </LuminaCardHeader>
+                  <LuminaCardContent>
                     <div className="bg-slate-800/40 rounded-xl overflow-hidden border border-slate-700/50 p-2">
                       <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto" style={{ maxHeight: '200px' }}>
                         <defs>
@@ -852,15 +854,15 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                         {renderAirplaneSVG({ noseAngle, wingSpan, wingAngle, hasWinglets, hasElevatorTab, noseWeight })}
                       </svg>
                     </div>
-                  </CardContent>
-                </Card>
+                  </LuminaCardContent>
+                </LuminaCard>
 
                 {/* Design parameters */}
-                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-slate-100 text-lg">Design Controls</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <LuminaCard>
+                  <LuminaCardHeader className="pb-2">
+                    <LuminaCardTitle className="text-lg">Design Controls</LuminaCardTitle>
+                  </LuminaCardHeader>
+                  <LuminaCardContent className="space-y-4">
                     {/* Nose angle */}
                     <div>
                       <div className="flex justify-between mb-1">
@@ -946,16 +948,16 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                         className="w-full"
                       />
                     </div>
-                  </CardContent>
-                </Card>
+                  </LuminaCardContent>
+                </LuminaCard>
               </div>
 
               {/* Launch settings */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-slate-100 text-lg">Launch Settings</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <LuminaCard>
+                <LuminaCardHeader className="pb-2">
+                  <LuminaCardTitle className="text-lg">Launch Settings</LuminaCardTitle>
+                </LuminaCardHeader>
+                <LuminaCardContent>
                   <div className="grid sm:grid-cols-2 gap-6">
                     <div>
                       <div className="flex justify-between mb-1">
@@ -994,18 +996,18 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                       <span>Wind: {initialLaunch.windSpeed} m/s from {initialLaunch.windDirection}°</span>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
 
               {/* Launch button */}
               <div className="flex justify-center gap-4">
-                <Button
+                <LuminaButton
                   onClick={launchFlight}
-                  variant="ghost"
-                  className="bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-300 px-8 py-6 text-lg font-bold rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+                  tone="primary"
+                  className="px-8 py-6 text-lg font-bold rounded-xl"
                 >
                   🚀 Launch Flight #{designVersion}
-                </Button>
+                </LuminaButton>
               </div>
             </div>
           )}
@@ -1013,9 +1015,9 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
           {/* ─── LAUNCH PHASE ────────────────────────────────────────── */}
           {phase === 'launch' && (
             <div className="space-y-6">
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-slate-100 text-lg flex items-center gap-2">
+              <LuminaCard>
+                <LuminaCardHeader className="pb-2">
+                  <LuminaCardTitle className="text-lg flex items-center gap-2">
                     {isFlying ? (
                       <>
                         <div className="w-5 h-5 border-2 border-sky-300/30 border-t-sky-300 rounded-full animate-spin" />
@@ -1024,9 +1026,9 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                     ) : (
                       <>📊 Flight Complete!</>
                     )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+                  </LuminaCardTitle>
+                </LuminaCardHeader>
+                <LuminaCardContent>
                   <div className="bg-slate-800/40 rounded-xl overflow-hidden border border-slate-700/50 p-2">
                     {renderTrajectory()}
                   </div>
@@ -1037,8 +1039,8 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
             </div>
           )}
 
@@ -1046,16 +1048,16 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
           {phase === 'analyze' && flightResults && (
             <div className="space-y-6">
               {/* Trajectory replay */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-slate-100 text-lg">Flight #{designVersion - 1} Results</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <LuminaCard>
+                <LuminaCardHeader className="pb-2">
+                  <LuminaCardTitle className="text-lg">Flight #{designVersion - 1} Results</LuminaCardTitle>
+                </LuminaCardHeader>
+                <LuminaCardContent>
                   <div className="bg-slate-800/40 rounded-xl overflow-hidden border border-slate-700/50 p-2">
                     {renderTrajectory()}
                   </div>
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
 
               {/* Performance metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1065,8 +1067,8 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                   { label: 'Stability', value: `${flightResults.stability}%`, icon: '⚖️', color: 'amber' },
                   { label: 'Accuracy', value: `${flightResults.accuracy}%`, icon: '🎯', color: 'violet' },
                 ].map(metric => (
-                  <Card key={metric.label} className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                    <CardContent className="p-4 text-center">
+                  <LuminaCard key={metric.label}>
+                    <LuminaCardContent className="p-4 text-center">
                       <span className="text-2xl block">{metric.icon}</span>
                       <div className={`text-2xl font-bold mt-1 ${
                         metric.color === 'sky' ? 'text-sky-300' :
@@ -1075,40 +1077,40 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                         'text-violet-300'
                       }`}>{metric.value}</div>
                       <div className="text-xs text-slate-400 mt-0.5">{metric.label}</div>
-                    </CardContent>
-                  </Card>
+                    </LuminaCardContent>
+                  </LuminaCard>
                 ))}
               </div>
 
               {/* What changed */}
               {changesFromLast.length > 0 && changesFromLast[0] !== 'first_flight' && (
-                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                  <CardContent className="p-4">
+                <LuminaCard>
+                  <LuminaCardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm text-slate-400">Changes from last design:</span>
                       {changesFromLast.length === 1 && (
-                        <Badge variant="outline" className="bg-emerald-500/20 border-emerald-500/40 text-emerald-300 text-xs">Good: 1 variable!</Badge>
+                        <LuminaBadge accent="emerald" className="text-xs">Good: 1 variable!</LuminaBadge>
                       )}
                       {changesFromLast.length > 2 && (
-                        <Badge variant="outline" className="bg-amber-500/20 border-amber-500/40 text-amber-300 text-xs">Tip: try changing just 1 thing</Badge>
+                        <LuminaBadge accent="amber" className="text-xs">Tip: try changing just 1 thing</LuminaBadge>
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {changesFromLast.map(c => (
-                        <Badge key={c} variant="outline" className="bg-white/5 border-white/20 text-slate-300 text-xs">{c}</Badge>
+                        <LuminaBadge key={c} className="text-xs">{c}</LuminaBadge>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  </LuminaCardContent>
+                </LuminaCard>
               )}
 
               {/* Challenges */}
               {challenges.length > 0 && (
-                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-slate-100 text-lg">Challenges</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <LuminaCard>
+                  <LuminaCardHeader className="pb-2">
+                    <LuminaCardTitle className="text-lg">Challenges</LuminaCardTitle>
+                  </LuminaCardHeader>
+                  <LuminaCardContent>
                     <div className="space-y-2">
                       {challenges.map(ch => {
                         const allLogResults = flightLog.map(e => ({ ...e.results, trajectory: [] as TrajectoryPoint[] }));
@@ -1131,91 +1133,86 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                         );
                       })}
                     </div>
-                  </CardContent>
-                </Card>
+                  </LuminaCardContent>
+                </LuminaCard>
               )}
 
               {/* Flight log */}
               {flightLog.length > 1 && (
-                <Accordion type="single" collapsible onValueChange={(v) => { if (v) setFlightLogViewed(true); }}>
-                  <AccordionItem value="log" className="border-white/10">
-                    <AccordionTrigger className="text-slate-100 hover:text-white">
-                      Flight Log ({flightLog.length} flights)
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-white/10">
-                              <th className="text-left py-2 px-2 text-slate-400 font-mono text-xs">#</th>
-                              <th className="text-left py-2 px-2 text-slate-400 font-mono text-xs">Template</th>
-                              <th className="text-right py-2 px-2 text-slate-400 font-mono text-xs">Dist</th>
-                              <th className="text-right py-2 px-2 text-slate-400 font-mono text-xs">Hang</th>
-                              <th className="text-right py-2 px-2 text-slate-400 font-mono text-xs">Stab</th>
-                              <th className="text-right py-2 px-2 text-slate-400 font-mono text-xs">Acc</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {flightLog.map((entry, i) => {
-                              const isBest = entry.results.distance === Math.max(...flightLog.map(e => e.results.distance));
-                              return (
-                                <tr key={i} className={`border-b border-white/5 ${isBest ? 'bg-emerald-500/5' : ''}`}>
-                                  <td className="py-1.5 px-2 text-slate-300 font-mono">{entry.designVersion}</td>
-                                  <td className="py-1.5 px-2 text-slate-300">{TEMPLATE_INFO[entry.templateName]?.icon} {entry.templateName}</td>
-                                  <td className="py-1.5 px-2 text-right text-sky-300 font-mono">{entry.results.distance}m</td>
-                                  <td className="py-1.5 px-2 text-right text-emerald-300 font-mono">{entry.results.hangTime}s</td>
-                                  <td className="py-1.5 px-2 text-right text-amber-300 font-mono">{entry.results.stability}%</td>
-                                  <td className="py-1.5 px-2 text-right text-violet-300 font-mono">{entry.results.accuracy}%</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
+                <LuminaAccordion type="single" collapsible onValueChange={(v) => { if (v) setFlightLogViewed(true); }}>
+                  <LuminaAccordionItem value="log" accent="cyan" label={`Flight Log (${flightLog.length} flights)`}>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-white/10">
+                            <th className="text-left py-2 px-2 text-slate-400 font-mono text-xs">#</th>
+                            <th className="text-left py-2 px-2 text-slate-400 font-mono text-xs">Template</th>
+                            <th className="text-right py-2 px-2 text-slate-400 font-mono text-xs">Dist</th>
+                            <th className="text-right py-2 px-2 text-slate-400 font-mono text-xs">Hang</th>
+                            <th className="text-right py-2 px-2 text-slate-400 font-mono text-xs">Stab</th>
+                            <th className="text-right py-2 px-2 text-slate-400 font-mono text-xs">Acc</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {flightLog.map((entry, i) => {
+                            const isBest = entry.results.distance === Math.max(...flightLog.map(e => e.results.distance));
+                            return (
+                              <tr key={i} className={`border-b border-white/5 ${isBest ? 'bg-emerald-500/5' : ''}`}>
+                                <td className="py-1.5 px-2 text-slate-300 font-mono">{entry.designVersion}</td>
+                                <td className="py-1.5 px-2 text-slate-300">{TEMPLATE_INFO[entry.templateName]?.icon} {entry.templateName}</td>
+                                <td className="py-1.5 px-2 text-right text-sky-300 font-mono">{entry.results.distance}m</td>
+                                <td className="py-1.5 px-2 text-right text-emerald-300 font-mono">{entry.results.hangTime}s</td>
+                                <td className="py-1.5 px-2 text-right text-amber-300 font-mono">{entry.results.stability}%</td>
+                                <td className="py-1.5 px-2 text-right text-violet-300 font-mono">{entry.results.accuracy}%</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </LuminaAccordionItem>
+                </LuminaAccordion>
               )}
 
               {/* Action buttons */}
               <div className="flex flex-wrap justify-center gap-4">
-                <Button
+                <LuminaButton
                   onClick={handleIteratePhase}
-                  variant="ghost"
-                  className="bg-sky-500/20 border border-sky-500/50 hover:bg-sky-500/30 text-sky-300 px-6 py-5 text-base font-bold rounded-xl"
+                  tone="primary"
+                  className="px-6 py-5 text-base font-bold rounded-xl"
                 >
                   🔄 Modify &amp; Retest
-                </Button>
+                </LuminaButton>
 
                 {flightLog.length >= 2 && !hasSubmittedEvaluation && (
-                  <Button
+                  <LuminaButton
                     onClick={handleSubmitEvaluation}
-                    variant="ghost"
-                    className="bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-300 px-6 py-5 text-base font-bold rounded-xl"
+                    tone="primary"
+                    className="bg-emerald-500/20 border-emerald-500/50 hover:bg-emerald-500/30 text-emerald-100 px-6 py-5 text-base font-bold rounded-xl"
                   >
                     ✅ Submit My Work
-                  </Button>
+                  </LuminaButton>
                 )}
 
                 {hasSubmittedEvaluation && (
-                  <Badge variant="outline" className="bg-emerald-500/20 border-emerald-500/40 text-emerald-300 text-sm px-4 py-2">
+                  <LuminaBadge accent="emerald" className="text-sm px-4 py-2">
                     Work Submitted!
-                  </Badge>
+                  </LuminaBadge>
                 )}
 
-                <Button
+                <LuminaButton
                   onClick={handleReset}
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300 px-5 py-5 text-sm rounded-xl"
+                  tone="subtle"
+                  className="px-5 py-5 text-sm rounded-xl"
                 >
                   ↺ Start Over
-                </Button>
+                </LuminaButton>
               </div>
             </div>
           )}
 
           {/* ─── Educational tips ─────────────────────────────────────── */}
-          <div className="mt-8 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel accent="cyan" className="mt-8 p-5">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1238,7 +1235,7 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                 </p>
               )}
             </div>
-          </div>
+          </LuminaPanel>
         </div>
       </div>
     </div>

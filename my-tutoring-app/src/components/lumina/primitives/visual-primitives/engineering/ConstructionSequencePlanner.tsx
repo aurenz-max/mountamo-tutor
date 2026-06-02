@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaFeedbackCard,
+  type FeedbackStatus,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -940,28 +948,32 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Feedback banner → kit FeedbackCard status mapping
+  const feedbackStatus: FeedbackStatus =
+    feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight';
+
   return (
     <div className={`w-full ${className || ''}`}>
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl">
-        <CardHeader className="pb-4">
+      <LuminaCard>
+        <LuminaCardHeader className="pb-4">
           <div className="flex items-center gap-3 mb-1">
-            <Badge variant="outline" className="text-[10px] font-mono uppercase tracking-widest text-slate-400 border-white/10">
+            <LuminaBadge className="text-[10px] font-mono uppercase tracking-widest">
               Engineering
-            </Badge>
-            <Badge variant="outline" className="text-[10px] uppercase tracking-widest font-mono bg-blue-500/20 text-blue-300 border-blue-500/30">
+            </LuminaBadge>
+            <LuminaBadge accent="blue" className="text-[10px] uppercase tracking-widest font-mono">
               Build It Right
-            </Badge>
+            </LuminaBadge>
             {phase === 'plan' && (
-              <Badge variant="outline" className="text-[10px] uppercase tracking-widest font-mono bg-amber-500/20 text-amber-300 border-amber-500/30 ml-auto">
+              <LuminaBadge accent="amber" className="text-[10px] uppercase tracking-widest font-mono ml-auto">
                 {scheduleWeeks}w / {targetWeeks}w target
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
-          <CardTitle className="text-2xl font-light text-white">{title}</CardTitle>
+          <LuminaCardTitle className="text-2xl font-light text-white">{title}</LuminaCardTitle>
           <p className="text-slate-300 text-sm leading-relaxed">{description}</p>
-        </CardHeader>
+        </LuminaCardHeader>
 
-        <CardContent className="space-y-6">
+        <LuminaCardContent className="space-y-6">
           {/* Build Scene Canvas */}
           <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-950/50">
             <canvas
@@ -1039,7 +1051,7 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
 
               {/* Gantt Preview */}
               {parallelAllowed && (
-                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                <LuminaPanel>
                   <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
                     Timeline Preview
                   </h3>
@@ -1054,24 +1066,21 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
                     currentBuildTask={null}
                     completedTasks={new Set()}
                   />
-                </div>
+                </LuminaPanel>
               )}
 
               {/* Actions */}
               <div className="flex items-center gap-3">
-                <Button
+                <LuminaButton
+                  tone="primary"
                   onClick={startBuild}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white"
+                  className="flex-1"
                 >
                   ▶ Start Building
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={handleHint}
-                  className="bg-white/5 border border-white/20 hover:bg-white/10"
-                >
+                </LuminaButton>
+                <LuminaButton onClick={handleHint}>
                   💡 Hint
-                </Button>
+                </LuminaButton>
               </div>
             </>
           )}
@@ -1080,7 +1089,7 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
           {phase === 'build' && (
             <>
               {/* Gantt with live progress */}
-              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+              <LuminaPanel>
                 <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
                   {isBuilding ? 'Building...' : buildSuccess ? 'Build Complete!' : 'Build Failed'}
                 </h3>
@@ -1095,35 +1104,33 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
                   currentBuildTask={currentBuildIdx >= 0 ? schedule[currentBuildIdx] : null}
                   completedTasks={completedTasks}
                 />
-              </div>
+              </LuminaPanel>
 
               {/* Build status */}
               {buildFinished && (
                 <div className="flex items-center gap-3">
                   {!buildSuccess && (
-                    <Button
+                    <LuminaButton
+                      tone="primary"
                       onClick={handleBackToPlan}
-                      className="flex-1 bg-amber-600 hover:bg-amber-500 text-white"
+                      className="flex-1"
                     >
                       ← Fix My Plan
-                    </Button>
+                    </LuminaButton>
                   )}
                   {buildSuccess && !hasSubmittedEvaluation && scheduleWeeks > targetWeeks && (
-                    <Button
+                    <LuminaButton
+                      tone="primary"
                       onClick={handleBackToPlan}
-                      className="flex-1 bg-amber-600 hover:bg-amber-500 text-white"
+                      className="flex-1"
                     >
                       ← Optimize Schedule
-                    </Button>
+                    </LuminaButton>
                   )}
                   {buildSuccess && hasSubmittedEvaluation && (
-                    <Button
-                      variant="ghost"
-                      onClick={handleReset}
-                      className="bg-white/5 border border-white/20 hover:bg-white/10"
-                    >
+                    <LuminaButton onClick={handleReset}>
                       🔄 Try Again
-                    </Button>
+                    </LuminaButton>
                   )}
                 </div>
               )}
@@ -1132,20 +1139,14 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
 
           {/* Feedback */}
           {feedback && (
-            <div className={`p-3 rounded-lg border text-sm transition-all duration-300 ${
-              feedbackType === 'success'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                : feedbackType === 'error'
-                ? 'bg-red-500/10 border-red-500/30 text-red-300'
-                : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
-            }`}>
+            <LuminaFeedbackCard status={feedbackStatus} className="p-3">
               {feedback}
-            </div>
+            </LuminaFeedbackCard>
           )}
 
           {/* Critical Path Info (grades 3+) */}
           {parallelAllowed && phase === 'plan' && (
-            <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <LuminaPanel className="p-3">
               <p className="text-xs text-slate-400">
                 <span className="text-amber-400 font-medium">Critical path</span>: the longest
                 chain of tasks that can&apos;t be done in parallel. Your project can&apos;t finish
@@ -1154,10 +1155,10 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
                   ? ' You can meet the deadline!'
                   : ` The deadline of ${targetWeeks} weeks is tight — you'll need to find parallel paths.`}
               </p>
-            </div>
+            </LuminaPanel>
           )}
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  type AnswerChoiceState,
+} from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { TransportChallengeMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
@@ -534,11 +544,11 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
   // ── Early return ──────────────────────────────────────────────────────────
   if (!scenarios.length) {
     return (
-      <Card className={cn('backdrop-blur-xl bg-slate-900/40 border-white/10', className)}>
-        <CardContent className="p-6">
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
           <p className="text-slate-400">No transport scenarios available.</p>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   }
 
@@ -548,18 +558,18 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <Card className={cn('backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden', className)}>
-      <CardHeader className="pb-3">
+    <LuminaCard className={cn('overflow-hidden', className)}>
+      <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-slate-100 text-xl">{title}</CardTitle>
-          <Badge variant="outline" className="border-white/20 text-slate-300">
+          <LuminaCardTitle>{title}</LuminaCardTitle>
+          <LuminaBadge>
             {currentIndex + 1} / {scenarios.length}
-          </Badge>
+          </LuminaBadge>
         </div>
         <p className="text-slate-400 text-sm">{description}</p>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
+      <LuminaCardContent className="space-y-4">
         {/* ── Phase Summary (when complete) ──────────────────────────────── */}
         {allScenariosComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -575,7 +585,7 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
         {!allScenariosComplete && scenario && (
           <>
             {/* ── Scenario Header ──────────────────────────────────────── */}
-            <div className="p-4 rounded-lg bg-slate-800/50 border border-white/5">
+            <LuminaPanel>
               <h3 className="text-slate-100 font-semibold text-lg mb-1">{scenario.title}</h3>
               <p className="text-slate-300 text-sm mb-3">
                 Transport <span className="text-blue-300 font-bold">{scenario.peopleToTransport} people</span> from{' '}
@@ -585,16 +595,12 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
               </p>
               <div className="flex flex-wrap gap-2">
                 {scenario.constraints.map(c => (
-                  <Badge
-                    key={c.type}
-                    variant="outline"
-                    className="border-white/15 text-slate-300 text-xs"
-                  >
+                  <LuminaBadge key={c.type} className="text-xs">
                     {constraintIcon(c.type)} {c.type}: {formatConstraintValue(c.limit, c.type)}
-                  </Badge>
+                  </LuminaBadge>
                 ))}
               </div>
-            </div>
+            </LuminaPanel>
 
             {/* ── Vehicle Selector (picking phase) ─────────────────────── */}
             {scenarioPhase === 'picking' && (
@@ -631,12 +637,9 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
                   })}
                 </div>
                 {selectedVehicleId && (
-                  <Button
-                    onClick={handleStartSimulation}
-                    className="w-full bg-blue-500/20 border border-blue-400/30 hover:bg-blue-500/30 text-blue-200"
-                  >
+                  <LuminaButton tone="primary" onClick={handleStartSimulation} className="w-full">
                     Start Transport →
-                  </Button>
+                  </LuminaButton>
                 )}
               </div>
             )}
@@ -712,24 +715,24 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
                       : 'Starting...'}
                   </div>
 
-                  {/* Simulation status badge */}
+                  {/* Simulation status badge (painted on the sim surface) */}
                   {scenarioPhase === 'simulating' && (
                     <div className="absolute top-2 right-2">
-                      <Badge className="bg-blue-500/20 border-blue-400/30 text-blue-300 text-xs animate-pulse">
+                      <span className="inline-flex items-center rounded-full border border-blue-400/30 bg-blue-500/20 px-2.5 py-0.5 text-xs font-medium text-blue-300 animate-pulse">
                         Transporting...
-                      </Badge>
+                      </span>
                     </div>
                   )}
                   {scenarioPhase !== 'simulating' && (
                     <div className="absolute top-2 right-2">
-                      <Badge className={cn(
-                        'text-xs',
+                      <span className={cn(
+                        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
                         selectedOutcome?.allConstraintsMet
-                          ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300'
-                          : 'bg-red-500/20 border-red-400/30 text-red-300',
+                          ? 'border-emerald-400/30 bg-emerald-500/20 text-emerald-300'
+                          : 'border-red-400/30 bg-red-500/20 text-red-300',
                       )}>
                         {selectedOutcome?.allConstraintsMet ? '✅ All constraints met' : '❌ Constraint violated'}
-                      </Badge>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -823,84 +826,71 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
                     </div>
 
                     {scenarioPhase === 'results' && (
-                      <Button
-                        onClick={handleShowQuestion}
-                        className="w-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                      >
+                      <LuminaButton onClick={handleShowQuestion} className="w-full">
                         Answer Trade-off Question →
-                      </Button>
+                      </LuminaButton>
                     )}
                   </div>
                 )}
 
                 {/* Trade-off Question */}
                 {(scenarioPhase === 'question' || scenarioPhase === 'answered') && (
-                  <div className="p-4 rounded-lg bg-slate-800/40 border border-white/5 space-y-3">
+                  <LuminaPanel className="space-y-3">
                     <p className="text-slate-100 font-medium text-sm">{scenario.tradeOffQuestion}</p>
                     <div className="space-y-2">
                       {scenario.tradeOffOptions.map((opt, i) => {
                         const isSelected = questionAnswer === i;
                         const isCorrect = i === scenario.tradeOffCorrectIndex;
-                        const showFeedback = scenarioPhase === 'answered';
+                        const answered = scenarioPhase === 'answered';
+                        const state: AnswerChoiceState = answered
+                          ? isCorrect
+                            ? 'correct'
+                            : isSelected
+                              ? 'incorrect'
+                              : 'dimmed'
+                          : isSelected
+                            ? 'selected'
+                            : 'idle';
                         return (
-                          <button
+                          <LuminaAnswerChoice
                             key={i}
+                            state={state}
                             onClick={() => scenarioPhase === 'question' && setQuestionAnswer(i)}
-                            disabled={scenarioPhase === 'answered'}
-                            className={cn(
-                              'w-full text-left p-2.5 rounded-lg border transition-all text-sm',
-                              showFeedback
-                                ? isCorrect
-                                  ? 'border-emerald-400/50 bg-emerald-500/10 text-emerald-200'
-                                  : isSelected
-                                    ? 'border-red-400/50 bg-red-500/10 text-red-200'
-                                    : 'border-white/5 bg-white/2 text-slate-500'
-                                : isSelected
-                                  ? 'border-blue-400 bg-blue-500/10 text-slate-100'
-                                  : 'border-white/10 bg-white/5 hover:border-white/20 text-slate-300',
-                            )}
+                            disabled={answered}
+                            className="p-2.5 text-sm"
                           >
                             {opt}
-                          </button>
+                          </LuminaAnswerChoice>
                         );
                       })}
                     </div>
 
                     {scenarioPhase === 'question' && questionAnswer !== null && (
-                      <Button
-                        onClick={handleSubmitAnswer}
-                        className="w-full bg-blue-500/20 border border-blue-400/30 hover:bg-blue-500/30 text-blue-200"
-                      >
+                      <LuminaActionButton action="check" onClick={handleSubmitAnswer} className="w-full">
                         Submit Answer
-                      </Button>
+                      </LuminaActionButton>
                     )}
 
                     {scenarioPhase === 'answered' && (
                       <>
-                        <div className={cn(
-                          'p-3 rounded-lg border text-sm',
-                          questionAnswer === scenario.tradeOffCorrectIndex
-                            ? 'border-emerald-400/20 bg-emerald-500/5 text-emerald-200'
-                            : 'border-amber-400/20 bg-amber-500/5 text-amber-200',
-                        )}>
-                          {scenario.explanation}
-                        </div>
-                        <Button
-                          onClick={handleNextScenario}
-                          className="w-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+                        <LuminaFeedbackCard
+                          status={questionAnswer === scenario.tradeOffCorrectIndex ? 'correct' : 'insight'}
                         >
+                          {scenario.explanation}
+                        </LuminaFeedbackCard>
+                        <LuminaActionButton action="next" onClick={handleNextScenario} className="w-full">
                           {currentIndex < scenarios.length - 1 ? 'Next Scenario →' : 'See Results'}
-                        </Button>
+                        </LuminaActionButton>
                       </>
                     )}
-                  </div>
+                  </LuminaPanel>
                 )}
               </div>
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
 

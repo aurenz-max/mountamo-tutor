@@ -2,6 +2,13 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+} from '../../../ui';
 
 /**
  * Gear Train Builder - Interactive gear system sandbox for teaching simple machines
@@ -237,10 +244,8 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
     const chain = buildGearChain();
     if (chain.size < 2) return null;
 
-    let lastGearInfo: { speedRatio: number } | null = null;
-    chain.forEach((info) => {
-      lastGearInfo = info;
-    });
+    const chainValues = Array.from(chain.values());
+    const lastGearInfo = chainValues[chainValues.length - 1];
 
     return lastGearInfo ? Math.abs(lastGearInfo.speedRatio) : null;
   };
@@ -546,6 +551,8 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
   const chain = buildGearChain();
   const overallRatio = getOverallRatio();
 
+  const onTarget = !!(overallRatio && targetRatio && Math.abs(overallRatio - targetRatio) < 0.1);
+
   return (
     <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
       {/* Header */}
@@ -564,14 +571,14 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-cyan-500/20 relative overflow-hidden">
+      <LuminaCard topAccent="cyan" className="relative overflow-hidden">
         {/* Background Texture */}
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(#06B6D4 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-6 md:p-8">
           {/* Description */}
           <div className="mb-6 text-center max-w-2xl mx-auto">
             <p className="text-slate-300 font-light">{description}</p>
@@ -579,38 +586,24 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
 
           {/* Stats Display */}
           <div className="mb-4 flex justify-center gap-4 flex-wrap">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700/50 border border-slate-600/50">
-              <span className="text-slate-300 text-sm font-mono">
-                Gears: <span className="font-bold text-white">{gears.length}/{maxGears}</span>
-              </span>
-            </div>
+            <LuminaBadge className="px-4 py-2 text-sm font-mono">
+              Gears: <span className="font-bold text-white ml-1">{gears.length}/{maxGears}</span>
+            </LuminaBadge>
 
             {overallRatio && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/20 border border-cyan-500/50">
-                <span className="text-cyan-300 text-sm font-mono">
-                  Output Ratio: <span className="font-bold">{overallRatio.toFixed(2)}:1</span>
-                </span>
-              </div>
+              <LuminaBadge accent="cyan" className="px-4 py-2 text-sm font-mono">
+                Output Ratio: <span className="font-bold ml-1">{overallRatio.toFixed(2)}:1</span>
+              </LuminaBadge>
             )}
 
             {targetRatio && (
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
-                overallRatio && Math.abs(overallRatio - targetRatio) < 0.1
-                  ? 'bg-green-500/20 border-green-500/50'
-                  : 'bg-amber-500/20 border-amber-500/50'
-              } border`}>
-                <span className={`text-sm font-mono ${
-                  overallRatio && Math.abs(overallRatio - targetRatio) < 0.1
-                    ? 'text-green-300'
-                    : 'text-amber-300'
-                }`}>
-                  Target: <span className="font-bold">{targetRatio}:1</span>
-                </span>
-              </div>
+              <LuminaBadge accent={onTarget ? 'emerald' : 'amber'} className="px-4 py-2 text-sm font-mono">
+                Target: <span className="font-bold ml-1">{targetRatio}:1</span>
+              </LuminaBadge>
             )}
           </div>
 
-          {/* Gear Size Selector */}
+          {/* Gear Size Selector — tool selection (interaction surface, stays bespoke) */}
           {allowAddGears && (
             <div className="mb-4 flex justify-center gap-2 flex-wrap">
               <span className="text-slate-400 text-sm self-center mr-2">Select gear size:</span>
@@ -630,7 +623,7 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
             </div>
           )}
 
-          {/* SVG Canvas */}
+          {/* SVG Canvas — bespoke interaction surface */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
               ref={svgRef}
@@ -779,8 +772,8 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
 
           {/* Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {/* Rotation Controls */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+            {/* Rotation Controls — direct manipulation of the sim, stays bespoke */}
+            <LuminaPanel accent="cyan">
               <label className="block text-sm font-mono text-slate-300 mb-3">
                 Rotate Driver Gear
               </label>
@@ -808,10 +801,10 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
                   {isAnimating ? '⏹ Stop' : '▶ Animate'}
                 </button>
               </div>
-            </div>
+            </LuminaPanel>
 
-            {/* Rotation slider */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+            {/* Rotation slider — direct manipulation of the sim, stays bespoke */}
+            <LuminaPanel accent="cyan">
               <label className="block text-sm font-mono text-slate-300 mb-3">
                 Driver Rotation: <span className="text-cyan-400 font-bold">{driverRotation.toFixed(0)}°</span>
               </label>
@@ -824,38 +817,32 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
                 onChange={(e) => setDriverRotation(parseFloat(e.target.value))}
                 className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
               />
-            </div>
+            </LuminaPanel>
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 mb-6">
-            <button
-              onClick={handleGetHint}
-              className="px-5 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-2"
-            >
+            <LuminaButton onClick={handleGetHint} className="gap-2">
               <span>💡</span> Hint
-            </button>
+            </LuminaButton>
 
-            <button
-              onClick={handleReset}
-              className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
-            >
+            <LuminaButton tone="danger" onClick={handleReset} className="gap-2">
               <span>↺</span> Reset
-            </button>
+            </LuminaButton>
           </div>
 
           {/* Hint Display */}
           {hint && (
-            <div className="mb-6 p-4 bg-amber-500/10 backdrop-blur-sm border border-amber-500/30 rounded-xl animate-fade-in">
+            <LuminaPanel accent="amber" className="mb-6 animate-fade-in">
               <div className="flex items-start gap-3">
                 <span className="text-amber-400 text-lg">💡</span>
                 <p className="text-amber-200 text-sm">{hint}</p>
               </div>
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Instructions */}
-          <div className="mb-6 p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel className="mb-6">
             <h4 className="text-white font-semibold mb-2">How to Use:</h4>
             <ul className="text-slate-400 text-sm space-y-1">
               <li>• <span className="text-cyan-400">Click on grid</span> to place a gear (first gear = driver)</li>
@@ -863,10 +850,10 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
               {allowRemoveGears && <li>• <span className="text-cyan-400">Shift+Click</span> to remove a gear</li>}
               <li>• Place gears close together to mesh their teeth</li>
             </ul>
-          </div>
+          </LuminaPanel>
 
           {/* Educational Info */}
-          <div className="p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel>
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -893,9 +880,9 @@ const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) 
                 </p>
               )}
             </div>
-          </div>
-        </div>
-      </div>
+          </LuminaPanel>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

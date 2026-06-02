@@ -3,9 +3,18 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { BarChart3, Car, Plane, Ship, Zap, Trophy, Lightbulb, ChevronRight } from 'lucide-react';
 import { SpotlightCard } from '../../../components/SpotlightCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+  answerStateClasses,
+} from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -288,7 +297,7 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
     }
   }, [discoveredFacts, surprisingFacts, sendText]);
 
-  // ── Render: Vehicle Selector ──────────────────────────────────────────────
+  // ── Render: Vehicle Selector (bespoke interaction surface) ─────────────────
   const renderVehicleSelector = () => (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
       {vehicles.map(vehicle => {
@@ -320,7 +329,7 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
     </div>
   );
 
-  // ── Render: Bar Chart ─────────────────────────────────────────────────────
+  // ── Render: Bar Chart (bespoke visualization surface) ──────────────────────
   const renderBarChart = () => (
     <div className="space-y-6">
       {activeMetrics.map(metric => {
@@ -353,7 +362,7 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
     </div>
   );
 
-  // ── Render: Table View ────────────────────────────────────────────────────
+  // ── Render: Table View (bespoke visualization surface) ─────────────────────
   const renderTable = () => (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -389,77 +398,76 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
     const challenge = challenges[activeChallengeIdx];
     if (!challenge) return null;
 
+    const answeredCorrectly =
+      challengeAnswer != null &&
+      (challengeAnswer === challenge.bestVehicleId ||
+        challenge.acceptableAlternatives.includes(challengeAnswer));
+
     return (
-      <Card className="backdrop-blur-xl bg-amber-500/5 border-amber-400/20">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-400" />
-            <CardTitle className="text-base text-amber-200">
-              Challenge {activeChallengeIdx + 1} of {challenges.length}
-            </CardTitle>
+      <LuminaPanel accent="amber" className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-amber-400" />
+          <h3 className="text-base font-semibold text-amber-200">
+            Challenge {activeChallengeIdx + 1} of {challenges.length}
+          </h3>
+        </div>
+
+        <p className="text-slate-200">{challenge.scenario}</p>
+
+        {challenge.constraints.passengers > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <LuminaBadge>{challenge.constraints.passengers} passengers</LuminaBadge>
+            <LuminaBadge>{challenge.constraints.distance} km</LuminaBadge>
+            {challenge.constraints.maxTime && (
+              <LuminaBadge>Max {challenge.constraints.maxTime}</LuminaBadge>
+            )}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-slate-200">{challenge.scenario}</p>
+        )}
 
-          {challenge.constraints.passengers > 0 && (
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-300">
-                {challenge.constraints.passengers} passengers
-              </Badge>
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-300">
-                {challenge.constraints.distance} km
-              </Badge>
-              {challenge.constraints.maxTime && (
-                <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-300">
-                  Max {challenge.constraints.maxTime}
-                </Badge>
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {vehicles.map(vehicle => (
-              <Button
+        {/* Answer choice surface — graded interaction, grading colors tokenized */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {vehicles.map(vehicle => {
+            const isThisAnswer = challengeAnswer === vehicle.id;
+            const isBest = vehicle.id === challenge.bestVehicleId;
+            const isAcceptable = isBest || challenge.acceptableAlternatives.includes(vehicle.id);
+            let stateClass = answerStateClasses.idle;
+            if (isThisAnswer) {
+              stateClass = isAcceptable ? answerStateClasses.correct : answerStateClasses.incorrect;
+            } else if (challengeAnswer !== null && isBest) {
+              stateClass = answerStateClasses.correct;
+            } else if (challengeAnswer !== null) {
+              stateClass = answerStateClasses.dimmed;
+            }
+            return (
+              <button
                 key={vehicle.id}
-                variant="ghost"
                 disabled={challengeAnswer !== null}
                 onClick={() => handleChallengeSubmit(vehicle.id)}
-                className={`
-                  bg-white/5 border border-white/20 hover:bg-white/10 h-auto py-3 px-3
-                  ${challengeAnswer === vehicle.id
-                    ? (vehicle.id === challenge.bestVehicleId || challenge.acceptableAlternatives.includes(vehicle.id))
-                      ? 'ring-2 ring-green-400 bg-green-500/10'
-                      : 'ring-2 ring-red-400 bg-red-500/10'
-                    : challengeAnswer !== null && (vehicle.id === challenge.bestVehicleId)
-                      ? 'ring-2 ring-green-400/50 bg-green-500/5'
-                      : ''
-                  }
-                `}
+                className={`rounded-lg border py-3 px-3 text-left transition-all disabled:cursor-default ${stateClass}`}
               >
                 <div className="flex items-center gap-2">
                   <span className={CATEGORY_COLORS[vehicle.category].text}>{CATEGORY_ICONS[vehicle.category]}</span>
-                  <span className="text-slate-200 text-sm">{vehicle.name}</span>
+                  <span className="text-sm">{vehicle.name}</span>
                 </div>
-              </Button>
-            ))}
-          </div>
+              </button>
+            );
+          })}
+        </div>
 
-          {challengeAnswer && (
-            <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-              <p className="text-sm text-slate-300">{challenge.explanation}</p>
-              <Button
-                variant="ghost"
-                onClick={nextChallenge}
-                className="mt-3 bg-white/5 border border-white/20 hover:bg-white/10"
-              >
-                {activeChallengeIdx < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {challengeAnswer && (
+          <LuminaFeedbackCard status={answeredCorrectly ? 'correct' : 'incorrect'}>
+            <p className="text-sm">{challenge.explanation}</p>
+            <LuminaActionButton
+              action="next"
+              onClick={nextChallenge}
+              className="mt-3"
+            >
+              {activeChallengeIdx < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </LuminaActionButton>
+          </LuminaFeedbackCard>
+        )}
+      </LuminaPanel>
     );
   };
 
@@ -469,32 +477,30 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
       className={`w-full ${className || ''}`}
       color="14, 165, 233"
     >
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-        <CardHeader className="pb-4">
+      <LuminaCard className="overflow-hidden">
+        <LuminaCardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400">
                 <BarChart3 className="w-5 h-5" />
               </div>
               <div>
-                <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+                <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
                 <p className="text-sm text-slate-400 mt-0.5">{instructions}</p>
               </div>
             </div>
-            <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400">
-              {gradeBand}
-            </Badge>
+            <LuminaBadge>{gradeBand}</LuminaBadge>
           </div>
-        </CardHeader>
+        </LuminaCardHeader>
 
-        <CardContent className="space-y-6">
+        <LuminaCardContent className="space-y-6">
           {/* Phase Navigation */}
           <div className="flex gap-2">
             {(['select', 'compare', 'challenge'] as const).map(p => (
-              <Button
+              <LuminaButton
                 key={p}
-                variant="ghost"
                 size="sm"
+                tone={phase === p ? 'primary' : 'ghost'}
                 onClick={() => {
                   setPhase(p);
                   if (p === 'compare') trackComparisonPair(selectedVehicleIds);
@@ -502,10 +508,10 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
                     sendText?.('[CHALLENGE_STARTED] Student entered challenge mode. Introduce the first scenario!', { silent: true });
                   }
                 }}
-                className={`capitalize ${phase === p ? 'bg-white/10 text-slate-100' : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'}`}
+                className="capitalize"
               >
                 {p === 'select' ? '1. Select' : p === 'compare' ? '2. Compare' : '3. Challenge'}
-              </Button>
+              </LuminaButton>
             ))}
           </div>
 
@@ -515,13 +521,11 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
               <p className="text-sm text-slate-400">Choose 2-4 vehicles to compare:</p>
               {renderVehicleSelector()}
               {selectedVehicleIds.length >= 2 && (
-                <Button
-                  variant="ghost"
+                <LuminaButton
                   onClick={() => { setPhase('compare'); trackComparisonPair(selectedVehicleIds); }}
-                  className="bg-white/5 border border-white/20 hover:bg-white/10"
                 >
                   Compare Selected <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
+                </LuminaButton>
               )}
             </div>
           )}
@@ -532,36 +536,38 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
               {/* Metric toggles */}
               <div className="flex flex-wrap gap-2">
                 {comparisonMetrics.map(m => (
-                  <Button
+                  <LuminaButton
                     key={m}
-                    variant="ghost"
                     size="sm"
+                    tone={activeMetrics.includes(m) ? 'primary' : 'ghost'}
                     onClick={() => setActiveMetrics(prev =>
                       prev.includes(m) ? (prev.length > 1 ? prev.filter(x => x !== m) : prev) : [...prev, m]
                     )}
-                    className={`text-xs ${activeMetrics.includes(m) ? 'bg-sky-500/20 text-sky-300 border border-sky-400/30' : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'}`}
+                    className="text-xs"
                   >
                     {METRIC_LABELS[m] || m}
-                  </Button>
+                  </LuminaButton>
                 ))}
               </div>
 
               {/* Chart type toggle */}
               <div className="flex gap-2">
-                <Button
-                  variant="ghost" size="sm"
+                <LuminaButton
+                  size="sm"
+                  tone={currentChartType === 'bar' ? 'primary' : 'ghost'}
                   onClick={() => { setCurrentChartType('bar'); setChartTypesUsed(prev => new Set(prev).add('bar')); }}
-                  className={`text-xs ${currentChartType === 'bar' ? 'bg-white/10 text-slate-100' : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'}`}
+                  className="text-xs"
                 >
                   Bar Chart
-                </Button>
-                <Button
-                  variant="ghost" size="sm"
+                </LuminaButton>
+                <LuminaButton
+                  size="sm"
+                  tone={currentChartType === 'table' ? 'primary' : 'ghost'}
                   onClick={() => { setCurrentChartType('table'); setChartTypesUsed(prev => new Set(prev).add('table')); }}
-                  className={`text-xs ${currentChartType === 'table' ? 'bg-white/10 text-slate-100' : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'}`}
+                  className="text-xs"
                 >
                   Table
-                </Button>
+                </LuminaButton>
               </div>
 
               {/* Chart */}
@@ -580,7 +586,7 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
                 ))}
               </div>
 
-              {/* Surprising Facts */}
+              {/* Surprising Facts (bespoke discovery interaction) */}
               {surprisingFacts.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2">
@@ -606,23 +612,21 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
                 </div>
               )}
 
-              <Button
-                variant="ghost"
+              <LuminaButton
                 onClick={() => {
                   setPhase('challenge');
                   sendText?.('[CHALLENGE_STARTED] Student entered challenge mode. Introduce the first scenario!', { silent: true });
                 }}
-                className="bg-white/5 border border-white/20 hover:bg-white/10"
               >
                 Try Challenges <Trophy className="w-4 h-4 ml-1" />
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
           {/* Challenge Phase */}
           {phase === 'challenge' && renderChallenge()}
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </SpotlightCard>
   );
 };

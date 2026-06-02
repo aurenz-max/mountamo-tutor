@@ -1,15 +1,21 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -128,11 +134,11 @@ const DOMAIN_ICONS: Record<string, string> = {
   amphibious: '🦆',
 };
 
-const DOMAIN_COLORS: Record<string, string> = {
-  land: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  sea: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  air: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-  amphibious: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+const DOMAIN_ACCENTS: Record<string, 'amber' | 'blue' | 'cyan' | 'emerald'> = {
+  land: 'amber',
+  sea: 'blue',
+  air: 'cyan',
+  amphibious: 'emerald',
 };
 
 const METRIC_LABELS = ['Speed', 'Range', 'Stability', 'Efficiency', 'Capacity'];
@@ -617,6 +623,8 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
   // ─── Can test? ────────────────────────────────────────────────
   const canTest = !!selectedBody && !!selectedPropulsion && !isSimulating;
 
+  const domainAccent = DOMAIN_ACCENTS[domain] ?? 'indigo';
+
   // ─── Render ───────────────────────────────────────────────────
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
@@ -632,21 +640,21 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
             <p className="text-xs text-indigo-400 font-mono uppercase tracking-wider">
               Vehicle Design Studio
             </p>
-            <Badge className={`text-xs ${DOMAIN_COLORS[domain]}`}>
+            <LuminaBadge accent={domainAccent} className="text-xs">
               {domain.charAt(0).toUpperCase() + domain.slice(1)}
-            </Badge>
+            </LuminaBadge>
           </div>
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-indigo-500/20 relative overflow-hidden">
+      <LuminaCard topAccent="indigo" className="relative overflow-hidden">
         {/* Background pattern */}
         <div
-          className="absolute inset-0 opacity-5"
+          className="absolute inset-0 opacity-5 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(#6366F1 1px, transparent 1px)', backgroundSize: '24px 24px' }}
         />
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-6 md:p-8">
           {/* Description */}
           {description && (
             <p className="text-slate-300 font-light text-center max-w-2xl mx-auto mb-6">{description}</p>
@@ -656,27 +664,25 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
           {challenges.length > 0 && (
             <div className="mb-6">
               <div className="flex flex-wrap gap-2 justify-center">
-                <Button
-                  variant="ghost"
+                <LuminaButton
                   size="sm"
-                  className={`border ${!activeChallenge ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' : 'bg-white/5 border-white/20 text-slate-400 hover:bg-white/10'}`}
+                  tone={!activeChallenge ? 'primary' : 'ghost'}
                   onClick={() => setActiveChallenge(null)}
                 >
                   Free Design
-                </Button>
+                </LuminaButton>
                 {challenges.map((ch, i) => (
-                  <Button
+                  <LuminaButton
                     key={i}
-                    variant="ghost"
                     size="sm"
-                    className={`border ${activeChallenge?.name === ch.name ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' : 'bg-white/5 border-white/20 text-slate-400 hover:bg-white/10'}`}
+                    tone={activeChallenge?.name === ch.name ? 'primary' : 'ghost'}
                     onClick={() => setActiveChallenge(ch)}
                   >
                     {ch.name}
-                    <Badge className="ml-1 text-[10px] bg-white/10 border-0">
+                    <LuminaBadge accent="amber" className="ml-1 text-[10px]">
                       {'★'.repeat(ch.difficulty)}
-                    </Badge>
-                  </Button>
+                    </LuminaBadge>
+                  </LuminaButton>
                 ))}
               </div>
               {activeChallenge && (
@@ -689,29 +695,29 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
           {(activeConstraints.maxWeight || activeConstraints.maxCost || activeConstraints.minRange || activeConstraints.minSpeed || activeConstraints.minCapacity) && (
             <div className="flex flex-wrap gap-2 justify-center mb-6">
               {activeConstraints.maxWeight !== null && (
-                <Badge className="bg-slate-700/50 border-slate-600/50 text-slate-300 text-xs">
+                <LuminaBadge className="text-xs">
                   Max Weight: {activeConstraints.maxWeight}kg
-                </Badge>
+                </LuminaBadge>
               )}
               {activeConstraints.maxCost !== null && (
-                <Badge className="bg-slate-700/50 border-slate-600/50 text-slate-300 text-xs">
+                <LuminaBadge className="text-xs">
                   Max Cost: ${activeConstraints.maxCost}
-                </Badge>
+                </LuminaBadge>
               )}
               {activeConstraints.minSpeed !== null && (
-                <Badge className="bg-slate-700/50 border-slate-600/50 text-slate-300 text-xs">
+                <LuminaBadge className="text-xs">
                   Min Speed: {activeConstraints.minSpeed} km/h
-                </Badge>
+                </LuminaBadge>
               )}
               {activeConstraints.minRange !== null && (
-                <Badge className="bg-slate-700/50 border-slate-600/50 text-slate-300 text-xs">
+                <LuminaBadge className="text-xs">
                   Min Range: {activeConstraints.minRange} km
-                </Badge>
+                </LuminaBadge>
               )}
               {activeConstraints.minCapacity !== null && (
-                <Badge className="bg-slate-700/50 border-slate-600/50 text-slate-300 text-xs">
+                <LuminaBadge className="text-xs">
                   Min Capacity: {activeConstraints.minCapacity}
-                </Badge>
+                </LuminaBadge>
               )}
             </div>
           )}
@@ -726,9 +732,9 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                   <AccordionTrigger className="text-slate-200 text-sm font-semibold hover:no-underline">
                     Body Shape
                     {selectedBody && (
-                      <Badge className="ml-2 bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-xs">
+                      <LuminaBadge accent="indigo" className="ml-2 text-xs">
                         {selectedBody.name}
-                      </Badge>
+                      </LuminaBadge>
                     )}
                   </AccordionTrigger>
                   <AccordionContent>
@@ -761,9 +767,9 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                   <AccordionTrigger className="text-slate-200 text-sm font-semibold hover:no-underline">
                     Propulsion
                     {selectedPropulsion && (
-                      <Badge className="ml-2 bg-cyan-500/20 text-cyan-300 border-cyan-500/30 text-xs">
+                      <LuminaBadge accent="cyan" className="ml-2 text-xs">
                         {selectedPropulsion.name}
-                      </Badge>
+                      </LuminaBadge>
                     )}
                   </AccordionTrigger>
                   <AccordionContent>
@@ -785,9 +791,9 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                             <span>Weight: {prop.weight}kg</span>
                             <span>Cost: ${prop.cost}</span>
                           </div>
-                          <Badge className="mt-1 text-[10px] bg-slate-700/50 border-slate-600/50 text-slate-400">
+                          <LuminaBadge className="mt-1 text-[10px]">
                             {prop.requires === 'any' ? 'Universal' : prop.requires}
-                          </Badge>
+                          </LuminaBadge>
                         </button>
                       ))}
                     </div>
@@ -799,9 +805,9 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                   <AccordionTrigger className="text-slate-200 text-sm font-semibold hover:no-underline">
                     Controls & Stabilizers
                     {selectedControls.length > 0 && (
-                      <Badge className="ml-2 bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs">
+                      <LuminaBadge accent="emerald" className="ml-2 text-xs">
                         {selectedControls.length} selected
-                      </Badge>
+                      </LuminaBadge>
                     )}
                   </AccordionTrigger>
                   <AccordionContent>
@@ -834,11 +840,11 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
             {/* Performance Panel (right) */}
             <div className="space-y-4">
               {/* Design Summary */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-slate-300">Current Design</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
+              <LuminaCard surface="nested">
+                <LuminaCardHeader className="pb-2">
+                  <LuminaCardTitle className="text-sm text-slate-300">Current Design</LuminaCardTitle>
+                </LuminaCardHeader>
+                <LuminaCardContent className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Body</span>
                     <span className="text-slate-200">{selectedBody?.name || '—'}</span>
@@ -869,16 +875,16 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                       </div>
                     </>
                   )}
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
 
               {/* Radar Chart */}
               {latestSimulation && (
-                <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                  <CardHeader className="pb-0">
-                    <CardTitle className="text-sm text-slate-300">Performance</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-2">
+                <LuminaCard surface="nested">
+                  <LuminaCardHeader className="pb-0">
+                    <LuminaCardTitle className="text-sm text-slate-300">Performance</LuminaCardTitle>
+                  </LuminaCardHeader>
+                  <LuminaCardContent className="pt-2">
                     <RadarChart
                       values={[
                         latestSimulation.topSpeed,
@@ -914,17 +920,17 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                     {/* Constraints met badge */}
                     <div className="mt-3 text-center">
                       {latestSimulation.meetsConstraints ? (
-                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                        <LuminaBadge accent="emerald">
                           All Constraints Met
-                        </Badge>
+                        </LuminaBadge>
                       ) : (
-                        <Badge className="bg-red-500/20 text-red-300 border-red-500/30">
+                        <LuminaBadge accent="rose">
                           Constraints Not Met
-                        </Badge>
+                        </LuminaBadge>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </LuminaCardContent>
+                </LuminaCard>
               )}
 
               {/* Iteration counter */}
@@ -944,13 +950,9 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
 
           {/* Controls */}
           <div className="flex flex-wrap gap-3 justify-center mb-6">
-            <Button
-              variant="ghost"
-              className={`px-6 py-3 font-semibold transition-all ${
-                canTest
-                  ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]'
-                  : 'bg-slate-700/50 border border-slate-600/50 text-slate-500 opacity-50'
-              }`}
+            <LuminaButton
+              tone="primary"
+              className="px-6 py-3 font-semibold"
               disabled={!canTest}
               onClick={handleTest}
             >
@@ -962,28 +964,27 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
               ) : (
                 'Test Design'
               )}
-            </Button>
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10"
+            </LuminaButton>
+            <LuminaButton
+              tone="ghost"
               onClick={handleReset}
               disabled={isSimulating}
             >
               Reset Parts
-            </Button>
+            </LuminaButton>
             {latestSimulation && !hasSubmittedEvaluation && (
-              <Button
-                variant="ghost"
-                className="bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30"
+              <LuminaButton
+                tone="primary"
+                className="bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30"
                 onClick={handleSubmitFinal}
               >
                 Submit Final Design
-              </Button>
+              </LuminaButton>
             )}
             {hasSubmittedEvaluation && (
-              <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-sm py-2">
+              <LuminaBadge accent="emerald" className="text-sm py-2">
                 Design Submitted!
-              </Badge>
+              </LuminaBadge>
             )}
           </div>
 
@@ -1003,13 +1004,14 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
           {/* Design Log */}
           {designLog.length > 0 && (
             <div className="mb-6">
-              <button
+              <LuminaButton
+                tone="ghost"
                 onClick={() => setShowDesignLog(!showDesignLog)}
-                className="w-full text-left px-4 py-3 bg-slate-800/40 border border-slate-700/50 rounded-xl text-slate-300 text-sm font-semibold hover:bg-slate-700/40 transition-all flex items-center justify-between"
+                className="w-full justify-between px-4 py-3 text-sm font-semibold"
               >
                 <span>Design Log ({designLog.length} iteration{designLog.length !== 1 ? 's' : ''})</span>
                 <span className="text-slate-500">{showDesignLog ? '▲' : '▼'}</span>
-              </button>
+              </LuminaButton>
               {showDesignLog && (
                 <div className="mt-2 space-y-2 max-h-60 overflow-y-auto">
                   {designLog.map((entry, i) => {
@@ -1018,13 +1020,13 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                     const ctrls = partsPalette.controls.filter(c => entry.controlIds.includes(c.id));
                     const sim = entry.simulation;
                     return (
-                      <div key={entry.id} className="p-3 bg-slate-800/30 border border-slate-700/40 rounded-lg text-xs">
+                      <LuminaPanel key={entry.id} className="text-xs">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-slate-300 font-semibold">Iteration {i + 1}</span>
                           {sim.meetsConstraints ? (
-                            <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-[10px]">Pass</Badge>
+                            <LuminaBadge accent="emerald" className="text-[10px]">Pass</LuminaBadge>
                           ) : (
-                            <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-[10px]">Fail</Badge>
+                            <LuminaBadge accent="rose" className="text-[10px]">Fail</LuminaBadge>
                           )}
                         </div>
                         <div className="text-slate-400">
@@ -1036,7 +1038,7 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                           <span>Stb: {sim.stability}</span>
                           <span>Eff: {sim.efficiency}</span>
                         </div>
-                      </div>
+                      </LuminaPanel>
                     );
                   })}
                 </div>
@@ -1045,7 +1047,7 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
           )}
 
           {/* Educational Tips */}
-          <div className="p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel accent="indigo" className="p-5">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1063,9 +1065,9 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                 <span className="text-amber-400 font-semibold">Trade-offs are real</span> — a faster vehicle might use more fuel. A bigger body carries more but weighs more. Find the best balance!
               </p>
             </div>
-          </div>
-        </div>
-      </div>
+          </LuminaPanel>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

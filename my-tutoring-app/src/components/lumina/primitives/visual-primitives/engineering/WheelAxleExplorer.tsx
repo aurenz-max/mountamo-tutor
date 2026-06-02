@@ -2,6 +2,14 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaCallout,
+} from '../../../ui';
 
 /**
  * Wheel & Axle Explorer - Interactive wheel/axle system for teaching simple machines
@@ -283,14 +291,14 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-teal-500/20 relative overflow-hidden">
+      <LuminaCard className="relative overflow-hidden border-teal-500/20">
         {/* Background Texture */}
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(#14B8A6 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-6 md:p-8">
           {/* Description */}
           <div className="mb-6 text-center max-w-2xl mx-auto">
             <p className="text-slate-300 font-light">{description}</p>
@@ -299,31 +307,25 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
           {/* Stats Display */}
           <div className="mb-4 flex justify-center gap-4 flex-wrap">
             {showRatio && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-500/20 border border-teal-500/50">
-                <span className="text-teal-300 text-sm font-mono">
-                  Ratio: <span className="font-bold">{mechanicalAdvantage.toFixed(1)}:1</span>
-                </span>
-              </div>
+              <LuminaBadge accent="teal" className="px-4 py-2 text-sm font-mono">
+                Ratio: <span className="font-bold ml-1">{mechanicalAdvantage.toFixed(1)}:1</span>
+              </LuminaBadge>
             )}
 
             {showForce && attachedLoad > 0 && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/50">
-                <span className="text-amber-300 text-sm font-mono">
-                  Force needed: <span className="font-bold">{requiredForce.toFixed(1)} units</span>
-                </span>
-              </div>
+              <LuminaBadge accent="amber" className="px-4 py-2 text-sm font-mono">
+                Force needed: <span className="font-bold ml-1">{requiredForce.toFixed(1)} units</span>
+              </LuminaBadge>
             )}
 
             {showRotationCount && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/50">
-                <span className="text-purple-300 text-sm font-mono">
-                  Turns: <span className="font-bold">{totalRotations.toFixed(1)}</span>
-                </span>
-              </div>
+              <LuminaBadge accent="purple" className="px-4 py-2 text-sm font-mono">
+                Turns: <span className="font-bold ml-1">{totalRotations.toFixed(1)}</span>
+              </LuminaBadge>
             )}
           </div>
 
-          {/* SVG Canvas */}
+          {/* SVG Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
               ref={svgRef}
@@ -597,29 +599,23 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Rotation Controls */}
             {rotationInput === 'buttons' && (
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+              <LuminaPanel accent="teal">
                 <label className="block text-sm font-mono text-slate-300 mb-3">
                   Rotate Wheel
                 </label>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => rotateWheel(-45)}
-                    className="flex-1 px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/50 text-teal-300 rounded-lg font-semibold transition-all"
-                  >
+                  <LuminaButton onClick={() => rotateWheel(-45)} className="flex-1 font-semibold">
                     ↺ Left
-                  </button>
-                  <button
-                    onClick={() => rotateWheel(45)}
-                    className="flex-1 px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/50 text-teal-300 rounded-lg font-semibold transition-all"
-                  >
+                  </LuminaButton>
+                  <LuminaButton onClick={() => rotateWheel(45)} className="flex-1 font-semibold">
                     Right ↻
-                  </button>
+                  </LuminaButton>
                 </div>
-              </div>
+              </LuminaPanel>
             )}
 
             {rotationInput === 'slider' && (
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+              <LuminaPanel accent="teal">
                 <label className="block text-sm font-mono text-slate-300 mb-3">
                   Wheel Rotation: <span className="text-teal-400 font-bold">{wheelRotation.toFixed(0)}°</span>
                 </label>
@@ -632,13 +628,13 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
                   onChange={(e) => { SoundManager.tick(); setWheelRotation(parseFloat(e.target.value)); }}
                   className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
                 />
-              </div>
+              </LuminaPanel>
             )}
 
             {/* Size Adjustments */}
             {adjustable && (
               <>
-                <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+                <LuminaPanel accent="blue">
                   <label className="block text-sm font-mono text-slate-300 mb-3">
                     Wheel Size: <span className="text-blue-400 font-bold">{wheelDiameter}</span>
                   </label>
@@ -651,9 +647,9 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
                     onChange={(e) => { SoundManager.tick(); setWheelDiameter(parseInt(e.target.value)); }}
                     className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                   />
-                </div>
+                </LuminaPanel>
 
-                <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+                <LuminaPanel accent="amber">
                   <label className="block text-sm font-mono text-slate-300 mb-3">
                     Axle Size: <span className="text-amber-400 font-bold">{axleDiameter}</span>
                   </label>
@@ -666,40 +662,31 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
                     onChange={(e) => { SoundManager.tick(); setAxleDiameter(parseFloat(e.target.value)); }}
                     className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
                   />
-                </div>
+                </LuminaPanel>
               </>
             )}
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 mb-6">
-            <button
-              onClick={handleGetHint}
-              className="px-5 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-2"
-            >
+            <LuminaButton onClick={handleGetHint} className="font-semibold gap-2">
               <span>💡</span> Hint
-            </button>
+            </LuminaButton>
 
-            <button
-              onClick={handleReset}
-              className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
-            >
+            <LuminaButton tone="subtle" onClick={handleReset} className="font-semibold gap-2">
               <span>↺</span> Reset
-            </button>
+            </LuminaButton>
           </div>
 
           {/* Hint Display */}
           {hint && (
-            <div className="mb-6 p-4 bg-amber-500/10 backdrop-blur-sm border border-amber-500/30 rounded-xl animate-fade-in">
-              <div className="flex items-start gap-3">
-                <span className="text-amber-400 text-lg">💡</span>
-                <p className="text-amber-200 text-sm">{hint}</p>
-              </div>
-            </div>
+            <LuminaCallout accent="amber" label="Hint" icon={<span>💡</span> } className="mb-6 animate-fade-in">
+              {hint}
+            </LuminaCallout>
           )}
 
           {/* Educational Info */}
-          <div className="p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel accent="teal">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -723,9 +710,9 @@ const WheelAxleExplorer: React.FC<WheelAxleExplorerProps> = ({ data, className }
                 </p>
               )}
             </div>
-          </div>
-        </div>
-      </div>
+          </LuminaPanel>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

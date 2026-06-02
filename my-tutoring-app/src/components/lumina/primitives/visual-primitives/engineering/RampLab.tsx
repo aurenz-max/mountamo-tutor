@@ -2,6 +2,14 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaPanel,
+  LuminaStat,
+  LuminaSlider,
+} from '../../../ui';
 
 /**
  * Ramp Lab - Interactive inclined plane simulation for teaching simple machines
@@ -666,14 +674,14 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-blue-500/20 relative overflow-hidden">
+      <LuminaCard topAccent="blue" className="relative overflow-hidden">
         {/* Background Texture */}
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-6 md:p-8">
           {/* Description */}
           <div className="mb-6 text-center max-w-2xl mx-auto">
             <p className="text-slate-300 font-light">{description}</p>
@@ -695,7 +703,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
             </div>
           </div>
 
-          {/* SVG Canvas */}
+          {/* SVG Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
               ref={svgRef}
@@ -1007,102 +1015,98 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Angle Control */}
             {adjustableAngle && (
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+              <LuminaPanel accent="purple">
                 <label className="block text-sm font-mono text-slate-300 mb-3">
                   Ramp Angle: <span className="text-purple-400 font-bold">{rampAngle}°</span>
                 </label>
-                <input
-                  type="range"
+                <LuminaSlider
+                  accent="purple"
                   min={5}
                   max={60}
                   step={1}
-                  value={rampAngle}
-                  onChange={(e) => handleAngleChange(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                  value={[rampAngle]}
+                  onValueChange={([v]) => handleAngleChange(v)}
                 />
                 <div className="flex justify-between text-xs text-slate-500 mt-1">
                   <span>Gentle (5°)</span>
                   <span>Steep (60°)</span>
                 </div>
-              </div>
+              </LuminaPanel>
             )}
 
             {/* Push Force Control */}
             {allowPush && (
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+              <LuminaPanel accent="emerald">
                 <label className="block text-sm font-mono text-slate-300 mb-3">
                   Push Force: <span className="text-green-400 font-bold">{pushForce.toFixed(1)} N</span>
                 </label>
-                <input
-                  type="range"
+                <LuminaSlider
+                  accent="emerald"
                   min={0}
                   max={100}
                   step={0.5}
-                  value={pushForce}
-                  onChange={(e) => handlePushForceChange(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-green-500"
+                  value={[pushForce]}
+                  onValueChange={([v]) => handlePushForceChange(v)}
                 />
                 <div className="flex justify-between text-xs text-slate-500 mt-1">
                   <span>None</span>
                   <span>Max</span>
                 </div>
-              </div>
+              </LuminaPanel>
             )}
           </div>
 
           {/* Info Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50 text-center">
-              <div className="text-xs text-slate-400 font-mono mb-1">Friction</div>
-              <div className="text-sm text-amber-400 font-bold capitalize">{frictionLevel}</div>
-            </div>
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50 text-center">
-              <div className="text-xs text-slate-400 font-mono mb-1">Load</div>
-              <div className="text-sm text-blue-400 font-bold">{getLoadLabel()}</div>
-            </div>
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50 text-center">
-              <div className="text-xs text-slate-400 font-mono mb-1">Position</div>
-              <div className="text-sm text-green-400 font-bold">{loadPosition.toFixed(0)}%</div>
-            </div>
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50 text-center">
-              <div className="text-xs text-slate-400 font-mono mb-1">Net Force</div>
-              <div className={`text-sm font-bold ${netForce > 0 ? 'text-green-400' : netForce < 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                {netForce.toFixed(1)} N
-              </div>
-            </div>
+            <LuminaStat
+              label="Friction"
+              value={<span className="capitalize">{frictionLevel}</span>}
+              accent="amber"
+            />
+            <LuminaStat label="Load" value={getLoadLabel()} accent="blue" />
+            <LuminaStat label="Position" value={`${loadPosition.toFixed(0)}%`} accent="emerald" />
+            <LuminaStat
+              label="Net Force"
+              value={`${netForce.toFixed(1)} N`}
+              accent={netForce > 0 ? 'emerald' : netForce < 0 ? 'rose' : undefined}
+            />
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
-            <button
+            <LuminaButton
+              tone="primary"
               onClick={handleStartPush}
               disabled={pushForce === 0 || isAnimating}
-              className="px-5 py-2.5 bg-green-500/20 hover:bg-green-500/30 disabled:bg-slate-700/30 disabled:opacity-50 border border-green-500/50 text-green-300 disabled:text-slate-500 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] flex items-center gap-2"
+              className="gap-2"
             >
               <span>🏃</span> Push!
-            </button>
+            </LuminaButton>
 
-            <button
+            <LuminaButton
+              tone="danger"
               onClick={handleRelease}
               disabled={loadPosition === 0 || isAnimating}
-              className="px-5 py-2.5 bg-red-500/20 hover:bg-red-500/30 disabled:bg-slate-700/30 disabled:opacity-50 border border-red-500/50 text-red-300 disabled:text-slate-500 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.3)] flex items-center gap-2"
+              className="gap-2"
             >
               <span>📉</span> Release
-            </button>
+            </LuminaButton>
 
-            <button
+            <LuminaButton
+              tone="ghost"
               onClick={handleGetHint}
-              className="px-5 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-2"
+              className="gap-2"
             >
               <span>💡</span> Hint
-            </button>
+            </LuminaButton>
 
-            <button
+            <LuminaButton
+              tone="subtle"
               onClick={handleReset}
-              className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+              className="gap-2"
             >
               <span>↺</span> Reset
-            </button>
+            </LuminaButton>
           </div>
 
           {/* Hint Display */}
@@ -1116,7 +1120,7 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
           )}
 
           {/* Acceleration vs Force Graph */}
-          <div className="mt-6 bg-slate-800/40 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50">
+          <LuminaPanel accent="cyan" className="mt-6 p-5">
             <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -1133,10 +1137,10 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
               maxForce={100}
               canMoveUp={canMoveUp}
             />
-          </div>
+          </LuminaPanel>
 
           {/* Educational Info */}
-          <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel accent="blue" className="mt-6 p-5">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -1158,9 +1162,9 @@ const RampLab: React.FC<RampLabProps> = ({ data, className }) => {
                 </p>
               )}
             </div>
-          </div>
-        </div>
-      </div>
+          </LuminaPanel>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

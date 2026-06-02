@@ -5,8 +5,15 @@ import { Compass, Layout, Layers, Download, Pen, Eraser, Trash2, Ruler, Brush } 
 import {
   usePrimitiveEvaluation,
   type BlueprintCanvasMetrics,
+  type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+} from '../../../ui';
 
 /**
  * Blueprint Canvas - Grid-based drawing surface for creating technical drawings
@@ -117,7 +124,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
     subskillId,
     objectiveId,
     exhibitId,
-    onSubmit: onEvaluationSubmit,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
   // Initialize canvas
@@ -351,7 +358,8 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
     setFullEvaluation(null);
   };
 
-  // Theme-specific colors
+  // Theme-specific colors (the bespoke drawing-surface frame — the technical
+  // blueprint aesthetic, not Lumina chrome).
   const themeColors = {
     blueprint: {
       bg: 'bg-blue-900',
@@ -380,11 +388,11 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
       {/* Header */}
       <div className="mb-4">
         <div className="flex items-center gap-3 mb-2">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <Compass size={24} className="text-white" />
+          <div className="bg-cyan-500/20 p-2 rounded-lg">
+            <Compass size={24} className="text-cyan-300" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-white">{title}</h3>
+            <h3 className="text-xl font-bold text-slate-100">{title}</h3>
             <p className="text-sm text-slate-400">{description}</p>
           </div>
         </div>
@@ -397,7 +405,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
 
       {/* Main Canvas Area */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Drawing Canvas */}
+        {/* Drawing Canvas — bespoke interaction surface (technical-drawing frame + toolbar) */}
         <div className={`${colors.bg} rounded-xl overflow-hidden shadow-2xl border-2 ${colors.border}`}>
           <div className="p-3 flex items-center justify-between border-b border-slate-700 bg-slate-900">
             <div className="flex items-center gap-2">
@@ -481,8 +489,8 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
         {/* Info Panel */}
         <div className="space-y-4">
           {/* View Type Info */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+          <LuminaPanel accent="cyan">
+            <h4 className="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
               <Layout size={20} />
               Drawing Info
             </h4>
@@ -508,12 +516,12 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
                 <span className="font-mono text-blue-400">{drawMode === 'line' ? 'LINE' : 'FREE-FORM'}</span>
               </div>
             </div>
-          </div>
+          </LuminaPanel>
 
           {/* Progress */}
           {targetElementCount && (
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-              <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <LuminaPanel accent="blue">
+              <h4 className="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
                 <Layers size={20} />
                 Progress
               </h4>
@@ -529,44 +537,42 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
                   />
                 </div>
               </div>
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Actions */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <h4 className="text-lg font-semibold text-white mb-3">Actions</h4>
+          <LuminaPanel>
+            <h4 className="text-lg font-semibold text-slate-100 mb-3">Actions</h4>
             <div className="space-y-2">
-              <button
+              <LuminaButton
                 onClick={downloadBlueprint}
                 disabled={!hasDrawings}
-                className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+                className="w-full justify-center gap-2"
               >
                 <Download size={18} />
                 Download Blueprint
-              </button>
+              </LuminaButton>
 
-              <button
+              <LuminaActionButton
+                action="check"
                 onClick={handleSubmit}
                 disabled={hasSubmitted || !hasDrawings || isEvaluating}
-                className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${
-                  hasSubmitted || !hasDrawings || isEvaluating
-                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white'
-                }`}
+                className="w-full"
               >
                 {isEvaluating ? evaluationProgress : hasSubmitted ? 'Submitted!' : 'Submit Blueprint'}
-              </button>
+              </LuminaActionButton>
 
               {hasSubmitted && (
-                <button
+                <LuminaActionButton
+                  action="retry"
                   onClick={handleReset}
-                  className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-all"
+                  className="w-full"
                 >
                   Start New Drawing
-                </button>
+                </LuminaActionButton>
               )}
             </div>
-          </div>
+          </LuminaPanel>
 
           {/* AI Feedback (after submission) */}
           {(() => {
@@ -578,14 +584,9 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
             <div className="space-y-3">
               {/* Overall Feedback Card */}
               {evalData.overallFeedback && (
-                <div className="group relative bg-gradient-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-sm rounded-xl p-4 border border-cyan-500/30 hover:border-cyan-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/20">
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/5 to-cyan-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-xl"></div>
-                  <h4 className="text-sm font-bold text-cyan-300 mb-2 flex items-center gap-2">
-                    <span className="text-lg">💡</span>
-                    AI Feedback
-                  </h4>
-                  <p className="text-sm text-slate-200 leading-relaxed relative z-10">{evalData.overallFeedback}</p>
-                </div>
+                <LuminaFeedbackCard status="insight" label="AI Feedback" className="p-4">
+                  <p className="text-sm text-slate-200 leading-relaxed">{evalData.overallFeedback}</p>
+                </LuminaFeedbackCard>
               )}
 
               {/* Quality Scores */}
@@ -593,91 +594,73 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
                 <div className="grid grid-cols-2 gap-3">
                   {/* Technical Quality */}
                   {evalData.technicalQuality !== undefined && (
-                    <div className="group relative bg-gradient-to-br from-purple-500/10 to-indigo-500/10 backdrop-blur-sm rounded-xl p-3 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-xl"></div>
-                  <div className="relative z-10">
-                    <p className="text-xs font-semibold text-purple-300 mb-1">Technical Quality</p>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-white">{evalData.technicalQuality}</span>
-                      <span className="text-xs text-slate-400">/100</span>
-                    </div>
-                    <div className="mt-2 w-full bg-slate-700/50 rounded-full h-1.5">
-                      <div
-                        className="bg-gradient-to-r from-purple-500 to-indigo-500 h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${evalData.technicalQuality}%` }}
-                      />
-                    </div>
-                  </div>
-                    </div>
+                    <LuminaPanel accent="purple" className="p-3">
+                      <p className="text-xs font-semibold text-purple-300 mb-1">Technical Quality</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-slate-100">{evalData.technicalQuality}</span>
+                        <span className="text-xs text-slate-400">/100</span>
+                      </div>
+                      <div className="mt-2 w-full bg-slate-700/50 rounded-full h-1.5">
+                        <div
+                          className="bg-gradient-to-r from-purple-500 to-indigo-500 h-1.5 rounded-full transition-all duration-500"
+                          style={{ width: `${evalData.technicalQuality}%` }}
+                        />
+                      </div>
+                    </LuminaPanel>
                   )}
 
                   {/* Spatial Planning */}
                   {evalData.spatialPlanning !== undefined && (
-                    <div className="group relative bg-gradient-to-br from-emerald-500/10 to-green-500/10 backdrop-blur-sm rounded-xl p-3 border border-emerald-500/30 hover:border-emerald-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/20">
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-xl"></div>
-                      <div className="relative z-10">
-                        <p className="text-xs font-semibold text-emerald-300 mb-1">Spatial Planning</p>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold text-white">{evalData.spatialPlanning}</span>
-                          <span className="text-xs text-slate-400">/100</span>
-                        </div>
-                        <div className="mt-2 w-full bg-slate-700/50 rounded-full h-1.5">
-                          <div
-                            className="bg-gradient-to-r from-emerald-500 to-green-500 h-1.5 rounded-full transition-all duration-500"
-                            style={{ width: `${evalData.spatialPlanning}%` }}
-                          />
-                        </div>
+                    <LuminaPanel accent="emerald" className="p-3">
+                      <p className="text-xs font-semibold text-emerald-300 mb-1">Spatial Planning</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-slate-100">{evalData.spatialPlanning}</span>
+                        <span className="text-xs text-slate-400">/100</span>
                       </div>
-                    </div>
+                      <div className="mt-2 w-full bg-slate-700/50 rounded-full h-1.5">
+                        <div
+                          className="bg-gradient-to-r from-emerald-500 to-green-500 h-1.5 rounded-full transition-all duration-500"
+                          style={{ width: `${evalData.spatialPlanning}%` }}
+                        />
+                      </div>
+                    </LuminaPanel>
                   )}
                 </div>
               )}
 
               {/* Elements Detected */}
               {evalData.elementsDetected && evalData.elementsDetected.length > 0 && (
-                <div className="group relative bg-gradient-to-br from-amber-500/10 to-orange-500/10 backdrop-blur-sm rounded-xl p-4 border border-amber-500/30 hover:border-amber-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/20">
-                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-amber-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-xl"></div>
-                  <div className="relative z-10">
-                    <h4 className="text-sm font-bold text-amber-300 mb-3 flex items-center gap-2">
-                      <span className="text-lg">🔍</span>
-                      {elementLabel.charAt(0).toUpperCase() + elementLabel.slice(1)} Detected ({evalData.totalElementsFound})
-                    </h4>
-                    <div className="space-y-2">
-                      {evalData.elementsDetected.map((room: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="group/room bg-slate-800/50 rounded-lg p-2 border border-slate-700 hover:border-amber-400/40 transition-all duration-200 hover:bg-slate-800/80"
-                        >
-                          <div className="flex items-start gap-2">
-                            <span className="text-xs mt-0.5">{room.identified ? '✅' : '❓'}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-white capitalize">{room.name}</p>
-                              <p className="text-xs text-slate-400 mt-0.5">{room.feedback}</p>
-                            </div>
+                <LuminaPanel accent="amber">
+                  <h4 className="text-sm font-bold text-amber-300 mb-3 flex items-center gap-2">
+                    <span className="text-lg">🔍</span>
+                    {elementLabel.charAt(0).toUpperCase() + elementLabel.slice(1)} Detected ({evalData.totalElementsFound})
+                  </h4>
+                  <div className="space-y-2">
+                    {evalData.elementsDetected.map((room: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="bg-black/20 rounded-lg p-2 border border-white/10 hover:border-amber-400/40 transition-all duration-200"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs mt-0.5">{room.identified ? '✅' : '❓'}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-slate-100 capitalize">{room.name}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">{room.feedback}</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                </LuminaPanel>
               )}
 
               {/* Target Achievement Badge */}
               {targetElementCount && (
-                <div className={`group relative backdrop-blur-sm rounded-xl p-3 border transition-all duration-300 ${
-                  evalData.targetMet
-                    ? 'bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 hover:border-green-400/50 hover:shadow-lg hover:shadow-green-500/20'
-                    : 'bg-gradient-to-br from-yellow-500/10 to-amber-500/10 border-yellow-500/30 hover:border-yellow-400/50 hover:shadow-lg hover:shadow-yellow-500/20'
-                }`}>
-                  <div className={`absolute inset-0 bg-gradient-to-r translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 rounded-xl ${
-                    evalData.targetMet
-                      ? 'from-green-500/0 via-green-500/5 to-green-500/0'
-                      : 'from-yellow-500/0 via-yellow-500/5 to-yellow-500/0'
-                  }`}></div>
-                  <div className="relative z-10 flex items-center gap-2">
+                <LuminaPanel accent={evalData.targetMet ? 'emerald' : 'amber'} className="p-3">
+                  <div className="flex items-center gap-2">
                     <span className="text-2xl">{evalData.targetMet ? '🎯' : '📝'}</span>
                     <div>
-                      <p className={`text-sm font-bold ${evalData.targetMet ? 'text-green-300' : 'text-yellow-300'}`}>
+                      <p className={`text-sm font-bold ${evalData.targetMet ? 'text-emerald-300' : 'text-amber-300'}`}>
                         {evalData.targetMet ? 'Target Achieved!' : 'Keep Going!'}
                       </p>
                       <p className="text-xs text-slate-400">
@@ -685,14 +668,14 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
                       </p>
                     </div>
                   </div>
-                </div>
+                </LuminaPanel>
               )}
             </div>
           );
           })()}
 
           {/* Instructions */}
-          <div className="bg-blue-900/20 rounded-xl p-4 border border-blue-500/30">
+          <LuminaPanel accent="blue">
             <h4 className="text-sm font-semibold text-blue-300 mb-2">Tips:</h4>
             <ul className="text-xs text-slate-300 space-y-1">
               <li>• Use the grid to keep your drawing aligned</li>
@@ -700,7 +683,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
               <li>• Label key parts and add measurements</li>
               <li>• Use the eraser to refine your design</li>
             </ul>
-          </div>
+          </LuminaPanel>
         </div>
       </div>
     </div>

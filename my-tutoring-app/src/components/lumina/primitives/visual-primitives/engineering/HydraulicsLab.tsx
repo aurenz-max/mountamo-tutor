@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardDescription,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaAnswerChoice,
+  LuminaAccordion,
+  LuminaAccordionItem,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -603,7 +614,7 @@ const HydraulicsSimulation: React.FC<{
         const area = Math.round(isSmall ? sArea : lArea);
         ctx.fillStyle = '#64748b';
         ctx.font = '9px monospace';
-        ctx.fillText(`A = ${area} cm\u00B2`, cx, baseY + 32);
+        ctx.fillText(`A = ${area} cm²`, cx, baseY + 32);
       };
 
       drawCylinder(l.smallCyl.cx, l.smallCyl.baseY, smallR, smallPistonYPos, 'Input (Small)', true);
@@ -990,8 +1001,14 @@ interface HydraulicsLabProps {
 const SCENARIO_ICONS: Record<string, string> = {
   hydraulic_press: '\u{1F527}',
   car_lift: '\u{1F697}',
-  excavator: '\u{1F3D7}\uFE0F',
+  excavator: '\u{1F3D7}️',
   brake_system: '\u{1F6D1}',
+};
+
+const CHALLENGE_TYPE_ACCENT: Record<HydraulicsChallenge['type'], 'emerald' | 'blue' | 'orange'> = {
+  predict: 'emerald',
+  observe: 'blue',
+  adjust: 'orange',
 };
 
 const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
@@ -1024,7 +1041,6 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
   const [forceMultDiscovered, setForceMultDiscovered] = useState(false);
   const [workConservationSeen, setWorkConservationSeen] = useState(false);
   const [maxForceRatio, setMaxForceRatio] = useState(1);
-  const [showPascalsLaw, setShowPascalsLaw] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
   const [currentChallengeIdx, setCurrentChallengeIdx] = useState(0);
   const [challengeResults, setChallengeResults] = useState<{ id: string; correct: boolean }[]>([]);
@@ -1290,7 +1306,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
   ]);
 
   // ---- Render ----
-  const icon = SCENARIO_ICONS[scenario] || '\u2699\uFE0F';
+  const icon = SCENARIO_ICONS[scenario] || '⚙️';
   const currentChallenge = challenges[currentChallengeIdx];
   const zoneInfo = selectedZone ? zoneDescs[selectedZone] : null;
 
@@ -1312,26 +1328,22 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
         </div>
       </div>
 
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-        <CardHeader className="pb-4">
+      <LuminaCard className="overflow-hidden">
+        <LuminaCardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-white text-lg">{scenarioName}</CardTitle>
-              <p className="text-slate-400 text-sm mt-1">{overview}</p>
+              <LuminaCardTitle className="text-lg">{scenarioName}</LuminaCardTitle>
+              <LuminaCardDescription className="text-sm mt-1">{overview}</LuminaCardDescription>
             </div>
             <div className="flex gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-300">
-                {scenario.replace(/_/g, ' ')}
-              </Badge>
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-300">
-                {realWorldContext}
-              </Badge>
+              <LuminaBadge>{scenario.replace(/_/g, ' ')}</LuminaBadge>
+              <LuminaBadge>{realWorldContext}</LuminaBadge>
             </div>
           </div>
-        </CardHeader>
+        </LuminaCardHeader>
 
-        <CardContent className="space-y-5">
-          {/* Simulation Canvas */}
+        <LuminaCardContent className="space-y-5">
+          {/* Simulation Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
             <HydraulicsSimulation
               inputForce={inputForce}
@@ -1353,7 +1365,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
 
           {/* Zone info card */}
           {zoneInfo && (
-            <div className="bg-slate-800/40 rounded-xl p-4 border border-cyan-500/20">
+            <LuminaPanel accent="cyan">
               <div className="flex items-start gap-3">
                 <span className="text-cyan-400 text-lg mt-0.5">&#x1F4A1;</span>
                 <div>
@@ -1361,39 +1373,39 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
                   <p className="text-slate-400 text-xs mt-1">{zoneInfo.explanation}</p>
                 </div>
               </div>
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Real-time Readouts */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-slate-800/40 rounded-xl p-3 border border-white/5 text-center">
+            <LuminaPanel className="p-3 text-center">
               <p className="text-slate-500 text-xs font-mono">Pressure</p>
               <p className="text-slate-100 text-lg font-bold">{systemPressure.toFixed(1)}</p>
               <p className="text-slate-600 text-[10px]">N/cm&sup2;</p>
-            </div>
-            <div className="bg-slate-800/40 rounded-xl p-3 border border-white/5 text-center">
+            </LuminaPanel>
+            <LuminaPanel className="p-3 text-center">
               <p className="text-slate-500 text-xs font-mono">Output Force</p>
               <p className="text-amber-400 text-lg font-bold">{Math.round(outputForce)}</p>
               <p className="text-slate-600 text-[10px]">Newtons</p>
-            </div>
-            <div className="bg-slate-800/40 rounded-xl p-3 border border-white/5 text-center">
+            </LuminaPanel>
+            <LuminaPanel className="p-3 text-center">
               <p className="text-slate-500 text-xs font-mono">Multiplier</p>
               <p className="text-cyan-400 text-lg font-bold">{forceRatio.toFixed(1)}x</p>
               <p className="text-slate-600 text-[10px]">area ratio</p>
-            </div>
-            <div className="bg-slate-800/40 rounded-xl p-3 border border-white/5 text-center">
+            </LuminaPanel>
+            <LuminaPanel className="p-3 text-center">
               <p className="text-slate-500 text-xs font-mono">Load Status</p>
               <p className={`text-lg font-bold ${isLifting ? 'text-green-400' : inputForce > 0 ? 'text-red-400' : 'text-slate-500'}`}>
                 {isLifting ? 'Lifting' : inputForce > 0 ? 'Stuck' : 'Idle'}
               </p>
               <p className="text-slate-600 text-[10px]">{loadWeight > 0 ? `${loadWeight} kg` : 'no load'}</p>
-            </div>
+            </LuminaPanel>
           </div>
 
-          {/* Controls */}
+          {/* Controls — range sliders are the direct-manipulation surface, kept native */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Input Force */}
-            <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5">
+            <LuminaPanel>
               <div className="flex justify-between items-center mb-2">
                 <label className="text-slate-300 text-sm font-mono">Input Force</label>
                 <span className="text-cyan-400 font-mono text-sm">{inputForce} N</span>
@@ -1403,10 +1415,10 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
                 onChange={e => handleForceChange(Number(e.target.value))}
                 className="w-full accent-cyan-500 h-2 rounded-full bg-slate-700 cursor-pointer"
               />
-            </div>
+            </LuminaPanel>
 
             {/* Load Weight */}
-            <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5">
+            <LuminaPanel>
               <div className="flex justify-between items-center mb-2">
                 <label className="text-slate-300 text-sm font-mono">Load Weight</label>
                 <span className="text-amber-400 font-mono text-sm">{loadWeight} kg</span>
@@ -1416,12 +1428,12 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
                 onChange={e => handleLoadChange(Number(e.target.value))}
                 className="w-full accent-amber-500 h-2 rounded-full bg-slate-700 cursor-pointer"
               />
-            </div>
+            </LuminaPanel>
 
             {/* Small Piston Diameter */}
-            <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5">
+            <LuminaPanel>
               <div className="flex justify-between items-center mb-2">
-                <label className="text-slate-300 text-sm font-mono">Small Piston \u2300</label>
+                <label className="text-slate-300 text-sm font-mono">Small Piston ⌀</label>
                 <span className="text-sky-400 font-mono text-sm">{smallDiameter} cm</span>
               </div>
               <input
@@ -1429,12 +1441,12 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
                 onChange={e => handleSmallDiamChange(Number(e.target.value))}
                 className="w-full accent-sky-500 h-2 rounded-full bg-slate-700 cursor-pointer"
               />
-            </div>
+            </LuminaPanel>
 
             {/* Large Piston Diameter */}
-            <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5">
+            <LuminaPanel>
               <div className="flex justify-between items-center mb-2">
-                <label className="text-slate-300 text-sm font-mono">Large Piston \u2300</label>
+                <label className="text-slate-300 text-sm font-mono">Large Piston ⌀</label>
                 <span className="text-violet-400 font-mono text-sm">{largeDiameter} cm</span>
               </div>
               <input
@@ -1442,12 +1454,12 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
                 onChange={e => handleLargeDiamChange(Number(e.target.value))}
                 className="w-full accent-violet-500 h-2 rounded-full bg-slate-700 cursor-pointer"
               />
-            </div>
+            </LuminaPanel>
           </div>
 
           {/* Work conservation insight */}
           {smallPistonDist > 10 && (
-            <div className="bg-slate-800/30 rounded-xl p-4 border border-white/5">
+            <LuminaPanel>
               <p className="text-slate-400 text-xs font-mono mb-1">Work Conservation (Force x Distance)</p>
               <div className="flex items-center gap-4">
                 <div className="flex-1">
@@ -1470,79 +1482,67 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
                   </div>
                 </div>
               </div>
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Pascal's Law explanation */}
           {pascalsLawExplanation && (
-            <div className="bg-slate-800/30 rounded-xl border border-white/5 overflow-hidden">
-              <button
-                onClick={() => setShowPascalsLaw(!showPascalsLaw)}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-white/5 transition-colors"
-              >
-                <span className="text-slate-300 text-sm font-mono">Pascal&apos;s Law Explained</span>
-                <span className="text-slate-500 text-sm">{showPascalsLaw ? '\u25B2' : '\u25BC'}</span>
-              </button>
-              {showPascalsLaw && (
-                <div className="px-4 pb-4 text-slate-400 text-sm">
-                  {gradeBand === '3-5' ? pascalsLawExplanation.simple : pascalsLawExplanation.detailed}
-                </div>
-              )}
-            </div>
+            <LuminaAccordion type="single" collapsible>
+              <LuminaAccordionItem value="pascals-law" accent="cyan" label="Pascal's Law Explained">
+                {gradeBand === '3-5' ? pascalsLawExplanation.simple : pascalsLawExplanation.detailed}
+              </LuminaAccordionItem>
+            </LuminaAccordion>
           )}
 
           {/* Challenges */}
           {!showChallenges && !allChallengesDone && (
-            <Button
+            <LuminaButton
               onClick={() => setShowChallenges(true)}
-              variant="ghost"
-              className="w-full bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
+              className="w-full"
             >
               Ready for a Challenge?
-            </Button>
+            </LuminaButton>
           )}
 
           {showChallenges && currentChallenge && !allChallengesDone && (
-            <div className="bg-slate-800/40 rounded-xl p-5 border border-white/10 space-y-4">
+            <LuminaPanel className="p-5 space-y-4">
               <div className="flex items-center gap-2 mb-1">
-                <Badge variant="outline" className={`text-xs ${
-                  currentChallenge.type === 'predict' ? 'border-emerald-500/30 text-emerald-400' :
-                  currentChallenge.type === 'observe' ? 'border-blue-500/30 text-blue-400' :
-                  'border-orange-500/30 text-orange-400'
-                }`}>
+                <LuminaBadge accent={CHALLENGE_TYPE_ACCENT[currentChallenge.type]} className="text-xs">
                   {currentChallenge.type}
-                </Badge>
+                </LuminaBadge>
                 <span className="text-slate-500 text-xs">
                   {challengeResults.length + 1} / {challenges.length}
                 </span>
               </div>
               <p className="text-slate-200 text-sm">{currentChallenge.instruction}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {currentChallenge.options.map(opt => (
-                  <Button
-                    key={opt.id}
-                    onClick={() => handleAnswer(opt.id)}
-                    variant="ghost"
-                    disabled={!!answerFeedback}
-                    className={`justify-start text-left text-sm py-3 px-4 h-auto whitespace-normal ${
-                      selectedAnswer === opt.id
-                        ? answerFeedback === 'correct'
-                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                          : 'bg-red-500/20 border-red-500/40 text-red-300'
-                        : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300'
-                    }`}
-                  >
-                    <span className="text-slate-500 mr-2 font-mono">{opt.id}.</span>
-                    {opt.text}
-                  </Button>
-                ))}
+                {currentChallenge.options.map(opt => {
+                  let state: AnswerChoiceState = 'idle';
+                  if (selectedAnswer === opt.id) {
+                    state = answerFeedback === 'correct' ? 'correct'
+                      : answerFeedback === 'incorrect' ? 'incorrect'
+                      : 'selected';
+                  }
+                  return (
+                    <LuminaAnswerChoice
+                      key={opt.id}
+                      state={state}
+                      onClick={() => handleAnswer(opt.id)}
+                      disabled={!!answerFeedback}
+                      className="p-3 text-sm"
+                    >
+                      <span className="text-slate-500 mr-2 font-mono">{opt.id}.</span>
+                      {opt.text}
+                    </LuminaAnswerChoice>
+                  );
+                })}
               </div>
               {showHint && (
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
                   <p className="text-amber-300 text-xs">&#x1F4A1; {currentChallenge.hint}</p>
                 </div>
               )}
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Completion / Submit */}
@@ -1551,13 +1551,9 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
               <p className="text-emerald-400 text-sm font-medium">
                 All challenges complete! {challengeResults.filter(r => r.correct).length}/{challenges.length} correct
               </p>
-              <Button
-                onClick={handleSubmitEvaluation}
-                variant="ghost"
-                className="bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/30 text-emerald-300"
-              >
+              <LuminaButton tone="primary" onClick={handleSubmitEvaluation}>
                 Submit Results
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
@@ -1583,8 +1579,8 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
             ))}
             <span className="text-slate-600 text-xs">{exploredZones.size}/4</span>
           </div>
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

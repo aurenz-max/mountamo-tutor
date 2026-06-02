@@ -6,6 +6,14 @@ import {
   type FoundationBuilderMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaFeedbackCard,
+} from '../../../ui';
 
 /**
  * Foundation Builder - Soil/foundation simulator for K-5 engineering education
@@ -286,14 +294,14 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-orange-500/20 relative overflow-hidden">
+      <LuminaCard className="p-6 md:p-8 rounded-3xl border-orange-500/20 relative overflow-hidden">
         {/* Background */}
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(#f97316 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-0">
           {/* Description */}
           <div className="mb-6 text-center max-w-3xl mx-auto">
             <p className="text-slate-300 font-light">{description}</p>
@@ -313,7 +321,7 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
             </div>
           </div>
 
-          {/* Status Bar */}
+          {/* Status Bar — live physics readouts */}
           <div className="mb-4 flex justify-center gap-4 flex-wrap">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700/50 border border-slate-600/50">
               <span className="text-sm font-mono">
@@ -340,7 +348,7 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
             </div>
           </div>
 
-          {/* Visualization */}
+          {/* Visualization — bespoke simulation surface, untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50 p-6">
             <svg
               viewBox="0 0 400 300"
@@ -541,7 +549,7 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
             </svg>
           </div>
 
-          {/* Controls */}
+          {/* Controls — bespoke design-manipulation surface, untouched */}
           {designMode && (
             <div className="mb-6 space-y-4">
               {/* Foundation Type */}
@@ -614,60 +622,47 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 justify-center">
-            <button
+            <LuminaActionButton
+              action="check"
               onClick={runTest}
               disabled={isTesting}
-              className="px-8 py-3 bg-orange-500/20 hover:bg-orange-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-orange-500/50 text-orange-300 rounded-xl font-semibold transition-all flex items-center gap-2"
             >
-              <span>🏗️</span>
+              <span className="mr-1">🏗️</span>
               {isTesting ? 'Testing...' : 'Test Foundation'}
-            </button>
+            </LuminaActionButton>
 
             {testResult && (
               <>
-                <button
-                  onClick={resetDesign}
-                  className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
-                >
-                  <span>🔄</span> Redesign
-                </button>
+                <LuminaButton tone="subtle" onClick={resetDesign} className="font-semibold">
+                  <span className="mr-1">🔄</span> Redesign
+                </LuminaButton>
 
                 {testResult.passed && !hasSubmittedEvaluation && (
-                  <button
+                  <LuminaButton
+                    tone="primary"
                     onClick={handleSubmitEvaluation}
-                    className="px-8 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+                    className="bg-emerald-500/15 border-emerald-400/40 text-emerald-100 hover:bg-emerald-500/25 font-semibold"
                   >
-                    <span>✓</span> Submit Results
-                  </button>
+                    <span className="mr-1">✓</span> Submit Results
+                  </LuminaButton>
                 )}
               </>
             )}
           </div>
 
-          {/* Hint */}
+          {/* Hint / Feedback */}
           {hintMessage && (
-            <div className={`mt-6 p-4 backdrop-blur-sm border rounded-xl animate-fade-in ${
-              testResult?.passed
-                ? 'bg-green-500/10 border-green-500/30'
-                : testResult
-                  ? 'bg-red-500/10 border-red-500/30'
-                  : 'bg-orange-500/10 border-orange-500/30'
-            }`}>
-              <div className="flex items-start gap-3">
-                <span className="text-lg">{testResult?.passed ? '✓' : testResult ? '❌' : '💡'}</span>
-                <p className={`text-sm ${
-                  testResult?.passed
-                    ? 'text-green-200'
-                    : testResult
-                      ? 'text-red-200'
-                      : 'text-orange-200'
-                }`}>{hintMessage}</p>
-              </div>
-            </div>
+            <LuminaFeedbackCard
+              status={testResult?.passed ? 'correct' : testResult ? 'incorrect' : 'insight'}
+              label={testResult?.passed ? 'Success' : testResult ? 'Failed' : 'Hint'}
+              className="mt-6"
+            >
+              <span className="text-sm">{hintMessage}</span>
+            </LuminaFeedbackCard>
           )}
 
           {/* Educational Info */}
-          <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel accent="orange" className="mt-6">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -691,10 +686,10 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
                 <span className="text-cyan-400 font-semibold">Your Task:</span> Design a foundation that keeps pressure below {soilCapacity} kN/m²!
               </p>
             </div>
-          </div>
+          </LuminaPanel>
 
           {/* Breakeven Analysis Graphs */}
-          <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel accent="orange" className="mt-6">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
@@ -910,11 +905,11 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
                 Going smaller = failure. Going larger = safer but more expensive. Real engineers target Safety Factor of 2.0-3.0.
               </p>
             </div>
-          </div>
+          </LuminaPanel>
 
           {/* Test History */}
           {testHistory.length > 0 && (
-            <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+            <LuminaPanel accent="orange" className="mt-6">
               <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
                 <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -935,10 +930,10 @@ const FoundationBuilder: React.FC<FoundationBuilderProps> = ({ data, className }
                   </div>
                 ))}
               </div>
-            </div>
+            </LuminaPanel>
           )}
-        </div>
-      </div>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

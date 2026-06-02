@@ -2,6 +2,13 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaPanel,
+  LuminaButton,
+  LuminaCallout,
+} from '../../../ui';
 
 /**
  * Pulley System Builder - Interactive pulley system for teaching simple machines
@@ -1088,14 +1095,14 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-yellow-500/20 relative overflow-hidden">
+      <LuminaCard className="rounded-3xl border-yellow-500/20 relative overflow-hidden">
         {/* Background Texture */}
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(#eab308 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-6 md:p-8">
           {/* Description */}
           <div className="mb-6 text-center max-w-2xl mx-auto">
             <p className="text-slate-300 font-light">{description}</p>
@@ -1123,7 +1130,7 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
             )}
           </div>
 
-          {/* SVG Canvas */}
+          {/* SVG Canvas — bespoke interaction surface (left untouched) */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
               ref={svgRef}
@@ -1256,7 +1263,7 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
           {/* Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Effort Control */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+            <LuminaPanel accent="amber">
               <label className="block text-sm font-mono text-slate-300 mb-3">
                 Effort Force: <span className="text-yellow-400 font-bold">{effortForce}</span> units
                 <span className="text-slate-500 text-xs ml-2">(Need {requiredEffort.toFixed(1)})</span>
@@ -1270,10 +1277,10 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
                 onChange={(e) => { SoundManager.tick(); setEffortForce(parseFloat(e.target.value)); }}
                 className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
               />
-            </div>
+            </LuminaPanel>
 
-            {/* Pull Button */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 flex items-center justify-center">
+            {/* Pull Button — bespoke press-and-hold interaction object */}
+            <LuminaPanel className="flex items-center justify-center">
               <button
                 onMouseDown={() => setIsPulling(true)}
                 onMouseUp={() => setIsPulling(false)}
@@ -1291,12 +1298,12 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
               >
                 {isPulling ? '🏋️ PULLING...' : canLift ? '🏋️ HOLD TO PULL' : '❌ NOT ENOUGH FORCE'}
               </button>
-            </div>
+            </LuminaPanel>
           </div>
 
           {/* Pulley Type Selector (when adding is allowed) */}
           {allowAddPulleys && (
-            <div className="mb-6 p-4 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/50">
+            <LuminaPanel className="mb-6">
               <label className="block text-sm font-mono text-slate-300 mb-3">Pulley Type to Add:</label>
               <div className="flex gap-3">
                 <button
@@ -1322,38 +1329,31 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
                   <span className="block text-xs font-normal mt-1">Reduces effort by 2x</span>
                 </button>
               </div>
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 mb-6">
-            <button
-              onClick={handleGetHint}
-              className="px-5 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-2"
-            >
+            <LuminaButton onClick={handleGetHint} className="font-semibold">
               <span>💡</span> Hint
-            </button>
+            </LuminaButton>
 
-            <button
-              onClick={handleReset}
-              className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
-            >
+            <LuminaButton onClick={handleReset} tone="subtle" className="font-semibold">
               <span>↺</span> Reset
-            </button>
+            </LuminaButton>
           </div>
 
           {/* Hint Display */}
           {hint && (
-            <div className="mb-6 p-4 bg-amber-500/10 backdrop-blur-sm border border-amber-500/30 rounded-xl animate-fade-in">
-              <div className="flex items-start gap-3">
-                <span className="text-amber-400 text-lg">💡</span>
-                <p className="text-amber-200 text-sm">{hint}</p>
-              </div>
+            <div className="mb-6 animate-fade-in">
+              <LuminaCallout accent="amber" label="Hint" icon={<span>💡</span>}>
+                {hint}
+              </LuminaCallout>
             </div>
           )}
 
           {/* Acceleration vs Force Graph */}
-          <div className="mb-6 bg-slate-800/40 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50">
+          <LuminaPanel accent="cyan" className="mb-6 p-5">
             <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -1372,10 +1372,10 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
               maxForce={loadWeight}
               canLift={canLift}
             />
-          </div>
+          </LuminaPanel>
 
           {/* Educational Info */}
-          <div className="p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel accent="amber" className="p-5">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -1393,9 +1393,9 @@ const PulleySystemBuilder: React.FC<PulleySystemBuilderProps> = ({ data, classNa
                 <span className="text-yellow-400 font-semibold">Key Formula:</span> Mechanical Advantage = Load Weight ÷ Effort Force
               </p>
             </div>
-          </div>
-        </div>
-      </div>
+          </LuminaPanel>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

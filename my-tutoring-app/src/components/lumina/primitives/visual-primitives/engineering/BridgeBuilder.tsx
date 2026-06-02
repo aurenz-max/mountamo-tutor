@@ -6,6 +6,14 @@ import {
   type BridgeBuilderMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaBadge,
+  LuminaButton,
+  LuminaPanel,
+  LuminaFeedbackCard,
+} from '../../../ui';
 
 /**
  * Bridge Builder - Interactive 2D bridge construction for teaching structural engineering
@@ -826,14 +834,14 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-blue-500/20 relative overflow-hidden">
+      <LuminaCard topAccent="blue" className="relative overflow-hidden">
         {/* Background */}
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-10 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-6 md:p-8">
           {/* Description */}
           <div className="mb-6 text-center max-w-2xl mx-auto">
             <p className="text-slate-300 font-light">{description}</p>
@@ -842,25 +850,24 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
           {/* Status Bar */}
           <div className="mb-4 flex justify-center gap-4 flex-wrap">
             {budget && (
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
-                withinBudget ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'
-              }`}>
-                <span className="text-sm font-mono">
-                  Pieces: <span className={withinBudget ? 'text-green-300' : 'text-red-300'}>{piecesUsed}/{budget}</span>
-                </span>
-              </div>
+              <LuminaBadge
+                accent={withinBudget ? 'emerald' : 'rose'}
+                className="px-4 py-2 rounded-full font-mono"
+              >
+                Pieces: {piecesUsed}/{budget}
+              </LuminaBadge>
             )}
 
             {bridgeSuccess && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 border border-green-500/50 animate-pulse">
-                <span className="text-green-300 font-bold">Bridge Holds!</span>
-              </div>
+              <LuminaBadge accent="emerald" className="px-4 py-2 rounded-full font-bold animate-pulse">
+                Bridge Holds!
+              </LuminaBadge>
             )}
 
             {bridgeFailed && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/20 border border-red-500/50 animate-pulse">
-                <span className="text-red-300 font-bold">Bridge Failed!</span>
-              </div>
+              <LuminaBadge accent="rose" className="px-4 py-2 rounded-full font-bold animate-pulse">
+                Bridge Failed!
+              </LuminaBadge>
             )}
           </div>
 
@@ -1198,14 +1205,15 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
 
           {/* Controls */}
           <div className="flex flex-wrap gap-3 justify-center">
-            <button
+            <LuminaButton
+              tone="primary"
               onClick={runStressTest}
               disabled={isSimulating || members.length === 0}
-              className="px-6 py-3 bg-green-500/20 hover:bg-green-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-green-500/50 text-green-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] flex items-center gap-2"
+              className="px-6 py-3 font-semibold"
             >
               {isSimulating ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-green-300/30 border-t-green-300 rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-cyan-300/30 border-t-cyan-300 rounded-full animate-spin" />
                   Testing...
                 </>
               ) : (
@@ -1214,29 +1222,27 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
                   Test Bridge
                 </>
               )}
-            </button>
+            </LuminaButton>
 
-            <button
+            <LuminaButton
+              tone="subtle"
               onClick={handleReset}
               disabled={isSimulating}
-              className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+              className="px-5 py-2.5 font-semibold"
             >
               <span>↺</span> Reset
-            </button>
+            </LuminaButton>
           </div>
 
           {/* Hint */}
           {hint && (
-            <div className="mt-6 p-4 bg-amber-500/10 backdrop-blur-sm border border-amber-500/30 rounded-xl animate-fade-in">
-              <div className="flex items-start gap-3">
-                <span className="text-amber-400 text-lg">💡</span>
-                <p className="text-amber-200 text-sm">{hint}</p>
-              </div>
-            </div>
+            <LuminaFeedbackCard status="insight" label="Heads up" className="mt-6">
+              {hint}
+            </LuminaFeedbackCard>
           )}
 
           {/* Educational Info */}
-          <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel accent="blue" className="mt-6 p-5">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1260,9 +1266,9 @@ const BridgeBuilder: React.FC<BridgeBuilderProps> = ({ data, className }) => {
                 </p>
               )}
             </div>
-          </div>
-        </div>
-      </div>
+          </LuminaPanel>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

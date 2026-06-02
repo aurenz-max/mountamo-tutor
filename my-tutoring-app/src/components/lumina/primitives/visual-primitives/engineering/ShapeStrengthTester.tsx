@@ -6,6 +6,14 @@ import {
   type ShapeStrengthTesterMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaProgress,
+} from '../../../ui';
 
 /* -------------------------------------------------------------------------- */
 /*                                PHYSICS ENGINE                              */
@@ -684,66 +692,58 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-purple-500/20 relative overflow-hidden">
-        {/* Background */}
+      <LuminaCard topAccent="purple" className="relative overflow-hidden">
+        {/* Decorative dot-grid background (bespoke lab identity) */}
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-10 pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(#a855f7 1px, transparent 1px)', backgroundSize: '20px 20px' }}
         ></div>
 
-        <div className="relative z-10">
+        <LuminaCardContent className="relative z-10 p-6 md:p-8">
           {/* Description */}
           <div className="mb-6 text-center max-w-3xl mx-auto">
             <p className="text-slate-300 font-light">{description}</p>
           </div>
 
           {/* Challenge Info */}
-          <div className={`mb-4 p-4 rounded-xl border ${
-            currentTest?.survived ? 'bg-green-500/20 border-green-500/50' : 'bg-purple-500/20 border-purple-500/50'
-          }`}>
+          <LuminaPanel
+            accent={currentTest?.survived ? 'emerald' : 'purple'}
+            className="mb-4"
+          >
             <div className="flex flex-wrap items-center gap-3 justify-center text-sm">
               <span className="font-semibold text-white">Challenge:</span>
               <span className="text-slate-300">Test: {testType} {testLoad}N</span>
               {targetTriangles > 0 && <span className="text-slate-300">• Min {targetTriangles} triangles</span>}
               {targetHeight > 0 && <span className="text-slate-300">• Height: {targetHeight}px</span>}
-              {currentTest?.survived && <span className="text-green-300">✓ Passed!</span>}
+              {currentTest?.survived && <span className="text-emerald-300">✓ Passed!</span>}
             </div>
-          </div>
+          </LuminaPanel>
 
           {/* Status Bar */}
-          <div className="mb-4 flex justify-center gap-4 flex-wrap">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700/50 border border-slate-600/50">
-              <span className="text-sm font-mono">
-                Beams: <span className="text-purple-300">{beams.length}</span>
-              </span>
-            </div>
+          <div className="mb-4 flex justify-center gap-3 flex-wrap">
+            <LuminaBadge className="font-mono">
+              Beams: <span className="text-purple-300 ml-1">{beams.length}</span>
+            </LuminaBadge>
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700/50 border border-slate-600/50">
-              <span className="text-sm font-mono">
-                Triangles: <span className="text-green-300">{triangles}</span>
-              </span>
-            </div>
+            <LuminaBadge className="font-mono">
+              Triangles: <span className="text-emerald-300 ml-1">{triangles}</span>
+            </LuminaBadge>
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700/50 border border-slate-600/50">
-              <span className="text-sm font-mono">
-                Height: <span className="text-blue-300">{height}px</span>
-              </span>
-            </div>
+            <LuminaBadge className="font-mono">
+              Height: <span className="text-blue-300 ml-1">{height}px</span>
+            </LuminaBadge>
 
             {!isBuilding && (
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
-                currentTest?.survived ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'
-              }`}>
-                <span className="text-sm font-mono">
-                  Status: <span className={currentTest?.survived ? 'text-green-300' : 'text-red-300'}>
-                    {currentTest?.survived ? 'PASSED' : currentTest ? 'FAILED' : 'TESTING'}
-                  </span>
-                </span>
-              </div>
+              <LuminaBadge
+                accent={currentTest?.survived ? 'emerald' : 'rose'}
+                className="font-mono"
+              >
+                Status: {currentTest?.survived ? 'PASSED' : currentTest ? 'FAILED' : 'TESTING'}
+              </LuminaBadge>
             )}
           </div>
 
-          {/* Building Canvas */}
+          {/* Building Canvas — bespoke interaction surface, untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
             <svg
               ref={svgRef}
@@ -929,7 +929,7 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
             )}
           </div>
 
-          {/* Material Selector */}
+          {/* Material Selector — bespoke build-tool palette (custom material swatches) */}
           {isBuilding && (
             <div className="mb-6 space-y-4">
               <div>
@@ -971,39 +971,43 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
           <div className="flex flex-wrap gap-3 justify-center">
             {isBuilding ? (
               <>
-                <button
+                <LuminaButton
+                  tone="danger"
                   onClick={initPhysicsSimulation}
                   disabled={beams.length === 0}
-                  className="px-8 py-3 bg-red-500/20 hover:bg-red-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-red-500/50 text-red-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+                  className="px-8 py-3 rounded-xl font-semibold"
                 >
-                  <span>🔬</span>
+                  <span className="mr-1">🔬</span>
                   Run Physics Test
-                </button>
+                </LuminaButton>
 
-                <button
+                <LuminaButton
+                  tone="subtle"
                   onClick={clearStructure}
                   disabled={beams.length === 0}
-                  className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 disabled:opacity-50 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+                  className="rounded-xl font-semibold"
                 >
-                  <span>🗑️</span> Clear
-                </button>
+                  <span className="mr-1">🗑️</span> Clear
+                </LuminaButton>
               </>
             ) : (
               <>
-                <button
+                <LuminaButton
+                  tone="primary"
                   onClick={resetToBuilding}
-                  className="px-8 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+                  className="px-8 py-3 rounded-xl font-semibold"
                 >
-                  <span>🔨</span> Rebuild
-                </button>
+                  <span className="mr-1">🔨</span> Rebuild
+                </LuminaButton>
 
                 {currentTest?.survived && !hasSubmittedEvaluation && (
-                  <button
+                  <LuminaButton
+                    tone="primary"
                     onClick={handleSubmitEvaluation}
-                    className="px-8 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 rounded-xl font-semibold transition-all flex items-center gap-2"
+                    className="px-8 py-3 rounded-xl font-semibold bg-emerald-500/15 border-emerald-400/40 text-emerald-100 hover:bg-emerald-500/25"
                   >
-                    <span>✓</span> Submit Results
-                  </button>
+                    <span className="mr-1">✓</span> Submit Results
+                  </LuminaButton>
                 )}
               </>
             )}
@@ -1011,44 +1015,36 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
 
           {/* Test Progress Bar */}
           {isSimulating && (
-            <div className="mt-6 p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+            <LuminaPanel accent="purple" className="mt-6">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-white font-semibold">Testing...</span>
                 <span className="text-slate-400 text-sm">{testProgress}%</span>
               </div>
-              <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-100"
-                  style={{ width: `${testProgress}%` }}
-                />
-              </div>
-            </div>
+              <LuminaProgress value={testProgress} accent="purple" />
+            </LuminaPanel>
           )}
 
           {/* Hint */}
           {hintMessage && (
-            <div className={`mt-6 p-4 backdrop-blur-sm border rounded-xl animate-fade-in ${
-              currentTest?.survived
-                ? 'bg-green-500/10 border-green-500/30'
-                : currentTest
-                  ? 'bg-red-500/10 border-red-500/30'
-                  : 'bg-purple-500/10 border-purple-500/30'
-            }`}>
+            <LuminaPanel
+              accent={currentTest?.survived ? 'emerald' : currentTest ? 'rose' : 'purple'}
+              className="mt-6 animate-fade-in"
+            >
               <div className="flex items-start gap-3">
                 <span className="text-lg">{currentTest?.survived ? '✓' : currentTest ? '❌' : '💡'}</span>
                 <p className={`text-sm ${
                   currentTest?.survived
-                    ? 'text-green-200'
+                    ? 'text-emerald-200'
                     : currentTest
-                      ? 'text-red-200'
+                      ? 'text-rose-200'
                       : 'text-purple-200'
                 }`}>{hintMessage}</p>
               </div>
-            </div>
+            </LuminaPanel>
           )}
 
           {/* Educational Info */}
-          <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel className="mt-6 p-5">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1072,11 +1068,11 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
                 <span className="text-cyan-400 font-semibold">Real-world:</span> Engineers use triangular trusses in bridges, towers, and earthquake-resistant buildings!
               </p>
             </div>
-          </div>
+          </LuminaPanel>
 
           {/* Test History */}
           {testResults.length > 0 && (
-            <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+            <LuminaPanel className="mt-6 p-5">
               <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
                 <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -1096,10 +1092,10 @@ const ShapeStrengthTester: React.FC<ShapeStrengthTesterProps> = ({ data, classNa
                   </div>
                 ))}
               </div>
-            </div>
+            </LuminaPanel>
           )}
-        </div>
-      </div>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

@@ -3,9 +3,15 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Wind, AlertTriangle, Target, Trophy, BarChart3 } from 'lucide-react';
 import { SpotlightCard } from '../../../components/SpotlightCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+} from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -484,7 +490,7 @@ const WindTunnelSimulation: React.FC<{
       ctx.textAlign = 'right';
       ctx.fillStyle = isStalling ? '#f87171' : '#a78bfa';
       ctx.font = 'bold 12px monospace';
-      ctx.fillText(`AoA: ${curAoa.toFixed(1)}\u00B0${isStalling ? ' STALL!' : ''}`, CW - 18, 28);
+      ctx.fillText(`AoA: ${curAoa.toFixed(1)}°${isStalling ? ' STALL!' : ''}`, CW - 18, 28);
 
       // Grab hint (before first grab)
       if (!dragRef.current.hasGrabbed && !dragRef.current.dragging) {
@@ -492,7 +498,7 @@ const WindTunnelSimulation: React.FC<{
         ctx.fillStyle = `rgba(148,197,255,${pulse})`;
         ctx.font = '11px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('\u2195 Grab the airfoil and drag up or down to rotate', CX, CY + 90);
+        ctx.fillText('↕ Grab the airfoil and drag up or down to rotate', CX, CY + 90);
       }
 
       ctx.textAlign = 'start';
@@ -838,16 +844,16 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
           </div>
         </div>
         <div className="flex items-center gap-2 ml-4">
-          <Badge variant="outline" className="border-cyan-500/40 text-cyan-300 text-xs">
+          <LuminaBadge accent="cyan" className="text-xs">
             {SHAPE_LABELS[selectedShape]}
-          </Badge>
-          <Badge variant="outline" className="border-white/20 text-slate-400 text-xs">
+          </LuminaBadge>
+          <LuminaBadge className="text-xs">
             Grades {data.gradeBand}
-          </Badge>
+          </LuminaBadge>
         </div>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-cyan-500/20 relative overflow-hidden">
+      <LuminaCard topAccent="cyan" className="p-6 md:p-8 rounded-3xl border-cyan-500/20 relative overflow-hidden">
         {/* Background texture */}
         <div
           className="absolute inset-0 opacity-10"
@@ -876,8 +882,8 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
             {/* Canvas wind tunnel (3 cols) */}
             <div className="lg:col-span-3 space-y-3">
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-                <CardContent className="p-0 relative">
+              <LuminaCard className="overflow-hidden">
+                <LuminaCardContent className="p-0 relative">
                   <WindTunnelSimulation
                     shape={selectedShape}
                     camber={camber}
@@ -889,16 +895,16 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                   {!hasGrabbedAirfoil && (
                     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/85 px-4 py-1.5 rounded-full border border-cyan-400/30 shadow-lg shadow-cyan-500/10">
                       <p className="text-cyan-200 text-xs font-medium">
-                        <span className="mr-1">{'\u270B'}</span>
+                        <span className="mr-1">{'✋'}</span>
                         Grab the airfoil and drag up or down to rotate it
                       </p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
 
               {/* Observed lift indicator (particle-driven) */}
-              <div className="flex items-center gap-3 px-4 py-2 bg-slate-800/40 rounded-lg border border-slate-700/50">
+              <LuminaPanel className="flex items-center gap-3 px-4 py-2">
                 <span className="text-[10px] uppercase tracking-wider text-slate-400 font-mono">Observed Lift</span>
                 <div className="flex-1 h-2 bg-slate-900/60 rounded-full overflow-hidden relative">
                   <div
@@ -914,9 +920,9 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                   <div className="absolute top-0 bottom-0 left-1/2 w-px bg-slate-600" />
                 </div>
                 <span className={`text-xs font-mono font-bold ${observedLiftSignal >= 0 ? 'text-sky-300' : 'text-red-300'}`}>
-                  {observedLiftSignal >= 0 ? '\u2191' : '\u2193'} {(observedLiftSignal * 100).toFixed(0)}
+                  {observedLiftSignal >= 0 ? '↑' : '↓'} {(observedLiftSignal * 100).toFixed(0)}
                 </span>
-              </div>
+              </LuminaPanel>
               <p className="text-[10px] text-slate-500 text-center font-mono">
                 Driven by particle density differential (fewer above = lower pressure = lift)
               </p>
@@ -925,26 +931,26 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
             {/* Controls (2 cols) */}
             <div className="lg:col-span-2 space-y-4">
               {/* Shape selector */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-mono text-slate-300">Airfoil Shape</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
+              <LuminaCard surface="nested">
+                <LuminaCardHeader className="pb-2">
+                  <LuminaCardTitle className="text-sm font-mono text-slate-300">Airfoil Shape</LuminaCardTitle>
+                </LuminaCardHeader>
+                <LuminaCardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-2">
                     {ALL_SHAPES.map(s => (
-                      <Button
+                      <LuminaButton
                         key={s}
-                        variant="ghost"
+                        tone={selectedShape === s ? 'primary' : 'ghost'}
                         size="sm"
                         className={`text-xs justify-start ${
                           selectedShape === s
-                            ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-300'
-                            : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-200'
+                            ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                            : 'text-slate-400 hover:text-slate-200'
                         }`}
                         onClick={() => handleShapeChange(s)}
                       >
                         {SHAPE_LABELS[s]}
-                      </Button>
+                      </LuminaButton>
                     ))}
                   </div>
 
@@ -964,15 +970,18 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                       />
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
 
               {/* Angle of Attack readout (hand-driven, no slider) */}
-              <Card className={`backdrop-blur-xl border ${computedResults.isStalled ? 'bg-red-500/10 border-red-500/40' : 'bg-slate-900/40 border-white/10'}`}>
-                <CardContent className="pt-4">
+              <LuminaCard
+                surface="nested"
+                className={computedResults.isStalled ? 'bg-red-500/10 border-red-500/40' : undefined}
+              >
+                <LuminaCardContent className="pt-4">
                   <label className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
                     <span>Angle of Attack</span>
-                    <span className="text-[10px] text-cyan-400 normal-case tracking-normal">{'\u270B'} hand-driven</span>
+                    <span className="text-[10px] text-cyan-400 normal-case tracking-normal">{'✋'} hand-driven</span>
                   </label>
                   <div className="flex items-baseline gap-2">
                     <span className={`text-2xl font-mono font-bold ${computedResults.isStalled ? 'text-red-300 animate-pulse' : 'text-purple-400'}`}>
@@ -981,14 +990,14 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                     {computedResults.isStalled && <span className="text-red-300 text-xs font-bold">STALL!</span>}
                   </div>
                   <p className="text-slate-500 text-[10px] mt-1">
-                    Stall angle: {data.results.stallAngle}&deg; {'\u00B7'} Drag the airfoil to rotate
+                    Stall angle: {data.results.stallAngle}&deg; {'·'} Drag the airfoil to rotate
                   </p>
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
 
               {/* Wind speed slider */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardContent className="pt-4">
+              <LuminaCard surface="nested">
+                <LuminaCardContent className="pt-4">
                   <label className="block text-sm font-mono text-slate-300 mb-2">
                     Wind Speed: <span className="text-green-400 font-bold">{windSpeed.toFixed(0)} m/s</span>
                   </label>
@@ -1005,17 +1014,17 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                     <span>1 m/s</span>
                     <span>50 m/s</span>
                   </div>
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
 
               {/* Results readout */}
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-mono text-slate-300 flex items-center gap-2">
+              <LuminaCard surface="nested">
+                <LuminaCardHeader className="pb-2">
+                  <LuminaCardTitle className="text-sm font-mono text-slate-300 flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-cyan-400" /> Results
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-2">
+                  </LuminaCardTitle>
+                </LuminaCardHeader>
+                <LuminaCardContent className="pt-0 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-slate-400 font-mono">Lift Force</span>
                     <span className="text-sm text-blue-400 font-bold font-mono">{computedResults.liftForce.toFixed(1)} N</span>
@@ -1036,34 +1045,34 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                       <span className="text-sm text-red-400 font-bold font-mono">{data.results.stallAngle}&deg;</span>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
             </div>
           </div>
 
           {/* Compare + Challenges */}
           <div className="space-y-6">
             {data.presetComparisons.length > 0 && (
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2">
+              <LuminaCard surface="nested">
+                <LuminaCardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-mono text-slate-300 flex items-center gap-2">
+                    <LuminaCardTitle className="text-sm font-mono text-slate-300 flex items-center gap-2">
                       <Target className="w-4 h-4 text-purple-400" /> Compare Airfoils
-                    </CardTitle>
-                    <Button
-                      variant="ghost"
+                    </LuminaCardTitle>
+                    <LuminaButton
+                      tone={compareModeActive ? 'primary' : 'subtle'}
                       size="sm"
-                      className={`text-xs ${compareModeActive ? 'bg-purple-500/20 border-purple-500/40 text-purple-300' : 'bg-white/5 border-white/10 text-slate-500'} border`}
+                      className={`text-xs ${compareModeActive ? 'bg-purple-500/20 border-purple-500/40 text-purple-300' : 'text-slate-500'}`}
                       onClick={handleToggleCompare}
                     >
                       {compareModeActive ? 'Hide Compare' : 'Compare'}
-                    </Button>
+                    </LuminaButton>
                   </div>
-                </CardHeader>
+                </LuminaCardHeader>
                 {compareModeActive && (
-                  <CardContent className="pt-0">
+                  <LuminaCardContent className="pt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+                      <LuminaPanel>
                         <div className="text-xs text-slate-400 font-mono mb-2">Shape A (in wind tunnel)</div>
                         <div className="text-sm text-cyan-300 font-bold">{SHAPE_LABELS[selectedShape]}</div>
                         <div className="mt-2 space-y-1 text-xs font-mono text-slate-400">
@@ -1071,9 +1080,9 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                           <div>Drag: <span className="text-orange-400">{computedResults.dragForce.toFixed(1)} N</span></div>
                           <div>L/D: <span className="text-green-400">{isFinite(ldRatio) ? ldRatio.toFixed(1) : '--'}</span></div>
                         </div>
-                      </div>
+                      </LuminaPanel>
 
-                      <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+                      <LuminaPanel>
                         <div className="text-xs text-slate-400 font-mono mb-2">Shape B</div>
                         <select
                           value={compareShape}
@@ -1097,7 +1106,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                         <p className="text-[10px] text-slate-500 mt-2">
                           Tip: swap Shape A in the tunnel to see B&apos;s particles live.
                         </p>
-                      </div>
+                      </LuminaPanel>
                     </div>
 
                     {data.presetComparisons.length > 0 && (
@@ -1116,19 +1125,19 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                         ))}
                       </div>
                     )}
-                  </CardContent>
+                  </LuminaCardContent>
                 )}
-              </Card>
+              </LuminaCard>
             )}
 
             {data.challenges.length > 0 && (
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-mono text-slate-300 flex items-center gap-2">
+              <LuminaCard surface="nested">
+                <LuminaCardHeader className="pb-2">
+                  <LuminaCardTitle className="text-sm font-mono text-slate-300 flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-amber-400" /> Challenges
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
+                  </LuminaCardTitle>
+                </LuminaCardHeader>
+                <LuminaCardContent className="pt-0">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {data.challenges.map((challenge, idx) => {
                       const isActive = activeChallenge === challenge;
@@ -1146,27 +1155,27 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                           <div className="p-4">
                             <p className="text-sm text-slate-200 font-medium mb-2">{challenge.scenario}</p>
                             <div className="flex gap-2 mb-2">
-                              <Badge variant="outline" className="text-[10px] border-blue-500/40 text-blue-300">
+                              <LuminaBadge accent="blue" className="text-[10px]">
                                 Lift: {challenge.targetLift}
-                              </Badge>
-                              <Badge variant="outline" className="text-[10px] border-orange-500/40 text-orange-300">
+                              </LuminaBadge>
+                              <LuminaBadge accent="orange" className="text-[10px]">
                                 Drag: {challenge.targetDrag}
-                              </Badge>
+                              </LuminaBadge>
                             </div>
                             {isActive && (
                               <div className="mt-3 space-y-2">
                                 <p className="text-xs text-amber-300/70 italic">{challenge.hint}</p>
-                                <Button
-                                  variant="ghost"
+                                <LuminaButton
+                                  tone="primary"
                                   size="sm"
-                                  className="w-full bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 text-xs"
+                                  className="w-full bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30 text-xs"
                                   onClick={e => {
                                     e.stopPropagation();
                                     evaluateChallenge();
                                   }}
                                 >
                                   Check My Solution
-                                </Button>
+                                </LuminaButton>
                                 {challengeOptimality > 0 && (
                                   <div className={`text-center text-sm font-bold font-mono ${challengeOptimality >= 100 ? 'text-green-400' : challengeOptimality >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
                                     Score: {challengeOptimality}/100
@@ -1179,13 +1188,13 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                       );
                     })}
                   </div>
-                </CardContent>
-              </Card>
+                </LuminaCardContent>
+              </LuminaCard>
             )}
           </div>
 
           {/* Educational context */}
-          <div className="mt-6 p-5 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+          <LuminaPanel className="mt-6 p-5">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <Wind className="w-5 h-5 text-cyan-400" />
               How Wings Create Lift
@@ -1211,7 +1220,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                 </p>
               )}
             </div>
-          </div>
+          </LuminaPanel>
 
           {/* Exploration progress */}
           <div className="mt-4 flex flex-wrap gap-3 justify-center">
@@ -1228,7 +1237,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
             )}
           </div>
         </div>
-      </div>
+      </LuminaCard>
     </div>
   );
 };

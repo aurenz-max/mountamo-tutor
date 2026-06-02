@@ -944,7 +944,9 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
           <div className="flex justify-center">
             <LuminaPanel className="rounded-xl px-6 py-3">
               <div className="flex items-center gap-2 text-4xl font-bold">
-                {currentChallenge.sequenceNumbers.map((num, i) => (
+                {/* Defensive cap: the generator builds bounded runs (≤5), but never
+                    let a malformed array stretch off-screen and OOM the tab again. */}
+                {currentChallenge.sequenceNumbers.slice(0, 12).map((num, i) => (
                   <React.Fragment key={i}>
                     <span className={i === currentChallenge.missingIndex
                       ? 'text-blue-400 border-b-2 border-blue-400 px-2'
@@ -952,7 +954,7 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
                     }>
                       {i === currentChallenge.missingIndex ? '?' : num}
                     </span>
-                    {i < currentChallenge.sequenceNumbers!.length - 1 && (
+                    {i < Math.min(currentChallenge.sequenceNumbers!.length, 12) - 1 && (
                       <span className="text-slate-600 text-2xl">,</span>
                     )}
                   </React.Fragment>

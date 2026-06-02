@@ -6,6 +6,11 @@ import {
   type ExcavatorArmSimulatorMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import {
+  LuminaCallout,
+  LuminaStat,
+  LuminaActionButton,
+} from '../../../ui';
 
 /**
  * Excavator Arm Simulator - Interactive multi-jointed arm simulation
@@ -242,7 +247,7 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
     subskillId,
     objectiveId,
     exhibitId,
-    onSubmit: onEvaluationSubmit,
+    onSubmit: onEvaluationSubmit as ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void) | undefined,
   });
 
   // Initialize Verlet nodes for the arm
@@ -1128,14 +1133,12 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         <p className="text-slate-300">{description}</p>
 
         {challenge && (
-          <div className="mt-3 p-4 bg-blue-500/15 border border-blue-500/40 rounded-xl backdrop-blur-sm">
-            <p className="text-blue-200 text-sm">
-              <strong>Challenge:</strong> {challenge.description}
-            </p>
-            <p className="text-blue-300 text-xs mt-1">
+          <LuminaCallout accent="blue" label="Challenge" className="mt-3 p-4">
+            <p className="text-sm">{challenge.description}</p>
+            <p className="text-xs mt-1 text-slate-400">
               Target: {challenge.targetAmount} units of material
             </p>
-          </div>
+          </LuminaCallout>
         )}
       </div>
 
@@ -1173,37 +1176,26 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="p-3 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 text-center">
-          <div className="text-2xl font-bold text-amber-400">{totalExcavated}</div>
-          <div className="text-xs text-slate-400">Total Excavated</div>
-        </div>
-        <div className="p-3 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 text-center">
-          <div className="text-2xl font-bold text-orange-400">{digOperations}</div>
-          <div className="text-xs text-slate-400">Digs</div>
-        </div>
-        <div className="p-3 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 text-center">
-          <div className="text-2xl font-bold text-green-400">{dumpOperations}</div>
-          <div className="text-xs text-slate-400">Dumps</div>
-        </div>
+        <LuminaStat label="Total Excavated" value={totalExcavated} accent="amber" />
+        <LuminaStat label="Digs" value={digOperations} accent="orange" />
+        <LuminaStat label="Dumps" value={dumpOperations} accent="emerald" />
       </div>
 
       {/* Evaluation Controls */}
       {data.instanceId && (
         <div className="flex gap-2">
-          <button
+          <LuminaActionButton
+            action="check"
             onClick={handleSubmit}
             disabled={hasSubmitted}
-            className="flex-1 px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-slate-700/50 disabled:opacity-50 border border-blue-500/50 text-blue-300 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] disabled:shadow-none"
+            className="flex-1"
           >
             {hasSubmitted ? 'Submitted' : 'Submit Work'}
-          </button>
+          </LuminaActionButton>
           {hasSubmitted && (
-            <button
-              onClick={handleReset}
-              className="px-4 py-3 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600/50 text-slate-300 rounded-xl font-semibold transition-all"
-            >
+            <LuminaActionButton action="retry" onClick={handleReset}>
               Reset
-            </button>
+            </LuminaActionButton>
           )}
         </div>
       )}

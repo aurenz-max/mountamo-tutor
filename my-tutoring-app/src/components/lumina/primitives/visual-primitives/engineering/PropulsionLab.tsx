@@ -1,9 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaCallout,
+  LuminaAnswerChoice,
+  LuminaFeedbackCard,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -71,7 +81,7 @@ interface PropulsionDef {
 const PROPULSION_DEFS: Record<PropulsionType, PropulsionDef> = {
   jet: {
     label: 'Jet Engine',
-    emoji: '\u2708\uFE0F',
+    emoji: '✈️',
     color: '#f97316',
     exhaustColor: '#fdba74',
     selfContained: false,
@@ -81,7 +91,7 @@ const PROPULSION_DEFS: Record<PropulsionType, PropulsionDef> = {
   },
   rocket: {
     label: 'Rocket',
-    emoji: '\uD83D\uDE80',
+    emoji: '🚀',
     color: '#a855f7',
     exhaustColor: '#c084fc',
     selfContained: true,
@@ -91,7 +101,7 @@ const PROPULSION_DEFS: Record<PropulsionType, PropulsionDef> = {
   },
   propeller: {
     label: 'Propeller',
-    emoji: '\uD83D\uDEE9\uFE0F',
+    emoji: '🛩️',
     color: '#3b82f6',
     exhaustColor: '#93c5fd',
     selfContained: false,
@@ -101,7 +111,7 @@ const PROPULSION_DEFS: Record<PropulsionType, PropulsionDef> = {
   },
   sail: {
     label: 'Sail',
-    emoji: '\u26F5',
+    emoji: '⛵',
     color: '#14b8a6',
     exhaustColor: '#5eead4',
     selfContained: false,
@@ -881,21 +891,19 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
         </div>
       </div>
 
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-        <CardHeader className="pb-4">
+      <LuminaCard className="overflow-hidden">
+        <LuminaCardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-white text-lg">Propulsion Lab</CardTitle>
+              <LuminaCardTitle className="text-lg">Propulsion Lab</LuminaCardTitle>
               <p className="text-slate-400 text-sm mt-1">{overview}</p>
             </div>
-            <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-300">
-              Grades {gradeBand}
-            </Badge>
+            <LuminaBadge>Grades {gradeBand}</LuminaBadge>
           </div>
-        </CardHeader>
+        </LuminaCardHeader>
 
-        <CardContent className="space-y-5">
-          {/* Simulation Canvas */}
+        <LuminaCardContent className="space-y-5">
+          {/* Simulation Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
             <PropulsionSimulation
               propulsion={propulsion}
@@ -919,15 +927,15 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
               {PROPULSION_TYPES.map(p => {
                 const def = PROPULSION_DEFS[p];
                 return (
-                  <Button key={p} variant="ghost" size="sm"
+                  <LuminaButton key={p} size="sm"
                     onClick={() => handlePropulsionChange(p)}
-                    className={`${propulsion === p
+                    className={propulsion === p
                       ? 'bg-white/15 ring-1 ring-white/30 text-white'
-                      : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'
-                    }`}
+                      : 'text-slate-400'
+                    }
                   >
                     <span className="mr-1.5">{def.emoji}</span> {def.label}
-                  </Button>
+                  </LuminaButton>
                 );
               })}
             </div>
@@ -943,25 +951,25 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
               {MEDIUM_TYPES.map(m => {
                 const def = MEDIUM_DEFS[m];
                 return (
-                  <Button key={m} variant="ghost" size="sm"
+                  <LuminaButton key={m} size="sm"
                     onClick={() => handleMediumChange(m)}
-                    className={`${medium === m
+                    className={medium === m
                       ? 'bg-white/15 ring-1 ring-white/30 text-white'
-                      : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'
-                    }`}
+                      : 'text-slate-400'
+                    }
                   >
                     {def.label}
                     <span className="ml-1.5 text-xs opacity-50">
                       ({def.particleDensity === 0 ? 'empty' : `${def.particleDensity} particles`})
                     </span>
-                  </Button>
+                  </LuminaButton>
                 );
               })}
             </div>
           </div>
 
-          {/* Throttle Slider */}
-          <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+          {/* Throttle Slider — direct-manipulation control, range input kept bespoke */}
+          <LuminaPanel>
             <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
               Throttle
             </label>
@@ -983,116 +991,99 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
               </div>
               <span className="text-slate-500 text-xs">Max</span>
             </div>
-          </div>
+          </LuminaPanel>
 
           {/* Key Insight Cards */}
           {noThrustMoments > 0 && (
-            <Card className="backdrop-blur-xl bg-amber-500/5 border-amber-500/20 animate-fade-in">
-              <CardContent className="py-4 space-y-2">
-                <h4 className="text-amber-200 font-semibold text-sm flex items-center gap-2">
-                  <span>&#x1F4A1;</span> Key Discovery!
-                </h4>
-                <p className="text-slate-300 text-sm">
-                  Some propulsion types need a <span className="text-amber-300 font-medium">medium</span> (air, water) to push against.
-                  Rockets carry their own propellant, so they work even in vacuum!
-                </p>
-              </CardContent>
-            </Card>
+            <LuminaCallout accent="amber" label="Key Discovery!" icon={<span>&#x1F4A1;</span>} className="animate-fade-in">
+              Some propulsion types need a <span className="text-amber-300 font-medium">medium</span> (air, water) to push against.
+              Rockets carry their own propellant, so they work even in vacuum!
+            </LuminaCallout>
           )}
 
           {/* Challenges Section */}
           {!showChallenges && !allChallengesDone && (
             <div className="flex justify-center">
-              <Button variant="ghost"
-                className="bg-purple-500/10 border border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+              <LuminaButton tone="primary"
                 onClick={() => setShowChallenges(true)}
               >
                 &#x1F9EA; Ready for a Challenge?
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
           {showChallenges && !allChallengesDone && currentChallenge && (
-            <Card className="backdrop-blur-xl bg-purple-500/5 border-purple-500/20 animate-fade-in">
-              <CardContent className="py-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                    Challenge {currentChallengeIdx + 1} of {challenges.length}
-                  </Badge>
-                  <Badge variant="outline" className="bg-white/5 border-white/10 text-slate-400 text-xs">
-                    {currentChallenge.type}
-                  </Badge>
-                </div>
+            <LuminaPanel accent="purple" className="animate-fade-in space-y-4">
+              <div className="flex items-center justify-between">
+                <LuminaBadge accent="purple">
+                  Challenge {currentChallengeIdx + 1} of {challenges.length}
+                </LuminaBadge>
+                <LuminaBadge className="text-xs">
+                  {currentChallenge.type}
+                </LuminaBadge>
+              </div>
 
-                <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+              <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {currentChallenge.options.map(opt => {
-                    const isSelected = selectedAnswer === opt.id;
-                    const isCorrectOpt = opt.id === currentChallenge.correctOptionId;
-                    let optClass = 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10';
-                    if (answerFeedback && isSelected) {
-                      optClass = answerFeedback === 'correct'
-                        ? 'bg-green-500/20 border-green-500/40 text-green-300'
-                        : 'bg-red-500/20 border-red-500/40 text-red-300';
-                    } else if (answerFeedback === 'correct' && isCorrectOpt) {
-                      optClass = 'bg-green-500/20 border-green-500/40 text-green-300';
-                    }
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {currentChallenge.options.map(opt => {
+                  const isSelected = selectedAnswer === opt.id;
+                  const isCorrectOpt = opt.id === currentChallenge.correctOptionId;
+                  let state: AnswerChoiceState = 'idle';
+                  if (answerFeedback === 'correct') {
+                    state = isCorrectOpt ? 'correct' : 'dimmed';
+                  } else if (answerFeedback === 'incorrect') {
+                    state = isSelected ? 'incorrect' : 'idle';
+                  } else if (isSelected) {
+                    state = 'selected';
+                  }
 
-                    return (
-                      <Button key={opt.id} variant="ghost"
-                        className={`border justify-start text-left h-auto py-3 px-4 whitespace-normal break-words min-h-[3rem] ${optClass}`}
-                        disabled={!!answerFeedback}
-                        onClick={() => handleAnswer(opt.id)}
-                      >
-                        <span className="mr-2 text-xs font-mono opacity-50 shrink-0">{opt.id.toUpperCase()}</span>
-                        <span className="text-sm leading-snug">{opt.text}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
+                  return (
+                    <LuminaAnswerChoice key={opt.id}
+                      state={state}
+                      className="flex items-start gap-2 p-4 min-h-[3rem]"
+                      disabled={!!answerFeedback}
+                      onClick={() => handleAnswer(opt.id)}
+                    >
+                      <span className="mr-1 text-xs font-mono opacity-50 shrink-0">{opt.id.toUpperCase()}</span>
+                      <span className="text-sm leading-snug">{opt.text}</span>
+                    </LuminaAnswerChoice>
+                  );
+                })}
+              </div>
 
-                {showHint && (
-                  <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 animate-fade-in">
-                    <p className="text-amber-200 text-sm">
-                      <span className="text-amber-400 font-semibold">Hint: </span>
-                      {currentChallenge.hint}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+              {showHint && (
+                <LuminaCallout accent="amber" label="Hint" className="animate-fade-in">
+                  {currentChallenge.hint}
+                </LuminaCallout>
+              )}
+            </LuminaPanel>
           )}
 
           {allChallengesDone && showChallenges && (
-            <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/30">
-              <p className="text-green-300 text-sm font-medium">
-                All challenges complete! {challengeResults.filter(r => r.correct).length}/{challenges.length} correct
-              </p>
-            </div>
+            <LuminaFeedbackCard status="correct" label="All challenges complete!">
+              {challengeResults.filter(r => r.correct).length}/{challenges.length} correct
+            </LuminaFeedbackCard>
           )}
 
           {/* Submit */}
           {!hasSubmittedEvaluation && (exploredCombos.size > 1 || challengeResults.length > 0) && (
             <div className="flex justify-center pt-2">
-              <Button variant="ghost"
-                className="bg-green-500/10 border border-green-500/30 text-green-300 hover:bg-green-500/20"
+              <LuminaButton tone="primary"
                 onClick={handleSubmitEvaluation}
               >
                 &#x2713; I&apos;m Done Exploring
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
           {hasSubmittedEvaluation && (
-            <div className="text-center p-3 bg-green-500/10 rounded-lg border border-green-500/30">
-              <p className="text-green-300 text-sm font-medium">
-                Exploration complete! You discovered how propulsion works through Newton&apos;s Third Law!
-              </p>
-            </div>
+            <LuminaFeedbackCard status="correct" label="Exploration complete!">
+              You discovered how propulsion works through Newton&apos;s Third Law!
+            </LuminaFeedbackCard>
           )}
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };

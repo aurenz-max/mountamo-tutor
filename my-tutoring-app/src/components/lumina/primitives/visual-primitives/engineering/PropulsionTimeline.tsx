@@ -3,9 +3,16 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Clock, Gauge, Plane, Ship, Car, Rocket, ChevronRight, ChevronLeft, Check, X, Link2 } from 'lucide-react';
 import { SpotlightCard } from '../../../components/SpotlightCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  answerStateClasses,
+} from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -267,22 +274,23 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
     <div className="space-y-4">
       {/* Domain filter */}
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="ghost" size="sm"
+        <LuminaButton
+          tone={!domainFilter ? 'primary' : 'ghost'}
+          size="sm"
           onClick={() => setDomainFilter(null)}
-          className={`text-xs ${!domainFilter ? 'bg-white/10 text-slate-100' : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'}`}
+          className="text-xs"
         >
           All
-        </Button>
+        </LuminaButton>
         {['land', 'sea', 'air', 'space'].map(d => (
-          <Button
+          <LuminaButton
             key={d}
-            variant="ghost" size="sm"
+            size="sm"
             onClick={() => setDomainFilter(d)}
-            className={`text-xs ${domainFilter === d ? `${DOMAIN_COLORS[d].bg} ${DOMAIN_COLORS[d].text} border ${DOMAIN_COLORS[d].border}` : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'}`}
+            className={`text-xs ${domainFilter === d ? `${DOMAIN_COLORS[d].bg} ${DOMAIN_COLORS[d].text} border ${DOMAIN_COLORS[d].border}` : ''}`}
           >
             <span className="mr-1">{DOMAIN_ICONS[d]}</span> {d.charAt(0).toUpperCase() + d.slice(1)}
-          </Button>
+          </LuminaButton>
         ))}
       </div>
 
@@ -375,13 +383,13 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
   const renderSequencePhase = () => {
     if (!currentSeqChallenge) return null;
     return (
-      <Card className="backdrop-blur-xl bg-amber-500/5 border-amber-400/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base text-amber-200">
+      <LuminaCard className="bg-amber-500/5 border-amber-400/20 shadow-none">
+        <LuminaCardHeader className="pb-3">
+          <LuminaCardTitle className="text-base text-amber-200">
             Put these in order! ({seqChallengeIdx + 1}/{sequencingChallenges.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </LuminaCardTitle>
+        </LuminaCardHeader>
+        <LuminaCardContent className="space-y-4">
           {/* User's order */}
           <div className="space-y-2">
             <p className="text-xs text-slate-400">Your order:</p>
@@ -399,7 +407,7 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
                       key={idx}
                       className={`flex items-center gap-2 p-2 rounded-lg border ${
                         seqChecked
-                          ? isCorrectPosition ? 'bg-green-500/10 border-green-400/20' : 'bg-red-500/10 border-red-400/20'
+                          ? isCorrectPosition ? answerStateClasses.correct : answerStateClasses.incorrect
                           : 'bg-white/5 border-white/10'
                       }`}
                     >
@@ -411,7 +419,7 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
                           <X className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      {seqChecked && (isCorrectPosition ? <Check className="w-3.5 h-3.5 text-green-400" /> : <X className="w-3.5 h-3.5 text-red-400" />)}
+                      {seqChecked && (isCorrectPosition ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <X className="w-3.5 h-3.5 text-rose-400" />)}
                     </div>
                   );
                 })}
@@ -427,14 +435,14 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
                 {seqAvailableItems.map(id => {
                   const milestone = milestones.find(m => m.id === id);
                   return (
-                    <Button
+                    <LuminaButton
                       key={id}
-                      variant="ghost" size="sm"
+                      size="sm"
                       onClick={() => addToSequence(id)}
-                      className="bg-white/5 border border-white/20 hover:bg-white/10 text-xs h-8"
+                      className="text-xs h-8"
                     >
                       {milestone?.name}
-                    </Button>
+                    </LuminaButton>
                   );
                 })}
               </div>
@@ -443,30 +451,25 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
 
           {/* Check / Next buttons */}
           {!seqChecked && seqUserOrder.length === currentSeqChallenge.items.length && (
-            <Button
-              variant="ghost"
+            <LuminaButton
               onClick={checkSequence}
               className="bg-amber-500/10 border border-amber-400/20 text-amber-200 hover:bg-amber-500/20"
             >
               Check Order
-            </Button>
+            </LuminaButton>
           )}
 
           {seqChecked && (
             <div className="space-y-2">
               <p className="text-xs text-slate-400 italic">{currentSeqChallenge.hint}</p>
-              <Button
-                variant="ghost"
-                onClick={nextSequence}
-                className="bg-white/5 border border-white/20 hover:bg-white/10"
-              >
+              <LuminaButton onClick={nextSequence}>
                 {seqChallengeIdx < sequencingChallenges.length - 1 ? 'Next Challenge' : 'Finish'}
                 <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+              </LuminaButton>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     );
   };
 
@@ -548,8 +551,7 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
         </div>
 
         {!speedTrendObserved && (
-          <Button
-            variant="ghost"
+          <LuminaButton
             onClick={() => {
               setSpeedTrendObserved(true);
               sendText?.(
@@ -557,13 +559,13 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
                 { silent: true }
               );
             }}
-            className="bg-white/5 border border-white/20 hover:bg-white/10 text-xs"
+            className="text-xs"
           >
             <Gauge className="w-3.5 h-3.5 mr-1" /> I see the trend!
-          </Button>
+          </LuminaButton>
         )}
         {speedTrendObserved && (
-          <p className="text-xs text-green-300 italic">
+          <p className="text-xs text-emerald-300 italic">
             Speed has grown exponentially — from walking (5 km/h) to spacecraft (28,000+ km/h)!
           </p>
         )}
@@ -577,25 +579,23 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
       className={`w-full ${className || ''}`}
       color="20, 184, 166"
     >
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-        <CardHeader className="pb-4">
+      <LuminaCard className="overflow-hidden">
+        <LuminaCardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-teal-500/10 text-teal-400">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <CardTitle className="text-lg text-slate-100">{title}</CardTitle>
+                <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
                 <p className="text-sm text-slate-400 mt-0.5">History of How Humans Move</p>
               </div>
             </div>
-            <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-400">
-              {gradeBand}
-            </Badge>
+            <LuminaBadge>{gradeBand}</LuminaBadge>
           </div>
-        </CardHeader>
+        </LuminaCardHeader>
 
-        <CardContent className="space-y-6">
+        <LuminaCardContent className="space-y-6">
           {/* Phase Navigation */}
           <div className="flex gap-2 flex-wrap">
             {([
@@ -604,18 +604,18 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
               { key: 'connect', label: '3. Connect' },
               { key: 'speed', label: '4. Speed Records' },
             ] as const).map(p => (
-              <Button
+              <LuminaButton
                 key={p.key}
-                variant="ghost"
+                tone={phase === p.key ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => {
                   setPhase(p.key);
                   if (p.key === 'speed') setSpeedTrendObserved(false);
                 }}
-                className={`text-xs ${phase === p.key ? 'bg-white/10 text-slate-100' : 'bg-white/5 border border-white/20 text-slate-400 hover:bg-white/10'}`}
+                className="text-xs"
               >
                 {p.label}
-              </Button>
+              </LuminaButton>
             ))}
           </div>
 
@@ -624,8 +624,8 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
           {phase === 'sequence' && renderSequencePhase()}
           {phase === 'connect' && renderConnectPhase()}
           {phase === 'speed' && renderSpeedPhase()}
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </SpotlightCard>
   );
 };

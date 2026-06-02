@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  LuminaCard,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaBadge,
+  LuminaPanel,
+  LuminaAnswerChoice,
+  type AnswerChoiceState,
+} from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -966,26 +974,22 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
         </div>
       </div>
 
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 overflow-hidden">
-        <CardHeader className="pb-4">
+      <LuminaCard className="overflow-hidden">
+        <LuminaCardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-white text-lg">{engineName}</CardTitle>
+              <LuminaCardTitle className="text-lg">{engineName}</LuminaCardTitle>
               <p className="text-slate-400 text-sm mt-1">{overview}</p>
             </div>
             <div className="flex gap-2">
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-300">
-                {engineType.replace(/_/g, ' ')}
-              </Badge>
-              <Badge variant="outline" className="bg-white/5 border-white/20 text-slate-300">
-                {vehicleContext}
-              </Badge>
+              <LuminaBadge>{engineType.replace(/_/g, ' ')}</LuminaBadge>
+              <LuminaBadge>{vehicleContext}</LuminaBadge>
             </div>
           </div>
-        </CardHeader>
+        </LuminaCardHeader>
 
-        <CardContent className="space-y-5">
-          {/* Simulation Canvas */}
+        <LuminaCardContent className="space-y-5">
+          {/* Simulation Canvas — bespoke interaction surface, untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
             <EngineSimulation
               layout={layout}
@@ -1005,23 +1009,21 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
 
           {/* Zone Info Card */}
           {zoneInfo && selectedZone && (
-            <Card className="backdrop-blur-xl bg-cyan-500/5 border-cyan-500/20 animate-fade-in">
-              <CardContent className="py-4 space-y-2">
-                <h4 className="text-white font-semibold text-lg">
-                  {layout.zones.find(z => z.id === selectedZone)?.name || selectedZone}
-                </h4>
-                <p className="text-slate-300 text-sm">{zoneInfo.explanation}</p>
-                <div className="flex items-start gap-2 mt-2 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                  <span className="text-amber-400 shrink-0">💡</span>
-                  <p className="text-amber-200 text-sm italic">{zoneInfo.analogy}</p>
-                </div>
-              </CardContent>
-            </Card>
+            <LuminaPanel accent="cyan" className="animate-fade-in">
+              <h4 className="text-white font-semibold text-lg">
+                {layout.zones.find(z => z.id === selectedZone)?.name || selectedZone}
+              </h4>
+              <p className="text-slate-300 text-sm mt-2">{zoneInfo.explanation}</p>
+              <div className="flex items-start gap-2 mt-3 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <span className="text-amber-400 shrink-0">💡</span>
+                <p className="text-amber-200 text-sm italic">{zoneInfo.analogy}</p>
+              </div>
+            </LuminaPanel>
           )}
 
-          {/* Controls: Fuel + Load sliders */}
+          {/* Controls: Fuel + Load sliders (range inputs are the bespoke control surface) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <LuminaPanel accent="amber">
               <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
                 {layout.fuelLabel}
               </label>
@@ -1035,9 +1037,9 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
                 <span className="text-amber-300 text-sm font-mono font-bold">{fuel}%</span>
                 <span className="text-slate-500 text-xs">Max</span>
               </div>
-            </div>
+            </LuminaPanel>
 
-            <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <LuminaPanel accent="rose">
               <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
                 Load
               </label>
@@ -1051,14 +1053,14 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
                 <span className="text-red-300 text-sm font-mono font-bold">{load}%</span>
                 <span className="text-slate-500 text-xs">Heavy</span>
               </div>
-            </div>
+            </LuminaPanel>
           </div>
 
           {/* Energy Flow (collapsible) */}
           {energyFlow && (
             <div className="space-y-3">
-              <Button variant="ghost"
-                className="bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10 w-full justify-start"
+              <LuminaButton
+                className="w-full justify-start"
                 onClick={() => {
                   const willShow = !showEnergyFlow;
                   setShowEnergyFlow(willShow);
@@ -1074,47 +1076,37 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
               >
                 <span className="mr-2">{showEnergyFlow ? '▼' : '▶'}</span>
                 Energy Flow
-              </Button>
+              </LuminaButton>
 
               {showEnergyFlow && (
-                <Card className="backdrop-blur-xl bg-slate-800/30 border-slate-700/50 animate-fade-in">
-                  <CardContent className="py-4 space-y-3">
-                    <div className="flex items-center gap-2 flex-wrap justify-center">
-                      <Badge className="bg-red-500/20 text-red-300 border-red-500/30">
-                        {energyFlow.input}
-                      </Badge>
-                      {energyFlow.transformations.map((t, i) => (
-                        <React.Fragment key={i}>
-                          <span className="text-slate-500">→</span>
-                          <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30">
-                            {t}
-                          </Badge>
-                        </React.Fragment>
-                      ))}
-                      <span className="text-slate-500">→</span>
-                      <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-                        {energyFlow.output}
-                      </Badge>
-                    </div>
-                    {energyFlow.efficiency && (
-                      <p className="text-slate-400 text-sm text-center">
-                        Efficiency: <span className="text-amber-300">{energyFlow.efficiency}</span>
-                      </p>
-                    )}
-                    {energyFlow.losses.length > 0 && (
-                      <div className="text-center">
-                        <p className="text-slate-500 text-xs mb-1">Energy losses:</p>
-                        <div className="flex gap-2 flex-wrap justify-center">
-                          {energyFlow.losses.map((loss, i) => (
-                            <Badge key={i} variant="outline" className="bg-white/5 border-white/10 text-slate-400 text-xs">
-                              {loss}
-                            </Badge>
-                          ))}
-                        </div>
+                <LuminaPanel className="animate-fade-in space-y-3">
+                  <div className="flex items-center gap-2 flex-wrap justify-center">
+                    <LuminaBadge accent="rose">{energyFlow.input}</LuminaBadge>
+                    {energyFlow.transformations.map((t, i) => (
+                      <React.Fragment key={i}>
+                        <span className="text-slate-500">→</span>
+                        <LuminaBadge accent="orange">{t}</LuminaBadge>
+                      </React.Fragment>
+                    ))}
+                    <span className="text-slate-500">→</span>
+                    <LuminaBadge accent="emerald">{energyFlow.output}</LuminaBadge>
+                  </div>
+                  {energyFlow.efficiency && (
+                    <p className="text-slate-400 text-sm text-center">
+                      Efficiency: <span className="text-amber-300">{energyFlow.efficiency}</span>
+                    </p>
+                  )}
+                  {energyFlow.losses.length > 0 && (
+                    <div className="text-center">
+                      <p className="text-slate-500 text-xs mb-1">Energy losses:</p>
+                      <div className="flex gap-2 flex-wrap justify-center">
+                        {energyFlow.losses.map((loss, i) => (
+                          <LuminaBadge key={i} className="text-xs">{loss}</LuminaBadge>
+                        ))}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </div>
+                  )}
+                </LuminaPanel>
               )}
             </div>
           )}
@@ -1122,70 +1114,63 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
           {/* Challenges Section */}
           {!showChallenges && !allChallengesDone && (
             <div className="flex justify-center">
-              <Button variant="ghost"
-                className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
-                onClick={() => setShowChallenges(true)}
-              >
+              <LuminaButton tone="primary" onClick={() => setShowChallenges(true)}>
                 🧪 Ready for a Challenge?
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
           {showChallenges && !allChallengesDone && currentChallenge && (
-            <Card className="backdrop-blur-xl bg-purple-500/5 border-purple-500/20 animate-fade-in">
-              <CardContent className="py-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                    Challenge {currentChallengeIdx + 1} of {challenges.length}
-                  </Badge>
-                  <Badge variant="outline" className="bg-white/5 border-white/10 text-slate-400 text-xs">
-                    {currentChallenge.type}
-                  </Badge>
+            <LuminaPanel accent="purple" className="animate-fade-in space-y-4">
+              <div className="flex items-center justify-between">
+                <LuminaBadge accent="purple">
+                  Challenge {currentChallengeIdx + 1} of {challenges.length}
+                </LuminaBadge>
+                <LuminaBadge className="text-xs">{currentChallenge.type}</LuminaBadge>
+              </div>
+
+              <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {currentChallenge.options.map(opt => {
+                  const isSelected = selectedAnswer === opt.id;
+                  const isCorrectOpt = opt.id === currentChallenge.correctOptionId;
+                  let state: AnswerChoiceState = 'idle';
+                  if (answerFeedback && isSelected) {
+                    state = answerFeedback === 'correct' ? 'correct' : 'incorrect';
+                  } else if (answerFeedback === 'correct' && isCorrectOpt) {
+                    state = 'correct';
+                  }
+
+                  return (
+                    <LuminaAnswerChoice
+                      key={opt.id}
+                      state={state}
+                      className="flex items-start gap-2 p-3 min-h-[3rem]"
+                      disabled={!!answerFeedback}
+                      onClick={() => handleAnswer(opt.id)}
+                    >
+                      <span className="text-xs font-mono opacity-50 shrink-0">{opt.id.toUpperCase()}</span>
+                      <span className="text-sm leading-snug">{opt.text}</span>
+                    </LuminaAnswerChoice>
+                  );
+                })}
+              </div>
+
+              {showHint && (
+                <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 animate-fade-in">
+                  <p className="text-amber-200 text-sm">
+                    <span className="text-amber-400 font-semibold">Hint: </span>
+                    {currentChallenge.hint}
+                  </p>
                 </div>
-
-                <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {currentChallenge.options.map(opt => {
-                    const isSelected = selectedAnswer === opt.id;
-                    const isCorrectOpt = opt.id === currentChallenge.correctOptionId;
-                    let optClass = 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10';
-                    if (answerFeedback && isSelected) {
-                      optClass = answerFeedback === 'correct'
-                        ? 'bg-green-500/20 border-green-500/40 text-green-300'
-                        : 'bg-red-500/20 border-red-500/40 text-red-300';
-                    } else if (answerFeedback === 'correct' && isCorrectOpt) {
-                      optClass = 'bg-green-500/20 border-green-500/40 text-green-300';
-                    }
-
-                    return (
-                      <Button key={opt.id} variant="ghost"
-                        className={`border justify-start text-left h-auto py-3 px-4 whitespace-normal break-words min-h-[3rem] ${optClass}`}
-                        disabled={!!answerFeedback}
-                        onClick={() => handleAnswer(opt.id)}
-                      >
-                        <span className="mr-2 text-xs font-mono opacity-50 shrink-0">{opt.id.toUpperCase()}</span>
-                        <span className="text-sm leading-snug">{opt.text}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-
-                {showHint && (
-                  <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 animate-fade-in">
-                    <p className="text-amber-200 text-sm">
-                      <span className="text-amber-400 font-semibold">Hint: </span>
-                      {currentChallenge.hint}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+              )}
+            </LuminaPanel>
           )}
 
           {allChallengesDone && showChallenges && (
-            <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/30">
-              <p className="text-green-300 text-sm font-medium">
+            <div className="text-center p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
+              <p className="text-emerald-300 text-sm font-medium">
                 All challenges complete! {challengeResults.filter(r => r.correct).length}/{challenges.length} correct
               </p>
             </div>
@@ -1194,24 +1179,21 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
           {/* Submit */}
           {!hasSubmittedEvaluation && (exploredZones.size > 0 || challengeResults.length > 0) && (
             <div className="flex justify-center pt-2">
-              <Button variant="ghost"
-                className="bg-green-500/10 border border-green-500/30 text-green-300 hover:bg-green-500/20"
-                onClick={handleSubmitEvaluation}
-              >
+              <LuminaButton tone="primary" onClick={handleSubmitEvaluation}>
                 ✓ I&apos;m Done Exploring
-              </Button>
+              </LuminaButton>
             </div>
           )}
 
           {hasSubmittedEvaluation && (
-            <div className="text-center p-3 bg-green-500/10 rounded-lg border border-green-500/30">
-              <p className="text-green-300 text-sm font-medium">
+            <div className="text-center p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
+              <p className="text-emerald-300 text-sm font-medium">
                 Exploration complete! Great work learning how the {engineName} works!
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </LuminaCardContent>
+      </LuminaCard>
     </div>
   );
 };
