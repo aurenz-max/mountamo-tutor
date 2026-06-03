@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import * as d3 from 'd3';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MoonPhasesLabMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // DATA INTERFACES (Single Source of Truth)
@@ -636,12 +637,14 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
 
   // Handle phase selection for challenge mode
   const handlePhaseSelect = (phase: MoonPhase) => {
+    SoundManager.select();
     setSelectedPhase(phase);
     setUserAnswers(prev => ({ ...prev, selected_phase: phase }));
   };
 
   // Jump to a specific phase
   const jumpToPhase = useCallback((phase: MoonPhaseInfo) => {
+    SoundManager.tap();
     setMoonPosition(phase.angle);
     setIsAnimating(false);
   }, []);
@@ -787,6 +790,7 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
                 step="1"
                 value={moonPosition}
                 onChange={(e) => {
+                  SoundManager.tick();
                   setMoonPosition(Number(e.target.value));
                   setIsAnimating(false);
                 }}
@@ -800,6 +804,7 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => {
+                  SoundManager.toggle(!isAnimating);
                   setIsAnimating(!isAnimating);
                   setUserAnswers(prev => ({ ...prev, animation_watched: 'yes' }));
                 }}

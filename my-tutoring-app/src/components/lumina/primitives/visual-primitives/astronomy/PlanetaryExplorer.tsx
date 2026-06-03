@@ -13,6 +13,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -300,6 +301,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
 
   const handleSelectOption = useCallback((optionIndex: number) => {
     if (showFeedback) return;
+    SoundManager.select();
     setSelectedOption(optionIndex);
   }, [showFeedback]);
 
@@ -312,6 +314,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     incrementAttempts();
 
     if (correct) {
+      SoundManager.playCorrect();
       setShowFeedback(true);
       recordResult({
         challengeId: currentFlatQuestion.id,
@@ -324,6 +327,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
       sendText(`[ANSWER_CORRECT] Student answered "${q.options[selectedOption]}" correctly for "${q.question}". Congratulate briefly.`, { silent: true });
     } else if (currentAttempts + 1 >= 2) {
       // Max 2 attempts — mark incorrect and show explanation
+      SoundManager.playIncorrect();
       setShowFeedback(true);
       recordResult({
         challengeId: currentFlatQuestion.id,
@@ -388,6 +392,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
 
   const handleStatTap = useCallback((planetId: string, statLabel: string) => {
     const key = `${planetId}-${statLabel}`;
+    SoundManager.pop();
     setTappedStats((prev) => new Set(prev).add(key));
     sendText(`[STAT_TAPPED] Student tapped "${statLabel}" for ${planetId}. Give interesting context or comparison.`, { silent: true });
   }, [sendText]);
@@ -396,6 +401,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
 
   const handleQuizSelectOption = useCallback((optionIndex: number) => {
     if (quizShowFeedback) return;
+    SoundManager.select();
     setQuizSelectedOption(optionIndex);
   }, [quizShowFeedback]);
 
@@ -407,10 +413,12 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     setQuizAttempts(newAttempts);
 
     if (correct) {
+      SoundManager.playCorrect();
       setQuizShowFeedback(true);
       setQuizResults((prev) => [...prev, { correct: true, attempts: newAttempts }]);
       sendText(`[QUIZ_CORRECT] Student identified "${currentQuizQuestion.options[quizSelectedOption]}" correctly for "${currentQuizQuestion.question}". Brief praise.`, { silent: true });
     } else if (newAttempts >= 2) {
+      SoundManager.playIncorrect();
       setQuizShowFeedback(true);
       setQuizResults((prev) => [...prev, { correct: false, attempts: newAttempts }]);
       sendText(`[QUIZ_INCORRECT] Student chose "${currentQuizQuestion.options[quizSelectedOption]}" but correct is "${currentQuizQuestion.options[currentQuizQuestion.correctIndex]}". Explain why.`, { silent: true });

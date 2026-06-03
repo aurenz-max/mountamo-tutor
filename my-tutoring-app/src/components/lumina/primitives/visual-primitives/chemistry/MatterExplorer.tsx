@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { MatterExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -301,6 +302,8 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     const obj = objects.find(o => o.id === draggedObjectId);
     if (!obj) return;
 
+    SoundManager.snap();
+
     setSortedObjects(prev => ({ ...prev, [draggedObjectId]: state }));
     setSortingTotal(prev => prev + 1);
 
@@ -401,6 +404,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     setCurrentAttempts(a => a + 1);
 
     if (allCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Amazing! You sorted everything correctly!');
       setFeedbackType('success');
       setChallengeResults(prev => [...prev, {
@@ -414,6 +418,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       const wrongCount = objects.filter(obj => sortedObjects[obj.id] !== obj.state).length;
       setFeedback(`${wrongCount} ${wrongCount === 1 ? 'object is' : 'objects are'} in the wrong bin. Try again!`);
       setFeedbackType('error');
@@ -458,6 +463,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     );
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Yes! It was ${target[0]}! Great detective work!`);
       setFeedbackType('success');
       setMysteryMaterialsSolved(prev => prev + 1);
@@ -472,6 +478,7 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback('Not quite! Read the clues again carefully.');
       setFeedbackType('error');
       sendText(

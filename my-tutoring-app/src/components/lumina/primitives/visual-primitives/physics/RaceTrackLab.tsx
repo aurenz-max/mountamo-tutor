@@ -10,6 +10,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface — Single Source of Truth
@@ -672,6 +673,7 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
   // ── Start race ───────────────────────────────────────────────────
   const handleStartRace = useCallback(() => {
     if (raceRunning) return;
+    SoundManager.tap();
     if (currentChallenge) {
       resetRace(currentChallenge);
     }
@@ -700,6 +702,7 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
     const isCorrect = selectedAnswer === currentChallenge.correctAnswer;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback({ correct: true, message: 'Correct! Great job!' });
       recordResult({
         challengeId: currentChallenge.id,
@@ -711,6 +714,7 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback({
         correct: false,
         message: currentChallenge.hint,
@@ -806,7 +810,7 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
                 variant="ghost"
                 size="sm"
                 className={`text-xs ${showGraph ? 'bg-rose-500/20 border-rose-400/40 text-rose-300' : 'bg-white/5 border border-white/20 text-slate-400'}`}
-                onClick={() => setShowGraph(!showGraph)}
+                onClick={() => { SoundManager.tap(); setShowGraph(!showGraph); }}
               >
                 {showGraph ? '🏁 Race View' : '📈 Graph View'}
               </Button>
@@ -863,7 +867,11 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
                           ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300'
                           : 'bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10'
                     }`}
-                    onClick={() => !feedback?.correct && !showingAnswer && setSelectedAnswer(opt)}
+                    onClick={() => {
+                      if (feedback?.correct || showingAnswer) return;
+                      SoundManager.select();
+                      setSelectedAnswer(opt);
+                    }}
                     disabled={!!feedback?.correct || showingAnswer}
                   >
                     {opt}

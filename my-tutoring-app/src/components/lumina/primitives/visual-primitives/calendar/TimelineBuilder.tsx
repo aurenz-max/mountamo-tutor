@@ -10,6 +10,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -174,6 +175,7 @@ const TimelineBuilder: React.FC<TimelineBuilderData> = (data) => {
   /** Select an event from the bank */
   const handleSelectEvent = useCallback((eventId: string) => {
     if (feedback?.checked) return;
+    SoundManager.select();
     setSelectedEventId((prev) => (prev === eventId ? null : eventId));
   }, [feedback]);
 
@@ -183,6 +185,7 @@ const TimelineBuilder: React.FC<TimelineBuilderData> = (data) => {
 
     // If slot already has an event, remove it (send back to bank)
     if (placements[slotIndex]) {
+      SoundManager.tap();
       setPlacements((prev) => {
         const next = { ...prev };
         delete next[slotIndex];
@@ -193,6 +196,7 @@ const TimelineBuilder: React.FC<TimelineBuilderData> = (data) => {
 
     // If an event is selected, place it
     if (selectedEventId) {
+      SoundManager.snap();
       // Remove event from any previous slot
       setPlacements((prev) => {
         const next: Record<number, string> = {};
@@ -234,6 +238,7 @@ const TimelineBuilder: React.FC<TimelineBuilderData> = (data) => {
     setFeedback({ checked: true, correctSlots, incorrectSlots });
 
     if (allCorrect) {
+      SoundManager.playCorrect();
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
@@ -246,6 +251,7 @@ const TimelineBuilder: React.FC<TimelineBuilderData> = (data) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       const pct = Math.round((correctSlots.size / slotCount) * 100);
       if (currentAttempts + 1 >= 3) {
         // Max attempts — record partial score and move on

@@ -10,6 +10,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface — Single Source of Truth
@@ -378,8 +379,9 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
   }, [isDragging, handleSunDrag]);
 
   const handlePointerUp = useCallback(() => {
+    if (isDragging) SoundManager.snap();
     setIsDragging(false);
-  }, []);
+  }, [isDragging]);
 
   // ── Build MC options from challenge ──────────────────────────────
   const mcOptions = useMemo(() => {
@@ -456,6 +458,7 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
     const isCorrect = selectedMcAnswer === correctMcAnswer;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback({ correct: true, message: 'Correct! Great observation!' });
       const challengeStartTime = Date.now() - 5000; // approximate
       recordResult({
@@ -470,6 +473,7 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback({
         correct: false,
         message: currentChallenge.hint ?? 'Not quite — look at where the sun is and think about which way the shadow would fall.',
@@ -740,7 +744,7 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
                     className={`bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-sm h-auto py-2 px-3 text-left justify-start ${
                       selectedMcAnswer === option ? 'ring-2 ring-blue-400 bg-blue-500/10' : ''
                     }`}
-                    onClick={() => setSelectedMcAnswer(option)}
+                    onClick={() => { SoundManager.select(); setSelectedMcAnswer(option); }}
                   >
                     {option}
                   </Button>

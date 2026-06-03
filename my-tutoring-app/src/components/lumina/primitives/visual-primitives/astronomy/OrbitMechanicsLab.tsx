@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import * as d3 from 'd3';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { OrbitMechanicsLabMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // Export data interface - single source of truth
 export interface OrbitConfig {
@@ -500,7 +501,11 @@ const OrbitMechanicsLab: React.FC<OrbitMechanicsLabProps> = ({ data, className =
 
   // Launch spacecraft
   const handleLaunch = useCallback(() => {
-    if (!data.allowLaunch || !canLift) return;
+    if (!data.allowLaunch || !canLift) {
+      SoundManager.invalid();
+      return;
+    }
+    SoundManager.pop();
 
     // Start on Earth's surface
     const startX = 0;
@@ -540,6 +545,7 @@ const OrbitMechanicsLab: React.FC<OrbitMechanicsLabProps> = ({ data, className =
   // Apply orbital burn
   const handleBurn = useCallback(() => {
     if (!data.allowBurns || !spacecraft || isPaused || spacecraft.isLaunching) return;
+    SoundManager.tap();
 
     setSpacecraft(prev => {
       if (!prev) return prev;
@@ -1119,7 +1125,7 @@ const OrbitMechanicsLab: React.FC<OrbitMechanicsLabProps> = ({ data, className =
                             {(['prograde', 'retrograde'] as const).map(dir => (
                               <button
                                 key={dir}
-                                onClick={() => setSelectedBurnDirection(dir)}
+                                onClick={() => { SoundManager.select(); setSelectedBurnDirection(dir); }}
                                 className={`px-2 py-1 rounded text-xs transition-all ${
                                   selectedBurnDirection === dir
                                     ? 'bg-green-500/40 border-green-400/50 text-green-300'

@@ -16,6 +16,7 @@ import {
 } from '../../../evaluation';
 import type { ReactionLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -523,6 +524,7 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
 
   const handleSelectSubstance = useCallback((substanceId: string) => {
     if (hasSubmittedEvaluation || isReacting) return;
+    SoundManager.select();
     setSelectedSubstances(prev => {
       const next = new Set(prev);
       if (next.has(substanceId)) {
@@ -536,6 +538,7 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
 
   const handleMixSubstances = useCallback(() => {
     if (selectedSubstances.size < 2 || isReacting) return;
+    SoundManager.snap();
 
     setIsReacting(true);
     sendText(
@@ -642,6 +645,7 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
     }
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback(currentChallenge.narration || 'Excellent work!');
       setFeedbackType('success');
       setChallengeResults(prev => [...prev, {
@@ -655,6 +659,7 @@ const ReactionLab: React.FC<ReactionLabProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(currentAttempts >= 1 ? currentChallenge.hint : 'Not quite — try again!');
       setFeedbackType('error');
       sendText(

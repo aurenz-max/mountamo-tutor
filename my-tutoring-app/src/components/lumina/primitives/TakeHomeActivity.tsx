@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Printer, Clock, Package, CheckCircle2, ChevronDown, ChevronUp, Lightbulb, Camera, MessageSquare, AlertTriangle, Sparkles, BookOpen } from 'lucide-react';
 import { TakeHomeActivityData } from '../types';
 import { LuminaBadge, LuminaPanel, LuminaCallout, LuminaButton } from '../ui';
+import { SoundManager } from '../utils/SoundManager';
 
 interface TakeHomeActivityProps {
   data: TakeHomeActivityData;
@@ -16,6 +17,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
   const [showReflections, setShowReflections] = useState(false);
 
   const handlePrint = () => {
+    SoundManager.tap();
     // Expand all sections for printing
     const allStepNumbers = data.steps.map(s => s.stepNumber);
     setExpandedSteps(new Set(allStepNumbers));
@@ -29,6 +31,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
   };
 
   const toggleStep = (stepNum: number) => {
+    SoundManager.tap();
     const newExpanded = new Set(expandedSteps);
     if (newExpanded.has(stepNum)) {
       newExpanded.delete(stepNum);
@@ -42,8 +45,15 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
     const newCompleted = new Set(completedSteps);
     if (newCompleted.has(stepNum)) {
       newCompleted.delete(stepNum);
+      SoundManager.toggle(false);
     } else {
       newCompleted.add(stepNum);
+      // All steps done — celebrate the milestone (no CelebrationLayer here)
+      if (newCompleted.size === data.steps.length) {
+        SoundManager.playStreak();
+      } else {
+        SoundManager.toggle(true);
+      }
       // Auto-expand next step
       if (stepNum < data.steps.length) {
         setExpandedSteps(new Set([...expandedSteps, stepNum + 1]));

@@ -16,6 +16,7 @@ import {
 } from '../../../evaluation';
 import type { SafetyLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -581,12 +582,14 @@ const SafetyLab: React.FC<SafetyLabProps> = ({ data, className }) => {
     setPPECorrectCount(correctCount);
 
     if (allCorrect) {
+      SoundManager.playCorrect();
       sendText(
         `[PPE_CORRECT] Student selected all the right safety equipment! ` +
         `Celebrate: "Perfect! You chose exactly the right protection for this experiment."`,
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       sendText(
         `[PPE_INCOMPLETE] Student selected ${correctCount}/${required.size} correct PPE. ` +
         `${incorrectCount} unnecessary items, ${missingCount} missing items. ` +
@@ -640,12 +643,14 @@ const SafetyLab: React.FC<SafetyLabProps> = ({ data, className }) => {
     setEmergencySequenceCorrect(isCorrect);
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       sendText(
         `[EMERGENCY_CORRECT] Student put the emergency steps in the right order! ` +
         `Celebrate: "Perfect sequence! In a real emergency, doing these steps in order could save someone."`,
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       sendText(
         `[EMERGENCY_INCORRECT] Student's order doesn't match. ` +
         `Correct order: ${emergencySequence.correctOrder.join(' → ')}. ` +
@@ -681,6 +686,7 @@ const SafetyLab: React.FC<SafetyLabProps> = ({ data, className }) => {
     );
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Correct! Safety first!');
       setFeedbackType('success');
 
@@ -702,6 +708,7 @@ const SafetyLab: React.FC<SafetyLabProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. ${currentChallenge.hint}`);
       setFeedbackType('error');
 

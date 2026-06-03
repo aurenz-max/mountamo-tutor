@@ -9,6 +9,7 @@ import type { ConstellationBuilderMetrics } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Type Definitions — Single Source of Truth
@@ -203,6 +204,7 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     if (currentChallenge.type !== 'guided_trace' && currentChallenge.type !== 'free_connect') return;
     if (!isConstellationComplete) return;
 
+    SoundManager.playCorrect();
     setShowMythology(true);
     setFeedback({ type: 'correct', message: `You traced ${currentChallenge.constellationName}!` });
 
@@ -228,6 +230,7 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
 
       if (starId === expectedStarId) {
         // Correct star in sequence
+        SoundManager.tap();
         if (guidedStep > 0) {
           const prevStarId = order[guidedStep - 1];
           setDrawnConnections(prev => [...prev, { fromStarId: prevStarId, toStarId: starId }]);
@@ -235,6 +238,7 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
         setGuidedStep(prev => prev + 1);
         setFeedback(null);
       } else {
+        SoundManager.invalid();
         incrementAttempts();
         setFeedback({ type: 'hint', message: 'Look for the numbered star!' });
       }
@@ -291,9 +295,11 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
 
     const correct = answer === currentChallenge.constellationName;
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback({ type: 'correct', message: `Yes! That\'s ${currentChallenge.constellationName}!` });
       setShowMythology(true);
     } else {
+      SoundManager.playIncorrect();
       incrementAttempts();
       setFeedback({ type: 'wrong', message: 'Not quite. Look at the shape of the lines carefully.' });
     }
@@ -322,9 +328,11 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     // For seasonal: the correct answer is the current challenge's constellation name
     const correct = seasonalSelections.includes(currentChallenge.constellationName) && seasonalSelections.length === 1;
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback({ type: 'correct', message: `Correct! ${currentChallenge.constellationName} is visible in ${currentChallenge.season}.` });
       setShowMythology(true);
     } else {
+      SoundManager.playIncorrect();
       incrementAttempts();
       setFeedback({ type: 'wrong', message: `Not quite. Think about which constellations are visible in ${currentChallenge.season}.` });
     }

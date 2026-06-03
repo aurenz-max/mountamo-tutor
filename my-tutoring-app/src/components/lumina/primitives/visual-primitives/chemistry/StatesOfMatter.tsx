@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { StatesOfMatterMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -626,12 +627,14 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
 
   const handleTemperatureChange = useCallback((newTemp: number) => {
     if (hasSubmittedEvaluation) return;
+    SoundManager.tick();
     setTemperature(newTemp);
   }, [hasSubmittedEvaluation]);
 
   const handleSwitchSubstance = useCallback((key: string) => {
     const preset = PRESET_SUBSTANCES[key];
     if (!preset) return;
+    SoundManager.select();
     setSubstance(preset);
     setTemperature(preset.currentTemp);
     setSubstancesExplored(prev => { const next = new Set(prev); next.add(preset.name); return next; });
@@ -730,6 +733,7 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
     }
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback(currentChallenge.narration || 'Excellent!');
       setFeedbackType('success');
       setChallengeResults(prev => [...prev, {
@@ -743,6 +747,7 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(currentAttempts >= 1 ? currentChallenge.hint : 'Not quite — try again!');
       setFeedbackType('error');
       sendText(

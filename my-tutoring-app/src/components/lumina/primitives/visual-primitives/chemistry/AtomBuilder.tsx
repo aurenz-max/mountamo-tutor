@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { AtomBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -448,6 +449,7 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
 
   // ---- Handlers ----
   const addParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
+    SoundManager.tick();
     if (type === 'proton') setProtons(p => Math.min(p + 1, constraints.maxProtons));
     else if (type === 'neutron') setNeutrons(n => Math.min(n + 1, constraints.maxProtons + 10));
     else setElectrons(e => Math.min(e + 1, constraints.maxProtons + 4));
@@ -455,6 +457,7 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
   }, [constraints.maxProtons]);
 
   const removeParticle = useCallback((type: 'proton' | 'neutron' | 'electron') => {
+    SoundManager.tick();
     if (type === 'proton') setProtons(p => Math.max(p - 1, 0));
     else if (type === 'neutron') setNeutrons(n => Math.max(n - 1, 0));
     else setElectrons(e => Math.max(e - 1, 0));
@@ -497,6 +500,7 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
     }
 
     if (correct) {
+      SoundManager.playCorrect();
       setFeedback(`Correct! ${element?.name ? `You built ${element.name}!` : ''}`);
       setFeedbackType('success');
       setCompletedChallenges(prev => { const next = new Set(prev); next.add(currentChallenge.id); return next; });
@@ -526,6 +530,7 @@ const AtomBuilder: React.FC<AtomBuilderProps> = ({ data, className }) => {
         }
       }, 2000);
     } else {
+      SoundManager.playIncorrect();
       setFeedback(reasons.join('. ') + `. Hint: ${currentChallenge.hint}`);
       setFeedbackType('error');
 

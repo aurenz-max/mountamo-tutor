@@ -11,6 +11,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface — Single Source of Truth
@@ -584,6 +585,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   // ── Apply force button handler ───────────────────────────────────
   const handleApplyForce = useCallback(() => {
     if (simRunning) return;
+    SoundManager.tap();
     const dir = forceDirection === 'push' ? 1 : -1;
     const forceN = forceStrength * FORCE_SCALE * dir;
 
@@ -622,6 +624,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     const isCorrect = selectedAnswer === currentChallenge.correctAnswer;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback({ correct: true, message: 'Correct! Great observation!' });
       recordResult({
         challengeId: currentChallenge.id,
@@ -633,6 +636,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback({
         correct: false,
         message: currentChallenge.hint ?? 'Not quite — try pushing the object and observe what happens!',
@@ -761,7 +765,11 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
               <span className="text-xs text-slate-400">Force:</span>
               <Slider
                 value={[forceStrength]}
-                onValueChange={([v]) => controlsInteractive && setForceStrength(v)}
+                onValueChange={([v]) => {
+                  if (!controlsInteractive) return;
+                  SoundManager.tick();
+                  setForceStrength(v);
+                }}
                 min={1}
                 max={10}
                 step={1}
@@ -809,7 +817,11 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
                           ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300'
                           : 'bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10'
                     }`}
-                    onClick={() => !feedback?.correct && !showingAnswer && setSelectedAnswer(opt)}
+                    onClick={() => {
+                      if (feedback?.correct || showingAnswer) return;
+                      SoundManager.select();
+                      setSelectedAnswer(opt);
+                    }}
                     disabled={!!feedback?.correct || showingAnswer}
                   >
                     {opt}

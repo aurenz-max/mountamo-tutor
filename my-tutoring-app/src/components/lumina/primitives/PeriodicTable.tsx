@@ -6,6 +6,7 @@ import { ELEMENTS } from './chemistry-primitives/constants';
 import { PeriodicTableGrid } from './chemistry-primitives/PeriodicTableGrid';
 import { ElementModal } from './chemistry-primitives/ElementModal';
 import { useLuminaAI } from '../hooks/useLuminaAI';
+import { SoundManager } from '../utils/SoundManager';
 
 interface PeriodicTableProps {
   data: PeriodicTableData;
@@ -65,6 +66,7 @@ const PeriodicTable: React.FC<PeriodicTableProps> = ({ data, className }) => {
 
   // Handle element selection with AI triggers
   const handleSelectElement = useCallback((element: ChemicalElement) => {
+    SoundManager.select();
     setSelectedElement(element);
 
     const isFirstExploration = elementsExploredRef.current.size === 0;
@@ -129,6 +131,7 @@ const PeriodicTable: React.FC<PeriodicTableProps> = ({ data, className }) => {
   // Handle category filter click with AI trigger
   const handleCategoryClick = useCallback((cat: string) => {
     const newCategory = hoveredCategory === cat ? (data.focusCategory || null) : cat;
+    SoundManager.toggle(newCategory === cat);
     setHoveredCategory(newCategory);
 
     if (newCategory && newCategory !== hoveredCategory) {

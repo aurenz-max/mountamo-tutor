@@ -16,6 +16,7 @@ import {
 } from '../../../evaluation';
 import type { EnergyOfReactionsMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -508,6 +509,7 @@ const EnergyOfReactions: React.FC<EnergyOfReactionsProps> = ({ data, className }
   }, [animateReactionPath, reaction, sendText]);
 
   const toggleCatalyst = useCallback(() => {
+    SoundManager.toggle(!showCatalyst);
     setShowCatalyst(prev => !prev);
 
     sendText(
@@ -529,6 +531,7 @@ const EnergyOfReactions: React.FC<EnergyOfReactionsProps> = ({ data, className }
     const correctText = currentChallenge.options[currentChallenge.correctOptionIndex] ?? '';
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Correct! Great understanding of energy changes.');
       setFeedbackType('success');
 
@@ -559,6 +562,7 @@ const EnergyOfReactions: React.FC<EnergyOfReactionsProps> = ({ data, className }
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. ${currentChallenge.hint}`);
       setFeedbackType('error');
 
@@ -797,7 +801,7 @@ const EnergyOfReactions: React.FC<EnergyOfReactionsProps> = ({ data, className }
                       ? 'bg-indigo-500/20 border-indigo-400/40 text-indigo-200 ring-1 ring-indigo-400/40'
                       : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300'
                   }`}
-                  onClick={() => setSelectedOption(i)}
+                  onClick={() => { SoundManager.select(); setSelectedOption(i); }}
                 >
                   {currentChallenge.answerType === 'true_false' ? (
                     <span>{option}</span>

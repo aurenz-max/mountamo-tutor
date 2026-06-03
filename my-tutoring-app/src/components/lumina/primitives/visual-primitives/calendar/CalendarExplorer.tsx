@@ -10,6 +10,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -182,6 +183,7 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
   // ── Handlers ────────────────────────────────────────────────────
   const handleDateClick = useCallback((day: number) => {
     if (allChallengesComplete || !currentChallenge) return;
+    SoundManager.tap();        // ← tactile date press
     setClickedDate(day);
     // For identify challenges, clicking a date IS the answer
     if (currentChallenge.type === 'identify') {
@@ -191,6 +193,7 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
 
   const handleOptionSelect = useCallback((option: string) => {
     if (allChallengesComplete || feedback) return;
+    SoundManager.select();     // ← confirms a choice
     setSelectedAnswer(option);
   }, [allChallengesComplete, feedback]);
 
@@ -201,6 +204,7 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
     incrementAttempts();
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback({ correct: true, message: 'Correct!' });
       if (currentChallenge.highlightDates) {
         setHighlightedDates(new Set(currentChallenge.highlightDates));
@@ -216,6 +220,7 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback({ correct: false, message: 'Not quite. Try again!' });
       if (currentAttempts + 1 >= 3) {
         // After 3 attempts, record and move on

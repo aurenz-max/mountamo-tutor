@@ -16,6 +16,7 @@ import {
 } from '../../../evaluation';
 import type { PhExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -509,6 +510,7 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
 
   const handleTestSubstance = useCallback((substance: Substance) => {
+    SoundManager.select();
     setSelectedSubstance(substance);
     setTestedSubstances(prev => new Set(prev).add(substance.id));
 
@@ -552,12 +554,14 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
     setSortingTotal(prev => prev + 1);
 
     if (classification === substance.type) {
+      SoundManager.playCorrect();
       setSortingCorrect(prev => prev + 1);
       sendText(
         `[SORT_CORRECT] Student correctly sorted ${substance.name} as ${classification}. Congratulate!`,
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       sendText(
         `[SORT_INCORRECT] Student sorted ${substance.name} as ${classification} ` +
         `but it's actually ${substance.type} (pH ${substance.pH}). ` +
@@ -618,6 +622,7 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
       || target.split('|').some(t => answer.includes(t.trim()));
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Correct! Great chemistry detective work!');
       setFeedbackType('success');
 
@@ -649,6 +654,7 @@ const PhExplorer: React.FC<PhExplorerProps> = ({ data, className }) => {
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. ${currentChallenge.hint}`);
       setFeedbackType('error');
 

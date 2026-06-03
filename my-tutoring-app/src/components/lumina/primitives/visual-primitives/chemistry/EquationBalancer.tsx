@@ -16,6 +16,7 @@ import {
 } from '../../../evaluation';
 import type { EquationBalancerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 import { CPK_COLORS } from './constants';
 
 // ============================================================================
@@ -600,6 +601,7 @@ const EquationBalancer: React.FC<EquationBalancerProps> = ({ data, className }) 
   // -------------------------------------------------------------------------
 
   const updateReactantCoeff = useCallback((index: number, value: number) => {
+    SoundManager.tick();
     pushHistory();
     setReactantCoeffs(prev => {
       const next = [...prev];
@@ -610,6 +612,7 @@ const EquationBalancer: React.FC<EquationBalancerProps> = ({ data, className }) 
   }, [pushHistory]);
 
   const updateProductCoeff = useCallback((index: number, value: number) => {
+    SoundManager.tick();
     pushHistory();
     setProductCoeffs(prev => {
       const next = [...prev];
@@ -687,6 +690,7 @@ const EquationBalancer: React.FC<EquationBalancerProps> = ({ data, className }) 
     setCurrentAttempts(prev => prev + 1);
 
     if (balanced) {
+      SoundManager.playCorrect();
       setFeedback('Perfectly balanced! Every element has the same count on both sides.');
       setFeedbackType('success');
 
@@ -703,6 +707,7 @@ const EquationBalancer: React.FC<EquationBalancerProps> = ({ data, className }) 
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       const unbalanced = allElements.filter(el =>
         (reactantAtomCounts[el] || 0) !== (productAtomCounts[el] || 0)
       );

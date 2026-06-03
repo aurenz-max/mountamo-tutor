@@ -16,6 +16,7 @@ import {
 } from '../../../evaluation';
 import type { MixingAndDissolvingMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -487,6 +488,7 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
   // -------------------------------------------------------------------------
 
   const addSubstance = useCallback((substance: SubstanceEntry) => {
+    SoundManager.snap();
     const increment = 5; // 5g per add
     setAddedSubstances(prev => {
       const existing = prev.find(s => s.substance.id === substance.id);
@@ -562,6 +564,7 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
     const correctText = currentChallenge.options[currentChallenge.correctOptionIndex] ?? '';
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback('Correct! Great observation!');
       setFeedbackType('success');
 
@@ -592,6 +595,7 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
         { silent: true }
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback(`Not quite. ${currentChallenge.hint}`);
       setFeedbackType('error');
 
@@ -897,7 +901,7 @@ const MixingAndDissolving: React.FC<MixingAndDissolvingProps> = ({ data, classNa
                       ? 'bg-indigo-500/20 border-indigo-400/40 text-indigo-200 ring-1 ring-indigo-400/40'
                       : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300'
                   }`}
-                  onClick={() => setSelectedOption(i)}
+                  onClick={() => { SoundManager.select(); setSelectedOption(i); }}
                 >
                   {currentChallenge.answerType === 'true_false' ? (
                     <span>{option}</span>

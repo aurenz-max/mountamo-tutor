@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import * as d3 from 'd3';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { DayNightSeasonsMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // DATA INTERFACES (Single Source of Truth)
@@ -1178,6 +1179,7 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
           .attr('opacity', projected.visible ? 1 : 0.3);
 
         marker.on('click', () => {
+          SoundManager.select();
           setSelectedLocation(location.id);
           setUserAnswers((prev) => ({ ...prev, [`explored_${location.id}`]: 'yes' }));
         });
@@ -1309,6 +1311,7 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
   };
 
   const handleLocationSelect = (locationId: string) => {
+    SoundManager.select();
     setSelectedLocation(locationId);
     setUserAnswers((prev) => ({ ...prev, [`explored_${locationId}`]: 'yes' }));
   };
@@ -1368,6 +1371,7 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
           <div className="space-y-3">
             <button
               onClick={() => {
+                SoundManager.toggle(!isAnimating);
                 setIsAnimating(!isAnimating);
                 setUserAnswers((prev) => ({ ...prev, viewed_animation: 'yes' }));
               }}

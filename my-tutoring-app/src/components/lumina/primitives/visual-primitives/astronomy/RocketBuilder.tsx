@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import * as d3 from 'd3';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { RocketBuilderMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Type Definitions - Single Source of Truth
@@ -413,8 +414,12 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
     if (!comp) return;
 
     // Check budget
-    if (budgetRemaining !== null && comp.cost && budgetRemaining < comp.cost) return;
+    if (budgetRemaining !== null && comp.cost && budgetRemaining < comp.cost) {
+      SoundManager.invalid();
+      return;
+    }
 
+    SoundManager.snap();
     setStages(prev => {
       const newStages = [...prev];
       newStages[stageIndex] = {
@@ -447,8 +452,12 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
   };
 
   const handleLaunch = async () => {
-    if (isLaunching || overBudget) return;
+    if (isLaunching || overBudget) {
+      SoundManager.invalid();
+      return;
+    }
 
+    SoundManager.tap();
     setIsLaunching(true);
     setLaunchResult(null);
     setFlightProgress(0);
@@ -471,8 +480,19 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
         setLaunchResult(result);
         setIsLaunching(false);
 
+        const willSubmit = result.success || attemptCount >= 2;
+        // Per-attempt flight feedback. Skip when this attempt also submits —
+        // CelebrationLayer fires correct/incorrect on submit, avoiding a double.
+        if (!willSubmit) {
+          if (result.success) {
+            SoundManager.playCorrect();
+          } else {
+            SoundManager.playIncorrect();
+          }
+        }
+
         // Submit evaluation on first successful attempt or after 3+ attempts
-        if (result.success || attemptCount >= 2) {
+        if (willSubmit) {
           const metrics: RocketBuilderMetrics = {
             type: 'rocket-builder',
             targetAltitudeKm: data.targetAltitudeKm,

@@ -10,6 +10,7 @@ import {
 } from '../../../evaluation';
 import type { MoleculeConstructorMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Element Data
@@ -299,6 +300,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
 
   const addAtom = useCallback((element: string) => {
     if (placedAtoms.length >= ATOM_POSITIONS.length || hasSubmitted) return;
+    SoundManager.select();
     const pos = ATOM_POSITIONS[placedAtoms.length];
     setPlacedAtoms(prev => [...prev, {
       id: `atom-${++atomIdRef.current}`,
@@ -353,6 +355,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       if (a1 && a2 &&
           getAvailableBonds(a1.id, a1.element, bonds) >= 1 &&
           getAvailableBonds(a2.id, a2.element, bonds) >= 1) {
+        SoundManager.snap();
         setBonds(prev => [...prev, {
           id: `bond-${++bondIdRef.current}`,
           atom1Id: selectedAtomId,
@@ -441,6 +444,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       attemptsCount, formula, submitResult, sendText]);
 
   const handleCorrect = useCallback(() => {
+    SoundManager.playCorrect();
     const moleculeName = (currentChallenge?.targetName ?? targetMolecule.name) || formula;
     setFeedback(`Correct! ${moleculeName ? `You built ${moleculeName}!` : 'Great work!'}`);
     setFeedbackType('success');
@@ -480,6 +484,7 @@ const MoleculeConstructor: React.FC<MoleculeConstructorProps> = ({ data, classNa
       challenges.length, sendText, clearWorkspace, handleFinalSubmit]);
 
   const handleIncorrect = useCallback((reasons: string[]) => {
+    SoundManager.playIncorrect();
     const hint = currentChallenge?.hint || 'Check the atom counts and make sure all bonds are connected!';
     setFeedback(`${reasons.join('. ')}. Hint: ${hint}`);
     setFeedbackType('error');

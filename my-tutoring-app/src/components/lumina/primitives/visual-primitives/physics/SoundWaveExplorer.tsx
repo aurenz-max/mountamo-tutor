@@ -11,6 +11,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface — Single Source of Truth
@@ -594,6 +595,7 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
     const isCorrect = selectedMcAnswer === currentChallenge.correctAnswer;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback({ correct: true, message: 'Correct! Great listening!' });
       recordResult({
         challengeId: currentChallenge.id,
@@ -607,6 +609,7 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback({
         correct: false,
         message: currentChallenge.hint ?? 'Not quite — try tapping the object and listening carefully!',
@@ -836,7 +839,7 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
                     className={`bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-sm h-auto py-2 px-3 text-left justify-start ${
                       selectedMcAnswer === option ? 'ring-2 ring-blue-400 bg-blue-500/10' : ''
                     }`}
-                    onClick={() => setSelectedMcAnswer(option)}
+                    onClick={() => { SoundManager.select(); setSelectedMcAnswer(option); }}
                   >
                     {option}
                   </Button>

@@ -21,6 +21,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -745,6 +746,7 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
 
   const handleApplyChange = useCallback(() => {
     if (!currentChallenge) return;
+    SoundManager.tap();
     const next = applyChange(
       scenario,
       { P: scenario.initialP, V: scenario.initialV, T: scenario.initialT, n: scenario.initialN },
@@ -796,6 +798,9 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
     setFeedback(feedbackMsg);
     setFeedbackType(correct ? 'success' : 'error');
     setPhase('reconcile');
+
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
 
     if (correct) {
       recordResult({
@@ -1098,7 +1103,7 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
                         ? 'border-amber-400/50 text-amber-300'
                         : 'border-white/20 text-slate-200'
                     }`}
-                    onClick={() => setStudentDirection(dir)}
+                    onClick={() => { SoundManager.select(); setStudentDirection(dir); }}
                   >
                     {DIRECTION_LABEL[dir]}
                   </Button>

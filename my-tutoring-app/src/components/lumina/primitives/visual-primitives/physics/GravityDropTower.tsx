@@ -11,6 +11,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
 // Data Interface — Single Source of Truth
@@ -567,6 +568,7 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
   // ── Drop button handler ──────────────────────────────────────────
   const handleDrop = useCallback(() => {
     if (simRunning) return;
+    SoundManager.tap();
     initDrop(currentChallenge);
     dropStateRef.current.isRunning = true;
     dropStateRef.current.slowMo = slowMo;
@@ -594,6 +596,7 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
     const isCorrect = selectedAnswer === currentChallenge.correctAnswer;
 
     if (isCorrect) {
+      SoundManager.playCorrect();
       setFeedback({ correct: true, message: 'Correct! Great thinking!' });
       recordResult({
         challengeId: currentChallenge.id,
@@ -605,6 +608,7 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
         { silent: true },
       );
     } else {
+      SoundManager.playIncorrect();
       setFeedback({
         correct: false,
         message: currentChallenge.hint,
@@ -761,7 +765,11 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
                           ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300'
                           : 'bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10'
                     }`}
-                    onClick={() => !feedback?.correct && !showingAnswer && setSelectedAnswer(opt)}
+                    onClick={() => {
+                      if (feedback?.correct || showingAnswer) return;
+                      SoundManager.select();
+                      setSelectedAnswer(opt);
+                    }}
                     disabled={!!feedback?.correct || showingAnswer}
                   >
                     {opt}

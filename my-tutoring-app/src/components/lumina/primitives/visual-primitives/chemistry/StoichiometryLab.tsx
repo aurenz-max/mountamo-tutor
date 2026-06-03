@@ -20,6 +20,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -534,6 +535,9 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
     setFeedbackType(correct ? 'success' : 'error');
     setPhase('reconcile');
 
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
+
     if (correct) {
       setOpenAccordions(['mole-ladder', 'ratios', 'reaction-output']);
       recordResult({
@@ -844,7 +848,7 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
                         ? 'border-amber-400/50 text-amber-300'
                         : 'border-white/20 text-slate-200'
                     }`}
-                    onClick={() => setStudentLimitingChoice(formula)}
+                    onClick={() => { SoundManager.select(); setStudentLimitingChoice(formula); }}
                   >
                     {renderFormula(formula)}
                   </Button>

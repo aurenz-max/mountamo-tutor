@@ -5,6 +5,7 @@ import {
   usePrimitiveEvaluation,
   type MotionDiagramMetrics,
 } from '../../../evaluation';
+import { SoundManager } from '../../../utils/SoundManager';
 
 /**
  * Motion Diagram / Strobe Diagram - Interactive visualization for teaching kinematics
@@ -272,6 +273,7 @@ const MotionDiagram: React.FC<MotionDiagramProps> = ({ data, className }) => {
 
   // Animation control
   const handlePlayAnimation = () => {
+    SoundManager.tap();
     setIsAnimating(true);
     setCurrentAnimationIndex(0);
 
@@ -309,6 +311,7 @@ const MotionDiagram: React.FC<MotionDiagramProps> = ({ data, className }) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    SoundManager.tap();
 
     const newMarker: PositionMarker = {
       x,
@@ -338,6 +341,7 @@ const MotionDiagram: React.FC<MotionDiagramProps> = ({ data, className }) => {
 
   // Evaluation: Identify motion type
   const handleIdentifyMotion = (type: MotionType) => {
+    SoundManager.select();
     setIdentifiedMotionType(type);
   };
 
