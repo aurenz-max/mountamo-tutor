@@ -374,6 +374,49 @@ export async function getEvaluationStats(
 }
 
 /**
+ * Full captured metadata for one attempt, resolved from its review — the rich
+ * `metrics` blob plus analysis/feedback/student-work. Backs the drill-down viewer.
+ */
+export interface ActivityDetail {
+  reviewId: string | null;
+  problemId: string | null;
+  primitiveType: string;
+  evalMode: string;
+  score: number;          // 0-100
+  success: boolean;
+  source: string | null;
+  durationMs: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  skillId: string | null;
+  subskillId: string | null;
+  subject: string | null;
+  /** Per-primitive measurements + cross-cutting aiAssistance. The main attraction. */
+  metrics: Record<string, unknown> | null;
+  analysis: unknown;
+  feedback: unknown;
+  observation: unknown;
+  studentWork: unknown;
+}
+
+/**
+ * Fetch the full captured metadata for one attempt. The attempt and its review
+ * share no id, so the row is matched by subskill + nearest timestamp.
+ */
+export async function getActivityDetail(
+  studentId: number,
+  opts: { subskillId?: string | null; timestamp?: string | null; primitiveType?: string | null }
+): Promise<ActivityDetail> {
+  const params = new URLSearchParams();
+  if (opts.subskillId) params.append('subskill_id', opts.subskillId);
+  if (opts.timestamp) params.append('timestamp', opts.timestamp);
+  if (opts.primitiveType) params.append('primitive_type', opts.primitiveType);
+  const queryString = params.toString();
+  const endpoint = `/api/evaluations/student/${studentId}/attempt-detail${queryString ? `?${queryString}` : ''}`;
+  return authApi.get(endpoint);
+}
+
+/**
  * Replay a past evaluation attempt (get the student work artifact).
  *
  * @param evaluationId - The evaluation ID to replay

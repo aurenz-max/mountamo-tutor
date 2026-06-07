@@ -240,6 +240,7 @@ export {
   getEvaluationHistory,
   getEvaluationStats,
   getEvaluationReplay,
+  getActivityDetail,
   type EvaluationSubmitResponse,
   type BatchEvaluationResponse,
   type SessionSummaryResponse,
@@ -247,4 +248,5 @@ export {
   type ActivityHistoryResponse,
   type ActivityGroupStats,
   type ActivityStatsResponse,
+  type ActivityDetail,
 } from './api/evaluationApi';

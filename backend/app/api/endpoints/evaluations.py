@@ -15,6 +15,7 @@ my-tutoring-app/src/components/lumina/evaluation/api/evaluationApi.ts.
 """
 
 from typing import Optional, List, Dict, Any
+from datetime import datetime, timedelta
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -192,3 +193,117 @@ async def get_evaluation_stats(
     except Exception as e:
         logger.error(f"Failed to get evaluation stats for student {student_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to get evaluation stats")
+
+
+def _parse_iso(s: Optional[str]) -> Optional[datetime]:
+    if not s:
+        return None
+    try:
+        return datetime.fromisoformat(s.replace('Z', '+00:00'))
+    except Exception:
+        return None
+
+
+def _review_to_detail(r: Dict[str, Any]) -> Dict[str, Any]:
+    """Project a stored review doc into the full captured-metadata detail.
+
+    The rich per-primitive `metrics` blob lives at full_review.metadata.metrics;
+    primitive_type/eval_mode/source/timing live alongside it. This is the metadata
+    the drill-down viewer renders.
+    """
+    full = r.get('full_review') or {}
+    meta = full.get('metadata') or {}
+    problem_content = r.get('problem_content') or {}
+
+    score10 = r.get('score') or 0
+    accuracy = full.get('accuracy_percentage')
+    score100 = accuracy if isinstance(accuracy, (int, float)) else round(score10 * 10, 1)
+    success = full.get('correct')
+    if success is None:
+        success = score10 >= 8
+
+    return {
+        "reviewId": r.get('id'),
+        "problemId": r.get('problem_id'),
+        "primitiveType": meta.get('primitive_type') or problem_content.get('primitive_type') or 'unknown',
+        "evalMode": meta.get('eval_mode') or 'default',
+        "score": score100,
+        "success": bool(success),
+        "source": meta.get('eval_source'),
+        "durationMs": meta.get('duration_ms'),
+        "startedAt": meta.get('started_at'),
+        "completedAt": meta.get('completed_at') or r.get('timestamp'),
+        "skillId": r.get('skill_id'),
+        "subskillId": r.get('subskill_id'),
+        "subject": r.get('subject'),
+        # The rich vein — per-primitive measurements + cross-cutting aiAssistance.
+        "metrics": meta.get('metrics') or problem_content.get('metrics'),
+        "analysis": full.get('analysis') or r.get('analysis'),
+        "feedback": full.get('feedback') or r.get('feedback'),
+        "observation": full.get('observation') or r.get('observation'),
+        "studentWork": problem_content.get('student_work'),
+    }
+
+
+@router.get("/student/{student_id}/attempt-detail")
+async def get_attempt_detail(
+    student_id: int,
+    subskill_id: Optional[str] = Query(None),
+    timestamp: Optional[str] = Query(None),
+    primitive_type: Optional[str] = Query(None),
+    user_context: dict = Depends(get_user_context),
+) -> Dict[str, Any]:
+    """Full captured metadata for one attempt, resolved from its review.
+
+    An attempt row and its review are written in the same submission, so we
+    locate the review by subskill + nearest timestamp (no shared id exists). This
+    reads existing data — including legacy rows, whose reviews still carry metrics.
+    """
+    try:
+        fs = get_firestore_service()
+        target = _parse_iso(timestamp)
+
+        # Query a narrow timestamp window around the attempt (the review is
+        # written in the same request, so it's within ~1s). A range filter on the
+        # same field as the order_by uses only the automatic single-field index —
+        # filtering by subskill_id here too would require a composite index.
+        if target is not None:
+            window = timedelta(seconds=30)
+            reviews = await fs.get_problem_reviews_date_range(
+                student_id,
+                start_date=(target - window).isoformat(),
+                end_date=(target + window).isoformat(),
+                limit=200,
+            )
+        else:
+            reviews = await fs.get_problem_reviews(student_id, limit=200)
+
+        # Narrow to the same subskill / primitive in Python (no index needed).
+        if subskill_id:
+            same_sub = [r for r in reviews if r.get('subskill_id') == subskill_id]
+            if same_sub:
+                reviews = same_sub
+        if primitive_type:
+            same_prim = [
+                r for r in reviews
+                if ((r.get('full_review') or {}).get('metadata') or {}).get('primitive_type') == primitive_type
+            ]
+            if same_prim:
+                reviews = same_prim
+
+        if not reviews:
+            raise HTTPException(status_code=404, detail="No review found for this attempt")
+
+        # Pick the review whose timestamp is closest to the attempt's.
+        if target is not None:
+            def distance(r: Dict[str, Any]) -> float:
+                rt = _parse_iso(r.get('timestamp'))
+                return abs((rt - target).total_seconds()) if rt else float('inf')
+            reviews = sorted(reviews, key=distance)
+
+        return _review_to_detail(reviews[0])
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get attempt detail for student {student_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to get attempt detail")
