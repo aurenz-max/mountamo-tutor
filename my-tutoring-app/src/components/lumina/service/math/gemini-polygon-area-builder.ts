@@ -68,6 +68,29 @@ const COUNT_BY_MODE: Record<PolygonAreaChallengeType, number> = {
 };
 
 // ---------------------------------------------------------------------------
+// Auto (mixed) session — tier difficulty order (easy → hard)
+// ---------------------------------------------------------------------------
+// Used only on the unconstrained "Auto" path: every IRT-pinned eval mode still
+// passes a single type. The mixed session interleaves all five tiers and is
+// sorted by this rank so difficulty scales low → high (SP-21 round-robin).
+
+const TIER_ORDER: PolygonAreaChallengeType[] = [
+  'decompose',                       // Grade 6 entry — easiest
+  'find_area_triangle_parallelogram',// Grade 6
+  'find_area_trapezoid',             // Grade 6-7
+  'composite_area',                  // Grade 6-7
+  'coordinate_polygon',              // Grade 7 — hardest
+];
+
+const TIER_RANK: Record<PolygonAreaChallengeType, number> = TIER_ORDER.reduce(
+  (acc, t, i) => { acc[t] = i; return acc; },
+  {} as Record<PolygonAreaChallengeType, number>,
+);
+
+const MIXED_INSTANCE_COUNT = 8;  // all 5 tiers once + 3 repeats of easier tiers
+const MIXED_MAX_COUNT = 12;
+
+// ---------------------------------------------------------------------------
 // Pool helpers (deterministic, per-challenge values built locally)
 // ---------------------------------------------------------------------------
 
@@ -343,6 +366,67 @@ export function selectPolygonAreaChallenges(
 }
 
 // ---------------------------------------------------------------------------
+// Build a MIXED session that interleaves all five tiers (Auto path only)
+// ---------------------------------------------------------------------------
+
+// Dispatch to the right per-type builder. The two multi-variant tiers pick a
+// variant at random so a mixed session shows figure variety within a tier too.
+function buildForType(type: PolygonAreaChallengeType): RawChallenge {
+  switch (type) {
+    case 'decompose':
+      return buildDecompose();
+    case 'find_area_triangle_parallelogram':
+      return Math.random() < 0.5 ? buildTriangleFA() : buildParallelogramFA();
+    case 'find_area_trapezoid':
+      return buildTrapezoid();
+    case 'composite_area':
+      return buildComposite();
+    case 'coordinate_polygon':
+      return buildCoordinate(Math.random() < 0.5 ? 'rectangle' : 'right_triangle');
+  }
+}
+
+export function selectMixedPolygonAreaChallenges(count?: number): PolygonAreaChallenge[] {
+  // Cover every tier at least once; default to a session of 8.
+  const target = Math.max(
+    TIER_ORDER.length,
+    Math.min(MIXED_MAX_COUNT, count ?? MIXED_INSTANCE_COUNT),
+  );
+
+  // Round-robin over a shuffled permutation so all five tiers are represented
+  // and the leading tier varies session-to-session. The first TIER_ORDER.length
+  // slots are guaranteed to cover all tiers (it's a permutation); later slots
+  // repeat tiers in the same rotation.
+  const rotation = shuffle(TIER_ORDER);
+  const raw: RawChallenge[] = [];
+  const seen = new Set<string>();
+
+  for (let attempt = 0; attempt < target * 10 && raw.length < target; attempt++) {
+    const type = rotation[raw.length % rotation.length];
+    const ch = buildForType(type);
+    const key = canonicalKey(ch);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    raw.push(ch);
+  }
+
+  // Fallback — accept duplicates if dedup starved a slot (narrow candidate space).
+  let slot = raw.length;
+  while (raw.length < target) {
+    raw.push(buildForType(rotation[slot % rotation.length]));
+    slot++;
+  }
+
+  // Scale difficulty low → high: tier rank is the primary key, area magnitude
+  // the tiebreaker within a tier.
+  const sorted = raw.sort((a, b) => {
+    const dr = TIER_RANK[a.type] - TIER_RANK[b.type];
+    return dr !== 0 ? dr : a.expectedArea - b.expectedArea;
+  });
+  return sorted.map((ch, i) => ({ ...ch, id: `pab-${i + 1}` }));
+}
+
+// ---------------------------------------------------------------------------
 // Post-validation: recompute every expectedArea from its geometry.
 // Pool builds locally, so this is a self-check that guards against drift.
 // ---------------------------------------------------------------------------
@@ -440,7 +524,7 @@ export const generatePolygonAreaBuilder = async (
 Create the wrapper metadata for a multi-figure polygon-area session on "${topic}" for ${gradeLevel} students.
 
 CONTEXT:
-- A polygon-area session contains 3-6 separate geometric figures, all of the same challenge type.
+- A polygon-area session contains several separate geometric figures the student finds the area of.
 - The system has ALREADY pre-built each figure (dimensions, coordinates, rectangle pieces) — you do NOT pick numbers, lengths, or coordinates.
 - Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
 
@@ -473,14 +557,25 @@ Return ONLY the wrapper fields described above.
     throw new Error('No valid polygon-area wrapper returned from Gemini API');
   }
 
+  // ── Auto (mixed) path: no eval-mode constraint → interleave ALL five tiers,
+  //    scaled easy→hard, as a single longer session (SP-21). IRT-pinned modes
+  //    always have a constraint and fall through to the single-type path below.
+  const isMixed = evalConstraint === null;
+
   // ── Resolve challengeType (Gemini → eval constraint → safe default) ──
-  let challengeType: PolygonAreaChallengeType = validTypes.includes(wrapper.challengeType as PolygonAreaChallengeType)
-    ? (wrapper.challengeType as PolygonAreaChallengeType)
-    : (evalConstraint?.allowedTypes[0] as PolygonAreaChallengeType) ?? 'find_area_triangle_parallelogram';
+  // For mixed sessions this is representative metadata only: the component
+  // renders per-challenge from `currentChallenge.type`, never the top-level field.
+  let challengeType: PolygonAreaChallengeType = isMixed
+    ? 'decompose' // lowest tier — where the mixed session begins
+    : validTypes.includes(wrapper.challengeType as PolygonAreaChallengeType)
+      ? (wrapper.challengeType as PolygonAreaChallengeType)
+      : (evalConstraint?.allowedTypes[0] as PolygonAreaChallengeType) ?? 'find_area_triangle_parallelogram';
   if (!validTypes.includes(challengeType)) challengeType = 'find_area_triangle_parallelogram';
 
   // ── Build the per-challenge pool locally ──
-  const challenges = selectPolygonAreaChallenges(challengeType, config?.instanceCount);
+  const challenges = isMixed
+    ? selectMixedPolygonAreaChallenges(config?.instanceCount)
+    : selectPolygonAreaChallenges(challengeType, config?.instanceCount);
 
   // ── Post-validation: every expectedArea must match its geometry ──
   for (const ch of challenges) {
@@ -491,9 +586,11 @@ Return ONLY the wrapper fields described above.
     }
   }
 
-  const gradeBand: '6' | '7' = wrapper.gradeBand === '7' || wrapper.gradeBand === '6'
-    ? wrapper.gradeBand
-    : (challengeType === 'coordinate_polygon' ? '7' : '6');
+  const gradeBand: '6' | '7' = isMixed
+    ? '7' // mixed sessions reach the Grade 7 coordinate-polygon tier
+    : wrapper.gradeBand === '7' || wrapper.gradeBand === '6'
+      ? wrapper.gradeBand
+      : (challengeType === 'coordinate_polygon' ? '7' : '6');
 
   const data: PolygonAreaBuilderData = {
     title: wrapper.title,

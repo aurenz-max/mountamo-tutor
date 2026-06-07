@@ -1,0 +1,668 @@
+import { Type, Schema } from "@google/genai";
+import { ai } from "../geminiClient";
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+import type {
+  CircleExplorerData,
+  CircleExplorerChallenge,
+  CircleExplorerChallengeType,
+  CircleCompositeShape,
+} from "../../primitives/visual-primitives/math/CircleExplorer";
+
+// ---------------------------------------------------------------------------
+// Challenge type docs (one per eval mode)
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  discover_pi: {
+    promptDoc:
+      `"discover_pi": Grade 7 entry. The student unrolls a circle's circumference and measures it against the diameter, `
+      + `discovering that C ÷ d is always about 3.14 (π). They enter the ratio. Whole-number diameters.`,
+    schemaDescription: "'discover_pi' (estimate the ratio C ÷ d ≈ π)",
+  },
+  circumference: {
+    promptDoc:
+      `"circumference": Grade 7. Given a labeled radius or diameter, the student computes the circumference `
+      + `(C = 2·π·r = π·d) using π ≈ 3.14. Whole-number given measure.`,
+    schemaDescription: "'circumference' (find C from r or d)",
+  },
+  area: {
+    promptDoc:
+      `"area": Grade 7. Given a labeled radius (or diameter), the student computes the area (A = π·r²) using π ≈ 3.14. `
+      + `Answer is in square units.`,
+    schemaDescription: "'area' (find A from r)",
+  },
+  reverse: {
+    promptDoc:
+      `"reverse": Grade 7. The circumference OR area is given; the student works backward to find the radius `
+      + `(r = C ÷ 2π, or r = √(A ÷ π)). Radii are whole numbers.`,
+    schemaDescription: "'reverse' (find r given C or A)",
+  },
+  composite: {
+    promptDoc:
+      `"composite": Grade 7. Semicircle area (½·π·r²), semicircle perimeter (π·r + 2·r), or a circle inscribed in a `
+      + `square — find the shaded leftover area (s² − π·(s/2)²). Whole-number measures.`,
+    schemaDescription: "'composite' (semicircles / circle-in-square)",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Per-mode instance counts
+// ---------------------------------------------------------------------------
+
+const DEFAULT_INSTANCE_COUNT = 4;
+const MAX_INSTANCE_COUNT = 6;
+
+const COUNT_BY_MODE: Record<CircleExplorerChallengeType, number> = {
+  discover_pi: 4,
+  circumference: 4,
+  area: 4,
+  reverse: 4,
+  composite: 4,
+};
+
+// ---------------------------------------------------------------------------
+// Auto (mixed) session — tier difficulty order (easy → hard)
+// ---------------------------------------------------------------------------
+// Used only on the unconstrained "Auto" path: every IRT-pinned eval mode still
+// passes a single type. The mixed session interleaves all five tiers and is
+// sorted by this rank so difficulty scales low → high (SP-21 round-robin).
+
+const TIER_ORDER: CircleExplorerChallengeType[] = [
+  'discover_pi',   // Grade 7 entry — discover π
+  'circumference', // apply π forward (C)
+  'area',          // apply π forward (A)
+  'reverse',       // work backward to r
+  'composite',     // semicircles / circle-in-square — hardest
+];
+
+const TIER_RANK: Record<CircleExplorerChallengeType, number> = TIER_ORDER.reduce(
+  (acc, t, i) => { acc[t] = i; return acc; },
+  {} as Record<CircleExplorerChallengeType, number>,
+);
+
+const MIXED_INSTANCE_COUNT = 8;  // all 5 tiers once + 3 repeats of easier tiers
+const MIXED_MAX_COUNT = 12;
+
+// ---------------------------------------------------------------------------
+// Math constants & helpers (deterministic, per-challenge values built locally)
+// ---------------------------------------------------------------------------
+
+/** Students are told to use π ≈ 3.14; expected answers are computed the same way. */
+const PI_APPROX = 3.14;
+
+const UNIT_POOL = ['cm', 'm', 'ft', 'in', 'mm'];
+
+const randInt = (min: number, max: number): number =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+const pick = <T,>(arr: T[]): T => arr[randInt(0, arr.length - 1)];
+
+const round1 = (n: number): number => Math.round(n * 10) / 10;
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+/** Tolerance band: covers the π≈3.14 vs true-π gap plus light rounding. */
+const lengthTol = (expected: number): number => Math.max(0.5, Math.abs(expected) * 0.02);
+const areaTol = (expected: number): number => Math.max(0.5, Math.abs(expected) * 0.02);
+
+const DISCOVER_CTX = [
+  'A bike wheel', 'A pizza', 'A clock face', 'A coin', 'A round pond', 'A dinner plate',
+];
+const CIRC_CTX = [
+  'A circular running track', 'A trampoline', 'A round rug', 'A bicycle tire', 'A garden fountain',
+];
+const AREA_CTX = [
+  'A circular pizza', 'A round tabletop', 'A pond', 'A circular flower bed', 'A drum head',
+];
+const REVERSE_CTX = [
+  'A circular pool', 'A round window', 'A ferris wheel', 'A circular garden', 'A round mirror',
+];
+const SEMICIRCLE_CTX = [
+  'A half-circle window', 'A semicircular rug', 'A half-moon garden bed',
+  'A protractor', 'A half-pizza',
+];
+const CIRCLE_IN_SQUARE_CTX = [
+  'A circular fountain in a square plaza', 'A round table in a square room',
+  'A circular pool in a square deck', 'A round clock on a square wall',
+];
+
+// ---------------------------------------------------------------------------
+// Per-challenge builders (return a challenge without an id)
+// ---------------------------------------------------------------------------
+
+type RawChallenge = Omit<CircleExplorerChallenge, 'id'>;
+
+function buildDiscoverPi(): RawChallenge {
+  const radius = randInt(3, 10);     // whole-number diameter (2r) in [6, 20]
+  const unitLabel = pick(UNIT_POOL);
+  return {
+    type: 'discover_pi',
+    narration: `${pick(DISCOVER_CTX)} is shaped like this circle.`,
+    instruction: 'Unroll the circumference, then find how many diameters fit around: C ÷ d.',
+    hint: 'Divide the circumference by the diameter. For EVERY circle this ratio is the same — a little more than 3.',
+    unitLabel,
+    radius,
+    given: 'diameter',
+    usePiApprox: true,
+    answerKind: 'ratio',
+    expectedAnswer: 3.14,
+    tolerance: 0.15,
+  };
+}
+
+function buildCircumference(variant: 'radius' | 'diameter'): RawChallenge {
+  const unitLabel = pick(UNIT_POOL);
+  if (variant === 'diameter') {
+    const d = randInt(4, 24);
+    const radius = d / 2;
+    const expected = round2(PI_APPROX * d);
+    return {
+      type: 'circumference',
+      narration: `${pick(CIRC_CTX)} has the diameter shown.`,
+      instruction: 'Find the circumference — the distance all the way around.',
+      hint: 'Circumference = π × d (or 2 × π × r). Use π ≈ 3.14.',
+      unitLabel,
+      radius,
+      given: 'diameter',
+      usePiApprox: true,
+      answerKind: 'length',
+      expectedAnswer: expected,
+      tolerance: lengthTol(expected),
+    };
+  }
+  const r = randInt(2, 15);
+  const expected = round2(2 * PI_APPROX * r);
+  return {
+    type: 'circumference',
+    narration: `${pick(CIRC_CTX)} has the radius shown.`,
+    instruction: 'Find the circumference — the distance all the way around.',
+    hint: 'Circumference = 2 × π × r. Use π ≈ 3.14.',
+    unitLabel,
+    radius: r,
+    given: 'radius',
+    usePiApprox: true,
+    answerKind: 'length',
+    expectedAnswer: expected,
+    tolerance: lengthTol(expected),
+  };
+}
+
+function buildArea(variant: 'radius' | 'diameter'): RawChallenge {
+  const unitLabel = pick(UNIT_POOL);
+  let r: number;
+  let given: 'radius' | 'diameter';
+  if (variant === 'diameter') {
+    const d = 2 * randInt(2, 10); // even diameter → whole radius
+    r = d / 2;
+    given = 'diameter';
+  } else {
+    r = randInt(2, 12);
+    given = 'radius';
+  }
+  const expected = round2(PI_APPROX * r * r);
+  return {
+    type: 'area',
+    narration: `${pick(AREA_CTX)} is shaped like this circle.`,
+    instruction: 'Find the area — the amount of space inside the circle.',
+    hint: 'Area = π × r². Square the radius first, then multiply by π ≈ 3.14. Area is in square units.',
+    unitLabel,
+    radius: r,
+    given,
+    usePiApprox: true,
+    answerKind: 'area',
+    expectedAnswer: expected,
+    tolerance: areaTol(expected),
+  };
+}
+
+function buildReverse(variant: 'circumference' | 'area'): RawChallenge {
+  const unitLabel = pick(UNIT_POOL);
+  const r = randInt(3, 15);
+  if (variant === 'circumference') {
+    const givenValue = round1(2 * PI_APPROX * r);
+    return {
+      type: 'reverse',
+      narration: `${pick(REVERSE_CTX)} has the circumference shown.`,
+      instruction: 'The circumference is given. Work backward to find the radius.',
+      hint: 'C = 2 × π × r, so r = C ÷ (2 × π). Divide by 2 × 3.14.',
+      unitLabel,
+      radius: r,
+      given: 'radius',
+      usePiApprox: true,
+      answerKind: 'length',
+      reverseGiven: 'circumference',
+      givenValue,
+      expectedAnswer: r,
+      tolerance: 0.2,
+    };
+  }
+  const givenValue = round1(PI_APPROX * r * r);
+  return {
+    type: 'reverse',
+    narration: `${pick(REVERSE_CTX)} has the area shown.`,
+    instruction: 'The area is given. Work backward to find the radius.',
+    hint: 'A = π × r², so r = √(A ÷ π). Divide by 3.14, then take the square root.',
+    unitLabel,
+    radius: r,
+    given: 'radius',
+    usePiApprox: true,
+    answerKind: 'length',
+    reverseGiven: 'area',
+    givenValue,
+    expectedAnswer: r,
+    tolerance: 0.2,
+  };
+}
+
+function buildComposite(shape: CircleCompositeShape): RawChallenge {
+  const unitLabel = pick(UNIT_POOL);
+  if (shape === 'circle_in_square') {
+    const s = 2 * randInt(2, 8); // even side → whole inscribed radius
+    const r = s / 2;
+    const expected = round2(s * s - PI_APPROX * r * r);
+    return {
+      type: 'composite',
+      narration: `${pick(CIRCLE_IN_SQUARE_CTX)} — a circle fits exactly inside the square.`,
+      instruction: 'A circle is inscribed in the square. Find the shaded area left over.',
+      hint: 'Shaded = square area − circle area = s² − π × (s ÷ 2)². The circle\'s radius is half the side.',
+      unitLabel,
+      radius: r,
+      given: 'radius',
+      usePiApprox: true,
+      answerKind: 'area',
+      compositeShape: 'circle_in_square',
+      squareSide: s,
+      expectedAnswer: expected,
+      tolerance: areaTol(expected),
+    };
+  }
+  const r = randInt(2, 12);
+  if (shape === 'semicircle_perimeter') {
+    const expected = round2(PI_APPROX * r + 2 * r);
+    return {
+      type: 'composite',
+      narration: `${pick(SEMICIRCLE_CTX)} is shaped like this semicircle.`,
+      instruction: 'Find the perimeter of this semicircle — the curved part plus the straight diameter.',
+      hint: 'Perimeter = half the circumference + the diameter = π × r + 2 × r.',
+      unitLabel,
+      radius: r,
+      given: 'radius',
+      usePiApprox: true,
+      answerKind: 'length',
+      compositeShape: 'semicircle_perimeter',
+      expectedAnswer: expected,
+      tolerance: lengthTol(expected),
+    };
+  }
+  // semicircle_area
+  const expected = round2(0.5 * PI_APPROX * r * r);
+  return {
+    type: 'composite',
+    narration: `${pick(SEMICIRCLE_CTX)} is shaped like this semicircle.`,
+    instruction: 'Find the area of this semicircle — half of a full circle.',
+    hint: 'A semicircle is half a circle: area = ½ × π × r².',
+    unitLabel,
+    radius: r,
+    given: 'radius',
+    usePiApprox: true,
+    answerKind: 'area',
+    compositeShape: 'semicircle_area',
+    expectedAnswer: expected,
+    tolerance: areaTol(expected),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Canonical key for de-duplication within a session
+// ---------------------------------------------------------------------------
+
+function canonicalKey(ch: RawChallenge): string {
+  switch (ch.type) {
+    case 'discover_pi':
+      return `pi|${ch.radius}`;
+    case 'circumference':
+    case 'area':
+      return `${ch.type}|${ch.given}|${ch.radius}`;
+    case 'reverse':
+      return `rev|${ch.reverseGiven}|${ch.radius}`;
+    case 'composite':
+      return `comp|${ch.compositeShape}|${ch.squareSide ?? ch.radius}`;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Recompute the expected answer from geometry (self-check guard against drift)
+// ---------------------------------------------------------------------------
+
+function recomputeExpected(ch: CircleExplorerChallenge): number | null {
+  const r = ch.radius;
+  switch (ch.type) {
+    case 'discover_pi':
+      return 3.14;
+    case 'circumference':
+      return round2(2 * PI_APPROX * r);
+    case 'area':
+      return round2(PI_APPROX * r * r);
+    case 'reverse':
+      return r; // the radius is the answer
+    case 'composite':
+      switch (ch.compositeShape) {
+        case 'circle_in_square':
+          return round2((ch.squareSide ?? 2 * r) ** 2 - PI_APPROX * r * r);
+        case 'semicircle_perimeter':
+          return round2(PI_APPROX * r + 2 * r);
+        case 'semicircle_area':
+          return round2(0.5 * PI_APPROX * r * r);
+        default:
+          return null;
+      }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Build N distinct challenges for a single-mode session, with variance rules
+// ---------------------------------------------------------------------------
+
+export function selectCircleExplorerChallenges(
+  challengeType: CircleExplorerChallengeType,
+  count?: number,
+): CircleExplorerChallenge[] {
+  const target = Math.max(
+    1,
+    Math.min(MAX_INSTANCE_COUNT, count ?? COUNT_BY_MODE[challengeType] ?? DEFAULT_INSTANCE_COUNT),
+  );
+
+  const raw: RawChallenge[] = [];
+  const seen = new Set<string>();
+
+  const tryPush = (ch: RawChallenge): boolean => {
+    const key = canonicalKey(ch);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    raw.push(ch);
+    return true;
+  };
+
+  // Variance rule: rotate through structural variants, guaranteeing ≥1 of each
+  // before back-filling. Mirrors factor-tree's "≥1 odd composite" pattern.
+  if (challengeType === 'circumference') {
+    const variants: Array<'radius' | 'diameter'> = ['radius', 'diameter'];
+    let i = 0;
+    for (let attempt = 0; attempt < target * 12 && raw.length < target; attempt++) {
+      const v = i < variants.length ? variants[i] : pick(variants);
+      i++;
+      tryPush(buildCircumference(v));
+    }
+  } else if (challengeType === 'area') {
+    const variants: Array<'radius' | 'diameter'> = ['radius', 'diameter'];
+    let i = 0;
+    for (let attempt = 0; attempt < target * 12 && raw.length < target; attempt++) {
+      const v = i < variants.length ? variants[i] : pick(variants);
+      i++;
+      tryPush(buildArea(v));
+    }
+  } else if (challengeType === 'reverse') {
+    const variants: Array<'circumference' | 'area'> = ['circumference', 'area'];
+    let i = 0;
+    for (let attempt = 0; attempt < target * 12 && raw.length < target; attempt++) {
+      const v = i < variants.length ? variants[i] : pick(variants);
+      i++;
+      tryPush(buildReverse(v));
+    }
+  } else if (challengeType === 'composite') {
+    const variants: CircleCompositeShape[] = ['semicircle_area', 'semicircle_perimeter', 'circle_in_square'];
+    let i = 0;
+    for (let attempt = 0; attempt < target * 14 && raw.length < target; attempt++) {
+      const v = i < variants.length ? variants[i] : pick(variants);
+      i++;
+      tryPush(buildComposite(v));
+    }
+  } else {
+    // discover_pi — just distinct radii
+    for (let attempt = 0; attempt < target * 12 && raw.length < target; attempt++) {
+      tryPush(buildDiscoverPi());
+    }
+  }
+
+  // Fallback — accept duplicates if the candidate space was too narrow.
+  while (raw.length < target) {
+    switch (challengeType) {
+      case 'circumference': raw.push(buildCircumference(pick(['radius', 'diameter']))); break;
+      case 'area': raw.push(buildArea(pick(['radius', 'diameter']))); break;
+      case 'reverse': raw.push(buildReverse(pick(['circumference', 'area']))); break;
+      case 'composite': raw.push(buildComposite(pick(['semicircle_area', 'semicircle_perimeter', 'circle_in_square']))); break;
+      default: raw.push(buildDiscoverPi());
+    }
+  }
+
+  // Easier → harder by the magnitude of the radius (the structural difficulty driver).
+  const sorted = raw.sort((a, b) => a.radius - b.radius);
+  return sorted.map((ch, i) => ({ ...ch, id: `ce-${i + 1}` }));
+}
+
+// ---------------------------------------------------------------------------
+// Build a MIXED session that interleaves all five tiers (Auto path only)
+// ---------------------------------------------------------------------------
+
+const shuffle = <T,>(arr: T[]): T[] => {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+};
+
+// Dispatch to the right per-type builder. The multi-variant tiers pick a
+// variant at random so a mixed session shows structural variety within a tier too.
+function buildForType(type: CircleExplorerChallengeType): RawChallenge {
+  switch (type) {
+    case 'discover_pi':
+      return buildDiscoverPi();
+    case 'circumference':
+      return buildCircumference(pick(['radius', 'diameter']));
+    case 'area':
+      return buildArea(pick(['radius', 'diameter']));
+    case 'reverse':
+      return buildReverse(pick(['circumference', 'area']));
+    case 'composite':
+      return buildComposite(pick(['semicircle_area', 'semicircle_perimeter', 'circle_in_square']));
+  }
+}
+
+export function selectMixedCircleExplorerChallenges(count?: number): CircleExplorerChallenge[] {
+  // Cover every tier at least once; default to a session of 8.
+  const target = Math.max(
+    TIER_ORDER.length,
+    Math.min(MIXED_MAX_COUNT, count ?? MIXED_INSTANCE_COUNT),
+  );
+
+  // Round-robin over a shuffled permutation so all five tiers are represented
+  // and the leading tier varies session-to-session. The first TIER_ORDER.length
+  // slots are guaranteed to cover all tiers (it's a permutation); later slots
+  // repeat tiers in the same rotation.
+  const rotation = shuffle(TIER_ORDER);
+  const raw: RawChallenge[] = [];
+  const seen = new Set<string>();
+
+  for (let attempt = 0; attempt < target * 12 && raw.length < target; attempt++) {
+    const type = rotation[raw.length % rotation.length];
+    const ch = buildForType(type);
+    const key = canonicalKey(ch);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    raw.push(ch);
+  }
+
+  // Fallback — accept duplicates if dedup starved a slot (narrow candidate space).
+  let slot = raw.length;
+  while (raw.length < target) {
+    raw.push(buildForType(rotation[slot % rotation.length]));
+    slot++;
+  }
+
+  // Scale difficulty low → high: tier rank is the primary key, radius magnitude
+  // the tiebreaker within a tier.
+  const sorted = raw.sort((a, b) => {
+    const dr = TIER_RANK[a.type] - TIER_RANK[b.type];
+    return dr !== 0 ? dr : a.radius - b.radius;
+  });
+  return sorted.map((ch, i) => ({ ...ch, id: `ce-${i + 1}` }));
+}
+
+// ---------------------------------------------------------------------------
+// Schema (wrapper metadata only — Gemini does NOT emit per-challenge data)
+// ---------------------------------------------------------------------------
+
+const circleExplorerSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: {
+      type: Type.STRING,
+      description:
+        "Title for the multi-circle session (e.g., 'Circumference of a Circle'). Do NOT name specific radii or values — the session walks through several circles.",
+    },
+    description: {
+      type: Type.STRING,
+      description: "1-2 sentence educational description of what students will practice across the session.",
+    },
+    challengeType: {
+      type: Type.STRING,
+      enum: ['discover_pi', 'circumference', 'area', 'reverse', 'composite'],
+      description: "Difficulty tier of the session. The system uses this to build the circle pool.",
+    },
+    gradeBand: {
+      type: Type.STRING,
+      enum: ['7'],
+      description: "Target grade band (always 7 for circles, CCSS 7.G.B.4).",
+    },
+  },
+  required: ['title', 'description', 'challengeType'],
+};
+
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
+
+export const generateCircleExplorer = async (
+  topic: string,
+  gradeLevel: string,
+  config?: {
+    instanceCount?: number;
+    targetEvalMode?: string;
+  },
+): Promise<CircleExplorerData> => {
+  const validTypes: CircleExplorerChallengeType[] = [
+    'discover_pi',
+    'circumference',
+    'area',
+    'reverse',
+    'composite',
+  ];
+
+  // ── Resolve eval mode from the catalog (single source of truth) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'circle-explorer',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(circleExplorerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'challengeType',
+        rootLevel: true,
+      })
+    : circleExplorerSchema;
+
+  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
+  const prompt = `
+Create the wrapper metadata for a multi-circle geometry session on "${topic}" for ${gradeLevel} students.
+
+CONTEXT:
+- A circle session contains several separate circle problems the student solves.
+- The system has ALREADY pre-built each circle (radii, diameters, given values, composite dimensions, and answers) — you do NOT pick numbers, radii, or answers.
+- Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
+
+${challengeTypeSection}
+
+REQUIREMENTS:
+1. Write a clear, student-friendly title for the whole session. Do NOT name any specific radius, value, or answer.
+2. Provide a 1-2 sentence educational description of what students will practice.
+3. Set challengeType to the correct difficulty tier (matches the constraint above).
+4. Set gradeBand to "7".
+
+Return ONLY the wrapper fields described above.
+`;
+
+  logEvalModeResolution('CircleExplorer', config?.targetEvalMode, evalConstraint);
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      temperature: 0.9,
+      topP: 0.95,
+      responseMimeType: "application/json",
+      responseSchema: activeSchema,
+    },
+  });
+
+  const wrapper = result.text ? JSON.parse(result.text) : null;
+  if (!wrapper) {
+    throw new Error('No valid circle-explorer wrapper returned from Gemini API');
+  }
+
+  // ── Auto (mixed) path: no eval-mode constraint → interleave ALL five tiers,
+  //    scaled easy→hard, as a single longer session (SP-21). IRT-pinned modes
+  //    always have a constraint and fall through to the single-type path below.
+  const isMixed = evalConstraint === null;
+
+  // ── Resolve challengeType (Gemini → eval constraint → safe default) ──
+  // For mixed sessions this is representative metadata only: the component
+  // renders per-challenge from `currentChallenge.type`, never the top-level field.
+  let challengeType: CircleExplorerChallengeType = isMixed
+    ? 'discover_pi' // lowest tier — where the mixed session begins
+    : validTypes.includes(wrapper.challengeType as CircleExplorerChallengeType)
+      ? (wrapper.challengeType as CircleExplorerChallengeType)
+      : (evalConstraint?.allowedTypes[0] as CircleExplorerChallengeType) ?? 'circumference';
+  if (!validTypes.includes(challengeType)) challengeType = 'circumference';
+
+  // ── Build the per-challenge pool locally ──
+  const challenges = isMixed
+    ? selectMixedCircleExplorerChallenges(config?.instanceCount)
+    : selectCircleExplorerChallenges(challengeType, config?.instanceCount);
+
+  // ── Post-validation: every expectedAnswer must match its geometry ──
+  for (const ch of challenges) {
+    const recomputed = recomputeExpected(ch);
+    if (recomputed === null) {
+      console.warn(`[CircleExplorer] Could not recompute expected for ${ch.id} (${ch.type}/${ch.compositeShape ?? '-'}).`);
+      continue;
+    }
+    if (Math.abs(recomputed - ch.expectedAnswer) > 1e-6) {
+      console.warn(`[CircleExplorer] Answer mismatch on ${ch.id} (${ch.type}): stored ${ch.expectedAnswer}, recomputed ${recomputed}. Correcting.`);
+      ch.expectedAnswer = recomputed;
+    }
+  }
+
+  const data: CircleExplorerData = {
+    title: wrapper.title,
+    description: wrapper.description,
+    challengeType,
+    gradeBand: '7',
+    challenges,
+  };
+
+  const summary = challenges
+    .map((c) => `${c.type}${c.compositeShape ? `/${c.compositeShape}` : ''} r=${c.radius}→${c.expectedAnswer}`)
+    .join(', ');
+  console.log(`[CircleExplorer] Final: challengeType=${challengeType}, instances=${challenges.length} [${summary}]`);
+
+  return data;
+};

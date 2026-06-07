@@ -1391,6 +1391,230 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
   },
   {
+    id: 'circle-explorer',
+    description: 'Multi-circle grade-7 session (3-6 distinct circles of the same eval mode, surfaced sequentially) for discovering and applying the geometry of circles. Students first uncover π itself by measuring C ÷ d across several circles and recognizing the constant ≈ 3.14, then find circumference from a radius or diameter (C = 2πr = πd), find area from a radius (A = πr²), work backward to recover the radius given a circumference or an area, and finally tackle composite figures (semicircle area/perimeter, circle-in-square). Canvas-based with two signature interactions: an unroll-the-circumference animation that straightens the perimeter into a line of length πd, and a slice-into-wedges rearrangement that morphs the circle into a near-rectangle of base πr and height r to reveal A = πr². Five progressive difficulty tiers (discover π → circumference → area → reverse → composite). CCSS 7.G.B.4. Grade 7. Fork-A: the pool service pre-builds each circle (radius, given value, composite dimensions, answer) deterministically per challenge — the manifest must NOT specify radii, given values, dimensions, or answers.',
+    constraints: 'The manifest must NOT supply per-circle radii, given values, composite dimensions, or answers — the pool service builds 3-6 distinct circles deterministically from the selected eval mode and gradeBand. The manifest may supply gradeBand and instanceCount only (default 4, max 6). Each eval mode maps to exactly one challengeType of the same name.',
+    evalModes: [
+      {
+        evalMode: 'discover_pi',
+        label: 'Discover π (Tier 1)',
+        beta: 2.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['discover_pi'],
+        description: 'Estimate C ÷ d across circles and recognize the constant π ≈ 3.14.',
+      },
+      {
+        evalMode: 'circumference',
+        label: 'Circumference (Tier 2)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['circumference'],
+        description: 'Find the circumference from the radius or diameter (C = 2πr = πd).',
+      },
+      {
+        evalMode: 'area',
+        label: 'Area (Tier 3)',
+        beta: 4.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['area'],
+        description: 'Find the area of a circle from its radius (A = πr²).',
+      },
+      {
+        evalMode: 'reverse',
+        label: 'Find the Radius (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 5,
+        challengeTypes: ['reverse'],
+        description: 'Work backward: find the radius given the circumference or the area.',
+      },
+      {
+        evalMode: 'composite',
+        label: 'Composite Figures (Tier 5)',
+        beta: 5.5,
+        scaffoldingMode: 6,
+        challengeTypes: ['composite'],
+        description: 'Semicircle area/perimeter and circle-in-square composite figures.',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Multi-circle session. Mode: {{challengeType}}. Circle {{currentChallengeIndex}} of {{totalChallenges}} (radius {{radius}} {{unitLabel}}). Expected answer = {{expectedAnswer}}.',
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'radius', 'given', 'answerKind', 'reverseGiven', 'compositeShape', 'unitLabel', 'expectedAnswer', 'gradeBand', 'attemptNumber'],
+      scaffoldingLevels: {
+        level1: '"Every circle answer flows from one number — π. Before you compute anything, ask yourself: does this question want what is AROUND the circle or INSIDE it, and do you need the radius or the diameter to get there?"',
+        level2: '"Pick the relationship that matches this mode: circumference is C = 2πr = πd; area is A = πr²; to work backward, divide a circumference by 2π to get the radius, or take √(A/π) for the radius from an area; for a composite, a semicircle is exactly half a circle, and a circle-in-square is the square minus the inscribed circle. This circle has radius {{radius}} {{unitLabel}} — match it to the right formula."',
+        level3: '"Start from radius {{radius}} {{unitLabel}}. For circumference, double the radius and multiply by π (2 × {{radius}} × π); for area, square the radius first ({{radius}} × {{radius}}) and then multiply by π; for reverse, undo that chain one step at a time; for a composite, build each circular piece and then combine. I have set up the multiplication for you — now you finish the arithmetic and tell me what you get."',
+      },
+      commonStruggles: [
+        { pattern: 'Using the diameter where the radius is needed (or the radius where the diameter is needed)', response: '"Check which length you have. The radius reaches from the center to the edge; the diameter goes all the way across (d = 2r). C = πd uses the diameter, but C = 2πr and A = πr² both use the radius."' },
+        { pattern: 'Forgetting to square the radius for area', response: '"Area is A = πr² — the radius is SQUARED, not just multiplied once. Compute r × r first, then multiply by π."' },
+        { pattern: 'Confusing circumference (around) with area (inside), and units with square units', response: '"Circumference measures the distance AROUND the circle and is reported in plain units; area measures the space INSIDE and is reported in square units. Decide which one the question wants before you start."' },
+        { pattern: 'For reverse problems, multiplying by 2π instead of dividing', response: '"To go from circumference back to the radius you must UNDO the formula: since C = 2πr, divide the circumference by 2π. Multiplying would make the radius far too big."' },
+      ],
+      aiDirectives: [
+        {
+          title: 'MULTI-CIRCLE PACING',
+          instruction:
+            'The session walks through several distinct circles of the same eval mode. '
+            + 'After each correct answer, briefly celebrate, then point forward: "Now look at the next circle — same method, new measurements." '
+            + 'Do NOT re-teach the formula from scratch on every circle; circles 2 through N should feel like fluency practice, not lesson restarts. '
+            + 'The student is on circle {{currentChallengeIndex}} of {{totalChallenges}}.',
+        },
+        {
+          title: 'PI AS A RATIO',
+          instruction:
+            'Keep returning to the through-line that π is simply C ÷ d — the ratio of any circle\'s circumference to its diameter, the same ≈ 3.14 for every circle. '
+            + 'That one constant powers BOTH circumference (C = 2πr = πd) and area (A = πr²). '
+            + 'Students who understand π as this single ratio stop memorizing disconnected formulas and instead see every circle answer as the same idea applied two ways.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'angle-workshop',
+    description: 'Interactive angle workshop where students measure, classify, and solve for unknown angles on a canvas figure. Perfect for angle relationships (complementary, supplementary, vertical, adjacent), writing and solving equations for unknown angles, and parallel-lines-with-a-transversal reasoning. ESSENTIAL for grade 7-8 geometry (CCSS 7.G.B.5, 8.G.A.5).',
+    constraints: 'The manifest must NOT supply specific per-challenge angle values, measures, or relationships — the local pool service builds the challenges deterministically from the selected eval mode. The manifest supplies only session-level wrapper metadata (title, description, challengeType, gradeBand).',
+    evalModes: [
+      {
+        evalMode: 'measure',
+        label: 'Measure with a Protractor',
+        beta: 1.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['measure'],
+        description: 'Read an angle from a protractor.',
+      },
+      {
+        evalMode: 'classify_pairs',
+        label: 'Classify Angle Pairs',
+        beta: 2.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['classify_pairs'],
+        description: 'Identify complementary, supplementary, vertical, or adjacent pairs.',
+      },
+      {
+        evalMode: 'solve_unknown',
+        label: 'Solve for an Unknown Angle',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['solve_unknown'],
+        description: 'Use a relationship to find a missing angle.',
+      },
+      {
+        evalMode: 'solve_algebraic',
+        label: 'Algebraic Angle Equations',
+        beta: 4.5,
+        scaffoldingMode: 4,
+        challengeTypes: ['solve_algebraic'],
+        description: 'Set up and solve a linear equation for an unknown angle.',
+      },
+      {
+        evalMode: 'transversal',
+        label: 'Transversals & Triangle Angles',
+        beta: 5.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['transversal'],
+        description: 'Parallel lines cut by a transversal, and triangle angle-sum / exterior-angle problems.',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Multi-problem angle session — the student measures, classifies, or solves for unknown angles across several figures. Currently on {{challengeType}} problem {{currentChallengeIndex}} of {{totalChallenges}}.',
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'answerKind', 'relationship', 'solveConfig', 'algConfig', 'transversalShape', 'transRelation', 'knownAngle', 'givenAngle', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Which angles in the figure are connected — do they form a line, a right angle, or cross? Decide how they relate before you reach for any numbers."',
+        level2: '"Name the relationship first. This is a {{relationship}} pair, so the two angles have a fixed total or are equal. One angle here measures {{knownAngle}}° — write the relationship as an equation that links it to the unknown, but do NOT compute the answer yet."',
+        level3: '"Set it up step by step. Start from the relationship ({{relationship}}) and the known angle {{knownAngle}}°. Write the equation, isolate the unknown on one side, and — if the question asks for an algebraic angle — remember to substitute your value of x back into the expression. I have framed the equation; you finish the arithmetic and tell me what you get."',
+      },
+      commonStruggles: [
+        { pattern: 'Adds to 90 when the angles lie on a straight line', response: 'Point out the straight line means the two angles must total 180°, not 90°.' },
+        { pattern: 'Solves for x but submits x instead of the requested angle measure', response: 'Remind them to substitute x back into the expression when the question asks for the angle.' },
+        { pattern: 'Calls a straight-line pair "vertical"', response: 'Clarify vertical angles are the opposite pair where two lines cross.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'MULTI-PROBLEM PACING',
+          instruction:
+            'This is a {{totalChallenges}}-problem session. After each correct answer, the student clicks "Next Problem →". '
+            + 'Encourage progression: "Nice — on to problem {{currentChallengeIndex}}!" '
+            + 'After a wrong attempt, point at the specific step that needs another look — '
+            + 'do NOT repeat the whole method from scratch.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
+    id: 'transformation-lab',
+    description: 'Interactive coordinate-plane transformation lab where students slide, flip, turn, and scale a polygon and see what stays the same. Students drag image vertices to apply translations, reflections, and rotations; name transformations from a pre-image/image pair; compose sequences of motions to hit a target; and apply dilations to reason about similarity vs congruence. Perfect for rigid motions (translations, reflections, rotations), congruence via sequences of transformations, dilations, and similarity. ESSENTIAL for grade 8 geometry (CCSS 8.G.A.1, 8.G.A.2, 8.G.A.3, 8.G.A.4).',
+    constraints: 'The manifest must NOT supply specific per-challenge vertices, coordinates, transformation parameters, or answers — the local pool service builds the challenges deterministically from the selected eval mode. The manifest supplies only session-level wrapper metadata (title, description, challengeType, gradeBand=\'8\').',
+    evalModes: [
+      {
+        evalMode: 'apply_translation_reflection',
+        label: 'Translate & Reflect (Tier 3)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['apply_translation_reflection'],
+        description: 'Produce the image of a translation or reflection by dragging vertices.',
+      },
+      {
+        evalMode: 'apply_rotation',
+        label: 'Rotate about the Origin (Tier 4)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['apply_rotation'],
+        description: 'Rotate a figure 90°, 180°, or 270° about the origin.',
+      },
+      {
+        evalMode: 'identify_transformation',
+        label: 'Identify the Transformation (Tier 4)',
+        beta: 4.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['identify_transformation'],
+        description: 'Name the single transformation and its parameters from a pre-image and image.',
+      },
+      {
+        evalMode: 'compose_sequence',
+        label: 'Compose a Sequence (Tier 5)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['compose_sequence'],
+        description: 'Reach a target image with a sequence of two or more transformations; argue congruence.',
+      },
+      {
+        evalMode: 'dilation_similarity',
+        label: 'Dilations & Similarity (Tier 5)',
+        beta: 5.5,
+        scaffoldingMode: 5,
+        challengeTypes: ['dilation_similarity'],
+        description: 'Apply a scale factor about the origin; reason about similarity vs congruence.',
+      },
+    ],
+    tutoring: {
+      taskDescription: 'Multi-problem transformation session — the student slides, flips, turns, and scales polygons on a coordinate grid across several figures. Currently on {{challengeType}} problem {{currentChallengeIndex}} of {{totalChallenges}}.',
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'answerKind', 'transformLabel', 'isSimilarity', 'scaleFactor', 'gradeBand'],
+      scaffoldingLevels: {
+        level1: '"Follow ONE corner of the pre-image. Where should it land after this transformation — does it slide, flip across a line, turn around the origin, or scale away from it?"',
+        level2: '"Use the coordinate rule for {{transformLabel}}. Apply it to a single vertex first: write the new (x, y), then move that corner. Reflections swap or negate a coordinate; a 90° turn sends (x, y) to (−y, x); a dilation multiplies both coordinates by the scale factor."',
+        level3: '"Go vertex by vertex. Take each pre-image point, apply the rule for {{transformLabel}} to get its image coordinates, and place that corner. I will set up the rule for the first corner; you finish the rest and check that the whole figure matches."',
+      },
+      commonStruggles: [
+        { pattern: 'Reflects over the wrong axis (swaps which coordinate is negated)', response: 'Reflection over the x-axis negates y; over the y-axis negates x. Point at which axis is the mirror.' },
+        { pattern: 'Confuses rotation direction (90° CW vs CCW)', response: 'A 90° counterclockwise turn about the origin sends (x, y) to (−y, x). Have them test it on one corner.' },
+        { pattern: 'Calls a dilation congruent', response: 'A dilation changes size, so the image is similar, not congruent — only rigid motions preserve size.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'MULTI-PROBLEM PACING',
+          instruction:
+            'This is a {{totalChallenges}}-problem session. After each correct answer, the student clicks "Next Problem →". '
+            + 'Encourage progression: "Nice — on to problem {{currentChallengeIndex}}!" '
+            + 'After a wrong attempt, point at the specific vertex or rule that needs another look — '
+            + 'do NOT re-explain the whole method from scratch.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
     id: 'matrix-display',
     description: 'Multi-challenge matrix practice session (3-6 matrix problems of the same operation, surfaced sequentially). Per challenge, students see Matrix A (and Matrix B for binary operations), enter the result in editable cells (or a single number for determinant), and click "Check Answer" for immediate judgment. Wrong answers prompt hint / "Show steps" walkthrough; correct answers advance to the next matrix. Supports transpose, add, subtract, multiply (row-by-column), determinant (2×2 and 3×3), and inverse (2×2 with det = ±1 so entries stay integer). ESSENTIAL for grade 7-8 (intro to matrix arithmetic), Algebra 2 (operations + determinant), Precalculus (inverses + multiplication), and Linear Algebra (all operations).',
     constraints: 'Manifest must NOT supply specific matrix values, dimensions, or per-challenge content — the pool service builds 3-6 distinct challenges deterministically from the eval-mode operation and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape constraints: transpose alternates 2×3/3×2; add/subtract uses 2×2 or 2×3 same-shape; multiply alternates 2×2 × 2×2 and 2×3 × 3×2; determinant uses 2×2 (grade 7-8) or 2×2/3×3 (algebra2+); inverse is always 2×2 with det ∈ {±1} so A⁻¹ entries are clean integers.',

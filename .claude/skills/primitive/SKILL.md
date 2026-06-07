@@ -582,6 +582,34 @@ Design a Gemini schema that reliably produces multi-instance valid data. **Read 
 
    Reference: [gemini-factor-tree.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-factor-tree.ts), [gemini-balance-scale.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-balance-scale.ts), [gemini-histogram.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-histogram.ts), [gemini-systems-equations.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-systems-equations.ts).
 
+   > ⚠️ **Fork A trap — the "Auto (mixed)" path silently ships a single tier (SP-21).** When the schema has ONE root-level `challengeType` enum and `selectFooChallenges(oneType)` builds the whole session from it, the unconstrained path (`resolveEvalModeConstraint(...) === null` — the tester's "Auto (mixed)" button and the manifest's no-`targetEvalMode` path) does NOT mix tiers. The null constraint just lets Gemini pick **one** enum value, so every challenge in the session is that one type — the "mixed" label is a lie, and a plain `tsc` + per-mode eval-test won't catch it (each IRT-pinned mode is correctly single-type). **If your primitive has 2+ challengeType tiers, build the mixed path explicitly:**
+   > ```typescript
+   > // Tier difficulty order (easy → hard) — used ONLY on the unconstrained Auto path.
+   > const TIER_ORDER: FooChallengeType[] = ['tierA', 'tierB', /* ... */];
+   > const TIER_RANK = TIER_ORDER.reduce((a, t, i) => { a[t] = i; return a; }, {} as Record<FooChallengeType, number>);
+   >
+   > // buildForType() dispatches to the existing per-type builders (no new figure code).
+   > export function selectMixedFooChallenges(count = 8): FooChallenge[] {        // >4, covers all tiers
+   >   const rotation = shuffle(TIER_ORDER);                                      // every tier appears ≥1×
+   >   const raw = []; const seen = new Set<string>();
+   >   for (let a = 0; a < count * 12 && raw.length < count; a++) {
+   >     const ch = buildForType(rotation[raw.length % rotation.length]);
+   >     if (!seen.has(canonKey(ch))) { seen.add(canonKey(ch)); raw.push(ch); }
+   >   }
+   >   // Scale low → high: tier rank primary, in-tier difficulty driver (area/radius/...) as tiebreaker.
+   >   return raw.sort((x, y) => (TIER_RANK[x.type] - TIER_RANK[y.type]) || (x.difficulty - y.difficulty))
+   >             .map((ch, i) => ({ ...ch, id: `foo-${i + 1}` }));
+   > }
+   >
+   > // In the generator: route the null-constraint path to the mixed builder.
+   > const isMixed = evalConstraint === null;
+   > const challenges = isMixed ? selectMixedFooChallenges(config?.instanceCount)
+   >                            : selectFooChallenges(challengeType, config?.instanceCount);
+   > // Top-level `challengeType` on the mixed path is representative metadata only — the component
+   > // must already render per-challenge from `currentChallenge.type`, never the top-level field.
+   > ```
+   > IRT-pinned modes pass a non-null constraint → the single-type path is untouched. Reference fixes: [gemini-polygon-area-builder.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-polygon-area-builder.ts) (`selectMixedPolygonAreaChallenges`), [gemini-circle-explorer.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-circle-explorer.ts) (`selectMixedCircleExplorerChallenges`). See EVAL_TRACKER SP-21.
+
    **Fork B — Orchestrator (content-bearing per-challenge data).** N parallel Gemini calls (Promise.all) of a per-mode sub-generator; results merged into `challenges[]`. Use **orchestrator-same-mode** (one call shape, N copies) when the session pins to a single eval mode (the common case). Use **orchestrator-mixed-type** only when one render spans multiple challenge types.
 
    ```typescript
@@ -699,6 +727,10 @@ export const generate<Name> = async (
 6. If all challenges rejected, use type-appropriate hardcoded fallback
 7. If eval mode requires semantic differentiation beyond challengeType
    (e.g., "count-like" = single coin type), apply post-filter
+8. **If 2+ challengeType tiers AND a single root-level `challengeType` enum (Fork A wrapper):**
+   build the unconstrained "Auto (mixed)" path explicitly — when `evalConstraint === null`,
+   round-robin all tiers + sort easy→hard instead of building from one Gemini-picked tier.
+   Otherwise Auto silently ships a single tier (SP-21). See Task 1 Fork A trap callout.
 
 **Anti-patterns to AVOID:**
 - `correctTotal ?? 10` — silent fallback masks broken generation

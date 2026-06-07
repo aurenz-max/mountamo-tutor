@@ -17,6 +17,9 @@ import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGrap
 import type { CoordinateGraphData } from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
 import PolygonAreaBuilder from '../primitives/visual-primitives/math/PolygonAreaBuilder';
+import CircleExplorer from '../primitives/visual-primitives/math/CircleExplorer';
+import AngleWorkshop from '../primitives/visual-primitives/math/AngleWorkshop';
+import TransformationLab from '../primitives/visual-primitives/math/TransformationLab';
 import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot from '../primitives/visual-primitives/math/DotPlot';
@@ -76,7 +79,7 @@ interface MathPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
+type PrimitiveType = 'fraction-bar' | 'place-value-chart' | 'area-model' | 'array-grid' | 'factor-tree' | 'bar-model' | 'ratio-table' | 'double-number-line' | 'percent-bar' | 'tape-diagram' | 'balance-scale' | 'function-machine' | 'coordinate-graph' | 'slope-triangle' | 'polygon-area-builder' | 'circle-explorer' | 'angle-workshop' | 'transformation-lab' | 'systems-equations-visualizer' | 'matrix-display' | 'dot-plot' | 'histogram' | 'two-way-table' | 'ten-frame' | 'counting-board' | 'pattern-builder' | 'practice-problem' | 'skip-counting-runner' | 'regrouping-workbench' | 'multiplication-explorer' | 'measurement-tools' | 'shape-builder' | 'number-line' | 'base-ten-blocks' | 'fraction-circles' | 'comparison-builder' | 'number-sequencer' | 'number-bond' | 'addition-subtraction-scene' | 'ordinal-line' | 'sorting-station' | 'shape-sorter' | '3d-shape-explorer' | 'shape-tracer' | 'number-tracer' | 'math-fact-fluency' | 'strategy-picker' | 'hundreds-chart' | 'length-lab' | 'analog-clock' | 'coin-counter' | 'time-sequencer' | 'spatial-scene' | 'shape-composer' | 'net-folder' | 'equation-builder' | 'compare-objects' | 'parameter-explorer' | 'equation-workspace' | 'function-sketch';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 type PrimitiveOption = { value: PrimitiveType; label: string; icon: string; topic: string };
@@ -175,6 +178,9 @@ const PRIMITIVE_GROUPS: Array<{ label: string; grade: string; items: PrimitiveOp
       { value: 'coordinate-graph', label: 'Coordinate Graph', icon: '📍', topic: 'Plotting ordered pairs' },
       { value: 'slope-triangle', label: 'Slope Triangle', icon: '📐', topic: 'Understanding slope with rise and run' },
       { value: 'polygon-area-builder', label: 'Polygon Area Builder', icon: '📐', topic: 'Find polygon areas by composing and decomposing shapes' },
+      { value: 'circle-explorer', label: 'Circle Explorer', icon: '⭕', topic: 'circles & π' },
+      { value: 'angle-workshop', label: 'Angle Workshop', icon: '📐', topic: 'angle relationships' },
+      { value: 'transformation-lab', label: 'Transformation Lab', icon: '🔄', topic: 'transformations & similarity' },
       { value: 'systems-equations-visualizer', label: 'Systems of Equations', icon: '📊', topic: 'Solving systems of equations' },
       { value: 'parameter-explorer', label: 'Parameter Explorer', icon: '🎛️', topic: 'Exploring how parameters affect functions and graphs' },
       { value: 'function-sketch', label: 'Function Sketch', icon: '✏️', topic: 'Trigonometric functions' },
@@ -462,6 +468,45 @@ const PrimitiveRenderer: React.FC<{
             skillId: 'math-geometry-area',
             subskillId: 'polygon-area',
             objectiveId: 'find-polygon-area',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'circle-explorer':
+      return (
+        <CircleExplorer
+          data={{
+            ...(data as Parameters<typeof CircleExplorer>[0]['data']),
+            instanceId: `circle-explorer-${Date.now()}`,
+            skillId: 'math-geometry-circles',
+            subskillId: 'circle-explorer',
+            objectiveId: 'explore-circles-and-pi',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'angle-workshop':
+      return (
+        <AngleWorkshop
+          data={{
+            ...(data as Parameters<typeof AngleWorkshop>[0]['data']),
+            instanceId: `angle-workshop-${Date.now()}`,
+            skillId: 'math-geometry-angles',
+            subskillId: 'angle-workshop',
+            objectiveId: 'explore-angle-relationships',
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'transformation-lab':
+      return (
+        <TransformationLab
+          data={{
+            ...(data as Parameters<typeof TransformationLab>[0]['data']),
+            instanceId: `transformation-lab-${Date.now()}`,
+            skillId: 'math-geometry-transformations',
+            subskillId: 'transformation-lab',
+            objectiveId: 'explore-transformations',
             onEvaluationSubmit,
           }}
         />
@@ -1214,6 +1259,42 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
                     <span>Hints viewed: {result.metrics.hintsViewed}</span>
                     <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show CircleExplorer-specific metrics */}
+                {result.metrics.type === 'circle-explorer' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount} / {result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Total attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg/challenge: {result.metrics.averageAttemptsPerChallenge}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy}%</span>
+                  </div>
+                )}
+                {/* Show AngleWorkshop-specific metrics */}
+                {result.metrics.type === 'angle-workshop' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
+                )}
+                {/* Show TransformationLab-specific metrics */}
+                {result.metrics.type === 'transformation-lab' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
                   </div>
                 )}
                 {/* Show SystemsEquations-specific metrics */}

@@ -2554,6 +2554,42 @@ export interface PolygonAreaBuilderMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface CircleExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'circle-explorer';
+  challengeType: 'discover_pi' | 'circumference' | 'area' | 'reverse' | 'composite';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
+export interface AngleWorkshopMetrics extends BasePrimitiveMetrics {
+  type: 'angle-workshop';
+  challengeType: 'measure' | 'classify_pairs' | 'solve_unknown' | 'solve_algebraic' | 'transversal';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
+export interface TransformationLabMetrics extends BasePrimitiveMetrics {
+  type: 'transformation-lab';
+  challengeType: 'apply_translation_reflection' | 'apply_rotation' | 'identify_transformation' | 'compose_sequence' | 'dilation_similarity';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface MatrixDisplayMetrics extends BasePrimitiveMetrics {
   type: 'matrix-display';
   challengeType: 'transpose' | 'add' | 'subtract' | 'multiply' | 'determinant' | 'inverse';
@@ -3217,6 +3253,9 @@ export type PrimitiveMetrics =
   | TwoWayTableMetrics
   | SlopeTriangleMetrics
   | PolygonAreaBuilderMetrics
+  | CircleExplorerMetrics
+  | AngleWorkshopMetrics
+  | TransformationLabMetrics
   | SystemsEquationsMetrics
   | LengthLabMetrics
   | ShapeBuilderMetrics

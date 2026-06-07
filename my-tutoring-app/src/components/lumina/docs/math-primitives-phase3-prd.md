@@ -10,10 +10,10 @@
 >
 > | # | Primitive | Wave | CCSS | Status |
 > |---|-----------|------|------|--------|
-> | 1 | `polygon-area-builder` | 1 — Geometry | 6.G.A.1 | ❌ Not Started |
-> | 2 | `circle-explorer` | 1 — Geometry | 7.G.B.4 | ❌ Not Started |
-> | 3 | `angle-workshop` | 1 — Geometry | 7.G.B.5, 8.G.A.5 | ❌ Not Started |
-> | 4 | `transformation-lab` | 1 — Geometry | 8.G.A.1-4 | ❌ Not Started |
+> | 1 | `polygon-area-builder` | 1 — Geometry | 6.G.A.1 | ✅ Shipped |
+> | 2 | `circle-explorer` | 1 — Geometry | 7.G.B.4 | ✅ Shipped |
+> | 3 | `angle-workshop` | 1 — Geometry | 7.G.B.5, 8.G.A.5 | ✅ Shipped |
+> | 4 | `transformation-lab` | 1 — Geometry | 8.G.A.1-4 | ✅ Shipped |
 > | 5 | `pythagorean-explorer` | 1 — Geometry | 8.G.B.6-8 | ❌ Not Started |
 > | 6 | `solid-volume-lab` | 1 — Geometry | 6.G.A.2, 7.G.B.6, 8.G.C.9 | ❌ Not Started |
 > | 7 | `box-plot` | 2 — Stats/Prob | 6.SP.B.4-5 | ❌ Not Started |
@@ -103,6 +103,8 @@ The single largest white space. Every primitive here is a **living, directly-man
 
 ### 1. `polygon-area-builder` — Cut It, Move It, Find the Area
 
+> **✅ Shipped 2026-05-28** (`/primitive polygon-area-builder`). Canvas component with drag-to-decompose (slide the cut triangle to rebuild a parallelogram as a rectangle); Fork A pool service (5 eval modes: `decompose` β1.5 → `find_area_triangle_parallelogram` β2.5 → `find_area_trapezoid` β3.5 → `composite_area` β4.5 → `coordinate_polygon` β5.5). QA eval-test PASS ([report](../../../../qa/eval-reports/polygon-area-builder-2026-05-28.md)). Files: `PolygonAreaBuilder.tsx`, `gemini-polygon-area-builder.ts`, plus catalog / registry / metrics / tester / backend `problem_type_registry.py`.
+
 **Purpose:** A child knows a rectangle's area is base × height. The leap is realizing *every* polygon's area comes from that one idea. This primitive lets students cut a triangle, parallelogram, or trapezoid and rearrange the pieces into a rectangle they already understand — deriving ½·b·h and the trapezoid formula by their own hands rather than memorizing them.
 
 **Grade Band:** 6-7 · **CCSS:** 6.G.A.1 (area of triangles, special quadrilaterals, and polygons by composing/decomposing), extends to coordinate-plane polygons.
@@ -139,6 +141,8 @@ The single largest white space. Every primitive here is a **living, directly-man
 
 ### 2. `circle-explorer` — Unroll the Circle
 
+> **✅ Shipped 2026-06-06** (`/primitive circle-explorer`). Canvas component with unroll-the-circumference and slice-into-wedges animations; Fork A pool service (5 eval modes: `discover_pi` β2.0 → `circumference` β3.0 → `area` β4.0 → `reverse` β5.0 → `composite` β5.5). `discover_pi` gates the answer on unrolling first; `reverse` never labels the radius (the answer). tsc clean (baseline 1441); QA eval-test PASS G1–G5 across all modes ([report](../../../../qa/eval-reports/circle-explorer-2026-06-06.md)). Files: `CircleExplorer.tsx`, `gemini-circle-explorer.ts`, plus catalog / registry / metrics / tester / backend `problem_type_registry.py`.
+
 **Purpose:** π is the most famous number students never *see*. This primitive makes it physical: unroll a circle's circumference into a straight segment and discover it's always a little more than 3 diameters long, no matter the circle. From there, circumference and area stop being formulas to memorize and become relationships students have watched happen.
 
 **Grade Band:** 7 · **CCSS:** 7.G.B.4 (know and use the formulas for area and circumference; informal derivation of the relationship between them).
@@ -174,6 +178,8 @@ The single largest white space. Every primitive here is a **living, directly-man
 
 ### 3. `angle-workshop` — Measure, Relate, Solve
 
+> **✅ Shipped 2026-06-06** (`/primitive angle-workshop`). Canvas component with a draggable protractor overlay, highlighted angle pairs, and a transversal picture; Fork A pool service (5 eval modes: `measure` β1.5 → `classify_pairs` β2.5 → `solve_unknown` β3.5 → `solve_algebraic` β4.5 → `transversal` β5.5) — all per-challenge data built in code (`selectAngleWorkshopChallenges`), Gemini emits wrapper metadata only. Answer-leak gated: `measure` labels only `?°`, `classify_pairs` shows only α/β symbols, unknowns shown as `x°`. tsc clean (baseline 1441); QA eval-test PASS G1–G5 across all 5 modes (a `solve_algebraic` supplementary monoculture from an always-firing fallback was found and fixed during QA — `b2Max` cap scaled by relationship target) ([report](../../../../qa/eval-reports/angle-workshop-2026-06-06.md)). Sound wired. Files: `AngleWorkshop.tsx`, `gemini-angle-workshop.ts`, plus catalog / registry / metrics / tester / backend `problem_type_registry.py`.
+
 **Purpose:** Angles are where geometry becomes algebra. A student who sees that two angles on a line *must* sum to 180° can write and solve an equation for the unknown. This primitive starts with a real protractor and builds to angle relationships — complementary, supplementary, vertical, adjacent — and the parallel-lines-with-a-transversal picture that powers grade 8.
 
 **Grade Band:** 7-8 · **CCSS:** 7.G.B.5 (angle relationships, write/solve equations for unknown angles), 8.G.A.5 (angle sums, exterior angles, parallel lines cut by a transversal).
@@ -208,6 +214,8 @@ The single largest white space. Every primitive here is a **living, directly-man
 ---
 
 ### 4. `transformation-lab` — Slide, Flip, Turn, Scale
+
+> **✅ Shipped 2026-06-07** (`/primitive transformation-lab`). Canvas coordinate-grid component with three interaction surfaces — drag-vertices-to-image (apply translation/reflection, rotation, dilation), multiple-choice naming (identify), and a transform-palette compose surface that maps the working image onto a ghost target. Fork A pool service (5 eval modes: `apply_translation_reflection` β2.5 → `apply_rotation` β3.5 → `identify_transformation` β4.0 → `compose_sequence` β5.0 → `dilation_similarity` β5.5) — all per-challenge geometry built in code (`selectTransformationLabChallenges` / `selectMixedTransformationLabChallenges`), Gemini emits wrapper metadata only. Answer-leak gated: drag/dilation modes never draw the target image; identify shows the image but never the transform name. SP-21 mixed "Auto" path interleaves all five tiers easy→hard. tsc clean (baseline 1441). QA: offline G1–G5 verification PASS against an independent oracle (image == label-derived transform; identify distractors all false; compose targets palette-reachable; 0 failures across ~40k generated challenges) — live eval-test pending dev server ([report](../../../../qa/eval-reports/transformation-lab-2026-06-07.md)). Sound wired. Files: `TransformationLab.tsx`, `gemini-transformation-lab.ts`, plus catalog / registry / metrics / tester / backend `problem_type_registry.py`.
 
 **Purpose:** Congruence and similarity are abstract until a student physically slides, flips, turns, and scales a shape and *sees* what stays the same. This primitive is the coordinate-plane playground for the four rigid/non-rigid motions, building the grade-8 intuition that transformations are the definition of congruent (rigid) and similar (with dilation).
 

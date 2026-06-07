@@ -23,6 +23,9 @@ import { generateFunctionMachine } from '../../math/gemini-function-machine';
 import { generateCoordinateGraph } from '../../math/gemini-coordinate-graph';
 import { generateSlopeTriangle } from '../../math/gemini-slope-triangle';
 import { generatePolygonAreaBuilder } from '../../math/gemini-polygon-area-builder';
+import { generateCircleExplorer } from '../../math/gemini-circle-explorer';
+import { generateAngleWorkshop } from '../../math/gemini-angle-workshop';
+import { generateTransformationLab } from '../../math/gemini-transformation-lab';
 import { generateSystemsEquations } from '../../math/gemini-systems-equations';
 import { generateMatrix } from '../../math/gemini-matrix';
 import { generateDotPlot } from '../../math/gemini-dot-plot';
@@ -172,6 +175,27 @@ registerGenerator('polygon-area-builder', async (item, topic, gradeContext) => (
   type: 'polygon-area-builder',
   instanceId: item.instanceId,
   data: await generatePolygonAreaBuilder(topic, gradeContext, item.config),
+}));
+
+// Circle Explorer (grade 7 circles — discover π, circumference, area, reverse, composite)
+registerGenerator('circle-explorer', async (item, topic, gradeContext) => ({
+  type: 'circle-explorer',
+  instanceId: item.instanceId,
+  data: await generateCircleExplorer(topic, gradeContext, item.config),
+}));
+
+// Angle Workshop
+registerGenerator('angle-workshop', async (item, topic, gradeContext) => ({
+  type: 'angle-workshop',
+  instanceId: item.instanceId,
+  data: await generateAngleWorkshop(topic, gradeContext, item.config),
+}));
+
+// Transformation Lab
+registerGenerator('transformation-lab', async (item, topic, gradeContext) => ({
+  type: 'transformation-lab',
+  instanceId: item.instanceId,
+  data: await generateTransformationLab(topic, gradeContext, item.config),
 }));
 
 // Systems of Equations Visualizer

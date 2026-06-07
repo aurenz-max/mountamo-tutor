@@ -40,6 +40,9 @@ import SortingStation from '../primitives/visual-primitives/math/SortingStation'
 import CoordinateGraph from '../primitives/visual-primitives/math/CoordinateGraph';
 import SlopeTriangle from '../primitives/visual-primitives/math/SlopeTriangle';
 import PolygonAreaBuilder from '../primitives/visual-primitives/math/PolygonAreaBuilder';
+import CircleExplorer from '../primitives/visual-primitives/math/CircleExplorer';
+import AngleWorkshop from '../primitives/visual-primitives/math/AngleWorkshop';
+import TransformationLab from '../primitives/visual-primitives/math/TransformationLab';
 import SystemsEquationsVisualizer from '../primitives/visual-primitives/math/SystemsEquationsVisualizer';
 import MatrixDisplay from '../primitives/visual-primitives/math/MatrixDisplay';
 import DotPlot from '../primitives/visual-primitives/math/DotPlot';
@@ -751,6 +754,36 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'polygon-area-builder': {
     component: PolygonAreaBuilder,
     sectionTitle: 'Polygon Area Builder',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'angle-workshop': {
+    component: AngleWorkshop,
+    sectionTitle: 'Angle Workshop',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'transformation-lab': {
+    component: TransformationLab,
+    sectionTitle: 'Transformation Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'circle-explorer': {
+    component: CircleExplorer,
+    sectionTitle: 'Circle Explorer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

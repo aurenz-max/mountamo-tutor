@@ -289,7 +289,27 @@ class CompetencyService:
                 analysis = str(evaluation.get('analysis', ''))
             
             logger.info(f"🔍 COMPETENCY_SERVICE: Extracted analysis length: {len(analysis)}")
-            
+
+            # Extract pass/fail outcome so the attempt record is self-contained
+            # for activity history (score alone can't distinguish success).
+            success = None
+            if isinstance(evaluation.get('correct'), bool):
+                success = evaluation['correct']
+            elif isinstance(evaluation.get('evaluation'), dict) and isinstance(evaluation['evaluation'].get('correct'), bool):
+                success = evaluation['evaluation']['correct']
+
+            # Promote primitive identity + outcome onto the attempt doc (Firestore
+            # merges additional_data to the top level, so these become queryable
+            # first-class fields). This service is the single owner of attempt
+            # persistence — submission_service saves only the review.
+            attempt_extra = {"source": source}
+            if primitive_type:
+                attempt_extra["primitive_type"] = primitive_type
+            if eval_mode:
+                attempt_extra["eval_mode"] = eval_mode
+            if success is not None:
+                attempt_extra["success"] = success
+
             # Save the attempt to both CosmosDB and Firestore (dual write)
             logger.info(f"🔍 COMPETENCY_SERVICE: Saving attempt to databases...")
             cosmos_success = False
@@ -322,7 +342,7 @@ class CompetencyService:
                         score=score,
                         analysis=analysis,
                         feedback=feedback,
-                        additional_data={"source": source},
+                        additional_data=attempt_extra,
                     )
                     firestore_success = True
                     logger.info(f"🔍 COMPETENCY_SERVICE: Successfully saved attempt to Firestore (source={source})")

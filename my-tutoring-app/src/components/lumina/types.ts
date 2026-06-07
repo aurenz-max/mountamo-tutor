@@ -1207,6 +1207,9 @@ export type ComponentId =
   | 'coordinate-graph'   // 2D Cartesian coordinate plane for plotting points, lines, curves, and regions
   | 'slope-triangle'     // Right triangle overlay showing rise/run for slope visualization
   | 'polygon-area-builder' // Interactive polygon area construction and decomposition
+  | 'angle-workshop'
+  | 'circle-explorer'
+  | 'transformation-lab'
   | 'systems-equations-visualizer' // Systems of linear equations with graphical and algebraic solution methods
   | 'matrix-display'     // Matrix display and editor with step-by-step operations (determinant, inverse, transpose, etc.)
   | 'dot-plot'           // Dot plot / line plot with stacked dots representing data values and frequency
@@ -1805,6 +1808,9 @@ export type { ParameterExplorerData } from './primitives/visual-primitives/math/
 export type { PracticeProblemData } from './primitives/visual-primitives/math/PracticeProblem';
 export type { CoordinateGraphData, CoordinateGraphChallenge } from './primitives/visual-primitives/math/CoordinateGraph';
 export type { PolygonAreaBuilderData } from './primitives/visual-primitives/math/PolygonAreaBuilder';
+export type { CircleExplorerData } from './primitives/visual-primitives/math/CircleExplorer';
+export type { AngleWorkshopData } from './primitives/visual-primitives/math/AngleWorkshop';
+export type { TransformationLabData } from './primitives/visual-primitives/math/TransformationLab';
 
 // Literacy
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';

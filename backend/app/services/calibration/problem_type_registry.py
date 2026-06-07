@@ -167,6 +167,27 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "composite_area":                  PriorConfig(4.5, "Decompose an irregular figure into known rectangles and sum."),
         "coordinate_polygon":              PriorConfig(5.5, "Find a polygon's area from its vertex coordinates."),
     },
+    "circle-explorer": {
+        "discover_pi":   PriorConfig(2.0, "Estimate C / d across circles and recognize the constant pi ~ 3.14."),
+        "circumference": PriorConfig(3.0, "Find circumference from radius or diameter (C = 2 * pi * r = pi * d)."),
+        "area":          PriorConfig(4.0, "Find the area of a circle from its radius (A = pi * r^2)."),
+        "reverse":       PriorConfig(5.0, "Work backward: find the radius given the circumference or area."),
+        "composite":     PriorConfig(5.5, "Semicircle area/perimeter and circle-in-square composite figures."),
+    },
+    "angle-workshop": {
+        "measure":         PriorConfig(1.5, "Read an angle from a protractor"),
+        "classify_pairs":  PriorConfig(2.5, "Identify complementary/supplementary/vertical/adjacent pairs"),
+        "solve_unknown":   PriorConfig(3.5, "Solve for an unknown angle from a relationship"),
+        "solve_algebraic": PriorConfig(4.5, "Set up and solve a linear equation for an unknown angle"),
+        "transversal":     PriorConfig(5.5, "Parallel-lines transversal and triangle angle-sum problems"),
+    },
+    "transformation-lab": {
+        "apply_translation_reflection": PriorConfig(2.5, "Produce the image of a translation or reflection on the coordinate plane"),
+        "apply_rotation":               PriorConfig(3.5, "Rotate a figure 90/180/270 degrees about the origin"),
+        "identify_transformation":      PriorConfig(4.0, "Name the single transformation and its parameters from a pre-image and image"),
+        "compose_sequence":             PriorConfig(5.0, "Reach a target image with a sequence of two or more transformations"),
+        "dilation_similarity":          PriorConfig(5.5, "Apply a scale factor about the origin; reason about similarity vs congruence"),
+    },
     "comparison-builder": {
         "compare_groups":    PriorConfig(1.5, "Concrete: visual group comparison"),
         "one_more_less":     PriorConfig(2.5, "Pictorial: adjacent number reasoning"),
