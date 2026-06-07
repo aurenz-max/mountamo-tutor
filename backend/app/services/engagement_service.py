@@ -37,6 +37,7 @@ class EngagementService:
             "content_package_completed_bonus": 200,
             "content_package_primitive_completed": 5,  # Base XP for interactive primitives
             "lumina_primitive_completed": 10,  # Base XP for a Lumina primitive completion (core loop)
+            "lumina_primitive_first_try_bonus_max": 10,  # Max mastery bonus at 100% first-try rate
             "daily_streak_base": 10,
             "daily_streak_max_bonus": 50,
             # --- NEW ASSESSMENT XP VALUES ---
@@ -255,6 +256,11 @@ class EngagementService:
             score = metadata.get('score', 0)  # 0-1 success rate
             if score and score >= 0.8:
                 base_xp *= 2  # Double XP for excellent performance
+            # Mastery bonus: reward one-shot solves over trial-and-error. Scales
+            # linearly with first-try rate (0-1). Additive, not a multiplier stack.
+            first_try_rate = metadata.get('first_try_rate')
+            if isinstance(first_try_rate, (int, float)):
+                base_xp += round(first_try_rate * self.xp_config["lumina_primitive_first_try_bonus_max"])
             return base_xp
 
         # --- NEW ASSESSMENT LOGIC ---

@@ -77,12 +77,60 @@ def _resolve_submission_activity_type(kwargs: dict, result) -> str:
     return "problem_submitted"
 
 
+def _find_challenge_results(*sources) -> Optional[list]:
+    """Locate the per-challenge results array — a list of objects each carrying a
+    numeric 'attempts' (challengeId/correct optional). Usually in student_work."""
+    def is_results(v) -> bool:
+        return (
+            isinstance(v, list) and len(v) > 0
+            and all(isinstance(e, dict) and isinstance(e.get('attempts'), (int, float)) for e in v)
+        )
+    for src in sources:
+        if is_results(src):
+            return src
+        if isinstance(src, dict):
+            for val in src.values():
+                if is_results(val):
+                    return val
+    return None
+
+
+def _first_try_signals(primitive_response: dict) -> dict:
+    """Derive first-try rate + challenge/attempt counts for the XP mastery bonus.
+
+    Prefers the per-challenge results (most reliable — a clean count of challenges
+    solved on the first attempt), falling back to the metrics summary fields.
+    Rewards demonstrated mastery over trial-and-error; this is the engagement/XP
+    layer only and never feeds IRT selection or the mastery gates.
+    """
+    metrics = primitive_response.get('metrics') or {}
+    results = _find_challenge_results(primitive_response.get('student_work'), metrics)
+    if results:
+        total = len(results)
+        first_try = sum(1 for r in results if r.get('attempts') == 1 and r.get('correct') is not False)
+        total_attempts = sum(int(r.get('attempts') or 0) for r in results)
+        return {
+            "first_try_rate": round(first_try / total, 4) if total else None,
+            "total_challenges": total,
+            "total_attempts": total_attempts,
+        }
+    # Fallback: metrics summary fields.
+    ftc, tc = metrics.get('firstTryCount'), metrics.get('totalChallenges')
+    if isinstance(ftc, (int, float)) and isinstance(tc, (int, float)) and tc > 0:
+        return {
+            "first_try_rate": round(min(1.0, ftc / tc), 4),
+            "total_challenges": int(tc),
+            "total_attempts": int(metrics.get('attemptsCount') or 0) or None,
+        }
+    return {"first_try_rate": None, "total_challenges": None, "total_attempts": None}
+
+
 def _extract_submission_metadata(kwargs: dict, result) -> dict:
     """Extracts engagement metadata for a problem/primitive submission.
 
     For Lumina primitives this carries primitive_type / eval_mode / subskill_id
-    (so XP is attributable per primitive) and a 0-1 success rate used by the
-    award engine's high-performance bonus.
+    (so XP is attributable per primitive), a 0-1 success rate (high-performance
+    bonus), and a first-try rate (mastery bonus — rewards one-shot solves).
     """
     submission = kwargs.get('submission')
     primitive_response = getattr(submission, 'primitive_response', None) or {}
@@ -93,6 +141,7 @@ def _extract_submission_metadata(kwargs: dict, result) -> dict:
         eval_mode = primitive_response.get('eval_mode') or metrics.get('evalMode') or 'default'
         frontend_score = primitive_response.get('score', 0)  # 0-100
         success = bool(primitive_response.get('success', False))
+        signals = _first_try_signals(primitive_response)
         return {
             "activity_name": f"Completed {primitive_type} primitive",
             "primitive_type": primitive_type,
@@ -103,6 +152,10 @@ def _extract_submission_metadata(kwargs: dict, result) -> dict:
             "score": round((frontend_score or 0) / 100, 4),
             "success": success,
             "is_correct": success,
+            # 0-1 first-try rate + counts — drive the mastery (one-shot) XP bonus.
+            "first_try_rate": signals["first_try_rate"],
+            "total_challenges": signals["total_challenges"],
+            "total_attempts": signals["total_attempts"],
         }
 
     problem_type = submission.problem.get('problem_type', 'generic')
