@@ -27,6 +27,7 @@ from .api.endpoints import (
     mastery,
     skill_progress,
     calibration,
+    evaluations,
     pulse)
 
 from .api import etl_routes
@@ -117,9 +118,17 @@ app.include_router(
 )
 
 app.include_router(
-    problems.router, 
-    prefix="/api/problems", 
+    problems.router,
+    prefix="/api/problems",
     tags=["problems"],
+    dependencies=[Depends(get_user_context)]
+)
+
+# Evaluations — student activity history & stats (Lumina primitive eval log)
+app.include_router(
+    evaluations.router,
+    prefix="/api/evaluations",
+    tags=["evaluations"],
     dependencies=[Depends(get_user_context)]
 )
 

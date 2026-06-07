@@ -461,6 +461,10 @@ class SubmissionService:
         # Extract eval_mode from primitive_response for IRT calibration engine
         eval_mode = primitive_response.get('eval_mode') or metrics.get('evalMode') or 'default'
 
+        # Persist eval_mode alongside primitive_type so the attempt doc carries
+        # both as first-class, queryable fields (see _save_attempt_and_review).
+        review["metadata"]["eval_mode"] = eval_mode
+
         # Update competency (threads primitive_type + eval_mode to calibration hook)
         competency_result = await self._update_competency(
             student_id=student_id,
@@ -643,6 +647,21 @@ class SubmissionService:
             resolved_skill = review.get('skill_id') or submission.skill_id
             resolved_subskill = review.get('subskill_id') or submission.subskill_id or submission.skill_id
 
+            # Promote primitive identity onto the attempt doc so it is queryable
+            # (e.g. "which primitives did student X use, and how did they score").
+            # save_attempt merges additional_data into the top level of the doc,
+            # so these land as first-class fields, not a nested blob.
+            review_metadata = review.get('metadata', {}) or {}
+            additional_data = {"source": eval_source}
+            if review_metadata.get('primitive_type'):
+                additional_data['primitive_type'] = review_metadata['primitive_type']
+            if review_metadata.get('eval_mode'):
+                additional_data['eval_mode'] = review_metadata['eval_mode']
+            # Persist the pass/fail outcome so the attempt doc is self-contained
+            # for activity history (score alone can't distinguish success).
+            if review.get('correct') is not None:
+                additional_data['success'] = bool(review.get('correct'))
+
             # Common kwargs for save_attempt
             attempt_kwargs = dict(
                 student_id=student_id,
@@ -653,7 +672,7 @@ class SubmissionService:
                 analysis=f"Problem attempt: Score {score}",
                 feedback=review.get('feedback', {}).get('guidance', ''),
                 firebase_uid=firebase_uid,
-                additional_data={"source": eval_source},
+                additional_data=additional_data,
             )
 
             # Common kwargs for save_problem_review

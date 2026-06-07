@@ -36,6 +36,7 @@ class EngagementService:
             "content_package_section_completed": 20,
             "content_package_completed_bonus": 200,
             "content_package_primitive_completed": 5,  # Base XP for interactive primitives
+            "lumina_primitive_completed": 10,  # Base XP for a Lumina primitive completion (core loop)
             "daily_streak_base": 10,
             "daily_streak_max_bonus": 50,
             # --- NEW ASSESSMENT XP VALUES ---
@@ -242,6 +243,16 @@ class EngagementService:
             base_xp = self.xp_config["content_package_primitive_completed"]
             # Bonus XP for high performance (80% or higher score)
             score = metadata.get('score', 0)
+            if score and score >= 0.8:
+                base_xp *= 2  # Double XP for excellent performance
+            return base_xp
+
+        if activity_type == "lumina_primitive_completed":
+            # Core Lumina loop: completing an interactive primitive.
+            # Mirrors content_package_primitive_completed's >=0.8 doubling so the
+            # high-performance threshold stays consistent across the codebase.
+            base_xp = self.xp_config["lumina_primitive_completed"]
+            score = metadata.get('score', 0)  # 0-1 success rate
             if score and score >= 0.8:
                 base_xp *= 2  # Double XP for excellent performance
             return base_xp

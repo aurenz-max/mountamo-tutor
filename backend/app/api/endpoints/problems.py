@@ -63,12 +63,50 @@ class ProblemResponse(BaseModel):
 # ENGAGEMENT METADATA EXTRACTORS
 # ============================================================================
 
-def _extract_submission_metadata(kwargs: dict, result) -> dict:
-    """Extracts metadata for a 'problem_submitted' activity."""
+def _is_lumina_submission(submission) -> bool:
+    """A submission is a Lumina primitive when it carries a primitive_response."""
+    return bool(getattr(submission, 'primitive_response', None))
+
+
+def _resolve_submission_activity_type(kwargs: dict, result) -> str:
+    """Lumina primitive completions get their own activity type so XP is
+    attributable per primitive; everything else stays 'problem_submitted'."""
     submission = kwargs.get('submission')
+    if submission is not None and _is_lumina_submission(submission):
+        return "lumina_primitive_completed"
+    return "problem_submitted"
+
+
+def _extract_submission_metadata(kwargs: dict, result) -> dict:
+    """Extracts engagement metadata for a problem/primitive submission.
+
+    For Lumina primitives this carries primitive_type / eval_mode / subskill_id
+    (so XP is attributable per primitive) and a 0-1 success rate used by the
+    award engine's high-performance bonus.
+    """
+    submission = kwargs.get('submission')
+    primitive_response = getattr(submission, 'primitive_response', None) or {}
+
+    if _is_lumina_submission(submission):
+        primitive_type = submission.problem.get('primitive_type', 'unknown')
+        metrics = primitive_response.get('metrics', {}) or {}
+        eval_mode = primitive_response.get('eval_mode') or metrics.get('evalMode') or 'default'
+        frontend_score = primitive_response.get('score', 0)  # 0-100
+        success = bool(primitive_response.get('success', False))
+        return {
+            "activity_name": f"Completed {primitive_type} primitive",
+            "primitive_type": primitive_type,
+            "eval_mode": eval_mode,
+            "skill_id": submission.skill_id,
+            "subskill_id": submission.subskill_id,
+            # 0-1 success rate — drives the >=0.8 high-performance XP bonus.
+            "score": round((frontend_score or 0) / 100, 4),
+            "success": success,
+            "is_correct": success,
+        }
+
     problem_type = submission.problem.get('problem_type', 'generic')
     score = result.review.get('score', 0) if hasattr(result, 'review') else 0
-
     return {
         "activity_name": f"Submitted {problem_type} problem",
         "problem_id": submission.problem.get('id'),
@@ -338,7 +376,7 @@ async def generate_problem(
 
 @router.post("/submit")
 @log_engagement_activity(
-    activity_type="problem_submitted",
+    activity_type=_resolve_submission_activity_type,
     metadata_extractor=_extract_submission_metadata
 )
 async def submit_problem(

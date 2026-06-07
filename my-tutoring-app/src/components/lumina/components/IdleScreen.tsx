@@ -463,6 +463,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
               { panel: 'sound-lab', icon: '\uD83D\uDD0A', title: 'Sound Lab', color: '20, 184, 166', cardClass: 'bg-gradient-to-br from-teal-900/20 to-cyan-900/20', iconClass: 'bg-teal-500/20', hoverTitle: 'group-hover:text-teal-200', hoverArrow: 'group-hover:text-teal-400' },
               { panel: 'design-studio', icon: '\uD83C\uDFA8', title: 'Design Studio', color: '168, 85, 247', cardClass: 'bg-gradient-to-br from-purple-900/20 to-fuchsia-900/20', iconClass: 'bg-purple-500/20', hoverTitle: 'group-hover:text-purple-200', hoverArrow: 'group-hover:text-purple-400' },
               { panel: 'analytics-dashboard', icon: '📊', title: 'Analytics', color: '139, 92, 246', cardClass: 'bg-gradient-to-br from-purple-900/20 to-indigo-900/20', iconClass: 'bg-purple-500/20', hoverTitle: 'group-hover:text-purple-200', hoverArrow: 'group-hover:text-purple-400' },
+              { panel: 'student-activity-panel', icon: '📈', title: 'Student Activity', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-teal-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
             ] as const).map(({ panel, icon, title, color, cardClass, iconClass, hoverTitle, hoverArrow }) => (
               <SpotlightCard
                 key={panel}

@@ -257,11 +257,56 @@ export async function submitSessionSummary(
 }
 
 /**
- * Get evaluation history for a student.
+ * A single row of durable student activity history, as served by
+ * GET /api/evaluations/student/{id}/history. This is a lean projection of the
+ * stored attempt log — not the full client-side PrimitiveEvaluationResult.
+ */
+export interface ActivityHistoryRow {
+  attemptId: string | null;
+  primitiveType: string;
+  evalMode: string;
+  skillId: string | null;
+  subskillId: string | null;
+  subject: string | null;
+  score: number;          // 0-100
+  success: boolean;
+  source: string | null;  // 'lesson' | 'practice'
+  completedAt: string | null;  // ISO timestamp
+}
+
+export interface ActivityHistoryResponse {
+  evaluations: ActivityHistoryRow[];
+  total: number;
+  hasMore: boolean;
+}
+
+/** Per-group aggregate used in ActivityStatsResponse. */
+export interface ActivityGroupStats {
+  attempts: number;
+  successRate: number;   // 0-1
+  averageScore: number;  // 0-100
+}
+
+export interface ActivityStatsResponse {
+  totalAttempts: number;
+  successRate: number;   // 0-1
+  averageScore: number;  // 0-100
+  byPrimitiveType: Record<string, ActivityGroupStats>;
+  bySkill: Record<string, ActivityGroupStats>;
+  recentTrend: 'improving' | 'stable' | 'declining';
+  engagement: {
+    totalXp: number;
+    currentLevel: number;
+    currentStreak: number;
+  } | null;
+}
+
+/**
+ * Get evaluation/activity history for a student.
  *
  * @param studentId - Student ID
  * @param options - Query options
- * @returns Array of past evaluation results
+ * @returns Paginated rows of past activity (newest first)
  */
 export async function getEvaluationHistory(
   studentId: number,
@@ -273,11 +318,7 @@ export async function getEvaluationHistory(
     startDate?: string;
     endDate?: string;
   }
-): Promise<{
-  evaluations: PrimitiveEvaluationResult[];
-  total: number;
-  hasMore: boolean;
-}> {
+): Promise<ActivityHistoryResponse> {
   try {
     const params = new URLSearchParams();
 
@@ -313,22 +354,7 @@ export async function getEvaluationStats(
     startDate?: string;
     endDate?: string;
   }
-): Promise<{
-  totalAttempts: number;
-  successRate: number;
-  averageScore: number;
-  byPrimitiveType: Record<string, {
-    attempts: number;
-    successRate: number;
-    averageScore: number;
-  }>;
-  bySkill: Record<string, {
-    attempts: number;
-    successRate: number;
-    averageScore: number;
-  }>;
-  recentTrend: 'improving' | 'stable' | 'declining';
-}> {
+): Promise<ActivityStatsResponse> {
   try {
     const params = new URLSearchParams();
 

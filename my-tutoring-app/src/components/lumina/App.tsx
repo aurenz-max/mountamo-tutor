@@ -33,6 +33,7 @@ import AnnotatedExampleTester from './components/AnnotatedExampleTester';
 import PracticeProblemTester from './components/PracticeProblemTester';
 import DistributionExplorerTester from './components/DistributionExplorerTester';
 import LuminaTutorTester from './components/LuminaTutorTester';
+import StudentActivityPanel from './components/StudentActivityPanel';
 import CalibrationSimulator from './components/CalibrationSimulator';
 import AtomRegistry from './components/AtomRegistry';
 import SoundLab from './components/SoundLab';
@@ -623,6 +624,13 @@ export default function App() {
         {phase === GameState.IDLE && activePanel === 'lumina-tutor-tester' && (
           <div className="flex-1 animate-fade-in">
             <LuminaTutorTester onBack={() => setActivePanel(null)} />
+          </div>
+        )}
+
+        {/* STUDENT ACTIVITY PANEL STATE */}
+        {phase === GameState.IDLE && activePanel === 'student-activity-panel' && (
+          <div className="flex-1 animate-fade-in">
+            <StudentActivityPanel onBack={() => setActivePanel(null)} />
           </div>
         )}
 

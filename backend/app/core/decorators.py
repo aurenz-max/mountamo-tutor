@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable, Any, Dict
+from typing import Callable, Any, Dict, Union
 from fastapi import Depends
 import logging
 
@@ -8,12 +8,18 @@ from ..core.middleware import get_user_context
 
 logger = logging.getLogger(__name__)
 
-def log_engagement_activity(activity_type: str, metadata_extractor: Callable[[Dict[str, Any], Any], Dict[str, Any]]):
+# An activity type may be a static string or a resolver derived from the
+# endpoint's (kwargs, result) — e.g. to log Lumina primitive submissions under
+# a distinct activity type than plain problem submissions on the same endpoint.
+ActivityType = Union[str, Callable[[Dict[str, Any], Any], str]]
+
+def log_engagement_activity(activity_type: ActivityType, metadata_extractor: Callable[[Dict[str, Any], Any], Dict[str, Any]]):
     """
     Decorator to automatically process an engagement activity after an endpoint runs.
-    
+
     Args:
-        activity_type: The type of activity (e.g., 'problem_submitted').
+        activity_type: The type of activity (e.g., 'problem_submitted'), or a
+                       callable (kwargs, result) -> str that resolves it per-request.
         metadata_extractor: A function that extracts metadata from the endpoint's
                             kwargs and its return value. It receives two arguments:
                             `kwargs` (from the endpoint) and `result` (from the endpoint).
@@ -23,25 +29,28 @@ def log_engagement_activity(activity_type: str, metadata_extractor: Callable[[Di
         async def wrapper(*args, **kwargs):
             # 1. Execute the original endpoint function
             endpoint_result = await func(*args, **kwargs)
-            
+
             try:
                 # 2. Extract user context from endpoint dependencies
                 user_context = kwargs.get('user_context')
                 if not user_context:
-                    logger.warning(f"No user_context found for engagement activity: {activity_type}")
+                    logger.warning(f"No user_context found for engagement activity")
                     return endpoint_result
 
                 firebase_uid = user_context["firebase_uid"]
                 student_id = user_context["student_id"]
 
-                # 3. Extract metadata using the provided function
+                # 3. Resolve the activity type (may be dynamic) and extract metadata
+                resolved_activity_type = (
+                    activity_type(kwargs, endpoint_result) if callable(activity_type) else activity_type
+                )
                 metadata = metadata_extractor(kwargs, endpoint_result)
 
                 # 4. Process the activity to get engagement data
                 engagement_response = await engagement_service.process_activity(
                     user_id=firebase_uid,
                     student_id=student_id,
-                    activity_type=activity_type,
+                    activity_type=resolved_activity_type,
                     metadata=metadata
                 )
                 
@@ -74,7 +83,7 @@ def log_engagement_activity(activity_type: str, metadata_extractor: Callable[[Di
                 return response_data
 
             except Exception as e:
-                logger.error(f"Error in engagement decorator for '{activity_type}': {e}", exc_info=True)
+                logger.error(f"Error in engagement decorator: {e}", exc_info=True)
                 # Return the original result without engagement data on error
                 return endpoint_result
 
