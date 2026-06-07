@@ -42,6 +42,7 @@ import {
   type ActivityStatsResponse,
   type ActivityDetail,
 } from '../evaluation';
+import { MetricsView } from './MetricsView';
 
 const HISTORY_LIMIT = 100;
 const HISTORY_COLUMNS = ['Primitive', 'Mode', 'Score', 'Result', 'Skill', 'Source', 'When', ''];
@@ -123,10 +124,10 @@ function AttemptDetail({
           unit="sec"
         />
       </div>
-      <JsonBlock
-        label="Metrics (the rich blob)"
-        value={detail.metrics}
-        empty="No metrics captured — legacy attempt or non-primitive submission."
+      <MetricsView
+        primitiveType={detail.primitiveType}
+        metrics={detail.metrics}
+        studentWork={detail.studentWork}
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <JsonBlock label="Feedback" value={detail.feedback} />
