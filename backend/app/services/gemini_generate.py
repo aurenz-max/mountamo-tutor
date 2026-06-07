@@ -23,8 +23,10 @@ class GeminiGenerateService(BaseAIService):
                 http_options={"api_version": "v1alpha"},
             )
             
-            # Store model ID for reference
-            self.model_id = 'gemini-2.0-flash-lite'
+            # Store model ID for reference.
+            # gemini-2.0-flash-lite was retired (404); 2.5-flash-lite is the
+            # current lite tier used elsewhere in the codebase.
+            self.model_id = 'gemini-2.5-flash-lite'
             logger.info("Gemini Generate service initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Gemini Generate service: {str(e)}")
