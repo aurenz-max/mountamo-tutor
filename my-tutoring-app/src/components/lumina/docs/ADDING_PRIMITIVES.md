@@ -1108,6 +1108,15 @@ grep "my-primitive" src/components/lumina/service/manifest/catalog/*.ts
 
 All four checks should return results.
 
+### 5. Curriculum-fit check (does a curriculum skill route to this primitive?)
+
+Registration only proves the primitive *exists*; it doesn't prove the adaptive engine has any reason to serve it. Run the **`/curriculum-fit <primitive-id>`** skill — it embeds the catalog `description` and uses the live retrieval path to find the curriculum skill(s) that map to the primitive at its target grade(s).
+
+- **MATCH** → that's the skill students earn credit on.
+- **MISS** → a **curriculum gap** (author the skill via `/curriculum-author`), a **thin description** (tighten the catalog `description`, re-run), or a **scoping/data issue** (grade not published). A primitive with no curriculum home mis-attributes or abstains in production — don't ship it homeless.
+
+Engine: `backend/scripts/curriculum_fit_probe.py` · Skill: `.claude/skills/curriculum-fit/SKILL.md` · Origin: `docs/QA_curriculum_mapping_misattribution.md`.
+
 **Note:** TypeScript compilation checking (`npx tsc --noEmit`) may fail due to syntax issues in other parts of the codebase. Focus on verifying the four integration points above instead.
 
 ---

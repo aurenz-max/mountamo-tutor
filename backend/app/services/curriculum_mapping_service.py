@@ -30,7 +30,12 @@ class CurriculumMapping:
     subskill_id: str
     subskill_description: str
     confidence: float  # 0.0–1.0
-    resolved_by: str   # "cache", "gemini", "fallback"
+    resolved_by: str   # "cache", "gemini", "fallback", "retrieval"
+    # Parent curriculum UNIT (the level above skill: Subject > Unit > Skill > Subskill).
+    # Populated by the retrieval path; the generation/fallback paths leave it blank
+    # (Gemini only returns skill/subskill), so treat empty as "unit unknown".
+    unit_id: str = ""
+    unit_title: str = ""
 
     def to_dict(self) -> Dict:
         return asdict(self)
@@ -52,6 +57,12 @@ class CurriculumMappingService:
         self.gemini_service = gemini_service
         # In-memory cache: normalised key → CurriculumMapping
         self._cache: Dict[str, CurriculumMapping] = {}
+        # Scoped embedding retrieval (the QA §8 root-cause fix). Lazily imported to
+        # avoid a circular import (the matcher imports CurriculumMapping from here).
+        from app.services.curriculum_retrieval_service import CurriculumRetrievalMatcher
+        self.retrieval_matcher = CurriculumRetrievalMatcher(curriculum_service)
+        # In-memory cache for retrieval results: key → CurriculumMapping | None
+        self._retrieval_cache: Dict[str, Optional[CurriculumMapping]] = {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -90,6 +101,8 @@ class CurriculumMappingService:
                 subskill_description=cached.subskill_description,
                 confidence=cached.confidence,
                 resolved_by="cache",
+                unit_id=cached.unit_id,
+                unit_title=cached.unit_title,
             )
 
         # 2. Load curriculum hierarchy
@@ -137,9 +150,120 @@ class CurriculumMappingService:
         )
         return mapping
 
+    def subject_for_domain(self, domain: Optional[str]) -> Optional[str]:
+        """Curriculum subject_id for a primitive's catalog domain, or None when the
+        domain is cross-cutting/unknown (the caller then keeps its fallback path)."""
+        return self.retrieval_matcher.subject_for_domain(domain)
+
+    async def resolve_by_retrieval(
+        self,
+        *,
+        primitive_domain: Optional[str],
+        topic: str,
+        grade_level: str,
+        primitive_type: str,
+        primitive_description: str = "",
+        objective_text: str = "",
+        eval_mode: str = "",
+        eval_mode_description: str = "",
+        challenge_text: str = "",
+    ) -> Optional[CurriculumMapping]:
+        """Resolve via scoped embedding retrieval (QA §8). Returns a high-confidence
+        CurriculumMapping (resolved_by="retrieval", confidence=cosine) or None to
+        abstain. None means "no curriculum home" — callers must NOT fall back to
+        forced generation, that is exactly the mis-attribution this replaces.
+
+        The per-challenge signal (`challenge_text`, `eval_mode_description`) sharpens the
+        embedding to the specific eval mode exercised so a cross-cutting primitive lands
+        on the right unit (number-line plot -> COUNT001) instead of abstaining on a
+        diffuse, range-averaged top-k. See _build_retrieval_query.
+        """
+        subject = self.subject_for_domain(primitive_domain)
+        if not subject:
+            # Cross-cutting / unknown domain — retrieval can't scope; let the caller decide.
+            return None
+
+        # Cache key must capture the eval mode + per-challenge signal, else different
+        # modes of the same lesson collide on one cached mapping (plot vs jump differ).
+        focus_sig = f"{eval_mode}|{(challenge_text or '')[:80]}".strip().lower()
+        cache_key = self._build_cache_key(topic, objective_text, grade_level) + f"|{subject}|{focus_sig}"
+        if cache_key in self._retrieval_cache:
+            cached = self._retrieval_cache[cache_key]
+            logger.info(f"[CURRICULUM_MAPPING] Retrieval cache hit: {cache_key} -> "
+                        f"{cached.subskill_id if cached else 'ABSTAIN'}")
+            return cached
+
+        query_text = self._build_retrieval_query(
+            primitive_description, topic, objective_text, eval_mode, primitive_type,
+            eval_mode_description=eval_mode_description,
+            challenge_text=challenge_text,
+        )
+        try:
+            mapping = await self.retrieval_matcher.match(
+                subject=subject,
+                grade_level=grade_level,
+                query_text=query_text,
+                primitive_type=primitive_type,
+            )
+        except Exception as e:
+            logger.warning(f"[CURRICULUM_MAPPING] Retrieval failed: {e}")
+            return None
+
+        self._retrieval_cache[cache_key] = mapping
+        return mapping
+
+    @staticmethod
+    def _build_retrieval_query(
+        primitive_description: str,
+        topic: str,
+        objective_text: str,
+        eval_mode: str,
+        primitive_type: str,
+        eval_mode_description: str = "",
+        challenge_text: str = "",
+    ) -> str:
+        """Compose the embedding query from the richest available primitive signal.
+
+        Two regimes:
+        - FOCUSED (preferred): when the submission carries concept-bearing per-challenge
+          signal — the actual challenge text and/or the eval-mode's own description —
+          LEAD with that and DROP the omnibus catalog `primitive_description`. The omnibus
+          blurb spans the primitive's whole K-12 range ("integers, fractions, decimals,
+          negatives… ESSENTIAL for K-5") and DILUTES the embedding toward the range-
+          average, which is what made cross-cutting primitives (number-line plot) abstain
+          on a diffuse top-k. The specific challenge is the true home signal.
+        - FALLBACK: no per-challenge signal → legacy behaviour (omnibus description +
+          context), so older clients keep working unchanged.
+
+        Note: a numeric range/scale hint is deliberately NOT part of the query — it embeds
+        toward arithmetic and breaks unit coherence (see SubmissionService docstring).
+        """
+        context = " ".join(p for p in [
+            f"Topic: {topic.strip()}" if topic and topic.strip() else "",
+            (objective_text or "").strip(),
+            f"Skill focus: {eval_mode.strip()}" if eval_mode and eval_mode.strip() else "",
+        ] if p).strip()
+
+        # Concept-bearing per-challenge signal — the only thing that triggers dropping
+        # the diluting omnibus blurb.
+        concept = " ".join(p for p in [
+            (challenge_text or "").strip(),
+            (eval_mode_description or "").strip(),
+        ] if p).strip()
+
+        if concept:
+            # Lead with the specific challenge/mode; append lesson context.
+            query = " ".join(p for p in [concept, context] if p).strip()
+        else:
+            # Legacy: omnibus catalog description + lesson context.
+            query = " ".join(p for p in [(primitive_description or "").strip(), context] if p).strip()
+        return query or primitive_type
+
     def clear_cache(self) -> None:
         """Clear the mapping cache (e.g. after curriculum data changes)."""
         self._cache.clear()
+        self._retrieval_cache.clear()
+        self.retrieval_matcher.clear_cache()
         logger.info("[CURRICULUM_MAPPING] Cache cleared")
 
     # ------------------------------------------------------------------

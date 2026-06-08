@@ -168,6 +168,13 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
   // Refs for cleanup
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingResultRef = useRef<PrimitiveEvaluationResult<TMetrics> | null>(null);
+  // Synchronous submit-once latch, keyed by attemptId. `hasSubmitted` is React
+  // state and only flips after the async backend round-trip resolves, so an
+  // auto-submit effect gated on it can fire many times in the window before the
+  // flag catches up — that produced the duplicate /api/problems/submit burst
+  // (double-counted XP / competency / calibration). This ref is set
+  // synchronously at call time, closing the window deterministically.
+  const submittedAttemptRef = useRef<string | null>(null);
 
   // Start elapsed time timer
   useEffect(() => {
@@ -187,8 +194,14 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
   // Handle unmount with pending work
   useEffect(() => {
     return () => {
-      if (autoSubmitOnUnmount && pendingResultRef.current && !hasSubmitted) {
-        // Attempt to submit pending result
+      // Use the synchronous latch (not the lagging `hasSubmitted` state) so the
+      // unmount path can't re-submit an attempt submitResult already sent.
+      if (
+        autoSubmitOnUnmount &&
+        pendingResultRef.current &&
+        submittedAttemptRef.current !== pendingResultRef.current.attemptId
+      ) {
+        submittedAttemptRef.current = pendingResultRef.current.attemptId;
         evaluationContext?.submitEvaluation(pendingResultRef.current);
       }
     };
@@ -204,6 +217,14 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     studentWork?: unknown,
     partialCredit?: number
   ): PrimitiveEvaluationResult<TMetrics> => {
+    // Submit-once latch: ignore repeat calls for the same attempt (re-firing
+    // auto-submit effects, double-clicks). Return the already-built result so
+    // callers relying on the return value still get the canonical payload.
+    if (submittedAttemptRef.current === attemptId && pendingResultRef.current) {
+      return pendingResultRef.current;
+    }
+    submittedAttemptRef.current = attemptId;
+
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - new Date(startedAt).getTime();
 
@@ -316,6 +337,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     setSubmittedResult(null);
     setCheckpoints([]);
     pendingResultRef.current = null;
+    submittedAttemptRef.current = null;
   }, []);
 
   /**

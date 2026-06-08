@@ -15,8 +15,10 @@ import type {
   QueuedEvaluation,
   EvaluationStatus,
   CompetencyUpdateSuggestion,
+  DemonstratedSkill,
+  SessionEngagement,
 } from '../types';
-import { submitEvaluationToBackend, submitBatchEvaluations } from '../api/evaluationApi';
+import { submitEvaluationToBackend } from '../api/evaluationApi';
 
 // =============================================================================
 // Context Types
@@ -56,6 +58,19 @@ export interface EvaluationContextType {
 
   // Competency suggestions (populated after backend response)
   competencyUpdates: CompetencyUpdateSuggestion[];
+
+  // Curriculum skills the student demonstrated this lesson (one per resolved
+  // subskill, best attempt kept). Backs the per-primitive "See what you
+  // demonstrated" accordion.
+  demonstratedSkills: DemonstratedSkill[];
+
+  // Append-only record of every confident skill resolution (one per submission,
+  // never deduped). Preserves the multiplicity demonstratedSkills collapses, so
+  // the lesson summary can show "3 activities contributed to this skill".
+  demonstratedSkillLog: DemonstratedSkill[];
+
+  // Running XP / level / streak for this session — backs the summary banner.
+  sessionEngagement: SessionEngagement;
 }
 
 const EvaluationContext = createContext<EvaluationContextType | null>(null);
@@ -148,6 +163,14 @@ export function EvaluationProvider({
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [competencyUpdates, setCompetencyUpdates] = useState<CompetencyUpdateSuggestion[]>([]);
+  const [demonstratedSkills, setDemonstratedSkills] = useState<DemonstratedSkill[]>([]);
+  const [demonstratedSkillLog, setDemonstratedSkillLog] = useState<DemonstratedSkill[]>([]);
+  const [sessionEngagement, setSessionEngagement] = useState<SessionEngagement>({
+    xpEarned: 0,
+    level: 0,
+    leveledUp: false,
+    streak: 0,
+  });
 
   // Refs
   const flushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -265,6 +288,34 @@ export function EvaluationProvider({
         setCompetencyUpdates(prev => [...prev, ...updates]);
         onCompetencyUpdate?.(updates);
       }
+
+      // Accumulate the curriculum skill the backend resolved (free-form lessons),
+      // deduped by subskill keeping the best attempt — backs the lesson summary.
+      const skill = response?.demonstratedSkill;
+      if (skill) {
+        setDemonstratedSkills(prev => {
+          const existing = prev.find(s => s.subskillId === skill.subskillId);
+          if (!existing) return [...prev, skill];
+          if (skill.score <= existing.score) return prev;
+          return prev.map(s => (s.subskillId === skill.subskillId ? skill : s));
+        });
+        // Append-only log keeps every contributing attempt (guard against a
+        // duplicate submit re-appending the same attemptId).
+        setDemonstratedSkillLog(prev =>
+          prev.some(s => s.attemptId === skill.attemptId) ? prev : [...prev, skill]
+        );
+      }
+
+      // Accumulate the session's XP / level / streak from this submission's award.
+      const eng = response?.engagement;
+      if (eng) {
+        setSessionEngagement(prev => ({
+          xpEarned: prev.xpEarned + (eng.xpEarned || 0),
+          level: eng.newLevel || prev.level,
+          leveledUp: prev.leveledUp || eng.levelUp,
+          streak: eng.currentStreak || prev.streak,
+        }));
+      }
     } catch (error) {
       console.error('[EvaluationContext] Submission failed:', error);
 
@@ -305,34 +356,15 @@ export function EvaluationProvider({
   // Flush All Pending to Backend
   // =============================================================================
 
+  // No-op: every eval is already submitted by submitEvaluation via the live
+  // per-item route (/api/problems/submit). There is no second backend sync.
+  // The old batch flush hit the deferred /api/evaluations/submit-batch route
+  // (404 spam), and re-submitting per-item here just double-counted attempts
+  // (duplicate XP / competency / calibration). The immediate path is the single
+  // source of truth, so flush does nothing.
   const flushToBackend = useCallback(async (): Promise<void> => {
-    if (pendingSubmissions.length === 0 || !isOnline || isSyncing) {
-      return;
-    }
-
-    setIsSyncing(true);
-
-    try {
-      const results = pendingSubmissions.map(e => e.result);
-      const response = await submitBatchEvaluations(results, studentId);
-
-      // Mark all as submitted
-      setSubmittedResults(prev => [...prev, ...results]);
-      setPendingSubmissions([]);
-
-      // Handle competency updates
-      const batchUpdates = response?.competencyUpdates;
-      if (batchUpdates && batchUpdates.length > 0) {
-        setCompetencyUpdates(prev => [...prev, ...batchUpdates]);
-        onCompetencyUpdate?.(batchUpdates);
-      }
-    } catch (error) {
-      console.error('[EvaluationContext] Batch flush failed:', error);
-      // Keep in pending for retry
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [pendingSubmissions, isOnline, isSyncing, studentId, onCompetencyUpdate]);
+    return;
+  }, []);
 
   // =============================================================================
   // Retry Failed Submissions
@@ -453,7 +485,11 @@ export function EvaluationProvider({
   // Context Value
   // =============================================================================
 
-  const contextValue: EvaluationContextType = {
+  // Memoize so consumers (and their effects) see a stable value reference. An
+  // unmemoized object literal here gave every render a fresh `submitEvaluation`
+  // identity, which destabilized primitives' auto-submit effects and helped
+  // drive the duplicate-submission storm.
+  const contextValue: EvaluationContextType = React.useMemo(() => ({
     sessionId,
     exhibitId,
     studentId,
@@ -472,7 +508,16 @@ export function EvaluationProvider({
     flushToBackend,
     retryFailed,
     competencyUpdates,
-  };
+    demonstratedSkills,
+    demonstratedSkillLog,
+    sessionEngagement,
+  }), [
+    sessionId, exhibitId, studentId, topic, gradeLevel,
+    curriculumSubject, curriculumSkillId, curriculumSubskillId,
+    submitEvaluation, pendingSubmissions, submittedResults, failedSubmissions,
+    isOnline, isSyncing, getSessionSummary, flushToBackend, retryFailed,
+    competencyUpdates, demonstratedSkills, demonstratedSkillLog, sessionEngagement,
+  ]);
 
   return (
     <EvaluationContext.Provider value={contextValue}>

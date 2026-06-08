@@ -21,6 +21,11 @@ class LessonContext(BaseModel):
     primitive_type: Optional[str] = None
     objective_text: Optional[str] = None
     curriculum_subject: Optional[str] = None
+    # Primitive's catalog identity (threaded from the frontend so the backend can
+    # scope curriculum retrieval to the right subject + use the rich description as
+    # the embedding signal). domain is the catalog domain ("math", "literacy", ...).
+    primitive_domain: Optional[str] = None
+    primitive_description: Optional[str] = None
     # Provenance of the skill/subskill IDs on this submission.
     # "curriculum" / "planner" / "diagnostic" = authoritative IDs from the curriculum graph.
     # "free-form" = no curriculum IDs available — backend should use CurriculumMappingService.

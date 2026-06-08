@@ -117,3 +117,15 @@ export function getDomainNames(): string[] {
 export function getComponentById(id: string): ComponentDefinition | undefined {
   return UNIVERSAL_CATALOG.find(c => c.id === id);
 }
+
+/**
+ * Find the catalog domain ("math", "literacy", ...) a primitive belongs to.
+ * Threaded into the submission's lesson_context so the backend can scope
+ * curriculum retrieval to the right subject (see QA_curriculum_mapping_misattribution).
+ */
+export function getDomainById(id: string): string | undefined {
+  for (const [domain, catalog] of Object.entries(CATALOGS_BY_DOMAIN)) {
+    if (catalog.some(c => c.id === id)) return domain;
+  }
+  return undefined;
+}

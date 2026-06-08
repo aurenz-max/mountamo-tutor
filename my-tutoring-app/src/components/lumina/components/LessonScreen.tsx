@@ -14,6 +14,7 @@ import { ExhibitProvider } from '../contexts/ExhibitContext';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LessonConnectionInfo } from '@/contexts/LuminaAIContext';
 import ExhibitCompleteFooter from './ExhibitCompleteFooter';
+import { LessonSummary } from './LessonSummary';
 import { LessonExitConfirmModal } from './LessonExitConfirmModal';
 import { useLessonExitGuard } from '../hooks/useLessonExitGuard';
 
@@ -119,6 +120,11 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
             />
 
             <EvaluationResultsIndicator />
+
+            {/* Standalone Learn lessons: end-of-lesson "skills you demonstrated"
+                summary, built from the backend's resolved curriculum mapping.
+                Session blocks get the ExhibitCompleteFooter flow instead. */}
+            {!sessionReturn && <LessonSummary />}
 
             {sessionReturn === 'daily-session' && sessionCurrentBlock && (
               <ExhibitCompleteFooter

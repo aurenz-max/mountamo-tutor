@@ -205,6 +205,8 @@ export type {
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,
+  DemonstratedSkill,
+  SessionEngagement,
   QueuedEvaluation,
   EvaluationStatus,
 } from './types';

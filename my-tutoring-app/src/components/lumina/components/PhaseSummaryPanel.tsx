@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SoundManager } from '../utils/SoundManager';
+import DemonstratedSkillDetails from './DemonstratedSkillDetails';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -395,6 +396,9 @@ const PhaseSummaryPanel: React.FC<PhaseSummaryPanelProps> = ({
             );
           })}
         </div>
+
+        {/* ── Skills demonstrated (self-discovered from the backend) ───── */}
+        <DemonstratedSkillDetails className="mt-6" />
       </CardContent>
     </Card>
   );

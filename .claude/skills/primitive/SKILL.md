@@ -21,7 +21,7 @@ Phase 3: Mechanical registration (4-5 parallel subagents — types, catalog, eva
 Phase 4: Generator             (FOCUSED agent — schema, prompt, post-validation)
 Phase 5: Type check            (main agent — compile everything)
 Phase 6: QA                    (FOCUSED agent — eval-test + G1-G5 sync rules)
-Phase 7: Report / Fix loop     (main agent)
+Phase 7: Report / Fix loop     (main agent — incl. /curriculum-fit home check)
 ```
 
 **Why the generator gets its own phase:** The generator is where quality lives or dies. It needs the component's render logic as input (to know which fields are required per challenge type) and focused attention on schema design and post-validation. Doing it in parallel with mechanical tasks produces sloppy generators.
@@ -900,6 +900,15 @@ After QA passes, report to the user:
 - Backend problem_type_registry.py updated (if eval modes — confirm beta values match catalog)
 
 **If QA found and fixed issues**, mention what was caught and how. This validates the phased approach.
+
+### Curriculum-Fit Check (run `/curriculum-fit <id>`)
+
+A new primitive only earns its place if a real curriculum skill routes to it. Run **`/curriculum-fit <primitive-id>`** now — it embeds the catalog `description` and checks, via the live retrieval path, whether a curriculum skill at the primitive's target grade(s) actually maps to it.
+
+- **MATCH** → note the resolved skill in the report (this is the skill students will get credit on).
+- **MISS** → the skill tells you which: a **curriculum gap** (→ `/curriculum-author` to add the skill), a **thin description** (→ tighten the catalog `description` and re-run), or a **scoping/data issue** (→ grade not published). Surface it — a primitive with no curriculum home will mis-attribute or abstain in production. Do **not** silently ship a homeless primitive.
+
+This is report-only; it won't edit curriculum or catalog. See `.claude/skills/curriculum-fit/SKILL.md`.
 
 ---
 

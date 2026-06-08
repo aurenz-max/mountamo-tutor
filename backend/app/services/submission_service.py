@@ -308,6 +308,33 @@ class SubmissionService:
     # LUMINA PRIMITIVE HANDLER
     # ============================================================================
 
+    @staticmethod
+    def _retrieval_challenge_signal(metrics: dict) -> tuple:
+        """Pull the per-challenge curriculum-retrieval signal out of a primitive's
+        metrics. Returns (eval_mode_description, challenge_text) — the concept-bearing
+        signal the frontend sends (catalog eval-mode description + the actual challenge
+        prompt). These concept words are what let retrieval pin a unit+skill; absent on
+        older clients, in which case retrieval falls back to the omnibus description.
+
+        NOTE: deliberately does NOT derive a numeric scale/range hint. Empirically a
+        phrase like "integer numbers from 0 to 4" embeds toward arithmetic/operations and
+        BREAKS unit coherence (it flipped a clean COUNT001 match to an abstain). Range is
+        a grade signal, not a concept signal — it belongs in grade scoping, not the query.
+        """
+        metrics = metrics or {}
+        eval_mode_description = (
+            metrics.get('evalModeDescription') or metrics.get('eval_mode_description') or ''
+        )
+        challenge_text = metrics.get('challengeText') or metrics.get('challenge_text') or ''
+        if not challenge_text:
+            instructions = metrics.get('challengeInstructions') or metrics.get('instructions')
+            if isinstance(instructions, list):
+                challenge_text = ' '.join(str(i) for i in instructions if i)
+            elif isinstance(instructions, str):
+                challenge_text = instructions
+
+        return eval_mode_description, challenge_text
+
     async def _handle_lumina_primitive(
         self,
         submission: ProblemSubmission,
@@ -341,6 +368,9 @@ class SubmissionService:
         primitive_type = problem.get('primitive_type', 'unknown')
         metrics = primitive_response.get('metrics', {})
 
+        # eval_mode drives both IRT calibration and the curriculum-retrieval query below.
+        eval_mode = primitive_response.get('eval_mode') or metrics.get('evalMode') or 'default'
+
         logger.info(f"[LUMINA_PRIMITIVE] Primitive: {primitive_type}")
         logger.info(f"[LUMINA_PRIMITIVE] Score: {frontend_score}% (backend: {backend_score}), Success: {is_correct}")
         logger.info(f"[LUMINA_PRIMITIVE] Metrics type: {metrics.get('type', 'unknown')}")
@@ -353,6 +383,15 @@ class SubmissionService:
         skill_id = submission.skill_id or problem.get('skill_id', 'free-form')
         subskill_id = submission.subskill_id or problem.get('subskill_id', 'free-form')
         subject = submission.subject or 'auto'
+
+        # Human-readable curriculum names + mapping provenance. Populated when the
+        # curriculum mapping runs (free-form lessons); threaded onto the review so
+        # the client can show "you demonstrated <skill>" without a second lookup.
+        skill_description = ''
+        subskill_description = ''
+        unit_id = ''
+        unit_title = ''
+        mapping_confidence: Optional[float] = None
 
         # Determine whether we need curriculum mapping:
         # 1. Explicit free-form from frontend (id_source == 'free-form')
@@ -378,31 +417,78 @@ class SubmissionService:
 
         if needs_mapping and self.curriculum_mapping_service:
             try:
-                # Use curriculum_subject from lesson_context as a hint when available
-                subject_hint = (
-                    (ctx.curriculum_subject if ctx else None)
-                    or (subject if subject not in ('auto', 'language_arts', 'free-form') else None)
-                )
-                mapping = await self.curriculum_mapping_service.resolve_mapping(
-                    topic=(ctx.topic if ctx else '') or '',
-                    component_intent=(ctx.component_intent if ctx else '') or '',
-                    grade_level=(ctx.grade_level if ctx else '') or '',
-                    primitive_type=(ctx.primitive_type if ctx else None) or primitive_type,
-                    subject_hint=subject_hint,
-                )
-                if mapping.confidence >= 0.3:
+                # Primitive's catalog domain (threaded from the frontend). When it
+                # maps to a known curriculum subject, we use SCOPED EMBEDDING
+                # RETRIEVAL (QA §8 root-cause fix) instead of forced LLM generation:
+                # scope to (subject, grade), embed -> cosine, abstain on a weak/diffuse
+                # top-k. An honest abstain means "no curriculum home" — we must NOT
+                # fall back to generation, which is exactly what mis-attributed a math
+                # primitive to a Language-Arts skill.
+                primitive_domain = ctx.primitive_domain if ctx else None
+                use_retrieval = bool(self.curriculum_mapping_service.subject_for_domain(primitive_domain))
+
+                mapping = None
+                accept = False
+                if use_retrieval:
+                    # Per-challenge signal that sharpens the embedding to the eval mode
+                    # actually exercised (so a cross-cutting primitive lands on the right
+                    # unit/skill instead of abstaining on a range-averaged omnibus query).
+                    # All optional — absent on older clients, which fall back to the
+                    # omnibus catalog description. See CurriculumMappingService.
+                    eval_mode_description, challenge_text = self._retrieval_challenge_signal(metrics)
+                    mapping = await self.curriculum_mapping_service.resolve_by_retrieval(
+                        primitive_domain=primitive_domain,
+                        topic=(ctx.topic if ctx else '') or '',
+                        grade_level=(ctx.grade_level if ctx else '') or '',
+                        primitive_type=(ctx.primitive_type if ctx else None) or primitive_type,
+                        primitive_description=(ctx.primitive_description if ctx else '') or '',
+                        objective_text=(ctx.objective_text if ctx else '') or '',
+                        eval_mode=eval_mode,
+                        eval_mode_description=eval_mode_description,
+                        challenge_text=challenge_text,
+                    )
+                    # The matcher already applied the abstain rule, so any returned
+                    # mapping is a confident, scoped match.
+                    accept = mapping is not None
+                    if not accept:
+                        logger.info(
+                            f"[LUMINA_PRIMITIVE] Retrieval abstained for {primitive_type} "
+                            f"(domain={primitive_domain}) — no curriculum home, using fallback IDs"
+                        )
+                else:
+                    # Cross-cutting / unknown domain (or legacy submission with no
+                    # domain): keep the existing generation path + 0.3 gate.
+                    subject_hint = (
+                        (ctx.curriculum_subject if ctx else None)
+                        or (subject if subject not in ('auto', 'language_arts', 'free-form') else None)
+                    )
+                    mapping = await self.curriculum_mapping_service.resolve_mapping(
+                        topic=(ctx.topic if ctx else '') or '',
+                        component_intent=(ctx.component_intent if ctx else '') or '',
+                        grade_level=(ctx.grade_level if ctx else '') or '',
+                        primitive_type=(ctx.primitive_type if ctx else None) or primitive_type,
+                        subject_hint=subject_hint,
+                    )
+                    accept = mapping is not None and mapping.confidence >= 0.3
+                    if not accept and mapping is not None:
+                        logger.info(
+                            f"[LUMINA_PRIMITIVE] Mapping confidence too low ({mapping.confidence:.2f}), "
+                            f"using fallback IDs"
+                        )
+
+                if accept and mapping is not None:
                     skill_id = mapping.skill_id
                     subskill_id = mapping.subskill_id
                     subject = mapping.subject
+                    skill_description = mapping.skill_description
+                    subskill_description = mapping.subskill_description
+                    unit_id = mapping.unit_id
+                    unit_title = mapping.unit_title
+                    mapping_confidence = mapping.confidence
                     logger.info(
                         f"[LUMINA_PRIMITIVE] Curriculum resolved: "
                         f"{subject}/{skill_id}/{subskill_id} "
                         f"(confidence={mapping.confidence:.2f}, via={mapping.resolved_by})"
-                    )
-                else:
-                    logger.info(
-                        f"[LUMINA_PRIMITIVE] Mapping confidence too low ({mapping.confidence:.2f}), "
-                        f"using fallback IDs"
                     )
             except Exception as e:
                 logger.warning(f"[LUMINA_PRIMITIVE] Curriculum mapping failed, using fallbacks: {e}")
@@ -441,6 +527,15 @@ class SubmissionService:
             "skill_id": skill_id,
             "subject": subject,
             "subskill_id": subskill_id,
+            # Human-readable curriculum names + mapping confidence — lets the client
+            # tell the student which curriculum skill this lesson demonstrated.
+            # unit_* gives the full Subject > Unit > Skill > Subskill path (blank when
+            # resolved via the generation/fallback path, which has no unit).
+            "skill_description": skill_description,
+            "subskill_description": subskill_description,
+            "unit_id": unit_id,
+            "unit_title": unit_title,
+            "mapping_confidence": mapping_confidence,
             "score": backend_score,
             "correct": is_correct,
             "accuracy_percentage": frontend_score,
@@ -457,9 +552,6 @@ class SubmissionService:
                 "completed_at": primitive_response.get('completed_at'),
             }
         }
-
-        # Extract eval_mode from primitive_response for IRT calibration engine
-        eval_mode = primitive_response.get('eval_mode') or metrics.get('evalMode') or 'default'
 
         # Record eval_mode on the review too (the attempt itself gets it via the
         # competency update below, which owns attempt persistence).

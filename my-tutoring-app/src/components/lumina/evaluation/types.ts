@@ -3437,6 +3437,49 @@ export interface CompetencyUpdateSuggestion {
   confidence: 'low' | 'medium' | 'high';
 }
 
+/**
+ * A curriculum skill the student demonstrated by completing a primitive.
+ *
+ * The backend resolves the live lesson (often a free-typed topic) to a real
+ * curriculum subskill via CurriculumMappingService and returns it on the
+ * submission review. This is the one piece of student-facing truth the client
+ * cannot self-source on a free-form lesson — only the backend mapping knows
+ * that "black holes" exercised, e.g., "Sequencing Story Events".
+ */
+export interface DemonstratedSkill {
+  attemptId: string;
+  primitiveType: string;
+  subject: string;            // e.g. "LANGUAGE_ARTS"
+  /** Parent curriculum unit (Subject > Unit > Skill > Subskill). Present on
+   *  retrieval-resolved mappings; empty on the generation/fallback path. */
+  unitId?: string;            // e.g. "LA003"
+  unitTitle?: string;         // e.g. "Reading: Literature"
+  skillId: string;            // e.g. "LA003-05"
+  subskillId: string;         // e.g. "LA003-05-a"
+  skillDescription: string;   // e.g. "Sequencing Story Events"
+  subskillDescription: string;
+  score: number;              // 0–100 (frontend scale)
+  success: boolean;
+  /** Confidence of the topic→curriculum mapping (0–1), or null when authoritative. */
+  mappingConfidence: number | null;
+}
+
+/**
+ * Running engagement totals for the current lesson session, accumulated from the
+ * XP/level/streak each submission earns. Backs the lesson-summary achievement
+ * banner so it shows real numbers rather than re-deriving them client-side.
+ */
+export interface SessionEngagement {
+  /** Sum of XP earned across every submission this session. */
+  xpEarned: number;
+  /** Latest level reported by the backend (0 if never reported). */
+  level: number;
+  /** True if any submission this session crossed a level boundary. */
+  leveledUp: boolean;
+  /** Latest day-streak reported by the backend. */
+  streak: number;
+}
+
 // =============================================================================
 // Evaluation State Management
 // =============================================================================

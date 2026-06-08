@@ -7,34 +7,122 @@
  */
 
 import { authApi } from '@/lib/authApiClient';
+import { getComponentById, getDomainById } from '../../service/manifest/catalog';
 import type {
   PrimitiveEvaluationResult,
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,
+  DemonstratedSkill,
 } from '../types';
 
 // =============================================================================
 // Response Types
 // =============================================================================
 
+/** Engagement reward the backend awarded for this submission (XP, level, streak).
+ *  The decorator flattens these onto the /api/problems/submit response; we promote
+ *  them so the lesson summary can show real session totals instead of guessing. */
+export interface SubmissionEngagement {
+  /** XP awarded for this single submission. */
+  xpEarned: number;
+  /** Student's running XP total after this award (if reported). */
+  totalXp: number;
+  /** Whether this submission crossed a level boundary. */
+  levelUp: boolean;
+  /** Student's level after this submission. */
+  newLevel: number;
+  /** Current day-streak after this submission. */
+  currentStreak: number;
+}
+
 export interface EvaluationSubmitResponse {
   success: boolean;
   evaluationId: string;
   competencyUpdates?: CompetencyUpdateSuggestion[];
+  /** The curriculum skill the backend resolved this attempt to, when confident. */
+  demonstratedSkill?: DemonstratedSkill;
+  /** XP / level / streak awarded for this submission, when the backend reported it. */
+  engagement?: SubmissionEngagement;
   message?: string;
+}
+
+/** The curriculum-bearing fields the backend promotes onto the submission review. */
+interface BackendReview {
+  subject?: string;
+  skill_id?: string;
+  subskill_id?: string;
+  skill_description?: string;
+  subskill_description?: string;
+  /** Parent curriculum unit (Subject > Unit > Skill > Subskill). Present on
+   *  retrieval-resolved mappings; blank on the generation/fallback path. */
+  unit_id?: string;
+  unit_title?: string;
+  mapping_confidence?: number | null;
+  [key: string]: unknown;
 }
 
 /** Backend SubmissionResult shape from /api/problems/submit */
 interface BackendSubmissionResult {
-  review: Record<string, unknown>;
+  review: BackendReview;
   competency: Record<string, unknown>;
   points_earned: number;
   encouraging_message: string;
   student_id?: number;
   user_id?: string;
   xp_earned?: number;
+  total_xp?: number;
+  streak_bonus_xp?: number;
   level_up?: boolean;
   new_level?: number;
+  current_streak?: number;
+}
+
+/**
+ * Build a DemonstratedSkill from the backend review — but only when the backend
+ * actually resolved a real curriculum skill (a named subskill, not a sentinel
+ * like `*_subskill` / `unknown`). On a low-confidence or failed mapping there's
+ * nothing honest to claim, so we return undefined and the lesson summary simply
+ * omits it.
+ */
+function extractDemonstratedSkill(
+  review: BackendReview,
+  result: PrimitiveEvaluationResult
+): DemonstratedSkill | undefined {
+  const subskillId = review.subskill_id || result.subskillId || '';
+  const skillDescription = review.skill_description || '';
+  const isSentinel =
+    !subskillId ||
+    subskillId === 'unknown' ||
+    subskillId === 'free-form' ||
+    subskillId.endsWith('_subskill');
+
+  if (isSentinel || !skillDescription) return undefined;
+
+  // Last-line display guard: never tell a student they demonstrated a skill on a
+  // low-confidence mapping. The backend already abstains on weak/diffuse retrieval
+  // matches (so accepted ones clear ~0.6 cosine); this also catches a low-confidence
+  // mapping from the legacy generation path. Mappings with no confidence reported
+  // (null) are treated as the older trusted path and allowed through.
+  const DISPLAY_CONFIDENCE_FLOOR = 0.6;
+  const mappingConfidence = review.mapping_confidence ?? null;
+  if (mappingConfidence !== null && mappingConfidence < DISPLAY_CONFIDENCE_FLOOR) {
+    return undefined;
+  }
+
+  return {
+    attemptId: result.attemptId,
+    primitiveType: result.primitiveType,
+    subject: review.subject || 'general',
+    skillId: review.skill_id || result.skillId || result.primitiveType,
+    subskillId,
+    skillDescription,
+    subskillDescription: review.subskill_description || '',
+    unitId: review.unit_id || '',
+    unitTitle: review.unit_title || '',
+    score: result.score,
+    success: result.success,
+    mappingConfidence: review.mapping_confidence ?? null,
+  };
 }
 
 export interface BatchEvaluationResponse {
@@ -78,12 +166,32 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
     primitive_type?: string;
     objective_text?: string;
     curriculum_subject?: string;
+    primitive_domain?: string;
+    primitive_description?: string;
     id_source?: string;
   };
   source?: 'lesson' | 'practice';
 } {
   const idSource = result.lessonContext?.idSource;
   const hasRealIds = !!result.skillId && !!result.subskillId && idSource !== 'free-form';
+
+  // Catalog identity for the primitive — lets the backend scope curriculum
+  // retrieval to the right subject and use the rich description as the embedding
+  // signal (QA_curriculum_mapping_misattribution §8).
+  const primitiveComponent = getComponentById(result.primitiveType);
+  const primitiveDomain = getDomainById(result.primitiveType);
+  const primitiveDescription = primitiveComponent?.description;
+
+  // Per-challenge curriculum signal: the catalog description of the eval mode the
+  // student actually exercised (e.g. 'plot' -> "Place value on number line with full
+  // guidance."). This is what lets retrieval pin the right curriculum unit+skill for a
+  // cross-cutting primitive — without it the backend embeds the omnibus K-12 blurb,
+  // which dilutes to the range-average and abstains. Keyed by evalMode, so it's exact
+  // for single-mode sessions; in auto/mixed it reflects the session's primary mode.
+  const activeEvalMode = result.metrics?.evalMode;
+  const evalModeDescription = activeEvalMode
+    ? primitiveComponent?.evalModes?.find((m) => m.evalMode === activeEvalMode)?.description
+    : undefined;
 
   // Subject resolution:
   // - Authoritative IDs with curriculum subject → use it directly
@@ -116,7 +224,9 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
       pre_evaluated: true,
       success: result.success,
       score: result.score,
-      metrics: result.metrics,
+      metrics: evalModeDescription
+        ? { ...result.metrics, evalModeDescription }
+        : result.metrics,
       eval_mode: result.metrics?.evalMode || 'default',
       duration_ms: result.durationMs,
       started_at: result.startedAt,
@@ -131,6 +241,8 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
       primitive_type: result.lessonContext?.primitiveType || (result.primitiveType as string),
       objective_text: result.lessonContext?.objectiveText,
       curriculum_subject: result.lessonContext?.curriculumSubject,
+      primitive_domain: primitiveDomain,
+      primitive_description: primitiveDescription,
       id_source: idSource || (hasRealIds ? 'curriculum' : 'free-form'),
     },
     // Eval source tagging (PRD 6.1): explicit from result, or derived from lessonContext
@@ -186,10 +298,30 @@ export async function submitEvaluationToBackend(
       });
     }
 
+    // Un-discard the backend's curriculum verdict: the resolved subskill +
+    // human-readable names ride back on `response.review`. This is the data the
+    // client cannot self-source on a free-typed lesson.
+    const demonstratedSkill = extractDemonstratedSkill(response.review || {}, result);
+
+    // Promote the engagement reward (flattened onto the response by the backend
+    // decorator) so the lesson summary can show real session XP/level/streak.
+    const engagement: SubmissionEngagement | undefined =
+      response.xp_earned !== undefined || response.new_level !== undefined
+        ? {
+            xpEarned: response.xp_earned ?? 0,
+            totalXp: response.total_xp ?? 0,
+            levelUp: response.level_up ?? false,
+            newLevel: response.new_level ?? 0,
+            currentStreak: response.current_streak ?? 0,
+          }
+        : undefined;
+
     return {
       success: true,
       evaluationId: result.attemptId,
       competencyUpdates,
+      demonstratedSkill,
+      engagement,
       message: response.encouraging_message,
     };
   } catch (error) {
@@ -209,22 +341,17 @@ export async function submitBatchEvaluations(
   results: PrimitiveEvaluationResult[],
   studentId?: string
 ): Promise<BatchEvaluationResponse> {
-  try {
-    const payload = {
-      evaluations: results,
-      studentId,
-    };
-
-    const response = await authApi.post<BatchEvaluationResponse>(
-      '/api/evaluations/submit-batch',
-      payload
-    );
-
-    return response;
-  } catch (error) {
-    console.error('[evaluationApi] Failed to submit batch evaluations:', error);
-    throw error;
-  }
+  // DEFERRED: the backend /api/evaluations/submit-batch route is intentionally
+  // not registered (see backend/app/api/endpoints/evaluations.py — the slice is
+  // history+stats only). Callers should drain evaluations one-by-one through
+  // submitEvaluationToBackend (/api/problems/submit), which is the live pipeline.
+  // This stub fails loudly instead of silently 404-spamming the dead route.
+  void results;
+  void studentId;
+  throw new Error(
+    '[evaluationApi] submitBatchEvaluations is disabled: /api/evaluations/submit-batch ' +
+      'is deferred. Submit evaluations individually via submitEvaluationToBackend.'
+  );
 }
 
 /**
