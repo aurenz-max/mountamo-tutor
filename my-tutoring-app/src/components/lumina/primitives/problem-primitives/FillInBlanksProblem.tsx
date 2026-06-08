@@ -55,6 +55,7 @@ export const FillInBlanksProblem: React.FC<FillInBlanksProblemProps> = ({ data }
     subskillId,
     objectiveId,
     exhibitId,
+    contentSubject: data.subject,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 

@@ -64,6 +64,7 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
     subskillId,
     objectiveId,
     exhibitId,
+    contentSubject: data.subject,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 

@@ -54,6 +54,7 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
     subskillId,
     objectiveId,
     exhibitId,
+    contentSubject: data.subject,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 

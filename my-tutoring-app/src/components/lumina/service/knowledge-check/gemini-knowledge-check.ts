@@ -1563,6 +1563,14 @@ export const generateKnowledgeCheck = async (
       throw new Error('[Knowledge Check] All generators failed — no problems produced');
     }
 
+    // Stamp the orchestrator's subject guess onto every problem. This is the KC's
+    // primitive-level subject signal — it rides each problem's evaluation submission and
+    // wins over the lesson manifest's subject during curriculum attribution (see
+    // BaseProblemData.subject / usePrimitiveEvaluation contentSubject).
+    if (plan.subject) {
+      for (const p of problems) p.subject = plan.subject;
+    }
+
     console.log(`[Knowledge Check] Orchestrated: ${problems.length}/${plan.problems.length} problems generated`);
     console.log(`  Arc: ${plan.assessmentArc}`);
     return problems;

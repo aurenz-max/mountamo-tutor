@@ -7,7 +7,7 @@
  */
 
 import { Type, Schema, ThinkingLevel } from "@google/genai";
-import { PracticeManifest } from "../../types";
+import { PracticeManifest, CURRICULUM_SUBJECT_IDS } from "../../types";
 import { ai } from "../geminiClient";
 import { buildPracticeVisualCatalogContext } from "./practice-visual-catalog";
 
@@ -56,6 +56,11 @@ const practiceManifestSchema: Schema = {
   properties: {
     topic: { type: Type.STRING },
     gradeLevel: { type: Type.STRING },
+    subject: {
+      type: Type.STRING,
+      enum: [...CURRICULUM_SUBJECT_IDS],
+      description: "The single closest curriculum subject for this session. Used to scope curriculum attribution — pick the best fit even if the topic is cross-cutting.",
+    },
     problemCount: { type: Type.NUMBER },
     sessionBrief: {
       type: Type.OBJECT,
@@ -162,7 +167,7 @@ const practiceManifestSchema: Schema = {
       },
     },
   },
-  required: ["topic", "gradeLevel", "problemCount", "sessionBrief", "items"],
+  required: ["topic", "gradeLevel", "subject", "problemCount", "sessionBrief", "items"],
 };
 
 /**
@@ -327,6 +332,9 @@ ASSIGNMENT: Generate ${problemCount} practice problems for: "${topic}"
 TARGET AUDIENCE: ${gradeLevelContext}
 
 ${visualCatalog}
+
+## SUBJECT (required)
+Set "subject" to the single closest curriculum subject for this session — one of MATHEMATICS, LANGUAGE_ARTS, SCIENCE, SOCIAL_STUDIES. Pick the best fit even when the topic is cross-cutting.
 
 ## SESSION BRIEF (required)
 First, generate a "sessionBrief" — a short, student-facing intro for this activity set:
@@ -602,6 +610,9 @@ ASSIGNMENT: Generate ${items.length} practice activities, one for each skill bel
 TARGET AUDIENCE: ${gradeLevelContext}
 
 ${visualCatalog}
+
+## SUBJECT (required)
+Set "subject" to the single closest curriculum subject for this Pulse session — one of MATHEMATICS, LANGUAGE_ARTS, SCIENCE, SOCIAL_STUDIES.
 
 ## SESSION BRIEF (required)
 Generate a "sessionBrief" — a short, student-facing intro for this Pulse session:

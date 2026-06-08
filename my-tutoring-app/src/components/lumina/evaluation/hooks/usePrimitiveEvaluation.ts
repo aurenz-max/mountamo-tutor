@@ -37,6 +37,13 @@ export interface UsePrimitiveEvaluationOptions {
   /** Objective text from the manifest (for curriculum mapping) */
   objectiveText?: string;
 
+  /** The primitive's OWN best-guess curriculum subject_id (e.g. a KC's orchestrator
+   *  subject stamped onto its problems). When present on a free-form submission it WINS
+   *  over the lesson manifest's subject, so an interdisciplinary lesson's primitive
+   *  attributes to its own subject. Authoritative (curriculum/planner) IDs are never
+   *  overridden. See BaseProblemData.subject. */
+  contentSubject?: string;
+
   /** Callback fired when result is submitted */
   onSubmit?: (result: PrimitiveEvaluationResult) => void;
 
@@ -147,6 +154,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     exhibitId,
     componentIntent,
     objectiveText,
+    contentSubject,
     onSubmit,
     onSubmitSuccess,
     onSubmitError,
@@ -243,6 +251,16 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       idSource = 'free-form';
     }
 
+    // Resolve the curriculum subject with primitive-first precedence:
+    //   1. authoritative IDs (curriculum/planner/diagnostic) → keep the lesson's real
+    //      subject untouched (it's also the top-level competency subject; mapping is skipped).
+    //   2. free-form → the primitive's own content guess (contentSubject) wins over the
+    //      lesson manifest's subject, so a 2-part lesson's primitive attributes to its own
+    //      subject. Falls back to the manifest/provider subject when the primitive has none.
+    const effectiveSubject = idSource === 'free-form'
+      ? (contentSubject?.trim() || evaluationContext?.curriculumSubject)
+      : evaluationContext?.curriculumSubject;
+
     // Build lesson context from EvaluationContext + component-level props.
     // Always include it so the backend has topic/grade for curriculum mapping.
     const lessonContext = {
@@ -251,7 +269,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       componentIntent,
       primitiveType: primitiveType as string,
       objectiveText,
-      curriculumSubject: evaluationContext?.curriculumSubject,
+      curriculumSubject: effectiveSubject,
       idSource,
     };
 
@@ -319,6 +337,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     exhibitId,
     componentIntent,
     objectiveText,
+    contentSubject,
     onSubmit,
     onSubmitSuccess,
     onSubmitError,

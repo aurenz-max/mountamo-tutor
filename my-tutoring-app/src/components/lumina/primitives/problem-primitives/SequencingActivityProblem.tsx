@@ -54,6 +54,7 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
     subskillId,
     objectiveId,
     exhibitId,
+    contentSubject: data.subject,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 

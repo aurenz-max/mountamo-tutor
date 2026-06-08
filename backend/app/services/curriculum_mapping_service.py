@@ -167,6 +167,7 @@ class CurriculumMappingService:
         eval_mode: str = "",
         eval_mode_description: str = "",
         challenge_text: str = "",
+        subject_override: Optional[str] = None,
     ) -> Optional[CurriculumMapping]:
         """Resolve via scoped embedding retrieval (QA §8). Returns a high-confidence
         CurriculumMapping (resolved_by="retrieval", confidence=cosine) or None to
@@ -177,10 +178,16 @@ class CurriculumMappingService:
         embedding to the specific eval mode exercised so a cross-cutting primitive lands
         on the right unit (number-line plot -> COUNT001) instead of abstaining on a
         diffuse, range-averaged top-k. See _build_retrieval_query.
+
+        `subject_override` (a curriculum subject_id) lets a CROSS-CUTTING primitive whose
+        catalog domain has no subject mapping (e.g. knowledge-check in the `assessment`
+        domain) still scope retrieval — the subject comes from the primitive's own content
+        guess or the lesson manifest instead of the domain. Domain mapping is preferred
+        when present; the override only supplies a subject the domain couldn't.
         """
-        subject = self.subject_for_domain(primitive_domain)
+        subject = self.subject_for_domain(primitive_domain) or subject_override
         if not subject:
-            # Cross-cutting / unknown domain — retrieval can't scope; let the caller decide.
+            # Cross-cutting / unknown domain AND no subject hint — retrieval can't scope.
             return None
 
         # Cache key must capture the eval mode + per-challenge signal, else different

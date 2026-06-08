@@ -309,6 +309,22 @@ class SubmissionService:
     # ============================================================================
 
     @staticmethod
+    def _normalize_subject_id(subject: Optional[str]) -> Optional[str]:
+        """Normalize a lesson-supplied subject to curriculum subject_id form.
+
+        The frontend emits a subject_id enum already (MATHEMATICS, LANGUAGE_ARTS,
+        SCIENCE, SOCIAL_STUDIES), so this is mostly a no-op; it defensively folds a
+        stray display name ("Language Arts") to the id form ("LANGUAGE_ARTS"). It does
+        NOT validate against published subjects — the retrieval matcher abstains
+        (no_scope) on an unknown subject, which is the safe outcome. Sentinel values
+        used elsewhere in this handler ('auto', 'free-form', 'general') are dropped.
+        """
+        s = (subject or "").strip()
+        if not s or s.lower() in ("auto", "free-form", "general", "unknown"):
+            return None
+        return s.upper().replace(" ", "_").replace("-", "_")
+
+    @staticmethod
     def _retrieval_challenge_signal(metrics: dict) -> tuple:
         """Pull the per-challenge curriculum-retrieval signal out of a primitive's
         metrics. Returns (eval_mode_description, challenge_text) — the concept-bearing
@@ -425,7 +441,17 @@ class SubmissionService:
                 # fall back to generation, which is exactly what mis-attributed a math
                 # primitive to a Language-Arts skill.
                 primitive_domain = ctx.primitive_domain if ctx else None
-                use_retrieval = bool(self.curriculum_mapping_service.subject_for_domain(primitive_domain))
+                # Subject for scoped retrieval, primitive-first:
+                #   1. the primitive's catalog DOMAIN (deterministic: math -> MATHEMATICS), else
+                #   2. the lesson-supplied subject (curriculum_subject). The frontend already
+                #      resolved primitive-first there: a cross-cutting primitive's own content
+                #      guess (e.g. a knowledge-check orchestrator's subject) when present, else
+                #      the lesson manifest's subject. This is what lets an `assessment`-domain
+                #      primitive — which subject_for_domain can't scope — reach retrieval at all.
+                # Frontend emits a subject_id enum; normalize defensively for stray display names.
+                domain_subject = self.curriculum_mapping_service.subject_for_domain(primitive_domain)
+                subject_override = self._normalize_subject_id(ctx.curriculum_subject if ctx else None)
+                use_retrieval = bool(domain_subject or subject_override)
 
                 mapping = None
                 accept = False
@@ -446,6 +472,7 @@ class SubmissionService:
                         eval_mode=eval_mode,
                         eval_mode_description=eval_mode_description,
                         challenge_text=challenge_text,
+                        subject_override=subject_override,
                     )
                     # The matcher already applied the abstain rule, so any returned
                     # mapping is a confident, scoped match.

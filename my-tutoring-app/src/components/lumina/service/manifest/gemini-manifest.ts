@@ -3,6 +3,7 @@ import { Type, Schema, ThinkingLevel } from "@google/genai";
 import {
   ExhibitManifest,
   ManifestItem,
+  CURRICULUM_SUBJECT_IDS,
 } from "../../types";
 
 import { ai } from "../geminiClient";
@@ -175,6 +176,11 @@ const manifestSchema: Schema = {
   properties: {
     topic: { type: Type.STRING },
     gradeLevel: { type: Type.STRING },
+    subject: {
+      type: Type.STRING,
+      enum: [...CURRICULUM_SUBJECT_IDS],
+      description: "The single closest curriculum subject for this lesson. Used to scope curriculum attribution — pick the best fit even if the topic is cross-cutting.",
+    },
     themeColor: {
       type: Type.STRING,
       description: "Hex color code for the exhibit theme (e.g., #3b82f6)"
@@ -244,7 +250,7 @@ const manifestSchema: Schema = {
       required: ["componentId", "instanceId", "title", "intent"]
     }
   },
-  required: ["topic", "gradeLevel", "themeColor", "curatorBrief", "objectiveBlocks"]
+  required: ["topic", "gradeLevel", "subject", "themeColor", "curatorBrief", "objectiveBlocks"]
 };
 
 /**
@@ -293,6 +299,7 @@ This manifest is structured around LEARNING OBJECTIVES, not a flat list of compo
 Each objective gets its own dedicated set of 2-4 components (1-to-many relationship).
 
 STRUCTURE:
+0. subject: The single closest curriculum subject for this lesson — one of MATHEMATICS, LANGUAGE_ARTS, SCIENCE, SOCIAL_STUDIES. Pick the best fit even when the topic is cross-cutting.
 1. curatorBrief: Introduces the topic and ALL objectives (always first)
 2. objectiveBlocks: Array where EACH objective has its own dedicated components
 3. finalAssessment: Optional quiz/flashcards covering ALL objectives (at the end)

@@ -557,6 +557,12 @@ export type Inset =
   | DefinitionBoxInset
   | EquationSetupInset;
 
+/** The curriculum subject_ids used to scope curriculum attribution. Single source of
+ *  truth for the Gemini schema `enum`s (manifest, practice, knowledge-check orchestrator)
+ *  and runtime validation. See BaseProblemData.subject / ExhibitManifest.subject. */
+export const CURRICULUM_SUBJECT_IDS = ['MATHEMATICS', 'LANGUAGE_ARTS', 'SCIENCE', 'SOCIAL_STUDIES'] as const;
+export type CurriculumSubjectId = typeof CURRICULUM_SUBJECT_IDS[number];
+
 // Base interface for all problem types
 export interface BaseProblemData {
   id: string;
@@ -567,6 +573,12 @@ export interface BaseProblemData {
   successCriteria: string[];
   /** Rich inline content (equation, table, passage, chart, etc.) generated with the problem */
   inset?: Inset;
+  /** The KC orchestrator's best-guess curriculum subject_id (MATHEMATICS, LANGUAGE_ARTS,
+   *  SCIENCE, SOCIAL_STUDIES) for THIS assessment's content. This is the primitive-level
+   *  subject signal — it wins over the lesson manifest's subject during curriculum
+   *  attribution, so an interdisciplinary lesson's KC attributes to its own subject rather
+   *  than the lesson's dominant one. Stamped onto every problem of a KC. */
+  subject?: string;
 }
 
 // Multiple Choice Problem
@@ -1534,6 +1546,12 @@ export interface ExhibitManifest {
   gradeLevel: string;
   themeColor: string;
 
+  /** Curator's best-guess curriculum subject_id (MATHEMATICS, LANGUAGE_ARTS, SCIENCE,
+   *  SOCIAL_STUDIES) for this lesson. The FALLBACK subject for curriculum attribution:
+   *  a primitive uses this when it can't resolve a subject from its own catalog domain
+   *  or content (see BaseProblemData.subject). */
+  subject?: string;
+
   // The curator brief introduces all objectives
   curatorBrief: CuratorBriefManifest;
 
@@ -1595,6 +1613,10 @@ export interface KnowledgeCheckPlan {
   /** 1-2 sentence narrative of the cognitive journey */
   assessmentArc: string;
   problems: KnowledgeCheckProblemPlan[];
+  /** Best-guess curriculum subject_id for this assessment's content (MATHEMATICS,
+   *  LANGUAGE_ARTS, SCIENCE, SOCIAL_STUDIES). The orchestrator sees the whole check,
+   *  so it owns the KC's subject guess; stamped onto each generated problem. */
+  subject?: string;
 }
 
 /**
@@ -1645,6 +1667,10 @@ export interface PracticeManifest {
   problemCount: number;
   sessionBrief?: SessionBrief;
   items: PracticeManifestItem[];
+  /** Best-guess curriculum subject_id for this practice session (MATHEMATICS,
+   *  LANGUAGE_ARTS, SCIENCE, SOCIAL_STUDIES). Fallback subject for curriculum
+   *  attribution; ignored on the Pulse path where items carry authoritative IDs. */
+  subject?: string;
 }
 
 /**

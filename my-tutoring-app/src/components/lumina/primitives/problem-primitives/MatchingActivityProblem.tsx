@@ -55,6 +55,7 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
     subskillId,
     objectiveId,
     exhibitId,
+    contentSubject: data.subject,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 

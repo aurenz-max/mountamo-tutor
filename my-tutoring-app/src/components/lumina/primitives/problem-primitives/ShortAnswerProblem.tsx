@@ -61,6 +61,7 @@ export const ShortAnswerProblem: React.FC<ShortAnswerProblemProps> = ({ data }) 
     subskillId,
     objectiveId,
     exhibitId,
+    contentSubject: data.subject,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 

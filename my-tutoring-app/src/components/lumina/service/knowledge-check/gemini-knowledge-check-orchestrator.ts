@@ -11,6 +11,7 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import { CURRICULUM_SUBJECT_IDS } from '../../types';
 import type {
   KnowledgeCheckPlan,
   KnowledgeCheckProblemPlan,
@@ -27,6 +28,11 @@ import type { BloomsTier } from './gemini-knowledge-check';
 const ORCHESTRATOR_SCHEMA: Schema = {
   type: Type.OBJECT,
   properties: {
+    subject: {
+      type: Type.STRING,
+      enum: [...CURRICULUM_SUBJECT_IDS],
+      description: 'The single closest curriculum subject this assessment tests. Judge from the actual question content, not the primitive type. Pick the best fit even when the topic is cross-cutting.',
+    },
     assessmentArc: {
       type: Type.STRING,
       description: '1-2 sentence narrative of the cognitive journey (e.g. "Start with recall of key terms, build to applying formulas, finish with analyzing edge cases")',
@@ -63,7 +69,7 @@ const ORCHESTRATOR_SCHEMA: Schema = {
       },
     },
   },
-  required: ['assessmentArc', 'problems'],
+  required: ['subject', 'assessmentArc', 'problems'],
 };
 
 // ============================================================================
@@ -84,6 +90,8 @@ function buildOrchestratorPrompt(
   return `You are an expert assessment designer. Plan a ${count}-problem knowledge check on "${topic}" for ${gradeLevel} students.
 
 Your job is to decide the optimal MIX of problem types and rich inline content (insets) that will best assess this topic at this level. You are NOT generating the problems — you are planning them. A separate generator will produce each problem from your brief.
+
+First, set "subject" to the single closest curriculum subject this assessment tests — one of MATHEMATICS, LANGUAGE_ARTS, SCIENCE, SOCIAL_STUDIES. Judge from the actual content being assessed, not the assessment format. Pick the best fit even when the topic is cross-cutting.
 
 ## Available Problem Types
 - **multiple_choice**: 4-5 options, one correct. Best for: conceptual understanding, application, analysis. The workhorse — but don't over-rely on it.
@@ -166,6 +174,8 @@ const VALID_INSET_TYPES = new Set<string>([
 
 const VALID_DIFFICULTIES = new Set<string>(['easy', 'medium', 'hard']);
 
+const VALID_SUBJECTS = new Set<string>(CURRICULUM_SUBJECT_IDS);
+
 export async function runKnowledgeCheckOrchestrator(
   topic: string,
   gradeLevel: string,
@@ -223,9 +233,16 @@ export async function runKnowledgeCheckOrchestrator(
     console.warn(`[KC Orchestrator] Requested ${count} problems, got ${validProblems.length}`);
   }
 
+  // Subject is the KC's own content guess (primitive-level signal). Keep only a valid
+  // subject_id; drop anything off-enum so attribution falls back to the manifest subject.
+  const subject = typeof raw.subject === 'string' && VALID_SUBJECTS.has(raw.subject)
+    ? raw.subject
+    : undefined;
+
   const plan: KnowledgeCheckPlan = {
     assessmentArc: raw.assessmentArc || '',
     problems: validProblems,
+    subject,
   };
 
   console.log('[KC Orchestrator] Plan:', {

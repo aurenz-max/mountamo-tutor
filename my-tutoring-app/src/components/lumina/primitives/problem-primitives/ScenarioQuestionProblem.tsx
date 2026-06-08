@@ -50,6 +50,7 @@ export const ScenarioQuestionProblem: React.FC<ScenarioQuestionProblemProps> = (
     subskillId,
     objectiveId,
     exhibitId,
+    contentSubject: data.subject,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 

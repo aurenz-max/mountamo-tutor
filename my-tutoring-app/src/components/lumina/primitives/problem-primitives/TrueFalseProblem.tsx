@@ -63,6 +63,7 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
     subskillId,
     objectiveId,
     exhibitId,
+    contentSubject: data.subject,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
