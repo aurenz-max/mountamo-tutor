@@ -72,6 +72,15 @@ class FirestoreCurriculumReader:
                 variants.append(short)
         return variants
 
+    async def resolve_grade(self, subject_id: str) -> Optional[str]:
+        """Resolve the grade bucket for a subject by scanning draft/published docs.
+
+        Delegates to the sync service's resolver so grade-resolution logic stays
+        in one place. Used by the graph-agent layer, which is addressed by
+        subject_id alone and must discover the grade for hierarchical reads.
+        """
+        return await firestore_curriculum_sync._resolve_grade(subject_id)
+
     # ==================== Draft doc access ====================
 
     async def _get_draft_doc(self, grade: str, subject_id: str) -> Optional[Dict[str, Any]]:
@@ -163,7 +172,7 @@ class FirestoreCurriculumReader:
         return result
 
     async def get_subject(
-        self, grade: str, subject_id: str, version_id: Optional[str] = None
+        self, grade: str, subject_id: str, version_id: Optional[str] = None, include_drafts: bool = False
     ) -> Optional[Dict[str, Any]]:
         """Get subject metadata from the hierarchical doc."""
         doc = await self._get_subject_doc(grade, subject_id)

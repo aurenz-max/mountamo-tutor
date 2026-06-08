@@ -81,14 +81,18 @@ class CurriculumGraphAgentService:
             if age < 300:
                 return cached
 
-        graph = await self.cache.get_graph(subject_id, include_drafts=True)
+        grade = await firestore_reader.resolve_grade(subject_id)
+        if not grade:
+            raise ValueError(f"Cannot resolve grade for {subject_id}")
+
+        graph = await self.cache.get_graph(subject_id, grade, include_drafts=True)
         nodes, edges_list = graph.nodes, graph.edges
 
         metrics = self.analysis.compute_health_metrics(nodes, edges_list)
         score = self.analysis.compute_health_score(metrics)
         anomalies = self.analysis.detect_anomalies(nodes, edges_list, metrics)
 
-        pending = await firestore_reader.get_suggestions_for_subject(subject_id, status="pending")
+        pending = await firestore_reader.get_suggestions_for_subject(grade, subject_id, status="pending")
         pending_count = len(pending)
 
         report = GraphHealthReport(
@@ -126,7 +130,10 @@ class CurriculumGraphAgentService:
         max_suggestions: 0 = no limit (return all valid suggestions).
         Clears all previous pending suggestions before storing the new batch.
         """
-        graph = await self.cache.get_graph(subject_id, include_drafts=True)
+        grade = await firestore_reader.resolve_grade(subject_id)
+        if not grade:
+            raise ValueError(f"Cannot resolve grade for {subject_id}")
+        graph = await self.cache.get_graph(subject_id, grade, include_drafts=True)
 
         suggestions = await self.suggestions_engine.generate_suggestions(
             subject_id, graph.nodes, graph.edges, max_suggestions
@@ -156,7 +163,10 @@ class CurriculumGraphAgentService:
         suggestion_id: str,
     ) -> CurriculumEdgeCreate:
         """Accept a suggestion: create draft edge + mark accepted."""
-        suggestion_data = await firestore_reader.get_suggestion(subject_id, suggestion_id)
+        grade = await firestore_reader.resolve_grade(subject_id)
+        if not grade:
+            raise ValueError(f"Cannot resolve grade for {subject_id}")
+        suggestion_data = await firestore_reader.get_suggestion(grade, subject_id, suggestion_id)
         if not suggestion_data:
             raise ValueError(f"Suggestion {suggestion_id} not found")
 
@@ -184,7 +194,7 @@ class CurriculumGraphAgentService:
             subject_id, "agent"
         )
 
-        await self.edges.create_edge(edge, version_id, subject_id)
+        await self.edges.create_edge(edge, version_id, subject_id, grade=grade)
         await firestore_curriculum_sync.update_suggestion(
             subject_id, suggestion_id, {
                 "status": "accepted",
@@ -211,12 +221,16 @@ class CurriculumGraphAgentService:
         """
         from app.services.version_control import version_control
 
+        grade = await firestore_reader.resolve_grade(subject_id)
+        if not grade:
+            raise ValueError(f"Cannot resolve grade for {subject_id}")
+
         version_id = await version_control.get_or_create_active_version(
             subject_id, "agent"
         )
 
         suggestions_data = await firestore_reader.get_suggestions_for_subject(
-            subject_id, status="pending"
+            grade, subject_id, status="pending"
         )
         if not suggestions_data:
             return {"accepted": 0, "message": "No pending suggestions"}
@@ -246,7 +260,7 @@ class CurriculumGraphAgentService:
                 confidence=suggestion.confidence,
             )
 
-            await self.edges.create_edge(edge, version_id, subject_id)
+            await self.edges.create_edge(edge, version_id, subject_id, grade=grade)
             edges_created += 1
             if suggestion.relationship == "parallel":
                 parallel_reverses += 1
@@ -314,9 +328,12 @@ class CurriculumGraphAgentService:
 
     async def preview_all_pending(self, subject_id: str) -> SuggestionImpact:
         """Preview cumulative impact if all pending suggestions are accepted."""
-        graph = await self.cache.get_graph(subject_id, include_drafts=True)
+        grade = await firestore_reader.resolve_grade(subject_id)
+        if not grade:
+            raise ValueError(f"Cannot resolve grade for {subject_id}")
+        graph = await self.cache.get_graph(subject_id, grade, include_drafts=True)
         suggestions_data = await firestore_reader.get_suggestions_for_subject(
-            subject_id, status="pending"
+            grade, subject_id, status="pending"
         )
 
         proposed_edges = [
@@ -355,8 +372,12 @@ class CurriculumGraphAgentService:
         """
         from collections import defaultdict
 
+        grade = await firestore_reader.resolve_grade(subject_id)
+        if not grade:
+            return {"error": f"Cannot resolve grade for {subject_id}"}
+
         # Build domain map from actual curriculum structure
-        nodes = await firestore_reader.get_subject_graph_nodes(subject_id, include_drafts=True)
+        nodes = await firestore_reader.get_subject_graph_nodes(grade, subject_id, include_drafts=True)
         node_domain: Dict[str, str] = {}  # entity_id -> unit_title (as domain)
         node_unit: Dict[str, str] = {}    # entity_id -> unit_id
         for n in nodes:
@@ -367,12 +388,8 @@ class CurriculumGraphAgentService:
         combo_drop = rules.get("combo_drop_threshold", 0.60)
         redundancy_cap = rules.get("redundancy_cap", 2)
 
-        grade = await firestore_reader.resolve_grade(subject_id)
-        if not grade:
-            return {"error": f"Cannot resolve grade for {subject_id}"}
-
         suggestions_data = await firestore_reader.get_suggestions_for_subject(
-            subject_id, status="pending"
+            grade, subject_id, status="pending"
         )
         logger.info(f"Reclassifying {len(suggestions_data)} pending suggestions for {subject_id}")
 

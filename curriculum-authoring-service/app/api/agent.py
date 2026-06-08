@@ -62,7 +62,10 @@ async def list_pending_suggestions(subject_id: str, request: Request):
     """List all pending suggestions for a subject."""
     from app.db.firestore_curriculum_reader import firestore_reader
     _get_agent(request)  # Ensure agent is initialized
-    data = await firestore_reader.get_suggestions_for_subject(subject_id, status="pending")
+    grade = await firestore_reader.resolve_grade(subject_id)
+    if not grade:
+        raise HTTPException(status_code=404, detail=f"Cannot resolve grade for {subject_id}")
+    data = await firestore_reader.get_suggestions_for_subject(grade, subject_id, status="pending")
     results = []
     for d in data:
         # Inject subject_id (scoped suggestions may omit or null it)
