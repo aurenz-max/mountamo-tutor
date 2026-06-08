@@ -681,10 +681,10 @@ Please address the feedback and generate an improved version."""
     ) -> Dict[str, Any]:
         """Create the subject if it doesn't exist, or return existing."""
 
-        existing = await curriculum_manager.get_subject(subject_id, include_drafts=True)
+        existing = await curriculum_manager.get_subject(grade, subject_id, include_drafts=True)
         if existing:
             units = await curriculum_manager.get_units_by_subject(
-                subject_id, include_drafts=True
+                grade, subject_id, include_drafts=True
             )
             return {
                 "subject_id": existing.subject_id,

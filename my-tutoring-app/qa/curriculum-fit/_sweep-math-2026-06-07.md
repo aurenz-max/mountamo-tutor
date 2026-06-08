@@ -1,62 +1,44 @@
 # Curriculum-Fit Sweep: math — 2026-06-07
 
 **Domain → Subject:** math → MATHEMATICS
-**Published grades probed:** Kindergarten, 1 *(only K–1 are published for MATHEMATICS — see Caveat)*
-**Primitives:** 60 — **25 MATCH, 35 ABSTAIN** (raw)
-**Engine:** `scripts/curriculum_fit_sweep.py` (batch driver, one Firestore init, reuses `CurriculumRetrievalMatcher.probe`).
+**Published grades probed:** Kindergarten, 1 (← no Grade 2 published yet)
+**Primitives:** 61 · **MATCH:** 55 · **ABSTAIN:** 6
 
-> One consolidated report instead of 60 per-primitive files: 35 of the abstains share one of two structural causes below, so individual stubs would be noise. `number-line` keeps its own detailed report ([number-line-2026-06-07.md](number-line-2026-06-07.md)).
+> Engine: `backend/scripts/curriculum_fit_sweep.py` (single in-process matcher; embedding cache reused across all 61 primitives). Raw: `_sweep-math.json`. analog-clock probed separately (multi-line description; sweep regex dropped it) — clean MATCH (K telling-time @0.826, G1 half-hour @0.823).
 
-## The raw 25/35 split is misleading — two structural factors dominate
+> **Supersedes the earlier 25/35 sweep.** That run predates the in-flight retrieval changes (`curriculum_mapping_service.py` + `curriculum_retrieval_service.py`: family/unit-level coherence + soft grade scoping). The same catalog now matches 55/61 vs 25/60. Spot-check: `length-lab` was "homeless 1/5" in the old run, now MATCH 5/5. The old report's headline fix ("grade-aware retrieval") is effectively shipped — grade is now a soft scope and each grade is scored on its own coherent set.
 
-### Caveat 1 — the curriculum ceiling is Grade 1
-Only **K and 1** are published for MATHEMATICS. Every grade-2+ primitive is being matched against a curriculum that *does not contain its concept*. Their abstains are **scoping, not description defects**. These are expected-MISS-until-authored, NOT work items for this skill:
+## ABSTAINs (the only "homeless" primitives)
 
-`slope-triangle, matrix-display, coordinate-graph, ratio-table, percent-bar, function-sketch, parameter-explorer, systems-equations-visualizer, circle-explorer, angle-workshop, polygon-area-builder, two-way-table, area-model, equation-workspace, equation-builder, multiplication-explorer, fraction-circles, fraction-bar, double-number-line, tape-diagram, net-folder, 3d-shape-explorer, transformation-lab (partial), histogram, distribution-explorer`
+| Primitive | Best | Reason | Top-1 (not a real home) | Diagnosis |
+|-----------|------|--------|--------------------------|-----------|
+| number-line | 0.814 | scattered | OPS001-04 Subtraction Strategies | **Thin/omnibus description** — cross-cutting representation, legitimately spans units. Not a gap. |
+| spatial-scene | 0.766 | diffuse | COUNT001-04 Ordinal numbers | Thin description **or** weak K/1 spatial-reasoning coverage. Read top-5 to classify. |
+| multiplication-explorer | 0.745 | scattered | OPS001-09 Properties of Operations | **Curriculum gap — G2/3.** No multiplication skill in K/1. The one clean grade-2 seed. |
+| ratio-table | 0.742 | diffuse | MEAS001-06 Interpreting Data | **Curriculum gap — G6.** Parking-lot (middle school). |
+| coordinate-graph | 0.728 | diffuse | PTRN001-04 Hundreds Chart | **Curriculum gap — G5.** Parking-lot. |
+| slope-triangle | 0.712 | diffuse | MEAS001-06 Interpreting Data | **Curriculum gap — G8.** Parking-lot. |
 
-→ Owner: `/curriculum-author` (author grades 2–12). Re-run the sweep per grade as curriculum is published.
+## The finding that matters: grade-2 primitives MATCHED to K/1
 
-### Caveat 2 — MATCH can be a *false positive* at the grade ceiling
-Because coherence only needs ≥3/5 to share a skill_id, an out-of-grade primitive whose top-5 happen to cluster on one vaguely-related K skill reports **MATCH** — a misattribution, not a home. Flagged false-MATCHes:
+The loop is *primitive-anchored* — it answers "has a home y/n". These grade-2-flavored primitives all returned a K/1 home, so the loop is **silent** on them, even though each has an obvious grade-2 extension that K/1 curriculum does not contain:
 
-| Primitive (true grade) | Spurious MATCH | Why it's wrong |
-|---|---|---|
-| systems-equations-visualizer (8) | OPS001-03 "add/subtract within 5" @0.694 | routes algebra attempts to K arithmetic |
-| percent-bar (6) | COUNT001-03 "compare numbers" @0.695 | percent ≠ compare-numbers |
-| distribution-explorer (6+) | COUNT001-05 "compose/decompose 11–19" @0.684 | unrelated |
-| histogram (3+) | MEAS001-09 "data interpretation" @0.710 | loosely ok but grade-mismatched |
+| Primitive | Matched | Grade-2 extension the loop can't see |
+|-----------|---------|--------------------------------------|
+| regrouping-workbench | K COUNT001-05 (compose/decompose 11–19) | two-/three-digit add-sub **with regrouping** |
+| skip-counting-runner | G1 PTRN001-04 (hundreds-chart) | skip-count by **5 / 10 / 100** |
+| place-value-chart | G1 NBT001-02 (tens & ones) | place value **to 1000** |
+| base-ten-blocks | G1 NBT001-03 (tens as a unit) | **three-digit** numbers |
+| coin-counter | G1 MEAS001-07 (coin ID) | **counting money / making change** |
+| array-grid | K COUNT001-02 (count objects) | **arrays → multiplication** |
+| analog-clock | K/G1 (hour, half-hour) | time to **nearest 5 min** |
 
-→ At the grade ceiling, **MATCH below ~0.73 with a grade-2+ primitive deserves suspicion.** A grade-aware retrieval (probe only the primitive's own grade band) would convert these to honest abstains.
+**Conclusion:** Grade 2 is largely the *same primitives at higher number ranges / new eval modes*, not new components. "Adding a grade" feels insurmountable because of **missing curriculum**, not missing primitives — the primitives already exist and already fit K/1.
 
-## The genuine finding: `number-line` is NOT a one-off
+## Recommended path to Grade 2
 
-Within the **K–1-appropriate** primitives, there's a distinct cluster that abstains with `number-line`'s exact signature — high cosine (concept is present) but low coherence (it's a *representation/strategy used across many skills*, no single home):
-
-| Primitive | Best | Coh | Cross-cutting role |
-|---|------|-----|--------------------|
-| **number-line** | 0.761 | 1/5 | operations-as-movement, ordering, placement |
-| **bar-model** | 0.829 | 2/5 | part–whole across add/subtract/compare |
-| **addition-subtraction-scene** | 0.821 | 2/5 | operations representation |
-| **strategy-picker** | 0.828 | 2/5 | meta — picks a strategy, maps to no content skill |
-| **skip-counting-runner** | 0.780 | 1/5 | counting, scattered across count/pattern skills |
-| **function-machine** | 0.715 | 1/5 | input→output rule, spans patterns/operations |
-| **tape-diagram** | 0.721 | 1/5 | part–whole (same family as bar-model) |
-| **length-lab** | 0.853 | 1/5 | highest cosine in the whole sweep, yet homeless — measurement spread across MEAS skills |
-
-These eight share number-line's diagnosis: **legitimately cross-cutting representation/strategy primitives.** Their abstain → fallback is the correct, pedagogically-safe outcome *today*, but they all accrue mastery to orphan synthetic subskills (subject `general`) instead of the real `OPS001`/`COUNT001`/`MEAS001` graph. They are the prime beneficiaries of the **per-eval-mode retrieval + skill-cluster coherence** enhancement proposed in the number-line report.
-
-## Healthy core — clean MATCHes (no action)
-
-The K–1 number-sense / geometry / measurement core resolves cleanly (4–5/5 coherence):
-`ten-frame, counting-board, number-tracer, number-sequencer, comparison-builder, ordinal-line, number-bond, math-fact-fluency, pattern-builder, base-ten-blocks, hundreds-chart, regrouping-workbench, place-value-chart, array-grid, factor-tree, compare-objects, shape-composer, shape-tracer, measurement-tools, dot-plot`.
-
-These confirm the retrieval path works — when a primitive maps to one skill at its grade, it lands with 5/5 coherence (e.g. ten-frame→COUNT001-05 5/5, ordinal-line→COUNT001-04 5/5).
-
-## Recommendations (priority order, report-only)
-
-1. **No per-primitive action for the 25 out-of-grade abstains.** They're blocked on curriculum authoring (grades 2–12), not on descriptions. Tracked under `/curriculum-author`, not here.
-2. **Grade-aware retrieval is the highest-leverage engine fix.** Probe a primitive against *its own* grade band, not the published default. This (a) stops the false-MATCH misattributions in Caveat 2, and (b) makes the out-of-grade abstains explicit ("no grade-6 curriculum yet") instead of silently matching K skills. Owner: `curriculum_retrieval_service.py` / `curriculum_mapping_service.py`.
-3. **The 8-primitive cross-cutting cluster** (number-line + bar-model + tape-diagram + addition-subtraction-scene + strategy-picker + skip-counting-runner + function-machine + length-lab) is the real target for the **per-eval-mode query + skill-cluster coherence** change. Fixing it once fixes all eight; it's where orphan-mastery is leaking from the K–1 strand.
-4. **Mark these 8 as expected-abstain cross-cutting primitives** so future sweeps don't re-flag them as gaps.
-
-**Bottom line:** the math catalog is healthy where the curriculum exists (20 clean K–1 matches). The 35 abstains are ~25 "curriculum not authored above G1 yet" + ~8 "cross-cutting representation, no single home" + a handful of false-MATCH grade-ceiling artifacts. `number-line`'s situation is a *pattern*, not an exception — and the same two engine changes (per-mode query, cluster coherence) plus curriculum authoring above G1 address the entire abstain set.
+1. **Author a thin `MATHEMATICS_G2` draft** (bounded, standards-driven): place value to 1000, two/three-digit add-sub w/ regrouping, skip-counting by 5/10/100, money, arrays→multiplication intro, time to 5 min, standard-unit measurement, bar graphs. Nearly every skill already has a primitive to point at.
+2. **Run `/curriculum-lumina-audit audit MATHEMATICS_G2`** on the draft → surfaces genuine PURPLE (no-primitive) gaps. From this sweep, very few — `multiplication-explorer` fills one.
+3. **Real build work = eval modes, not components.** `/add-eval-modes` to extend regrouping-workbench (2/3-digit), skip-counting-runner (by 5/10/100), place-value-chart (hundreds), coin-counter (make change), analog-clock (5-min). New number ranges = new eval modes on built primitives.
+4. **Description fixes (separate from grade 2):** tighten `number-line` (omnibus); inspect `spatial-scene`.
+5. **Parking-lot:** ratio-table (G6), coordinate-graph (G5), slope-triangle (G8) — homeless because those grades aren't authored; correct to leave until then.

@@ -1,0 +1,1991 @@
+{
+  "domain": "math",
+  "subject": "MATHEMATICS",
+  "grades": [
+    "1",
+    "Kindergarten"
+  ],
+  "n": 60,
+  "rows": [
+    {
+      "primitive": "bar-model",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8374,
+        "coherent": 4,
+        "skill_id": "MEAS001-06",
+        "skill_desc": "Interpreting Data"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8374,
+          "coherent": 4,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8291,
+          "coherent": 5,
+          "skill_id": "MEAS001-03",
+          "skill_desc": "Collect and Represent Data"
+        }
+      ],
+      "query_head": "K-5 categorical-data graph: simple comparison bars (K-1), scaled bar graphs with step-2/5/"
+    },
+    {
+      "primitive": "number-line",
+      "chosen": {
+        "grade": "1",
+        "verdict": "abstain",
+        "reason": "scattered",
+        "best": 0.8139,
+        "coherent": 3,
+        "skill_id": "OPS001-04",
+        "skill_desc": "Subtraction Strategies"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "scattered",
+          "best": 0.8139,
+          "coherent": 3,
+          "skill_id": "OPS001-04",
+          "skill_desc": "Subtraction Strategies"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "scattered",
+          "best": 0.7615,
+          "coherent": 3,
+          "skill_id": "OPS001-03",
+          "skill_desc": "Fluently add and subtract within 5"
+        }
+      ],
+      "query_head": "Interactive number line with drag-to-plot, animated jump arcs, ordering, and zoom. Support"
+    },
+    {
+      "primitive": "base-ten-blocks",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8303,
+        "coherent": 5,
+        "skill_id": "NBT001-03",
+        "skill_desc": "Tens as a Unit"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8303,
+          "coherent": 5,
+          "skill_id": "NBT001-03",
+          "skill_desc": "Tens as a Unit"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7917,
+          "coherent": 5,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Interactive base-ten manipulative with place value columns, supply tray, and regrouping. S"
+    },
+    {
+      "primitive": "fraction-circles",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8125,
+        "coherent": 5,
+        "skill_id": "GEOM001-06",
+        "skill_desc": "Partitioning into Fourths"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8125,
+          "coherent": 5,
+          "skill_id": "GEOM001-06",
+          "skill_desc": "Partitioning into Fourths"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7202,
+          "coherent": 1,
+          "skill_id": "TIME001-03",
+          "skill_desc": "Telling Time to the Hour"
+        }
+      ],
+      "query_head": "Multi-phase fraction learning with circle diagrams. Challenges include identifying fractio"
+    },
+    {
+      "primitive": "fraction-bar",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7629,
+        "coherent": 3,
+        "skill_id": "GEOM001-06",
+        "skill_desc": "Partitioning into Fourths"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7629,
+          "coherent": 3,
+          "skill_id": "GEOM001-06",
+          "skill_desc": "Partitioning into Fourths"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7186,
+          "coherent": 2,
+          "skill_id": "OPS001-02",
+          "skill_desc": "Understand subtraction as taking apart and taking from"
+        }
+      ],
+      "query_head": "Multi-challenge interactive fraction bar. Each session walks the student through 3-6 disti"
+    },
+    {
+      "primitive": "place-value-chart",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7739,
+        "coherent": 5,
+        "skill_id": "NBT001-02",
+        "skill_desc": "Tens and Ones Understanding"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7739,
+          "coherent": 5,
+          "skill_id": "NBT001-02",
+          "skill_desc": "Tens and Ones Understanding"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7199,
+          "coherent": 5,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Multi-challenge interactive place value chart. Each session walks the student through 3 di"
+    },
+    {
+      "primitive": "practice-problem",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7109,
+        "coherent": 4,
+        "skill_id": "OPS001-11",
+        "skill_desc": "Meaning of the Equal Sign"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7109,
+          "coherent": 4,
+          "skill_id": "OPS001-11",
+          "skill_desc": "Meaning of the Equal Sign"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.6884,
+          "coherent": 3,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Standalone canvas-based math derivation surface. Student writes their multi-step solution "
+    },
+    {
+      "primitive": "area-model",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.6804,
+        "coherent": 4,
+        "skill_id": "COUNT001-01",
+        "skill_desc": "Know number names and the count sequence"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7298,
+          "coherent": 2,
+          "skill_id": "NBT001-03",
+          "skill_desc": "Tens as a Unit"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.6804,
+          "coherent": 4,
+          "skill_id": "COUNT001-01",
+          "skill_desc": "Know number names and the count sequence"
+        }
+      ],
+      "query_head": "Multi-challenge visual area model for multiplication, perimeter, and factoring. Each sessi"
+    },
+    {
+      "primitive": "array-grid",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7398,
+        "coherent": 4,
+        "skill_id": "COUNT001-02",
+        "skill_desc": "Count to tell the number of objects"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7547,
+          "coherent": 2,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7398,
+          "coherent": 4,
+          "skill_id": "COUNT001-02",
+          "skill_desc": "Count to tell the number of objects"
+        }
+      ],
+      "query_head": "Multi-challenge rectangular array of discrete objects (dots, squares, stars) arranged in r"
+    },
+    {
+      "primitive": "double-number-line",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7079,
+        "coherent": 3,
+        "skill_id": "COUNT001-01",
+        "skill_desc": "Know number names and the count sequence"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "scattered",
+          "best": 0.742,
+          "coherent": 3,
+          "skill_id": "OPS001-03",
+          "skill_desc": "Addition Strategies"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7079,
+          "coherent": 3,
+          "skill_id": "COUNT001-01",
+          "skill_desc": "Know number names and the count sequence"
+        }
+      ],
+      "query_head": "Multi-challenge double-number-line session: students walk through 3-6 ratio challenges tha"
+    },
+    {
+      "primitive": "tape-diagram",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7213,
+        "coherent": 5,
+        "skill_id": "OPS001-03",
+        "skill_desc": "Fluently add and subtract within 5"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.8014,
+          "coherent": 2,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7213,
+          "coherent": 5,
+          "skill_id": "OPS001-03",
+          "skill_desc": "Fluently add and subtract within 5"
+        }
+      ],
+      "query_head": "Multi-challenge tape-diagram session: students walk through 3-6 distinct word problems of "
+    },
+    {
+      "primitive": "factor-tree",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7503,
+        "coherent": 3,
+        "skill_id": "NBT001-03",
+        "skill_desc": "Tens as a Unit"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7503,
+          "coherent": 3,
+          "skill_id": "NBT001-03",
+          "skill_desc": "Tens as a Unit"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7138,
+          "coherent": 5,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Multi-challenge factor-tree session: students factor 3-6 different composite numbers in a "
+    },
+    {
+      "primitive": "ratio-table",
+      "chosen": {
+        "grade": "1",
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "best": 0.7419,
+        "coherent": 1,
+        "skill_id": "MEAS001-06",
+        "skill_desc": "Interpreting Data"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7419,
+          "coherent": 1,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.6903,
+          "coherent": 1,
+          "skill_id": "MEAS001-08",
+          "skill_desc": "Comparing Capacities"
+        }
+      ],
+      "query_head": "Multi-challenge ratio table with 4 challenge types: missing-value (find a hidden scaled va"
+    },
+    {
+      "primitive": "percent-bar",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.6948,
+        "coherent": 4,
+        "skill_id": "COUNT001-03",
+        "skill_desc": "Compare numbers"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7632,
+          "coherent": 2,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.6948,
+          "coherent": 4,
+          "skill_id": "COUNT001-03",
+          "skill_desc": "Compare numbers"
+        }
+      ],
+      "query_head": "Multi-challenge percent-bar session (3-6 percent problems of the same difficulty tier). Ea"
+    },
+    {
+      "primitive": "balance-scale",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8319,
+        "coherent": 5,
+        "skill_id": "OPS001-11",
+        "skill_desc": "Meaning of the Equal Sign"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8319,
+          "coherent": 5,
+          "skill_id": "OPS001-11",
+          "skill_desc": "Meaning of the Equal Sign"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7253,
+          "coherent": 1,
+          "skill_id": "MEAS001-04",
+          "skill_desc": "Estimate and Measure"
+        }
+      ],
+      "query_head": "Multi-equation balance scale session (3-6 equations of the same difficulty tier). Each equ"
+    },
+    {
+      "primitive": "function-machine",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7868,
+        "coherent": 4,
+        "skill_id": "PTRN001-05",
+        "skill_desc": "Addition and Subtraction Patterns"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7868,
+          "coherent": 4,
+          "skill_id": "PTRN001-05",
+          "skill_desc": "Addition and Subtraction Patterns"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7151,
+          "coherent": 4,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Visual \"machine\" with input hopper, rule display, and output chute. Each session walks the"
+    },
+    {
+      "primitive": "coordinate-graph",
+      "chosen": {
+        "grade": "1",
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "best": 0.7284,
+        "coherent": 2,
+        "skill_id": "PTRN001-04",
+        "skill_desc": "Hundreds Chart Patterns"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7284,
+          "coherent": 2,
+          "skill_id": "PTRN001-04",
+          "skill_desc": "Hundreds Chart Patterns"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.6916,
+          "coherent": 1,
+          "skill_id": "GEOM001-01",
+          "skill_desc": "Identify and describe shapes"
+        }
+      ],
+      "query_head": "Interactive coordinate plane with structured challenges. Students plot points by clicking "
+    },
+    {
+      "primitive": "slope-triangle",
+      "chosen": {
+        "grade": "1",
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "best": 0.712,
+        "coherent": 1,
+        "skill_id": "MEAS001-06",
+        "skill_desc": "Interpreting Data"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.712,
+          "coherent": 1,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.677,
+          "coherent": 1,
+          "skill_id": "GEOM001-01",
+          "skill_desc": "Identify and describe shapes"
+        }
+      ],
+      "query_head": "Multi-challenge slope triangle session (3-6 distinct lines of the same challenge type). Ea"
+    },
+    {
+      "primitive": "systems-equations-visualizer",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7266,
+        "coherent": 4,
+        "skill_id": "OPS001-11",
+        "skill_desc": "Meaning of the Equal Sign"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7266,
+          "coherent": 4,
+          "skill_id": "OPS001-11",
+          "skill_desc": "Meaning of the Equal Sign"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.694,
+          "coherent": 4,
+          "skill_id": "OPS001-03",
+          "skill_desc": "Fluently add and subtract within 5"
+        }
+      ],
+      "query_head": "Multi-challenge systems-of-equations session (3-6 distinct systems of the same solution me"
+    },
+    {
+      "primitive": "polygon-area-builder",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7894,
+        "coherent": 4,
+        "skill_id": "GEOM001-03",
+        "skill_desc": "Composing 2D Shapes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7894,
+          "coherent": 4,
+          "skill_id": "GEOM001-03",
+          "skill_desc": "Composing 2D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7249,
+          "coherent": 5,
+          "skill_id": "GEOM001-01",
+          "skill_desc": "Identify and describe shapes"
+        }
+      ],
+      "query_head": "Multi-figure polygon-area session (3-6 distinct figures of the same eval mode, surfaced se"
+    },
+    {
+      "primitive": "circle-explorer",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7398,
+        "coherent": 4,
+        "skill_id": "GEOM001-06",
+        "skill_desc": "Partitioning into Fourths"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7398,
+          "coherent": 4,
+          "skill_id": "GEOM001-06",
+          "skill_desc": "Partitioning into Fourths"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.6773,
+          "coherent": 2,
+          "skill_id": "GEOM001-01",
+          "skill_desc": "Identify and describe shapes"
+        }
+      ],
+      "query_head": "Multi-circle grade-7 session (3-6 distinct circles of the same eval mode, surfaced sequent"
+    },
+    {
+      "primitive": "angle-workshop",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.6878,
+        "coherent": 3,
+        "skill_id": "GEOM001-03",
+        "skill_desc": "Composing 2D Shapes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.6878,
+          "coherent": 3,
+          "skill_id": "GEOM001-03",
+          "skill_desc": "Composing 2D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.6702,
+          "coherent": 2,
+          "skill_id": "GEOM001-02",
+          "skill_desc": "Analyze, compare, create, and compose shapes"
+        }
+      ],
+      "query_head": "Interactive angle workshop where students measure, classify, and solve for unknown angles "
+    },
+    {
+      "primitive": "transformation-lab",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7323,
+        "coherent": 4,
+        "skill_id": "GEOM001-03",
+        "skill_desc": "Composing 2D Shapes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7323,
+          "coherent": 4,
+          "skill_id": "GEOM001-03",
+          "skill_desc": "Composing 2D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7146,
+          "coherent": 5,
+          "skill_id": "GEOM001-01",
+          "skill_desc": "Identify and describe shapes"
+        }
+      ],
+      "query_head": "Interactive coordinate-plane transformation lab where students slide, flip, turn, and scal"
+    },
+    {
+      "primitive": "matrix-display",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.6997,
+        "coherent": 3,
+        "skill_id": "NBT001-03",
+        "skill_desc": "Tens as a Unit"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.6997,
+          "coherent": 3,
+          "skill_id": "NBT001-03",
+          "skill_desc": "Tens as a Unit"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.6675,
+          "coherent": 2,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Multi-challenge matrix practice session (3-6 matrix problems of the same operation, surfac"
+    },
+    {
+      "primitive": "dot-plot",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7639,
+        "coherent": 3,
+        "skill_id": "MEAS001-06",
+        "skill_desc": "Interpreting Data"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7639,
+          "coherent": 3,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7448,
+          "coherent": 5,
+          "skill_id": "MEAS001-03",
+          "skill_desc": "Collect and Represent Data"
+        }
+      ],
+      "query_head": "Interactive dot plot (also called line plot) with stacked dots representing data values on"
+    },
+    {
+      "primitive": "histogram",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7876,
+        "coherent": 4,
+        "skill_id": "MEAS001-06",
+        "skill_desc": "Interpreting Data"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7876,
+          "coherent": 4,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7095,
+          "coherent": 4,
+          "skill_id": "MEAS001-09",
+          "skill_desc": "Data Interpretation"
+        }
+      ],
+      "query_head": "Multi-histogram analysis session (3-6 distinct histograms of the same challenge type) for "
+    },
+    {
+      "primitive": "two-way-table",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7514,
+        "coherent": 3,
+        "skill_id": "MEAS001-06",
+        "skill_desc": "Interpreting Data"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7514,
+          "coherent": 3,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.6863,
+          "coherent": 4,
+          "skill_id": "MEAS001-09",
+          "skill_desc": "Data Interpretation"
+        }
+      ],
+      "query_head": "Multi-challenge two-way table (contingency table) probability practice session (3-6 proble"
+    },
+    {
+      "primitive": "ten-frame",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8299,
+        "coherent": 4,
+        "skill_id": "OPS001-01",
+        "skill_desc": "Addition within 10"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8299,
+          "coherent": 4,
+          "skill_id": "OPS001-01",
+          "skill_desc": "Addition within 10"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7965,
+          "coherent": 5,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Interactive 2\u00d75 grid manipulative for building number sense in K-2. Students place counter"
+    },
+    {
+      "primitive": "counting-board",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8067,
+        "coherent": 5,
+        "skill_id": "COUNT001-02",
+        "skill_desc": "Count to tell the number of objects"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7978,
+          "coherent": 1,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8067,
+          "coherent": 5,
+          "skill_id": "COUNT001-02",
+          "skill_desc": "Count to tell the number of objects"
+        }
+      ],
+      "query_head": "Flexible Pre-K to Grade 1 counting workspace with tappable objects (bears, apples, stars, "
+    },
+    {
+      "primitive": "comparison-builder",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8352,
+        "coherent": 5,
+        "skill_id": "COUNT001-03",
+        "skill_desc": "Compare numbers"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8128,
+          "coherent": 3,
+          "skill_id": "OPS001-07",
+          "skill_desc": "Compare Problems"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8352,
+          "coherent": 5,
+          "skill_id": "COUNT001-03",
+          "skill_desc": "Compare numbers"
+        }
+      ],
+      "query_head": "Multi-phase comparison activity with four challenge types: compare groups of objects visua"
+    },
+    {
+      "primitive": "pattern-builder",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8527,
+        "coherent": 5,
+        "skill_id": "PTRN001-02",
+        "skill_desc": "Creating and Translating Patterns"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8527,
+          "coherent": 5,
+          "skill_id": "PTRN001-02",
+          "skill_desc": "Creating and Translating Patterns"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7948,
+          "coherent": 5,
+          "skill_id": "PTRN001-01",
+          "skill_desc": "Recognizing and Creating Patterns"
+        }
+      ],
+      "query_head": "Interactive pattern recognition, extension, and creation for K-3 algebraic thinking. Stude"
+    },
+    {
+      "primitive": "skip-counting-runner",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8156,
+        "coherent": 3,
+        "skill_id": "PTRN001-04",
+        "skill_desc": "Hundreds Chart Patterns"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8156,
+          "coherent": 3,
+          "skill_id": "PTRN001-04",
+          "skill_desc": "Hundreds Chart Patterns"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7798,
+          "coherent": 4,
+          "skill_id": "COUNT001-02",
+          "skill_desc": "Count to tell the number of objects"
+        }
+      ],
+      "query_head": "Rhythmic skip counting with animated number line jumps for grades 1-3. A character (frog, "
+    },
+    {
+      "primitive": "hundreds-chart",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8797,
+        "coherent": 3,
+        "skill_id": "PTRN001-04",
+        "skill_desc": "Hundreds Chart Patterns"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8797,
+          "coherent": 3,
+          "skill_id": "PTRN001-04",
+          "skill_desc": "Hundreds Chart Patterns"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7818,
+          "coherent": 5,
+          "skill_id": "COUNT001-01",
+          "skill_desc": "Know number names and the count sequence"
+        }
+      ],
+      "query_head": "Interactive hundreds chart (10x10 grid, 1-100) for skip-counting pattern discovery. Studen"
+    },
+    {
+      "primitive": "regrouping-workbench",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7706,
+        "coherent": 5,
+        "skill_id": "COUNT001-05",
+        "skill_desc": "Compose and Decompose Numbers 11\u201319"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "scattered",
+          "best": 0.7921,
+          "coherent": 3,
+          "skill_id": "NBT001-06",
+          "skill_desc": "Ten More / Ten Less"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7706,
+          "coherent": 5,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Interactive addition and subtraction with regrouping (carrying and borrowing) for grades 1"
+    },
+    {
+      "primitive": "multiplication-explorer",
+      "chosen": {
+        "grade": "1",
+        "verdict": "abstain",
+        "reason": "scattered",
+        "best": 0.7445,
+        "coherent": 3,
+        "skill_id": "OPS001-09",
+        "skill_desc": "Properties of Operations"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "scattered",
+          "best": 0.7445,
+          "coherent": 3,
+          "skill_id": "OPS001-09",
+          "skill_desc": "Properties of Operations"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "scattered",
+          "best": 0.7284,
+          "coherent": 3,
+          "skill_id": "OPS001-03",
+          "skill_desc": "Fluently add and subtract within 5"
+        }
+      ],
+      "query_head": "Multi-representation multiplication workspace connecting equal groups, arrays, repeated ad"
+    },
+    {
+      "primitive": "measurement-tools",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7679,
+        "coherent": 5,
+        "skill_id": "MEAS001-05",
+        "skill_desc": "Using Non-Standard Tools"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7605,
+          "coherent": 3,
+          "skill_id": "GEOM001-03",
+          "skill_desc": "Composing 2D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7679,
+          "coherent": 5,
+          "skill_id": "MEAS001-05",
+          "skill_desc": "Using Non-Standard Tools"
+        }
+      ],
+      "query_head": "Multi-shape ruler measurement session (3-6 distinct shapes of the same challenge type). Po"
+    },
+    {
+      "primitive": "shape-builder",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7826,
+        "coherent": 4,
+        "skill_id": "GEOM001-03",
+        "skill_desc": "Composing 2D Shapes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7826,
+          "coherent": 4,
+          "skill_id": "GEOM001-03",
+          "skill_desc": "Composing 2D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7595,
+          "coherent": 5,
+          "skill_id": "GEOM001-01",
+          "skill_desc": "Identify and describe shapes"
+        }
+      ],
+      "query_head": "Interactive geometry workspace for constructing shapes on dot/coordinate grids, measuring "
+    },
+    {
+      "primitive": "number-sequencer",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8069,
+        "coherent": 4,
+        "skill_id": "COUNT001-01",
+        "skill_desc": "Know number names and the count sequence"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.773,
+          "coherent": 1,
+          "skill_id": "PTRN001-04",
+          "skill_desc": "Hundreds Chart Patterns"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8069,
+          "coherent": 4,
+          "skill_id": "COUNT001-01",
+          "skill_desc": "Know number names and the count sequence"
+        }
+      ],
+      "query_head": "Interactive number sequencing with 5 challenge types: fill-missing (complete number sequen"
+    },
+    {
+      "primitive": "number-bond",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8124,
+        "coherent": 5,
+        "skill_id": "OPS001-06",
+        "skill_desc": "Put-Together/Take-Apart Problems"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8124,
+          "coherent": 5,
+          "skill_id": "OPS001-06",
+          "skill_desc": "Put-Together/Take-Apart Problems"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8032,
+          "coherent": 3,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Classic number bond diagram (circle-and-branch visual) showing part-part-whole relationshi"
+    },
+    {
+      "primitive": "addition-subtraction-scene",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8551,
+        "coherent": 5,
+        "skill_id": "OPS001-05",
+        "skill_desc": "Add-To/Take-From Problems"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8551,
+          "coherent": 5,
+          "skill_id": "OPS001-05",
+          "skill_desc": "Add-To/Take-From Problems"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8209,
+          "coherent": 5,
+          "skill_id": "OPS001-01",
+          "skill_desc": "Understand addition as putting together and adding to"
+        }
+      ],
+      "query_head": "An animated story scene where objects join, leave, or are compared to teach addition and s"
+    },
+    {
+      "primitive": "ordinal-line",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8243,
+        "coherent": 5,
+        "skill_id": "COUNT001-04",
+        "skill_desc": "Understand ordinal numbers"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7523,
+          "coherent": 4,
+          "skill_id": "OPS001-05",
+          "skill_desc": "Add-To/Take-From Problems"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8243,
+          "coherent": 5,
+          "skill_id": "COUNT001-04",
+          "skill_desc": "Understand ordinal numbers"
+        }
+      ],
+      "query_head": "Interactive ordinal positions activity with a horizontal queue of characters. Students ide"
+    },
+    {
+      "primitive": "sorting-station",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7983,
+        "coherent": 5,
+        "skill_id": "MEAS001-06",
+        "skill_desc": "Interpreting Data"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7983,
+          "coherent": 5,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.8081,
+          "coherent": 2,
+          "skill_id": "PTRN001-02",
+          "skill_desc": "Sorting by Attributes"
+        }
+      ],
+      "query_head": "Interactive sorting station where students categorize objects by attributes (color, shape,"
+    },
+    {
+      "primitive": "shape-sorter",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8434,
+        "coherent": 5,
+        "skill_id": "GEOM001-02",
+        "skill_desc": "Analyze, compare, create, and compose shapes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8305,
+          "coherent": 5,
+          "skill_id": "GEOM001-01",
+          "skill_desc": "Defining Attributes of 2D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8434,
+          "coherent": 5,
+          "skill_id": "GEOM001-02",
+          "skill_desc": "Analyze, compare, create, and compose shapes"
+        }
+      ],
+      "query_head": "Attribute-focused geometry primitive with 3 challenge types: identify (find shapes matchin"
+    },
+    {
+      "primitive": "3d-shape-explorer",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7958,
+        "coherent": 5,
+        "skill_id": "GEOM001-02",
+        "skill_desc": "Defining Attributes of 3D Shapes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7958,
+          "coherent": 5,
+          "skill_id": "GEOM001-02",
+          "skill_desc": "Defining Attributes of 3D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7689,
+          "coherent": 5,
+          "skill_id": "GEOM001-01",
+          "skill_desc": "Identify and describe shapes"
+        }
+      ],
+      "query_head": "3D Shape Explorer \u2014 introduces cubes, cones, cylinders, spheres, and rectangular prisms th"
+    },
+    {
+      "primitive": "shape-tracer",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.78,
+        "coherent": 5,
+        "skill_id": "GEOM001-02",
+        "skill_desc": "Analyze, compare, create, and compose shapes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7762,
+          "coherent": 5,
+          "skill_id": "GEOM001-03",
+          "skill_desc": "Composing 2D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.78,
+          "coherent": 5,
+          "skill_id": "GEOM001-02",
+          "skill_desc": "Analyze, compare, create, and compose shapes"
+        }
+      ],
+      "query_head": "Interactive shape construction canvas with 4 progressive challenge types: trace (follow do"
+    },
+    {
+      "primitive": "math-fact-fluency",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8134,
+        "coherent": 5,
+        "skill_id": "OPS001-01",
+        "skill_desc": "Addition within 10"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8134,
+          "coherent": 5,
+          "skill_id": "OPS001-01",
+          "skill_desc": "Addition within 10"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8021,
+          "coherent": 5,
+          "skill_id": "OPS001-03",
+          "skill_desc": "Fluently add and subtract within 5"
+        }
+      ],
+      "query_head": "Rapid-fire math fact fluency practice with 5 progressive challenge types: visual facts wit"
+    },
+    {
+      "primitive": "strategy-picker",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8277,
+        "coherent": 5,
+        "skill_id": "OPS001-01",
+        "skill_desc": "Understand addition as putting together and adding to"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8198,
+          "coherent": 5,
+          "skill_id": "OPS001-04",
+          "skill_desc": "Subtraction Strategies"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8277,
+          "coherent": 5,
+          "skill_id": "OPS001-01",
+          "skill_desc": "Understand addition as putting together and adding to"
+        }
+      ],
+      "query_head": "An interactive strategy-comparison activity where students solve the same problem using 2-"
+    },
+    {
+      "primitive": "number-tracer",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.806,
+        "coherent": 5,
+        "skill_id": "COUNT001-01",
+        "skill_desc": "Know number names and the count sequence"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "scattered",
+          "best": 0.7883,
+          "coherent": 3,
+          "skill_id": "NBT001-01",
+          "skill_desc": "Counting to 120"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.806,
+          "coherent": 5,
+          "skill_id": "COUNT001-01",
+          "skill_desc": "Know number names and the count sequence"
+        }
+      ],
+      "query_head": "Canvas-based numeral writing practice. Students trace dotted digit paths, copy from a mode"
+    },
+    {
+      "primitive": "length-lab",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8534,
+        "coherent": 5,
+        "skill_id": "MEAS001-01",
+        "skill_desc": "Describe and compare measurable attributes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8138,
+          "coherent": 5,
+          "skill_id": "MEAS001-02",
+          "skill_desc": "Non-Standard Measurement"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8534,
+          "coherent": 5,
+          "skill_id": "MEAS001-01",
+          "skill_desc": "Describe and compare measurable attributes"
+        }
+      ],
+      "query_head": "Interactive length measurement lab for Kindergarten. Students compare object lengths visua"
+    },
+    {
+      "primitive": "coin-counter",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8647,
+        "coherent": 3,
+        "skill_id": "MEAS001-07",
+        "skill_desc": "Coin Identification"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8647,
+          "coherent": 3,
+          "skill_id": "MEAS001-07",
+          "skill_desc": "Coin Identification"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7493,
+          "coherent": 4,
+          "skill_id": "COUNT001-02",
+          "skill_desc": "Count to tell the number of objects"
+        }
+      ],
+      "query_head": "Interactive coin workspace for grades K-3. Students identify coins by appearance, count mi"
+    },
+    {
+      "primitive": "time-sequencer",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8241,
+        "coherent": 4,
+        "skill_id": "TIME001-01",
+        "skill_desc": "Understanding Daily and Seasonal Time"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7812,
+          "coherent": 4,
+          "skill_id": "MEAS001-04",
+          "skill_desc": "Telling Time \u2014 Half Hour"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8241,
+          "coherent": 4,
+          "skill_id": "TIME001-01",
+          "skill_desc": "Understanding Daily and Seasonal Time"
+        }
+      ],
+      "query_head": "Event sequencer and time concepts for grades K-2. Students order daily events, match activ"
+    },
+    {
+      "primitive": "spatial-scene",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "abstain",
+        "reason": "diffuse",
+        "best": 0.7661,
+        "coherent": 1,
+        "skill_id": "COUNT001-04",
+        "skill_desc": "Understand ordinal numbers"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7639,
+          "coherent": 1,
+          "skill_id": "NBT001-02",
+          "skill_desc": "Tens and Ones Understanding"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7661,
+          "coherent": 1,
+          "skill_id": "COUNT001-04",
+          "skill_desc": "Understand ordinal numbers"
+        }
+      ],
+      "query_head": "Grid-based spatial reasoning for K.G.1 positional language. Students identify, place, and "
+    },
+    {
+      "primitive": "shape-composer",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.862,
+        "coherent": 5,
+        "skill_id": "GEOM001-03",
+        "skill_desc": "Composing 2D Shapes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.862,
+          "coherent": 5,
+          "skill_id": "GEOM001-03",
+          "skill_desc": "Composing 2D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8485,
+          "coherent": 5,
+          "skill_id": "GEOM001-02",
+          "skill_desc": "Analyze, compare, create, and compose shapes"
+        }
+      ],
+      "query_head": "Interactive shape composition and decomposition workspace. Students compose larger shapes "
+    },
+    {
+      "primitive": "net-folder",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7789,
+        "coherent": 5,
+        "skill_id": "GEOM001-02",
+        "skill_desc": "Defining Attributes of 3D Shapes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7789,
+          "coherent": 5,
+          "skill_id": "GEOM001-02",
+          "skill_desc": "Defining Attributes of 3D Shapes"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7748,
+          "coherent": 5,
+          "skill_id": "GEOM001-02",
+          "skill_desc": "Analyze, compare, create, and compose shapes"
+        }
+      ],
+      "query_head": "3D shape net folding/unfolding visualization with CSS 3D transforms. Shows relationship be"
+    },
+    {
+      "primitive": "equation-builder",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8434,
+        "coherent": 4,
+        "skill_id": "OPS001-11",
+        "skill_desc": "Meaning of the Equal Sign"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8434,
+          "coherent": 4,
+          "skill_id": "OPS001-11",
+          "skill_desc": "Meaning of the Equal Sign"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7737,
+          "coherent": 2,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Interactive equation-building manipulative where students construct, evaluate, and balance"
+    },
+    {
+      "primitive": "compare-objects",
+      "chosen": {
+        "grade": "Kindergarten",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.8821,
+        "coherent": 5,
+        "skill_id": "MEAS001-01",
+        "skill_desc": "Describe and compare measurable attributes"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8203,
+          "coherent": 4,
+          "skill_id": "MEAS001-01",
+          "skill_desc": "Ordering by Length"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.8821,
+          "coherent": 5,
+          "skill_id": "MEAS001-01",
+          "skill_desc": "Describe and compare measurable attributes"
+        }
+      ],
+      "query_head": "Interactive measurement comparison activity where students describe and compare measurable"
+    },
+    {
+      "primitive": "parameter-explorer",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7105,
+        "coherent": 3,
+        "skill_id": "OPS001-11",
+        "skill_desc": "Meaning of the Equal Sign"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7105,
+          "coherent": 3,
+          "skill_id": "OPS001-11",
+          "skill_desc": "Meaning of the Equal Sign"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.6709,
+          "coherent": 1,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Multi-variable formula explorer with interactive sliders. Students adjust parameters via c"
+    },
+    {
+      "primitive": "equation-workspace",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7619,
+        "coherent": 5,
+        "skill_id": "OPS001-11",
+        "skill_desc": "Meaning of the Equal Sign"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7619,
+          "coherent": 5,
+          "skill_id": "OPS001-11",
+          "skill_desc": "Meaning of the Equal Sign"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "abstain",
+          "reason": "diffuse",
+          "best": 0.7061,
+          "coherent": 1,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Step-by-step algebraic manipulation workspace where students isolate a target variable by "
+    },
+    {
+      "primitive": "function-sketch",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7424,
+        "coherent": 3,
+        "skill_id": "MEAS001-06",
+        "skill_desc": "Interpreting Data"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7424,
+          "coherent": 3,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7087,
+          "coherent": 3,
+          "skill_id": "GEOM001-01",
+          "skill_desc": "Identify and describe shapes"
+        }
+      ],
+      "query_head": "Multi-challenge qualitative function reasoning primitive for grades 9-12. Each session wal"
+    },
+    {
+      "primitive": "distribution-explorer",
+      "chosen": {
+        "grade": "1",
+        "verdict": "match",
+        "reason": null,
+        "best": 0.7108,
+        "coherent": 3,
+        "skill_id": "MEAS001-06",
+        "skill_desc": "Interpreting Data"
+      },
+      "per_grade": [
+        {
+          "grade": "1",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.7108,
+          "coherent": 3,
+          "skill_id": "MEAS001-06",
+          "skill_desc": "Interpreting Data"
+        },
+        {
+          "grade": "Kindergarten",
+          "verdict": "match",
+          "reason": null,
+          "best": 0.6838,
+          "coherent": 3,
+          "skill_id": "COUNT001-05",
+          "skill_desc": "Compose and Decompose Numbers 11\u201319"
+        }
+      ],
+      "query_head": "Live workbench for probability distributions (binomial, Poisson, exponential). Students ma"
+    }
+  ]
+}

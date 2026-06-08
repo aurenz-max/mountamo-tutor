@@ -24,8 +24,13 @@
 | GAP-014 | LOW | SCIENCE (K) | 1 (SCI003-01-E) | `weather-station` | MEDIUM | CLOSED — assigned `take-home-activity` |
 | GAP-015 | LOW | SCIENCE (K) | 1 (SCI004-02-E) | `digital-skills-sim` | SMALL | CLOSED |
 | GAP-016 | MEDIUM | MATHEMATICS (K) | 2 (MEAS001-01-F, MEAS001-04-E) | `capacity-lab` | MEDIUM | OPEN |
+| GAP-017 | HIGH | SCIENCE (G2) | 3 (SCI003-01-a/b/c) | `erosion-explorer` | MEDIUM | OPEN — scaffold authored |
+| GAP-018 | HIGH | SCIENCE (G2) | 2 (SCI003-02-a/b) | `landform-mapper` | MEDIUM | OPEN — scaffold authored |
+| GAP-019 | MEDIUM | SCIENCE (G2) | 2 (SCI003-03-a/b) | `earth-changes-timeline` | SMALL-MEDIUM | OPEN — scaffold authored |
 
-**Totals:** 16 gaps | 5 HIGH, 7 MEDIUM, 4 LOW | ~66 subskills affected | 10 CLOSED (GAP-001, GAP-002, GAP-004, GAP-005, GAP-006, GAP-012, GAP-013, GAP-014, GAP-015 + GAP-003 backlog) | 6 OPEN
+**Totals:** 19 gaps | 7 HIGH, 8 MEDIUM, 4 LOW | ~73 subskills affected | 10 CLOSED (GAP-001, GAP-002, GAP-004, GAP-005, GAP-006, GAP-012, GAP-013, GAP-014, GAP-015 + GAP-003 backlog) | 9 OPEN
+
+> **Grade 2 Earth Sciences (SCI003)** is authored as a deferred SCAFFOLD: the unit is held PENDING (excluded from publish) and its 7 subskills point at the three proposed primitives below (GAP-017/018/019). Build them with `/primitive`, then accept + publish SCI003 to bring Grade 2 Earth Science live.
 
 ---
 
@@ -998,3 +1003,87 @@ Visual: glass-style containers with animated liquid levels. Containers can be di
 ### Maintenance tasks
 7. **Phantom primitive audit:** `/curriculum-lumina-audit audit LANGUAGE_ARTS_G1` and `SOCIAL_STUDIES_G1` to find more phantom assignments
 8. **Authoring service fix:** Add catalog validation to the author-unit endpoint to prevent future phantom primitives
+
+---
+
+## GAP-017: erosion-explorer — OPEN (scaffold authored)
+
+> **Status:** Grade 2 Earth Sciences unit SCI003 authored as a deferred scaffold (held PENDING, excluded from publish). Build this primitive, then accept + publish SCI003.
+
+**Priority:** HIGH — anchors the entire SCI003-01 skill (wind/water shaping land); no erosion/weathering primitive exists in any catalog.
+
+### Curriculum Need
+
+| Subject | Subskill | Description |
+|---------|----------|-------------|
+| SCIENCE (G2) | SCI003-01-a | Explore how wind slowly changes the shape of the land |
+| SCIENCE (G2) | SCI003-01-b | Explore how moving water shapes land through erosion and deposition |
+| SCIENCE (G2) | SCI003-01-c | Compare designs that slow or prevent wind/water from changing land |
+
+**Standards:** NGSS 2-ESS2-1 — "Compare multiple solutions designed to slow or prevent wind or water from changing the shape of the land."
+
+### Pedagogical Goal
+
+A living simulation where students watch wind or moving water act on a landscape (sand dune, hillside, riverbank) over compressed time, then place barriers (plants, walls, rocks) and re-run to compare how each solution slows the change. Phenomenon-first, not a quiz about erosion.
+
+### Proposed Design
+
+- **Observe mode:** time-lapse particle/terrain sim — wind blows sand, water carves a channel; terrain mesh deforms in real time.
+- **Intervention mode:** student drags barriers (vegetation, rip-rap, retaining wall) onto the terrain, re-runs, and the sim shows reduced material loss.
+- **Compare mode:** two solutions side by side; measure how much land was preserved.
+- **Eval modes:** `observe` (predict where erosion happens), `design` (place barriers), `compare` (which solution preserves more land).
+
+**Complexity:** MEDIUM — canvas terrain deformation + particle flow; reuse the living-simulation pattern (see physics push-pull-arena / gravity-drop-tower).
+
+---
+
+## GAP-018: landform-mapper — OPEN (scaffold authored)
+
+**Priority:** HIGH — anchors SCI003-02 (mapping land and water); `blueprint-canvas` is a generic drawing surface, not a landform/water map with kinds-of-water reasoning.
+
+### Curriculum Need
+
+| Subject | Subskill | Description |
+|---------|----------|-------------|
+| SCIENCE (G2) | SCI003-02-a | Map the shapes and kinds of land and bodies of water in an area |
+| SCIENCE (G2) | SCI003-02-b | Identify where water is found on Earth and whether it is solid or liquid |
+
+**Standards:** NGSS 2-ESS2-2 ("Develop a model to represent the shapes and kinds of land and bodies of water in an area"), 2-ESS2-3 ("Obtain information to identify where water is found on Earth and that it can be solid or liquid").
+
+### Pedagogical Goal
+
+Students build a simple map by placing labeled landform and water tiles (mountain, hill, valley, plain, lake, river, ocean, pond) onto a region grid, then tag each water body as solid (glacier, ice cap) or liquid. Model-building, not free drawing.
+
+### Proposed Design
+
+- Tile palette of landforms + bodies of water; drag onto a region canvas to compose a map.
+- Per-water-body solid/liquid tag with feedback.
+- **Eval modes:** `build` (compose a map to match a description), `identify` (label landforms/water on a given map), `classify` (solid vs liquid water).
+
+**Complexity:** MEDIUM — tile-placement canvas + labeling/classification logic. Could fork `blueprint-canvas` with a fixed earth-science tile palette.
+
+---
+
+## GAP-019: earth-changes-timeline — OPEN (scaffold authored)
+
+**Priority:** MEDIUM — anchors SCI003-03 (fast vs slow Earth events). `timeline-explorer` and `classification-sorter` are near-fits but lack the fast/slow timescale-reasoning framing.
+
+### Curriculum Need
+
+| Subject | Subskill | Description |
+|---------|----------|-------------|
+| SCIENCE (G2) | SCI003-03-a | Sort Earth events by whether they happen quickly or slowly |
+| SCIENCE (G2) | SCI003-03-b | Sequence Earth events by how long they take to happen |
+
+**Standards:** NGSS 2-ESS1-1 — "Use information from several sources to provide evidence that Earth events can occur quickly or slowly."
+
+### Pedagogical Goal
+
+Students sort/sequence Earth events (earthquake, volcanic eruption, landslide vs. canyon carving, mountain building, erosion) along a fast→slow timescale, building intuition that geologic change spans seconds to millions of years.
+
+### Proposed Design
+
+- Event cards with imagery; a fast→slow axis.
+- **Eval modes:** `sort` (drop events into fast/slow bins), `order` (arrange events by duration), `match` (event → typical timescale).
+
+**Complexity:** SMALL-MEDIUM — card sort/sequence on a labeled axis. Could be a themed configuration of `classification-sorter` + `timeline-explorer` capabilities.
