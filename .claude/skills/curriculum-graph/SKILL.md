@@ -73,12 +73,14 @@ Default: `diagnose` if only a subject_id is given.
 
 **Primary: Use the agent health endpoint (if service is running):**
 ```bash
+# The /api/agent/{id}/health endpoint resolves grade internally — no ?grade needed.
 curl -s http://localhost:8001/api/agent/{subject_id}/health | python -m json.tool
 ```
 
 **Graph data (for manual analysis):**
 ```bash
-curl -s http://localhost:8001/api/subjects/{subject_id}/knowledge-graph | python -m json.tool > /tmp/graph.json
+# knowledge-graph REQUIRES ?grade=X (grade-scoping refactor) — omitting it returns HTTP 422.
+curl -s "http://localhost:8001/api/subjects/{subject_id}/knowledge-graph?grade=X&include_drafts=true" | python -m json.tool > /tmp/graph.json
 ```
 
 **Fallback:** If the service isn't running, read the cached graph from Firestore via the backend, or read graph JSON from prior reports. Can also use `GraphAnalysisEngine` or `DAGAnalysisEngine.compute_health_metrics()` directly on the graph data.
@@ -133,6 +135,34 @@ From the `GraphAnomaly` list:
 | `isolated_unit` | critical | Units with no cross-unit edges (unreachable) |
 | `bottleneck` | warning | Nodes that are sole prereq for 3+ dependents |
 | `dead_end_cluster` | warning | Subtrees with no forward progression |
+
+> **CRITICAL — re-derive these at the subskill level. The composite health score is NOT reliable right after `connect-skills`.**
+>
+> `connect-skills` (and scoped-suggest) only ever create **subskill↔subskill** edges. **Skill-level nodes (IDs without a trailing `-a`/`-b`/… , e.g. `ENG001-03`) therefore have zero edges by construction** and the analyzer flags every one of them as a *critical orphan* + its own connected component + a dead-end. For a freshly-connected subject this can drag a perfectly healthy graph down to ~2/10 and report "N critical orphans" that are all skill nodes.
+>
+> So `diagnose` MUST **lead with a subskill-only view**, computed from `/tmp/graph.json`:
+> - Split nodes: `skills` = ids not matching `-[a-z]$`; `subskills` = ids matching it.
+> - **True orphan subskills** = subskills with in-degree 0 AND out-degree 0 (these are the *actionable* orphans — usually want 0).
+> - **Dead-end subskills** = subskills with out-degree 0 (no successor). ~20–35% is healthy — terminal/capstone subskills should be dead-ends. Only flag the *reducible* ones (a subskill whose concept clearly feeds a later skill but has no outgoing edge).
+> - **Connected components over subskills only** — want 1 (skill nodes inflate this; ignore them).
+>
+> Report skill-node orphans separately as "structural (non-actionable)". Present both the raw score and the corrected subskill view, and say which one to trust.
+>
+> Quick subskill-level computation:
+> ```python
+> import json, re
+> d = json.load(open("/tmp/graph.json"))
+> SUB = re.compile(r"-[a-z]$")
+> subs = [n["id"] for n in d["nodes"] if SUB.search(n["id"])]
+> out = {i:0 for i in subs}; inn = {i:0 for i in subs}
+> for e in d["edges"]:
+>     s,t = e["source_entity_id"], e["target_entity_id"]
+>     if s in out: out[s]+=1
+>     if t in inn: inn[t]+=1
+> dead = [i for i in subs if out[i]==0]
+> orphan = [i for i in subs if out[i]==0 and inn[i]==0]
+> print(f"subskills={len(subs)} true_orphans={len(orphan)} dead_ends={len(dead)} ({len(dead)/len(subs)*100:.0f}%)")
+> ```
 
 ### Step 3: Depth distribution
 
@@ -324,13 +354,20 @@ Returns `ScopedSuggestionResponse` with suggestions and scope_summary (nodes ana
 
 ### Step 3: Accept selected suggestions
 
+**Simplest (accept the whole pending batch → draft edges):**
+```bash
+curl -s -X POST http://localhost:8001/api/agent/{subject_id}/suggestions/accept-all
+# → {"accepted": N, "edges_created": N, "version_id": "..."}
+```
+
+**Selective (specific IDs only):**
 ```bash
 curl -s -X POST http://localhost:8001/api/ai/suggest-edges/accept \
   -H "Content-Type: application/json" \
   -d '{"suggestion_ids": ["uuid1", "uuid2"], "subject_id": "MATHEMATICS"}'
 ```
 
-Creates draft edges via EdgeManager (same dual-write, same on_mutation hooks).
+Both create draft edges via EdgeManager (same dual-write, same on_mutation hooks). Prefer `accept-all` after a batch of connect-skills/scoped-suggest calls — it avoids collecting individual IDs.
 
 ---
 
@@ -348,12 +385,14 @@ curl -s -X POST http://localhost:8001/api/ai/connect-skills \
   -d '{
     "source_skill_id": "OPS001-01",
     "source_subject_id": "MATHEMATICS",
+    "source_grade": "1",
     "target_skill_id": "OPS002-01",
-    "target_subject_id": "MATHEMATICS"
+    "target_subject_id": "MATHEMATICS",
+    "target_grade": "2"
   }'
 ```
 
-Returns `ConnectSkillsResponse` with connections and skill_summary.
+`source_grade` AND `target_grade` are **required** (grade-scoping refactor) — omitting either returns HTTP 422. For same-grade connections, use the same value for both. Returns `ConnectSkillsResponse` with connections and skill_summary.
 
 ### Step 2: Present connections
 
@@ -373,7 +412,12 @@ Source: 6 subskills | Target: 5 subskills | Connections found: 4
 
 ### Step 3: Accept connections
 
-Use the same accept endpoint — connections are stored as scoped suggestions in Firestore:
+Connections are stored as pending scoped suggestions in Firestore. After a batch of connect-skills calls, accept them all at once:
+```bash
+curl -s -X POST http://localhost:8001/api/agent/{subject_id}/suggestions/accept-all
+# → {"accepted": N, "edges_created": N, "version_id": "..."}
+```
+Or accept specific IDs selectively:
 ```bash
 curl -s -X POST http://localhost:8001/api/ai/suggest-edges/accept \
   -H "Content-Type: application/json" \
@@ -388,12 +432,14 @@ curl -s -X POST http://localhost:8001/api/ai/connect-skills \
   -d '{
     "source_skill_id": "GEOM002-04",
     "source_subject_id": "MATHEMATICS",
+    "source_grade": "2",
     "target_skill_id": "NF001-01",
-    "target_subject_id": "MATHEMATICS"
+    "target_subject_id": "MATHEMATICS",
+    "target_grade": "3"
   }'
 ```
 
-The LLM receives grade context and considers developmental progression when suggesting cross-grade connections.
+The LLM receives grade context (from `source_grade`/`target_grade`) and considers developmental progression when suggesting cross-grade connections.
 
 ---
 

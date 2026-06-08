@@ -37,17 +37,21 @@ Create, review, and manage curriculum content (subjects, units, skills, subskill
 | `/api/ai/suggest-edges/accept` | POST | Accept suggestion IDs → create draft edges |
 | `/api/edges/validate` | POST | Validate edge without creating (cycle check) |
 | `/api/graph-agent/{subject_id}/health` | GET | Graph health report (score, anomalies) |
-| `/api/publishing/subjects/{subject_id}/publish` | POST | Publish all draft changes (drafts → published) |
-| `/api/publishing/subjects/{subject_id}/deploy` | POST | Deploy to `curriculum_published` + auto-flatten graph for Pulse |
-| `/api/publishing/subjects/{subject_id}/deploy/status` | GET | Check deployment status |
-| `/api/publishing/subjects/{subject_id}/active-version` | GET | Get currently active version |
-| `/api/publishing/subjects/{subject_id}/flatten` | POST | Manually rebuild flat graph cache (auto-runs on deploy) |
+| `/api/publishing/subjects/{subject_id}/publish?grade=X` | POST | **Atomic** publish: drafts → `curriculum_published` + publishes graph edges (`is_draft=false`). No separate deploy. |
+| `/api/publishing/subjects/{subject_id}/draft-changes?grade=X` | GET | List pending draft changes (count + diff) |
+| `/api/publishing/subjects/{subject_id}/active-version?grade=X` | GET | Get currently active version |
+| `/api/publishing/subjects/{subject_id}/flatten` | POST | Manually rebuild flat graph cache (backend JIT-flattens on read, so rarely needed) |
+
+> **CRITICAL — grade is now required on every publishing/graph read.** The grade-scoping refactor added a required `grade` query param. Every `publishing/*` and `subjects/{id}/knowledge-graph` call needs `?grade=X` (e.g. `?grade=2`). Calls without it return HTTP 422 `Field required: query.grade`.
+>
+> **There is NO `/deploy` endpoint.** `publish` is a single atomic operation that copies drafts to `curriculum_published`, sets `is_draft=false` on edges, and updates the version record. The backend JIT-flattens the graph on first read — no separate deploy, no flatten call. (Older docs describing a two-step publish→deploy are stale and will 404 on `/deploy`.)
 
 ### Key Models
 
 ```
 AuthorUnitRequest: {subject_id, grade, unit_id, unit_title, unit_description, unit_order, prd_context, custom_instructions, num_skills, num_subskills_per_skill}
-ConnectSkillsRequest: {source_skill_id, target_skill_id, source_subject_id, target_subject_id, relationship_types}
+ConnectSkillsRequest: {source_skill_id, source_subject_id, source_grade, target_skill_id, target_subject_id, target_grade, relationship_types}
+  # NOTE: source_grade AND target_grade are REQUIRED (grade-scoping refactor). Omitting either → HTTP 422.
 AcceptScopedSuggestionsRequest: {suggestion_ids, subject_id}
 ```
 
@@ -100,27 +104,24 @@ After all units are accepted, run the `review` command to catch structural issue
 
 ### Phase 3: Publish & Deploy
 
-After review passes, publish and deploy so the curriculum is live in Firestore:
+After review passes, publish so the curriculum is live in Firestore. **Publish is a single atomic step** — it copies drafts to `curriculum_published`, publishes the graph edges (`is_draft=false`), and bumps the version. The backend JIT-flattens the graph on first read. There is no separate deploy step.
 
-1. **Publish** drafts → published:
+1. **Publish** (note the required `?grade=X`):
    ```bash
-   curl -s -X POST "http://localhost:8001/api/publishing/subjects/{subject_id}/publish" \
+   curl -s -X POST "http://localhost:8001/api/publishing/subjects/{subject_id}/publish?grade=X" \
      -H "Content-Type: application/json" \
      --data-raw '{"subject_id":"{subject_id}","version_description":"...","change_summary":"..."}'
    ```
+   Response: `{"success":true,"version_number":N,"changes_published":M,...}`.
 
-2. **Deploy** to `curriculum_published` (auto-flattens graph for Pulse/LearningPaths):
+2. **Verify** the active version and that edges are published:
    ```bash
-   curl -s -X POST "http://localhost:8001/api/publishing/subjects/{subject_id}/deploy"
-   ```
-   The deploy response includes a `flatten` key with node/edge counts confirming the graph cache was rebuilt.
-
-3. **Verify** deployment:
-   ```bash
-   curl -s "http://localhost:8001/api/publishing/subjects/{subject_id}/deploy/status"
+   curl -s "http://localhost:8001/api/publishing/subjects/{subject_id}/active-version?grade=X"
+   # Confirm published edges are visible (is_draft=false):
+   curl -s "http://localhost:8001/api/subjects/{subject_id}/knowledge-graph?grade=X&include_drafts=false"
    ```
 
-**IMPORTANT:** Publish promotes internal state. Deploy writes to `curriculum_published` AND auto-flattens the graph cache for Pulse/LearningPaths. Two steps only: publish → deploy.
+**IMPORTANT:** One atomic call. `publish` already deploys to `curriculum_published` and publishes edges. Do NOT call a `/deploy` endpoint — it no longer exists and returns 404. Publish also triggers a non-blocking BQ sync in the background.
 
 ---
 
@@ -237,41 +238,36 @@ After presenting the review table, ask the user which issues to fix:
 
 ## Command: `publish`
 
-Publish and deploy a subject's curriculum to Firestore so the backend can read it.
+Publish a subject's curriculum to Firestore so the backend can read it. **Publish is one atomic call** (drafts → `curriculum_published` + edges published + version bump); there is no separate deploy step. Every call requires `?grade=X`.
 
 ### Steps
 
 1. **Check draft changes exist:**
    ```bash
-   curl -s "http://localhost:8001/api/publishing/subjects/{subject_id}/draft-changes"
+   curl -s "http://localhost:8001/api/publishing/subjects/{subject_id}/draft-changes?grade=X"
    ```
-   Report total changes count. If 0, nothing to publish.
+   Report `total_changes`. If 0, nothing to publish.
 
-2. **Publish** (promotes drafts → published):
+2. **Publish** (atomic — promotes drafts → `curriculum_published`, publishes edges `is_draft=false`, bumps version):
    ```bash
-   curl -s -X POST "http://localhost:8001/api/publishing/subjects/{subject_id}/publish" \
+   curl -s -X POST "http://localhost:8001/api/publishing/subjects/{subject_id}/publish?grade=X" \
      -H "Content-Type: application/json" \
      --data-raw '{"subject_id":"{subject_id}","version_description":"...","change_summary":"..."}'
    ```
-   Log the version number returned.
+   Log the `version_number` and `changes_published` returned.
 
-3. **Deploy** (writes to `curriculum_published` + auto-flattens graph for Pulse/LearningPaths):
+3. **Verify:**
    ```bash
-   curl -s -X POST "http://localhost:8001/api/publishing/subjects/{subject_id}/deploy"
+   curl -s "http://localhost:8001/api/publishing/subjects/{subject_id}/active-version?grade=X"
+   curl -s "http://localhost:8001/api/subjects/{subject_id}/knowledge-graph?grade=X&include_drafts=false"
    ```
-   Log stats: units, skills, subskills deployed. The response includes a `flatten` key confirming the graph cache was rebuilt with node/edge counts. No separate flatten step needed.
+   Confirm the active version bumped and the published-edge count matches what you built.
 
-4. **Verify:**
-   ```bash
-   curl -s "http://localhost:8001/api/publishing/subjects/{subject_id}/deploy/status"
-   ```
-
-**Note:** Deploy auto-flattens the graph — no backend or separate rebuild-cache call needed. Publish also triggers a non-blocking BQ sync in the background.
+**Note:** No `/deploy` endpoint exists (404 if called) — `publish` does it all. The backend JIT-flattens the graph on first read, so no flatten call is needed. Publish also triggers a non-blocking BQ sync in the background.
 
 ```
-[PUBLISH] MATHEMATICS_G1 → version 2 published (366 changes)
-[DEPLOY] MATHEMATICS_G1 → 5 units, 36 skills, 111 subskills deployed to curriculum_published
-[FLATTEN] MATHEMATICS_G1 → 36 skills, 111 subskills, 85 edges flattened (auto)
+[PUBLISH] ENGINEERING_G2 (grade 2) → version 2 published (159 changes)
+[VERIFY] ENGINEERING_G2 → active version 2, 62 nodes / 91 published edges (is_draft=false)
 ```
 
 ---
@@ -327,11 +323,14 @@ For unit LA001 with skills [LA001-01, LA001-02, ..., LA001-09]:
     POST /api/ai/connect-skills
     {
       "source_skill_id": "LA001-01",
-      "target_skill_id": "LA001-02",
       "source_subject_id": "LANGUAGE_ARTS_G1",
+      "source_grade": "1",
+      "target_skill_id": "LA001-02",
       "target_subject_id": "LANGUAGE_ARTS_G1",
+      "target_grade": "1",
       "relationship_types": ["prerequisite", "builds_on", "reinforces"]
     }
+    # source_grade AND target_grade are REQUIRED — omitting either returns HTTP 422.
 ```
 
 **Optimization:** Not every pair needs analysis. Use difficulty ordering to skip unlikely pairs:
@@ -559,8 +558,8 @@ All API calls in this skill MUST be logged with enough detail to debug issues:
 ## Checklist
 
 - [ ] Parsed command and arguments
-- [ ] For `author`: read PRD, ensured subject, authored units one-by-one, reviewed and accepted each, published + deployed
-- [ ] For `publish`: checked drafts, published, deployed (auto-flattens graph), verified
+- [ ] For `author`: read PRD, ensured subject, authored units one-by-one, reviewed and accepted each, published (atomic, `?grade=X`)
+- [ ] For `publish`: checked drafts (`?grade=X`), published (atomic — no separate deploy), verified active-version + published edges
 - [ ] For `add-skill`: checked existing structure, generated skill, verified quality
 - [ ] For `review`: ran all 6 review checks, presented findings table, offered fixes
 - [ ] For `graph`: used pairwise connect-skills (not bulk suggest-edges), validated result
