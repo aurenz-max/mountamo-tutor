@@ -9,7 +9,7 @@ Exposes the CurriculumGraphAgentService capabilities:
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Request
 
 from app.models.suggestions import (
@@ -32,10 +32,13 @@ def _get_agent(request: Request):
 
 
 @router.get("/{subject_id}/health", response_model=GraphHealthReport)
-async def get_graph_health(subject_id: str, request: Request):
-    """Get cached graph health report (re-analyzed on graph mutations)."""
+async def get_graph_health(subject_id: str, request: Request, grade: Optional[str] = None):
+    """Get cached graph health report (re-analyzed on graph mutations).
+
+    Pass `?grade=` to disambiguate subjects whose id is shared across grades.
+    """
     agent = _get_agent(request)
-    return await agent.analyze_graph(subject_id)
+    return await agent.analyze_graph(subject_id, grade=grade)
 
 
 @router.post("/{subject_id}/suggest", response_model=List[EdgeSuggestion])
@@ -58,11 +61,15 @@ async def generate_suggestions(
 
 
 @router.get("/{subject_id}/suggestions", response_model=List[EdgeSuggestion])
-async def list_pending_suggestions(subject_id: str, request: Request):
-    """List all pending suggestions for a subject."""
+async def list_pending_suggestions(subject_id: str, request: Request, grade: Optional[str] = None):
+    """List all pending suggestions for a subject.
+
+    Pass `?grade=` to disambiguate subjects whose id is shared across grades.
+    """
     from app.db.firestore_curriculum_reader import firestore_reader
     _get_agent(request)  # Ensure agent is initialized
-    grade = await firestore_reader.resolve_grade(subject_id)
+    if not grade:
+        grade = await firestore_reader.resolve_grade(subject_id)
     if not grade:
         raise HTTPException(status_code=404, detail=f"Cannot resolve grade for {subject_id}")
     data = await firestore_reader.get_suggestions_for_subject(grade, subject_id, status="pending")
@@ -81,11 +88,14 @@ async def list_pending_suggestions(subject_id: str, request: Request):
 
 
 @router.post("/{subject_id}/suggestions/accept-all")
-async def bulk_accept_all(subject_id: str, request: Request):
-    """Accept all pending suggestions in bulk — creates draft edges via streaming insert."""
+async def bulk_accept_all(subject_id: str, request: Request, grade: Optional[str] = None):
+    """Accept all pending suggestions in bulk — creates draft edges via streaming insert.
+
+    Pass `?grade=` to disambiguate subjects whose id is shared across grades.
+    """
     agent = _get_agent(request)
     try:
-        result = await agent.bulk_accept_all(subject_id)
+        result = await agent.bulk_accept_all(subject_id, grade=grade)
         return result
     except Exception as e:
         logger.error(f"Bulk accept failed: {e}")

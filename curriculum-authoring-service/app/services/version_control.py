@@ -188,9 +188,11 @@ class VersionControl:
         if old_version_id:
             versions_coll.document(old_version_id).update({"is_active": False})
 
-        # Publish edges in graph subcollection
+        # Publish edges in graph subcollection. Pass grade explicitly so
+        # shared-id subjects (e.g. LANGUAGE_ARTS @ 1/2/3) publish the correct
+        # grade's edges rather than whichever bucket _resolve_grade returns first.
         await firestore_curriculum_sync.publish_edges(
-            publish_request.subject_id, new_version.version_id
+            publish_request.subject_id, new_version.version_id, grade=grade
         )
 
         logger.info(f"Published version {new_version.version_number} for {publish_request.subject_id}")

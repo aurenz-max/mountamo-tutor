@@ -72,16 +72,24 @@ class CurriculumGraphAgentService:
     #  Health Analysis
     # ------------------------------------------------------------------ #
 
-    async def analyze_graph(self, subject_id: str) -> GraphHealthReport:
-        """Run full structural analysis. Cached until next mutation."""
-        if subject_id in self._health_cache:
+    async def analyze_graph(self, subject_id: str, grade: Optional[str] = None) -> GraphHealthReport:
+        """Run full structural analysis. Cached until next mutation.
+
+        `grade` may be passed explicitly to disambiguate subjects whose id is
+        shared across grades (e.g. LANGUAGE_ARTS @ 1/2/3); when provided it
+        overrides resolve_grade and bypasses the subject-keyed in-memory cache
+        (which cannot tell grades apart).
+        """
+        explicit_grade = grade
+        if explicit_grade is None and subject_id in self._health_cache:
             cached = self._health_cache[subject_id]
             # Use cache if < 5 minutes old
             age = (datetime.utcnow() - cached.computed_at).total_seconds()
             if age < 300:
                 return cached
 
-        grade = await firestore_reader.resolve_grade(subject_id)
+        if not grade:
+            grade = await firestore_reader.resolve_grade(subject_id)
         if not grade:
             raise ValueError(f"Cannot resolve grade for {subject_id}")
 
@@ -104,7 +112,10 @@ class CurriculumGraphAgentService:
             computed_at=datetime.utcnow(),
         )
 
-        self._health_cache[subject_id] = report
+        # Only populate the subject-keyed in-memory cache for the resolve_grade
+        # default path; an explicit grade must not poison the ambiguous key.
+        if explicit_grade is None:
+            self._health_cache[subject_id] = report
 
         # Persist to Firestore graph doc for dashboard access
         await self._cache_health_report(subject_id, report)
@@ -212,16 +223,20 @@ class CurriculumGraphAgentService:
         logger.info(f"Accepted suggestion {suggestion_id} -> created draft edge")
         return edge
 
-    async def bulk_accept_all(self, subject_id: str) -> Dict:
+    async def bulk_accept_all(self, subject_id: str, grade: Optional[str] = None) -> Dict:
         """Accept all pending suggestions in bulk via EdgeManager (Firestore-native).
 
         Creates draft edges for all pending suggestions, marks them accepted.
         Uses EdgeManager.create_edge() so edges go to the correct hierarchical
         subcollection with proper validation.
+
+        `grade` may be passed explicitly to disambiguate subjects whose id is
+        shared across grades; when omitted it falls back to resolve_grade.
         """
         from app.services.version_control import version_control
 
-        grade = await firestore_reader.resolve_grade(subject_id)
+        if not grade:
+            grade = await firestore_reader.resolve_grade(subject_id)
         if not grade:
             raise ValueError(f"Cannot resolve grade for {subject_id}")
 
@@ -272,7 +287,7 @@ class CurriculumGraphAgentService:
             }))
 
         # Batch-update suggestion statuses
-        await firestore_curriculum_sync.batch_update_suggestions(subject_id, accepted_ids)
+        await firestore_curriculum_sync.batch_update_suggestions(subject_id, accepted_ids, grade=grade)
 
         # Invalidate caches
         self._health_cache.pop(subject_id, None)
