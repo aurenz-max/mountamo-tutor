@@ -62,6 +62,15 @@ interface CurriculumBrowserProps {
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
+/**
+ * Stable identity for a subject pill. subject_id is shared across grades
+ * (e.g. LANGUAGE_ARTS is the same id at Grade 1/2/3), so it alone cannot
+ * distinguish a grade. Always fold grade into the key.
+ */
+function subjectKey(s: SubjectInfo): string {
+  return `${s.subject_id ?? s.subject_name}::${s.grade ?? ''}`;
+}
+
 function mapGradeToLevel(grade: string | null | undefined): GradeLevel | undefined {
   if (!grade) return undefined;
   const g = grade.toLowerCase().trim();
@@ -255,10 +264,10 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
   }, [subjectsLoaded, loadingSubjects, user]);
 
   const handleSubjectSelect = useCallback(async (subject: SubjectInfo) => {
-    // Use subject_id as the unique key (each grade has a distinct ID)
-    const subjectKey = subject.subject_id ?? subject.subject_name;
+    // Grade-aware key: subject_id is shared across grades, so it alone collides.
+    const key = subjectKey(subject);
 
-    if ((selectedSubject?.subject_id ?? selectedSubject?.subject_name) === subjectKey) {
+    if (selectedSubject && subjectKey(selectedSubject) === key) {
       // Toggle off
       setSelectedSubject(null);
       setCurriculumData(null);
@@ -269,7 +278,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
     setError(null);
 
     // Check cache
-    const cached = cacheRef.current.get(subjectKey);
+    const cached = cacheRef.current.get(key);
     if (cached) {
       setCurriculumData(cached);
       return;
@@ -278,10 +287,11 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
     setLoadingCurriculum(true);
     setCurriculumData(null);
     try {
-      // Pass subject_id when available — the backend resolves it unambiguously
+      // Pass subject_id when available plus grade so the backend resolves the
+      // exact grade's published doc (shared subject_id is otherwise ambiguous).
       const lookupKey = subject.subject_id ?? subject.subject_name;
-      const data = await authApi.getSubjectCurriculum(lookupKey) as { curriculum: CurriculumUnit[] };
-      cacheRef.current.set(subjectKey, data.curriculum);
+      const data = await authApi.getSubjectCurriculum(lookupKey, subject.grade) as { curriculum: CurriculumUnit[] };
+      cacheRef.current.set(key, data.curriculum);
       setCurriculumData(data.curriculum);
     } catch {
       setError(`Failed to load ${subject.subject_name} curriculum`);
@@ -363,7 +373,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
                       key={`${subject.subject_name}-${grade}`}
                       onClick={() => handleSubjectSelect(subject)}
                       className={`px-4 py-2 rounded-full border transition-all text-sm font-medium ${
-                        (selectedSubject?.subject_id ?? selectedSubject?.subject_name) === (subject.subject_id ?? subject.subject_name)
+                        selectedSubject && subjectKey(selectedSubject) === subjectKey(subject)
                           ? 'bg-blue-500/20 border-blue-500/50 text-blue-200'
                           : 'bg-white/5 border-white/20 text-slate-300 hover:bg-white/10 hover:text-white'
                       }`}
@@ -393,7 +403,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
                 setSubjectsLoaded(false);
                 ensureSubjectsLoaded();
               } else if (selectedSubject) {
-                cacheRef.current.delete(selectedSubject.subject_id ?? selectedSubject.subject_name);
+                cacheRef.current.delete(subjectKey(selectedSubject));
                 handleSubjectSelect(selectedSubject);
               }
             }}

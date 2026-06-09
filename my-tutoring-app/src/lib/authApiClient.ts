@@ -923,8 +923,9 @@ private async getAuthToken(): Promise<string> {
     return data?.subjects ?? data;
   }
 
-  async getSubjectCurriculum(subject: string) {
-    return this.get(`/api/curriculum/curriculum/${encodeURIComponent(subject)}`);
+  async getSubjectCurriculum(subject: string, grade?: string) {
+    const query = grade ? `?grade=${encodeURIComponent(grade)}` : '';
+    return this.get(`/api/curriculum/curriculum/${encodeURIComponent(subject)}${query}`);
   }
 
   async getSkillCompetency(params: {
