@@ -106,6 +106,25 @@ interface LuminaAIContextType {
 
 const LuminaAIContext = createContext<LuminaAIContextType | null>(null);
 
+// Static lesson/identity metadata that is framing, not live interaction state.
+// It's already delivered in lesson_context at connect and in the switch_primitive
+// scaffold. Re-sending it inside a [CONTEXT UPDATE] tells Gemini the student's
+// state "changed" when it hasn't — which makes the tutor narrate on every render
+// and appear to jump between primitives. We strip these before forwarding.
+const STATIC_CONTEXT_KEYS = new Set([
+  'title',
+  'objectiveText',
+  'objectiveId',
+  'objectiveIds',
+  'instanceId',
+  'exhibitId',
+  'skillId',
+  'subskillId',
+  'topic',
+  'gradeLevel',
+  'componentIntent',
+]);
+
 export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const socketRef = useRef<WebSocket | null>(null);
   const audioServiceRef = useRef<AudioCaptureService | null>(null);
@@ -132,6 +151,10 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [sessionMode, setSessionMode] = useState<SessionMode>('idle');
   const [activePrimitiveId, setActivePrimitiveId] = useState<string | null>(null);
   const activePrimitiveIdRef = useRef<string | null>(null);
+
+  // Signature of the last context update actually forwarded to Gemini. Used to
+  // drop referentially-churned-but-value-identical updates (see updateContext).
+  const lastContextSigRef = useRef<string>('');
 
   // Metrics tracking
   const [aiMetrics, setAIMetrics] = useState<AIMetrics>({
@@ -526,6 +549,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     activePrimitiveIdRef.current = null;
     setActivePrimitiveId(null);
     setConversation([]);
+    lastContextSigRef.current = '';
 
     if (sessionStartTimeRef.current > 0) {
       const totalTime = Date.now() - sessionStartTimeRef.current;
@@ -626,6 +650,8 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    // Always keep our local mirror of primitive_data current, even when we end
+    // up not forwarding this particular update to Gemini.
     if (currentPrimitiveRef.current) {
       currentPrimitiveRef.current.primitive_data = {
         ...currentPrimitiveRef.current.primitive_data,
@@ -633,9 +659,36 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       };
     }
 
+    // Drop static lesson/identity framing — only genuine interaction state is a
+    // real "context update".
+    const dynamicState: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(newState || {})) {
+      if (STATIC_CONTEXT_KEYS.has(k)) continue;
+      dynamicState[k] = v;
+    }
+
+    // Nothing meaningful left to report.
+    if (Object.keys(dynamicState).length === 0 && !progress) {
+      return;
+    }
+
+    // Dedup by value, scoped to the active primitive. Parent re-renders (e.g. on
+    // every AI transcription chunk) hand primitives a fresh data object with
+    // unchanged values; without this guard each one would forward an identical
+    // [CONTEXT UPDATE], creating a transcription -> render -> update feedback loop.
+    const signature = JSON.stringify({
+      id: activePrimitiveIdRef.current,
+      state: dynamicState,
+      progress: progress ?? null,
+    });
+    if (signature === lastContextSigRef.current) {
+      return;
+    }
+    lastContextSigRef.current = signature;
+
     socketRef.current.send(JSON.stringify({
       type: 'update_context',
-      primitive_data: newState,
+      primitive_data: dynamicState,
       student_progress: progress,
     }));
   }, []);

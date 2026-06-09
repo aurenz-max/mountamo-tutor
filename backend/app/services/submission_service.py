@@ -520,6 +520,39 @@ class SubmissionService:
             except Exception as e:
                 logger.warning(f"[LUMINA_PRIMITIVE] Curriculum mapping failed, using fallbacks: {e}")
 
+        # Authoritative path parity: when real IDs came straight from the
+        # curriculum browser, no mapping ran, so the human-readable curriculum
+        # names are still blank. Look them up directly by ID so the review carries
+        # the same skill_description / subskill_description / unit_* the free-form
+        # mapping path fills — a student must not see a different lesson summary
+        # for "clicked Engineering" vs "typed strong towers". A miss leaves the
+        # fields blank (today's behavior), so there's no regression.
+        _has_real_subskill = (
+            subskill_id
+            and subskill_id != 'free-form'
+            and not subskill_id.endswith('_subskill')
+        )
+        if not skill_description and _has_real_subskill and self.curriculum_mapping_service:
+            try:
+                curriculum_service = self.curriculum_mapping_service.curriculum_service
+                meta = await curriculum_service.get_subskill_metadata(subskill_id, subject)
+                if meta:
+                    skill_description = meta.get('skill_description', '') or skill_description
+                    subskill_description = meta.get('subskill_description', '') or subskill_description
+                    unit_id = meta.get('unit_id', '') or unit_id
+                    unit_title = meta.get('unit_title', '') or unit_title
+                    logger.info(
+                        f"[LUMINA_PRIMITIVE] Authoritative curriculum names resolved for "
+                        f"{subject}/{skill_id}/{subskill_id}: '{skill_description}'"
+                    )
+                else:
+                    logger.info(
+                        f"[LUMINA_PRIMITIVE] No curriculum metadata for {subskill_id} "
+                        f"(subject={subject}) — summary will omit the skill card"
+                    )
+            except Exception as e:
+                logger.warning(f"[LUMINA_PRIMITIVE] Curriculum name lookup failed: {e}")
+
         # Ensure subject/skill/subskill are never sentinel values when reaching competency update
         if subject in ('auto', 'free-form'):
             subject = 'general'

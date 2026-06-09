@@ -64,6 +64,13 @@ export function useLuminaAI({
   const primitiveDataRef = useRef(primitiveData);
   primitiveDataRef.current = primitiveData;
 
+  // Serialized value of the last context update we scheduled — lets us skip
+  // re-sends when a parent re-render hands us a fresh object with unchanged values.
+  const lastContextSentRef = useRef<string>('');
+  // Whether we've recorded this primitive's baseline state yet. The initial mount
+  // value is not a "change" and must never be pushed as a [CONTEXT UPDATE].
+  const hasContextBaselineRef = useRef(false);
+
   // Effect 1: Standalone auto-connect (testers, backward compat)
   // Only runs when sessionMode is idle — reads mode from ref to avoid dep cycle.
   useEffect(() => {
@@ -179,8 +186,33 @@ export function useLuminaAI({
       return;
     }
 
+    // Skip if the serialized value is identical to what we last scheduled.
+    // primitiveData is frequently a fresh object with unchanged values (parent
+    // re-renders rebuild it on every AI transcription chunk), and resending it
+    // creates a render -> update -> response feedback loop.
+    let signature: string;
+    try {
+      signature = JSON.stringify(primitiveData);
+    } catch {
+      signature = '';
+    }
+
+    // Record the baseline silently on the first qualifying run. A context update
+    // is a delta describing student interaction; the backend already has the full
+    // primitive_data from connect / switch_primitive. Pushing the mount value here
+    // floods Gemini during the opening greeting and derails it into the last
+    // primitive's content (e.g. presenting the final quiz instead of greeting).
+    if (!hasContextBaselineRef.current) {
+      hasContextBaselineRef.current = true;
+      lastContextSentRef.current = signature;
+      return;
+    }
+
+    if (signature && signature === lastContextSentRef.current) return;
+
     // Debounce updates to avoid spamming the server
     const timeoutId = setTimeout(() => {
+      lastContextSentRef.current = signature;
       contextRef.current.updateContext(primitiveData);
     }, 500);
 

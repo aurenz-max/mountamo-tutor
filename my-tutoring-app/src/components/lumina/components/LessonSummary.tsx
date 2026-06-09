@@ -119,6 +119,47 @@ interface LessonStats {
   totalTimeMs: number;
 }
 
+/** One row of the bottom "by activity type" rollup. */
+interface PrimitiveBreakdown {
+  primitiveType: string;
+  attempts: number;
+  avgScore: number;
+  successCount: number;
+}
+
+/**
+ * Aggregate the raw submissions by primitive type — the felt "what did I
+ * actually play with" view, independent of the curriculum mapping. Ordered by
+ * volume (most-practiced first); first-seen order breaks ties.
+ */
+function computePrimitiveBreakdown(results: PrimitiveEvaluationResult[]): PrimitiveBreakdown[] {
+  const order: string[] = [];
+  const byType = new Map<string, { scoreSum: number; attempts: number; successCount: number }>();
+  for (const r of results) {
+    const type = r.primitiveType;
+    let agg = byType.get(type);
+    if (!agg) {
+      agg = { scoreSum: 0, attempts: 0, successCount: 0 };
+      byType.set(type, agg);
+      order.push(type);
+    }
+    agg.scoreSum += r.score;
+    agg.attempts += 1;
+    if (r.success) agg.successCount += 1;
+  }
+  return order
+    .map((primitiveType) => {
+      const agg = byType.get(primitiveType)!;
+      return {
+        primitiveType,
+        attempts: agg.attempts,
+        avgScore: agg.attempts > 0 ? Math.round(agg.scoreSum / agg.attempts) : 0,
+        successCount: agg.successCount,
+      };
+    })
+    .sort((a, b) => b.attempts - a.attempts);
+}
+
 /** Roll the raw submissions up into the banner's headline stats. */
 function computeStats(results: PrimitiveEvaluationResult[]): LessonStats {
   const activities = results.length;
@@ -276,13 +317,28 @@ const SkillCard: React.FC<{ group: SkillGroup }> = ({ group }) => {
   );
 };
 
+const PrimitiveBreakdownRow: React.FC<{ row: PrimitiveBreakdown }> = ({ row }) => (
+  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02]">
+    <span className="text-sm text-slate-300 truncate">{humanize(row.primitiveType)}</span>
+    <div className="flex items-center gap-3 flex-shrink-0">
+      <span className="text-xs text-slate-500">
+        {row.attempts} {row.attempts === 1 ? 'activity' : 'activities'}
+      </span>
+      <span className={`text-sm font-mono font-bold ${accentText[scoreAccent(row.avgScore)]}`}>
+        {row.avgScore}
+      </span>
+    </div>
+  </div>
+);
+
 const LessonSummaryModal: React.FC<{
   stats: LessonStats;
   groups: Array<[string, SkillGroup[]]>;
+  breakdown: PrimitiveBreakdown[];
   engagement: { xpEarned: number; level: number; leveledUp: boolean; streak: number };
   topic?: string;
   onClose: () => void;
-}> = ({ stats, groups, engagement, topic, onClose }) => {
+}> = ({ stats, groups, breakdown, engagement, topic, onClose }) => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -402,6 +458,19 @@ const LessonSummaryModal: React.FC<{
             </div>
           )}
 
+          {/* By-activity rollup — the felt "what did I play with" view, grouped
+              by primitive independent of the curriculum mapping. */}
+          {breakdown.length > 0 && (
+            <div>
+              <LuminaSectionLabel>By activity</LuminaSectionLabel>
+              <div className="mt-2 space-y-1">
+                {breakdown.map((row) => (
+                  <PrimitiveBreakdownRow key={row.primitiveType} row={row} />
+                ))}
+              </div>
+            </div>
+          )}
+
           <LuminaButton tone="primary" className="w-full" onClick={onClose}>
             Done
           </LuminaButton>
@@ -429,6 +498,7 @@ export const LessonSummary: React.FC = () => {
   };
 
   const stats = useMemo(() => computeStats(results), [results]);
+  const breakdown = useMemo(() => computePrimitiveBreakdown(results), [results]);
   const groups = useMemo(() => {
     const resultByAttempt = new Map(results.map((r) => [r.attemptId, r]));
     return buildSkillGroups(log, resultByAttempt);
@@ -474,6 +544,7 @@ export const LessonSummary: React.FC = () => {
         <LessonSummaryModal
           stats={stats}
           groups={groups}
+          breakdown={breakdown}
           engagement={engagement}
           topic={context?.topic}
           onClose={() => setOpen(false)}

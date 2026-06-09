@@ -372,8 +372,14 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
   }, [blocks.length, evaluableChallenges.length, title, sendText]);
 
   // ── Send completion message ───────────────────────────────────
+  // Fire-once guard: without it this re-fires on every re-render once complete
+  // (phaseResults is a fresh array each render), and since each send makes the
+  // tutor respond -> transcription -> re-render, it becomes an infinite loop.
+  const sentCompleteRef = useRef(false);
   useEffect(() => {
+    if (sentCompleteRef.current) return;
     if (allChallengesComplete && hasEval && phaseResults.length > 0) {
+      sentCompleteRef.current = true;
       const phaseScoreStr = phaseResults
         .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
         .join(', ');
