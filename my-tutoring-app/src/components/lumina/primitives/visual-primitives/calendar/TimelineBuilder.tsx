@@ -84,7 +84,7 @@ const TimelineBuilder: React.FC<TimelineBuilderData> = (data) => {
   const {
     title,
     description,
-    challenges,
+    challenges = [],
     gradeBand,
     instanceId,
     skillId,

@@ -7,6 +7,7 @@ import type { CurriculumContext } from './CurriculumBrowser';
 import type { LessonBlock } from '@/lib/sessionPlanAPI';
 import type { GenerateOptions } from '../hooks/useExhibitSession';
 import { ManifestOrderRenderer } from './ManifestOrderRenderer';
+import { CuratorConsole } from './CuratorConsole';
 import { EvaluationProvider } from '../evaluation';
 import type { CompetencyUpdateSuggestion } from '../evaluation';
 import { EvaluationResultsIndicator } from './EvaluationResultsIndicator';
@@ -192,6 +193,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
           {showExitModal && (
             <LessonExitConfirmModal onCancel={cancelExit} onConfirm={confirmExit} />
           )}
+
+          {/* Live generative-UI tutor. Binds to the lesson session opened by
+              LessonAIBootstrap; surfaces primitive-aware next-step buttons. */}
+          <CuratorConsole />
         </LuminaAIProvider>
       </ExhibitProvider>
     </EvaluationProvider>

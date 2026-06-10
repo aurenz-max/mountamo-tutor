@@ -78,8 +78,13 @@ export function useLuminaAI({
 
     const ctx = contextRef.current;
 
-    // If a lesson session is active or pending, don't auto-connect
-    if (ctx.sessionMode === 'lesson') return;
+    // If a lesson session is active or pending, don't auto-connect.
+    // lessonModeRef is set SYNCHRONOUSLY by connectLesson (which runs in the
+    // LessonAIBootstrap effect, before primitive effects in the same commit),
+    // whereas sessionMode only flips to 'lesson' later inside the async
+    // socket-open callback. Checking the ref closes the race where primitives
+    // standalone-connect during that window and clobber the lesson socket.
+    if (ctx.sessionMode === 'lesson' || ctx.lessonModeRef.current) return;
 
     // Guard against duplicate connects
     if (hasConnectedRef.current || isConnectingRef.current) return;
@@ -234,9 +239,18 @@ export function useLuminaAI({
     }
   }, [primitiveType, exhibitId, topic, gradeLevel]);
 
-  // Wrapped sendText with implicit activation
+  // Wrapped sendText with implicit activation.
+  //
+  // Only STUDENT-INITIATED (non-silent) messages claim focus. Silent messages
+  // are background pedagogical triggers ([ACTIVITY_START], [PROBLEM_SHOWN], …)
+  // that EVERY primitive fires from a mount-time effect. Letting those call
+  // ensureActive() means that in a stacked lesson the last-mounted primitive
+  // (usually the bottom Knowledge Assessment) immediately switches "active" to
+  // itself and wins — overriding viewport tracking, with no scroll to correct
+  // it on a static intro. Focus is viewport-driven; only real student turns
+  // should override it.
   const sendText = useCallback((text: string, options?: { silent?: boolean }) => {
-    ensureActive();
+    if (!options?.silent) ensureActive();
     contextRef.current.sendText(text, options);
   }, [ensureActive]);
 

@@ -72,49 +72,75 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
     }, 500);
   }, []);
 
-  // Set up IntersectionObserver for viewport-based primitive tracking
+  // Viewport-based primitive tracking.
+  //
+  // We pick the primitive *nearest the focus line* (~30% down the viewport)
+  // rather than "the one currently inside a focus band". The band approach goes
+  // stale in two ways: (1) tall primitives may never satisfy a ratio threshold
+  // inside the band, and (2) regions with NO observed primitive — like the
+  // curator-brief intro/hook at the very top, which is rendered separately and
+  // not observed — leave the active primitive stuck on whatever was last in the
+  // band (e.g. a Knowledge Assessment at the bottom). Nearest-to-focus-line is
+  // computed on every scroll, so it always reflects what's actually on screen.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Observe primitive sections — trigger when element enters the upper-center
-    // of the viewport (rootMargin shrinks the observation zone)
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Find the entry that is most "in view" — prefer the one closest to viewport top
-        let bestEntry: IntersectionObserverEntry | null = null;
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          if (!bestEntry || entry.boundingClientRect.top < bestEntry.boundingClientRect.top) {
-            bestEntry = entry;
-          }
+    const pickNearest = () => {
+      const focusLine = window.innerHeight * 0.3;
+      const sections = container.querySelectorAll<HTMLElement>('[data-primitive-instance-id]');
+      let best: HTMLElement | null = null;
+      let bestDist = Infinity;
+      sections.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        // 0 when the focus line is inside the element, else distance to the
+        // nearest edge — so the on-screen primitive (or closest one) wins.
+        const dist =
+          r.top > focusLine ? r.top - focusLine : r.bottom < focusLine ? focusLine - r.bottom : 0;
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = el;
         }
+      });
 
-        if (!bestEntry) return;
+      if (!best) return;
+      const instanceId = (best as HTMLElement).dataset.primitiveInstanceId;
+      const componentId = (best as HTMLElement).dataset.primitiveComponentId;
+      if (!instanceId || !componentId) return;
 
-        const target = bestEntry.target as HTMLElement;
-        const instanceId = target.dataset.primitiveInstanceId;
-        const componentId = target.dataset.primitiveComponentId;
-        if (!instanceId || !componentId) return;
+      const component = orderedComponentsRef.current.find((c) => c.instanceId === instanceId);
+      debouncedSwitch(componentId, instanceId, component?.data);
+    };
 
-        // Find the component data from our ordered list
-        const component = orderedComponentsRef.current.find(c => c.instanceId === instanceId);
-        debouncedSwitch(componentId, instanceId, component?.data);
-      },
-      {
-        // Focus zone: ignore the top 20% and bottom 50% of the viewport
-        // so only elements in the upper-center area trigger switches
-        rootMargin: '-20% 0px -50% 0px',
-        threshold: 0.1,
-      }
-    );
-
-    // Observe all primitive sections within the container
+    // IntersectionObserver catches structural/layout changes (mount, lazy media
+    // resizing section heights); the scroll listener handles continuous tracking.
+    const observer = new IntersectionObserver(() => pickNearest(), {
+      threshold: [0, 0.25, 0.5, 1],
+    });
     const sections = container.querySelectorAll('[data-primitive-instance-id]');
-    sections.forEach(section => observer.observe(section));
+    sections.forEach((section) => observer.observe(section));
+
+    // rAF-throttled scroll/resize so returning to a no-primitive region updates
+    // the active primitive instead of leaving it stale.
+    let rafId = 0;
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        pickNearest();
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+
+    // Initial pick once layout settles.
+    pickNearest();
 
     return () => {
       observer.disconnect();
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
       clearTimeout(switchTimerRef.current);
     };
   }, [orderedComponents, debouncedSwitch]);

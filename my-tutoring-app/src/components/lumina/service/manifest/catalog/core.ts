@@ -228,6 +228,28 @@ export const CORE_CATALOG: ComponentDefinition[] = [
             + 'Keep it to 2-3 encouraging sentences.',
         },
       ],
+      studentPrompts: [
+        {
+          kind: 'explain',
+          label: 'Explain {{selectedConceptName}}',
+          prompt: 'Can you explain "{{selectedConceptName}}" to me in a simple way?',
+        },
+        { kind: 'hint', label: "I'm stuck on the self-check", hintLevel: 1 },
+        { kind: 'hint', label: 'Give me a bigger hint', hintLevel: 2 },
+        {
+          kind: 'check',
+          label: 'How does this fit the goal?',
+          prompt:
+            'How does {{selectedConceptName}} connect to the objective "{{objectiveText}}"?',
+        },
+        {
+          kind: 'advance',
+          label: 'What should I explore next?',
+          prompt:
+            "I've explored {{completedCount}} of {{totalConcepts}} concepts. Which one should I look at next?",
+          showWhen: { key: 'allCompleted', equals: false },
+        },
+      ],
     },
   },
   {

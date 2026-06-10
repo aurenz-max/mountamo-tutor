@@ -423,6 +423,38 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
           instruction: 'When [ALL_COMPLETE], summarize Pascal\'s Law and how hydraulic machines use it to multiply force. Connect to real-world hydraulic systems.',
         },
       ],
+      studentPrompts: [
+        // Self-grounding: each prompt names the live on-screen situation so the
+        // tutor answers about THIS hydraulic system, not an earlier activity.
+        {
+          kind: 'explain',
+          label: "Why won't it lift the {{loadWeight}}kg load?",
+          prompt:
+            'The {{loadWeight}}kg load is stuck — output force is only {{outputForce}}N. Why is that not enough, and how do I fix it?',
+          showWhen: { key: 'isLifting', equals: false },
+        },
+        {
+          kind: 'explain',
+          label: 'How is it lifting {{loadWeight}}kg?',
+          prompt:
+            'How is this {{scenarioName}} lifting the {{loadWeight}}kg load with only {{inputForce}}N of input force?',
+          showWhen: { key: 'isLifting', equals: true },
+        },
+        {
+          kind: 'explain',
+          label: 'What does {{forceRatio}}x force mean?',
+          prompt:
+            'What does the {{forceRatio}}x force multiplier mean in this {{scenarioName}}, and where does it come from?',
+        },
+        { kind: 'hint', label: 'Give me a hint', hintLevel: 1 },
+        { kind: 'hint', label: "Explain Pascal's Law", hintLevel: 2 },
+        {
+          kind: 'check',
+          label: 'What should I try next?',
+          prompt:
+            "I've explored these zones: {{zonesExplored}}. Challenge progress: {{challengeProgress}}. What should I try next?",
+        },
+      ],
     },
     supportsEvaluation: true,
   },

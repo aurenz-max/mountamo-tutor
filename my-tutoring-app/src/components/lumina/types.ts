@@ -1433,6 +1433,45 @@ export interface TutoringScaffold {
     /** Instruction text. Supports {{key}} template variables. */
     instruction: string;
   }>;
+
+  /**
+   * Curated, tappable "next step" buttons surfaced by the CuratorConsole.
+   * These are the centerpiece of the live generative-UI tutoring surface:
+   * authored per-primitive (so they stay pedagogically sound), but rendered
+   * live — labels/prompts interpolate {{key}} from primitive_data, and
+   * `showWhen` gates visibility on live state — so they feel generative
+   * without free LLM generation. Optional; omit for primitives that only
+   * need passive scaffolding.
+   */
+  studentPrompts?: StudentPrompt[];
+}
+
+/** Routing + styling category for a {@link StudentPrompt}. */
+export type StudentPromptKind = 'hint' | 'explain' | 'check' | 'advance';
+
+/**
+ * A single curated next-step button in the CuratorConsole.
+ * `kind: 'hint'` routes to `requestHint(hintLevel)`; all other kinds send
+ * `prompt` (falling back to `label`) as a student-voiced message.
+ */
+export interface StudentPrompt {
+  /** Button text. Supports {{key}} interpolation from primitive_data. */
+  label: string;
+  /**
+   * Text sent to the tutor on tap (student-voiced, non-silent).
+   * Supports {{key}} interpolation. Omit for `kind: 'hint'` (uses hintLevel).
+   */
+  prompt?: string;
+  /** Visual + routing category. */
+  kind: StudentPromptKind;
+  /** For `kind: 'hint'` only — which scaffolding level to request. Defaults to 1. */
+  hintLevel?: 1 | 2 | 3;
+  /**
+   * Optional contextual visibility gate. The button only renders when
+   * primitive_data[key] is truthy, or — when `equals` is provided — strictly
+   * equals it. Lets buttons appear/disappear as the student's state changes.
+   */
+  showWhen?: { key: string; equals?: unknown };
 }
 
 /**

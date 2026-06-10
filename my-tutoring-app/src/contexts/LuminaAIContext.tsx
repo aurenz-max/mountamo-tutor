@@ -85,7 +85,14 @@ interface LuminaAIContextType {
   disconnect: () => void;
   isConnected: boolean;
   sessionMode: SessionMode;
+  /** Synchronous flag (ref) that a lesson session owns this provider. Primitives
+   *  read it to suppress their standalone auto-connect and avoid racing it. */
+  lessonModeRef: React.MutableRefObject<boolean>;
   activePrimitiveId: string | null;
+  /** Catalog id (component type) of the active primitive — used to look up its tutoring scaffold. */
+  activePrimitiveType: string | null;
+  /** Live primitive_data for the active primitive — drives CuratorConsole button interpolation. */
+  activePrimitiveData: Record<string, any> | null;
 
   // AI interaction
   requestHint: (level: 1 | 2 | 3, currentState?: any) => void;
@@ -129,6 +136,13 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const socketRef = useRef<WebSocket | null>(null);
   const audioServiceRef = useRef<AudioCaptureService | null>(null);
   const currentPrimitiveRef = useRef<PrimitiveContext | null>(null);
+  // Synchronous flag: a lesson session is being (or has been) established.
+  // sessionMode state only flips to 'lesson' inside the async socket-open
+  // callback, so during the initial mount it's still 'idle' — long enough for
+  // every primitive's standalone auto-connect to race the lesson and clobber
+  // the shared socket (last primitive wins → session stuck in standalone on the
+  // bottom primitive). Primitives read this ref to stand down immediately.
+  const lessonModeRef = useRef(false);
   const sessionStartTimeRef = useRef<number>(0);
 
   // Use the proven queued audio playback hook
@@ -151,6 +165,11 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [sessionMode, setSessionMode] = useState<SessionMode>('idle');
   const [activePrimitiveId, setActivePrimitiveId] = useState<string | null>(null);
   const activePrimitiveIdRef = useRef<string | null>(null);
+  // Active primitive type + live data, mirrored for the CuratorConsole's
+  // generative next-step buttons. Kept in sync with setActivePrimitiveId calls
+  // and refreshed by updateContext as the student interacts.
+  const [activePrimitiveType, setActivePrimitiveType] = useState<string | null>(null);
+  const [activePrimitiveData, setActivePrimitiveData] = useState<Record<string, any> | null>(null);
 
   // Signature of the last context update actually forwarded to Gemini. Used to
   // drop referentially-churned-but-value-identical updates (see updateContext).
@@ -279,6 +298,9 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           console.log(`Lumina AI: switched to ${message.primitive_type} (${message.instance_id})`);
           activePrimitiveIdRef.current = message.instance_id;
           setActivePrimitiveId(message.instance_id);
+          // Server confirms only type + id; live data comes from our optimistic mirror.
+          setActivePrimitiveType(message.primitive_type ?? null);
+          setActivePrimitiveData(currentPrimitiveRef.current?.primitive_data ?? null);
         } else if (messageType === 'auth_success' || messageType === 'session_ready') {
           console.log('Lumina AI session ready:', message.message);
         }
@@ -291,8 +313,11 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.log('Lumina AI WebSocket closed:', event.code, event.reason);
       setIsConnected(false);
       setSessionMode('idle');
+      lessonModeRef.current = false;
       activePrimitiveIdRef.current = null;
       setActivePrimitiveId(null);
+      setActivePrimitiveType(null);
+      setActivePrimitiveData(null);
 
       if (sessionStartTimeRef.current > 0) {
         const totalTime = Date.now() - sessionStartTimeRef.current;
@@ -406,6 +431,8 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setSessionMode('standalone');
           activePrimitiveIdRef.current = primitiveContext.instance_id;
           setActivePrimitiveId(primitiveContext.instance_id);
+          setActivePrimitiveType(primitiveContext.primitive_type);
+          setActivePrimitiveData(primitiveContext.primitive_data ?? null);
           console.log('Lumina AI authenticated (standalone)');
         } catch (error) {
           console.error('Error authenticating Lumina AI:', error);
@@ -423,6 +450,10 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Lesson connect — one WebSocket for the entire exhibit
   const connectLesson = useCallback(async (info: LessonConnectionInfo) => {
     console.log(`[LuminaAI] connectLesson() called for exhibit ${info.exhibit_id}`);
+
+    // Claim lesson mode synchronously (before any await) so primitives mounting
+    // in the same commit don't standalone-connect and clobber this session.
+    lessonModeRef.current = true;
 
     closeExistingSocket();
 
@@ -484,6 +515,8 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setSessionMode('lesson');
           activePrimitiveIdRef.current = info.firstPrimitive.instance_id;
           setActivePrimitiveId(info.firstPrimitive.instance_id);
+          setActivePrimitiveType(info.firstPrimitive.primitive_type);
+          setActivePrimitiveData(info.firstPrimitive.primitive_data ?? null);
           console.log('Lumina AI authenticated (lesson mode)');
         } catch (error) {
           console.error('Error authenticating Lumina AI (lesson):', error);
@@ -529,6 +562,8 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Optimistically set active — server will confirm via primitive_switched
     activePrimitiveIdRef.current = primitiveContext.instance_id;
     setActivePrimitiveId(primitiveContext.instance_id);
+    setActivePrimitiveType(primitiveContext.primitive_type);
+    setActivePrimitiveData(primitiveContext.primitive_data ?? null);
   }, []);
 
   const disconnect = useCallback(() => {
@@ -546,6 +581,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     setIsConnected(false);
     setSessionMode('idle');
+    lessonModeRef.current = false;
     activePrimitiveIdRef.current = null;
     setActivePrimitiveId(null);
     setConversation([]);
@@ -686,6 +722,13 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     lastContextSigRef.current = signature;
 
+    // Surface the merged live data to the CuratorConsole so its next-step button
+    // labels/visibility re-interpolate. Only runs when state genuinely changed
+    // (past the dedup guard above), so it adds no render churn on idle re-renders.
+    if (currentPrimitiveRef.current) {
+      setActivePrimitiveData({ ...currentPrimitiveRef.current.primitive_data });
+    }
+
     socketRef.current.send(JSON.stringify({
       type: 'update_context',
       primitive_data: dynamicState,
@@ -725,7 +768,10 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     disconnect,
     isConnected,
     sessionMode,
+    lessonModeRef,
     activePrimitiveId,
+    activePrimitiveType,
+    activePrimitiveData,
     requestHint,
     sendVoice,
     sendText,

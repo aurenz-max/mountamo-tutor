@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { GenerativeBackground } from './primitives/GenerativeBackground';
 import { DetailDrawer } from './primitives/DetailDrawer';
-import { LiveAssistant } from './service/LiveAssistant';
 import { GameState, ExhibitManifest } from './types';
 import { useExhibitSession } from './hooks/useExhibitSession';
 import type { GradeLevel } from './components/GradeLevelSelector';
@@ -880,12 +879,8 @@ export default function App() {
 
       </main>
 
-      {/* Voice Curator - Available during exhibit viewing */}
-      {phase === GameState.PLAYING && exhibit && (
-        <LiveAssistant
-            exhibitData={exhibit}
-        />
-      )}
+      {/* The Curator now lives inside LessonScreen (CuratorConsole), bound to the
+          scaffold-aware lesson session rather than a separate browser-direct one. */}
     </div>
   );
 }

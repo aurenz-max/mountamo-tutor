@@ -994,6 +994,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'Do not re-introduce the balance metaphor each time — once is enough.',
         },
       ],
+      studentPrompts: [
+        {
+          kind: 'explain',
+          label: 'What do I do with {{currentEquation}}?',
+          prompt: "I'm looking at {{currentEquation}}. What should my first step be?",
+        },
+        { kind: 'hint', label: 'Give me a nudge', hintLevel: 1 },
+        { kind: 'hint', label: 'Show me the next step', hintLevel: 2 },
+        {
+          kind: 'check',
+          label: 'Did I keep it balanced?',
+          prompt: "Did I keep both sides balanced? I'm on step {{stepCount}}.",
+        },
+        {
+          kind: 'advance',
+          label: 'Next equation',
+          prompt:
+            "I solved it! Ready for equation {{currentChallengeIndex}} of {{totalChallenges}}.",
+          showWhen: { key: 'isSolved' },
+        },
+      ],
     },
     supportsEvaluation: true,
     evalModes: [

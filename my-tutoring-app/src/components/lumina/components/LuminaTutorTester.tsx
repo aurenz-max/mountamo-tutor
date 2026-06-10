@@ -6,6 +6,7 @@ import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext
 import { EvaluationProvider } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import type { ComponentId, TutoringScaffold } from '../types';
+import { interpolateTemplate } from '../utils/interpolateTemplate';
 import { Bot, Mic, MicOff, Send, Loader2, CheckCircle, XCircle, Info } from 'lucide-react';
 
 // ============================================================================
@@ -83,13 +84,8 @@ const ScaffoldInspector: React.FC<{
     );
   }
 
-  // Simulate template interpolation
-  const interpolate = (template: string) => {
-    return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
-      const value = mockData[key];
-      return value !== undefined ? String(value) : '(not set)';
-    });
-  };
+  // Simulate template interpolation (shared with the live CuratorConsole + backend)
+  const interpolate = (template: string) => interpolateTemplate(template, mockData);
 
   return (
     <div className="space-y-3">
