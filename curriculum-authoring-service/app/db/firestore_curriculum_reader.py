@@ -479,23 +479,43 @@ class FirestoreCurriculumReader:
 
     # ==================== VERSION READS (flat) ====================
 
-    async def get_versions(self, subject_id: str) -> List[Dict[str, Any]]:
-        query = self._c["versions"].where("subject_id", "==", subject_id)
-        docs = [doc.to_dict() for doc in query.stream()]
-        docs.sort(key=lambda d: d.get("version_number", 0), reverse=True)
-        return docs
+    async def get_versions(self, subject_id: str, grade: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List versions for a subject.
 
-    async def get_active_version(self, subject_id: str) -> Optional[Dict[str, Any]]:
-        query = self._c["versions"].where("subject_id", "==", subject_id).where("is_active", "==", True).limit(1)
-        docs = list(query.stream())
-        return docs[0].to_dict() if docs else None
+        When ``grade`` is provided, returns only that grade's versions so
+        shared-id subjects keep independent histories. Falls back to the
+        subject-only result set if no grade-stamped docs exist yet (legacy
+        version docs written before versions were grade-scoped).
+        """
+        all_docs = [doc.to_dict() for doc in self._c["versions"].where("subject_id", "==", subject_id).stream()]
+        if grade:
+            scoped = [d for d in all_docs if d.get("grade") == grade]
+            # Only narrow to the grade bucket if grade-stamped docs exist;
+            # otherwise fall back to legacy (un-stamped) docs unchanged.
+            if scoped:
+                all_docs = scoped
+        all_docs.sort(key=lambda d: d.get("version_number", 0), reverse=True)
+        return all_docs
+
+    async def get_active_version(self, subject_id: str, grade: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        query = self._c["versions"].where("subject_id", "==", subject_id).where("is_active", "==", True)
+        docs = [doc.to_dict() for doc in query.stream()]
+        if grade:
+            scoped = [d for d in docs if d.get("grade") == grade]
+            if scoped:
+                return scoped[0]
+            # If any doc IS grade-stamped (just not this grade), do NOT return
+            # another grade's active version — that is the grade-blindness bug.
+            if any(d.get("grade") for d in docs):
+                return None
+        return docs[0] if docs else None
 
     async def get_version(self, version_id: str) -> Optional[Dict[str, Any]]:
         doc = self._c["versions"].document(version_id).get()
         return doc.to_dict() if doc.exists else None
 
-    async def get_max_version_number(self, subject_id: str) -> int:
-        versions = await self.get_versions(subject_id)
+    async def get_max_version_number(self, subject_id: str, grade: Optional[str] = None) -> int:
+        versions = await self.get_versions(subject_id, grade=grade)
         return max((v.get("version_number", 0) for v in versions), default=0)
 
     # ==================== PRIMITIVE READS (flat) ====================

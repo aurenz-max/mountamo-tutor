@@ -266,7 +266,7 @@ class ScopedSuggestionService:
         from app.models.edges import CurriculumEdgeCreate
 
         version_id = await version_control.get_or_create_active_version(
-            request.subject_id, "agent"
+            request.subject_id, "agent", grade=request.grade
         )
 
         edge_ids: List[str] = []

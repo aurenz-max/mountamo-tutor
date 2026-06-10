@@ -40,9 +40,9 @@ class GraphCacheManager:
         version_type = "draft" if include_drafts else "published"
 
         if not force_refresh:
-            cached = await self._get_from_cache(subject_id, version_type)
+            cached = await self._get_from_cache(subject_id, version_type, grade)
             if cached:
-                logger.info(f"✅ Returning cached graph for {subject_id} ({version_type})")
+                logger.info(f"✅ Returning cached graph for {subject_id} ({version_type}, grade={grade})")
                 return cached
 
         logger.info(f"🔄 Generating fresh graph for {subject_id} ({version_type})")
@@ -53,11 +53,12 @@ class GraphCacheManager:
     async def _get_from_cache(
         self,
         subject_id: str,
-        version_type: str
+        version_type: str,
+        grade: Optional[str] = None,
     ) -> Optional[PrerequisiteGraph]:
-        """Retrieve graph from Firestore cache"""
+        """Retrieve graph from Firestore cache (grade-scoped when given)"""
         try:
-            doc = await firestore_graph_service.get_graph_document(subject_id, version_type)
+            doc = await firestore_graph_service.get_graph_document(subject_id, version_type, grade=grade)
 
             if doc:
                 graph_data = doc.get("graph", {})
@@ -123,7 +124,8 @@ class GraphCacheManager:
                     "nodes": graph.nodes,
                     "edges": graph.edges
                 },
-                metadata=metadata
+                metadata=metadata,
+                grade=grade,
             )
 
             logger.info(f"✅ Generated and cached graph for {subject_id}")
@@ -144,7 +146,8 @@ class GraphCacheManager:
 
         Args:
             subject_id: Subject identifier
-            grade: Grade level (accepted for API consistency, not used in cache key)
+            grade: Grade level — scopes invalidation to one grade's cache docs
+                   so sibling grades' caches survive. None invalidates all grades.
             version_type: Optional - "draft" or "published". If None, invalidates both.
 
         Returns:
@@ -154,7 +157,8 @@ class GraphCacheManager:
         try:
             deleted_count = await firestore_graph_service.delete_graph_documents(
                 subject_id,
-                version_type
+                version_type,
+                grade=grade,
             )
 
             logger.info(f"🗑️ Invalidated {deleted_count} cached graph(s) for {subject_id}")
@@ -186,7 +190,7 @@ class GraphCacheManager:
 
         logger.info(f"🔄 Force regenerating graph for {subject_id} ({version_type})")
 
-        await self.invalidate_cache(subject_id, version_type=version_type)
+        await self.invalidate_cache(subject_id, grade=grade, version_type=version_type)
 
         graph = await self._generate_and_cache(subject_id, grade, include_drafts, version_type)
 
@@ -209,7 +213,7 @@ class GraphCacheManager:
         """
         logger.info(f"🔄 Regenerating all graph versions for {subject_id}")
 
-        await self.invalidate_cache(subject_id)
+        await self.invalidate_cache(subject_id, grade=grade)
 
         published_graph = await self._generate_and_cache(
             subject_id,
@@ -243,7 +247,7 @@ class GraphCacheManager:
         Returns information about cached versions, timestamps, and metadata
         """
         try:
-            status = await firestore_graph_service.get_graph_status(subject_id)
+            status = await firestore_graph_service.get_graph_status(subject_id, grade=grade)
             return status
 
         except Exception as e:

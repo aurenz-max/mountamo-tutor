@@ -68,17 +68,15 @@ class DraftCurriculumService:
     def _ref(self, grade: str, subject_id: str):
         """Get doc reference for a draft subject.
 
-        TODO: Normalise grade to long-form (e.g. "K" → "Kindergarten") before
-        building the Firestore path.  The reader already does this via
-        _grade_variants(), but writes use the raw string — so ``grade="K"``
-        silently creates a *new* doc at ``curriculum_drafts/K/…`` instead of
-        updating the existing ``curriculum_drafts/Kindergarten/…`` doc.
-        Fix: call ``normalise_grade(grade)`` here (from app.models.grades).
+        Normalises grade to its canonical long form (e.g. "K" → "Kindergarten")
+        before building the Firestore path, so a write with ``grade="K"`` lands
+        on the SAME doc the reader resolves via _grade_variants() rather than
+        silently creating a divergent ``curriculum_drafts/K/…`` bucket.
         """
         return (
             self._client
             .collection(self.COLLECTION)
-            .document(grade)
+            .document(normalise_grade(grade))
             .collection("subjects")
             .document(subject_id)
         )
@@ -90,12 +88,13 @@ class DraftCurriculumService:
 
     async def save_draft(self, grade: str, subject_id: str, data: Dict[str, Any]) -> None:
         """Write the full draft document (upsert)."""
-        # Ensure grade doc exists
-        self._client.collection(self.COLLECTION).document(grade).set(
-            {"grade": grade}, merge=True
+        canonical = normalise_grade(grade)
+        # Ensure grade doc exists (canonical key so it matches _ref's path)
+        self._client.collection(self.COLLECTION).document(canonical).set(
+            {"grade": canonical}, merge=True
         )
         self._ref(grade, subject_id).set(data)
-        logger.info(f"Saved draft for {subject_id} (grade={grade})")
+        logger.info(f"Saved draft for {subject_id} (grade={canonical})")
 
     async def delete_draft(self, grade: str, subject_id: str) -> None:
         """Delete a draft document."""
@@ -158,7 +157,7 @@ class DraftCurriculumService:
         doc = {
             "subject_id": subject_id,
             "subject_name": subject_name,
-            "grade": grade,
+            "grade": normalise_grade(grade),
             "version_id": version_id,
             "version_number": 1,
             "created_at": now,

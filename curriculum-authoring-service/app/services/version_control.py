@@ -29,17 +29,25 @@ class VersionControl:
     async def create_version(
         self,
         version_create: VersionCreate,
-        user_id: str
+        user_id: str,
+        grade: Optional[str] = None,
     ) -> Version:
-        """Create a new version record."""
+        """Create a new version record.
+
+        ``grade`` scopes the version to a grade bucket so shared-id subjects
+        keep independent histories. Falls back to ``version_create.grade`` and
+        then to a subject-level (legacy) version when omitted.
+        """
         version_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
-        max_version = await firestore_reader.get_max_version_number(version_create.subject_id)
+        grade = grade or version_create.grade
+        max_version = await firestore_reader.get_max_version_number(version_create.subject_id, grade=grade)
 
         version_data = {
             "version_id": version_id,
             "subject_id": version_create.subject_id,
+            "grade": grade,
             "version_number": max_version + 1,
             "description": version_create.description or settings.DEFAULT_VERSION_DESCRIPTION,
             "is_active": False,
@@ -55,13 +63,17 @@ class VersionControl:
         return Version(**version_data)
 
     async def get_active_version(self, subject_id: str, grade: Optional[str] = None) -> Optional[Version]:
-        """Get the currently active version for a subject."""
-        row = await firestore_reader.get_active_version(subject_id)
+        """Get the currently active version for a subject (grade-scoped when given)."""
+        row = await firestore_reader.get_active_version(subject_id, grade=grade)
         return Version(**row) if row else None
 
-    async def get_or_create_active_version(self, subject_id: str, user_id: str) -> str:
-        """Get active version_id for a subject, or create one if none exists."""
-        active_version = await self.get_active_version(subject_id)
+    async def get_or_create_active_version(self, subject_id: str, user_id: str, grade: Optional[str] = None) -> str:
+        """Get active version_id for a subject, or create one if none exists.
+
+        ``grade`` disambiguates shared-id subjects so each grade gets its own
+        active version rather than sharing one global counter.
+        """
+        active_version = await self.get_active_version(subject_id, grade=grade)
 
         if active_version:
             return active_version.version_id
@@ -73,6 +85,7 @@ class VersionControl:
         version_data = {
             "version_id": version_id,
             "subject_id": subject_id,
+            "grade": grade,
             "version_number": 1,
             "description": f"Initial {subject_id} curriculum",
             "is_active": True,
@@ -88,8 +101,8 @@ class VersionControl:
         return version_id
 
     async def get_version_history(self, subject_id: str, grade: Optional[str] = None) -> List[Version]:
-        """Get all versions for a subject."""
-        rows = await firestore_reader.get_versions(subject_id)
+        """Get all versions for a subject (grade-scoped when given)."""
+        rows = await firestore_reader.get_versions(subject_id, grade=grade)
         return [Version(**row) for row in rows]
 
     async def get_draft_changes(self, subject_id: str, grade: Optional[str] = None) -> DraftSummary:
@@ -97,7 +110,7 @@ class VersionControl:
         changes = []
         validation_errors = []
 
-        active_version = await self.get_active_version(subject_id)
+        active_version = await self.get_active_version(subject_id, grade=grade)
         active_version_id = active_version.version_id if active_version else None
 
         if not grade:
@@ -163,16 +176,18 @@ class VersionControl:
         if not draft_summary.can_publish:
             raise ValueError(f"Cannot publish: {draft_summary.validation_errors}")
 
-        # Get current active version and create new one
-        active_ver = await firestore_reader.get_active_version(publish_request.subject_id)
+        # Get current active version and create new one (grade-scoped so a
+        # publish in one grade does not deactivate another grade's version).
+        active_ver = await firestore_reader.get_active_version(publish_request.subject_id, grade=grade)
         old_version_id = active_ver["version_id"] if active_ver else None
 
         version_id = str(uuid.uuid4())
-        max_version = await firestore_reader.get_max_version_number(publish_request.subject_id)
+        max_version = await firestore_reader.get_max_version_number(publish_request.subject_id, grade=grade)
 
         new_version = Version(
             version_id=version_id,
             subject_id=publish_request.subject_id,
+            grade=grade,
             version_number=max_version + 1,
             description=publish_request.version_description or settings.DEFAULT_VERSION_DESCRIPTION,
             is_active=True,

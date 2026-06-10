@@ -702,6 +702,7 @@ Please address the feedback and generate an improved version."""
         version = await version_control.create_version(
             VersionCreate(
                 subject_id=subject_id,
+                grade=grade,
                 description=f"Initial authoring of {subject_name} (Grade {grade})",
             ),
             user_id="authoring-service",

@@ -46,15 +46,18 @@ async def generate_suggestions(
     subject_id: str,
     request: Request,
     max_suggestions: int = 0,
+    grade: Optional[str] = None,
 ):
     """Trigger suggestion generation (Gemini-powered analysis).
 
     This is an expensive operation — calls Gemini embeddings + LLM.
     Results are stored in Firestore and returned.
+
+    Pass `?grade=` to disambiguate subjects whose id is shared across grades.
     """
     agent = _get_agent(request)
     try:
-        return await agent.suggest_connections(subject_id, max_suggestions)
+        return await agent.suggest_connections(subject_id, max_suggestions, grade=grade)
     except Exception as e:
         logger.error(f"Suggestion generation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -104,12 +107,15 @@ async def bulk_accept_all(subject_id: str, request: Request, grade: Optional[str
 
 @router.post("/{subject_id}/suggestions/{suggestion_id}/accept")
 async def accept_suggestion(
-    subject_id: str, suggestion_id: str, request: Request
+    subject_id: str, suggestion_id: str, request: Request, grade: Optional[str] = None
 ):
-    """Accept a suggestion: creates a draft edge in the knowledge graph."""
+    """Accept a suggestion: creates a draft edge in the knowledge graph.
+
+    Pass `?grade=` to disambiguate subjects whose id is shared across grades.
+    """
     agent = _get_agent(request)
     try:
-        edge = await agent.accept_suggestion(subject_id, suggestion_id)
+        edge = await agent.accept_suggestion(subject_id, suggestion_id, grade=grade)
         return {
             "message": "Suggestion accepted — draft edge created",
             "edge": {
@@ -126,11 +132,14 @@ async def accept_suggestion(
 
 @router.post("/{subject_id}/suggestions/{suggestion_id}/reject")
 async def reject_suggestion(
-    subject_id: str, suggestion_id: str, request: Request
+    subject_id: str, suggestion_id: str, request: Request, grade: Optional[str] = None
 ):
-    """Reject a suggestion."""
+    """Reject a suggestion.
+
+    Pass `?grade=` to disambiguate subjects whose id is shared across grades.
+    """
     agent = _get_agent(request)
-    await agent.reject_suggestion(subject_id, suggestion_id)
+    await agent.reject_suggestion(subject_id, suggestion_id, grade=grade)
     return {"message": "Suggestion rejected"}
 
 
@@ -139,6 +148,7 @@ async def reclassify_suggestions(
     subject_id: str,
     request: Request,
     dry_run: bool = False,
+    grade: Optional[str] = None,
 ):
     """Reclassify pending suggestions using tiered promotion rules.
 
@@ -168,7 +178,7 @@ async def reclassify_suggestions(
         }}
 
     try:
-        result = await agent.reclassify_suggestions(subject_id, rules)
+        result = await agent.reclassify_suggestions(subject_id, rules, grade=grade)
         return result
     except Exception as e:
         logger.error(f"Reclassification failed: {e}")
@@ -176,7 +186,10 @@ async def reclassify_suggestions(
 
 
 @router.get("/{subject_id}/impact-preview", response_model=SuggestionImpact)
-async def preview_impact(subject_id: str, request: Request):
-    """Preview cumulative impact if all pending suggestions are accepted."""
+async def preview_impact(subject_id: str, request: Request, grade: Optional[str] = None):
+    """Preview cumulative impact if all pending suggestions are accepted.
+
+    Pass `?grade=` to disambiguate subjects whose id is shared across grades.
+    """
     agent = _get_agent(request)
-    return await agent.preview_all_pending(subject_id)
+    return await agent.preview_all_pending(subject_id, grade=grade)

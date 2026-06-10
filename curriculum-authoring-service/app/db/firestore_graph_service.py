@@ -88,21 +88,33 @@ class CurriculumFirestore:
     # CURRICULUM GRAPH OPERATIONS
     # ============================================================================
 
+    @staticmethod
+    def _graph_doc_id(subject_id: str, grade: Optional[str], version_id: str, version_type: str) -> str:
+        """Build the cache doc id. Grade is part of the identity key so
+        shared-id subjects (e.g. MATHEMATICS @ 1/2/3) get distinct cache docs
+        instead of overwriting each other. Legacy callers (grade=None) keep the
+        old 3-part id for backward compatibility."""
+        if grade:
+            return f"{subject_id}_{grade}_{version_id}_{version_type}"
+        return f"{subject_id}_{version_id}_{version_type}"
+
     async def create_graph_document(
         self,
         subject_id: str,
         version_id: str,
         version_type: str,
         graph_data: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create or update a curriculum graph document"""
         try:
-            doc_id = f"{subject_id}_{version_id}_{version_type}"
+            doc_id = self._graph_doc_id(subject_id, grade, version_id, version_type)
 
             document = {
                 "id": doc_id,
                 "subject_id": subject_id,
+                "grade": grade,
                 "version_id": version_id,
                 "version_type": version_type,  # "published" or "draft"
                 "graph": graph_data,
@@ -130,19 +142,30 @@ class CurriculumFirestore:
         self,
         subject_id: str,
         version_type: str = "published",
-        version_id: Optional[str] = None
+        version_id: Optional[str] = None,
+        grade: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Retrieve a curriculum graph document"""
+        """Retrieve a curriculum graph document.
+
+        When ``grade`` is provided, only that grade's cache doc is returned —
+        a grade-3 request never receives a grade-2 (or grade-blind) cached graph.
+        Grade is filtered in Python to avoid requiring a new composite index.
+        """
         try:
             # If no version_id specified, get the latest for this type
             if not version_id:
                 query = self.curriculum_graphs \
                     .where('subject_id', '==', subject_id) \
                     .where('version_type', '==', version_type) \
-                    .order_by('generated_at', direction=firestore.Query.DESCENDING) \
-                    .limit(1)
+                    .order_by('generated_at', direction=firestore.Query.DESCENDING)
 
                 docs = list(query.stream())
+
+                # Grade-scope: only accept a doc whose grade matches the request.
+                # Legacy docs (grade field absent/None) are NOT served to a
+                # grade-qualified request — that was the grade-blind cache bug.
+                if grade is not None:
+                    docs = [d for d in docs if d.to_dict().get('grade') == grade]
 
                 if docs:
                     doc = docs[0]
@@ -152,14 +175,14 @@ class CurriculumFirestore:
                     doc_data["last_accessed"] = datetime.utcnow().isoformat()
                     doc.reference.update({"last_accessed": doc_data["last_accessed"]})
 
-                    logger.info(f"✅ Retrieved graph for {subject_id} (type: {version_type})")
+                    logger.info(f"✅ Retrieved graph for {subject_id} (type: {version_type}, grade: {grade})")
                     return doc_data
                 else:
-                    logger.info(f"ℹ️ No graph found for {subject_id} (type: {version_type})")
+                    logger.info(f"ℹ️ No graph found for {subject_id} (type: {version_type}, grade: {grade})")
                     return None
             else:
                 # Get specific version
-                doc_id = f"{subject_id}_{version_id}_{version_type}"
+                doc_id = self._graph_doc_id(subject_id, grade, version_id, version_type)
                 doc_ref = self.curriculum_graphs.document(doc_id)
                 doc = doc_ref.get()
 
@@ -184,9 +207,14 @@ class CurriculumFirestore:
     async def delete_graph_documents(
         self,
         subject_id: str,
-        version_type: Optional[str] = None
+        version_type: Optional[str] = None,
+        grade: Optional[str] = None,
     ) -> int:
-        """Delete graph documents for a subject (all or specific version type)"""
+        """Delete graph documents for a subject (all or specific version type).
+
+        When ``grade`` is provided, only that grade's cache docs are deleted so
+        invalidating one grade does not wipe a sibling grade's cache.
+        """
         try:
             # Build query for documents to delete
             query = self.curriculum_graphs.where('subject_id', '==', subject_id)
@@ -201,6 +229,8 @@ class CurriculumFirestore:
             batch = self.client.batch()
 
             for doc in docs:
+                if grade is not None and doc.to_dict().get('grade') != grade:
+                    continue
                 batch.delete(doc.reference)
                 deleted_count += 1
 
@@ -217,9 +247,10 @@ class CurriculumFirestore:
 
     async def get_graph_status(
         self,
-        subject_id: str
+        subject_id: str,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Get cache status information for a subject"""
+        """Get cache status information for a subject (grade-scoped when given)."""
         try:
             query = self.curriculum_graphs.where('subject_id', '==', subject_id)
             docs = list(query.stream())
@@ -227,6 +258,8 @@ class CurriculumFirestore:
             cached_versions = []
             for doc in docs:
                 doc_data = doc.to_dict()
+                if grade is not None and doc_data.get('grade') != grade:
+                    continue
                 cached_versions.append({
                     "version_type": doc_data.get("version_type"),
                     "version_id": doc_data.get("version_id"),

@@ -35,7 +35,7 @@ async def create_edge(
 
     # Get active version
     version_id = await version_control.get_or_create_active_version(
-        subject_id, "local-dev-user"
+        subject_id, "local-dev-user", grade=grade
     )
 
     result = await edge_manager.create_edge(edge, version_id, subject_id, grade=grade)

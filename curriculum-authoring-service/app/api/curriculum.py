@@ -104,7 +104,8 @@ async def create_subject(
     # Get or create active version (this will create version 1 if it doesn't exist)
     version_id = await version_control.get_or_create_active_version(
         subject.subject_id,
-        "local-dev-user"
+        "local-dev-user",
+        grade=subject.grade,
     )
 
     return await curriculum_manager.create_subject(
@@ -122,14 +123,14 @@ async def update_subject(
 ):
     """Update a subject"""
     # Get or create draft version
-    active_version = await version_control.get_active_version(subject_id)
+    active_version = await version_control.get_active_version(subject_id, grade=grade)
 
     if not active_version:
         raise HTTPException(status_code=404, detail="Subject not found")
 
     # Create new draft version
     draft_version = await version_control.create_version(
-        VersionCreate(subject_id=subject_id, description="Draft update"),
+        VersionCreate(subject_id=subject_id, grade=grade, description="Draft update"),
         "local-dev-user"
     )
 
@@ -185,7 +186,8 @@ async def create_unit(
 
     version_id = await version_control.get_or_create_active_version(
         unit.subject_id,
-        "local-dev-user"
+        "local-dev-user",
+        grade=grade,
     )
 
     return await curriculum_manager.create_unit(unit, version_id, grade)
@@ -202,7 +204,7 @@ async def update_unit(
     await _require_grade_subject(grade, subject_id)
 
     draft_version = await version_control.create_version(
-        VersionCreate(subject_id=subject_id, description="Update unit"),
+        VersionCreate(subject_id=subject_id, grade=grade, description="Update unit"),
         "local-dev-user"
     )
 
@@ -260,7 +262,8 @@ async def create_skill(
 
     version_id = await version_control.get_or_create_active_version(
         subject_id,
-        "local-dev-user"
+        "local-dev-user",
+        grade=grade,
     )
 
     result = await curriculum_manager.create_skill(skill, version_id, grade=grade, subject_id=subject_id)
@@ -293,7 +296,7 @@ async def update_skill(
     await _require_grade_subject(grade, subject_id)
 
     draft_version = await version_control.create_version(
-        VersionCreate(subject_id=subject_id, description="Update skill"),
+        VersionCreate(subject_id=subject_id, grade=grade, description="Update skill"),
         "local-dev-user"
     )
 
@@ -355,7 +358,8 @@ async def create_subskill(
 
     version_id = await version_control.get_or_create_active_version(
         subject_id,
-        "local-dev-user"
+        "local-dev-user",
+        grade=grade,
     )
 
     result = await curriculum_manager.create_subskill(subskill, version_id, grade=grade, subject_id=subject_id)
@@ -388,7 +392,7 @@ async def update_subskill(
     ctx = await _require_grade_subject(grade, subject_id)
 
     draft_version = await version_control.create_version(
-        VersionCreate(subject_id=subject_id, description="Update subskill"),
+        VersionCreate(subject_id=subject_id, grade=grade, description="Update subskill"),
         "local-dev-user"
     )
 

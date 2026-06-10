@@ -10,6 +10,11 @@ from pydantic import BaseModel
 class VersionBase(BaseModel):
     """Base model for Version"""
     subject_id: str
+    # Grade bucket this version belongs to. Optional for backward-compat with
+    # legacy version docs written before versions were grade-scoped; new docs
+    # always stamp it so shared-id subjects (e.g. MATHEMATICS @ 1/2/3) keep
+    # independent version history.
+    grade: Optional[str] = None
     description: Optional[str] = None
 
 

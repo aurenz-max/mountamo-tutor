@@ -13,6 +13,7 @@ For parallel relationships, auto-creates a reverse edge (A->B + B->A)
 linked by pair_id for atomic creation/deletion.
 """
 
+import hashlib
 import logging
 import uuid
 from typing import List, Optional, Dict, Any, Tuple
@@ -30,6 +31,25 @@ logger = logging.getLogger(__name__)
 
 class EdgeManager:
     """Manages curriculum knowledge graph edges."""
+
+    @staticmethod
+    def _edge_identity(grade: str, subject_id: str, edge: "CurriculumEdgeCreate") -> str:
+        """Deterministic, grade-scoped edge id.
+
+        Identity = (grade, subject_id, source, target, relationship). Re-running
+        a suggestion/connect-skills pass for the same logical edge overwrites the
+        same doc instead of creating a duplicate with a fresh uuid — fixing the
+        "re-running connect-skills duplicates edges" bug. Including ``grade`` keeps
+        the same (source,target,relationship) distinct across grades.
+        """
+        identity = "|".join([
+            grade or "",
+            subject_id,
+            edge.source_entity_id,
+            edge.target_entity_id,
+            edge.relationship,
+        ])
+        return "e_" + hashlib.sha1(identity.encode("utf-8")).hexdigest()[:20]
 
     # ------------------------------------------------------------------ #
     #  CREATE
@@ -93,7 +113,9 @@ class EdgeManager:
     ) -> CurriculumEdge:
         """Write edge to Firestore graph subcollection (source of truth)."""
         now = datetime.utcnow()
-        edge_id = str(uuid.uuid4())
+        # Deterministic, grade-scoped identity so re-syncing the same logical
+        # edge overwrites rather than duplicates (see _edge_identity).
+        edge_id = self._edge_identity(grade, subject_id, edge)
 
         row = {
             "edge_id": edge_id,

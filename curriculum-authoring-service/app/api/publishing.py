@@ -139,7 +139,7 @@ async def flatten_and_cache_graph(
     Automatically called after publish, but can be triggered manually.
     """
     try:
-        result = graph_flattening_service.rebuild_cache(subject_id, published_only)
+        result = graph_flattening_service.rebuild_cache(subject_id, published_only, grade=grade)
 
         if not result:
             raise HTTPException(
@@ -172,7 +172,7 @@ async def preview_flattened_graph(
 ):
     """Preview the flattened graph without writing to cache."""
     try:
-        result = graph_flattening_service.flatten_graph(subject_id, published_only)
+        result = graph_flattening_service.flatten_graph(subject_id, published_only, grade=grade)
 
         if not result:
             raise HTTPException(
