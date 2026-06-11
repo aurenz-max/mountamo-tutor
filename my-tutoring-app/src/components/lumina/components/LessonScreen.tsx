@@ -91,9 +91,14 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
 }) => {
   const { showExitModal, confirmExit, cancelExit } = useLessonExitGuard(true, onExitLesson);
 
+  // One evaluation session per exhibit. Computed once per exhibit instance so
+  // EvaluationProvider's sessionId doesn't churn on every render — downstream
+  // attribution/memoization keyed on it would otherwise fragment.
+  const sessionId = React.useMemo(() => `exhibit-${Date.now()}`, [exhibit]);
+
   return (
     <EvaluationProvider
-      sessionId={`exhibit-${Date.now()}`}
+      sessionId={sessionId}
       exhibitId={exhibit.topic || 'unknown'}
       topic={exhibit.topic}
       gradeLevel={gradeLevel}

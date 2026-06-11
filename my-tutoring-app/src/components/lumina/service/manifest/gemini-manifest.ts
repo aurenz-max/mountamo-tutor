@@ -11,6 +11,10 @@ import { ai } from "../geminiClient";
 // Import modular catalog (Phase 3 refactor)
 import { UNIVERSAL_CATALOG } from './catalog';
 
+// Type-only import — keeps the client-side auth stack out of this
+// server-rendered module (the fetch lives in studentContext/fetchGenerationContext)
+import type { StudentGenerationContext } from '../studentContext/types';
+
 /**
  * Convert objective-centric manifest to flat layout array for backward compatibility
  * This allows the existing rendering pipeline to work with the new manifest format
@@ -93,6 +97,45 @@ const getGradeLevelContext = (gradeLevel: string): string => {
   };
 
   return contexts[gradeLevel] || contexts['elementary'];
+};
+
+/**
+ * Build the per-student personalization block for the manifest prompt.
+ *
+ * The data comes from the backend's IRT/mastery state, keyed by resolving
+ * each objective to a curriculum subskill (embedding retrieval with abstain).
+ * The numbers are surfaced as-is; this block only translates them into
+ * curator-level guidance — which phases to weight, which difficulty to set.
+ * Returns '' when no usable context exists so the prompt is unchanged for
+ * unpersonalized generation.
+ */
+const buildStudentContextBlock = (
+  studentContext?: StudentGenerationContext | null
+): string => {
+  if (!studentContext?.available || !studentContext.objectives?.length) return '';
+
+  const lines = studentContext.objectives.map(
+    (o, i) => `${i + 1}. "${o.objectiveText}" — ${o.summary}`
+  );
+
+  return `
+
+## STUDENT PROFILE (IRT model state — personalize the blueprint for THIS student)
+${studentContext.overallSummary || ''}
+Per-objective state (objectives resolved to curriculum subskills via retrieval):
+${lines.join('\n')}
+
+HOW TO PERSONALIZE (apply per objective, based on its state above):
+- STRUGGLING (P(correct) below ~55%, or mastery gate 0-1 with recorded attempts): weight that objective's components toward Phase 1-2 (Introduce/Visualize); place a worked-example or explainer component BEFORE any practice; set config.difficulty to "easy" on practice components.
+- NEW MATERIAL (no recorded attempts): standard grade-level progression, but start gently — full Introduce phase before any practice.
+- ON TRACK (P(correct) roughly 55-80%): standard balanced progression.
+- STRONG (P(correct) above ~80%, or mastery gate 3-4): compress Phase 1, weight toward Phase 3 (Apply) and the finalAssessment; set config.difficulty to "challenging".
+- NO CURRICULUM MATCH for an objective: use grade-level defaults for it.
+
+PERSONALIZATION RULES:
+- Personalization changes component selection, phase weighting, and difficulty config ONLY.
+- NEVER mention scores, gates, probabilities, or mastery state in any student-facing title or intent.
+- NEVER reveal answers or weaken a component's pedagogy to make it "easier".`;
 };
 
 
@@ -271,10 +314,12 @@ export const generateExhibitManifestStreaming = async (
   topic: string,
   gradeLevel: string = 'elementary',
   objectives?: Array<{ id: string; text: string; verb: string; icon: string }>,
+  studentContext?: StudentGenerationContext | null,
   callbacks?: ManifestProgressCallback
 ): Promise<ExhibitManifest> => {
   try {
     const gradeLevelContext = getGradeLevelContext(gradeLevel);
+    const studentContextBlock = buildStudentContextBlock(studentContext);
     const catalogContext = UNIVERSAL_CATALOG.map(c =>
       `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`
     ).join('\n');
@@ -288,7 +333,7 @@ ${objectives.map((obj, i) => `${i + 1}. ${obj.text} [${obj.verb}]`).join('\n')}`
     const prompt = `You are the Lead Curator designing an educational exhibit using an OBJECTIVE-CENTRIC approach.
 
 ASSIGNMENT: Create a manifest (blueprint) for: "${topic}"
-TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}
+TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}${studentContextBlock}
 
 AVAILABLE COMPONENT TOOLS:
 ${catalogContext}

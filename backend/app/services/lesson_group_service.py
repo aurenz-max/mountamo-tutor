@@ -191,6 +191,7 @@ class LessonGroupService:
 
             subskills.append(BlockSubskill(
                 subskill_id=s.get("skill_id", ""),
+                skill_id=s.get("parent_skill_id") or "",
                 subskill_name=desc,
                 bloom_phase=bloom,
                 gate=gate,

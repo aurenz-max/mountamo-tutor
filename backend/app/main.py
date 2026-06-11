@@ -28,7 +28,8 @@ from .api.endpoints import (
     skill_progress,
     calibration,
     evaluations,
-    pulse)
+    pulse,
+    student_profile)
 
 from .api import etl_routes
 from .core.config import settings
@@ -98,9 +99,16 @@ app.include_router(
 # Each endpoint handles its own activity logging internally
 
 app.include_router(
-    user_profiles.router, 
-    prefix="/api/user-profiles", 
+    user_profiles.router,
+    prefix="/api/user-profiles",
     tags=["user-profiles"],
+    dependencies=[Depends(get_user_context)]
+)
+
+app.include_router(
+    student_profile.router,
+    prefix="/api/student-profile",
+    tags=["student-profile"],
     dependencies=[Depends(get_user_context)]
 )
 

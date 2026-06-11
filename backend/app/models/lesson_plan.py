@@ -37,6 +37,8 @@ class BlockType(str, Enum):
 class BlockSubskill(BaseModel):
     """One subskill within a lesson block."""
     subskill_id:   str
+    # Parent skill id from the curriculum hierarchy (empty if unresolved)
+    skill_id:      str = ""
     subskill_name: str
     bloom_phase:   BloomLevel
     gate:          int = 0   # Current mastery gate (0–4)

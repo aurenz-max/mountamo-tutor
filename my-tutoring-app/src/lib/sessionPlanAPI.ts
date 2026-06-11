@@ -19,6 +19,9 @@ export type SkillStatus = 'new' | 'review' | 'retest' | 'mastered';
 
 export interface BlockSubskill {
   subskill_id:   string;
+  // Parent skill id resolved from the curriculum hierarchy. Optional because
+  // plans generated before this field existed won't carry it.
+  skill_id?:     string;
   subskill_name: string;
   bloom_phase:   BloomLevel;
   gate:          number;

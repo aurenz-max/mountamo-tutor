@@ -4,7 +4,7 @@ import { generateExhibitManifestStreaming } from '@/components/lumina/service/ma
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { topic, gradeLevel, objectives } = body;
+    const { topic, gradeLevel, objectives, studentContext } = body;
 
     // Create a TransformStream for streaming the response
     const encoder = new TextEncoder();
@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
           topic,
           gradeLevel,
           objectives,
+          studentContext ?? undefined,
           {
             onProgress: async (message: string) => {
               const data = JSON.stringify({ type: 'progress', message }) + '\n';

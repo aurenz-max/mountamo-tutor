@@ -883,6 +883,7 @@ class PlanningService:
             enriched.append({
                 **c,
                 "unit_title":           meta.get("unit_title"),
+                "parent_skill_id":      meta.get("skill_id", ""),
                 "skill_description":    meta.get("skill_description"),
                 "subskill_description": meta.get("subskill_description"),
             })
@@ -966,13 +967,15 @@ class PlanningService:
             for unit in curriculum_data:
                 unit_title = unit.get("title", unit.get("id", ""))
                 for skill in unit.get("skills", []):
-                    skill_desc = skill.get("description", skill.get("id", ""))
+                    skill_id = skill.get("id", "")
+                    skill_desc = skill.get("description", skill_id)
                     for subskill in skill.get("subskills", []):
                         ss_id = subskill.get("id", "")
                         ss_desc = subskill.get("description", ss_id)
                         if ss_id:
                             lookup[ss_id] = {
                                 "unit_title": unit_title,
+                                "skill_id": skill_id,
                                 "skill_description": skill_desc,
                                 "subskill_description": ss_desc,
                             }

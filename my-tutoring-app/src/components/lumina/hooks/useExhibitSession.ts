@@ -7,6 +7,8 @@ import {
 } from '../service/geminiClient-api';
 import { GameState, type ExhibitData, type IntroBriefingData } from '../types';
 import type { GradeLevel } from '../components/GradeLevelSelector';
+import { fetchGenerationContext } from '../service/studentContext/fetchGenerationContext';
+import type { StudentGenerationContext } from '../service/studentContext/types';
 
 export interface ComponentStatus {
   id: string;
@@ -51,8 +53,13 @@ export interface ExhibitSession {
  * Returns stable `generate` and `reset` callbacks. All intermediate state
  * (loading messages, thinking, component build progress) is exposed through
  * the `progress` object so the caller can render a loading screen.
+ *
+ * When `studentId` is provided, the brief's objectives are resolved against
+ * the curriculum (embedding retrieval) and the student's IRT/mastery state
+ * is injected into manifest generation. Personalization is strictly
+ * fail-soft: any error or timeout falls back to the unpersonalized pipeline.
  */
-export function useExhibitSession(): ExhibitSession {
+export function useExhibitSession(studentId?: string): ExhibitSession {
   const [phase, setPhase] = useState<GameState>(GameState.IDLE);
   const [brief, setBrief] = useState<IntroBriefingData | null>(null);
   const [exhibit, setExhibit] = useState<ExhibitData | null>(null);
@@ -88,6 +95,23 @@ export function useExhibitSession(): ExhibitSession {
 
       setBrief(generatedBrief);
 
+      // STEP 1.5: Resolve objectives → curriculum subskills → student state.
+      // This is the personalization seam: the brief's objectives carry enough
+      // signal for scoped embedding retrieval, and the resolved subskills key
+      // into the student's competency/mastery/IRT state. Null on any failure
+      // — the manifest then generates exactly as before.
+      let studentContext: StudentGenerationContext | null = null;
+      if (studentId) {
+        setMessage('🎓 Personalizing for this student...');
+        studentContext = await fetchGenerationContext({
+          studentId,
+          topic,
+          gradeLevel,
+          subject: generatedBrief.subject,
+          objectives,
+        });
+      }
+
       // STEP 2: Manifest generation with streaming
       setMessage('📋 Generating exhibit blueprint...');
 
@@ -109,7 +133,8 @@ export function useExhibitSession(): ExhibitSession {
         topic,
         gradeLevel,
         objectives,
-        manifestCallbacks
+        manifestCallbacks,
+        studentContext
       );
       console.log('🗺️ Manifest generated based on learning objectives');
 
@@ -154,7 +179,7 @@ export function useExhibitSession(): ExhibitSession {
       console.error(error);
       setPhase(GameState.ERROR);
     }
-  }, []);
+  }, [studentId]);
 
   const reset = useCallback(() => {
     setPhase(GameState.IDLE);

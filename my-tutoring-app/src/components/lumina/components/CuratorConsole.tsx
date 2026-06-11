@@ -20,6 +20,7 @@
  * Must be rendered inside <LuminaAIProvider> (i.e. within LessonScreen).
  */
 import React, { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { getComponentById } from '../service/manifest/catalog';
 import { getPrimitive } from '../config/primitiveRegistry';
@@ -240,13 +241,22 @@ export const CuratorConsole: React.FC<CuratorConsoleProps> = ({ defaultExpanded 
                   Curator
                 </span>
               </div>
-              {isConnected && focusName && (
-                <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                  <Target className="h-2.5 w-2.5 text-cyan-400/70" />
-                  Helping with{' '}
-                  <span className="font-medium text-slate-300">{focusName}</span>
-                </span>
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                {isConnected && focusName && (
+                  <motion.span
+                    key={focusName}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                    className="flex items-center gap-1 text-[10px] text-slate-400"
+                  >
+                    <Target className="h-2.5 w-2.5 text-cyan-400/70" />
+                    Helping with{' '}
+                    <span className="font-medium text-slate-300">{focusName}</span>
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </div>
           </div>
           <button
@@ -284,31 +294,46 @@ export const CuratorConsole: React.FC<CuratorConsoleProps> = ({ defaultExpanded 
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
             Next steps
           </span>
-          {!isConnected ? (
-            <div className="flex items-center gap-2 px-1 py-2 text-xs text-slate-500">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Waking up the Curator…
-            </div>
-          ) : prompts.length === 0 ? (
-            <p className="px-1 py-2 text-xs text-slate-500">
-              Keep exploring — I&apos;ll jump in when there&apos;s something to help with.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-2">
-              {prompts.map((p, i) => (
-                <LuminaButton
-                  key={`${p.kind}-${i}`}
-                  tone={KIND_TONE[p.kind]}
-                  disabled={isAIResponding}
-                  onClick={() => onTap(p)}
-                  className="h-auto justify-start gap-2.5 whitespace-normal py-2.5 text-left text-sm"
-                >
-                  <KindIcon kind={p.kind} />
-                  <span className="flex-1">{p.label}</span>
-                </LuminaButton>
-              ))}
-            </div>
-          )}
+          {/* Keyed to the focused primitive so the button set morphs as the
+              viewport scrolls between primitives, instead of snapping. Within a
+              single primitive the key is stable, so showWhen-driven updates apply
+              instantly without re-animating. */}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={!isConnected ? 'connecting' : activePrimitiveType ?? 'none'}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="overflow-hidden"
+            >
+              {!isConnected ? (
+                <div className="flex items-center gap-2 px-1 py-2 text-xs text-slate-500">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Waking up the Curator…
+                </div>
+              ) : prompts.length === 0 ? (
+                <p className="px-1 py-2 text-xs text-slate-500">
+                  Keep exploring — I&apos;ll jump in when there&apos;s something to help with.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-2">
+                  {prompts.map((p, i) => (
+                    <LuminaButton
+                      key={`${p.kind}-${i}`}
+                      tone={KIND_TONE[p.kind]}
+                      disabled={isAIResponding}
+                      onClick={() => onTap(p)}
+                      className="h-auto justify-start gap-2.5 whitespace-normal py-2.5 text-left text-sm"
+                    >
+                      <KindIcon kind={p.kind} />
+                      <span className="flex-1">{p.label}</span>
+                    </LuminaButton>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Transcript (collapsible) */}

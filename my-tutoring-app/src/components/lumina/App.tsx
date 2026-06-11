@@ -1,58 +1,39 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { GenerativeBackground } from './primitives/GenerativeBackground';
 import { DetailDrawer } from './primitives/DetailDrawer';
-import { GameState, ExhibitManifest } from './types';
-import { useExhibitSession } from './hooks/useExhibitSession';
+import { GameState } from './types';
+import { useExhibitSession, type GenerateOptions } from './hooks/useExhibitSession';
 import type { GradeLevel } from './components/GradeLevelSelector';
-import { ManifestViewer } from './components/ManifestViewer';
-import { ObjectivesViewer } from './components/ObjectivesViewer';
-import { ComponentViewer } from './components/ComponentViewer';
-import { ObjectCollection } from './primitives/visual-primitives/ObjectCollection';
-import { ComparisonPanel as VisualComparisonPanel } from './primitives/visual-primitives/ComparisonPanel';
-import { AlphabetSequence } from './primitives/visual-primitives/AlphabetSequence';
-import { RhymingPairs } from './primitives/visual-primitives/RhymingPairs';
-import { SightWordCard } from './primitives/visual-primitives/SightWordCard';
-import { SoundSort } from './primitives/visual-primitives/SoundSort';
-import { LetterPicture } from './primitives/visual-primitives/LetterPicture';
-import { KnowledgeCheckTester } from './components/KnowledgeCheckTester';
-import { MediaPlayerTester } from './components/MediaPlayerTester';
-import { MathPrimitivesTester } from './components/MathPrimitivesTester';
-import { EngineeringPrimitivesTester } from './components/EngineeringPrimitivesTester';
-import AstronomyPrimitivesTester from './components/AstronomyPrimitivesTester';
-import { PhysicsPrimitivesTester } from './components/PhysicsPrimitivesTester';
-import { FeatureExhibitTester } from './components/FeatureExhibitTester';
-import DeepDiveTester from './components/DeepDiveTester';
-import PassageStudioTester from './components/PassageStudioTester';
-import BiologyPrimitivesTester from './components/BiologyPrimitivesTester';
-import ChemistryPrimitivesTester from './components/ChemistryPrimitivesTester';
-import LanguageArtsPrimitivesTester from './components/LanguageArtsPrimitivesTester';
-import AnnotatedExampleTester from './components/AnnotatedExampleTester';
-import PracticeProblemTester from './components/PracticeProblemTester';
-import DistributionExplorerTester from './components/DistributionExplorerTester';
-import LuminaTutorTester from './components/LuminaTutorTester';
-import StudentActivityPanel from './components/StudentActivityPanel';
-import CalibrationSimulator from './components/CalibrationSimulator';
-import AtomRegistry from './components/AtomRegistry';
-import SoundLab from './components/SoundLab';
-import DesignStudio from './components/DesignStudio';
-import { PulseAdaptiveSession } from './pulse/PulseAdaptiveSession';
-import { ScratchPad } from './components/scratch-pad';
-import { PlannerDashboard } from './components/PlannerDashboard';
-import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import type { CurriculumContext } from './components/CurriculumBrowser';
 import { IdleScreen } from './components/IdleScreen';
 import { LessonScreen } from './components/LessonScreen';
+import { DevPanelRouter } from './components/DevPanelRouter';
+import { GeneratingScreen } from './components/GeneratingScreen';
+import { GenerationErrorScreen } from './components/GenerationErrorScreen';
 import { DailyLessonPlan } from './DailyLessonPlan';
 import { DailySessionView } from './components/PlannerDashboard/DailySessionView';
 import type { DailySessionPlan, LessonBlock } from '@/lib/sessionPlanAPI';
 import SessionBreakScreen from './components/SessionBreakScreen';
+import { StudentProvider, useStudent } from './contexts/StudentContext';
+import StudentBadge from './components/StudentBadge';
 
 
 export default function App() {
-  // Core lesson pipeline (brief → manifest → exhibit)
-  const { phase, brief, exhibit, progress, generate, reset: resetSession } = useExhibitSession();
+  return (
+    <StudentProvider>
+      <LuminaApp />
+    </StudentProvider>
+  );
+}
+
+function LuminaApp() {
+  // Student identity — resolved once by StudentProvider, never a literal
+  const { studentId } = useStudent();
+
+  // Core lesson pipeline (brief → manifest → exhibit), personalized per student
+  const { phase, brief, exhibit, progress, generate, reset: resetSession } = useExhibitSession(studentId);
 
   const [topic, setTopic] = useState('');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
@@ -69,9 +50,13 @@ export default function App() {
     setActivePanel('practice-mode');
   }, []);
 
-  // Manifest Viewer State (dev tools)
-  const [manifest, setManifest] = useState<ExhibitManifest | null>(null);
-  const [isGeneratingManifest, setIsGeneratingManifest] = useState(false);
+  // Last generate request — lets the error screen retry without losing
+  // session or curriculum state.
+  const lastGenerateRef = useRef<GenerateOptions | null>(null);
+  const startGenerate = useCallback((options: GenerateOptions) => {
+    lastGenerateRef.current = options;
+    void generate(options);
+  }, [generate]);
 
   // Auto-scroll when generation starts
   useEffect(() => {
@@ -80,20 +65,9 @@ export default function App() {
     }
   }, [phase]);
 
-  // Error handling
-  useEffect(() => {
-    if (phase === GameState.ERROR) {
-      alert("Failed to generate exhibit. Please try a different topic or check API key.");
-      resetSession();
-    }
-  }, [phase, resetSession]);
-
   // Drawer State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<string | null>(null);
-
-  // Visual Primitives Testing State
-  const [currentVisualIndex, setCurrentVisualIndex] = useState(0);
 
   // Curriculum context (set when lesson initiated from CurriculumBrowser)
   const [curriculumContext, setCurriculumContext] = useState<CurriculumContext | null>(null);
@@ -119,124 +93,6 @@ export default function App() {
   // Session sub-phase: null = normal, 'break' = showing break/transition screen
   const [sessionPhase, setSessionPhase] = useState<'break' | null>(null);
 
-  // Sample data for visual primitives tester
-  const visualPrimitiveExamples = [
-    {
-      name: 'Object Collection',
-      component: (
-        <ObjectCollection
-          data={{
-            instruction: 'Count the apples',
-            items: [
-              { name: 'apple', count: 5, icon: '🍎' },
-              { name: 'orange', count: 3, icon: '🍊' }
-            ],
-            layout: 'grid'
-          }}
-        />
-      )
-    },
-    {
-      name: 'Comparison Panel',
-      component: (
-        <VisualComparisonPanel
-          data={{
-            panels: [
-              {
-                label: 'Group A',
-                collection: {
-                  instruction: 'Red fruits',
-                  items: [{ name: 'apple', count: 4, icon: '🍎' }],
-                  layout: 'grid'
-                }
-              },
-              {
-                label: 'Group B',
-                collection: {
-                  instruction: 'Yellow fruits',
-                  items: [{ name: 'banana', count: 3, icon: '🍌' }],
-                  layout: 'grid'
-                }
-              }
-            ]
-          }}
-        />
-      )
-    },
-    {
-      name: 'Alphabet Sequence',
-      component: (
-        <AlphabetSequence
-          data={{
-            sequence: ['A', 'B', '_', 'D', 'E'],
-            missing: ['C'],
-            highlightMissing: true,
-            showImages: true
-          }}
-        />
-      )
-    },
-    {
-      name: 'Rhyming Pairs',
-      component: (
-        <RhymingPairs
-          data={{
-            pairs: [
-              { word1: 'cat', image1: '🐱', word2: 'hat', image2: '🎩' },
-              { word1: 'dog', image1: '🐶', word2: 'log', image2: '🪵' }
-            ],
-            showConnectingLines: true
-          }}
-        />
-      )
-    },
-    {
-      name: 'Sight Word Card',
-      component: (
-        <SightWordCard
-          data={{
-            word: 'the',
-            fontSize: 'large',
-            showInContext: true,
-            sentence: 'Look at the cat in the hat.',
-            highlightWord: true
-          }}
-        />
-      )
-    },
-    {
-      name: 'Sound Sort',
-      component: (
-        <SoundSort
-          data={{
-            targetSound: 'short a',
-            categories: [
-              { label: 'Has short a', words: ['cat', 'hat', 'bat', 'mat'] },
-              { label: 'No short a', words: ['dog', 'run', 'pig'] }
-            ],
-            showPictures: true
-          }}
-        />
-      )
-    },
-    {
-      name: 'Letter Picture',
-      component: (
-        <LetterPicture
-          data={{
-            letter: 'B',
-            items: [
-              { name: 'Ball', image: '🏀', highlight: true },
-              { name: 'Book', image: '📚', highlight: true },
-              { name: 'Cat', image: '🐱', highlight: false },
-              { name: 'Bear', image: '🐻', highlight: true }
-            ]
-          }}
-        />
-      )
-    }
-  ];
-
   // Handle curriculum browser selection
   const handleCurriculumSelect = useCallback((topicString: string, grade?: GradeLevel, curriculum?: CurriculumContext) => {
     if (grade) {
@@ -244,8 +100,8 @@ export default function App() {
     }
     setCurriculumContext(curriculum ?? null);
     setTopic(topicString);
-    generate({ topic: topicString, gradeLevel: grade || gradeLevel });
-  }, [generate, gradeLevel]);
+    startGenerate({ topic: topicString, gradeLevel: grade || gradeLevel });
+  }, [startGenerate, gradeLevel]);
 
   // Handle lesson group launch from IdleScreen
   const handleLaunchGroupLesson = useCallback((params: {
@@ -257,14 +113,13 @@ export default function App() {
     setTopic(params.topic);
     setGradeLevel(params.gradeLevel);
     setCurriculumContext(params.curriculum);
-    generate({ topic: params.topic, gradeLevel: params.gradeLevel, preBuiltObjectives: params.preBuiltObjectives });
-  }, [generate]);
+    startGenerate({ topic: params.topic, gradeLevel: params.gradeLevel, preBuiltObjectives: params.preBuiltObjectives });
+  }, [startGenerate]);
 
   const reset = () => {
     resetSession();
     setTopic('');
     setCurriculumContext(null);
-    setManifest(null);
     setSessionPhase(null);
     const returnPanel = sessionReturn;
     setSessionReturn(null);
@@ -291,11 +146,16 @@ export default function App() {
       setSessionPhase(null);
     }
     setActivePanel(null);
+    setPracticeTopic('');
   }, [activePanel]);
 
+  // Back handler for dev panels (testers, dashboards, practice mode)
+  const handlePanelBack = useCallback(() => {
+    setActivePanel(null);
+    setPracticeTopic('');
+  }, []);
+
   const handleBlockStart = useCallback((block: LessonBlock) => {
-    setSessionCompletedBlocks(prev => new Set(Array.from(prev).concat(block.block_id)));
-    setSessionStats(prev => prev ? { ...prev, completed: prev.completed + 1 } : prev);
     setSessionCurrentBlock(block);
     setSessionEvalCount(0);
     setSessionReturn('daily-session');
@@ -306,20 +166,35 @@ export default function App() {
     const firstSubskill = block.subskills[0];
     if (firstSubskill) {
       const subskillId = firstSubskill.subskill_id;
-      // Derive parent skill_id: "RF.K.2.C" → "RF.K.2"
+      // Prefer the curriculum-resolved parent skill carried on the block;
+      // dot-trimming remains only as a fallback for plans fetched before
+      // skill_id was added to the payload.
       const lastDot = subskillId.lastIndexOf('.');
-      const skillId = lastDot > 0 ? subskillId.substring(0, lastDot) : subskillId;
+      const skillId = firstSubskill.skill_id
+        || (lastDot > 0 ? subskillId.substring(0, lastDot) : subskillId);
       setCurriculumContext({ subject: block.subject, skillId, subskillId });
     } else {
       setCurriculumContext(null);
     }
 
-    generate({ topic: `${block.subject}: ${block.title}`, gradeLevel });
+    // Generate against the block's own subskills, not just a topic string —
+    // they ride the existing preBuiltObjectives path so the manifest targets
+    // what the block actually teaches.
+    const preBuiltObjectives = block.subskills.length > 0
+      ? block.subskills.map(ss => ({
+          id: ss.subskill_id,
+          text: ss.subskill_name,
+          verb: ss.bloom_phase.charAt(0).toUpperCase() + ss.bloom_phase.slice(1),
+          icon: '🎯',
+        }))
+      : undefined;
+
+    startGenerate({ topic: `${block.subject}: ${block.title}`, gradeLevel, preBuiltObjectives });
     // TODO (backend integration): POST session block start to record attempt
     // authApi.post(`/api/daily-activities/daily-plan/1/session/start-block`, {
     //   block_id: block.block_id, lesson_group_id: block.lesson_group_id,
     // });
-  }, [generate, gradeLevel]);
+  }, [startGenerate, gradeLevel]);
 
   // Derived: next block in session (for break screen preview)
   const currentBlockIndex = sessionCurrentBlock
@@ -331,13 +206,18 @@ export default function App() {
 
   // Transition from exhibit completion → break screen
   const handleExhibitComplete = useCallback(() => {
+    // Completion is recorded here — when the student finishes the exhibit —
+    // not at block launch. Abandoned blocks stay incomplete.
+    if (sessionCurrentBlock && !sessionCompletedBlocks.has(sessionCurrentBlock.block_id)) {
+      setSessionCompletedBlocks(prev => new Set(prev).add(sessionCurrentBlock.block_id));
+      setSessionStats(prev => prev ? { ...prev, completed: prev.completed + 1 } : prev);
+    }
     resetSession();
     setTopic('');
     setCurriculumContext(null);
-    setManifest(null);
     setSessionPhase('break');
     // Session tracking state preserved: sessionReturn, sessionCurrentBlock, sessionEvalCount, sessionStats, sessionCompletedBlocks
-  }, [resetSession]);
+  }, [resetSession, sessionCurrentBlock, sessionCompletedBlocks]);
 
   // Break screen → start next block
   const handleBreakContinue = useCallback(() => {
@@ -388,6 +268,8 @@ export default function App() {
              <span className="text-xl font-bold tracking-tight text-white">Lumina <span className="text-slate-500 font-light">Exhibits</span></span>
         </div>
         <div className="flex items-center gap-4 text-xs md:text-sm font-mono text-slate-400">
+            {/* Signed-in student identity */}
+            <StudentBadge />
             {/* Session progress dots — shown while viewing the session panel (IDLE) */}
             {phase === GameState.IDLE && activePanel === 'daily-session' && sessionStats && sessionStats.total > 0 && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
@@ -410,7 +292,9 @@ export default function App() {
                 </span>
               </div>
             )}
-            {/* Exhibit tracker — shown during an exhibit launched from a session block */}
+            {/* Exhibit tracker — shown during an exhibit launched from a session block.
+                completed excludes the in-flight block, so the dot at index
+                `completed` is the one currently being worked. */}
             {phase === GameState.PLAYING && sessionReturn === 'daily-session' && sessionCurrentBlock && (
               <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
                 {sessionStats && sessionStats.total > 0 && (
@@ -421,7 +305,7 @@ export default function App() {
                         className={`rounded-full transition-all duration-300 ${
                           i < sessionStats.completed
                             ? 'w-2 h-2 bg-cyan-400'
-                            : i === sessionStats.completed - 1
+                            : i === sessionStats.completed
                             ? 'w-2.5 h-2.5 bg-cyan-400/50 animate-pulse'
                             : 'w-2 h-2 bg-white/15'
                         }`}
@@ -459,7 +343,7 @@ export default function App() {
             onTopicChange={setTopic}
             gradeLevel={gradeLevel}
             onGradeLevelChange={setGradeLevel}
-            onGenerate={generate}
+            onGenerate={startGenerate}
             onStartPractice={handleStartPractice}
             onCurriculumSelect={handleCurriculumSelect}
             onLaunchGroupLesson={handleLaunchGroupLesson}
@@ -467,202 +351,16 @@ export default function App() {
           />
         )}
 
-        {/* MANIFEST VIEWER STATE */}
-        {phase === GameState.IDLE && activePanel === 'manifest-viewer' && (
-          <div className="flex-1 animate-fade-in">
-            <div className="mb-8 text-center">
-              <button
-                onClick={reset}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-full border border-slate-600 transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                Back to Home
-              </button>
-            </div>
-            <ManifestViewer manifest={manifest} isLoading={isGeneratingManifest} />
-          </div>
-        )}
-
-        {/* KNOWLEDGE CHECK TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'knowledge-check-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <KnowledgeCheckTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* MEDIA PLAYER TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'media-player-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <MediaPlayerTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* MATH PRIMITIVES TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'math-primitives-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <MathPrimitivesTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* ENGINEERING PRIMITIVES TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'engineering-primitives-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <EngineeringPrimitivesTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* ASTRONOMY PRIMITIVES TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'astronomy-primitives-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <AstronomyPrimitivesTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* PHYSICS PRIMITIVES TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'physics-primitives-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <PhysicsPrimitivesTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* FEATURE EXHIBIT TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'feature-exhibit-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <FeatureExhibitTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* DEEP DIVE TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'deep-dive-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <DeepDiveTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* PASSAGE STUDIO TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'passage-studio-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <PassageStudioTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* BIOLOGY PRIMITIVES TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'biology-primitives-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <BiologyPrimitivesTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* CHEMISTRY PRIMITIVES TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'chemistry-primitives-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <ChemistryPrimitivesTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* LANGUAGE ARTS PRIMITIVES TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'language-arts-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <LanguageArtsPrimitivesTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* ANNOTATED EXAMPLE TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'annotated-example-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <AnnotatedExampleTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* PRACTICE PROBLEM TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'practice-problem-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <PracticeProblemTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* DISTRIBUTION EXPLORER TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'distribution-explorer-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <DistributionExplorerTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* CALIBRATION SIMULATOR STATE */}
-        {phase === GameState.IDLE && activePanel === 'calibration-simulator' && (
-          <div className="flex-1 animate-fade-in">
-            <CalibrationSimulator onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* ATOM REGISTRY STATE */}
-        {phase === GameState.IDLE && activePanel === 'atom-registry' && (
-          <AtomRegistry
-            onBack={() => setActivePanel(null)}
-            onOpenTester={(panel) => setActivePanel(panel)}
+        {/* DEV PANELS — testers, dashboards, labs (everything except the student flow) */}
+        {phase === GameState.IDLE && activePanel !== null && activePanel !== 'daily-session' && (
+          <DevPanelRouter
+            activePanel={activePanel}
+            gradeLevel={gradeLevel}
+            practiceTopic={practiceTopic}
+            onBack={handlePanelBack}
+            onNavigate={setActivePanel}
           />
         )}
-
-        {/* SOUND LAB STATE */}
-        {phase === GameState.IDLE && activePanel === 'sound-lab' && (
-          <div className="flex-1 animate-fade-in">
-            <SoundLab onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* DESIGN STUDIO STATE */}
-        {phase === GameState.IDLE && activePanel === 'design-studio' && (
-          <div className="flex-1 animate-fade-in">
-            <DesignStudio onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* LUMINA TUTOR TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'lumina-tutor-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <LuminaTutorTester onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* STUDENT ACTIVITY PANEL STATE */}
-        {phase === GameState.IDLE && activePanel === 'student-activity-panel' && (
-          <div className="flex-1 animate-fade-in">
-            <StudentActivityPanel onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* PRACTICE MODE STATE */}
-        {phase === GameState.IDLE && activePanel === 'practice-mode' && (
-          <div className="flex-1 animate-fade-in">
-            <PulseAdaptiveSession
-              onBack={() => { setActivePanel(null); setPracticeTopic(''); }}
-              gradeLevel={gradeLevel}
-              initialTopic={practiceTopic}
-              autoStart={!!practiceTopic}
-              debugMode={process.env.NODE_ENV === 'development'}
-            />
-          </div>
-        )}
-
-        {/* SCRATCH PAD STATE */}
-        {phase === GameState.IDLE && activePanel === 'scratch-pad' && (
-          <div className="flex-1 animate-fade-in">
-            <ScratchPad
-              onBack={() => setActivePanel(null)}
-              gradeLevel={gradeLevel}
-            />
-          </div>
-        )}
-
-        {/* PLANNER DASHBOARD STATE */}
-        {phase === GameState.IDLE && activePanel === 'planner-dashboard' && (
-          <div className="flex-1 animate-fade-in">
-            <PlannerDashboard onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
 
         {/* SESSION BREAK SCREEN — between blocks */}
         {phase === GameState.IDLE && sessionPhase === 'break' && sessionCurrentBlock && (
@@ -682,11 +380,11 @@ export default function App() {
         {phase === GameState.IDLE && activePanel === 'daily-session' && !sessionPhase && (
           <div className="flex-1 animate-fade-in max-w-4xl mx-auto w-full pt-2">
             <DailySessionView
-              studentId="1"
+              studentId={studentId}
               onStartPulse={() => setActivePanel('practice-mode')}
               renderLessonPlan={() => (
                 <DailyLessonPlan
-                  studentId="1"
+                  studentId={studentId}
                   completedBlockIds={sessionCompletedBlocks}
                   blockResults={sessionBlockResults}
                   initialPlan={sessionPlan}
@@ -703,142 +401,24 @@ export default function App() {
           </div>
         )}
 
-        {/* ANALYTICS DASHBOARD STATE */}
-        {phase === GameState.IDLE && activePanel === 'analytics-dashboard' && (
-          <div className="flex-1 animate-fade-in">
-            <AnalyticsDashboard onBack={() => setActivePanel(null)} />
-          </div>
-        )}
-
-        {/* VISUAL PRIMITIVES TESTER STATE */}
-        {phase === GameState.IDLE && activePanel === 'visual-tester' && (
-          <div className="flex-1 animate-fade-in">
-            <div className="mb-8 text-center">
-              <button
-                onClick={() => setActivePanel(null)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-full border border-slate-600 transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                Back to Home
-              </button>
-            </div>
-
-            <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold text-white mb-2">Visual Primitives Gallery</h2>
-              <p className="text-slate-400">Preview all early learning visual components</p>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 mb-8">
-              <button
-                onClick={() => setCurrentVisualIndex(Math.max(0, currentVisualIndex - 1))}
-                disabled={currentVisualIndex === 0}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Previous
-              </button>
-
-              <div className="px-6 py-3 bg-slate-800/80 rounded-lg border border-slate-600">
-                <span className="text-white font-bold">
-                  {currentVisualIndex + 1} / {visualPrimitiveExamples.length}
-                </span>
-                <span className="text-slate-400 ml-2">- {visualPrimitiveExamples[currentVisualIndex].name}</span>
-              </div>
-
-              <button
-                onClick={() => setCurrentVisualIndex(Math.min(visualPrimitiveExamples.length - 1, currentVisualIndex + 1))}
-                disabled={currentVisualIndex === visualPrimitiveExamples.length - 1}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:opacity-50 text-white rounded-lg font-semibold transition-all disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                Next
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-              </button>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-2 mb-8 max-w-4xl mx-auto">
-              {visualPrimitiveExamples.map((example, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentVisualIndex(index)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    currentVisualIndex === index
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  {example.name}
-                </button>
-              ))}
-            </div>
-
-            <div className="max-w-5xl mx-auto">
-              {visualPrimitiveExamples[currentVisualIndex].component}
-            </div>
-          </div>
-        )}
-
         {/* GENERATING STATE */}
         {phase === GameState.GENERATING && (
-            <div className="flex-1 flex flex-col justify-center items-center text-center">
-                <div className="relative w-32 h-32 mb-8">
-                    <div className="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
-                    <div className="absolute inset-0 border-t-4 border-blue-500 rounded-full animate-spin shadow-[0_0_30px_rgba(59,130,246,0.5)]"></div>
-                    <div className="absolute inset-4 border-t-4 border-purple-500 rounded-full animate-spin direction-reverse shadow-[0_0_30px_rgba(168,85,247,0.5)]" style={{ animationDirection: 'reverse', animationDuration: '2s' }}></div>
-                </div>
-                <h3 className="text-2xl font-bold text-white animate-pulse">{progress.message}</h3>
-                <p className="text-slate-500 mt-2 font-mono text-sm">Generative AI is curating...</p>
-                <div className="mt-4 px-4 py-2 bg-slate-800/50 rounded-full border border-slate-700">
-                  <span className="text-xs text-slate-400">
-                    Tailoring for: <span className="text-blue-400 font-medium capitalize">{gradeLevel.replace('-', ' ')}</span>
-                  </span>
-                </div>
+          <GeneratingScreen progress={progress} brief={brief} gradeLevel={gradeLevel} />
+        )}
 
-                {/* Objectives Display - Show after curator brief is generated */}
-                {brief && brief.objectives && (
-                  <div className="mt-12 w-full px-4">
-                    <ObjectivesViewer
-                      objectives={brief.objectives}
-                      topic={brief.topic}
-                    />
-                  </div>
-                )}
-
-                {/* Component Build Progress */}
-                {progress.componentStatuses.length > 0 && (
-                  <div className="mt-8 w-full px-4">
-                    <ComponentViewer components={progress.componentStatuses} />
-                  </div>
-                )}
-
-                {/* AI Thinking Display */}
-                {progress.thoughts.length > 0 && (
-                  <div className="mt-8 max-w-2xl w-full px-4">
-                    <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">AI Thinking</span>
-                      </div>
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {progress.thoughts.map((thought, index) => (
-                          <div
-                            key={index}
-                            className="text-sm text-slate-300 bg-slate-900/40 rounded-lg p-3 animate-fade-in"
-                            style={{ animationDelay: `${index * 50}ms` }}
-                          >
-                            {thought}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-            </div>
+        {/* ERROR STATE — retry preserves session/curriculum state */}
+        {phase === GameState.ERROR && (
+          <GenerationErrorScreen
+            topic={lastGenerateRef.current?.topic ?? topic}
+            canRetry={lastGenerateRef.current !== null}
+            backLabel={sessionReturn ? 'Return to Session' : 'Back to Home'}
+            onRetry={() => {
+              if (lastGenerateRef.current) {
+                void generate(lastGenerateRef.current);
+              }
+            }}
+            onBack={reset}
+          />
         )}
 
         {/* EXHIBIT STATE */}
@@ -872,7 +452,7 @@ export default function App() {
             }}
             onDetailItemClick={handleDetailItemClick}
             onExhibitComplete={handleExhibitComplete}
-            onGenerateRelated={generate}
+            onGenerateRelated={startGenerate}
             onExitLesson={reset}
           />
         )}

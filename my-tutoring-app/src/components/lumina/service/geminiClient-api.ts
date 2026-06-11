@@ -17,6 +17,7 @@ import {
   HydratedPracticeItem,
   SessionBrief,
 } from '../types';
+import type { StudentGenerationContext } from './studentContext/types';
 
 /**
  * Progress callback for manifest generation streaming
@@ -107,14 +108,15 @@ export const generateExhibitManifestWithObjectivesStreaming = async (
   topic: string,
   gradeLevel: string,
   objectives: Array<{ id: string; text: string; verb: string; icon: string }>,
-  callbacks?: ManifestProgressCallback
+  callbacks?: ManifestProgressCallback,
+  studentContext?: StudentGenerationContext | null
 ): Promise<ExhibitManifest> => {
   const response = await fetch('/api/lumina/manifest-stream', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ topic, gradeLevel, objectives }),
+    body: JSON.stringify({ topic, gradeLevel, objectives, studentContext }),
   });
 
   if (!response.ok) {
