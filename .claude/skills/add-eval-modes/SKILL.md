@@ -384,12 +384,17 @@ Ten Frame is the reference. Read these files for the complete pattern:
 - [ ] Designed eval mode progression with the user (types → modes → β values)
 - [ ] Added `evalModes` array to catalog entry, ordered by β
 - [ ] β values match backend `PROBLEM_TYPE_REGISTRY` (or added to both)
+- [ ] `discrimination` (a) values mirrored from backend `discrimination_priors.py` on each catalog mode (omit → 1.4 default, matching the backend fallback)
 - [ ] `targetEvalMode` added to config type
 - [ ] Logging added via `logEvalModeResolution()` from `evalMode/index.ts`
 - [ ] Generator registration in `registry/generators/[domain]Generators.ts` passes `item.config` through (via `getConfig(item)` or `...item.config`)
 - [ ] Backend `PROBLEM_TYPE_REGISTRY` in `problem_type_registry.py` updated with matching β priors (or confirmed existing entries match)
+- [ ] **Within-mode difficulty** (see ten-frame/counting-board keystone, 2026-06-11). Two prescriptions by generator class:
+  - **Value-only primitives → POOL-SERVICE pattern** (preferred; place-value/array-grid/ten-frame/counting-board precedent): Gemini wrapper emits ONLY metadata + a `windowMax` schema field (it reads the scope language — never regex-parse it, never add manifest schema fields); code builds every challenge from `modeRange ∩ window ∩ difficultyBand(withinModeLevel)`. Export numeric band functions (e.g. `tenFrameCountBand(evalMode, level, scopeCeiling)`) using `band`/`capBand` from `service/difficulty/difficultyContext.ts`; add `studentTheta?: number` to the config; compute level via `computeDifficultyTuple` with the mode's catalog `discrimination`. Scope/difficulty violations are impossible by construction — no prompt caps, no schema min/max, no post-clamps.
+  - **Content-heavy primitives** (LLM must author the substance): use `buildDifficultyPromptSection` + schema `minimum`/`maximum` via `constrainNumericRange` (pinned-mode only) + a code-side post-generation cap. Prompt-only enforcement fails under conflict.
+  - Either way: mode = WHAT (pinned by pedagogy); difficulty = HOW HARD within the mode — never select modes by β proximity in lessons.
 - [ ] TypeScript compiles without errors
-- [ ] Reminded user to test each mode in Primitives Tester
+- [ ] Reminded user to test each mode in Primitives Tester, then run the `/eval-test` Step 2b difficulty sweep (theta low/mid/high + scope-conflict case)
 
 ### Multi-Mode Only (additional steps)
 

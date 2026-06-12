@@ -8,14 +8,14 @@ import { useStudent } from '../contexts/StudentContext';
 // StudentBadge — header chip showing who is signed in and which student
 // the app is driving.
 //
-// Identity comes from two places that are not yet unified (until step 4 of
-// the personalization plan):
+// Identity comes from two places:
 //   - useAuth().userProfile  → the authenticated Firebase user (+ their
 //     backend student_id mapping)
 //   - useStudent().studentId → the student the Lumina app actually drives
-//     (currently dev-pinned in StudentContext)
-// When the two disagree, the chip shows a small amber "dev" marker so the
-// pinning is visible instead of silently misleading.
+//     (auth-resolved since step 4; NEXT_PUBLIC_LUMINA_DEV_STUDENT_ID pins it)
+// They agree in production. When a dev pin diverges from the signed-in
+// user's mapping, the chip shows a small amber "dev" marker so the pinning
+// is visible instead of silently misleading.
 // ═══════════════════════════════════════════════════════════════════════
 
 export const StudentBadge: React.FC = () => {

@@ -161,6 +161,55 @@ export function constrainChallengeTypeEnum(
 }
 
 // ---------------------------------------------------------------------------
+// Schema constraint: numeric range on a quantity field
+// ---------------------------------------------------------------------------
+
+/**
+ * Deep-clone a schema and constrain a numeric field's range with
+ * `minimum`/`maximum` (Gemini structured output honors both). The schema-level
+ * twin of constrainChallengeTypeEnum: out-of-range values become
+ * unrepresentable instead of merely discouraged in the prompt.
+ *
+ * Only safe when the field's semantics are uniform across generated items —
+ * i.e. when a single eval mode is pinned. Mixed-mode schemas must not use this
+ * (e.g. counting-board 'compare' uses `count` as the total of both groups).
+ *
+ * Default path: `schema.properties.challenges.items.properties.<fieldName>`.
+ */
+export function constrainNumericRange(
+  baseSchema: Schema,
+  fieldName: string,
+  range: { minimum?: number; maximum?: number },
+  config?: Omit<SchemaConstraintConfig, 'fieldName'>,
+): Schema {
+  const schema: Schema = JSON.parse(JSON.stringify(baseSchema));
+  const props = (schema as Record<string, unknown>).properties as Record<string, unknown>;
+
+  let field: Record<string, unknown> | undefined;
+  if (config?.rootLevel) {
+    field = props?.[fieldName] as Record<string, unknown> | undefined;
+  } else {
+    const arrayName = config?.arrayName ?? 'challenges';
+    const array = props?.[arrayName] as Record<string, unknown> | undefined;
+    const items = array?.items as Record<string, unknown> | undefined;
+    const itemProps = items?.properties as Record<string, unknown> | undefined;
+    field = itemProps?.[fieldName] as Record<string, unknown> | undefined;
+  }
+
+  if (field) {
+    if (range.minimum !== undefined) field.minimum = range.minimum;
+    if (range.maximum !== undefined) field.maximum = range.maximum;
+    const bounds = [
+      range.minimum !== undefined ? `min ${range.minimum}` : null,
+      range.maximum !== undefined ? `max ${range.maximum}` : null,
+    ].filter(Boolean).join(', ');
+    field.description = `${field.description ?? ''} (REQUIRED RANGE: ${bounds})`.trim();
+  }
+
+  return schema;
+}
+
+// ---------------------------------------------------------------------------
 // Prompt builder helper
 // ---------------------------------------------------------------------------
 

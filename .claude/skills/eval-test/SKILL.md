@@ -193,6 +193,67 @@ When the generator has a fallback path (e.g., `?? 10`, `?? "A"`, `|| ['penny','n
 
 **Why this matters:** Silent fallbacks mask broken generation. A `correctTotal ?? 10` that fires on every challenge means students always see "10" regardless of the displayed coins.
 
+## Step 2b: Difficulty Sweep (primitives with a difficulty spec)
+
+For primitives with IRT within-mode difficulty (as of 2026-06-11, **17**:
+ten-frame, counting-board, number-line, hundreds-chart, ordinal-line,
+number-sequencer, comparison-builder, number-bond, base-ten-blocks,
+skip-counting-runner, array-grid, area-model, multiplication-explorer,
+math-fact-fluency, regrouping-workbench, addition-subtraction-scene, factor-tree
+— pool-service generators exporting numeric band functions like
+`tenFrameCountBand`/`numberLineRangeMax`/`comparisonBuilderValueBand`/
+`areaModelFactorBands`; the `DIFFICULTY_SPEC_PRIMITIVES` set in
+MathPrimitivesTester.tsx is the live list), verify the bands are honored by
+sweeping `&theta=` across the mode's range:
+
+```bash
+# Pick thetas that land LOW / MID / HIGH within the mode's band:
+# level = (clamp(θ − 0.847/a, β±0.75) − (β−0.75)) / 1.5
+curl -s ".../eval-test?componentId=counting-board&evalMode=count&topic=Counting%20objects&gradeLevel=kindergarten&theta=0.5"
+curl -s "...&theta=1.5"
+curl -s "...&theta=5.9"
+```
+
+Assert three things:
+1. **Monotonicity** — the quantity-bearing fields (counts, targetCounts, startFrom)
+   move up with theta and stay inside the band the spec declares for that level.
+2. **Scope wins** — repeat the HIGH theta with a topic whose ceiling sits BELOW
+   the band (e.g. "Counting to 5" against band 7-10), AND once with a word
+   number ("Counting to five") to exercise the wrapper's window extraction.
+   Every value must respect the ceiling. In the POOL-SERVICE architecture
+   (ten-frame, counting-board, place-value, array-grid) this is guaranteed by
+   construction: the wrapper LLM emits only `windowMax` (reading the scope
+   language); code draws every value from modeRange ∩ window ∩ difficultyBand.
+   Prompt-only enforcement FAILS under conflict (verified 2026-06-11: LLM
+   generated 1-7 for a "to 5" topic) — which is why value-generating prompts
+   are the wrong architecture for value-only primitives.
+3. **Null-theta no-op** — omit `&theta=` and confirm output matches pre-difficulty
+   behavior (grade-band defaults).
+
+A spec violation is **HIGH** (fix the spec/cap in the generator); a scope
+violation is **CRITICAL** (pedagogy rule #1).
+
+**Span-clamp gotcha (multi-term constructions):** capping the *max band* is not
+sufficient when a mode builds a stepped sequence (count-from, order-cards,
+fill-missing, skip runs). If `length` and `step` are chosen from the difficulty
+bands independently of the capped `maxHi`, the span `(length-1)*step` can exceed
+the window — `start` clamps to 1 but the terms walk past the ceiling (verified
+2026-06-11 on number-sequencer: "Counting to 10" @ θ2.5 → terms to 21). Fix:
+clamp the span to the window (shrink step then length so `(length-1)*step ≤
+maxHi-1`) BEFORE constructing terms — scope wins over the length/step axis.
+Always sweep a HIGH-θ + small-ceiling case (e.g. "to 5"/"to 10") for any
+multi-term mode.
+
+**Product-mode corollary (rollout #2, area-model):** for modes whose scope-bound
+quantity is a PRODUCT (arrays, area models, multiplication facts), capping each
+factor band independently is insufficient — two separately-capped factors still
+multiply past a product ceiling. The product cap must shrink a factor band BELOW
+its difficulty `lo` to a structural floor, or it silently fails to bind. And a
+value generator that *rejects* every collapsed draw (e.g. requiring a 2×2 grid)
+empties the session — make it degrade to the minimal valid pair instead, never
+zero challenges. A sweep that returns 0 challenges reads as "scope OK" (max 0 ≤
+ceiling) but is actually a CRITICAL empty-render — always assert challenge count > 0.
+
 ## Key Files
 
 | File | Purpose |

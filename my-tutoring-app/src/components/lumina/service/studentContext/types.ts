@@ -32,6 +32,34 @@ export interface ObjectiveStudentState {
   summary: string;
 }
 
+/** Most recent calendar day of activity, from the durable attempt log. */
+export interface StudentLastSession {
+  /** YYYY-MM-DD */
+  date: string;
+  activityCount: number;
+  /** 0–1 */
+  successRate: number;
+  primitiveTypes: string[];
+  /** One prompt-embeddable sentence. */
+  summary: string;
+}
+
+/**
+ * Voice persona — identity/engagement facts for prompt FRAMING only (greeting
+ * by name, interest theming, last-session continuity). Never carries model
+ * quantities; difficulty/scope/phase decisions stay with the objective states.
+ */
+export interface StudentPersona {
+  firstName?: string | null;
+  interests?: string[];
+  learningGoals?: string[];
+  preferredLearningStyles?: string[];
+  currentStreak?: number;
+  lastSession?: StudentLastSession | null;
+  /** One prompt-embeddable sentence rolling up the persona. */
+  summary: string;
+}
+
 export interface StudentGenerationContext {
   available: boolean;
   studentId?: string;
@@ -40,5 +68,7 @@ export interface StudentGenerationContext {
   /** Set when available=false (e.g. 'no_subject_scope', 'internal_error') */
   reason?: string;
   overallSummary?: string;
+  /** Voice persona; null/absent when nothing personally useful exists. */
+  studentProfile?: StudentPersona | null;
   objectives: ObjectiveStudentState[];
 }

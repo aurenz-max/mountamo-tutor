@@ -7,15 +7,15 @@
 
 | Primitive | Modes | Passed | Failed | Last Tested | Report |
 |-----------|-------|--------|--------|-------------|--------|
-| regrouping-workbench | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/regrouping-workbench-2026-03-15.md) |
-| array-grid | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/array-grid-2026-03-15.md) |
+| regrouping-workbench | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| array-grid | 3 | 3 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | fraction-bar | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/fraction-bar-2026-03-15.md) |
 | percent-bar | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/percent-bar-2026-03-15.md) |
 | measurement-tools | 4 | 4 | 0 | 2026-05-22 | [report](eval-reports/measurement-tools-2026-05-22.md) |
 | tape-diagram | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/tape-diagram-2026-03-15.md) |
 | sorting-station | 6 | 6 | 0 | 2026-04-01 | [report](eval-reports/sorting-station-2026-04-01.md) |
-| number-sequencer | 5 | 5 | 0 | 2026-03-18 | [report](eval-reports/number-sequencer-2026-03-15.md) |
-| base-ten-blocks | 4 | 4 | 0 | 2026-05-19 | [report](eval-reports/base-ten-blocks-2026-05-19.md) |
+| number-sequencer | 5 | 5 | 0 | 2026-06-11 | [report](eval-reports/number-sequencer-2026-06-11.md) |
+| base-ten-blocks | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | phonics-blender | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phonics-blender-2026-03-15.md) |
 | rhyme-studio | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/rhyme-studio-2026-03-15.md) |
 | syllable-clapper | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/syllable-clapper-2026-03-15.md) |
@@ -32,22 +32,22 @@
 | opinion-builder | 2 | 1 | 1 | 2026-03-15 | [report](eval-reports/opinion-builder-2026-03-15.md) |
 | revision-workshop | 6 | 5 | 1 | 2026-03-15 | [report](eval-reports/revision-workshop-2026-03-15.md) |
 | sentence-builder | 4 | 2 | 2 | 2026-03-15 | [report](eval-reports/sentence-builder-2026-03-15.md) |
-| area-model | 5 | 5 | 0 | 2026-05-19 | [report](eval-reports/area-model-2026-05-19.md) |
+| area-model | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | counting-board | 5 | 5 | 0 | 2026-03-15 | [report](eval-reports/counting-board-2026-03-15.md) |
 | ten-frame | 4 | 4 | 0 | 2026-05-28 | [report](eval-reports/ten-frame-2026-05-28.md) |
-| factor-tree | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/factor-tree-2026-03-16.md) |
-| addition-subtraction-scene | 4 | 4 | 0 | 2026-03-16 | [report](eval-reports/addition-subtraction-scene-2026-03-16.md) |
-| number-line | 5 | 5 | 0 | 2026-05-19 | [report](eval-reports/number-line-2026-05-19.md) |
+| factor-tree | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| addition-subtraction-scene | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| number-line | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout-2026-06-11.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/fraction-circles-2026-03-17.md) |
-| number-bond | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/number-bond-2026-03-17.md) |
+| number-bond | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | pattern-builder | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/pattern-builder-2026-03-17.md) |
-| comparison-builder | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/comparison-builder-2026-03-17.md) |
+| comparison-builder | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | balance-scale | 6 | 6 | 0 | 2026-05-21 | [report](eval-reports/balance-scale-2026-05-21.md) |
-| ordinal-line | 5 | 5 | 0 | 2026-05-19 | [report](eval-reports/ordinal-line-2026-05-19.md) |
+| ordinal-line | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout-2026-06-11.md) |
 | shape-sorter | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/shape-sorter-2026-03-17.md) |
-| math-fact-fluency | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/math-fact-fluency-2026-03-17.md) |
-| multiplication-explorer | 6 | 6 | 0 | 2026-03-17 | [report](eval-reports/multiplication-explorer-2026-03-17.md) |
-| skip-counting-runner | 5 | 5 | 0 | 2026-05-24 | [report](eval-reports/skip-counting-runner-2026-05-24.md) |
+| math-fact-fluency | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| multiplication-explorer | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| skip-counting-runner | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | shape-builder | 6 | 5 | 1 | 2026-03-28 | [report](eval-reports/shape-builder-2026-03-28.md) |
 | shape-tracer | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/shape-tracer-2026-03-17.md) |
 | 3d-shape-explorer | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/3d-shape-explorer-2026-03-17.md) |
@@ -62,7 +62,7 @@
 | light-shadow-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/light-shadow-lab-2026-03-29.md) |
 | constellation-builder | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/constellation-builder-2026-03-29.md) |
 | sound-wave-explorer | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/sound-wave-explorer-2026-03-29.md) |
-| hundreds-chart | 4 | 4 | 0 | 2026-05-19 | [report](eval-reports/hundreds-chart-2026-05-19.md) |
+| hundreds-chart | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout-2026-06-11.md) |
 | length-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/length-lab-2026-03-29.md) |
 | analog-clock | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/analog-clock-2026-03-29.md) |
 | media-player | 1 | 0 | 1 | 2026-04-02 | [report](eval-reports/media-player-2026-04-02.md) |
@@ -279,6 +279,14 @@ setWorkspaceSlots(prev => [...prev, tile]);
 **Fix pattern:** Same shape as the SP-18 round-robin. Make the selection function accept an **array** of types (the per-type builders already exist); on the unconstrained path pass the full allowed set and assign per-challenge type via a per-session shuffled round-robin, then keep any easy→hard sort. IRT-pinned calls keep passing a single type. The component must already render per-challenge by type (polygon-area-builder does) — confirm before fixing. **Product question** (DEC-PAB-1): whether a mixed session should span all difficulty tiers, only same-grade tiers, or whether single-tier is intended and the *label* should change instead.
 **Status:** Resolved for polygon-area-builder 2026-06-06 (PAB-1) **and circle-explorer 2026-06-06 (CE-1)** — same fix shape on both. DEC-PAB-1 decided: Auto mixes all five tiers, scaled low→high, 8 problems. Each generator got a `selectMixed…Challenges` (shuffled round-robin over all tiers, dedup, sort by `(TIER_RANK, <in-tier difficulty driver>)` — `expectedArea` for polygon, `radius` for circle) + `buildForType` dispatch; the `evalConstraint === null` path now calls it. IRT-pinned modes unchanged. Reusable for any other wrapper-picks-one-type generator (number-tracer-style orchestrators, area-model, hundreds-chart — still to audit). **transformation-lab shipped 2026-06-07 already SP-21-compliant** — `selectMixedTransformationLabChallenges` (round-robin over `TIER_ORDER`, dedup, sort by `(TIER_RANK, figure magnitude)`) is wired to the `evalConstraint === null` path from the start; reference for building new wrapper-style primitives correctly the first time.
 
+### SP-22: Difficulty band introduces a hidden structural parameter the instruction never communicates
+
+**Affected:** number-sequencer (count_from — NS-2)
+**Risk:** Any rollout#1 pool-service generator whose difficulty bands vary a *structural* parameter (step, direction, grouping, blank placement) while the instruction is a fixed deterministic template. Distinct from SP-17 (LLM prose vs code data desync): here BOTH instruction and data are code-built, but the template was written for the LOW-band shape and doesn't surface parameters that only activate at MID/HIGH levels. The bug is invisible at low θ — sweeps that check band monotonicity and scope caps (the standard rollout sweep) pass while the challenge is unanswerable at high θ.
+**Root cause:** Difficulty rollout added band-driven parameters to builders without auditing whether each parameter is observable by the student (visible in data, or stated in the instruction). Answer derivability (Rule G4) was only checked at default difficulty.
+**Fix pattern:** For each band-driven parameter, either (1) constrain it to the value the mode's pedagogy doc implies (count_from = "sequential counting" → step 1 always), or (2) thread it into the instruction template (`Count forward by ${step}s`). Then add a HIGH-θ derivability spot-check to the difficulty sweep: for every mode, can the answer be computed from instruction + visible sequence alone?
+**Status:** Resolved for number-sequencer 2026-06-11 (NS-2, option 1 — step pinned to 1 for count_from; fill_missing/order_cards keep stepped bands because their steps are derivable from visible terms). Other rollout pool-service generators still need the HIGH-θ derivability audit.
+
 ---
 
 ## Open Issues — CRITICAL / HIGH
@@ -343,6 +351,7 @@ setWorkspaceSlots(prev => [...prev, tile]);
 | ~~FS-1~~ | ~~function-sketch~~ | ~~identify-features~~ | ~~HIGH~~ | ~~Wrong content~~ | ~~3/4 challenges generated linear functions with a feature tagged `type: "maximum"` on an endpoint or arbitrary midpoint. Math-conceptual error.~~ Fixed 2026-05-21: PROMPT-CHANGE forbids linear/monotonic functions in identify-features mode; new `validateFeatureSemantics()` drops max/min features that aren't real local extrema of the sampled curve; orchestrator uses `Promise.allSettled` for stochastic resilience. | ~~GENERATOR~~ |
 | FS-2 | function-sketch | classify-shape | HIGH | Trivial session (SP-19) | All 4 parallel sub-generators receive identical args and converge on the same function family — `topic=oscillating waves` → 4× sinusoidal; default topic → 4× linear. MC answer is invariant across the session, so after challenge 1 the student locks in the right option for all remaining 3. Mode no longer discriminates between families. | GENERATOR |
 | NT-1 | number-tracer | all modes | CRITICAL | Truncated JSON (SP-6) | Required deeply-nested `strokePaths` (ARRAY<ARRAY<{x,y}>>) forces Flash Lite to emit hundreds of coordinate points despite prompt saying "leave []". Output overflows token limit, JSON truncates mid-array (`JSON.parse` fails at pos 66381, one ~65KB line). All 4 modes fail to generate. The field is dead weight — generator force-sets `strokePaths=[]` at gemini-number-tracer.ts:184, component falls back to hardcoded `getDigitPaths(digit)`. Fix: delete `strokePaths` property + required entry from schema (lines 54-68, 75). | GENERATOR |
+| ~~NS-2~~ | ~~number-sequencer~~ | ~~count_from~~ | ~~CRITICAL~~ | ~~Instruction-data mismatch (SP-22)~~ | ~~Difficulty bands raise the step to 2 (MID) / 5 (HIGH) but the deterministic instruction template only says "Count forward from X!" — the skip-count step is invisible, so counting by ones is marked wrong.~~ Fixed 2026-06-11: pinned step=1 for count_from in `numberSequencerStepBand` (user decision: mode doc says "sequential counting"; skip counting belongs to fill_missing + skip-counting-runner). | ~~GENERATOR~~ |
 | DNL-1 | double-number-line | find_missing | HIGH | Answer leak | Umbrella `contextQuestion` verbally states the unit rate ("1 can of paint covers 5 feet of wood", "Every 1 packet of flower seeds grows 5 beautiful flowers") in 2/2 samples — but `find_missing` is supposed to make students derive the rate from the labeled non-unit given pair (e.g., `2 → 10`). Schema description's example (`'1 cup of flour makes 3 cookies'`) trains Gemini to follow the same pattern regardless of `challengeType`. `equivalent_ratios` is fine (rate is shown anyway); `unit_rate` already avoids stating it. | GENERATOR |
 | ~~CO-5~~ | ~~compare-objects~~ | ~~order_three~~ | ~~HIGH~~ | ~~Instruction-data desync (SP-17)~~ | ~~Gemini stochastically wrote instruction direction opposite of `comparisonWord` direction (~3/16 challenges across 4 runs): e.g. `cw=heavier` (DESC correctAnswer) paired with "Order them from lightest to heaviest" (ASC instruction).~~ Fixed 2026-05-24: SCHEMA-SIMPLIFY (SP-17), same approach as HC-1/2/3 — removed `instruction` from the order_three Gemini schema; `buildOrderThreeInstruction(comparisonWord, attribute)` synthesizes prose from a 4-attribute × 2-direction lookup. | ~~GENERATOR~~ |
 | ~~CO-1~~ | ~~compare-objects~~ | ~~compare_two (weight only)~~ | ~~CRITICAL~~ | ~~Wrong visual / pedagogical inversion~~ | ~~Seesaw tilted the heavier side UP and the lighter side DOWN — SVG positive rotation is clockwise around the fulcrum, which raises the left side regardless of which side was heavier.~~ Fixed 2026-05-24: inverted the ternary in [CompareObjects.tsx:130](my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/CompareObjects.tsx#L130) — heavier-left now maps to CCW (negative rotation) and heavier-right to CW (positive). Verified across 3 stochastic runs / 6 weight challenges, all 4 schema combinations (heavier-{left,right} × asks-{heavier,lighter}) render correctly. | ~~COMPONENT~~ |
@@ -364,6 +373,7 @@ setWorkspaceSlots(prev => [...prev, tile]);
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| NS-2 | number-sequencer | 2026-06-11 | GENERATOR (band constraint, SP-22 option 1). `numberSequencerStepBand` now returns a pinned `step = 1` for `count_from` — the instruction template ("Count forward from X!") never surfaces a step, so any step > 1 was invisible and the challenge unanswerable (G4 violation). User decision: the mode's pedagogy doc is "sequential counting, Grades K-1"; skip counting belongs to fill_missing (step derivable from visible terms) and skip-counting-runner. Difficulty still scales via maxBand ([5,10]→[10,20]→[20,30]), length (4→6), and backward counting at high levels. fill_missing/order_cards keep their stepped bands (steps derivable from visible data). Verified at θ=5.9 and θ=1.0: all count_from sequences consecutive; all 5 modes re-tested PASS, no regression; tsc clean (1441 baseline). |
 | CE-1 | circle-explorer | 2026-06-06 | GENERATOR (SP-21 round-robin). Identical pattern to PAB-1: "Auto (mixed)" produced a single tier (`discover_pi ×4`) because the null eval constraint still let the root-level `challengeType` enum pick one tier and `selectCircleExplorerChallenges(oneType)` built the whole session from it. Fix: added `TIER_ORDER` (discover_pi→circumference→area→reverse→composite)/`TIER_RANK` + `MIXED_INSTANCE_COUNT=8`, a `buildForType(type)` dispatch over the existing per-type builders, and `selectMixedCircleExplorerChallenges()` (shuffled round-robin so all tiers appear, dedup, sort by `(TIER_RANK, radius)`). `generateCircleExplorer` routes the `evalConstraint === null` path to the mixed builder; top-level `challengeType`='discover_pi' (metadata only — component renders per-challenge `currentChallenge.type`), `gradeBand`='7'. Verified: Auto → 8 challenges, all 5 tiers, ordered easy→hard; 5 IRT-pinned modes still PASS single-type count=4 (no regression); tsc clean. |
 | PAB-1 | polygon-area-builder | 2026-06-06 | GENERATOR (SP-21 round-robin). "Auto (mixed)" produced a single tier because the null eval constraint still let the root-level `challengeType` enum pick one tier and `selectPolygonAreaChallenges(oneType)` built the whole session from it. DEC-PAB-1 decided: mix all five tiers, scale low→high, >4 problems. Fix: added `TIER_ORDER`/`TIER_RANK` + `MIXED_INSTANCE_COUNT=8`, a `buildForType(type)` dispatch over the existing per-type builders, and `selectMixedPolygonAreaChallenges()` (shuffled round-robin so all tiers appear, dedup within session, sort by `(TIER_RANK, expectedArea)`). `generatePolygonAreaBuilder` routes the `evalConstraint === null` path to the mixed builder; top-level `challengeType`='decompose' (metadata only — component renders per-challenge `currentChallenge.type`), `gradeBand`='7'. Verified: Auto → 8 challenges, all 5 tiers, ordered easy→hard; 5 IRT-pinned modes still PASS single-type count=4 (no regression); tsc clean. |
 | NT-2 | number-tracer | 2026-06-02 | GENERATOR (ORCHESTRATOR + DETERMINISTIC SERVICE, SP-3). CRITICAL tab-OOM: `sequence` mode let Flash-Lite emit an unbounded `sequenceNumbers` array (live repetition loop → 1000,1001,1002,… thousands of nodes in a `text-4xl` flex row → browser crash). Root cause was architectural — a *counting* task (a run of consecutive ints with one blank = pure arithmetic) was embedded in the shared *handwriting* schema and generated by the LLM. Fix: split [gemini-number-tracer.ts](../../src/components/lumina/service/math/gemini-number-tracer.ts) into an orchestrator + `generateHandwriting` (clean 4-field schema, sequence fields removed) + `generateSequence`, where a minimal LLM call picks only a scope-bound `rangeMin`/`rangeMax` window and `buildSequenceChallenges()` builds the runs deterministically at a fixed length (4). A malformed LLM window is clamped to ≤ grade ceiling (≤20), so a runaway array is structurally impossible; component also caps the render at 12 (belt-and-suspenders). **Reusable pattern:** for a mode whose structure is deterministic arithmetic, have the LLM pick only the scope window and let code build the structure — kills overflow/desync bug classes by construction (cf. SP-17 schema-simplify). Verified eval-test: sequence runs length-4, all 4 modes PASS. |

@@ -1486,6 +1486,13 @@ export interface EvalModeDefinition {
   label: string;
   /** IRT prior β from the problem-type registry (1.0–10.0 scale) */
   beta: number;
+  /**
+   * IRT discrimination `a`, mirrored from backend discrimination_priors.py.
+   * Used to invert the 2PL for per-student target difficulty
+   * (targetBeta = θ − logit(0.70)/a). Must match the backend value.
+   * Omitted → 1.4 (DEFAULT_DISCRIMINATION_PRIOR), same as the backend fallback.
+   */
+  discrimination?: number;
   /** Scaffolding mode (1-6) this eval mode maps to in the PRD mode taxonomy */
   scaffoldingMode: number;
   /** Which challenge types the generator should produce for this eval mode */

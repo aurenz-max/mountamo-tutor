@@ -20,6 +20,10 @@ export async function GET(request: NextRequest) {
   if (componentId && evalMode) {
     const testTopic = searchParams.get('topic') || 'number sense';
     const testGradeLevel = searchParams.get('gradeLevel') || 'elementary';
+    // Optional student ability for difficulty-sweep testing: passes
+    // config.studentTheta exactly as flattenManifestToLayout stamps it.
+    const thetaParam = searchParams.get('theta');
+    const studentTheta = thetaParam !== null ? parseFloat(thetaParam) : undefined;
 
     const component = UNIVERSAL_CATALOG.find((c) => c.id === componentId);
     const modeDefinition = component?.evalModes?.find((m) => m.evalMode === evalMode);
@@ -27,7 +31,10 @@ export async function GET(request: NextRequest) {
     const item = {
       componentId,
       instanceId: `eval-test-${componentId}-${evalMode}-${Date.now()}`,
-      config: { targetEvalMode: evalMode },
+      config: {
+        targetEvalMode: evalMode,
+        ...(studentTheta !== undefined && Number.isFinite(studentTheta) ? { studentTheta } : {}),
+      },
     };
 
     const startTime = Date.now();

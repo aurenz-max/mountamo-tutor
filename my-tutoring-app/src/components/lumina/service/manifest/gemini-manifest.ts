@@ -18,9 +18,28 @@ import type { StudentGenerationContext } from '../studentContext/types';
 /**
  * Convert objective-centric manifest to flat layout array for backward compatibility
  * This allows the existing rendering pipeline to work with the new manifest format
+ *
+ * When a studentContext is provided, each component's config is also stamped
+ * with `studentTheta` — the student's IRT ability for the subskill its parent
+ * objective resolved to. Deterministic (code-side), never round-tripped
+ * through the LLM. Generators invert the 2PL against their pinned eval mode
+ * to derive within-mode difficulty (see service/difficulty/difficultyContext.ts).
  */
-export const flattenManifestToLayout = (manifest: ExhibitManifest): ManifestItem[] => {
+export const flattenManifestToLayout = (
+  manifest: ExhibitManifest,
+  studentContext?: StudentGenerationContext | null,
+): ManifestItem[] => {
   const layout: ManifestItem[] = [];
+
+  // objectiveId → theta for resolved objectives with ability data
+  const thetaByObjective = new Map<string, number>();
+  if (studentContext?.available) {
+    for (const obj of studentContext.objectives ?? []) {
+      if (obj.tier === 'exact' && obj.theta != null) {
+        thetaByObjective.set(obj.objectiveId, obj.theta);
+      }
+    }
+  }
 
   // 1. Add curator brief first
   if (manifest.curatorBrief) {
@@ -36,6 +55,7 @@ export const flattenManifestToLayout = (manifest: ExhibitManifest): ManifestItem
   // 2. Add all components from each objective block
   if (manifest.objectiveBlocks) {
     for (const block of manifest.objectiveBlocks) {
+      const studentTheta = thetaByObjective.get(block.objectiveId);
       for (const component of block.components) {
         layout.push({
           componentId: component.componentId,
@@ -48,6 +68,8 @@ export const flattenManifestToLayout = (manifest: ExhibitManifest): ManifestItem
             objectiveId: block.objectiveId,
             objectiveText: block.objectiveText,
             objectiveVerb: block.objectiveVerb,
+            // Student ability for this objective's resolved subskill (if any)
+            ...(studentTheta != null ? { studentTheta } : {}),
           },
           objectiveIds: [block.objectiveId]
         });
@@ -73,10 +95,13 @@ export const flattenManifestToLayout = (manifest: ExhibitManifest): ManifestItem
 /**
  * Enrich manifest with flattened layout for backward compatibility
  */
-export const enrichManifestWithLayout = (manifest: ExhibitManifest): ExhibitManifest => {
+export const enrichManifestWithLayout = (
+  manifest: ExhibitManifest,
+  studentContext?: StudentGenerationContext | null,
+): ExhibitManifest => {
   return {
     ...manifest,
-    layout: flattenManifestToLayout(manifest)
+    layout: flattenManifestToLayout(manifest, studentContext)
   };
 };
 
@@ -109,7 +134,7 @@ const getGradeLevelContext = (gradeLevel: string): string => {
  * Returns '' when no usable context exists so the prompt is unchanged for
  * unpersonalized generation.
  */
-const buildStudentContextBlock = (
+export const buildStudentContextBlock = (
   studentContext?: StudentGenerationContext | null
 ): string => {
   if (!studentContext?.available || !studentContext.objectives?.length) return '';
@@ -136,6 +161,48 @@ PERSONALIZATION RULES:
 - Personalization changes component selection, phase weighting, and difficulty config ONLY.
 - NEVER mention scores, gates, probabilities, or mastery state in any student-facing title or intent.
 - NEVER reveal answers or weaken a component's pedagogy to make it "easier".`;
+};
+
+/**
+ * Build the student VOICE block — personal framing, words only.
+ *
+ * Deliberately separate from buildStudentContextBlock: the IRT block governs
+ * structure (component selection, phase weighting, difficulty config); this
+ * block governs language (greeting, theming, continuity). Keeping the two
+ * authorities separate is the proven words-vs-numbers division — prompt-level
+ * instructions are reliable for voice precisely because there is no numeric
+ * constraint for the LLM to trade off against.
+ *
+ * Returns '' when no persona exists so the prompt is unchanged.
+ */
+export const buildStudentVoiceBlock = (
+  studentContext?: StudentGenerationContext | null
+): string => {
+  const persona = studentContext?.studentProfile;
+  if (!persona) return '';
+
+  const facts: string[] = [];
+  if (persona.firstName) facts.push(`- Name: ${persona.firstName} (address the student directly by name)`);
+  if (persona.interests?.length) facts.push(`- Interests: ${persona.interests.join(', ')}`);
+  if ((persona.currentStreak ?? 0) >= 2) facts.push(`- Learning streak: ${persona.currentStreak} days running`);
+  if (persona.lastSession) facts.push(`- ${persona.lastSession.summary}`);
+  if (facts.length === 0) return '';
+
+  return `
+
+## STUDENT VOICE (personal framing — affects WORDS ONLY)
+${facts.join('\n')}
+
+HOW TO USE THE VOICE:
+- curatorBrief: open by greeting the student by name and connect today's topic to what they did last session (e.g. "Last time you worked with ten frames — today we're building on that"). Celebrate an active streak in one short phrase.
+- Component intents: where an interest fits the content NATURALLY, instruct the generator to theme word problems, examples, or story contexts around it.
+
+VOICE RULES (hard constraints):
+- Theme AT MOST 2 component intents with the student's interests. Every other component intent must stay interest-neutral — count your themed intents before finalizing. A lesson where everything is themed reads as gimmicky and dilutes the content.
+- The voice changes WORDING ONLY. It must NEVER change component selection, phase weighting, difficulty, counts, number ranges, or scope — those are owned by the STUDENT PROFILE calibration and the pedagogical scope.
+- Only use the facts listed above. NEVER invent details about the student.
+- NEVER weaken pedagogy for the sake of a theme; if an interest does not fit the content, skip it.
+- NEVER mention this data block, profiles, or personalization mechanics in student-facing text.`;
 };
 
 
@@ -320,6 +387,7 @@ export const generateExhibitManifestStreaming = async (
   try {
     const gradeLevelContext = getGradeLevelContext(gradeLevel);
     const studentContextBlock = buildStudentContextBlock(studentContext);
+    const studentVoiceBlock = buildStudentVoiceBlock(studentContext);
     const catalogContext = UNIVERSAL_CATALOG.map(c =>
       `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`
     ).join('\n');
@@ -333,7 +401,7 @@ ${objectives.map((obj, i) => `${i + 1}. ${obj.text} [${obj.verb}]`).join('\n')}`
     const prompt = `You are the Lead Curator designing an educational exhibit using an OBJECTIVE-CENTRIC approach.
 
 ASSIGNMENT: Create a manifest (blueprint) for: "${topic}"
-TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}${studentContextBlock}
+TARGET AUDIENCE: ${gradeLevelContext}${objectivesContext}${studentContextBlock}${studentVoiceBlock}
 
 AVAILABLE COMPONENT TOOLS:
 ${catalogContext}
@@ -482,8 +550,10 @@ Return ONLY valid JSON matching the schema.`;
 
     const rawManifest = JSON.parse(jsonStr) as ExhibitManifest;
 
-    // Enrich with flattened layout for backward compatibility
-    const manifest = enrichManifestWithLayout(rawManifest);
+    // Enrich with flattened layout for backward compatibility.
+    // studentContext also stamps per-objective studentTheta into each
+    // component's config here (deterministic, code-side).
+    const manifest = enrichManifestWithLayout(rawManifest, studentContext);
 
     const totalComponents = manifest.objectiveBlocks?.reduce(
       (sum, block) => sum + (block.components?.length || 0), 0

@@ -16,10 +16,14 @@ Design rules (CLAUDE.md / project feedback):
   gates, competency). No hand-tuned urgency or priority formulas.
 - Fail-soft: any error returns {"available": false}. Callers treat that as
   "generate without personalization" — this endpoint must never block a lesson.
+- Words vs numbers: the `studentProfile` persona (name, interests, streak,
+  last session) feeds prompt FRAMING only. Difficulty/scope/phase decisions
+  stay with the per-objective IRT state — never with the persona.
 """
 
 import asyncio
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends
@@ -161,6 +165,142 @@ _ABSTAIN_STATE: Dict[str, Any] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Student persona (voice personalization — words, not numbers)
+#
+# The persona block carries identity/engagement facts the manifest prompt can
+# use for FRAMING ONLY: greeting by name, interest theming, "last time you
+# worked on..." continuity. It never carries model quantities — difficulty and
+# phase weighting stay with the IRT objective states above.
+#
+# NOTE: the persona comes from the AUTHENTICATED user's profile (Cosmos, via
+# user_context) while IRT state is keyed by request.student_id. In production
+# these are the same student; in dev they can diverge (test student 1004).
+# ---------------------------------------------------------------------------
+
+_RECENT_ATTEMPTS_LIMIT = 50
+
+
+def _first_name(display_name: Optional[str]) -> Optional[str]:
+    """First token of the display name; rejects email-shaped values."""
+    if not display_name or "@" in display_name:
+        return None
+    tokens = display_name.strip().split()
+    return tokens[0] if tokens else None
+
+
+def _parse_ts(value: Any) -> Optional[datetime]:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    return None
+
+
+def _last_session_from_attempts(attempts: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Summarize the most recent calendar day of activity from the durable
+    attempt log (same docs the evaluations history endpoint reads)."""
+    dated = []
+    for a in attempts:
+        ts = _parse_ts(a.get("timestamp") or a.get("created_at"))
+        if ts is not None:
+            dated.append((ts, a))
+    if not dated:
+        return None
+
+    dated.sort(key=lambda pair: pair[0], reverse=True)
+    last_day = dated[0][0].date()
+    day_attempts = [a for ts, a in dated if ts.date() == last_day]
+
+    successes = 0
+    primitive_types: List[str] = []
+    for a in day_attempts:
+        success = a.get("success")
+        if success is None:  # legacy fallback (backend 0-10 scale)
+            success = (a.get("score") or 0) >= 8
+        if success:
+            successes += 1
+        prim = a.get("primitive_type")
+        if prim and prim not in primitive_types:
+            primitive_types.append(prim)
+
+    count = len(day_attempts)
+    success_rate = successes / count if count else 0.0
+    prim_text = ", ".join(primitive_types[:4]) if primitive_types else "practice activities"
+    summary = (
+        f"Last session ({last_day.isoformat()}): {count} activities on {prim_text} "
+        f"({successes}/{count} successful)."
+    )
+    return {
+        "date": last_day.isoformat(),
+        "activityCount": count,
+        "successRate": round(success_rate, 3),
+        "primitiveTypes": primitive_types,
+        "summary": summary,
+    }
+
+
+async def _build_student_persona(
+    user_context: Dict[str, Any], firestore, student_id: int
+) -> Optional[Dict[str, Any]]:
+    """Assemble the voice-personalization persona. Fail-soft: returns None on
+    any error or when nothing personally useful exists."""
+    try:
+        first_name = _first_name(user_context.get("display_name"))
+        preferences = user_context.get("preferences") or {}
+        onboarding = preferences.get("onboarding") or {}
+
+        # Free-form interests (forward-compatible — not yet collected by
+        # onboarding; honored from preferences as soon as something writes it).
+        interests = preferences.get("interests") or onboarding.get("interests") or []
+        interests = [i for i in interests if isinstance(i, str)][:8]
+
+        learning_goals = [g for g in onboarding.get("learningGoals") or [] if isinstance(g, str)]
+        learning_styles = [
+            s for s in onboarding.get("preferredLearningStyle") or [] if isinstance(s, str)
+        ]
+        streak = int(user_context.get("current_streak") or 0)
+
+        try:
+            attempts = await firestore.get_student_attempts(
+                student_id, limit=_RECENT_ATTEMPTS_LIMIT
+            )
+        except Exception as e:
+            logger.warning(f"[GENERATION_CONTEXT] Recent-attempts fetch failed: {e}")
+            attempts = []
+        last_session = _last_session_from_attempts(attempts or [])
+
+        # Streak/goals alone aren't enough to be worth a prompt block.
+        if not first_name and not interests and not last_session:
+            return None
+
+        parts = []
+        if first_name:
+            parts.append(f"Student goes by {first_name}")
+        if interests:
+            parts.append(f"interests: {', '.join(interests)}")
+        if streak >= 2:
+            parts.append(f"on a {streak}-day learning streak")
+        if last_session:
+            parts.append(last_session["summary"])
+
+        return {
+            "firstName": first_name,
+            "interests": interests,
+            "learningGoals": learning_goals,
+            "preferredLearningStyles": learning_styles,
+            "currentStreak": streak,
+            "lastSession": last_session,
+            "summary": ". ".join(parts) + ".",
+        }
+    except Exception as e:
+        logger.warning(f"[GENERATION_CONTEXT] Persona build failed (continuing without): {e}")
+        return None
+
+
 @router.post("/generation-context")
 async def get_generation_context(
     request: GenerationContextRequest,
@@ -169,15 +309,19 @@ async def get_generation_context(
     mapping_service=Depends(get_curriculum_mapping_service),
 ):
     """Resolve lesson objectives to curriculum subskills and return the
-    student's state on each. Fail-soft: always 200; `available: false` means
-    the caller should generate without personalization."""
+    student's state on each, plus a voice persona (name, interests, last
+    session) for prompt framing. Fail-soft: always 200; `available: false`
+    means the caller should generate without personalization. A usable persona
+    alone makes the context available even when no objective resolves."""
     firestore = get_firestore_service()
     try:
         subject_id = _normalize_subject(request.subject)
+        persona = await _build_student_persona(user_context, firestore, request.student_id)
         base: Dict[str, Any] = {
-            "available": False,
+            "available": persona is not None,
             "studentId": str(request.student_id),
             "subject": subject_id,
+            "studentProfile": persona,
             "objectives": [],
         }
         if not request.objectives:
@@ -275,6 +419,7 @@ async def get_generation_context(
             "subject": subject_id,
             "gradeLevel": request.grade_level,
             "overallSummary": " ".join(parts),
+            "studentProfile": persona,
             "objectives": objectives_out,
         }
 

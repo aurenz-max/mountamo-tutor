@@ -697,54 +697,72 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
         {/* ═══════════════════════════════════════════════════════════
             Challenge Type: Count From
            ═══════════════════════════════════════════════════════════ */}
-        {currentChallenge && !allChallengesComplete && currentChallenge.type === 'count-from' && (
-          <div className="relative">
-            <div className="absolute top-1/2 left-4 right-4 h-1 bg-slate-700/50 rounded-full -translate-y-1/2 z-0" />
-            <div className="flex items-center justify-center gap-2 overflow-x-auto py-4 px-2 relative z-10">
-              {/* Starting number */}
-              <TrainCar colorClass="bg-indigo-500/20 border-indigo-400/40">
-                <span className="text-lg font-bold text-indigo-300">{currentChallenge.startNumber}</span>
-                {showDotArrays && currentChallenge.startNumber !== undefined && (
-                  <DotArray count={currentChallenge.startNumber} />
-                )}
+        {currentChallenge && !allChallengesComplete && currentChallenge.type === 'count-from' && (() => {
+          // Backward counting moves LEFT along the number line, so mirror the
+          // train: start card on the right, continuation slots extending left.
+          // This aligns the train's magnitude axis with the number line below
+          // (left = small, right = large) instead of contradicting it. The
+          // slot↔countInputs[idx] mapping is unchanged — only visual order flips.
+          const isBackward = currentChallenge.direction === 'backward';
+
+          const startCard = (
+            <TrainCar key="start" colorClass="bg-indigo-500/20 border-indigo-400/40">
+              <span className="text-lg font-bold text-indigo-300">{currentChallenge.startNumber}</span>
+              {showDotArrays && currentChallenge.startNumber !== undefined && (
+                <DotArray count={currentChallenge.startNumber} />
+              )}
+            </TrainCar>
+          );
+
+          const arrow = (
+            <span key="arrow" className="text-slate-500 text-lg select-none">
+              {isBackward ? '←' : '→'}
+            </span>
+          );
+
+          const inputSlots = countInputs.map((val, idx) => {
+            const isCorrect = correctSlots.has(idx);
+            return (
+              <TrainCar
+                key={idx}
+                colorClass={
+                  isCorrect
+                    ? 'bg-emerald-500/20 border-emerald-400/50 scale-105'
+                    : 'bg-slate-800/50 border-dashed border-white/20'
+                }
+              >
+                <input
+                  type="number"
+                  value={val}
+                  onChange={e => {
+                    const newInputs = [...countInputs];
+                    newInputs[idx] = e.target.value;
+                    setCountInputs(newInputs);
+                  }}
+                  className="w-10 h-8 bg-transparent text-center text-lg font-bold text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-400/50 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  disabled={isCurrentChallengeComplete || hasSubmittedEvaluation}
+                  onKeyDown={e => e.key === 'Enter' && canCheckAnswer && handleCheckAnswer()}
+                  autoFocus={idx === 0}
+                />
               </TrainCar>
+            );
+          });
 
-              {/* Direction arrow */}
-              <span className="text-slate-500 text-lg select-none">
-                {currentChallenge.direction === 'backward' ? '←' : '→'}
-              </span>
+          // forward:  [start] → [in0][in1]…   (magnitude ascends rightward)
+          // backward: …[in1][in0] ← [start]   (magnitude ascends rightward too)
+          const trainCars = isBackward
+            ? [...inputSlots.reverse(), arrow, startCard]
+            : [startCard, arrow, ...inputSlots];
 
-              {/* Input slots */}
-              {countInputs.map((val, idx) => {
-                const isCorrect = correctSlots.has(idx);
-                return (
-                  <TrainCar
-                    key={idx}
-                    colorClass={
-                      isCorrect
-                        ? 'bg-emerald-500/20 border-emerald-400/50 scale-105'
-                        : 'bg-slate-800/50 border-dashed border-white/20'
-                    }
-                  >
-                    <input
-                      type="number"
-                      value={val}
-                      onChange={e => {
-                        const newInputs = [...countInputs];
-                        newInputs[idx] = e.target.value;
-                        setCountInputs(newInputs);
-                      }}
-                      className="w-10 h-8 bg-transparent text-center text-lg font-bold text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-400/50 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      disabled={isCurrentChallengeComplete || hasSubmittedEvaluation}
-                      onKeyDown={e => e.key === 'Enter' && canCheckAnswer && handleCheckAnswer()}
-                      autoFocus={idx === 0}
-                    />
-                  </TrainCar>
-                );
-              })}
+          return (
+            <div className="relative">
+              <div className="absolute top-1/2 left-4 right-4 h-1 bg-slate-700/50 rounded-full -translate-y-1/2 z-0" />
+              <div className="flex items-center justify-center gap-2 overflow-x-auto py-4 px-2 relative z-10">
+                {trainCars}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ═══════════════════════════════════════════════════════════
             Challenge Type: Decade Fill (Hundred Chart)
