@@ -303,10 +303,20 @@ export async function resolveEvalModes(
   const entry = getComponentById(componentId);
   const modes = entry?.evalModes ?? [];
 
-  // 1. Explicit pin (tester / curator) wins — no LLM call, no latency.
+  // 1. Explicit pin (tester / curator / lesson resolver) wins — no LLM call.
+  //    The pin channel carries single | blend | mixed (see resolveLessonEvalModes):
+  //      - 'mixed' (or any unknown key) → genuine mixed; leave the schema open.
+  //      - 'a|b'                        → curated blend; constrain to those modes.
+  //      - '<key>'                      → single skill.
   if (opts.targetEvalMode) {
-    const def = modes.find(m => m.evalMode === opts.targetEvalMode);
-    return def ? buildResolution([def], challengeTypeDocs, 'explicit') : null;
+    const raw = opts.targetEvalMode.trim();
+    if (raw === 'mixed') return null; // explicit broad/mixed practice
+    const keys = raw.split('|').map(k => k.trim()).filter(Boolean);
+    const defs = keys
+      .map(k => modes.find(m => m.evalMode === k))
+      .filter((m): m is EvalModeDefinition => Boolean(m));
+    // Known key(s) → single (1) or curated blend (2+). Unknown/empty → mixed.
+    return defs.length ? buildResolution(defs, challengeTypeDocs, 'explicit') : null;
   }
 
   // 2. Nothing to resolve: primitive has <2 modes, or no intent signal at all.

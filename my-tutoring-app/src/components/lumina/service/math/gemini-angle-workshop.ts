@@ -788,30 +788,28 @@ Return ONLY the wrapper fields described above.
   }
 
   // ── Within-mode support tier: withdraw on-screen scaffolding (never the numbers).
-  //    Runs AFTER the answer-recompute fixup so a tier can only remove help. ──
-  if (tierScaffold && pinnedType) {
+  //    Applied PER CHALLENGE from each challenge's OWN type, so a blended (auto-mode)
+  //    session gets difficulty too — the tier is a student property, not a single-mode
+  //    one. Runs AFTER the answer-recompute fixup so a tier can only remove help. ──
+  if (supportTier) {
     for (const ch of challenges) {
-      if (ch.type !== pinnedType) continue; // single-mode session; guard anyway
-      if (pinnedType === 'measure') {
-        ch.showReadingCue = tierScaffold.showReadingCue ?? true;
-      } else if (pinnedType === 'classify_pairs') {
-        ch.showPerceptionMarks = tierScaffold.showPerceptionMarks ?? true;
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      if (ch.type === 'measure') {
+        ch.showReadingCue = sc.showReadingCue ?? true;
+      } else if (ch.type === 'classify_pairs') {
+        ch.showPerceptionMarks = sc.showPerceptionMarks ?? true;
       } else {
-        if (tierScaffold.showEquationSetup && ch.type === 'solve_algebraic') {
+        if (sc.showEquationSetup && ch.type === 'solve_algebraic') {
           ch.instruction = easyAlgInstruction(ch); // easy: hand over the assembled equation
-        } else if (tierScaffold.nameRelationship === false) {
+        } else if (sc.nameRelationship === false) {
           ch.instruction = genericInstruction(ch); // hard: withhold the relationship name
         }
-        if (tierScaffold.hintLevel === 'concept') {
-          ch.hint = conceptHint(ch, tierScaffold.nameRelationship !== false);
+        if (sc.hintLevel === 'concept') {
+          ch.hint = conceptHint(ch, sc.nameRelationship !== false);
         }
       }
     }
-    const lever =
-      pinnedType === 'measure' ? `readingCue=${tierScaffold.showReadingCue}`
-      : pinnedType === 'classify_pairs' ? `perceptionMarks=${tierScaffold.showPerceptionMarks}`
-      : `nameRelationship=${tierScaffold.nameRelationship}, hint=${tierScaffold.hintLevel}${tierScaffold.showEquationSetup ? ', eqSetup' : ''}`;
-    console.log(`[AngleWorkshop] Support tier "${supportTier}" on mode "${pinnedType}" → ${lever}`);
+    console.log(`[AngleWorkshop] Support tier "${supportTier}" applied per-challenge across ${challenges.length} challenge(s) [${pinnedType ? `single-mode ${pinnedType}` : 'blended'}].`);
   }
 
   const data: AngleWorkshopData = {
@@ -819,9 +817,9 @@ Return ONLY the wrapper fields described above.
     description: wrapper.description,
     challengeType,
     gradeBand,
-    // Tell the live tutor the support level — but only when a tier actually applied
-    // (single pinned mode). In a blend nothing was withheld, so the tutor stays neutral.
-    ...(tierScaffold && supportTier ? { supportTier } : {}),
+    // Tell the live tutor the support level whenever a tier is present — it applies
+    // in blended sessions too (the tutor's reveal policy is mode-aware per challenge).
+    ...(supportTier ? { supportTier } : {}),
     challenges,
   };
 

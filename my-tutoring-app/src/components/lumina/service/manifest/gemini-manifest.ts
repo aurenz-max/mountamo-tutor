@@ -268,8 +268,9 @@ const objectiveComponentSchema: Schema = {
       type: Type.OBJECT,
       description: "Optional configuration hints and educational context",
       properties: {
-        targetEvalMode: { type: Type.STRING, description: "For a primitive that lists 'eval modes': the ONE mode whose skill matches this component's parent objective and intent. Modes are distinct skills, not difficulty levels — never pick by lesson position or phase. Omit for primitives without listed modes." },
-        difficulty: { type: Type.STRING, enum: ['easy', 'medium', 'hard'], description: "Structural support tier WITHIN the chosen eval mode: 'easy' (max scaffolding), 'medium', or 'hard' (min scaffolding). Support level only — never a bigger number range." },
+        // Eval mode (which SKILL a component teaches) is resolved authoritatively
+        // downstream by resolveLessonEvalModes — deliberately NOT chosen here.
+        difficulty: { type: Type.STRING, enum: ['easy', 'medium', 'hard'], description: "Structural support tier for this component: 'easy' (max scaffolding), 'medium', or 'hard' (min scaffolding). Support level only — never a bigger number range." },
         count: { type: Type.NUMBER, description: "Number of items to generate" }
       }
     }
@@ -388,19 +389,13 @@ export const generateExhibitManifestStreaming = async (
     const gradeLevelContext = getGradeLevelContext(gradeLevel);
     const studentContextBlock = buildStudentContextBlock(studentContext);
     const studentVoiceBlock = buildStudentVoiceBlock(studentContext);
-    const catalogContext = UNIVERSAL_CATALOG.map(c => {
-      const base = `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`;
-      // Surface eval modes as TASK IDENTITIES, not a difficulty ladder. Each mode
-      // is a different skill the primitive can teach; the curator matches the mode
-      // to what the objective asks for. (β stays an IRT calibration concern — it is
-      // deliberately NOT shown here, and the keys are listed in catalog order with
-      // no easy→hard framing, so lesson position can't masquerade as mode choice.)
-      if (c.evalModes && c.evalModes.length > 1) {
-        const modes = c.evalModes.map(m => m.evalMode).join(', ');
-        return `${base}\n    eval modes (distinct skills): ${modes}`;
-      }
-      return base;
-    }).join('\n');
+    // Eval-mode selection is no longer the curator's job — resolveLessonEvalModes
+    // resolves it downstream, reading the catalog directly. The manifest only needs
+    // each primitive's identity, so mode lists are NOT surfaced here (reclaims the
+    // prompt's cognitive-load budget — the point of this stage's existence).
+    const catalogContext = UNIVERSAL_CATALOG.map(c =>
+      `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`
+    ).join('\n');
 
     // Format objectives if provided
     const objectivesContext = objectives
@@ -439,18 +434,15 @@ USE 'deep-dive' when:
 
 DO NOT use 'deep-dive' when:
 - A specialist interactive primitive exists (e.g., use 'fraction-circles' for fractions, 'slope-triangle' for slope, 'lever-lab' for levers)
-- The objective is pure practice/drill (use 'knowledge-check' or the specialist primitive's eval modes)
+- The objective is pure practice/drill (use 'knowledge-check' or the specialist interactive primitive)
 
-## EVAL MODES = TASK IDENTITY (match the mode to the objective, never to difficulty)
+## SUPPORT TIER (config.difficulty)
 
-Some components above list \`eval modes (distinct skills): a, b, c\`. Each mode is a DIFFERENT skill that primitive can teach — e.g. ten-frame's \`build\` teaches counting/cardinality while \`make_ten\` teaches complements to 10. Modes are NOT difficulty levels of one task, so there is nothing to "start easy" on: picking a different mode means teaching a different thing.
+For each practice/interactive component, set config.difficulty to the structural SUPPORT tier: 'easy' (maximum on-screen scaffolding), 'medium', or 'hard' (minimum scaffolding). This is support level ONLY — it NEVER means a bigger number range; the pedagogical scope owns the numbers.
 
-When you pick such a primitive for a component:
-1. Set config.targetEvalMode to the ONE mode whose SKILL is what this component's parent objective asks the student to do. Match the objective's content and verb to the mode keys shown. Omit config.targetEvalMode for primitives that list no modes.
-2. The mode MUST agree with the component's own intent. If the intent says "find how many more make 10", the mode is make_ten — never a lower mode because the component comes early in the lesson. Lesson position, phase, and "introducing the tool" NEVER change the mode.
-3. Components within one objective normally share the SAME mode (same skill, taught across Introduce → Visualize → Apply). Use different modes within an objective ONLY when the objective itself names more than one skill.
-4. Set config.difficulty to the STRUCTURAL SUPPORT tier WITHIN the chosen mode: 'easy' (maximum on-screen scaffolding), 'medium', or 'hard' (minimum scaffolding). This is support only — it NEVER means a bigger number range. The pedagogical scope owns the numbers.
-5. PERSONALIZATION (only when a STUDENT PROFILE block is present): adjust config.difficulty, not the mode — a STRUGGLING student gets 'easy' support on the SAME matched mode; a STRONG student gets 'hard' support. Personalization NEVER changes which mode is selected.
+PERSONALIZATION (only when a STUDENT PROFILE block is present): a STRUGGLING student gets 'easy' support; a STRONG student gets 'hard' support.
+
+(Which SKILL each component teaches — its eval mode — is resolved automatically AFTER this blueprint. Do not think about or specify eval modes here; just pick the right primitive and intent for each objective.)
 
 ## RULES FOR EACH OBJECTIVE BLOCK:
 1. Include 2-4 components per objective (not too few, not too many)
@@ -580,7 +572,10 @@ Return ONLY valid JSON matching the schema.`;
     try {
       const summary = await resolveLessonEvalModes(rawManifest, topic, gradeLevel, objectives);
       if (summary.slots > 0) {
-        callbacks?.onProgress?.(`🎚️ Eval modes: ${summary.changed} refined, ${summary.kept} kept`);
+        callbacks?.onProgress?.(
+          `🎚️ Eval modes: ${summary.changed} refined, ${summary.kept} kept ` +
+          `(${summary.mixed} mixed, ${summary.blend} blend)`,
+        );
       }
     } catch (e) {
       console.warn('[manifest] eval-mode resolution stage failed; using curator pins:', e);

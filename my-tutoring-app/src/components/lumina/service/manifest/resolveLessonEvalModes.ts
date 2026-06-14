@@ -11,11 +11,30 @@
  * emits an absent/hallucinated mode) and relieves the manifest of eval-mode
  * cognitive load.
  *
+ * SINGLE | BLEND | MIXED — the resolver does NOT collapse every slot to one
+ * skill. Many primitives were DESIGNED for "auto" / mixed practice (they cycle
+ * their skills with increasing difficulty); others want exactly one skill when
+ * that is what the objective asks. So each slot's pick is a LIST of the slot's
+ * candidate mode keys:
+ *   - one key            → single skill   (config.targetEvalMode = "<key>")
+ *   - a 2+ subset        → curated blend  (config.targetEvalMode = "a|b")
+ *   - ALL candidate keys → broad mixed    (config.targetEvalMode = "mixed")
+ * The downstream generator's resolveEvalModes() already honors all three via the
+ * same targetEvalMode channel with NO extra LLM call ("mixed" / unknown → open
+ * schema; "a|b" → union of those modes), so this needs zero generator edits.
+ *
+ * SIBLING CONTEXT — each slot is shown the OTHER components in its objective so
+ * the model can divide labor across the objective's primitive set (anchor the
+ * canonical skill on one, a contrasting model on another, reserve mixed for the
+ * synthesis/summative slot) instead of independently picking the single best-fit
+ * mode for each in isolation.
+ *
  * It runs as ONE batched flash call (same tier as the manifest), AFTER the
  * manifest is parsed and BEFORE the layout is flattened, so the resolved pins
  * propagate to every consumer through config.targetEvalMode. It is strictly
- * NON-REGRESSING: any slot it cannot improve keeps the manifest's existing pin,
- * and a failed call leaves the manifest untouched.
+ * NON-REGRESSING: any slot it cannot resolve (omitted, or all-invalid keys)
+ * keeps the manifest's existing pin, and a failed call leaves the manifest
+ * untouched.
  *
  * NOTE: the manifest still emits an inline config.targetEvalMode; that is now a
  * FALLBACK, not the source of truth. Stripping the eval-mode prose from the
@@ -37,6 +56,11 @@ interface MutableComponent {
   config?: Record<string, unknown>;
 }
 
+interface Sibling {
+  componentId: string;
+  intent: string;
+}
+
 interface Slot {
   slotId: string;
   component: MutableComponent; // live reference into the manifest — mutated in place
@@ -45,6 +69,7 @@ interface Slot {
   intent: string;
   candidateKeys: string[];
   candidateModes: { key: string; label: string; description: string }[];
+  siblings: Sibling[]; // other components under the SAME objective (for labor division)
   currentPin: string | null;
 }
 
@@ -67,9 +92,15 @@ function collectSlots(
     const auth = objById.get(block.objectiveId);
     const objectiveText = auth?.text ?? block.objectiveText;
     const objectiveVerb = auth?.verb ?? block.objectiveVerb;
-    for (const component of block.components ?? []) {
+    const blockComponents = block.components ?? [];
+    for (const component of blockComponents) {
       const modes = getComponentById(component.componentId)?.evalModes ?? [];
       if (modes.length < 2) continue; // only multi-mode primitives have a choice to make
+      // Siblings: every OTHER component under this objective, so the model can
+      // see how the objective's primitive set already divides the skill.
+      const siblings: Sibling[] = blockComponents
+        .filter((c) => c !== component)
+        .map((c) => ({ componentId: c.componentId, intent: (c.intent ?? '').slice(0, 120) }));
       slots.push({
         slotId: `s${n++}`,
         component,
@@ -82,6 +113,7 @@ function collectSlots(
           label: m.label,
           description: (m.description ?? '').slice(0, 160),
         })),
+        siblings,
         currentPin: (component.config?.targetEvalMode as string | undefined) ?? null,
       });
     }
@@ -105,6 +137,7 @@ function collectSlots(
           label: m.label,
           description: (m.description ?? '').slice(0, 160),
         })),
+        siblings: [], // its objectiveText already spans the whole lesson
         currentPin: (fa.config?.targetEvalMode as string | undefined) ?? null,
       });
     }
@@ -123,10 +156,18 @@ function buildSchema(): Schema {
           type: Type.OBJECT,
           properties: {
             slotId: { type: Type.STRING },
-            chosenMode: { type: Type.STRING, description: "Exactly one mode key from that slot's candidate list." },
+            chosenModes: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description:
+                "The subset of THIS slot's candidate mode keys whose SKILL the objective + intent needs. " +
+                'ONE key = single skill. ALL of the slot\'s candidate keys = broad mixed / "auto" practice ' +
+                '(use when the primitive should cycle its skills with no single one emphasized). ' +
+                'A 2+ subset (fewer than all) = curated blend. Every entry MUST be one of the slot\'s candidate keys.',
+            },
             rationale: { type: Type.STRING },
           },
-          required: ['slotId', 'chosenMode'],
+          required: ['slotId', 'chosenModes'],
         },
       },
     },
@@ -136,31 +177,57 @@ function buildSchema(): Schema {
 
 function buildPrompt(topic: string, gradeLevel: string, slots: Slot[]): string {
   const slotText = slots
-    .map(
-      (s) =>
-        `SLOT ${s.slotId}\n  objective (${s.objectiveVerb}): "${s.objectiveText}"\n  component: ${s.component.componentId}\n  intent: "${s.intent}"\n  candidate modes (each a DISTINCT skill):\n${s.candidateModes
-          .map((m) => `    - ${m.key} (${m.label}): ${m.description}`)
-          .join('\n')}`,
-    )
+    .map((s) => {
+      const siblingText = s.siblings.length
+        ? `\n  other components in this SAME objective (already covering part of it):\n${s.siblings
+            .map((sib) => `    • ${sib.componentId}${sib.intent ? `: "${sib.intent}"` : ''}`)
+            .join('\n')}`
+        : '';
+      return `SLOT ${s.slotId}\n  objective (${s.objectiveVerb}): "${s.objectiveText}"\n  component: ${s.component.componentId}\n  intent: "${s.intent}"\n  candidate modes (each a DISTINCT skill):\n${s.candidateModes
+        .map((m) => `    - ${m.key} (${m.label}): ${m.description}`)
+        .join('\n')}${siblingText}`;
+    })
     .join('\n\n');
 
-  return `You are selecting the single best eval mode (the SKILL a component teaches) for each slot in ONE lesson on "${topic}" (${gradeLevel}).
+  return `You are selecting the eval mode(s) (the SKILL a component teaches) for each slot in ONE lesson on "${topic}" (${gradeLevel}).
 
-Each eval mode is a DISTINCT skill — NOT a difficulty level. For each slot, choose the ONE mode whose skill the objective + intent actually asks the student to do. Rules, in priority order:
+Each eval mode is a DISTINCT skill — NOT a difficulty level. For each slot, return the LIST of candidate mode keys whose skill the objective + intent actually asks the student to do:
+- ONE key when the objective points at a single skill and you want focused practice of it.
+- ALL of the slot's candidate keys when the component is meant for broad / mixed practice — the primitive cycling through its skills with rising difficulty, with no single skill emphasized. Summative or "compare strategies / put it all together" intents usually want this.
+- A subset of 2+ (but not all) when the intent genuinely spans a few specific skills.
+
+Rules, in priority order:
 1. Match by skill and content only. Never pick by lesson position, phase, or "introducing the tool".
-2. Do NOT over-reach. Pick the mode that matches what the objective asks — never a more advanced one. The SIMPLEST mode that fully covers the objective's skill is correct; a higher-tier mode teaches a different, harder skill the objective did not ask for.
-3. Seeing the whole lesson at once, prefer a coherent VARIETY of modes across slots where the objectives genuinely differ — but per-slot fit (rules 1-2) ALWAYS wins over variety.
+2. For a SINGLE pick, do not over-reach: choose the simplest mode that fully covers the objective's skill — a higher-tier mode teaches a different, harder skill the objective did not ask for. Mixed is NOT a way to dodge this: only go mixed when no single skill is the point.
+3. Use the sibling components to DIVIDE LABOR across the objective. If other components already anchor the core skill, this slot can take a contrasting skill or the mixed/synthesis role rather than duplicating them. Per-slot fit (rules 1-2) still wins over forced variety.
 
 SLOTS:
 ${slotText}
 
-Return exactly one pick per slot. chosenMode MUST be one of that slot's candidate mode keys.`;
+Return exactly one pick per slot. Every key in chosenModes MUST be one of that slot's candidate mode keys.`;
 }
 
 export interface EvalModeResolutionSummary {
   slots: number;
-  changed: number; // pins the dedicated call improved over the curator's
-  kept: number; // pins left as the curator set them (agreement or unresolved)
+  changed: number; // pins the dedicated call changed from the curator's
+  kept: number; // pins left as the curator set them (unresolved / all-invalid)
+  mixed: number; // slots resolved to broad mixed practice
+  blend: number; // slots resolved to a curated 2+ blend
+}
+
+/**
+ * Encode a validated key list into the config.targetEvalMode channel the
+ * generators already read:
+ *   - all candidate keys → 'mixed' (open schema, broad practice)
+ *   - one key            → '<key>' (single skill)
+ *   - a 2+ subset        → 'a|b'   (curated blend; resolveEvalModes splits on '|')
+ * Catalog order is preserved for the blend case so the pin is deterministic.
+ */
+function encodePin(validKeys: string[], allKeys: string[]): { pin: string; kind: 'single' | 'blend' | 'mixed' } {
+  if (validKeys.length >= allKeys.length) return { pin: 'mixed', kind: 'mixed' };
+  if (validKeys.length === 1) return { pin: validKeys[0], kind: 'single' };
+  const ordered = allKeys.filter((k) => validKeys.includes(k));
+  return { pin: ordered.join('|'), kind: 'blend' };
 }
 
 /**
@@ -176,7 +243,7 @@ export async function resolveLessonEvalModes(
   objectives?: Array<{ id: string; text: string; verb: string }>,
 ): Promise<EvalModeResolutionSummary> {
   const slots = collectSlots(manifest, objectives);
-  if (slots.length === 0) return { slots: 0, changed: 0, kept: 0 };
+  if (slots.length === 0) return { slots: 0, changed: 0, kept: 0, mixed: 0, blend: 0 };
 
   try {
     const result = await ai.models.generateContent({
@@ -185,31 +252,43 @@ export async function resolveLessonEvalModes(
       config: { responseMimeType: 'application/json', responseSchema: buildSchema(), temperature: 0.3 },
     });
     const parsed = result.text
-      ? (JSON.parse(result.text) as { picks?: Array<{ slotId: string; chosenMode: string }> })
+      ? (JSON.parse(result.text) as { picks?: Array<{ slotId: string; chosenModes?: string[] }> })
       : null;
-    const bySlot = new Map((parsed?.picks ?? []).map((p) => [p.slotId, p.chosenMode]));
+    const bySlot = new Map((parsed?.picks ?? []).map((p) => [p.slotId, p.chosenModes ?? []]));
 
     let changed = 0;
     let kept = 0;
+    let mixed = 0;
+    let blend = 0;
     for (const slot of slots) {
-      const pick = bySlot.get(slot.slotId);
-      // Post-validate against the catalog: only accept a real mode for this primitive.
-      if (pick && slot.candidateKeys.includes(pick)) {
-        if (!slot.component.config) slot.component.config = {};
-        slot.component.config.targetEvalMode = pick;
-        if (pick !== slot.currentPin) changed++;
-        else kept++;
-      } else {
-        kept++; // unresolved/invalid → curator's pin stands (non-regressing)
+      const raw = bySlot.get(slot.slotId);
+      // Post-validate against the catalog: keep only real modes for this primitive,
+      // de-duped, in catalog order.
+      const valid = raw
+        ? slot.candidateKeys.filter((k) => raw.includes(k))
+        : [];
+
+      if (valid.length === 0) {
+        kept++; // slot omitted or all-invalid → curator's pin stands (non-regressing)
+        continue;
       }
+
+      const { pin, kind } = encodePin(valid, slot.candidateKeys);
+      if (!slot.component.config) slot.component.config = {};
+      slot.component.config.targetEvalMode = pin;
+      if (kind === 'mixed') mixed++;
+      else if (kind === 'blend') blend++;
+      if (pin !== slot.currentPin) changed++;
+      else kept++;
     }
 
     console.log(
-      `[resolveLessonEvalModes] ${slots.length} multi-mode slot(s) → ${changed} improved, ${kept} kept (curator pin)`,
+      `[resolveLessonEvalModes] ${slots.length} multi-mode slot(s) → ${changed} changed, ${kept} kept ` +
+        `(${mixed} mixed, ${blend} blend, ${slots.length - mixed - blend} single-or-kept)`,
     );
-    return { slots: slots.length, changed, kept };
+    return { slots: slots.length, changed, kept, mixed, blend };
   } catch (err) {
     console.warn('[resolveLessonEvalModes] resolution failed — keeping curator pins:', err);
-    return { slots: slots.length, changed: 0, kept: slots.length };
+    return { slots: slots.length, changed: 0, kept: slots.length, mixed: 0, blend: 0 };
   }
 }

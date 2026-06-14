@@ -182,6 +182,11 @@ async function runTrace(params: TraceParams) {
         componentConfigs: b.components.map((c) => {
           const validModes = getComponentById(c.componentId)?.evalModes?.map((m) => m.evalMode) ?? [];
           const pin = c.config?.targetEvalMode ?? null;
+          // The pin can be single ('build'), a blend ('a|b'), or the 'mixed' sentinel
+          // (SINGLE|BLEND|MIXED encoding). Valid iff it's 'mixed', or every '|'-part
+          // is a real catalog mode for this primitive.
+          const pinValid = (p: string | null): boolean =>
+            p != null && (p === 'mixed' || p.split('|').every((k) => validModes.includes(k)));
           return {
             componentId: c.componentId,
             title: c.title,
@@ -190,9 +195,9 @@ async function runTrace(params: TraceParams) {
             targetEvalMode: pin,
             evalModeCount: validModes.length,
             // null = N/A (primitive has <2 modes, no pin needed);
-            // true  = multi-mode AND validly pinned;
-            // false = multi-mode but pin missing or not in the catalog set (a MISS).
-            targetEvalModeValid: validModes.length < 2 ? null : pin != null && validModes.includes(pin),
+            // true  = multi-mode AND validly pinned (single | blend | mixed);
+            // false = multi-mode but pin missing or not a real catalog mode (a MISS).
+            targetEvalModeValid: validModes.length < 2 ? null : pinValid(pin),
           };
         }),
       })) || [],

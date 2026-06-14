@@ -19,7 +19,7 @@ Two worked references — **ten-frame** (3 levers, all boolean/numeric) and **co
 
 **Fixed scaffold — copy verbatim, zero changes:**
 - `SupportTier` type + `SUPPORT_TIERS` + `normalizeSupportTier()`
-- The single-mode gate (apply only when exactly one mode is pinned)
+- The tier gate: apply the scaffold whenever a tier is present, resolved **per challenge from each challenge's own mode** (so blended/auto sessions get difficulty too). Only the `tierSection` *prompt* injection is single-mode — it describes one mode to the LLM for title/description tone
 - `config.difficulty?: string` added to the config type
 - `tierSection` prompt injection (after the challenge-type section)
 - Deterministic application **at the end** of the generator, after structural fixups, with a `[Primitive] Support tier …` log line
@@ -148,13 +148,13 @@ If the primitive has **no real scaffold levers across the whole modality catalog
 9. **Resolve the tier in the generator function** (place after mode resolution):
 
    ```typescript
-   // Single resolved mode only — a curated BLEND has no single tier surface.
-   // (resolveEvalModes:)  resolution && resolution.modes.length === 1 ? resolution.allowedTypes[0] : undefined
-   // (resolveEvalModeConstraint:)  evalConstraint?.allowedTypes.length === 1 ? evalConstraint.allowedTypes[0] : undefined
+   const supportTier = normalizeSupportTier(config?.difficulty); // the STUDENT's tier — DRIVES application (single OR blend)
+   // pinnedType is ONLY for the prompt tone (a curated BLEND has no single mode to describe to the LLM).
+   // (resolveEvalModes:)         resolution && resolution.modes.length === 1 ? resolution.allowedTypes[0] : undefined
+   // (resolveEvalModeConstraint:) evalConstraint?.allowedTypes.length === 1 ? evalConstraint.allowedTypes[0] : undefined
    const pinnedType = /* per resolver, see above */ as ChallengeType | undefined;
-   const supportTier = normalizeSupportTier(config?.difficulty);
    const tierScaffold = pinnedType && supportTier
-     ? resolveSupportStructure(pinnedType, supportTier) : null;
+     ? resolveSupportStructure(pinnedType, supportTier) : null; // tierSection tone only — NOT the application
    const tierSection = tierScaffold
      ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
      : '';
@@ -164,20 +164,22 @@ If the primitive has **no real scaffold levers across the whole modality catalog
 
 ### Phase 4: Apply deterministically + clean up
 
-11. **Apply the scaffold in code at the END of the generator** — after the empty-fallback and all structural fixups/force-enables, before `return`. Code owns the support *structure*; the LLM only chose the numbers. Guard each lever to its relevant modes, and protect UI contracts (e.g. ten-frame keeps subitize's count display off at every tier; counting-board only relaxes `subitize_perceptual` toward `scattered`, never `line`). End with a log line:
+11. **Apply the scaffold in code at the END of the generator** — after the empty-fallback and all structural fixups/force-enables, before `return`. **Gate only on `supportTier` being present, and resolve each challenge's scaffold from its OWN mode (`ch.type`), applying per challenge.** This is the global rule: difficulty is a *student* property, so a blended/auto session must get it too — single-mode just happens to give every challenge the same scaffold. (Do NOT gate on `pinnedType` — that silently drops difficulty for every blended session, the exact no-op this skill exists to kill.) Code owns the support *structure*; the LLM only chose the numbers. Guard each lever to its relevant modes, and protect UI contracts (e.g. ten-frame keeps subitize's count display off at every tier; counting-board only relaxes `subitize_perceptual` toward `scattered`, never `line`). End with a log line:
 
     ```typescript
-    if (tierScaffold && pinnedType) {
-      if (!data.showOptions) data.showOptions = { /* safe defaults */ };
-      // ...assign each lever from tierScaffold, guarded by pinnedType...
-      console.log(`[Primitive] Support tier "${supportTier}" on mode "${pinnedType}" → <levers>`);
+    if (supportTier) {
+      for (const ch of challenges) {
+        const sc = resolveSupportStructure(ch.type, supportTier); // per-challenge, mode-correct
+        // ...assign each lever from sc, guarded by ch.type; protect UI contracts...
+      }
+      console.log(`[Primitive] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
     }
     ```
 
 11b. **Keep the live tutor in sync (if the primitive has one — esp. for modality #2).** A tier that withholds information on screen but lets the tutor reveal it is only half-applied. Do three small things:
-    - Persist the tier onto the generated data: add `supportTier?: 'easy' | 'medium' | 'hard'` to the data type and set it **only when the scaffold actually applied** (single pinned mode), so the tutor's reveal policy matches what's on screen — never claim a withholding in a blended session where nothing was withheld.
+    - Persist the tier onto the generated data: add `supportTier?: 'easy' | 'medium' | 'hard'` to the data type and set it **whenever a tier is present** (it now applies per challenge, blends included) — so the tutor matches what's on screen for every challenge, not just single-mode ones.
     - Add `supportTier` to the component's `aiPrimitiveData` so `useLuminaAI` sees it.
-    - Add a tier clause to the `sendText` prompts (at minimum `[ACTIVITY_START]` and the wrong-answer nudge): easy → tutor may name the strategy and walk the setup; medium → nudge execution only; hard → do NOT name the strategy the instruction hid, ask what the student sees, never reveal the answer.
+    - Add a **mode-aware** tier clause to the `sendText` prompts (at minimum `[ACTIVITY_START]` and the wrong-answer nudge), keyed off the *current challenge's* type so it's correct in a blend: easy → tutor may name the strategy and walk the setup; medium → nudge execution only; hard → do NOT name the strategy the instruction hid, ask what the student sees, never reveal the answer. **Watch the recognition modes** — where the strategy/relationship IS the answer (a classify/identify mode), the tutor must never name it at *any* tier; there the tier only dials coaching depth. (AngleWorkshop's `tutorRevealPolicy(tier, challengeType)` is the worked example.)
 
 12. **Remove any retired numeric-difficulty wiring** from this primitive — imports/calls into `service/difficulty/difficultyContext.ts` (`computeDifficultyTuple`, `studentTheta` → numeric band). It changes the numbers, which violates the invariant and fights this skill. (Known wirers to check: number-sequencer, number-line, base-ten-blocks, sorting-station.)
 
@@ -212,7 +214,7 @@ Three worked examples — read all three; the *differences* between them are the
 - [ ] Designed + confirmed the easy→hard gradient per mode with the user
 - [ ] Added the fixed scaffold verbatim (`SupportTier`, `SUPPORT_TIERS`, `normalizeSupportTier`, `difficulty?: string`)
 - [ ] Wrote bespoke `SupportScaffold` (booleans and/or enums) + `resolveSupportStructure` with a numbers-never-change leading prompt line
-- [ ] Gated on exactly ONE pinned mode (resolver-agnostic: `resolution.modes.length === 1` OR `allowedTypes.length === 1`)
+- [ ] Applied the scaffold **per challenge** (`resolveSupportStructure(ch.type, tier)`), gated only on a tier being present — so blended/auto sessions get difficulty too (NOT gated on `pinnedType`); `pinnedType` (resolver-agnostic: `modes.length === 1` OR `allowedTypes.length === 1`) gates only the prompt `tierSection`
 - [ ] Injected `${tierSection}` after the challenge-type section
 - [ ] Applied the scaffold deterministically at the END, after structural fixups/force-enables, guarded per mode, with a log line
 - [ ] If the primitive has a live tutor: threaded `supportTier` into the data + `aiPrimitiveData` and added a tier reveal-clause to the `sendText` prompts so the tutor doesn't leak what the tier withheld (mandatory for modality #2)
