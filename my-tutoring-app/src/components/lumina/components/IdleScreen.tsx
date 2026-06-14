@@ -157,7 +157,10 @@ interface IdleScreenProps {
   onLaunchGroupLesson: (params: {
     topic: string;
     gradeLevel: GradeLevel;
-    preBuiltObjectives: Array<{ id: string; text: string; verb: string; icon: string }>;
+    preBuiltObjectives: Array<{
+      id: string; text: string; verb: string; icon: string;
+      subskillId?: string; skillId?: string;
+    }>;
     curriculum: CurriculumContext;
   }) => void;
   onNavigate: (panel: string) => void;
@@ -217,6 +220,10 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
       text: s.description,
       verb: s.bloomPhase as string,
       icon: s.bloomPhase === 'identify' ? 'search' : s.bloomPhase === 'explain' ? 'message' : 'pencil',
+      // Each objective is a distinct selected subskill — carry its IDs so
+      // personalization keys into β directly instead of re-deriving via embedding.
+      subskillId: s.id,
+      skillId: s.skillId,
     }));
 
     const subjects = new Set(selectedSubskills.map(s => s.subject));

@@ -3147,8 +3147,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'math-fact-fluency',
-    description: 'Rapid-fire math fact fluency practice with 5 progressive challenge types: visual facts with dot arrays/ten-frames, bare equation solving, missing number problems, visual-equation matching, and timed speed rounds. Builds automaticity for addition and subtraction facts within 3, 5, or 10. Perfect for K-1 fact fluency development. ESSENTIAL for Kindergarten and Grade 1 math fact recall.',
-    constraints: 'Facts limited to addition and subtraction within maxNumber (3, 5, or 10). Visual aids only in visual-fact and match phases. Speed round has no multiple choice. Time limits vary by phase (3-8 seconds).',
+    description: 'Math fact fluency practice with 5 progressive challenge types: visual facts with dot arrays/ten-frames, bare equation solving, missing number problems, visual-equation matching, and aid-free rapid recall. Builds automaticity for addition and subtraction facts within 3, 5, or 10 through calm, untimed practice (no countdown, no time pressure). Perfect for K-1 fact fluency development. ESSENTIAL for Kindergarten and Grade 1 math fact recall.',
+    constraints: 'Facts limited to addition and subtraction within maxNumber (3, 5, or 10). Visual aids only in visual-fact and match phases. Rapid-recall (speed-round) has no multiple choice and no visual aids. No timers — students answer at their own pace; response time is measured silently for the automaticity signal only.',
     evalModes: [
       {
         evalMode: 'visual_fact',
@@ -3184,15 +3184,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'speed_round',
-        label: 'Speed Round (Tier 5)',
+        label: 'Rapid Recall (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['speed-round'],
-        description: 'Timed fluency assessment — rapid recall without aids.',
+        description: 'Rapid recall of bare facts without visual aids or countdown — the top automaticity rung. Response time is measured silently; the student is never rushed.',
       },
     ],
     tutoring: {
-      taskDescription: 'Student is practicing math fact fluency. Current challenge type: {{challengeType}}. Equation: {{equation}} ({{operation}}). Unknown position: {{unknownPosition}}. This is about building SPEED, not just accuracy.',
+      taskDescription: 'Student is practicing math fact fluency. Current challenge type: {{challengeType}}. Equation: {{equation}} ({{operation}}). Unknown position: {{unknownPosition}}. This is about building automaticity through calm, untimed practice — there is no timer, so never rush the student or mention speed.',
       contextKeys: ['challengeType', 'equation', 'operation', 'unknownPosition', 'correctAnswer', 'operand1', 'operand2', 'result', 'attemptNumber', 'streak', 'accuracy', 'averageTime'],
       scaffoldingLevels: {
         level1: '"Take your time! Look at the numbers. What do you get when you put {{operand1}} and {{operand2}} together?"',
@@ -3200,10 +3200,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         level3: '"Let me help: start at {{operand1}}, now count up {{operand2}} more... what number do you land on?"',
       },
       commonStruggles: [
-        { pattern: 'Student answers correctly but slowly (>5 seconds)', response: 'Affirm correctness and encourage speed: "You got it! With more practice, this will feel automatic."' },
+        { pattern: 'Student answers correctly but is still counting on fingers', response: 'Affirm correctness and reassure: "You got it! The more you practice, the more these will just pop into your head — no rush."' },
         { pattern: 'Student struggles with subtraction facts', response: 'Connect to addition: "If 3 + 2 = 5, then 5 - 2 = ?"' },
         { pattern: 'Student struggles with missing-number problems', response: 'Encourage think-backwards strategy: "If 3 + __ = 5, think: what do I add to 3 to get to 5?"' },
-        { pattern: 'Student keeps running out of time', response: 'Reduce pressure: "Don\'t worry about the timer. Let\'s just practice getting the right answer first."' },
+        { pattern: 'Student seems anxious or rushed', response: 'Reassure that there is no clock: "Take all the time you need — we are just practicing getting the right answer."' },
       ],
     },
     supportsEvaluation: true,

@@ -1,6 +1,43 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { IntroBriefingData } from "../../types";
 import { ai } from "../geminiClient";
+// Type-only — keeps the client-side auth stack out of this server module.
+import type { StudentPersona } from "../studentContext/types";
+
+/**
+ * Build the personal-framing block for the brief prompt — WORDS ONLY.
+ *
+ * Mirrors the manifest's buildStudentVoiceBlock (words-vs-numbers division),
+ * but scoped to the brief: the curator brief is the natural place to greet the
+ * student by name and tie today's topic to their last session. Returns '' when
+ * no persona is given, so the prompt is byte-identical for unpersonalized runs.
+ */
+const buildBriefVoiceBlock = (persona?: StudentPersona | null): string => {
+  if (!persona) return '';
+
+  const facts: string[] = [];
+  if (persona.firstName) facts.push(`- Name: ${persona.firstName} (greet the student directly by name)`);
+  if (persona.interests?.length) facts.push(`- Interests: ${persona.interests.join(', ')}`);
+  if ((persona.currentStreak ?? 0) >= 2) facts.push(`- Learning streak: ${persona.currentStreak} days running`);
+  if (persona.lastSession?.summary) facts.push(`- Last session: ${persona.lastSession.summary}`);
+  if (facts.length === 0) return '';
+
+  return `
+
+## STUDENT VOICE (personal framing — affects WORDING ONLY)
+${facts.join('\n')}
+
+HOW TO USE THE VOICE:
+- hook.content: open by greeting the student by name. If a last-session fact is present, connect today's topic to it in one short phrase (e.g. "Last time you worked with ten frames — today we build on that"). Acknowledge an active streak in at most one short clause.
+- mindset.encouragement: you may address the student warmly by name.
+- Where an interest fits the topic NATURALLY, you may theme the hook around it — the hook only, and only if it genuinely fits.
+
+VOICE RULES (hard constraints):
+- The voice changes WORDING ONLY. It must NEVER change the objectives, prerequisites, the quick-check answer, or the difficulty of the content.
+- Use ONLY the facts listed above. NEVER invent details about the student.
+- NEVER reveal the quick-check answer, and NEVER mention this block, profiles, or personalization mechanics in any student-facing text.
+- Keep it natural: one greeting woven into the hook, not a paragraph about the student.`;
+};
 
 /**
  * Convert grade level to descriptive educational context for prompts
@@ -37,9 +74,11 @@ export const generateIntroBriefing = async (
   topic: string,
   subject: string,
   gradeLevel: string,
-  estimatedTime: string = '15-20 minutes'
+  estimatedTime: string = '15-20 minutes',
+  persona?: StudentPersona | null
 ): Promise<IntroBriefingData> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const voiceBlock = buildBriefVoiceBlock(persona);
 
   const schema: Schema = {
     type: Type.OBJECT,
@@ -223,7 +262,7 @@ Generate an Intro Briefing schema for the following topic:
 **Estimated Lesson Time:** ${estimatedTime}
 
 ## Educational Context
-This content is for ${gradeLevelContext}
+This content is for ${gradeLevelContext}${voiceBlock}
 
 ## Guidelines for High-Quality Schemas
 
@@ -311,6 +350,12 @@ Create an engaging, age-appropriate Intro Briefing that will excite students abo
 
     if (!result) {
       throw new Error('No data returned from Gemini API');
+    }
+
+    // Stamp the name deterministically (code-side) for the "Prepared for X"
+    // header chip — never trust the LLM to emit a reliable UI label.
+    if (persona?.firstName) {
+      result.preparedFor = persona.firstName;
     }
 
     console.log('📋 Curator Brief Generated from dedicated service:', result);

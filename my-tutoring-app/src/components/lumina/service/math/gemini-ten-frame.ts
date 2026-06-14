@@ -2,10 +2,9 @@ import { Type, Schema } from "@google/genai";
 import { TenFrameData, TenFrameChallenge } from "../../primitives/visual-primitives/math/TenFrame";
 import { ai } from "../geminiClient";
 import {
-  resolveEvalModeConstraint,
+  resolveEvalModes,
   constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
-  logEvalModeResolution,
+  buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContext";
@@ -89,6 +88,89 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'subtract' (subtraction)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract: config.evalMode says WHICH skill (task identity,
+// matched to the objective by the manifest); config.difficulty says how much
+// on-frame SUPPORT the student gets while doing it ('easy' = max scaffolding,
+// 'hard' = min). The tier is per-component — the manifest withdraws support
+// across Introduce → Visualize → Apply, and personalization routes through this
+// field. It NEVER changes the target numbers: the pedagogical scope owns those.
+// See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Numeric count readout under the frame (build/make_ten/operate). */
+  showCount: boolean;
+  /** Equation display alongside the frame (operate modes). */
+  showEquation: boolean;
+  /** Subitize flash window (ms) — longer = more support. */
+  flashDuration: number;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-frame support structure for a tier on a pinned challenge type.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * task with less scaffolding — never a different task, never bigger numbers.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const flashDuration = tier === 'easy' ? 2000 : tier === 'medium' ? 1500 : 1000;
+  const showCount = tier === 'easy';
+  const showEquation = tier === 'easy';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-frame SCAFFOLDING only (${tier === 'easy' ? 'maximum support: the frame helps the student self-check' : tier === 'medium' ? 'moderate support: the student tracks the quantity themselves' : 'minimum support: the student works unaided and justifies their thinking'}). Keep every target number within the pedagogical scope above; a harder tier NEVER means bigger numbers.`,
+  ];
+  switch (pinnedType) {
+    case 'subitize':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Arrange flashed counters in standard ten-frame order (fill row 1 left-to-right, then row 2) so the quantity is easy to recognize. Hints should name the quantity.'
+          : tier === 'hard'
+            ? 'Scatter flashed counters in irregular, non-standard positions; hints should prompt the student to break the count into parts (e.g. "a full row of 5 and 2 more").'
+            : 'Use varied arrangements; hints should point to the row-of-5 anchor rather than naming the count.',
+      );
+      break;
+    case 'build':
+    case 'make_ten':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep the running count visible so the student can self-check while placing counters; narration names the target.'
+          : tier === 'hard'
+            ? 'Hide the running count; narration/hints should ask the student to explain or find more than one way to reach the target (e.g. two number bonds that make 10).'
+            : 'Hide the running count; the student tracks the quantity themselves while applying the strategy.',
+      );
+      break;
+    case 'add':
+    case 'subtract':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Show the equation alongside the frame to connect symbols to counters; narration walks the steps.'
+          : tier === 'hard'
+            ? 'Hide the equation; narration/hints should ask the student to justify the make-ten strategy or compare two ways to reach the answer.'
+            : 'Hide the equation; the student works the operation from the frame alone.',
+      );
+      break;
+  }
+  return { showCount, showEquation, flashDuration, promptLines };
+}
 
 // ---------------------------------------------------------------------------
 // Deterministic instruction synthesis (SP-17)
@@ -274,39 +356,72 @@ export const generateTenFrame = async (
     challengeTypes?: string[];
     counterColor?: string;
     twoColorEnabled?: boolean;
-    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+    /**
+     * Eval mode that pins which challenge types to generate. Set by the MANIFEST
+     * (curator matches the mode to the objective) and by the eval-test tester —
+     * both write this single field. Resolved through the catalog constraint.
+     */
     targetEvalMode?: string;
     /** Intent from the manifest item. */
     intent?: string;
     /** Learning objective this component serves (injected by flattenManifestToLayout). */
     objectiveText?: string;
-    /** Bloom's verb for the objective. */
+    /**
+     * Bloom's verb for the objective (injected by flattenManifestToLayout).
+     * Scope context only — surfaced as the COGNITIVE LEVEL line in the prompt.
+     * NOT the difficulty source: config.difficulty owns the support tier.
+     */
     objectiveVerb?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * The second axis of the two-field contract: evalMode = which skill,
+     * difficulty = how much on-frame scaffolding within it.
+     */
+    difficulty?: string;
   }
 ): Promise<TenFrameData> => {
-  // ── Resolve eval mode from the catalog (single source of truth) ──
-  const evalConstraint = resolveEvalModeConstraint(
+  // ── Resolve eval mode(s): single | curated blend | mixed ──
+  // An explicit config.targetEvalMode (tester / curator) pins exactly that mode
+  // with NO LLM call. Otherwise the generator resolves its OWN mode set from the
+  // component intent via a flash-lite enum micro-call scoped to ten-frame's modes
+  // (see resolveEvalModes). null = genuine mixed → schema left unconstrained.
+  const resolution = await resolveEvalModes(
     'ten-frame',
-    config?.targetEvalMode,
+    { targetEvalMode: config?.targetEvalMode, intent: config?.intent, objectiveText: config?.objectiveText },
     CHALLENGE_TYPE_DOCS,
   );
+  const allowedTypes = resolution?.allowedTypes;
 
-  // For config.challengeTypes without an eval mode, use them as a hint
-  const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
+  // For config.challengeTypes without a resolved mode, use them as a hint.
+  const effectiveChallengeTypes = allowedTypes ?? config?.challengeTypes;
+
+  // ── Within-mode support tier (only meaningful within ONE pinned mode) ──
+  // The eval mode owns WHAT skill; config.difficulty owns how much on-frame
+  // scaffolding within it. A curated BLEND has no single tier surface, so the
+  // tier scaffold applies only when exactly one mode is selected.
+  const pinnedType = allowedTypes?.[0] as ChallengeType | undefined;
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold =
+    resolution && resolution.modes.length === 1 && pinnedType && supportTier
+      ? resolveSupportStructure(pinnedType, supportTier)
+      : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l: string) => `- ${l}`).join('\n')}\n`
+    : '';
 
   // ── Resolve per-mode instance count (PRD §5a) ──
-  const count = resolveCount(evalConstraint?.allowedTypes);
+  const count = resolveCount(allowedTypes);
 
   // ── Build mode-constrained schema ──
-  // When an eval mode is active, the schema enum restricts challenge.type
-  // so Gemini *cannot* produce disallowed types. No post-filtering needed.
+  // When mode(s) are resolved, the schema enum restricts challenge.type to the
+  // union of the selected modes' types so Gemini *cannot* produce others.
   const baseSchema = buildTenFrameSchema(count);
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+  const activeSchema = resolution
+    ? constrainChallengeTypeEnum(baseSchema, resolution.allowedTypes, CHALLENGE_TYPE_DOCS)
     : baseSchema;
 
   // ── Build prompt ──
-  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  const challengeTypeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
 
   // ── Pedagogical scope — binds output to the lesson objective (topic wins over grade band) ──
   const scope = resolvePedagogicalScope(topic, config, config?.intent);
@@ -322,8 +437,8 @@ CONTEXT:
 - The frame makes the relationship to 5 and 10 highly visible
 
 ${challengeTypeSection}
-
-${!evalConstraint ? `
+${tierSection}
+${!resolution ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
   * Build challenges with numbers 1-10 (single frame)
@@ -382,7 +497,9 @@ REQUIREMENTS:
 Return the complete ten frame configuration.
 `;
 
-  logEvalModeResolution('TenFrame', config?.targetEvalMode, evalConstraint);
+  console.log(
+    `[TenFrame] modes: ${resolution ? `${resolution.modes.map(m => m.evalMode).join('+')} (${resolution.source})` : 'mixed'} → types [${(allowedTypes ?? ['all']).join(', ')}]`,
+  );
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
@@ -417,7 +534,7 @@ Return the complete ten frame configuration.
   // scaffold all assume a single 10-frame. Pin it to single frame here (and again after
   // config overrides). A double-frame "make 20" is a different skill → separate eval mode.
   const isMakeTenEvalMode =
-    evalConstraint?.allowedTypes.length === 1 && evalConstraint.allowedTypes[0] === 'make_ten';
+    resolution?.allowedTypes.length === 1 && resolution.allowedTypes[0] === 'make_ten';
   if (isMakeTenEvalMode) {
     data.mode = 'single';
   }
@@ -480,7 +597,7 @@ Return the complete ten frame configuration.
 
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {
-    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'build';
+    const fallbackType = resolution?.allowedTypes[0] ?? 'build';
     // instruction is synthesized below — these objects only carry the numeric fields.
     const fallbacks: Record<string, Omit<TenFrameChallenge, 'id' | 'instruction'>> = {
       build: { type: 'build', targetCount: 5, hint: 'Fill up one whole row!', narration: "Let's start by building the number 5 on the ten frame." },
@@ -514,6 +631,34 @@ Return the complete ten frame configuration.
 
   // make_ten stays single-frame even if the manifest passed a double-frame override.
   if (isMakeTenEvalMode) data.mode = 'single';
+
+  // ── Apply the support-tier structure deterministically (code owns the SUPPORT
+  // structure; the LLM only chose numbers). Withdraws scaffolds as the tier
+  // hardens — never alters the target numbers. ──
+  if (tierScaffold && pinnedType) {
+    if (!data.showOptions) {
+      data.showOptions = { showCount: true, showEquation: false, showEmptyCount: false, allowFlip: false };
+    }
+    // Count readout supports build/make_ten/operate; subitize is flashed, so its
+    // count display stays off regardless of tier.
+    if (pinnedType !== 'subitize') {
+      data.showOptions.showCount = tierScaffold.showCount;
+    }
+    if (pinnedType === 'add' || pinnedType === 'subtract') {
+      data.showOptions.showEquation = tierScaffold.showEquation;
+    }
+    // make_ten: showing empty spaces leaks the complement — force off at every tier.
+    if (pinnedType === 'make_ten') {
+      data.showOptions.showEmptyCount = false;
+    }
+    // subitize: flash window is the support lever.
+    if (pinnedType === 'subitize') {
+      for (const ch of data.challenges as TenFrameChallenge[]) {
+        if (ch.type === 'subitize') ch.flashDuration = tierScaffold.flashDuration;
+      }
+    }
+    console.log(`[TenFrame] Support tier "${supportTier}" on mode "${pinnedType}" → showCount=${data.showOptions.showCount}, showEquation=${data.showOptions.showEquation}, flash=${tierScaffold.flashDuration}`);
+  }
 
   // Synthesize every instruction from the now-final numeric fields. Runs last so it
   // reflects the settled frame mode — the on-screen prompt can never contradict the frame.

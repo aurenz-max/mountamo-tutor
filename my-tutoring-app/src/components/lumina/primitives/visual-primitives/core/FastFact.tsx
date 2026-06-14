@@ -56,8 +56,6 @@ export interface FastFactChallenge {
   responseMode: 'choice';
   /** Answer options (required — always multiple choice). */
   options: string[];
-  /** Per-challenge time override (seconds). */
-  timeLimit?: number;
   /** Brief explanation shown after the correct answer is revealed. */
   explanation?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
@@ -71,16 +69,18 @@ export interface FastFactData {
   subject: string;
   challenges: FastFactChallenge[];
 
-  /** Default seconds per challenge (used when challenge.timeLimit is absent). */
-  defaultTimeLimit: number;
-  /** Seconds — answers within this threshold count as "fast". */
+  /**
+   * Seconds — answers within this threshold count as "fast". Used ONLY as a
+   * silent automaticity signal for analytics/IRT. Never surfaced to the student
+   * and never enforced as a deadline.
+   */
   targetResponseTime: number;
   /** Phase display config keyed by challenge.type. */
   phaseConfig: Record<string, { label: string; icon: string; accentColor: string }>;
 
   showStreakCounter: boolean;
   showAccuracy: boolean;
-  /** Max wrong answers before recording incorrect and advancing (1 for speed-rounds). */
+  /** Max wrong answers before recording incorrect and advancing. */
   maxAttemptsPerChallenge: number;
   gradeBand?: string;
 
@@ -126,39 +126,6 @@ function VisualRenderer({ visual }: { visual: FastFactVisual }) {
 }
 
 // ============================================================================
-// Timer Arc
-// ============================================================================
-
-function TimerArc({ timeLeft, timeLimit }: { timeLeft: number; timeLimit: number }) {
-  const fraction = Math.max(0, timeLeft / timeLimit);
-  const radius = 44;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - fraction);
-
-  let colorClass = 'stroke-emerald-400';
-  if (fraction <= 0.25) colorClass = 'stroke-red-400';
-  else if (fraction <= 0.5) colorClass = 'stroke-amber-400';
-
-  return (
-    <svg width={100} height={100} className="absolute -top-1 -right-1 opacity-50" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r={radius} className="fill-none stroke-white/5" strokeWidth="4" />
-      <circle
-        cx="50" cy="50" r={radius}
-        className={`fill-none ${colorClass}`}
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        style={{ transition: 'stroke-dashoffset 1s linear', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
-      />
-      <text x="50" y="54" textAnchor="middle" className="fill-slate-300 text-xs" fontSize="14" fontWeight="bold">
-        {Math.ceil(timeLeft)}
-      </text>
-    </svg>
-  );
-}
-
-// ============================================================================
 // Answer Checker
 // ============================================================================
 
@@ -179,9 +146,10 @@ interface FastFactProps {
 }
 
 // ============================================================================
-// Start screen phases: 'waiting' -> 'counting' -> 'playing'
+// Start screen phases: 'waiting' -> 'playing'
+// (No race-start countdown — the drill is untimed and pressure-free.)
 // ============================================================================
-type GamePhase = 'waiting' | 'counting' | 'playing';
+type GamePhase = 'waiting' | 'playing';
 
 // ============================================================================
 // Component
@@ -193,7 +161,6 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
     description,
     subject,
     challenges = [],
-    defaultTimeLimit = 10,
     targetResponseTime = 6,
     phaseConfig = {},
     showStreakCounter = true,
@@ -236,16 +203,14 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
   // Local state
   // -------------------------------------------------------------------------
   const [gamePhase, setGamePhase] = useState<GamePhase>('waiting');
-  const [countdown, setCountdown] = useState(3);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false);
 
-  // Timer state
-  const [timeLeft, setTimeLeft] = useState(0);
+  // Response timing — measured SILENTLY for the automaticity metric. There is no
+  // countdown and no deadline; the student never sees a clock.
   const [challengeStartTime, setChallengeStartTime] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Streak tracking
   const [streak, setStreak] = useState(0);
@@ -259,25 +224,12 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Start button & countdown
+  // Start button — begin the drill (no race countdown)
   // -------------------------------------------------------------------------
   const handleStart = useCallback(() => {
     SoundManager.tap();        // ← tactile press to begin
-    setGamePhase('counting');
-    setCountdown(3);
+    setGamePhase('playing');
   }, []);
-
-  useEffect(() => {
-    if (gamePhase !== 'counting') return;
-    if (countdown <= 0) {
-      SoundManager.pop();      // ← "GO!" — we're live
-      setGamePhase('playing');
-      return;
-    }
-    SoundManager.tick();       // ← 3 · 2 · 1 countdown anticipation
-    const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [gamePhase, countdown]);
 
   // -------------------------------------------------------------------------
   // Current challenge
@@ -291,55 +243,15 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
     r => r.challengeId === currentChallenge?.id
   );
 
-  const effectiveTimeLimit = useMemo(() => {
-    if (!currentChallenge) return defaultTimeLimit;
-    return currentChallenge.timeLimit ?? defaultTimeLimit;
-  }, [currentChallenge, defaultTimeLimit]);
-
   // -------------------------------------------------------------------------
-  // Timer management
+  // Start the (silent) response-time clock when a new challenge appears.
+  // No interval, no countdown — just a start timestamp for analytics.
   // -------------------------------------------------------------------------
-  const startTimer = useCallback((limit: number) => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setTimeLeft(limit);
-    setChallengeStartTime(Date.now());
-    timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 0.1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          return 0;
-        }
-        return prev - 0.1;
-      });
-    }, 100);
-  }, []);
-
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  // Start timer only after playing
   useEffect(() => {
     if (gamePhase === 'playing' && currentChallenge && !allChallengesComplete && !isCurrentChallengeComplete) {
-      startTimer(effectiveTimeLimit);
+      setChallengeStartTime(Date.now());
     }
-    return () => stopTimer();
-  }, [gamePhase, currentChallengeIndex, currentChallenge, allChallengesComplete, isCurrentChallengeComplete, effectiveTimeLimit, startTimer, stopTimer]);
-
-  // Handle time-up
-  useEffect(() => {
-    if (timeLeft <= 0 && currentChallenge && !isCurrentChallengeComplete && !allChallengesComplete && challengeStartTime > 0) {
-      handleTimeUp();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft]);
-
-  useEffect(() => {
-    return () => stopTimer();
-  }, [stopTimer]);
+  }, [gamePhase, currentChallengeIndex, currentChallenge, allChallengesComplete, isCurrentChallengeComplete]);
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -399,10 +311,11 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
     sendText(
-      `[ACTIVITY_START] Fast Fact fluency drill. Subject: ${subject}. `
+      `[ACTIVITY_START] Fact fluency drill. Subject: ${subject}. `
       + `${challenges.length} challenges. Grade: ${gradeBand ?? 'General'}. `
       + `First challenge: "${currentChallenge?.prompt.text}" (${currentChallenge?.type}). `
-      + `Introduce warmly and encourage the student to be fast AND accurate.`,
+      + `This drill is untimed — there is NO timer and no time pressure. `
+      + `Introduce warmly and reassure the student they can take all the time they need.`,
       { silent: true }
     );
   }, [isConnected, challenges.length, subject, gradeBand, currentChallenge, sendText]);
@@ -410,13 +323,12 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Answer handling
   // -------------------------------------------------------------------------
-  const processAnswer = useCallback((answer: string, isTimeUp = false) => {
+  const processAnswer = useCallback((answer: string) => {
     if (!currentChallenge || isCurrentChallengeComplete) return;
 
-    stopTimer();
     const responseTime = Date.now() - challengeStartTime;
     const responseTimeSec = responseTime / 1000;
-    const correct = !isTimeUp && isAnswerCorrect(answer, currentChallenge);
+    const correct = isAnswerCorrect(answer, currentChallenge);
 
     incrementAttempts();
     setTotalAnswered(prev => prev + 1);
@@ -429,8 +341,10 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
       setStreak(newStreak);
       if (newStreak > bestStreak) setBestStreak(newStreak);
 
+      // isFast is a SILENT automaticity signal for the metric — never surfaced as
+      // speed praise to the student, so the feedback stays pressure-free.
       const isFast = responseTimeSec <= targetResponseTime;
-      setFeedback(isFast ? 'Lightning fast!' : 'Correct!');
+      setFeedback('Correct!');
       setFeedbackType('success');
 
       recordResult({
@@ -446,24 +360,18 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
       if (isConnected) {
         sendText(
           `[ANSWER_CORRECT] Student answered "${answer}" correctly for "${currentChallenge.prompt.text}". `
-          + `Response time: ${responseTimeSec.toFixed(1)}s (target: ${targetResponseTime}s). `
-          + `${isFast ? 'FAST answer!' : 'Correct but slow.'} Streak: ${newStreak}. `
-          + `${isFast ? 'Celebrate enthusiastically!' : 'Affirm and encourage speed.'}`,
+          + `Streak: ${newStreak}. `
+          + `Affirm warmly without mentioning speed.`,
           { silent: true }
         );
       }
     } else {
-      SoundManager.playIncorrect();  // ← wrong answer or time-up (both route here)
+      SoundManager.playIncorrect();
       setStreak(0);
       setFeedbackType('error');
+      setFeedback(`Not quite. The answer is ${currentChallenge.correctAnswer}.`);
 
-      if (isTimeUp) {
-        setFeedback(`Time's up! The answer is ${currentChallenge.correctAnswer}.`);
-      } else {
-        setFeedback(`Not quite. The answer is ${currentChallenge.correctAnswer}.`);
-      }
-
-      if (currentAttempts + 1 >= maxAttemptsPerChallenge || isTimeUp) {
+      if (currentAttempts + 1 >= maxAttemptsPerChallenge) {
         setShowCorrectAnswer(true);
         recordResult({
           challengeId: currentChallenge.id,
@@ -479,34 +387,28 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
           setFeedback(prev => `${prev} ${currentChallenge!.explanation}`);
         }
       } else {
-        // More attempts available — restart timer, clear selection
+        // More attempts available — clear selection and reset the silent clock.
         setSelectedAnswer(null);
-        startTimer(effectiveTimeLimit);
+        setChallengeStartTime(Date.now());
       }
 
       if (isConnected) {
-        const tag = isTimeUp ? '[TIME_UP]' : '[ANSWER_INCORRECT]';
         sendText(
-          `${tag} Student ${isTimeUp ? 'ran out of time' : `answered "${answer}"`} for "${currentChallenge.prompt.text}". `
+          `[ANSWER_INCORRECT] Student answered "${answer}" for "${currentChallenge.prompt.text}". `
           + `Correct answer: "${currentChallenge.correctAnswer}". `
           + `Attempt ${currentAttempts + 1} of ${maxAttemptsPerChallenge}. `
-          + `${currentAttempts + 1 >= maxAttemptsPerChallenge || isTimeUp
+          + `${currentAttempts + 1 >= maxAttemptsPerChallenge
             ? 'Show the correct answer and encourage. Never punish wrong answers.'
-            : 'Give a brief hint and let them try again.'}`,
+            : 'Give a brief hint and let them try again, with no rush.'}`,
           { silent: true }
         );
       }
     }
   }, [
     currentChallenge, isCurrentChallengeComplete, challengeStartTime, streak, bestStreak,
-    targetResponseTime, currentAttempts, maxAttemptsPerChallenge, effectiveTimeLimit,
-    isConnected, sendText, incrementAttempts, recordResult, stopTimer, startTimer,
+    targetResponseTime, currentAttempts, maxAttemptsPerChallenge,
+    isConnected, sendText, incrementAttempts, recordResult,
   ]);
-
-  const handleTimeUp = useCallback(() => {
-    if (!currentChallenge || isCurrentChallengeComplete) return;
-    processAnswer('', true);
-  }, [currentChallenge, isCurrentChallengeComplete, processAnswer]);
 
   const handleSelectOption = useCallback((value: string) => {
     if (isCurrentChallengeComplete || allChallengesComplete) return;
@@ -525,14 +427,11 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
         .join(', ');
       const overallPct = challenges.length > 0
         ? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100) : 0;
-      const avgTimeStr = responseTimes.length > 0
-        ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1)
-        : '0';
 
       sendText(
         `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Average response time: ${avgTimeStr}s. Best streak: ${bestStreak}. `
-        + `Give encouraging phase-specific feedback. Celebrate speed improvements!`,
+        + `Best streak: ${bestStreak}. `
+        + `Give encouraging phase-specific feedback. Celebrate accuracy and growing confidence — not speed.`,
         { silent: true }
       );
 
@@ -676,7 +575,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
         {gamePhase === 'waiting' && challenges.length > 0 && (
           <div className="flex flex-col items-center justify-center py-12 space-y-6">
             <div className="text-4xl font-bold text-slate-100 tracking-tight">
-              Ready to test your knowledge?
+              Ready to practice?
             </div>
             <p className="text-slate-400 text-sm">
               {challenges.length} challenges &middot; {subject}
@@ -689,31 +588,8 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
               Start
             </LuminaButton>
             <p className="text-slate-600 text-xs">
-              Answer as fast and accurately as you can!
+              Take your time and do your best!
             </p>
-          </div>
-        )}
-
-        {/* Counting — 3-2-1 Countdown */}
-        {gamePhase === 'counting' && (
-          <div className="flex flex-col items-center justify-center py-12 space-y-6">
-            <div className="relative flex items-center justify-center">
-              <svg width={140} height={140} viewBox="0 0 140 140">
-                <circle cx="70" cy="70" r="60" className="fill-none stroke-white/5" strokeWidth="6" />
-                <circle
-                  cx="70" cy="70" r="60"
-                  className="fill-none stroke-emerald-400"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 60}
-                  strokeDashoffset={2 * Math.PI * 60 * (1 - countdown / 3)}
-                  style={{ transition: 'stroke-dashoffset 1s linear', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
-                />
-              </svg>
-              <span className="absolute text-6xl font-black text-emerald-400">
-                {countdown > 0 ? countdown : 'GO!'}
-              </span>
-            </div>
           </div>
         )}
 
@@ -756,11 +632,6 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
         {/* Main Challenge Area */}
         {gamePhase === 'playing' && currentChallenge && !allChallengesComplete && (
           <div className="relative">
-            {/* Timer Arc */}
-            {!isCurrentChallengeComplete && (
-              <TimerArc timeLeft={timeLeft} timeLimit={effectiveTimeLimit} />
-            )}
-
             {/* Visual (if present) */}
             {currentChallenge.prompt.visual && (
               <div className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">
@@ -824,7 +695,7 @@ const FastFact: React.FC<FastFactProps> = ({ data, className }) => {
             phases={phaseResults}
             overallScore={submittedResult?.score ?? localOverallScore}
             durationMs={elapsedMs}
-            heading="Fast Fact Complete!"
+            heading="Fact Fluency Complete!"
             celebrationMessage={`You completed ${challenges.length} challenges! Best streak: ${bestStreak} in a row!`}
             className="mt-4"
           />

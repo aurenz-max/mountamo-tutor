@@ -107,6 +107,97 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract (same as ten-frame): config.targetEvalMode says WHICH
+// skill (task identity, matched to the objective by the manifest); config.difficulty
+// says how much on-workspace SUPPORT the student gets while doing it ('easy' = max
+// scaffolding, 'hard' = min). The tier is per-component — the manifest withdraws
+// support across Introduce → Visualize → Apply, and personalization routes through
+// this field. It NEVER changes the counts: the per-mode count table + grade band
+// own those. A harder tier means LESS help tracking the count, never a bigger count.
+// See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Live "Counted: N / total" tally — the strongest self-check scaffold. */
+  showRunningCount: boolean;
+  /** Per-object cardinality number tags (which objects are already counted). */
+  showLastNumber: boolean;
+  /** Pre-segmentation rings for group_count/compare — visually does the grouping. */
+  showGroupCircles: boolean;
+  /** Forced arrangement for count/subitize ('line' easiest to track/perceive,
+   *  'scattered' hardest). null = let the LLM vary it (medium). group_count and
+   *  compare own 'groups' structurally, so this never applies to them. */
+  arrangement: 'line' | 'scattered' | null;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-workspace support structure for a tier on a pinned challenge type.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * task with less scaffolding — never a different task, never bigger counts.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const showRunningCount = tier === 'easy';
+  const showLastNumber = tier !== 'hard';
+  const showGroupCircles = tier !== 'hard';
+  const arrangement: 'line' | 'scattered' | null =
+    tier === 'easy' ? 'line' : tier === 'hard' ? 'scattered' : null;
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-workspace SCAFFOLDING only (${tier === 'easy' ? 'maximum support: the workspace helps the student keep track and self-check' : tier === 'medium' ? 'moderate support: the student tracks the count themselves' : 'minimum support: the student works unaided and explains how they kept track'}). Keep every count within the pedagogical scope and per-mode range; a harder tier NEVER means bigger counts, only less help tracking them.`,
+  ];
+  switch (pinnedType) {
+    case 'count_all':
+    case 'count_on':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Arrange the objects in a neat line and keep the running tally and per-object number tags visible so the student can self-check one-to-one as they tap.'
+          : tier === 'hard'
+            ? 'Scatter the objects and hide the running tally; hints should ask the student to organize their own counting path and explain how they avoided missing or double-counting.'
+            : 'Use varied arrangements; the student tracks the count themselves while per-object tags confirm which were already counted.',
+      );
+      break;
+    case 'subitize':
+    case 'subitize_perceptual':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Arrange the objects in a clear line or small even cluster so the quantity is easy to perceive at a glance; hints may name the quantity.'
+          : tier === 'hard'
+            ? 'Scatter the objects in irregular positions; hints should prompt the student to break the set into parts (e.g. "a group of 3 and 2 more") rather than naming the total.'
+            : 'Use varied arrangements; hints should point to a recognizable sub-group rather than naming the count.',
+      );
+      break;
+    case 'group_count':
+    case 'compare':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Show the grouping rings so each group is visually pre-segmented; the student counts the groups with full visual support.'
+          : tier === 'hard'
+            ? 'Hide the grouping rings; the student must mentally segment the set and justify how they grouped to reach the total.'
+            : 'Show the grouping rings, but the student should find the total before leaning on them.',
+      );
+      break;
+  }
+  return { showRunningCount, showLastNumber, showGroupCircles, arrangement, promptLines };
+}
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -240,6 +331,12 @@ export const generateCountingBoard = async (
     challengeTypes?: string[];
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * The second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-workspace scaffolding within it. NEVER changes counts.
+     */
+    difficulty?: string;
   }
 ): Promise<CountingBoardData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -251,6 +348,22 @@ export const generateCountingBoard = async (
 
   // For config.challengeTypes without an eval mode, use them as a hint
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
+
+  // ── Within-mode support tier (only meaningful within ONE pinned mode) ──
+  // The eval mode owns WHAT skill; config.difficulty owns how much on-workspace
+  // scaffolding within it. A mixed-mode session (no single pinned type) has no
+  // single tier surface, so the tier scaffold applies only when exactly one mode
+  // is selected.
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT count size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   // ── Resolve per-mode instance count (§5a tier table) ──
   const targetCount = resolveCount(evalConstraint?.allowedTypes);
@@ -286,7 +399,7 @@ CONTEXT:
 - Each challenge gets its OWN count and arrangement, so the board changes between challenges
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
@@ -475,6 +588,39 @@ Return the complete counting board configuration.
   );
   if (hasGroupChallenges && data.showOptions) {
     data.showOptions.showGroupCircles = true;
+  }
+
+  // ── Apply the support-tier structure deterministically (code owns the SUPPORT
+  // structure; the LLM only chose counts/arrangements). Withdraws scaffolds as the
+  // tier hardens — never alters the counts. Runs AFTER the group-circle enable so
+  // a 'hard' tier can withdraw the rings. ──
+  if (tierScaffold && pinnedType) {
+    if (!data.showOptions) {
+      data.showOptions = { showRunningCount: true, showGroupCircles: false, highlightOnTap: true, showLastNumber: true };
+    }
+    data.showOptions.showRunningCount = tierScaffold.showRunningCount;
+    data.showOptions.showLastNumber = tierScaffold.showLastNumber;
+    // Grouping rings are the support lever for group_count/compare only.
+    if (pinnedType === 'group_count' || pinnedType === 'compare') {
+      data.showOptions.showGroupCircles = tierScaffold.showGroupCircles;
+    }
+    // Arrangement is the tracking/perception lever for count + subitize. group_count
+    // and compare own 'groups' structurally, so the tier never overrides them.
+    if (
+      tierScaffold.arrangement &&
+      (pinnedType === 'count_all' || pinnedType === 'count_on' ||
+        pinnedType === 'subitize' || pinnedType === 'subitize_perceptual')
+    ) {
+      // subitize_perceptual is clamped to scattered/groups upstream — only relax it
+      // toward 'scattered', never to 'line' (its hand-image UI assumes 1-3 scattered).
+      const arr = tierScaffold.arrangement;
+      for (const ch of data.challenges as Array<{ type: string; arrangement: string }>) {
+        if (ch.type !== pinnedType) continue;
+        if (pinnedType === 'subitize_perceptual' && arr !== 'scattered') continue;
+        ch.arrangement = arr;
+      }
+    }
+    console.log(`[CountingBoard] Support tier "${supportTier}" on mode "${pinnedType}" → runningCount=${data.showOptions.showRunningCount}, lastNumber=${data.showOptions.showLastNumber}, groupCircles=${data.showOptions.showGroupCircles}, arrangement=${tierScaffold.arrangement ?? 'varied'}`);
   }
 
   // Final summary log

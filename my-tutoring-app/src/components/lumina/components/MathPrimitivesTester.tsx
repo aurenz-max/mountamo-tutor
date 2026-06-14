@@ -1341,6 +1341,8 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('fraction-bar');
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
   const [selectedEvalMode, setSelectedEvalMode] = useState<string | null>(null);
+  // Structural support tier WITHIN the pinned mode (easy/medium/hard) → config.difficulty.
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
@@ -1379,6 +1381,7 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
             gradeLevel,
             config: {
               ...(selectedEvalMode ? { targetEvalMode: selectedEvalMode } : {}),
+              ...(selectedEvalMode && selectedTier ? { difficulty: selectedTier } : {}),
             },
           },
         }),
@@ -1536,6 +1539,40 @@ const MathPrimitivesTesterInner: React.FC<MathPrimitivesTesterProps> = ({ onBack
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Structural Tier Selector — shown when a mode is pinned. Changes
+              on-screen SUPPORT (scaffolds), not the numbers. */}
+          {selectedEvalMode && evalModes.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+                Structural Tier
+                <span className="text-slate-600 font-normal ml-1">(support)</span>
+              </label>
+              <div className="grid grid-cols-4 gap-1">
+                {([
+                  { value: null, label: 'Auto' },
+                  { value: 'easy', label: 'Easy' },
+                  { value: 'medium', label: 'Med' },
+                  { value: 'hard', label: 'Hard' },
+                ] as const).map((t) => (
+                  <button
+                    key={t.label}
+                    onClick={() => setSelectedTier(t.value)}
+                    className={`px-2 py-2 rounded-lg transition-all text-xs font-medium ${
+                      selectedTier === t.value
+                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                        : 'bg-slate-800/50 text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-slate-600 mt-1.5">
+                More support (Easy) → less (Hard). Same numbers — only scaffolds change.
+              </p>
             </div>
           )}
 

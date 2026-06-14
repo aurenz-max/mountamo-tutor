@@ -18,7 +18,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"visual-fact": Show a visual (dot-array, ten-frame, fingers, objects) alongside the equation. `
       + `Student sees the fact visually and answers. Set visualType and visualCount. `
-      + `unknownPosition = "result". Provide options (multiple choice). timeLimit: 8 seconds. `
+      + `unknownPosition = "result". Provide options (multiple choice). `
       + `Use 2-3 challenges for warm-up. Full scaffolding — concrete visual aids.`,
     schemaDescription: "'visual-fact' (picture-based fact recognition)",
   },
@@ -28,30 +28,30 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Set matchDirection to "visual-to-equation" or "equation-to-visual". `
       + `For visual-to-equation: provide equationOptions (4 equation strings, one correct). `
       + `CRITICAL: all distractor equations must have DIFFERENT results from the correct equation. `
-      + `Set visualType and visualCount. timeLimit: 6 seconds.`,
+      + `Set visualType and visualCount.`,
     schemaDescription: "'match' (connect fact pairs)",
   },
   'equation-solve': {
     promptDoc:
       `"equation-solve": Show bare equations with multiple choice options. No visual aids. `
       + `unknownPosition = "result". Provide 4 options (one correct, three close distractors ±1-2). `
-      + `timeLimit: 5 seconds. Reduced scaffolding — pictorial support removed.`,
+      + `Reduced scaffolding — pictorial support removed.`,
     schemaDescription: "'equation-solve' (solve given equation)",
   },
   'missing-number': {
     promptDoc:
       `"missing-number": Show an equation with a blank. `
       + `unknownPosition = "operand1" or "operand2" (NOT result). `
-      + `No options — student types the answer. timeLimit: 5 seconds. `
+      + `No options — student types the answer. `
       + `Transitional: requires inverse thinking.`,
     schemaDescription: "'missing-number' (find unknown in equation)",
   },
   'speed-round': {
     promptDoc:
-      `"speed-round": Bare equations, student types answer as fast as possible. `
-      + `unknownPosition = "result". No options, no visual aids. `
-      + `Short timeLimit: 3 seconds. Tests automaticity — fully symbolic rapid recall.`,
-    schemaDescription: "'speed-round' (timed fluency assessment)",
+      `"speed-round": Bare equations, student types the answer. `
+      + `unknownPosition = "result". No options, no visual aids, NO timer or countdown. `
+      + `Tests automaticity — fully symbolic rapid recall the student can answer at their own pace.`,
+    schemaDescription: "'speed-round' (rapid recall without aids)",
   },
 };
 
@@ -152,10 +152,6 @@ const mathFactFluencySchema: Schema = {
             items: { type: Type.NUMBER },
             description: "Multiple choice number options for equation-solve"
           },
-          timeLimit: {
-            type: Type.NUMBER,
-            description: "Time limit in seconds for this challenge"
-          },
           matchDirection: {
             type: Type.STRING,
             description: "For match: 'visual-to-equation' or 'equation-to-visual'"
@@ -222,7 +218,7 @@ Create a math fact fluency activity for teaching "${topic}" to ${gradeLevel} stu
 CONTEXT:
 - This primitive builds RAPID RECALL of basic addition and subtraction facts.
 - Students progress through challenge types that gradually remove visual scaffolding.
-- The goal is automaticity — answering within 3 seconds without counting.
+- The goal is automaticity — recalling facts without counting. There is NO timer and no time pressure; never reference speed deadlines or countdowns in instruction text.
 
 ${challengeTypeSection}
 
@@ -389,18 +385,6 @@ Return the complete math fact fluency configuration.
       }
     }
 
-    // Default timeLimit per type
-    if (!challenge.timeLimit || challenge.timeLimit < 1) {
-      switch (challenge.type) {
-        case 'visual-fact': challenge.timeLimit = 8; break;
-        case 'equation-solve': challenge.timeLimit = 5; break;
-        case 'missing-number': challenge.timeLimit = 5; break;
-        case 'match': challenge.timeLimit = 6; break;
-        case 'speed-round': challenge.timeLimit = 3; break;
-        default: challenge.timeLimit = 5;
-      }
-    }
-
     // Validate match direction
     if (challenge.type === 'match') {
       if (challenge.matchDirection !== 'visual-to-equation' && challenge.matchDirection !== 'equation-to-visual') {
@@ -463,7 +447,6 @@ Return the complete math fact fluency configuration.
         visualType: 'dot-array' as const,
         visualCount: 3,
         options: [1, 2, 3, 4],
-        timeLimit: 8,
       },
       'match': {
         id: 'c1',
@@ -480,7 +463,6 @@ Return the complete math fact fluency configuration.
         visualCount: 3,
         matchDirection: 'visual-to-equation' as const,
         equationOptions: ['2 + 1 = 3', '1 + 1 = 2', '3 + 1 = 4', '2 + 3 = 5'],
-        timeLimit: 6,
       },
       'equation-solve': {
         id: 'c1',
@@ -494,7 +476,6 @@ Return the complete math fact fluency configuration.
         unknownPosition: 'result' as const,
         correctAnswer: 5,
         options: [3, 4, 5, 6],
-        timeLimit: 5,
       },
       'missing-number': {
         id: 'c1',
@@ -507,12 +488,11 @@ Return the complete math fact fluency configuration.
         result: 5,
         unknownPosition: 'operand2' as const,
         correctAnswer: 2,
-        timeLimit: 5,
       },
       'speed-round': {
         id: 'c1',
         type: 'speed-round' as const,
-        instruction: 'Quick! What is 2 + 1?',
+        instruction: 'What is 2 + 1?',
         equation: '2 + 1 = 3',
         operation: 'addition' as const,
         operand1: 2,
@@ -520,7 +500,6 @@ Return the complete math fact fluency configuration.
         result: 3,
         unknownPosition: 'result' as const,
         correctAnswer: 3,
-        timeLimit: 3,
       },
     };
     console.log(`[MathFactFluency] No valid challenges — using ${fallbackType} fallback`);

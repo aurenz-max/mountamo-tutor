@@ -7,7 +7,7 @@ import {
 } from '../service/geminiClient-api';
 import { GameState, type ExhibitData, type IntroBriefingData } from '../types';
 import type { GradeLevel } from '../components/GradeLevelSelector';
-import { fetchGenerationContext } from '../service/studentContext/fetchGenerationContext';
+import { fetchGenerationContext, fetchStudentPersona } from '../service/studentContext/fetchGenerationContext';
 import type { StudentGenerationContext } from '../service/studentContext/types';
 
 export interface ComponentStatus {
@@ -32,7 +32,21 @@ export interface ExhibitProgress {
 export interface GenerateOptions {
   topic: string;
   gradeLevel: GradeLevel;
-  preBuiltObjectives?: Array<{ id: string; text: string; verb: string; icon: string }>;
+  /**
+   * Curriculum-launched objectives may carry their own subskill IDs (e.g. a
+   * daily-session block, where each objective is a distinct subskill). When
+   * present these let the personalization step skip embedding retrieval.
+   */
+  preBuiltObjectives?: Array<{
+    id: string; text: string; verb: string; icon: string;
+    subskillId?: string; skillId?: string;
+  }>;
+  /**
+   * Set when the lesson was launched from a single known curriculum node (the
+   * browser). The whole lesson is that one subskill, so the brief's generated
+   * objectives all resolve to it — no retrieval sweep needed.
+   */
+  curriculumContext?: { subject: string; skillId: string; subskillId: string };
 }
 
 export interface ExhibitSession {
@@ -68,7 +82,7 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
   const [componentStatuses, setComponentStatuses] = useState<ComponentStatus[]>([]);
 
   const generate = useCallback(async (options: GenerateOptions) => {
-    const { topic, gradeLevel, preBuiltObjectives } = options;
+    const { topic, gradeLevel, preBuiltObjectives, curriculumContext } = options;
     if (!topic.trim()) return;
 
     setPhase(GameState.GENERATING);
@@ -78,9 +92,17 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
     setBrief(null);
 
     try {
+      // STEP 0: Lightweight persona fetch (name + last session) so the brief can
+      // greet by name. Pure identity — no objectives, no curriculum retrieval —
+      // so it's safe to run before the brief exists. Fail-soft: null ⇒ the brief
+      // greets generically, exactly as it did before.
+      const persona = studentId
+        ? await fetchStudentPersona(studentId, topic)
+        : null;
+
       // STEP 1: Curator brief
       setMessage('🎯 Generating lesson introduction...');
-      let generatedBrief = await generateIntroBriefing(topic, gradeLevel);
+      let generatedBrief = await generateIntroBriefing(topic, gradeLevel, persona);
       console.log('📚 Curator brief generated:', generatedBrief);
 
       let objectives = generatedBrief.objectives;
@@ -103,13 +125,40 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
       let studentContext: StudentGenerationContext | null = null;
       if (studentId) {
         setMessage('🎓 Personalizing for this student...');
+
+        // Curriculum-launched lessons already know their subskill(s), so they
+        // pass the IDs and the backend skips embedding retrieval. Two shapes:
+        //  • preBuiltObjectives carry per-objective subskill IDs (multi-subskill
+        //    block/group) → forward them per objective.
+        //  • a single curriculumContext (browser launch) → the whole lesson is
+        //    one subskill; the backend applies it to every brief objective.
+        // Free-form (neither present) falls through to the retrieval sweep.
+        const contextObjectives = preBuiltObjectives
+          ? preBuiltObjectives.map(o => ({
+              id: o.id, text: o.text, verb: o.verb,
+              subskillId: o.subskillId, skillId: o.skillId,
+            }))
+          : objectives;
+
         studentContext = await fetchGenerationContext({
           studentId,
           topic,
           gradeLevel,
           subject: generatedBrief.subject,
-          objectives,
+          objectives: contextObjectives,
+          // Lesson-level node only applies when objectives don't carry their own.
+          curriculumContext: preBuiltObjectives ? undefined : curriculumContext,
+          // STEP 0 already fetched the persona (it's identical across calls), so
+          // tell the backend not to rebuild it — only fall back to building it
+          // here if STEP 0 came back empty (transient failure).
+          includePersona: !persona,
         });
+
+        // Re-attach the persona STEP 0 fetched: the backend skipped it above, so
+        // inject it here for the manifest's student-voice block.
+        if (studentContext && persona && !studentContext.studentProfile) {
+          studentContext = { ...studentContext, studentProfile: persona };
+        }
       }
 
       // STEP 2: Manifest generation with streaming

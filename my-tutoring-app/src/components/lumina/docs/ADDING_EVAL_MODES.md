@@ -1,6 +1,21 @@
 # Adding Eval Modes to Primitives
 
-This guide explains how to add IRT eval modes to an existing primitive's generator so the session assembly engine can request specific difficulty levels — and the generator produces **only** challenges at that level.
+This guide explains how to add eval modes to an existing primitive's generator. **Eval modes are distinct SKILLS (task identities), not difficulty levels.** The generator resolves *which* mode(s) to run from the component's **intent** and constrains its output via the schema enum so it produces **only** those challenge types — no post-filtering.
+
+## What changed (2026-06-13) — read this first
+
+The old design treated eval modes as a difficulty ladder and had the generator read a single pinned mode (`resolveEvalModeConstraint`). That had two problems:
+
+1. **Modes aren't difficulty tiers — they're different skills.** ten-frame's `make_ten` (complements to 10) is not a "harder build"; it's a different thing to learn. Framing modes as easy→hard made the curator pick the lowest rung every time, contradicting its own intent. See [[structural-difficulty-not-numeric]].
+2. **The manifest can't pick the mode reliably.** The valid mode set is a *function of the primitive* (`componentId`), and Gemini's `responseSchema` can't express a dependent/conditional enum. So a manifest-level mode field is either a free string (no constraint) or a union-of-all-modes enum (cognitively brutal, and lets ten-frame get a number-line mode). The per-primitive enum is only expressible **downstream, in the generator**, where the one primitive is known.
+
+**The new design: `resolveEvalModes` (generator-driven).** Each generator resolves its own mode set from intent, producing one of three outcomes:
+
+- **single** — intent maps to one skill → that mode only
+- **curated blend** — intent spans 2-3 skills → the union of those modes' challenge types
+- **mixed** — intent is broad / no single skill → schema left unconstrained (all types). Mixed is a legitimate pedagogical choice, not a failure.
+
+An explicit `config.targetEvalMode` (the eval-test tester, or a curator override) **pins one mode with NO LLM call** and short-circuits intent resolution.
 
 ## How It Works
 
@@ -9,37 +24,38 @@ This guide explains how to add IRT eval modes to an existing primitive's generat
 │  catalog/[domain].ts  (SINGLE SOURCE OF TRUTH)               │
 │  { id: 'ten-frame', evalModes: [                             │
 │    { evalMode: 'build', challengeTypes: ['build'], β: 1.5 }, │
-│    { evalMode: 'operate', challengeTypes: ['add','subtract']} │
+│    { evalMode: 'operate', challengeTypes: ['add','subtract']}│
 │  ]}                                                          │
 └─────────────┬───────────────────────────────────────────────┘
-              │ resolveEvalModeConstraint()
+              │ resolveEvalModes(id, { targetEvalMode, intent, objectiveText }, docs)
               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  service/evalMode/index.ts  (SHARED ORCHESTRATION)           │
-│  1. Reads EvalModeDefinition from catalog                    │
-│  2. Constrains schema enum → Gemini cannot output wrong types│
-│  3. Strips irrelevant docs from prompt → fewer tokens        │
+│  service/evalMode/index.ts  (SHARED RESOLVER)               │
+│  1. targetEvalMode set? → that ONE mode, NO LLM call         │
+│  2. else ≥2 modes + intent → flash-lite enum micro-call      │
+│       scoped to THIS primitive's mode keys                   │
+│  3. selection → union challengeTypes → EvalModeResolution    │
+│       (one=single · several=blend · all/none=null=mixed)     │
 └─────────────┬───────────────────────────────────────────────┘
-              │ constrained schema + focused prompt
+              │ resolution (or null) → constrained schema + focused prompt
               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  service/[domain]/gemini-[primitive].ts  (GENERATOR)         │
-│  Calls Gemini with constrained schema                        │
-│  → All challenges guaranteed to match the target eval mode   │
-│  → No post-filtering or wasted tokens                        │
+│  Schema enum = union of selected modes' challenge types      │
+│  → Gemini cannot output other types. No post-filtering.      │
+│  → null resolution = mixed (schema left open, all types)     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Key principle:** The schema `enum` constraint means Gemini *cannot* output disallowed challenge types. This replaces the old approach of asking in the prompt (which Gemini ignores ~30% of the time) and post-filtering.
+**Key principle:** The schema `enum` constraint means Gemini *cannot* output disallowed challenge types. This replaces asking in the prompt (which Gemini ignores ~30% of the time) and post-filtering. The resolver decides *which* types are allowed; the schema enforces it.
 
 ---
 
 ## When to Add Eval Modes
 
 Add eval modes when:
-- Your primitive has **2+ distinct challenge types** that represent different difficulty levels
-- The IRT calibration system needs to target a specific difficulty tier
-- Each challenge type maps to a meaningful pedagogical progression (concrete → abstract)
+- Your primitive has **2+ distinct challenge types**, each a meaningful **skill** (not just a numeric difficulty knob)
+- The skills map to different things the student does (concrete → abstract is a fine progression, but each rung is its own skill)
 
 Skip eval modes for:
 - Single-mode primitives (only one challenge type)
@@ -53,9 +69,9 @@ Skip eval modes for:
 | Step | File | What to Do |
 |------|------|------------|
 | 1 | `catalog/[domain].ts` | Add `evalModes` array to catalog entry |
-| 2 | `service/[domain]/gemini-[primitive].ts` | Add `CHALLENGE_TYPE_DOCS` + use shared utilities |
-| 3 | `registry/generators/[domain]Generators.ts` | Ensure registration spreads `...item.config` so `targetEvalMode` flows through |
-| 4 | Verify | `npx tsc --noEmit` + test in MathPrimitivesTester |
+| 2 | `service/[domain]/gemini-[primitive].ts` | Add `CHALLENGE_TYPE_DOCS` + wire `resolveEvalModes` |
+| 3 | `registry/generators/[domain]Generators.ts` | Registration spreads `...item.config` **and** passes `intent` |
+| 4 | Verify | `npx tsc --noEmit` + Primitives Tester (pins) + `/topic-trace` (intent resolution) |
 
 No new files needed — the shared utilities in `service/evalMode/index.ts` already exist.
 
@@ -63,7 +79,7 @@ No new files needed — the shared utilities in `service/evalMode/index.ts` alre
 
 ## Step 1: Add `evalModes` to the Catalog Entry
 
-Open the domain catalog file and add an `evalModes` array to your primitive's entry. Each mode maps to an IRT difficulty prior (β).
+Open the domain catalog file and add an `evalModes` array to your primitive's entry. Each mode is a distinct skill with an IRT difficulty prior (β) used by the calibration system.
 
 ```typescript
 // catalog/math.ts
@@ -73,11 +89,11 @@ Open the domain catalog file and add an `evalModes` array to your primitive's en
   constraints: '...',
   evalModes: [
     {
-      evalMode: 'build',              // Key sent via config.targetEvalMode
+      evalMode: 'build',              // Key matched by config.targetEvalMode / resolver
       label: 'Build (Concrete)',       // Human-readable label for UI
       beta: 1.5,                       // IRT prior β (1.0–10.0)
       scaffoldingMode: 1,              // Maps to PRD scaffolding mode (1-6)
-      challengeTypes: ['build'],       // Which challenge types the generator should produce
+      challengeTypes: ['build'],       // Which challenge types this skill produces
       description: 'Place counters with full guidance. Lowest cognitive load.',
     },
     {
@@ -85,7 +101,7 @@ Open the domain catalog file and add an `evalModes` array to your primitive's en
       label: 'Operate (Symbolic)',
       beta: 5.0,
       scaffoldingMode: 4,
-      challengeTypes: ['add', 'subtract'],  // Can map to multiple challenge types
+      challengeTypes: ['add', 'subtract'],  // A mode can own multiple challenge types
       description: 'Addition and subtraction using the frame.',
     },
   ],
@@ -96,9 +112,9 @@ Open the domain catalog file and add an `evalModes` array to your primitive's en
 
 ### Design Guidelines for Eval Modes
 
-**Ordering:** List modes from lowest β (easiest) to highest β (hardest). This matches the pedagogical progression.
+**Ordering:** List modes from lowest β to highest β. This is a catalog convention for readability and the IRT priors — it is **not** a ladder the curator climbs. β is deliberately NOT shown to the curator/resolver; modes are matched to intent by SKILL, never by β proximity or lesson position.
 
-**Mode naming:** Use the challenge type name when 1:1 (e.g., `build` → `['build']`). Use a descriptive verb when mapping to multiple types (e.g., `operate` → `['add', 'subtract']`).
+**Mode naming:** Use the challenge type name when 1:1 (e.g., `build` → `['build']`). Use a descriptive verb when mapping to multiple types (e.g., `operate` → `['add', 'subtract']`). The resolver unions `challengeTypes` across selected modes, so a `make_ten + operate` blend allows exactly `make_ten/add/subtract`.
 
 **β values:** Must follow the PRD §5.3 prior difficulty table (see [lumina_difficulty_calibration_prd.md](lumina_difficulty_calibration_prd.md)):
 
@@ -119,21 +135,21 @@ Within-mode adjustments of ±0.5–1.0 are allowed for: number range, operation 
 
 ---
 
-## Step 2: Add `CHALLENGE_TYPE_DOCS` to the Generator
-
-The generator needs a structured registry of documentation per challenge type. This serves two purposes:
-1. **Prompt docs** — only the relevant type's docs are included in the Gemini prompt
-2. **Schema description** — used to build the constrained enum description
+## Step 2: Wire `resolveEvalModes` in the Generator
 
 ### 2a: Define the docs registry
+
+The generator needs a structured registry of documentation per challenge type:
+1. **Prompt docs** — only the allowed types' docs are injected into the Gemini prompt
+2. **Schema description** — used to build the constrained enum description
 
 Add this at the top of your generator file, after imports:
 
 ```typescript
 import {
-  resolveEvalModeConstraint,
+  resolveEvalModes,
   constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
+  buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from '../evalMode';
 
@@ -154,19 +170,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 ```
 
-**Rules for `promptDoc`:**
-- Start with the type name in quotes (e.g., `"build":`)
-- Describe what the student does, not what Gemini should output
-- Include key constraints (number ranges, required fields, grade-level notes)
-- Keep it concise — this is injected into the prompt, so every token costs
+**Rules for `promptDoc`:** start with the type name in quotes; describe what the student does; include key constraints (ranges, required fields, grade notes); keep it concise — every token costs.
 
-**Rules for `schemaDescription`:**
-- Short label format: `'type_name' (brief description)`
-- Used in the schema enum description field
+**Rules for `schemaDescription`:** short label format `'type_name' (brief description)`; used in the schema enum description field.
 
-### 2b: Resolve the eval mode constraint
+### 2b: Resolve the eval mode(s)
 
-Inside your generator function, replace any hardcoded eval mode mapping with the shared utility:
+The generator function must be `async` (it already awaits Gemini). `resolveEvalModes` makes its own micro-call, so it is awaited too:
 
 ```typescript
 export const generateMyPrimitive = async (
@@ -174,51 +184,57 @@ export const generateMyPrimitive = async (
   gradeLevel: string,
   config?: {
     // ... existing config fields ...
+    /** Eval mode pinned by the tester/curator. Wins over intent resolution, NO LLM call. */
     targetEvalMode?: string;
+    /** Component intent — the routing signal when no mode is pinned. */
+    intent?: string;
+    /** Parent objective text (stamped by flattenManifestToLayout) — secondary signal. */
+    objectiveText?: string;
   }
 ): Promise<MyPrimitiveData> => {
-  // Resolve eval mode from the catalog (single source of truth)
-  const evalConstraint = resolveEvalModeConstraint(
+  // Resolve which skill(s) this component should teach.
+  const resolution = await resolveEvalModes(
     'my-primitive',        // Must match the catalog id
-    config?.targetEvalMode,
+    { targetEvalMode: config?.targetEvalMode, intent: config?.intent, objectiveText: config?.objectiveText },
     CHALLENGE_TYPE_DOCS,
   );
+  const allowedTypes = resolution?.allowedTypes;
 ```
+
+`resolveEvalModes` returns `EvalModeResolution | null`:
+- **explicit pin** (`targetEvalMode` set) → that one mode, no LLM call.
+- **intent resolution** (no pin, primitive has ≥2 modes) → single | blend.
+- **`null`** → mixed (no constraint). `resolution.allowedTypes` = union of selected modes' challenge types; `resolution.modes` = the selected `EvalModeDefinition`s; `resolution.source` = `'explicit' | 'resolved'`.
 
 ### 2c: Constrain the schema
 
-Build a mode-constrained schema that narrows the `challenge.type` enum:
-
 ```typescript
-  // When eval mode is active, schema enum restricts challenge.type
-  // so Gemini *cannot* produce disallowed types. No post-filtering needed.
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+  // When mode(s) resolved, the schema enum restricts challenge.type to the union
+  // of selected types so Gemini *cannot* produce others. null → mixed (open schema).
+  const activeSchema = resolution
+    ? constrainChallengeTypeEnum(baseSchema, resolution.allowedTypes, CHALLENGE_TYPE_DOCS)
     : baseSchema;
 ```
 
 > **Literacy generators** use non-standard field paths. Pass a `SchemaConstraintConfig` as the 4th arg:
 > ```typescript
 > // challenges[].mode — e.g., LetterSpotter, RhymeStudio, WordWorkout
-> constrainChallengeTypeEnum(schema, types, docs, { fieldName: 'mode' })
+> constrainChallengeTypeEnum(schema, resolution.allowedTypes, docs, { fieldName: 'mode' })
 > // Root-level patternType — e.g., PhonicsBlender, SpellingPatternExplorer
-> constrainChallengeTypeEnum(schema, types, docs, { fieldName: 'patternType', rootLevel: true })
+> constrainChallengeTypeEnum(schema, resolution.allowedTypes, docs, { fieldName: 'patternType', rootLevel: true })
 > // instances[].type — e.g., FigurativeLanguageFinder
-> constrainChallengeTypeEnum(schema, types, docs, { arrayName: 'instances' })
+> constrainChallengeTypeEnum(schema, resolution.allowedTypes, docs, { arrayName: 'instances' })
 > ```
 
-### 2d: Build the prompt with only relevant docs
+### 2d: Build the prompt with only the relevant docs
 
-Use `buildChallengeTypePromptSection()` to generate the challenge types section:
+`buildModeConstraintSection` renders all three cases (single / curated blend / mixed-all):
 
 ```typescript
-  const challengeTypeSection = buildChallengeTypePromptSection(
-    evalConstraint,
-    CHALLENGE_TYPE_DOCS,
-  );
+  const challengeTypeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
 ```
 
-Then insert it into your prompt template:
+Insert it into your prompt, and wrap any grade-level guidelines so they only appear for the mixed case:
 
 ```typescript
   const prompt = `
@@ -229,9 +245,9 @@ CONTEXT:
 
 ${challengeTypeSection}
 
-${!evalConstraint ? `
+${!resolution ? `
 GUIDELINES FOR GRADE LEVELS:
-... (only include when no eval mode is active)
+... (only include when no mode is resolved — i.e. mixed)
 ` : ''}
 
 REQUIREMENTS:
@@ -239,25 +255,34 @@ REQUIREMENTS:
 `;
 ```
 
-When an eval mode is active, `challengeTypeSection` produces:
+**Single mode** produces:
 
 ```
-## ADAPTIVE DIFFICULTY CONSTRAINT (IRT calibration β=1.5)
-Mode: Build (Concrete) — Place counters with full guidance.
+## EVAL MODE: Build (Concrete) (β=1.5)
+Place counters with full guidance. Lowest cognitive load.
 Generate ONLY the following challenge type(s):
 
-CHALLENGE TYPES (allowed for this mode):
 - "build": Student places exactly N counters on the frame. targetCount = N. ...
 ```
 
-When no eval mode, it includes all types:
+**Curated blend** produces:
 
 ```
-CHALLENGE TYPES:
-- "build": Student places exactly N counters on the frame. ...
-- "subitize": Counters flash briefly, student types how many. ...
-- "make_ten": Frame shows some counters, ...
-- ...
+## EVAL MODES — CURATED BLEND: Make Ten (Strategy) + Operate (Symbolic)
+Generate a MIX of ONLY the challenge types below, distributed across the session (do not collapse to just one):
+
+- "make_ten": Frame shows some counters, student enters how many more to fill ...
+- "add": ...
+- "subtract": ...
+```
+
+**Mixed** (`null`) includes all types:
+
+```
+CHALLENGE TYPES (mixed session — vary across all of these):
+- "build": ...
+- "subitize": ...
+- "make_ten": ...
 ```
 
 ### 2e: Pass the constrained schema to Gemini
@@ -268,79 +293,83 @@ CHALLENGE TYPES:
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: activeSchema,  // ← constrained schema
+      responseSchema: activeSchema,  // ← constrained schema (or base, when mixed)
     },
   });
 ```
 
-### 2f: Update fallbacks
+### 2f: Within-mode support tier (single mode only)
 
-If your generator has a fallback for empty challenges, use the eval constraint's allowed types:
+`config.difficulty` ('easy' | 'medium' | 'hard') is the structural **support tier** — how much on-screen scaffolding the student gets *within one skill*, applied deterministically **post-generation** (code owns the support structure; the LLM only chose numbers). It NEVER changes the target numbers — the pedagogical scope owns those. A curated **blend** has no single tier surface, so gate it on a single resolved mode:
+
+```typescript
+  const pinnedType = allowedTypes?.[0] as ChallengeType | undefined;
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold =
+    resolution && resolution.modes.length === 1 && pinnedType && supportTier
+      ? resolveSupportStructure(pinnedType, supportTier)   // primitive-defined
+      : null;
+```
+
+ten-frame's `resolveSupportStructure` is the reference: showCount/showEquation withdraw as the tier hardens, the subitize flash window shrinks (2000/1500/1000ms). Define the structural changes per-primitive. (See [[structural-difficulty-not-numeric]] — the older numeric pool-service band pattern in `service/difficulty/difficultyContext.ts` is RETIRED; numeric jitter changes the numbers, not the difficulty.)
+
+### 2g: Update fallbacks
 
 ```typescript
   if (data.challenges.length === 0) {
-    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'build';
+    const fallbackType = resolution?.allowedTypes[0] ?? 'build';
     // ... build fallback challenge of that type
   }
 ```
 
-### 2g: Add logging via the shared helper
-
-Use `logEvalModeResolution()` from `evalMode/index.ts` instead of inline logging:
+### 2h: Add logging
 
 ```typescript
-import { logEvalModeResolution } from '../evalMode';
-
-// After resolveEvalModeConstraint():
-logEvalModeResolution('MyPrimitive', config?.targetEvalMode, evalConstraint);
+  console.log(
+    `[MyPrimitive] modes: ${resolution ? `${resolution.modes.map(m => m.evalMode).join('+')} (${resolution.source})` : 'mixed'} → types [${(resolution?.allowedTypes ?? ['all']).join(', ')}]`,
+  );
 ```
 
-### 2h: Remove old eval mode code
+### 2i: Remove old eval mode code
 
 If your generator previously had:
 - A hardcoded `evalModeConstraints` map → **delete it** (catalog is the source of truth)
 - Post-generation filtering of challenge types → **delete it** (schema enum prevents wrong types)
-- Eval mode hint strings in the prompt → **delete them** (replaced by `buildChallengeTypePromptSection`)
+- Legacy `resolveEvalModeConstraint` / `buildChallengeTypePromptSection` calls → **replace** with `resolveEvalModes` / `buildModeConstraintSection`
+- Eval mode hint strings in the prompt → **delete them**
 
 ---
 
 ## Step 3: Verify the Generator Registration
 
-The generator function accepts `targetEvalMode` in its config, but the **registration** in `registry/generators/[domain]Generators.ts` is the bridge between the API route and the generator. If the registration constructs a new config object with only specific fields (e.g., `{ intent: item.title }`), `targetEvalMode` will be silently dropped.
+The registration in `registry/generators/[domain]Generators.ts` is the bridge between the API route and the generator. It must spread `item.config` (carries `targetEvalMode` from the tester + `objectiveText` stamped by `flattenManifestToLayout`) **and** pass `intent` (the routing signal for unpinned resolution).
 
-Open the registration file for your domain:
-- Math: `service/registry/generators/mathGenerators.ts`
-- Literacy: `service/registry/generators/literacyGenerators.ts`
-- etc.
+Open the registration file for your domain (e.g. `service/registry/generators/mathGenerators.ts`), find the `registerGenerator()` call, and check both are forwarded.
 
-Find the `registerGenerator()` call for your primitive and check how it passes config.
-
-**Broken pattern** (drops `targetEvalMode`):
+**Broken pattern** (drops `targetEvalMode` + `objectiveText`):
 ```typescript
 registerGenerator('my-primitive', async (item, topic, gradeContext) => ({
   type: 'my-primitive',
   instanceId: item.instanceId,
   data: await generateMyPrimitive(topic, gradeContext, {
-    intent: item.intent || item.title,  // ❌ Only passes intent, loses targetEvalMode
+    intent: item.intent || item.title,  // ❌ Only intent — config lost
   }),
 }));
 ```
 
-**Correct pattern** (spreads `item.config` first):
+**Correct pattern** (spreads `item.config`, passes `intent`):
 ```typescript
 registerGenerator('my-primitive', async (item, topic, gradeContext) => ({
   type: 'my-primitive',
   instanceId: item.instanceId,
   data: await generateMyPrimitive(topic, gradeContext, {
-    ...item.config,                     // ✅ Passes targetEvalMode and all other config
-    intent: item.intent || item.title,
+    ...item.config,                     // ✅ targetEvalMode + objectiveText + all config
+    intent: item.intent || item.title,  // ✅ routing signal for intent resolution
   }),
 }));
 ```
 
-The `item.config` object comes from the API route, which receives it from the tester UI (or session assembly engine). Spreading it ensures `targetEvalMode` flows through.
-
-> **Why this matters:** The generator logs `No targetEvalMode — full schema, mixed difficulty` even when a mode is selected in the tester if the registration doesn't forward `item.config`. This is a silent failure — no errors, just unconstrained output.
+> **Why this matters:** without `...item.config` the tester's `targetEvalMode` is dropped; without `intent` the unpinned path has no signal and silently falls back to mixed. No errors — just unconstrained output.
 
 ---
 
@@ -362,7 +391,7 @@ If the primitive previously had a single `"default"` entry, replace it with one 
 },
 ```
 
-**The β values must exactly match** the catalog's `evalModes[].beta`. If they diverge, the IRT system targets different difficulty than what the generator produces.
+**The β values must exactly match** the catalog's `evalModes[].beta`. If they diverge, the IRT system targets a different difficulty than what the generator produces.
 
 ---
 
@@ -374,14 +403,11 @@ If the primitive previously had a single `"default"` entry, replace it with one 
 cd my-tutoring-app && npx tsc --noEmit
 ```
 
-### Test in the Primitives Tester
+### Test the two paths
 
-The `MathPrimitivesTester` (and other domain testers) automatically reads `evalModes` from the catalog and shows a mode selector dropdown. Select each eval mode and verify:
-
-1. **All generated challenges match the selected mode** — no off-type challenges
-2. **Prompt tokens are lower** — check console logs for shorter prompts
-3. **Fallback works** — if Gemini returns empty, a sensible default is used
-4. **No-eval-mode path unchanged** — without selecting a mode, mixed difficulty works as before
+1. **Primitives Tester (explicit pin).** The `MathPrimitivesTester` (and other domain testers) reads `evalModes` from the catalog and shows a mode selector. It passes `targetEvalMode`, exercising the **explicit** path. Select each mode → verify all challenges match, prompt tokens are lower, fallback works.
+2. **`/topic-trace` (intent resolution).** The Tester can't exercise the unpinned path (it always pins). Run `/topic-trace` on a topic whose objective implies one skill → verify intent resolves to the right single mode. Try a broad objective → verify it resolves to a blend or mixed.
+3. **No-mode path** — verify mixed (unconstrained) generation is unchanged.
 
 ---
 
@@ -391,16 +417,19 @@ All utilities live in `service/evalMode/index.ts`:
 
 | Function | Purpose | When to Call |
 |----------|---------|-------------|
-| `resolveEvalModeConstraint()` | Reads the catalog's `EvalModeDefinition`, builds allowed types + prompt docs | Once at the top of your generator |
-| `constrainChallengeTypeEnum()` | Deep-clones the schema, narrows challenge-type enum to allowed values. Accepts optional `SchemaConstraintConfig` for non-standard field paths (literacy generators). | Before calling `ai.models.generateContent()` |
-| `buildChallengeTypePromptSection()` | Builds the challenge types prompt section with only relevant docs | When constructing the prompt string |
-| `logEvalModeResolution()` | Logs the resolved eval mode for observability | After `resolveEvalModeConstraint()` |
+| `resolveEvalModes()` | **(current)** Resolves single \| blend \| mixed from intent (or an explicit pin). Returns `EvalModeResolution \| null`. Makes a flash-lite enum micro-call only when unpinned. | Once at the top of your generator (`await`) |
+| `constrainChallengeTypeEnum()` | Deep-clones the schema, narrows the challenge-type enum to `resolution.allowedTypes`. Accepts optional `SchemaConstraintConfig` for non-standard field paths (literacy). | Before `ai.models.generateContent()` |
+| `buildModeConstraintSection()` | Builds the challenge-types prompt section for all three cases (single/blend/mixed). | When constructing the prompt string |
+| `resolveEvalModeConstraint()` | **(legacy, single-mode only)** Reads one `EvalModeDefinition` → allowed types + docs. Still used by generators not yet migrated to `resolveEvalModes`. | — (prefer `resolveEvalModes`) |
+| `buildChallengeTypePromptSection()` | **(legacy)** Single-mode prompt section. Superseded by `buildModeConstraintSection`. | — |
+| `logEvalModeResolution()` | Legacy single-mode logger. New code uses the inline `console.log` in 2h. | — |
 
 ### What stays in the generator (domain-specific)
 
 | Concern | Why it stays |
 |---------|-------------|
 | `CHALLENGE_TYPE_DOCS` | Each primitive has different challenge types with unique docs |
+| `resolveSupportStructure` / support-tier scaffolding | Structural support is per-primitive (what "less scaffolding" means) |
 | Domain validation (e.g., startCount inference) | Specific to the primitive's data model |
 | Instruction ↔ numeric field consistency checks | Domain-specific invariants |
 | Fallback challenge definitions | Each primitive knows what a sensible default looks like |
@@ -414,7 +443,7 @@ Defined in `types.ts`:
 
 ```typescript
 export interface EvalModeDefinition {
-  /** Eval mode key sent to the backend (e.g., 'build', 'subitize') */
+  /** Eval mode key (e.g., 'build', 'subitize') */
   evalMode: string;
   /** Human-readable label for UI display */
   label: string;
@@ -422,47 +451,67 @@ export interface EvalModeDefinition {
   beta: number;
   /** Scaffolding mode (1-6) this eval mode maps to in the PRD mode taxonomy */
   scaffoldingMode: number;
-  /** Which challenge types the generator should produce for this eval mode */
+  /** Which challenge types the generator should produce for this mode */
   challengeTypes: string[];
-  /** Brief description of what this mode tests */
+  /** Brief description of what this mode tests — also feeds the resolver's enum prompt */
   description: string;
 }
+```
+
+`resolveEvalModes` returns:
+
+```typescript
+export interface EvalModeResolution {
+  /** Selected mode definitions. length 1 = single skill, 2+ = curated blend. */
+  modes: EvalModeDefinition[];
+  /** Union of challenge types across the selected modes (schema-enum source). */
+  allowedTypes: string[];
+  /** Prompt fragment: docs for the allowed challenge types only. */
+  promptDocs: string;
+  /** How the selection was made — observability only. */
+  source: 'explicit' | 'resolved';
+}
+// null return = MIXED (caller leaves the schema unconstrained)
 ```
 
 ---
 
 ## Reference Implementation
 
-**Ten Frame** is the first primitive with eval modes. Use it as a reference:
+**Ten Frame** is the reference for the new design (4 modes: build → subitize → make_ten → operate):
 
 | File | What to look at |
 |------|----------------|
-| [catalog/math.ts](../service/manifest/catalog/math.ts) (search for `id: 'ten-frame'`) | `evalModes` array with 4 modes (build → subitize → make_ten → operate) |
-| [gemini-ten-frame.ts](../service/math/gemini-ten-frame.ts) | `CHALLENGE_TYPE_DOCS`, `resolveEvalModeConstraint()`, `constrainChallengeTypeEnum()`, `buildChallengeTypePromptSection()` usage |
-| [evalMode/index.ts](../service/evalMode/index.ts) | Shared utilities |
-| [types.ts](../types.ts) (search for `EvalModeDefinition`) | Type definitions |
+| [catalog/math.ts](../service/manifest/catalog/math.ts) (search `id: 'ten-frame'`) | `evalModes` array (`operate` → `['add','subtract']` shows the union case) |
+| [gemini-ten-frame.ts](../service/math/gemini-ten-frame.ts) | `CHALLENGE_TYPE_DOCS`, `resolveEvalModes()`, `constrainChallengeTypeEnum()`, `buildModeConstraintSection()`, `resolveSupportStructure()` (single-mode tier) |
+| [evalMode/index.ts](../service/evalMode/index.ts) | `resolveEvalModes`, `buildModeConstraintSection`, `EvalModeResolution` |
+| [types.ts](../types.ts) (search `EvalModeDefinition`) | Type definitions |
+
+> **Rollout status:** ten-frame is the migrated reference. The other ~57 mode-bearing generators still call the legacy single-mode `resolveEvalModeConstraint` path and will be migrated incrementally. When migrating one, follow Step 2 above.
 
 ---
 
 ## Checklist
 
-- [ ] Identified 2+ challenge types that represent distinct difficulty levels
+- [ ] Identified 2+ challenge types that are distinct **skills** (not just numeric difficulty)
 - [ ] Added `evalModes` array to catalog entry in `catalog/[domain].ts`
 - [ ] Each eval mode has `evalMode`, `label`, `beta`, `scaffoldingMode`, `challengeTypes`, `description`
-- [ ] Modes ordered from lowest β (easiest) to highest β (hardest)
+- [ ] Modes ordered low β → high β (catalog convention; β is NOT shown to the resolver)
 - [ ] `challengeTypes` values match the challenge type strings in the generator schema
-- [ ] Added `CHALLENGE_TYPE_DOCS` registry to the generator with `promptDoc` + `schemaDescription` per type
-- [ ] Generator calls `resolveEvalModeConstraint()` with the correct `componentId`
-- [ ] Schema constrained via `constrainChallengeTypeEnum()` before Gemini call
-- [ ] Prompt built with `buildChallengeTypePromptSection()` (no hardcoded mode hints)
-- [ ] Removed any old eval mode code (hardcoded constraint maps, post-generation filtering)
-- [ ] Fallback uses `evalConstraint?.allowedTypes[0]` for correct fallback type
-- [ ] Logging added via `logEvalModeResolution()` from `evalMode/index.ts`
-- [ ] Generator registration in `registry/generators/[domain]Generators.ts` spreads `...item.config` (not just cherry-picked fields)
-- [ ] Backend `PROBLEM_TYPE_REGISTRY` in `problem_type_registry.py` updated with matching β priors (or confirmed existing entries match)
+- [ ] Added `CHALLENGE_TYPE_DOCS` registry with `promptDoc` + `schemaDescription` per type
+- [ ] Generator is `async` and `await`s `resolveEvalModes(id, { targetEvalMode, intent, objectiveText }, docs)`
+- [ ] `targetEvalMode`, `intent`, `objectiveText` added to the config type
+- [ ] Schema constrained via `constrainChallengeTypeEnum(baseSchema, resolution.allowedTypes, ...)` before the Gemini call
+- [ ] Prompt built with `buildModeConstraintSection(resolution, ...)` (no hardcoded mode hints)
+- [ ] Support tier (`config.difficulty`) gated on `resolution.modes.length === 1`
+- [ ] Removed old eval mode code (constraint maps, post-filtering, legacy `resolveEvalModeConstraint`/`buildChallengeTypePromptSection`, mode hint strings)
+- [ ] Fallback uses `resolution?.allowedTypes[0]`
+- [ ] Logging added (inline `console.log` from 2h)
+- [ ] Generator registration spreads `...item.config` **and** passes `intent`
+- [ ] Backend `PROBLEM_TYPE_REGISTRY` updated with matching β priors (or confirmed existing match)
 - [ ] TypeScript compiles without errors (`npx tsc --noEmit`)
-- [ ] Tested each eval mode in the domain Primitives Tester — all challenges match the mode
-- [ ] Tested no-eval-mode path — mixed difficulty generation unchanged
+- [ ] Tested explicit pins in the Primitives Tester + intent resolution via `/topic-trace`
+- [ ] Tested no-mode (mixed) path — unchanged
 
 ## Additional Resources
 
@@ -471,4 +520,4 @@ export interface EvalModeDefinition {
 - **[ADDING_PRIMITIVES.md](ADDING_PRIMITIVES.md)** - Full guide for creating new primitives
 - **[ADDING_TUTORING_SCAFFOLD.md](ADDING_TUTORING_SCAFFOLD.md)** - Adding AI tutoring scaffolding
 - **[types.ts](../types.ts)** - `EvalModeDefinition` and `ComponentDefinition` interfaces
-- **[catalog/index.ts](../service/manifest/catalog/index.ts)** - `getComponentById()` lookup used by the eval mode resolver
+- **[catalog/index.ts](../service/manifest/catalog/index.ts)** - `getComponentById()` lookup used by the resolver

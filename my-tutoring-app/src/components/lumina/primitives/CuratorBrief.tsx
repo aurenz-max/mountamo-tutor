@@ -426,6 +426,12 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
                 <span className="text-xs font-mono text-slate-400 uppercase tracking-widest">
                   {briefingData.gradeLevel}
                 </span>
+                {briefingData.preparedFor && (
+                  <span className="text-xs font-mono text-indigo-300 uppercase tracking-widest border border-indigo-500/30 bg-indigo-500/10 px-2 py-1 rounded flex items-center gap-1.5">
+                    <Sparkles size={11} className="text-indigo-400" />
+                    Prepared for {briefingData.preparedFor}
+                  </span>
+                )}
                 <div className="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
               <h1 className="text-4xl font-light text-white mb-4 tracking-tight">

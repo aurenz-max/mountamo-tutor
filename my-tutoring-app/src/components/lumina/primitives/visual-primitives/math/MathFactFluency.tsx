@@ -44,7 +44,6 @@ export interface MathFactFluencyChallenge {
   visualCount?: number;
   // equation-solve & speed-round
   options?: number[];
-  timeLimit?: number;              // seconds
   // match
   matchDirection?: 'visual-to-equation' | 'equation-to-visual';
   equationOptions?: string[];
@@ -58,7 +57,9 @@ export interface MathFactFluencyData {
   maxNumber: number;               // 3, 5, or 10
   includeSubtraction: boolean;
   showVisualAids: boolean;
-  targetResponseTime: number;      // seconds (goal: 3)
+  // Goal response time in seconds, used ONLY as a silent automaticity signal for
+  // analytics/IRT. Never surfaced to the student and never enforced as a deadline.
+  targetResponseTime: number;
   adaptiveDifficulty: boolean;
   gradeBand: 'K' | '1';
 
@@ -80,7 +81,7 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'equation-solve': { label: 'Equation Solve', icon: '💡',       accentColor: 'blue' },
   'missing-number': { label: 'Missing Number', icon: '❓',             accentColor: 'amber' },
   'match':          { label: 'Match',          icon: '🔗',       accentColor: 'emerald' },
-  'speed-round':    { label: 'Speed Round',    icon: '⚡',             accentColor: 'orange' },
+  'speed-round':    { label: 'Rapid Recall',   icon: '🎯',             accentColor: 'orange' },
 };
 
 // ============================================================================
@@ -186,39 +187,6 @@ function VisualAid({ type, count }: { type?: string; count: number }) {
 }
 
 // ============================================================================
-// Timer Arc Component
-// ============================================================================
-
-function TimerArc({ timeLeft, timeLimit }: { timeLeft: number; timeLimit: number }) {
-  const fraction = Math.max(0, timeLeft / timeLimit);
-  const radius = 44;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - fraction);
-
-  let colorClass = 'stroke-emerald-400';
-  if (fraction <= 0.25) colorClass = 'stroke-red-400';
-  else if (fraction <= 0.5) colorClass = 'stroke-amber-400';
-
-  return (
-    <svg width={100} height={100} className="absolute -top-1 -right-1 opacity-50" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r={radius} className="fill-none stroke-white/5" strokeWidth="4" />
-      <circle
-        cx="50" cy="50" r={radius}
-        className={`fill-none ${colorClass}`}
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        style={{ transition: 'stroke-dashoffset 1s linear', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
-      />
-      <text x="50" y="54" textAnchor="middle" className="fill-slate-300 text-xs" fontSize="14" fontWeight="bold">
-        {Math.ceil(timeLeft)}
-      </text>
-    </svg>
-  );
-}
-
-// ============================================================================
 // Match Visual Option (small inline visual for match challenges)
 // ============================================================================
 
@@ -291,10 +259,9 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false);
 
-  // Timer state
-  const [timeLeft, setTimeLeft] = useState(0);
+  // Response timing — measured SILENTLY for the automaticity metric. There is no
+  // countdown and no deadline; the student never sees a clock.
   const [challengeStartTime, setChallengeStartTime] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Streak tracking
   const [streak, setStreak] = useState(0);
@@ -319,65 +286,18 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
     r => r.challengeId === currentChallenge?.id && r.correct
   );
 
-  /** Effective time limit for the current challenge (computed once, reused by timer + arc) */
-  const effectiveTimeLimit = useMemo(() => {
-    if (!currentChallenge) return 5;
-    return currentChallenge.timeLimit ?? (
-      currentChallenge.type === 'visual-fact' ? 8 :
-      currentChallenge.type === 'speed-round' ? 4 :
-      currentChallenge.type === 'match' ? 6 :
-      currentChallenge.type === 'missing-number' ? 8 : 5
-    );
-  }, [currentChallenge]);
-
   // -------------------------------------------------------------------------
-  // Timer management
+  // Start the (silent) response-time clock when a new challenge appears.
+  // No interval, no countdown — just a start timestamp for analytics.
   // -------------------------------------------------------------------------
-  const startTimer = useCallback((limit: number) => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setTimeLeft(limit);
-    setChallengeStartTime(Date.now());
-    timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 0.1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          return 0;
-        }
-        return prev - 0.1;
-      });
-    }, 100);
-  }, []);
-
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  // Start timer when challenge changes
   useEffect(() => {
     if (currentChallenge && !allChallengesComplete && !isCurrentChallengeComplete) {
-      startTimer(effectiveTimeLimit);
+      setChallengeStartTime(Date.now());
       // Focus input for type-in challenges
-      setTimeout(() => inputRef.current?.focus(), 100);
+      const t = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(t);
     }
-    return () => stopTimer();
-  }, [currentChallengeIndex, currentChallenge, allChallengesComplete, isCurrentChallengeComplete, effectiveTimeLimit, startTimer, stopTimer]);
-
-  // Handle time-up
-  useEffect(() => {
-    if (timeLeft <= 0 && currentChallenge && !isCurrentChallengeComplete && !allChallengesComplete && challengeStartTime > 0) {
-      // Time expired — treat as wrong
-      handleTimeUp();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft]);
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => stopTimer();
-  }, [stopTimer]);
+  }, [currentChallengeIndex, currentChallenge, allChallengesComplete, isCurrentChallengeComplete]);
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -444,8 +364,8 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
       `[ACTIVITY_START] Math Fact Fluency for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
       + `${challenges.length} challenges, facts within ${maxNumber}. `
       + `First challenge: "${currentChallenge?.instruction}" (${currentChallenge?.type}). `
-      + `This primitive is about building SPEED, not just accuracy. `
-      + `Introduce warmly and encourage the student to be fast AND accurate.`,
+      + `This primitive builds automaticity through calm, repeated practice — there is NO timer and NO time pressure. `
+      + `Introduce warmly and reassure the student they can take all the time they need to think.`,
       { silent: true }
     );
   }, [isConnected, challenges.length, maxNumber, gradeBand, currentChallenge, sendText]);
@@ -466,10 +386,9 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   // Answer handling
   // -------------------------------------------------------------------------
-  const processAnswer = useCallback((answer: number, isTimeUp = false) => {
+  const processAnswer = useCallback((answer: number) => {
     if (!currentChallenge || isCurrentChallengeComplete) return;
 
-    stopTimer();
     const responseTime = Date.now() - challengeStartTime;
     const responseTimeSec = responseTime / 1000;
     const correct = answer === currentChallenge.correctAnswer;
@@ -485,8 +404,10 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
       setStreak(newStreak);
       if (newStreak > bestStreak) setBestStreak(newStreak);
 
+      // isFast is a SILENT automaticity signal for the metric — never surfaced as
+      // speed praise to the student, so the feedback stays pressure-free.
       const isFast = responseTimeSec <= targetResponseTime;
-      setFeedback(isFast ? 'Lightning fast!' : 'Correct!');
+      setFeedback('Correct!');
       setFeedbackType('success');
 
       recordResult({
@@ -502,9 +423,8 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
       if (isConnected) {
         sendText(
           `[ANSWER_CORRECT] Student answered ${answer} correctly for ${currentChallenge.equation}. `
-          + `Response time: ${responseTimeSec.toFixed(1)}s (target: ${targetResponseTime}s). `
-          + `${isFast ? 'FAST answer!' : 'Correct but slow.'} Streak: ${newStreak}. `
-          + `${isFast ? 'Celebrate enthusiastically: "Lightning fast! You knew that one by heart!"' : 'Affirm: "Correct! With more practice, you\'ll get even faster."'}`,
+          + `Streak: ${newStreak}. `
+          + `Affirm warmly without mentioning speed: "That's right! Nice thinking."`,
           { silent: true }
         );
       }
@@ -513,16 +433,12 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
       setStreak(0);
       setFeedbackType('error');
       setShowCorrectAnswer(true);
+      setFeedback(`Not quite. The answer is ${currentChallenge.correctAnswer}.`);
 
-      if (isTimeUp) {
-        setFeedback(`Time's up! The answer is ${currentChallenge.correctAnswer}.`);
-      } else {
-        setFeedback(`Not quite. The answer is ${currentChallenge.correctAnswer}.`);
-      }
-
-      // Record incorrect after max attempts or for speed-round (1 chance)
+      // Record incorrect after max attempts. Rapid-recall (speed-round) is a
+      // single-attempt automaticity check; everything else allows a second try.
       const maxAttempts = currentChallenge.type === 'speed-round' ? 1 : 2;
-      if (currentAttempts + 1 >= maxAttempts || isTimeUp) {
+      if (currentAttempts + 1 >= maxAttempts) {
         recordResult({
           challengeId: currentChallenge.id,
           correct: false,
@@ -535,13 +451,12 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
       }
 
       if (isConnected) {
-        const tag = isTimeUp ? '[TIME_UP]' : '[ANSWER_INCORRECT]';
         sendText(
-          `${tag} Student ${isTimeUp ? 'ran out of time' : `chose ${answer}`} for ${currentChallenge.equation}. `
+          `[ANSWER_INCORRECT] Student chose ${answer} for ${currentChallenge.equation}. `
           + `Correct answer: ${currentChallenge.correctAnswer}. `
           + `${currentChallenge.unknownPosition === 'operand1' || currentChallenge.unknownPosition === 'operand2'
             ? 'For missing-number, encourage "think backwards" strategy.'
-            : 'Show the correct answer and move on quickly. Never punish wrong answers.'}`,
+            : 'Show the correct answer and move on gently. Never punish wrong answers.'}`,
           { silent: true }
         );
       }
@@ -549,13 +464,8 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   }, [
     currentChallenge, isCurrentChallengeComplete, challengeStartTime, streak, bestStreak,
     targetResponseTime, currentAttempts, isConnected, sendText, incrementAttempts,
-    recordResult, stopTimer,
+    recordResult,
   ]);
-
-  const handleTimeUp = useCallback(() => {
-    if (!currentChallenge || isCurrentChallengeComplete) return;
-    processAnswer(-1, true);
-  }, [currentChallenge, isCurrentChallengeComplete, processAnswer]);
 
   const handleSelectOption = useCallback((value: number) => {
     if (isCurrentChallengeComplete || allChallengesComplete) return;
@@ -570,7 +480,6 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
     // This avoids false negatives when multiple equations share the same result (e.g. "2+3=5" vs "4+1=5").
     const eqResult = parseInt(eq.split('=').pop()?.trim() ?? '', 10);
     const correct = eqResult === currentChallenge.correctAnswer;
-    stopTimer();
     const responseTime = Date.now() - challengeStartTime;
     const responseTimeSec = responseTime / 1000;
     incrementAttempts();
@@ -613,7 +522,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   }, [
     isCurrentChallengeComplete, allChallengesComplete, currentChallenge, challengeStartTime,
     streak, bestStreak, targetResponseTime, currentAttempts, incrementAttempts,
-    recordResult, stopTimer,
+    recordResult,
   ]);
 
   const handleSelectVisual = useCallback((idx: number) => {
@@ -621,7 +530,6 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
     setSelectedVisualIdx(idx);
     const vo = currentChallenge.visualOptions?.[idx];
     const correct = vo ? vo.count === currentChallenge.correctAnswer : false;
-    stopTimer();
     const responseTime = Date.now() - challengeStartTime;
     const responseTimeSec = responseTime / 1000;
     incrementAttempts();
@@ -664,7 +572,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   }, [
     isCurrentChallengeComplete, allChallengesComplete, currentChallenge, challengeStartTime,
     streak, bestStreak, targetResponseTime, currentAttempts, incrementAttempts,
-    recordResult, stopTimer,
+    recordResult,
   ]);
 
   const handleTypedSubmit = useCallback(() => {
@@ -684,14 +592,11 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         .join(', ');
       const overallPct = challenges.length > 0
         ? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100) : 0;
-      const avgTimeStr = responseTimes.length > 0
-        ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1)
-        : '0';
 
       sendText(
         `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Average response time: ${avgTimeStr}s. Best streak: ${bestStreak}. `
-        + `Give encouraging phase-specific feedback. Celebrate speed improvements!`,
+        + `Best streak: ${bestStreak}. `
+        + `Give encouraging phase-specific feedback. Celebrate accuracy and growing confidence — not speed.`,
         { silent: true }
       );
 
@@ -941,10 +846,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
                 {currentChallengeIndex + 1} / {challenges.length}
               </span>
               {currentChallenge && (
-                <LuminaBadge
-                  accent={currentChallenge.type === 'speed-round' ? 'orange' : undefined}
-                  className="text-xs"
-                >
+                <LuminaBadge className="text-xs">
                   {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
                   {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
                 </LuminaBadge>
@@ -973,14 +875,6 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
         {/* Main Challenge Area */}
         {currentChallenge && !allChallengesComplete && (
           <div className="relative">
-            {/* Timer Arc */}
-            {!isCurrentChallengeComplete && (
-              <TimerArc
-                timeLeft={timeLeft}
-                timeLimit={effectiveTimeLimit}
-              />
-            )}
-
             {/* Visual Aid (visual-fact phase) — bespoke SVG interaction surface */}
             {currentChallenge.type === 'visual-fact' && currentChallenge.visualType && (
               <div className="mb-4 p-4 bg-slate-800/20 rounded-xl border border-white/5">

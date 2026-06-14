@@ -11,8 +11,9 @@
  * 3. Read challenge type lists from the catalog's EvalModeDefinition (single source of truth)
  */
 
-import { Schema } from '@google/genai';
+import { Schema, Type } from '@google/genai';
 import { getComponentById } from '../manifest/catalog';
+import { ai } from '../geminiClient';
 import type { EvalModeDefinition } from '../../types';
 
 // ---------------------------------------------------------------------------
@@ -242,6 +243,158 @@ ${constraint.promptDocs}`;
     .join('\n');
 
   return `CHALLENGE TYPES:\n${allPromptDocs}`;
+}
+
+// ---------------------------------------------------------------------------
+// Generator-driven mode resolution (intent → single | subset | mixed)
+// ---------------------------------------------------------------------------
+//
+// When the manifest did NOT pin a mode (config.targetEvalMode empty — the common
+// case), the generator resolves its OWN mode set from the component intent. The
+// enum is scoped to THIS primitive's modes — the only place that scoping is
+// expressible, since the valid set is a function of componentId, which the
+// manifest schema can't conditionally constrain. The micro-call returns:
+//   - one mode  → single-skill session
+//   - several   → curated blend
+//   - all/none  → genuine mixed (returns null; caller leaves the schema open)
+// An explicit targetEvalMode (tester or curator) short-circuits with NO LLM call.
+
+export interface EvalModeResolution {
+  /** Selected mode definitions. length 1 = single skill, 2+ = curated blend. */
+  modes: EvalModeDefinition[];
+  /** Union of challenge types across the selected modes (schema-enum source). */
+  allowedTypes: string[];
+  /** Prompt fragment: docs for the allowed challenge types only. */
+  promptDocs: string;
+  /** How the selection was made — observability only. */
+  source: 'explicit' | 'resolved';
+}
+
+function buildResolution(
+  modes: EvalModeDefinition[],
+  challengeTypeDocs: Record<string, ChallengeTypeDoc>,
+  source: 'explicit' | 'resolved',
+): EvalModeResolution {
+  // Union the modes' challenge types, de-duped, order preserved (handles modes
+  // like ten-frame's 'operate' that own more than one challenge type).
+  const allowedTypes = Array.from(new Set(modes.flatMap(m => m.challengeTypes)));
+  const promptDocs = allowedTypes
+    .filter(t => challengeTypeDocs[t])
+    .map(t => `- ${challengeTypeDocs[t].promptDoc}`)
+    .join('\n');
+  return { modes, allowedTypes, promptDocs, source };
+}
+
+/**
+ * Resolve which eval mode(s) a component should generate, from its intent.
+ *
+ * @param componentId       Catalog ID (e.g. 'ten-frame').
+ * @param opts.targetEvalMode  Explicit pin (tester/curator). When set, wins with NO LLM call.
+ * @param opts.intent          Component intent — the routing signal.
+ * @param opts.objectiveText   Parent objective — secondary signal.
+ * @param challengeTypeDocs    Generator-defined docs per challenge type.
+ * @returns Resolution, or null for the MIXED case (caller leaves schema unconstrained).
+ */
+export async function resolveEvalModes(
+  componentId: string,
+  opts: { targetEvalMode?: string; intent?: string; objectiveText?: string },
+  challengeTypeDocs: Record<string, ChallengeTypeDoc>,
+): Promise<EvalModeResolution | null> {
+  const entry = getComponentById(componentId);
+  const modes = entry?.evalModes ?? [];
+
+  // 1. Explicit pin (tester / curator) wins — no LLM call, no latency.
+  if (opts.targetEvalMode) {
+    const def = modes.find(m => m.evalMode === opts.targetEvalMode);
+    return def ? buildResolution([def], challengeTypeDocs, 'explicit') : null;
+  }
+
+  // 2. Nothing to resolve: primitive has <2 modes, or no intent signal at all.
+  const intentSignal = [opts.intent, opts.objectiveText].filter(Boolean).join(' — ').trim();
+  if (modes.length < 2 || !intentSignal) return null;
+
+  // 3. Resolve the subset from intent via a single-purpose enum micro-call.
+  const modeKeys = modes.map(m => m.evalMode);
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      modes: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING, enum: modeKeys },
+        description:
+          'The eval mode key(s) whose SKILL the intent asks the student to do. ' +
+          'Return ONE for a single-skill task, SEVERAL for a genuine blend, or ALL of them ' +
+          'when broad mixed practice is right. Match by skill/content only — never by difficulty or lesson position.',
+      },
+    },
+    required: ['modes'],
+  };
+
+  const prompt = `You are routing one learning component to the right skill(s) for the primitive "${componentId}".
+
+COMPONENT INTENT: "${opts.intent ?? ''}"
+${opts.objectiveText ? `LEARNING OBJECTIVE: "${opts.objectiveText}"` : ''}
+
+This primitive can teach these DISTINCT skills (eval modes). Each is a different thing to learn, NOT a difficulty level:
+${modes.map(m => `- ${m.evalMode}: ${m.label} — ${m.description}`).join('\n')}
+
+Return the subset of mode keys whose skill the intent calls for:
+- One key if the intent is a single skill.
+- Several keys if the intent genuinely spans more than one of these skills.
+- All keys if the intent is broad / mixed practice with no single skill emphasized.`;
+
+  try {
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: prompt,
+      config: { responseMimeType: 'application/json', responseSchema: schema },
+    });
+    const parsed = result.text ? (JSON.parse(result.text) as { modes?: string[] }) : null;
+    const unique = Array.from(new Set((parsed?.modes ?? []).filter(k => modeKeys.includes(k))));
+
+    // Empty selection or "all modes" → genuine mixed; don't constrain.
+    if (unique.length === 0 || unique.length === modeKeys.length) {
+      console.log(`[resolveEvalModes] ${componentId}: intent → mixed (${unique.length}/${modeKeys.length} selected)`);
+      return null;
+    }
+
+    const selected = modes.filter(m => unique.includes(m.evalMode));
+    console.log(`[resolveEvalModes] ${componentId}: intent → [${unique.join(', ')}]`);
+    return buildResolution(selected, challengeTypeDocs, 'resolved');
+  } catch (err) {
+    console.warn(`[resolveEvalModes] ${componentId}: resolution failed, falling back to mixed —`, err);
+    return null;
+  }
+}
+
+/**
+ * Build the challenge-types prompt section from an EvalModeResolution.
+ * Generalizes buildChallengeTypePromptSection to the single | blend | mixed cases.
+ */
+export function buildModeConstraintSection(
+  resolution: EvalModeResolution | null,
+  allDocs: Record<string, ChallengeTypeDoc>,
+): string {
+  // Mixed — all challenge types in play.
+  if (!resolution) {
+    const all = Object.values(allDocs).map(d => `- ${d.promptDoc}`).join('\n');
+    return `CHALLENGE TYPES (mixed session — vary across all of these):\n${all}`;
+  }
+
+  if (resolution.modes.length === 1) {
+    const m = resolution.modes[0];
+    return `## EVAL MODE: ${m.label} (β=${m.beta})
+${m.description}
+Generate ONLY the following challenge type(s):
+
+${resolution.promptDocs}`;
+  }
+
+  const labels = resolution.modes.map(m => m.label).join(' + ');
+  return `## EVAL MODES — CURATED BLEND: ${labels}
+Generate a MIX of ONLY the challenge types below, distributed across the session (do not collapse to just one):
+
+${resolution.promptDocs}`;
 }
 
 // ---------------------------------------------------------------------------

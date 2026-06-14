@@ -6,6 +6,7 @@ import {
 } from "../types";
 
 import { generateIntroBriefing as generateIntroBriefingWithSubject } from "./curator-brief/gemini-curator-brief";
+import type { StudentPersona } from "./studentContext/types";
 
 // Foundational Concept Teaching
 import { ai } from "./geminiClient";
@@ -275,10 +276,11 @@ export const buildCompleteExhibitFromManifest = async (
  */
 export const generateIntroBriefing = async (
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  persona?: StudentPersona | null
 ): Promise<any> => {
   // Auto-infer subject as "General" - the curator brief will adapt to the topic
-  return generateIntroBriefingWithSubject(topic, 'General', gradeLevel);
+  return generateIntroBriefingWithSubject(topic, 'General', gradeLevel, undefined, persona);
 };
 
 // Re-export hint generator from problems service

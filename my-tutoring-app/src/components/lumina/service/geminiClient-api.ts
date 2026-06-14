@@ -17,7 +17,7 @@ import {
   HydratedPracticeItem,
   SessionBrief,
 } from '../types';
-import type { StudentGenerationContext } from './studentContext/types';
+import type { StudentGenerationContext, StudentPersona } from './studentContext/types';
 
 /**
  * Progress callback for manifest generation streaming
@@ -286,9 +286,10 @@ export const buildCompleteExhibitFromManifestStreaming = async (
 
 export const generateIntroBriefing = async (
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  persona?: StudentPersona | null
 ): Promise<IntroBriefingData> => {
-  return callAPI('generateIntroBriefing', { topic, gradeLevel });
+  return callAPI('generateIntroBriefing', { topic, gradeLevel, persona });
 };
 
 // ============================================

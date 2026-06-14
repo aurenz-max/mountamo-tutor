@@ -1,8 +1,11 @@
 /**
- * Fast Fact Generator - Dedicated service for timed fluency drill content
+ * Fast Fact Generator - Dedicated service for fluency drill content
  *
  * Subject-agnostic: infers subject from the topic / learning objective.
- * Generates 8-12 challenges across 2-3 phases (recall, apply, speed-round, etc.)
+ * Generates 8-12 challenges across 2-3 phases (recall, apply, rapid-recall, etc.)
+ *
+ * Untimed by design — there is no countdown or deadline. Response time is
+ * measured silently for the automaticity signal only.
  *
  * Uses a FLAT Gemini schema to avoid malformed nested JSON, then reconstructs
  * the nested FastFactChallenge structure during validation.
@@ -86,10 +89,6 @@ const flatChallengeSchema: Schema = {
       items: { type: Type.STRING },
       description: "Answer options (3-4 items). Must include the correct answer. Required for every challenge",
     },
-    timeLimit: {
-      type: Type.NUMBER,
-      description: "Seconds allowed for this challenge (5-20). Younger learners need more time to read and respond",
-    },
     explanation: {
       type: Type.STRING,
       description: "Brief explanation shown after the answer is revealed (1 sentence)",
@@ -103,7 +102,7 @@ const flatChallengeSchema: Schema = {
   required: [
     "id", "type", "promptText", "promptSubtext", "visualType", "visualContent",
     "visualAlt", "correctAnswer", "acceptableAnswers", "responseMode", "options",
-    "timeLimit", "explanation", "difficulty",
+    "explanation", "difficulty",
   ],
 };
 
@@ -155,13 +154,9 @@ const fastFactSchema: Schema = {
       items: phaseConfigItemSchema,
       description: "Phase display config — one entry per unique challenge.type value used",
     },
-    defaultTimeLimit: {
-      type: Type.NUMBER,
-      description: "Default seconds per challenge when challenge.timeLimit is absent (6-20). Scale up for younger learners",
-    },
     targetResponseTime: {
       type: Type.NUMBER,
-      description: "Seconds — answers within this count as 'fast' (4-12). Scale up for younger learners",
+      description: "Seconds — answers within this count as 'fast' (4-12) for the SILENT automaticity metric only; never shown to the student or enforced as a deadline. Scale up for younger learners",
     },
     showStreakCounter: {
       type: Type.BOOLEAN,
@@ -182,7 +177,7 @@ const fastFactSchema: Schema = {
   },
   required: [
     "title", "description", "subject", "challenges", "phaseConfigItems",
-    "defaultTimeLimit", "targetResponseTime", "showStreakCounter",
+    "targetResponseTime", "showStreakCounter",
     "showAccuracy", "maxAttemptsPerChallenge", "gradeBand",
   ],
 };
@@ -250,7 +245,6 @@ function reconstructChallenge(flat: any, index: number): FastFactChallenge {
       : undefined,
     responseMode: 'choice',
     options,
-    timeLimit: typeof flat.timeLimit === 'number' ? Math.max(5, Math.min(20, flat.timeLimit)) : undefined,
     explanation: flat.explanation || undefined,
     difficulty: ['easy', 'medium', 'hard'].includes(flat.difficulty) ? flat.difficulty : undefined,
   };
@@ -307,8 +301,6 @@ function validateFastFactData(raw: any): FastFactData {
     description: raw.description || undefined,
     subject: raw.subject || 'General',
     challenges,
-    defaultTimeLimit: typeof raw.defaultTimeLimit === 'number'
-      ? clamp(raw.defaultTimeLimit, 6, 20) : 10,
     targetResponseTime: typeof raw.targetResponseTime === 'number'
       ? clamp(raw.targetResponseTime, 4, 12) : 6,
     phaseConfig,
@@ -341,7 +333,7 @@ export const generateFastFact = async (
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const challengeCount = (config?.challengeCount as number) || 10;
 
-  const prompt = `You are a curriculum expert creating timed fluency drill challenges.
+  const prompt = `You are a curriculum expert creating fluency drill challenges.
 
 TOPIC / LEARNING OBJECTIVE: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
@@ -352,9 +344,9 @@ NUMBER OF CHALLENGES: ${challengeCount} (8-12 range)
 Create a Fast Fact fluency drill for "${topic}". Infer the subject area from the topic (Math, Science, Language Arts, History, etc.).
 
 ## Phase Design:
-- Generate challenges across 2-3 PHASES (e.g. 'recall', 'apply', 'speed-round').
+- Generate challenges across 2-3 PHASES (e.g. 'recall', 'apply', 'rapid-recall').
 - Each challenge has a \`type\` field that groups it into a phase.
-- Early phases should be easier; later phases should be faster/harder.
+- Early phases should be easier; later phases should be harder (more abstract / less scaffolded), NOT faster.
 - Distribute challenges roughly evenly across phases.
 
 ## Challenge Design:
@@ -365,13 +357,9 @@ Create a Fast Fact fluency drill for "${topic}". Infer the subject area from the
 - Use emojis (visualType: "emoji") or large text (visualType: "text-large") where pedagogically helpful (math expressions, symbols, etc.).
 - Use visualType: "none" when no visual is needed.
 
-## Time & Difficulty:
-- Adjust difficulty and timeLimit for the grade level. Young learners need MORE time to read, process, and respond.
-- For K-2 / Preschool / Kindergarten: Easy 12-15s, Medium 10-12s, Hard 8-10s. defaultTimeLimit 12. targetResponseTime 8.
-- For grades 3-5 / Elementary: Easy 10-12s, Medium 8-10s, Hard 6-8s. defaultTimeLimit 10. targetResponseTime 6.
-- For grades 6-8 / Middle School: Easy 8-10s, Medium 6-8s, Hard 5-7s. defaultTimeLimit 8. targetResponseTime 5.
-- For grades 9+ / High School and above: Easy 6-8s, Medium 5-7s, Hard 4-6s. defaultTimeLimit 6. targetResponseTime 4.
-- defaultTimeLimit is the fallback when a challenge has no specific timeLimit.
+## Difficulty:
+- Adjust difficulty for the grade level. The drill is UNTIMED — there is no countdown and no deadline. Never reference speed, timers, or "answer quickly" anywhere in the content.
+- targetResponseTime is a SILENT automaticity signal (never shown to the student): K-2 / Preschool / Kindergarten 8, grades 3-5 / Elementary 6, grades 6-8 / Middle School 5, grades 9+ / High School and above 4.
 
 ## Critical Rules:
 - promptText is the main question shown large — keep it concise and clear.
@@ -379,7 +367,7 @@ Create a Fast Fact fluency drill for "${topic}". Infer the subject area from the
 - correctAnswer must be an exact string match to one of the options (for choice mode).
 - acceptableAnswers covers alternate spellings or equivalent forms.
 - explanation is a 1-sentence reason shown after the answer is revealed.
-- maxAttemptsPerChallenge: use 1 for speed-round phases, 2 otherwise.
+- maxAttemptsPerChallenge: use 1 for rapid-recall phases, 2 otherwise.
 
 Now generate the Fast Fact drill.`;
 

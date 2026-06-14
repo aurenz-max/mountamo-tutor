@@ -826,6 +826,12 @@ export interface IntroBriefingData {
   roadmap: RoadmapPhase[];
   connections: ConnectionsData;
   mindset: MindsetData;
+  /**
+   * Student first name, stamped code-side from the persona (NOT LLM-generated).
+   * Drives the deterministic "Prepared for X" chip in the brief header.
+   * Absent when the lesson is unpersonalized.
+   */
+  preparedFor?: string;
 }
 
 export interface GraphBoardData {

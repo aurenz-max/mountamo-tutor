@@ -92,6 +92,20 @@ class ObjectiveIn(BaseModel):
     id: str
     text: str
     verb: Optional[str] = None
+    # When the lesson was launched from a known curriculum node (e.g. a daily-
+    # session block), the objective's subskill is already known. Supplying it
+    # lets the resolver skip embedding retrieval entirely — β becomes a keyed
+    # read. skill_id is optional; it's derived from subskill_id when absent.
+    subskill_id: Optional[str] = None
+    skill_id: Optional[str] = None
+
+
+class CurriculumContextIn(BaseModel):
+    """Single known curriculum node for the whole lesson (single-subskill launch
+    from the curriculum browser). Applied to every objective that doesn't carry
+    its own subskill_id."""
+    skill_id: str
+    subskill_id: str
 
 
 class GenerationContextRequest(BaseModel):
@@ -100,6 +114,13 @@ class GenerationContextRequest(BaseModel):
     grade_level: Optional[str] = None
     subject: Optional[str] = None
     objectives: List[ObjectiveIn] = Field(default_factory=list, max_length=12)
+    curriculum_context: Optional[CurriculumContextIn] = None
+    # The persona (name, interests, last session) is the SAME on every call for a
+    # student — it doesn't depend on the objectives. The lesson pipeline fetches
+    # it once up front (for the brief greeting), so the objective-resolving call
+    # passes include_persona=False to skip a redundant attempt-log read. Defaults
+    # True so standalone callers still get it.
+    include_persona: bool = True
 
 
 def _objective_state(
@@ -163,6 +184,30 @@ _ABSTAIN_STATE: Dict[str, Any] = {
     "tier": "none",
     "summary": "No confident curriculum match — personalize at grade level only.",
 }
+
+
+class _KnownMapping:
+    """Stand-in for a CurriculumRetrievalMatcher result when the subskill is
+    already known (curriculum-launched lesson). Exposes the same attributes
+    _objective_state reads off a real match, so downstream state assembly is
+    identical to the retrieval path — only the embedding lookup is skipped."""
+
+    __slots__ = ("subskill_id", "skill_id", "subskill_description", "confidence")
+
+    def __init__(self, subskill_id: str, skill_id: str, description: str):
+        self.subskill_id = subskill_id
+        self.skill_id = skill_id
+        self.subskill_description = description
+        self.confidence = 1.0
+
+
+def _derive_skill_id(subskill_id: str) -> str:
+    """Fallback skill_id from a subskill_id when none is supplied — mirrors the
+    frontend's dot-trim (App.tsx handleBlockStart). Fail-soft: a wrong guess
+    just yields no competency/ability data (treated as new material), never an
+    error."""
+    dot = subskill_id.rfind(".")
+    return subskill_id[:dot] if dot > 0 else subskill_id
 
 
 # ---------------------------------------------------------------------------
@@ -316,7 +361,13 @@ async def get_generation_context(
     firestore = get_firestore_service()
     try:
         subject_id = _normalize_subject(request.subject)
-        persona = await _build_student_persona(user_context, firestore, request.student_id)
+        # Skip the persona build (and its attempt-log read) when the caller
+        # already has it — see include_persona on the request model.
+        persona = (
+            await _build_student_persona(user_context, firestore, request.student_id)
+            if request.include_persona
+            else None
+        )
         base: Dict[str, Any] = {
             "available": persona is not None,
             "studentId": str(request.student_id),
@@ -331,13 +382,28 @@ async def get_generation_context(
             base["reason"] = "no_subject_scope"
             return base
 
-        # 1. Resolve each objective SEQUENTIALLY. The retrieval matcher's lazy
-        #    client and per-(subject,grade) embed cache are not safe under
+        # 1. Resolve each objective to a curriculum subskill.
+        #    Curriculum-launched lessons already KNOW the subskill (from the
+        #    browser or a daily-session block), so they skip embedding retrieval
+        #    entirely — β becomes a keyed read below. Only free-form objectives
+        #    (no known id) hit the matcher, which stays SEQUENTIAL: its lazy
+        #    client and per-(subject,grade) embed cache aren't safe under
         #    concurrent first calls (racing them GC's a client mid-request and
-        #    duplicates the curriculum embedding warm-up). After warm-up each
-        #    match is a single query embedding (~100ms), so serial is cheap.
+        #    duplicates the warm-up). After warm-up each match is ~100ms.
+        ctx = request.curriculum_context
         mappings = []
         for obj in request.objectives:
+            known_subskill = obj.subskill_id or (ctx.subskill_id if ctx else None)
+            if known_subskill:
+                known_skill = (
+                    obj.skill_id
+                    or (ctx.skill_id if ctx else None)
+                    or _derive_skill_id(known_subskill)
+                )
+                # obj.text is the subskill description on every curriculum-
+                # launched path (browser/block/group), so it's a faithful label.
+                mappings.append(_KnownMapping(known_subskill, known_skill, obj.text))
+                continue
             try:
                 mappings.append(
                     await mapping_service.retrieval_matcher.match(

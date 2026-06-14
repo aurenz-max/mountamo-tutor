@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
       case 'generateIntroBriefing':
         console.log('📚 API ROUTE: generateIntroBriefing called for topic:', params.topic);
-        const introBriefing = await generateIntroBriefing(params.topic, params.gradeLevel);
+        const introBriefing = await generateIntroBriefing(params.topic, params.gradeLevel, params.persona);
         return NextResponse.json(introBriefing);
 
       case 'generateCuratorBrief':

@@ -16,30 +16,39 @@ import { UNIVERSAL_CATALOG } from './catalog';
 import type { StudentGenerationContext } from '../studentContext/types';
 
 /**
- * Convert objective-centric manifest to flat layout array for backward compatibility
- * This allows the existing rendering pipeline to work with the new manifest format
+ * Convert objective-centric manifest to flat layout array for backward compatibility.
+ * This allows the existing rendering pipeline to work with the new manifest format.
  *
- * When a studentContext is provided, each component's config is also stamped
- * with `studentTheta` — the student's IRT ability for the subskill its parent
- * objective resolved to. Deterministic (code-side), never round-tripped
- * through the LLM. Generators invert the 2PL against their pinned eval mode
- * to derive within-mode difficulty (see service/difficulty/difficultyContext.ts).
+ * Each component's config is stamped (code-side, never round-tripped through the
+ * LLM) with its parent objective's id/text/Bloom verb. The Bloom verb surfaces in
+ * generator prompts as the COGNITIVE LEVEL line (see scopeContext.ts).
+ *
+ * NOTE: this previously also stamped a numeric `studentTheta` for generators to
+ * invert a 2PL against — that within-mode NUMERIC difficulty path was retired (it
+ * changed which in-scope numbers got picked, not difficulty). Per-student
+ * personalization will return as a Bloom-tier entry point, not a theta stamp.
  */
 export const flattenManifestToLayout = (
   manifest: ExhibitManifest,
-  studentContext?: StudentGenerationContext | null,
+  objectives?: Array<{ id: string; text: string; verb: string }>,
 ): ManifestItem[] => {
   const layout: ManifestItem[] = [];
 
-  // objectiveId → theta for resolved objectives with ability data
-  const thetaByObjective = new Map<string, number>();
-  if (studentContext?.available) {
-    for (const obj of studentContext.objectives ?? []) {
-      if (obj.tier === 'exact' && obj.theta != null) {
-        thetaByObjective.set(obj.objectiveId, obj.theta);
-      }
-    }
-  }
+  // Authoritative objective lookup. When the caller supplied the lesson
+  // objectives, we LEFT JOIN each block onto them by objectiveId and let the
+  // supplied text/verb WIN over whatever the curator echoed. The curator can
+  // paraphrase the objective, and scopeContext binds generated content on
+  // objectiveText — a drifted echo would silently shift the bound scope. No
+  // match (or no objectives passed, e.g. the legacy topic-only path) → keep the
+  // curator's values.
+  const objectiveById = new Map((objectives ?? []).map(o => [o.id, o]));
+  const resolveObjective = (block: { objectiveId: string; objectiveText: string; objectiveVerb: string }) => {
+    const auth = objectiveById.get(block.objectiveId);
+    return {
+      objectiveText: auth?.text ?? block.objectiveText,
+      objectiveVerb: auth?.verb ?? block.objectiveVerb,
+    };
+  };
 
   // 1. Add curator brief first
   if (manifest.curatorBrief) {
@@ -55,7 +64,7 @@ export const flattenManifestToLayout = (
   // 2. Add all components from each objective block
   if (manifest.objectiveBlocks) {
     for (const block of manifest.objectiveBlocks) {
-      const studentTheta = thetaByObjective.get(block.objectiveId);
+      const { objectiveText, objectiveVerb } = resolveObjective(block);
       for (const component of block.components) {
         layout.push({
           componentId: component.componentId,
@@ -64,12 +73,12 @@ export const flattenManifestToLayout = (
           intent: component.intent,
           config: {
             ...component.config,
-            // Inject objective context into config for content generators
+            // Inject objective context into config for content generators.
+            // objectiveVerb is the Bloom verb — surfaced in prompts via scopeContext.
+            // text/verb are the authoritative (joined) values, not the curator's echo.
             objectiveId: block.objectiveId,
-            objectiveText: block.objectiveText,
-            objectiveVerb: block.objectiveVerb,
-            // Student ability for this objective's resolved subskill (if any)
-            ...(studentTheta != null ? { studentTheta } : {}),
+            objectiveText,
+            objectiveVerb,
           },
           objectiveIds: [block.objectiveId]
         });
@@ -97,11 +106,11 @@ export const flattenManifestToLayout = (
  */
 export const enrichManifestWithLayout = (
   manifest: ExhibitManifest,
-  studentContext?: StudentGenerationContext | null,
+  objectives?: Array<{ id: string; text: string; verb: string }>,
 ): ExhibitManifest => {
   return {
     ...manifest,
-    layout: flattenManifestToLayout(manifest, studentContext)
+    layout: flattenManifestToLayout(manifest, objectives)
   };
 };
 
@@ -255,22 +264,9 @@ const objectiveComponentSchema: Schema = {
       type: Type.OBJECT,
       description: "Optional configuration hints and educational context",
       properties: {
-        visualType: { type: Type.STRING, description: "Type of visualization (e.g., 'bar-model', 'number-line')" },
-        itemCount: { type: Type.NUMBER, description: "Number of items to generate" },
-        difficulty: { type: Type.STRING, description: "Difficulty level" },
-        subject: { type: Type.STRING, description: "Subject area (e.g., 'Mathematics', 'Science', 'Language Arts')" },
-        unitTitle: { type: Type.STRING, description: "Broader unit context" },
-        count: { type: Type.NUMBER, description: "Number of items to generate" },
-        keyTerms: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: "Key vocabulary terms to emphasize in the visualization"
-        },
-        conceptsCovered: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: "Core concepts to illustrate"
-        }
+        targetEvalMode: { type: Type.STRING, description: "For a primitive that lists 'eval modes': the ONE mode whose skill matches this component's parent objective and intent. Modes are distinct skills, not difficulty levels — never pick by lesson position or phase. Omit for primitives without listed modes." },
+        difficulty: { type: Type.STRING, enum: ['easy', 'medium', 'hard'], description: "Structural support tier WITHIN the chosen eval mode: 'easy' (max scaffolding), 'medium', or 'hard' (min scaffolding). Support level only — never a bigger number range." },
+        count: { type: Type.NUMBER, description: "Number of items to generate" }
       }
     }
   },
@@ -388,9 +384,19 @@ export const generateExhibitManifestStreaming = async (
     const gradeLevelContext = getGradeLevelContext(gradeLevel);
     const studentContextBlock = buildStudentContextBlock(studentContext);
     const studentVoiceBlock = buildStudentVoiceBlock(studentContext);
-    const catalogContext = UNIVERSAL_CATALOG.map(c =>
-      `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`
-    ).join('\n');
+    const catalogContext = UNIVERSAL_CATALOG.map(c => {
+      const base = `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`;
+      // Surface eval modes as TASK IDENTITIES, not a difficulty ladder. Each mode
+      // is a different skill the primitive can teach; the curator matches the mode
+      // to what the objective asks for. (β stays an IRT calibration concern — it is
+      // deliberately NOT shown here, and the keys are listed in catalog order with
+      // no easy→hard framing, so lesson position can't masquerade as mode choice.)
+      if (c.evalModes && c.evalModes.length > 1) {
+        const modes = c.evalModes.map(m => m.evalMode).join(', ');
+        return `${base}\n    eval modes (distinct skills): ${modes}`;
+      }
+      return base;
+    }).join('\n');
 
     // Format objectives if provided
     const objectivesContext = objectives
@@ -430,6 +436,17 @@ USE 'deep-dive' when:
 DO NOT use 'deep-dive' when:
 - A specialist interactive primitive exists (e.g., use 'fraction-circles' for fractions, 'slope-triangle' for slope, 'lever-lab' for levers)
 - The objective is pure practice/drill (use 'knowledge-check' or the specialist primitive's eval modes)
+
+## EVAL MODES = TASK IDENTITY (match the mode to the objective, never to difficulty)
+
+Some components above list \`eval modes (distinct skills): a, b, c\`. Each mode is a DIFFERENT skill that primitive can teach — e.g. ten-frame's \`build\` teaches counting/cardinality while \`make_ten\` teaches complements to 10. Modes are NOT difficulty levels of one task, so there is nothing to "start easy" on: picking a different mode means teaching a different thing.
+
+When you pick such a primitive for a component:
+1. Set config.targetEvalMode to the ONE mode whose SKILL is what this component's parent objective asks the student to do. Match the objective's content and verb to the mode keys shown. Omit config.targetEvalMode for primitives that list no modes.
+2. The mode MUST agree with the component's own intent. If the intent says "find how many more make 10", the mode is make_ten — never a lower mode because the component comes early in the lesson. Lesson position, phase, and "introducing the tool" NEVER change the mode.
+3. Components within one objective normally share the SAME mode (same skill, taught across Introduce → Visualize → Apply). Use different modes within an objective ONLY when the objective itself names more than one skill.
+4. Set config.difficulty to the STRUCTURAL SUPPORT tier WITHIN the chosen mode: 'easy' (maximum on-screen scaffolding), 'medium', or 'hard' (minimum scaffolding). This is support only — it NEVER means a bigger number range. The pedagogical scope owns the numbers.
+5. PERSONALIZATION (only when a STUDENT PROFILE block is present): adjust config.difficulty, not the mode — a STRUGGLING student gets 'easy' support on the SAME matched mode; a STRONG student gets 'hard' support. Personalization NEVER changes which mode is selected.
 
 ## RULES FOR EACH OBJECTIVE BLOCK:
 1. Include 2-4 components per objective (not too few, not too many)
@@ -550,10 +567,9 @@ Return ONLY valid JSON matching the schema.`;
 
     const rawManifest = JSON.parse(jsonStr) as ExhibitManifest;
 
-    // Enrich with flattened layout for backward compatibility.
-    // studentContext also stamps per-objective studentTheta into each
-    // component's config here (deterministic, code-side).
-    const manifest = enrichManifestWithLayout(rawManifest, studentContext);
+    // Enrich with flattened layout for backward compatibility. Per-objective
+    // id/text/Bloom-verb are stamped into each component's config (code-side).
+    const manifest = enrichManifestWithLayout(rawManifest, objectives);
 
     const totalComponents = manifest.objectiveBlocks?.reduce(
       (sum, block) => sum + (block.components?.length || 0), 0

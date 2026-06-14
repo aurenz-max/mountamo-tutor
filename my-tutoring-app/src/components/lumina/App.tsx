@@ -100,14 +100,19 @@ function LuminaApp() {
     }
     setCurriculumContext(curriculum ?? null);
     setTopic(topicString);
-    startGenerate({ topic: topicString, gradeLevel: grade || gradeLevel });
+    // Single known subskill → the personalization step keys straight into β,
+    // skipping the embedding sweep that would otherwise re-derive it.
+    startGenerate({ topic: topicString, gradeLevel: grade || gradeLevel, curriculumContext: curriculum });
   }, [startGenerate, gradeLevel]);
 
   // Handle lesson group launch from IdleScreen
   const handleLaunchGroupLesson = useCallback((params: {
     topic: string;
     gradeLevel: GradeLevel;
-    preBuiltObjectives: Array<{ id: string; text: string; verb: string; icon: string }>;
+    preBuiltObjectives: Array<{
+      id: string; text: string; verb: string; icon: string;
+      subskillId?: string; skillId?: string;
+    }>;
     curriculum: CurriculumContext;
   }) => {
     setTopic(params.topic);
@@ -186,6 +191,13 @@ function LuminaApp() {
           text: ss.subskill_name,
           verb: ss.bloom_phase.charAt(0).toUpperCase() + ss.bloom_phase.slice(1),
           icon: '🎯',
+          // Carry the real IDs so personalization keys into β per subskill
+          // instead of re-deriving each via embedding retrieval.
+          subskillId: ss.subskill_id,
+          skillId: ss.skill_id
+            || (ss.subskill_id.lastIndexOf('.') > 0
+                ? ss.subskill_id.substring(0, ss.subskill_id.lastIndexOf('.'))
+                : ss.subskill_id),
         }))
       : undefined;
 

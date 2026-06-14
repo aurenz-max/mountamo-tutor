@@ -254,21 +254,21 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fast-fact',
-    description: 'Timed fluency drill for rapid recall across any subject. '
-      + 'Supports choice and type-in response modes with configurable phases, time limits, and visual prompts. '
+    description: 'Untimed fluency drill for rapid recall across any subject. '
+      + 'Multiple-choice challenges with configurable phases and visual prompts. No countdown or time pressure — students answer at their own pace; response time is measured silently for the automaticity signal only. '
       + 'Use for: math facts, sight words, vocabulary, element symbols, dates & events, translations — '
-      + 'any domain requiring automaticity. Generates 8-12 challenges across 2-3 phases with streak tracking and speed metrics. '
+      + 'any domain requiring automaticity. Generates 8-12 challenges across 2-3 phases with streak tracking. '
       + 'ESSENTIAL for building fluency and automaticity at any grade level.',
     constraints: 'Best for factual recall (not reasoning or multi-step problems). '
-      + 'Challenges should have single correct answers. Keep to 8-15 challenges per session for engagement.',
+      + 'Challenges should have single correct answers. Keep to 8-15 challenges per session for engagement. '
+      + 'No timers — never frame challenges around speed or deadlines.',
     tutoring: {
       taskDescription:
-        'Guide the student through a timed fluency drill. Subject: {{subject}}. '
+        'Guide the student through an untimed fluency drill (no clock, no time pressure). Subject: {{subject}}. '
         + 'Current challenge: "{{promptText}}" ({{challengeType}}, {{responseMode}} mode). '
         + 'Correct answer: "{{correctAnswer}}". '
         + 'Attempt {{attemptNumber}}. Streak: {{streak}}. Accuracy: {{accuracy}}%. '
-        + 'Average time: {{averageTime}}s (target: {{targetResponseTime}}s). '
-        + 'Challenge {{currentIndex}} of {{totalChallenges}}.',
+        + 'Challenge {{currentIndex}} of {{totalChallenges}}. Never rush the student or mention speed.',
       contextKeys: [
         'subject', 'challengeType', 'promptText', 'correctAnswer',
         'responseMode', 'difficulty', 'attemptNumber', 'streak',
@@ -286,24 +286,24 @@ export const CORE_CATALOG: ComponentDefinition[] = [
           + 'Think about the key connection and try again."',
       },
       commonStruggles: [
-        { pattern: 'Student answers very quickly but incorrectly', response: 'Slow down just a little. Speed matters, but accuracy comes first. Read the question one more time.' },
-        { pattern: 'Student freezes and lets the timer run out repeatedly', response: 'It is okay to guess! Even a guess helps you learn. Try your best answer before time runs out.' },
-        { pattern: 'Student gets frustrated after wrong answers', response: 'Every wrong answer teaches your brain something. You are getting faster — keep going!' },
-        { pattern: 'Student answers correctly but slowly', response: 'You know this! The more you practice, the faster it will come. Try to beat your own time on the next one.' },
+        { pattern: 'Student answers without reading carefully and gets it wrong', response: 'There is no rush — take a breath and read the whole question once more. What is it really asking?' },
+        { pattern: 'Student freezes or seems unsure', response: 'It is okay to take your time, and okay to make your best guess! Even a guess helps you learn. What feels closest?' },
+        { pattern: 'Student gets frustrated after wrong answers', response: 'Every wrong answer teaches your brain something. You are making progress — keep going!' },
+        { pattern: 'Student answers correctly but is still working it out step by step', response: 'You know this! The more you practice, the more it will just pop into your head — no rush at all.' },
       ],
       aiDirectives: [
         {
           title: 'ACTIVITY INTRODUCTION',
           instruction:
             'When you receive [ACTIVITY_START], welcome the student to the fluency drill. '
-            + 'Mention the subject and number of challenges. Encourage them to be fast AND accurate. '
+            + 'Mention the subject and number of challenges. Reassure them it is untimed and they can take all the time they need. '
             + 'Keep it to 2-3 sentences.',
         },
         {
           title: 'CORRECT ANSWER FEEDBACK',
           instruction:
-            'When you receive [ANSWER_CORRECT], briefly celebrate. '
-            + 'If the answer was fast, be extra enthusiastic. If slow but correct, affirm and encourage speed. '
+            'When you receive [ANSWER_CORRECT], briefly celebrate the correct thinking. '
+            + 'Do NOT mention speed or how fast they answered. '
             + 'If on a streak, mention it. Keep to 1-2 sentences.',
         },
         {
@@ -315,13 +315,6 @@ export const CORE_CATALOG: ComponentDefinition[] = [
             + 'Keep to 1-2 sentences.',
         },
         {
-          title: 'TIME UP HANDLING',
-          instruction:
-            'When you receive [TIME_UP], be supportive. '
-            + 'Say the correct answer matter-of-factly and encourage the student to try to remember it. '
-            + 'Never shame for running out of time. Keep to 1 sentence.',
-        },
-        {
           title: 'NEXT CHALLENGE TRANSITION',
           instruction:
             'When you receive [NEXT_ITEM], briefly introduce the new challenge. '
@@ -331,7 +324,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
           title: 'COMPLETION CELEBRATION',
           instruction:
             'When you receive [ALL_COMPLETE], celebrate the student\'s effort. '
-            + 'Mention phase scores, best streak, and speed improvements. '
+            + 'Mention phase scores and best streak, and affirm their accuracy and growing confidence — not speed. '
             + 'Give subject-specific encouragement. Keep to 2-3 sentences.',
         },
       ],

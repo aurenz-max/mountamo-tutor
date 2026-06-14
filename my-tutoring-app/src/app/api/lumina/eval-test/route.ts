@@ -20,10 +20,15 @@ export async function GET(request: NextRequest) {
   if (componentId && evalMode) {
     const testTopic = searchParams.get('topic') || 'number sense';
     const testGradeLevel = searchParams.get('gradeLevel') || 'elementary';
-    // Optional student ability for difficulty-sweep testing: passes
-    // config.studentTheta exactly as flattenManifestToLayout stamps it.
+    // Optional ?theta= for difficulty-sweep testing. NOTE: the numeric
+    // within-mode theta path was retired — no generator currently reads
+    // config.studentTheta, so this is presently inert (kept for harness compat).
     const thetaParam = searchParams.get('theta');
     const studentTheta = thetaParam !== null ? parseFloat(thetaParam) : undefined;
+    // Optional ?verb= — the objective's Bloom verb, which drives within-mode
+    // difficulty (the cognitive tier). Mirrors config.objectiveVerb as
+    // flattenManifestToLayout stamps it, so the keystone is testable in isolation.
+    const objectiveVerb = searchParams.get('verb') || undefined;
 
     const component = UNIVERSAL_CATALOG.find((c) => c.id === componentId);
     const modeDefinition = component?.evalModes?.find((m) => m.evalMode === evalMode);
@@ -34,6 +39,7 @@ export async function GET(request: NextRequest) {
       config: {
         targetEvalMode: evalMode,
         ...(studentTheta !== undefined && Number.isFinite(studentTheta) ? { studentTheta } : {}),
+        ...(objectiveVerb ? { objectiveVerb } : {}),
       },
     };
 
