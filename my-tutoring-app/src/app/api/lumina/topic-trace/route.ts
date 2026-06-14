@@ -8,6 +8,7 @@ import {
   generateComponentContent,
   generateIntroBriefing,
 } from '@/components/lumina/service/geminiService';
+import { getComponentById } from '@/components/lumina/service/manifest/catalog';
 import type { ExhibitManifest, ManifestItem } from '@/components/lumina/types';
 import type { StudentGenerationContext } from '@/components/lumina/service/studentContext/types';
 
@@ -173,13 +174,27 @@ async function runTrace(params: TraceParams) {
         objectiveText: b.objectiveText,
         objectiveVerb: b.objectiveVerb,
         componentIds: b.components.map((c) => c.componentId),
-        // Personalization assessment: difficulty configs the curator chose
-        componentConfigs: b.components.map((c) => ({
-          componentId: c.componentId,
-          title: c.title,
-          intent: c.intent,
-          difficulty: c.config?.difficulty ?? null,
-        })),
+        // Personalization assessment: difficulty configs the curator chose.
+        // Eval-mode instrumentation: surface the curator's targetEvalMode pin and
+        // validate it against the primitive's catalog modes, so a manifestOnly run
+        // measures the manifest miss-rate (how often a multi-mode primitive leaves
+        // the manifest stage WITHOUT a valid pin → the recovery-path question).
+        componentConfigs: b.components.map((c) => {
+          const validModes = getComponentById(c.componentId)?.evalModes?.map((m) => m.evalMode) ?? [];
+          const pin = c.config?.targetEvalMode ?? null;
+          return {
+            componentId: c.componentId,
+            title: c.title,
+            intent: c.intent,
+            difficulty: c.config?.difficulty ?? null,
+            targetEvalMode: pin,
+            evalModeCount: validModes.length,
+            // null = N/A (primitive has <2 modes, no pin needed);
+            // true  = multi-mode AND validly pinned;
+            // false = multi-mode but pin missing or not in the catalog set (a MISS).
+            targetEvalModeValid: validModes.length < 2 ? null : pin != null && validModes.includes(pin),
+          };
+        }),
       })) || [],
     briefObjectives: objectives ?? null,
     finalAssessment: manifest.finalAssessment

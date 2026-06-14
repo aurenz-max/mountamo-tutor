@@ -55,6 +55,20 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT numbers
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ---------------------------------------------------------------------------
 // Per-mode instance counts
 // ---------------------------------------------------------------------------
 
@@ -522,6 +536,146 @@ const angleWorkshopSchema: Schema = {
 };
 
 // ---------------------------------------------------------------------------
+// Support-tier scaffold — which on-screen helps are withdrawn (per pinned mode).
+// INVARIANT: a tier only removes scaffolding; it never touches an angle measure,
+// a given value, or an expectedAnswer. The per-mode build tables own the numbers.
+// ---------------------------------------------------------------------------
+
+interface AngleSupportScaffold {
+  /** measure: show the dot marking where the 2nd ray crosses the protractor scale. */
+  showReadingCue?: boolean;
+  /** classify_pairs: show the right-angle square / equal-angle marks that reveal the relationship. */
+  showPerceptionMarks?: boolean;
+  /** solving modes: name the governing relationship in the instruction. */
+  nameRelationship?: boolean;
+  /** solving modes: 'formula' = explicit rule in the hint; 'concept' = nudge only. */
+  hintLevel?: 'formula' | 'concept';
+  /** solve_algebraic: hand the student the pre-assembled equation (easy) vs. make them set it up. */
+  showEquationSetup?: boolean;
+  promptLines: string[];
+}
+
+function resolveSupportStructure(
+  pinnedType: AngleWorkshopChallengeType,
+  tier: SupportTier,
+): AngleSupportScaffold {
+  const lead =
+    'This tier changes only how much on-screen help the student gets. It NEVER changes the '
+    + 'angle measures, the given values, or the answer.';
+
+  if (pinnedType === 'measure') {
+    const showReadingCue = tier !== 'hard';
+    return {
+      showReadingCue,
+      promptLines: [
+        lead,
+        `The protractor reading cue (a dot where the second ray crosses the scale) is ${showReadingCue ? 'shown to help locate the reading' : 'withdrawn — the student reads the scale unaided'}.`,
+        'Keep the title and description neutral — never state the support level or name an angle measure.',
+      ],
+    };
+  }
+
+  if (pinnedType === 'classify_pairs') {
+    const showPerceptionMarks = tier !== 'hard';
+    return {
+      showPerceptionMarks,
+      promptLines: [
+        lead,
+        `Relationship perception marks (right-angle square, equal-angle labels) are ${showPerceptionMarks ? 'shown' : 'withdrawn — the student judges the bare rays'}.`,
+        'Keep the title and description neutral — never state the support level or the relationship.',
+      ],
+    };
+  }
+
+  // solving modes: solve_unknown / solve_algebraic / transversal
+  const nameRelationship = tier !== 'hard';
+  const hintLevel: 'formula' | 'concept' = tier === 'easy' ? 'formula' : 'concept';
+  const showEquationSetup = pinnedType === 'solve_algebraic' && tier === 'easy';
+  return {
+    nameRelationship,
+    hintLevel,
+    showEquationSetup,
+    promptLines: [
+      lead,
+      `The governing relationship is ${nameRelationship ? 'named in the instruction' : 'NOT named — the student identifies it from the figure (right-angle corner, straight line, crossing lines, or parallel marks) before solving'}.`,
+      ...(pinnedType === 'solve_algebraic'
+        ? [`The equation is ${showEquationSetup ? 'pre-assembled in the instruction — the student only solves it for x' : 'NOT given — the student sets it up from the relationship before solving'}.`]
+        : []),
+      `The hint is ${hintLevel === 'formula' ? 'an explicit formula/rule' : 'a conceptual nudge only — no formula'}.`,
+      'Keep the title and description neutral — never state the support level, the relationship, or the answer.',
+    ],
+  };
+}
+
+/** Format a linear expression a·x + b for an equation label, e.g. "(2x + 10)", "x", "(−x − 5)". */
+function fmtAlgExpr(a: number, b: number): string {
+  const xPart = a === 1 ? 'x' : a === -1 ? '−x' : `${a}x`;
+  if (b === 0) return xPart;
+  const sign = b > 0 ? '+' : '−';
+  return `(${xPart} ${sign} ${Math.abs(b)})`;
+}
+
+/** The pre-assembled equation handed to the student at the easy tier (solve_algebraic). */
+function equationSetup(ch: AngleWorkshopChallenge): string {
+  const e1 = fmtAlgExpr(ch.a1 ?? 1, ch.b1 ?? 0);
+  const e2 = fmtAlgExpr(ch.a2 ?? 1, ch.b2 ?? 0);
+  if (ch.algConfig === 'vertical') return `${e1} = ${e2}`;
+  const target = ch.algConfig === 'complementary' ? 90 : 180;
+  return `${e1} + ${e2} = ${target}`;
+}
+
+/** Easy-tier instruction: relationship named AND equation handed over — student only solves. */
+function easyAlgInstruction(ch: AngleWorkshopChallenge): string {
+  const rel =
+    ch.algConfig === 'vertical' ? 'vertical angles, so they are equal'
+    : ch.algConfig === 'complementary' ? 'complementary (they add to 90°)'
+    : 'supplementary (they add to 180°)';
+  return `These two angles are ${rel}. Solve the equation ${equationSetup(ch)} for x.`;
+}
+
+/** Generic instruction used at the hard tier, where the relationship is NOT named.
+ *  Withholds the rule's name only — the figure (drawn from the same numbers) still shows it. */
+function genericInstruction(ch: AngleWorkshopChallenge): string {
+  switch (ch.type) {
+    case 'solve_unknown':
+      return 'Use the relationship shown in the figure to find the unknown angle x.';
+    case 'solve_algebraic':
+      return 'Decide how the angles in the figure are related, write an equation, and solve for x.';
+    case 'transversal':
+      switch (ch.transversalShape) {
+        case 'triangle_sum':   return 'Find the missing angle x in the triangle.';
+        case 'exterior_angle': return 'Find the exterior angle x.';
+        default:               return 'Identify how the marked angle and x are related on the parallel lines, then find x.';
+      }
+    default:
+      return ch.instruction;
+  }
+}
+
+/** Conceptual hint (no formula). `named` = the relationship is still named in the
+ *  instruction (medium tier); otherwise the nudge points the student to read the figure first. */
+function conceptHint(ch: AngleWorkshopChallenge, named: boolean): string {
+  if (named) {
+    switch (ch.type) {
+      case 'solve_unknown':   return 'You know how the two angles are related — now do the arithmetic to find x.';
+      case 'solve_algebraic': return 'Set up the equation from the relationship you are given, then solve for x.';
+      case 'transversal':     return 'Use the rule stated above with the given angles to find x.';
+      default:                return ch.hint;
+    }
+  }
+  switch (ch.type) {
+    case 'solve_unknown':
+      return 'Read the figure first — a right-angle corner, a straight line, crossing lines, or rays around a point tells you the rule. Then find x.';
+    case 'solve_algebraic':
+      return 'Read the figure to decide whether the angles are equal, add to 90°, or add to 180°, then write the equation.';
+    case 'transversal':
+      return 'Look at the figure: parallel lines cut by a transversal, or a triangle? That decides the rule for x.';
+    default:
+      return ch.hint;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Generator
 // ---------------------------------------------------------------------------
 
@@ -531,6 +685,12 @@ export const generateAngleWorkshop = async (
   config?: {
     instanceCount?: number;
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   },
 ): Promise<AngleWorkshopData> => {
   const validTypes: AngleWorkshopChallengeType[] = [
@@ -553,6 +713,22 @@ export const generateAngleWorkshop = async (
 
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Within-mode support tier (config.difficulty): scaffolding level, NOT numbers.
+  //    Applies only when the manifest pinned EXACTLY ONE eval mode (a curated blend
+  //    has no single tier surface). The withdrawal happens deterministically after
+  //    the pool is built; tierSection only nudges the title/description tone. ──
+  const pinnedType: AngleWorkshopChallengeType | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as AngleWorkshopChallengeType)
+      : undefined;
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const prompt = `
 Create the wrapper metadata for a multi-problem angle geometry session on "${topic}" for ${gradeLevel} students.
 
@@ -562,7 +738,7 @@ CONTEXT:
 - Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific angle measure, value, or answer.
 2. Provide a 1-2 sentence educational description of what students will practice.
@@ -611,11 +787,41 @@ Return ONLY the wrapper fields described above.
     }
   }
 
+  // ── Within-mode support tier: withdraw on-screen scaffolding (never the numbers).
+  //    Runs AFTER the answer-recompute fixup so a tier can only remove help. ──
+  if (tierScaffold && pinnedType) {
+    for (const ch of challenges) {
+      if (ch.type !== pinnedType) continue; // single-mode session; guard anyway
+      if (pinnedType === 'measure') {
+        ch.showReadingCue = tierScaffold.showReadingCue ?? true;
+      } else if (pinnedType === 'classify_pairs') {
+        ch.showPerceptionMarks = tierScaffold.showPerceptionMarks ?? true;
+      } else {
+        if (tierScaffold.showEquationSetup && ch.type === 'solve_algebraic') {
+          ch.instruction = easyAlgInstruction(ch); // easy: hand over the assembled equation
+        } else if (tierScaffold.nameRelationship === false) {
+          ch.instruction = genericInstruction(ch); // hard: withhold the relationship name
+        }
+        if (tierScaffold.hintLevel === 'concept') {
+          ch.hint = conceptHint(ch, tierScaffold.nameRelationship !== false);
+        }
+      }
+    }
+    const lever =
+      pinnedType === 'measure' ? `readingCue=${tierScaffold.showReadingCue}`
+      : pinnedType === 'classify_pairs' ? `perceptionMarks=${tierScaffold.showPerceptionMarks}`
+      : `nameRelationship=${tierScaffold.nameRelationship}, hint=${tierScaffold.hintLevel}${tierScaffold.showEquationSetup ? ', eqSetup' : ''}`;
+    console.log(`[AngleWorkshop] Support tier "${supportTier}" on mode "${pinnedType}" → ${lever}`);
+  }
+
   const data: AngleWorkshopData = {
     title: wrapper.title,
     description: wrapper.description,
     challengeType,
     gradeBand,
+    // Tell the live tutor the support level — but only when a tier actually applied
+    // (single pinned mode). In a blend nothing was withheld, so the tutor stays neutral.
+    ...(tierScaffold && supportTier ? { supportTier } : {}),
     challenges,
   };
 

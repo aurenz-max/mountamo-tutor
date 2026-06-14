@@ -11,6 +11,10 @@ import { ai } from "../geminiClient";
 // Import modular catalog (Phase 3 refactor)
 import { UNIVERSAL_CATALOG } from './catalog';
 
+// Dedicated post-manifest eval-mode resolution (authoritative selector; the
+// inline curator pin is now a fallback). See resolveLessonEvalModes.ts.
+import { resolveLessonEvalModes } from './resolveLessonEvalModes';
+
 // Type-only import — keeps the client-side auth stack out of this
 // server-rendered module (the fetch lives in studentContext/fetchGenerationContext)
 import type { StudentGenerationContext } from '../studentContext/types';
@@ -566,6 +570,21 @@ Return ONLY valid JSON matching the schema.`;
     }
 
     const rawManifest = JSON.parse(jsonStr) as ExhibitManifest;
+
+    // Dedicated eval-mode resolution stage — the authoritative selector. Runs one
+    // batched call to pick the best mode per multi-mode component (the inline
+    // curator pin is now a fallback). Mutates config.targetEvalMode in place BEFORE
+    // the flatten below so the layout inherits the resolved pins. Non-regressing:
+    // unresolved slots and any failure keep the curator's pin.
+    callbacks?.onProgress?.('🎚️ Resolving eval modes…');
+    try {
+      const summary = await resolveLessonEvalModes(rawManifest, topic, gradeLevel, objectives);
+      if (summary.slots > 0) {
+        callbacks?.onProgress?.(`🎚️ Eval modes: ${summary.changed} refined, ${summary.kept} kept`);
+      }
+    } catch (e) {
+      console.warn('[manifest] eval-mode resolution stage failed; using curator pins:', e);
+    }
 
     // Enrich with flattened layout for backward compatibility. Per-objective
     // id/text/Bloom-verb are stamped into each component's config (code-side).

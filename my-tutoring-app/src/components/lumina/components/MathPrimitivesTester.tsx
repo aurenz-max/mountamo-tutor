@@ -720,23 +720,20 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
-    case 'addition-subtraction-scene': {
-      const testData: AdditionSubtractionSceneData = {
-        title: 'Addition & Subtraction Scene: Addition and subtraction stories within 10',
-        description: 'Act out stories, build equations, and solve word problems!',
-        challenges: [
-          { id: 'as-1', type: 'act-out', instruction: 'Count all the ducks in the pond!', storyText: '3 ducks are swimming in the pond. 2 more ducks arrive.', scene: 'pond', objectType: 'ducks', operation: 'addition', storyType: 'join', startCount: 3, changeCount: 2, resultCount: 5, equation: '3 + 2 = 5' },
-          { id: 'as-2', type: 'build-equation', instruction: 'Build the equation that matches this story.', storyText: '4 frogs are on a log. 1 more hops on.', scene: 'garden', objectType: 'frogs', operation: 'addition', storyType: 'join', startCount: 4, changeCount: 1, resultCount: 5, equation: '4 + 1 = 5' },
-          { id: 'as-3', type: 'solve-story', instruction: 'How many birds are left?', storyText: '5 birds are on a branch. 2 fly away. How many are left?', scene: 'farm', objectType: 'birds', operation: 'subtraction', storyType: 'separate', startCount: 5, changeCount: 2, resultCount: 3, equation: '5 - 2 = 3', unknownPosition: 'result' },
-          { id: 'as-4', type: 'create-story', instruction: 'Create a story for this equation!', storyText: 'Can you make up a story for 4 + 3 = 7?', scene: 'playground', objectType: 'butterflies', operation: 'addition', storyType: 'join', startCount: 4, changeCount: 3, resultCount: 7, equation: '4 + 3 = 7' },
-        ],
-        maxNumber: 10,
-        showTenFrame: true,
-        showEquationBar: true,
-        gradeBand: 'K',
-      };
-      return <AdditionSubtractionScene data={testData} />;
-    }
+    case 'addition-subtraction-scene':
+      // AdditionSubtractionScene handles its own evaluation via usePrimitiveEvaluation hook
+      // — do NOT pass onEvaluationSubmit to avoid double submission.
+      return (
+        <AdditionSubtractionScene
+          data={{
+            ...(data as AdditionSubtractionSceneData),
+            instanceId: `addition-subtraction-scene-${Date.now()}`,
+            skillId: 'math-addition-subtraction',
+            subskillId: 'addition-subtraction-stories',
+            objectiveId: 'solve-add-subtract-stories-within-10',
+          }}
+        />
+      );
     case 'ordinal-line':
       // OrdinalLine handles its own evaluation via usePrimitiveEvaluation hook
       return (

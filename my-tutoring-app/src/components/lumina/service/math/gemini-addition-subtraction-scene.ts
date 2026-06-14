@@ -1,5 +1,5 @@
 import { Type, Schema } from "@google/genai";
-import { AdditionSubtractionSceneData } from "../../primitives/visual-primitives/math/AdditionSubtractionScene";
+import { AdditionSubtractionSceneData, AddSubChallenge } from "../../primitives/visual-primitives/math/AdditionSubtractionScene";
 import { ai } from "../geminiClient";
 import {
   resolveEvalModeConstraint,
@@ -64,6 +64,124 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'create-story' (write story for given equation)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty)
+//
+// Second axis of the two-field contract: targetEvalMode = WHICH skill,
+// difficulty = HOW MUCH on-screen scaffolding within it. A tier withdraws
+// SUPPORT inherent to the story-scene interaction — never the size of the
+// numbers (the scope / per-mode tables own those). Each pinned mode has its
+// own natural lever:
+//   act-out        → scene count-aids (grouped reveal + ordinal tap-badges)
+//   build-equation → equation-tray distractors (exact → +distractors → full)
+//   solve-story    → unknownPosition (result/forward → start·change/inverse)
+//   create-story   → open-ended; no support surface, no tier
+// ---------------------------------------------------------------------------
+
+type ChallengeType = 'act-out' | 'build-equation' | 'solve-story' | 'create-story';
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** act-out: tapping an object stamps its running ordinal count. */
+  showCountBadges: boolean;
+  /** act-out: change group animates in separately so the join is visible. */
+  groupedReveal: boolean;
+  /** build-equation: how many candidate number tiles the tray offers. */
+  tilePalette: 'exact' | 'plus-distractors' | 'full';
+  /** solve-story (prompt-driven): which unknownPosition gradient to request. */
+  unknownGradient: 'result' | 'vary' | 'inverse';
+  promptLines: string[];
+}
+
+/**
+ * The easy→hard support gradient, per pinned mode. Returns null for create-story
+ * (open-ended — no scaffold to withdraw). NEVER references number size.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold | null {
+  if (pinnedType === 'create-story') return null;
+
+  const lead =
+    `SUPPORT TIER = "${tier}". This sets ONLY how much on-screen scaffolding the student gets — `
+    + `it must NEVER change the size of any number. Keep every startCount / changeCount / resultCount `
+    + `within maxNumber exactly as you otherwise would; only the support described below changes.`;
+
+  if (pinnedType === 'act-out') {
+    const showCountBadges = tier !== 'hard';
+    const groupedReveal = tier === 'easy';
+    const lines = [lead];
+    if (tier === 'easy') {
+      lines.push('Scene aids ON (applied automatically): objects arrive in two groups so the join/separation is visible, and tapping numbers each object as it is counted. Write clear join/separate stories.');
+    } else if (tier === 'medium') {
+      lines.push('Scene aids PARTIAL (applied automatically): objects appear together, but tapping still numbers them as the student counts.');
+    } else {
+      lines.push('Scene aids WITHDRAWN (applied automatically): objects appear together with no counting numbers — the student must segment and count unaided.');
+    }
+    return { showCountBadges, groupedReveal, tilePalette: 'full', unknownGradient: 'vary', promptLines: lines };
+  }
+
+  if (pinnedType === 'build-equation') {
+    const tilePalette: SupportScaffold['tilePalette'] =
+      tier === 'easy' ? 'exact' : tier === 'medium' ? 'plus-distractors' : 'full';
+    const lines = [lead];
+    if (tier === 'easy') {
+      lines.push('Equation tray restricted (applied automatically) to ONLY each story\'s three numbers plus operators — the student just arranges them. Keep every story a clear three-number relationship.');
+    } else if (tier === 'medium') {
+      lines.push('Equation tray adds a few distractor numbers (applied automatically) the student must reject.');
+    } else {
+      lines.push('Equation tray shows the full number range (applied automatically) — the student must pick the right numbers from many.');
+    }
+    return { showCountBadges: true, groupedReveal: true, tilePalette, unknownGradient: 'vary', promptLines: lines };
+  }
+
+  // solve-story — unknownPosition is coupled to the story phrasing, so it is
+  // driven through the prompt (like the numbers), not force-set in code.
+  const unknownGradient: SupportScaffold['unknownGradient'] =
+    tier === 'easy' ? 'result' : tier === 'medium' ? 'vary' : 'inverse';
+  const lines = [lead];
+  if (tier === 'easy') {
+    lines.push('Make the missing value the RESULT in every story (the forward operation). Set unknownPosition="result" and phrase each story to ask "how many now / how many left?".');
+  } else if (tier === 'medium') {
+    lines.push('Mix unknown positions: mostly "result", occasionally "change". Phrase each story so the question clearly targets the hidden value, and set unknownPosition to match.');
+  } else {
+    lines.push('Make the missing value the START or CHANGE (inverse reasoning — the student works backward). Set unknownPosition="start" or "change" and phrase each story to ask for that hidden value (e.g. "How many were there before?" / "How many came?"). Keep all numbers within maxNumber.');
+  }
+  return { showCountBadges: true, groupedReveal: true, tilePalette: 'full', unknownGradient, promptLines: lines };
+}
+
+/**
+ * Build the restricted tile list for a build-equation challenge. Returns the
+ * sorted number strings to offer (operators are appended by the component), or
+ * undefined for the full palette. Deterministic — never changes the equation.
+ */
+function buildAllowedTiles(
+  challenge: { startCount: number; changeCount: number; resultCount: number },
+  palette: SupportScaffold['tilePalette'],
+  maxNumber: number,
+): string[] | undefined {
+  if (palette === 'full') return undefined;
+  const needed = Array.from(new Set([challenge.startCount, challenge.changeCount, challenge.resultCount]))
+    .filter((n) => n >= 0 && n <= maxNumber);
+  if (palette === 'exact') {
+    return needed.sort((a, b) => a - b).map(String);
+  }
+  // plus-distractors: add up to 3 deterministic in-range numbers not already needed
+  const set = new Set(needed);
+  const distractors: number[] = [];
+  for (let n = 0; n <= maxNumber && distractors.length < 3; n++) {
+    if (!set.has(n)) distractors.push(n);
+  }
+  return Array.from(new Set([...needed, ...distractors])).sort((a, b) => a - b).map(String);
+}
 
 // ---------------------------------------------------------------------------
 // Base schema (all challenge types)
@@ -187,6 +305,12 @@ export const generateAdditionSubtractionScene = async (
     storyTypes?: string[];
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   }
 ): Promise<AdditionSubtractionSceneData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -197,6 +321,18 @@ export const generateAdditionSubtractionScene = async (
   );
 
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
+
+  // ── Resolve within-mode support tier (only when exactly ONE mode is pinned) ──
+  const pinnedType = (evalConstraint && evalConstraint.allowedTypes.length === 1
+    ? evalConstraint.allowedTypes[0]
+    : undefined) as ChallengeType | undefined;
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
@@ -216,7 +352,7 @@ CONTEXT:
 - Each challenge has a themed scene (pond, farm, playground, space, kitchen, garden)
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
@@ -302,6 +438,14 @@ Return the complete addition/subtraction scene configuration.
   }
   if (typeof data.showEquationBar !== 'boolean') {
     data.showEquationBar = true;
+  }
+  // Support-tier scene levers default to full scaffolding (current behavior);
+  // a pinned-mode tier may withdraw them at the end of the generator.
+  if (typeof data.showCountBadges !== 'boolean') {
+    data.showCountBadges = true;
+  }
+  if (typeof data.groupedReveal !== 'boolean') {
+    data.groupedReveal = true;
   }
 
   // Valid enums
@@ -459,6 +603,37 @@ Return the complete addition/subtraction scene configuration.
     }
     if (config.maxNumber !== undefined) {
       data.maxNumber = config.maxNumber;
+    }
+  }
+
+  // ── Apply the within-mode support tier deterministically (scaffolding only) ──
+  // Runs LAST, after all structural fixups: code owns the support structure;
+  // the LLM only chose the numbers (and, for solve-story, the matching phrasing).
+  if (tierScaffold && pinnedType) {
+    if (pinnedType === 'act-out') {
+      data.showCountBadges = tierScaffold.showCountBadges;
+      data.groupedReveal = tierScaffold.groupedReveal;
+      console.log(
+        `[AdditionSubtractionScene] Support tier "${supportTier}" on mode "act-out" → `
+        + `countBadges=${data.showCountBadges}, groupedReveal=${data.groupedReveal}`,
+      );
+    } else if (pinnedType === 'build-equation') {
+      for (const ch of data.challenges as AddSubChallenge[]) {
+        const tiles = buildAllowedTiles(ch, tierScaffold.tilePalette, data.maxNumber);
+        if (tiles) ch.allowedTiles = tiles;
+        else delete ch.allowedTiles;
+      }
+      console.log(
+        `[AdditionSubtractionScene] Support tier "${supportTier}" on mode "build-equation" → `
+        + `tilePalette=${tierScaffold.tilePalette}`,
+      );
+    } else if (pinnedType === 'solve-story') {
+      // unknownPosition is coupled to the LLM-authored story phrasing, so it is
+      // driven through the prompt (not force-set here) to avoid story↔answer desync.
+      console.log(
+        `[AdditionSubtractionScene] Support tier "${supportTier}" on mode "solve-story" → `
+        + `unknownGradient=${tierScaffold.unknownGradient} (prompt-driven)`,
+      );
     }
   }
 

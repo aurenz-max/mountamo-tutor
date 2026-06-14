@@ -116,6 +116,12 @@ export interface AngleWorkshopChallenge {
   expectedRelationship?: AnglePairRelationship;
   /** Absolute tolerance for accepting a numeric answer. */
   tolerance: number;
+
+  // --- within-mode support tier (config.difficulty) — scaffolding only ---
+  /** measure: show the dot marking where the 2nd ray crosses the protractor scale. Default true. */
+  showReadingCue?: boolean;
+  /** classify_pairs: show relationship perception marks (right-angle square, equal-angle labels). Default true. */
+  showPerceptionMarks?: boolean;
 }
 
 export interface AngleWorkshopData {
@@ -123,6 +129,13 @@ export interface AngleWorkshopData {
   description: string;
   challengeType: AngleWorkshopChallengeType;
   gradeBand?: '7' | '8';
+  /**
+   * Within-mode support tier that was applied ('easy' | 'medium' | 'hard'), set only
+   * for single-mode sessions. Threaded into the live tutor so it calibrates how much
+   * it reveals — at 'hard' the instruction withholds the relationship, so the tutor
+   * must not name it either. Absent in blended sessions (nothing was withheld).
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
   /** 3-6 challenges per session. Required. Built by the generator's pool service. */
   challenges: AngleWorkshopChallenge[];
 
@@ -186,6 +199,48 @@ function fmtExpr(a: number, b: number): string {
   return `(${xPart} ${sign} ${Math.abs(b)})°`;
 }
 
+/**
+ * How much the live tutor may reveal, calibrated to the on-screen support tier.
+ * Keeps the tutor (a second information channel) consistent with the instruction
+ * scaffold (modality #2): at 'hard' the instruction withholds the relationship,
+ * so the tutor must not name it either.
+ *
+ * Mode-aware: in measure / classify_pairs the relationship or reading IS the answer,
+ * so the tutor never names it at any tier — there the tier only dials coaching depth.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  challengeType: AngleWorkshopChallengeType,
+): string {
+  if (!tier) return '';
+  const common = 'Never state the final answer (the angle measure or the value of x).';
+  const solving =
+    challengeType === 'solve_unknown'
+    || challengeType === 'solve_algebraic'
+    || challengeType === 'transversal';
+
+  if (!solving) {
+    // measure / classify_pairs — the relationship or reading IS the answer; never name it.
+    switch (tier) {
+      case 'easy':
+        return `SUPPORT TIER easy: be explicit about technique and the visual tells (how to place and read the protractor; which corner shapes mean 90°, 180°, or equal) WITHOUT saying which one this figure is. ${common}`;
+      case 'medium':
+        return `SUPPORT TIER medium: hint at the visual tells and let the student decide. ${common}`;
+      default:
+        return `SUPPORT TIER hard: minimal coaching — ask what the student notices and let them judge it unaided. ${common}`;
+    }
+  }
+
+  switch (tier) {
+    case 'easy':
+      return `SUPPORT TIER easy: maximum scaffolding. You may name the angle relationship and walk through the setup step by step. ${common}`;
+    case 'medium':
+      return `SUPPORT TIER medium: the relationship is named on screen, but let the student do the setup and arithmetic. Nudge the next step; do not solve it. ${common}`;
+    default:
+      return `SUPPORT TIER hard: the on-screen instruction deliberately does NOT name the relationship — identifying it from the figure is part of the task. Do NOT name the relationship or its rule; ask what the student notices (a right-angle corner, a straight line, crossing lines, parallel marks). ${common}`;
+  }
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -200,6 +255,7 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
     title,
     description,
     gradeBand = '7',
+    supportTier,
     challenges = [],
     instanceId,
     skillId,
@@ -416,9 +472,12 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
             label(cx + (PR + 16) * Math.cos(a), cy + (PR + 16) * Math.sin(a), `${d}`, COL_PROT, 'center', '12px ui-sans-serif, system-ui, sans-serif');
           }
         }
-        // mark where the second ray crosses the scale (a reading cue, not a number)
-        const a = toRad(m);
-        dot(cx + PR * Math.cos(a), cy + PR * Math.sin(a), 5, COL_UNKNOWN);
+        // mark where the second ray crosses the scale (a reading cue, not a number).
+        // Withdrawn at the hard support tier so the student reads the scale unaided.
+        if (ch.showReadingCue !== false) {
+          const a = toRad(m);
+          dot(cx + PR * Math.cos(a), cy + PR * Math.sin(a), 5, COL_UNKNOWN);
+        }
       }
 
       // the angle itself
@@ -448,8 +507,12 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
         // highlight the two opposite (vertical) wedges
         wedgeDeg(cx, cy, 40, 0, cross, FILL_A, COL_RAY);
         wedgeDeg(cx, cy, 40, 180, 180 + cross, FILL_A, COL_RAY);
-        labelAtDeg(cx, cy, cross / 2, 58, 'α', COL_RAY);
-        labelAtDeg(cx, cy, 180 + cross / 2, 58, 'α', COL_RAY);
+        // equal-angle (α/α) labels reveal the vertical relationship — a perception
+        // mark withdrawn at the hard tier so the student reasons from the crossing.
+        if (ch.showPerceptionMarks !== false) {
+          labelAtDeg(cx, cy, cross / 2, 58, 'α', COL_RAY);
+          labelAtDeg(cx, cy, 180 + cross / 2, 58, 'α', COL_RAY);
+        }
       } else {
         const outer = rel === 'complementary' ? 90 : rel === 'supplementary' ? 180 : (ch.outerAngle ?? 140);
         const split = ch.splitAngle ?? Math.round(outer * 0.4);
@@ -460,7 +523,8 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
         wedgeDeg(cx, cy, 60, split, outer, FILL_B, COL_RAY2);
         labelAtDeg(cx, cy, split / 2, 70, 'α', COL_RAY);
         labelAtDeg(cx, cy, (split + outer) / 2, 84, 'β', COL_RAY2);
-        if (rel === 'complementary') rightAngleMark(cx, cy, 0);
+        // right-angle square reveals the complementary relationship — withdrawn at hard.
+        if (rel === 'complementary' && ch.showPerceptionMarks !== false) rightAngleMark(cx, cy, 0);
         dot(cx, cy, 4);
       }
       return;
@@ -718,6 +782,7 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
     knownAngle: currentChallenge?.knownAngle ?? null,
     givenAngle: currentChallenge?.givenAngle ?? null,
     gradeBand,
+    supportTier: supportTier ?? null,
     attemptNumber: currentAttempts + 1,
   }), [
     challengeType,
@@ -725,6 +790,7 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
     currentChallengeIndex,
     challenges.length,
     gradeBand,
+    supportTier,
     currentAttempts,
   ]);
 
@@ -739,12 +805,14 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
+    const policy = tutorRevealPolicy(supportTier, challengeType);
     sendText(
       `[ACTIVITY_START] Angle session: ${challenges.length} problems, mode "${challengeType}", grade ${gradeBand}. `
-      + `Introduce briefly: angles in a figure are linked by relationships (they add to 90°, 180°, or are equal), and those relationships let us find unknown angles. Then read the first task.`,
+      + `Introduce briefly: angles in a figure are linked by relationships (they add to 90°, 180°, or are equal), and those relationships let us find unknown angles. Then read the first task.`
+      + (policy ? ` ${policy}` : ''),
       { silent: true },
     );
-  }, [isConnected, challenges.length, challengeType, gradeBand, sendText]);
+  }, [isConnected, challenges.length, challengeType, gradeBand, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Record / submit
@@ -767,6 +835,7 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
   const handleCheck = useCallback(() => {
     if (!currentChallenge || hasSubmittedEvaluation) return;
     const ch = currentChallenge;
+    const revealPolicy = tutorRevealPolicy(supportTier, ch.type);
 
     // --- relationship (classify) ---
     if (ch.answerKind === 'relationship') {
@@ -792,7 +861,8 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
         setFeedbackType('error');
         sendText(
           `[ANSWER_INCORRECT] Student chose "${selectedRelationship}" but the pair is "${ch.expectedRelationship}". `
-          + `Attempt ${currentAttempts + 1}. Point at what in the figure distinguishes them — do NOT name the answer outright.`,
+          + `Attempt ${currentAttempts + 1}. Point at what in the figure distinguishes them — do NOT name the answer outright.`
+          + (revealPolicy ? ` ${revealPolicy}` : ''),
           { silent: true },
         );
         setSelectedRelationship(null);
@@ -839,13 +909,15 @@ const AngleWorkshop: React.FC<AngleWorkshopProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_INCORRECT] Student answered ${parsed} but the answer is ${ch.expectedAnswer} (${challengeType}). `
         + `Attempt ${currentAttempts + 1}. Point at the specific step that needs another look — do NOT give the answer. `
-        + `Common slips: using 90 where 180 is needed, or solving for x but forgetting to substitute back.`,
+        + `Common slips: using 90 where 180 is needed, or solving for x but forgetting to substitute back.`
+        + (revealPolicy ? ` ${revealPolicy}` : ''),
         { silent: true },
       );
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, selectedRelationship, needsProtractorFirst,
     answerInput, incrementAttempts, completeChallenge, currentAttempts, sendText, challengeType,
+    supportTier,
   ]);
 
   const handleShowHint = useCallback(() => {

@@ -36,7 +36,7 @@
 | counting-board | 5 | 5 | 0 | 2026-03-15 | [report](eval-reports/counting-board-2026-03-15.md) |
 | ten-frame | 4 | 4 | 0 | 2026-05-28 | [report](eval-reports/ten-frame-2026-05-28.md) |
 | factor-tree | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
-| addition-subtraction-scene | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| addition-subtraction-scene | 4 | 4 | 0 | 2026-06-13 | [report](eval-reports/addition-subtraction-scene-2026-06-13.md) |
 | number-line | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout-2026-06-11.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/fraction-circles-2026-03-17.md) |
 | number-bond | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
@@ -93,7 +93,7 @@
 | circle-explorer | 5 | 5 | 0 | 2026-06-06 | [report](eval-reports/circle-explorer-2026-06-06.md) |
 | transformation-lab | 5 | 5 | 0 | 2026-06-07 | [report](eval-reports/transformation-lab-2026-06-07.md) |
 
-**Totals:** 320/331 modes passing (96.7%) | 24 open issues (2 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 320/331 modes passing (96.7%) | 25 open issues (3 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
 
 Note: polygon-area-builder and circle-explorer each have 5 IRT-pinned modes all passing; their "Auto (mixed)" paths (PAB-1 / CE-1) were both fixed 2026-06-06 (SP-21) — each now interleaves all five tiers, scaled easy→hard, across 8 problems.
 
@@ -319,6 +319,7 @@ setWorkspaceSlots(prev => [...prev, tile]);
 | SS-2 | shape-strength-tester | — | CRITICAL | Wrong result | Collapsed structure passes — `survived` only checks beam breakage, not structural collapse. Tower falls flat, still PASSED | COMPONENT |
 | GT-1 | gear-train-builder | — | CRITICAL | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — adaptive session selects primitive but can't generate content | CATALOG |
 | GT-2 | gear-train-builder | — | CRITICAL | Session deadlock | When prefetch() returns 0 items (malformed 65K+ JSON from generator), `waitingForDelivery` never clears — permanent deadlock on "Preparing next challenge..." | SESSION ENGINE |
+| ~~AST-1~~ | ~~addition-subtraction-scene~~ | ~~all modes (tester only)~~ | ~~CRITICAL~~ | ~~Harness ignores generated data~~ | ~~MathPrimitivesTester `renderPrimitive` builds a hardcoded 4-type mixed `testData` for the `addition-subtraction-scene` case (line 723-738) and passes it instead of the generated `data` prop. Fixed 2026-06-13: case now spreads the `data` prop (+ instance/skill/subskill/objective IDs) like every other primitive; dropped onEvaluationSubmit (hook self-submits to context). Generator + component were already correct.~~ | ~~TESTER (MathPrimitivesTester.tsx)~~ |
 | ~~EB-1~~ | ~~equation-builder~~ | ~~build~~ | ~~CRITICAL~~ | ~~Answer leak~~ | ~~Instruction text contained literal target equation. Fixed: prompt doc forbids revealing answer, post-process strips leaked equations, fallback updated~~ | ~~GENERATOR~~ |
 | ~~EB-2~~ | ~~equation-builder~~ | ~~build~~ | ~~HIGH~~ | ~~Duplicate tiles~~ | ~~`availableTiles` had duplicates. Fixed: derive tiles deterministically from target tokens + deduplicated distractors~~ | ~~GENERATOR~~ |
 | ~~EB-3~~ | ~~equation-builder~~ | ~~build, rewrite~~ | ~~CRITICAL~~ | ~~Duplicate tile placement~~ | ~~Clicking a pool tile placed it twice in the workspace (1 + 4 = 5 → 1 + 4 = 5 5). Root cause: `handlePickTile` called `setWorkspaceSlots` inside the `setPoolTiles` updater — React Strict Mode double-invokes updaters, so the nested functional set ran twice. Fixed 2026-05-24: read tile out of state, then call both setters independently. Mirror fix in `handleRemoveSlot`.~~ | ~~COMPONENT~~ |

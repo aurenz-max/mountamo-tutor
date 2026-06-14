@@ -45,6 +45,13 @@ export interface AddSubChallenge {
   resultCount: number;
   equation: string;
   unknownPosition?: 'result' | 'change' | 'start';
+  /**
+   * Support-tier lever (build-equation): when present, the equation tray shows ONLY
+   * these number tiles (operators are always appended). Withdraws the "discriminate
+   * the right numbers from distractors" challenge. Absent = full 0…maxNumber tray.
+   * Never changes the target equation — only how many candidate numbers are offered.
+   */
+  allowedTiles?: string[];
 }
 
 export interface AdditionSubtractionSceneData {
@@ -55,6 +62,16 @@ export interface AdditionSubtractionSceneData {
   showTenFrame: boolean;
   showEquationBar: boolean;
   gradeBand: 'K' | '1';
+
+  /**
+   * Support-tier levers (act-out). Scaffolding-only — never change the numbers.
+   * - showCountBadges: tapping an object stamps its running ordinal (1,2,3…) so the
+   *   scene tracks the count. Off = the student must hold the count mentally.
+   * - groupedReveal: the "change" objects animate in separately from the "start" group
+   *   so the join/separation is visible. Off = all objects appear together (must segment).
+   */
+  showCountBadges?: boolean;
+  groupedReveal?: boolean;
 
   // Evaluation props
   instanceId?: string;
@@ -171,6 +188,8 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     showTenFrame = false,
     showEquationBar = true,
     gradeBand = 'K',
+    showCountBadges = true,
+    groupedReveal = true,
     instanceId,
     skillId,
     subskillId,
@@ -607,6 +626,20 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     }
   }, [currentChallenge, isCurrentChallengeComplete, countAnswer, equationTiles, solveAnswer, createSelection]);
 
+  // Equation tray tiles. Support tier (build-equation) may restrict the offered
+  // numbers via challenge.allowedTiles; operators are always available. Falls back
+  // to the full 0…maxNumber palette. Never affects the target equation.
+  const equationTilePalette = useMemo(() => {
+    const allowed = currentChallenge?.allowedTiles;
+    const numberTiles = allowed && allowed.length > 0
+      ? Array.from(new Set(allowed)).sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+      : EQUATION_TILES.filter((t) => {
+          const num = parseInt(t, 10);
+          return !isNaN(num) && num <= maxNumber;
+        });
+    return [...numberTiles, '+', '-', '='];
+  }, [currentChallenge, maxNumber]);
+
   // Eval-mode / phase tabs (chrome)
   const phaseTabs = useMemo(
     () => Object.entries(PHASE_TYPE_CONFIG).map(([value, cfg]) => ({
@@ -696,13 +729,16 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                 {positions.map((pos, i) => {
                   const isTapped = tappedObjects.has(i);
                   const isChangeGroup = !startGroup.has(i);
-                  const animDelay = isChangeGroup && animatingObjects ? '0.5s' : '0s';
+                  // groupedReveal (easy/medium): the change group animates in separately so the
+                  // join is visible. Withdrawn (hard): everything appears together at once.
+                  const useGroupedAnim = groupedReveal && animatingObjects && isChangeGroup;
+                  const animDelay = useGroupedAnim ? '0.5s' : '0s';
 
                   return (
                     <g
                       key={i}
                       className={`cursor-pointer transition-transform duration-300 ${
-                        animatingObjects && isChangeGroup ? 'opacity-0 animate-fadeIn' : 'opacity-100'
+                        useGroupedAnim ? 'opacity-0 animate-fadeIn' : 'opacity-100'
                       }`}
                       style={{
                         animationDelay: animDelay,
@@ -725,8 +761,8 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
                       >
                         {getEmoji(currentChallenge.objectType)}
                       </text>
-                      {/* Count badge for tapped objects */}
-                      {isTapped && (
+                      {/* Count badge for tapped objects (withdrawn at the hard tier) */}
+                      {isTapped && showCountBadges && (
                         <>
                           <circle
                             cx={pos.x + OBJ_SIZE / 2 - 2} cy={pos.y - OBJ_SIZE / 2 + 2}
@@ -807,10 +843,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
             </div>
             {/* Available tiles */}
             <div className="flex flex-wrap justify-center gap-1">
-              {EQUATION_TILES.filter((t) => {
-                const num = parseInt(t, 10);
-                return isNaN(num) || num <= maxNumber;
-              }).map((tile) => (
+              {equationTilePalette.map((tile) => (
                 <LuminaButton
                   key={tile}
                   className="text-slate-200 text-sm font-mono h-8 w-8 p-0"
