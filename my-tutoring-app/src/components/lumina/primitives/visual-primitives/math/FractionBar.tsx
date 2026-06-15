@@ -49,6 +49,26 @@ export interface FractionBarData {
   challengeType: FractionBarChallengeType;
   /** Whether to show the decimal approximation in the build phase. */
   showDecimal?: boolean;
+  /**
+   * Support-tier lever: show the partition-index numerals ({i+1}) inside each bar
+   * cell (denominator ≤ 12). These label POSITION, not the shaded count, so hiding
+   * them never leaks the answer. Default true (current behavior; withdrawn at hard).
+   */
+  showPartitionNumerals?: boolean;
+  /**
+   * Support-tier lever: show the live "Shaded: X/N" + target restatement above the
+   * bar in the build phase. Default true (current behavior; withdrawn at hard so the
+   * student shades from the fraction alone).
+   */
+  showShadedReadout?: boolean;
+  /**
+   * Support-tier lever: include the "(the top number)/(the bottom number)" gloss in
+   * the identify-phase prompts. Default true; dropped at hard so the student must
+   * recall which position is numerator vs denominator.
+   */
+  showPromptGloss?: boolean;
+  /** Support tier in effect ('easy' | 'medium' | 'hard'), for tutor reveal calibration. */
+  supportTier?: 'easy' | 'medium' | 'hard';
   gradeLevel?: string;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -80,6 +100,38 @@ function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (attempts - 1) * 20);
 }
 
+/**
+ * Tutor reveal calibration, keyed to the on-screen support tier so the AI tutor
+ * never leaks what the tier withheld. `identify` is a RECOGNITION mode — the
+ * numerator/denominator IS the answer, so the tutor must never name the values at
+ * ANY tier; there the clause only dials coaching depth. The build/compare/operate
+ * modes let easy name the count-toward-target strategy; hard withholds it.
+ */
+function tutorRevealClause(
+  tier: FractionBarData['supportTier'],
+  challengeType: FractionBarChallengeType,
+): string {
+  if (challengeType === 'identify') {
+    if (tier === 'hard') {
+      return 'TIER hard (recognition): do NOT name which number is the numerator or denominator and do NOT state their values; ask the student where the top vs bottom number sits and let them decide.';
+    }
+    if (tier === 'medium') {
+      return 'TIER medium (recognition): coach which position is which (top vs bottom) but never state the actual numerator or denominator value.';
+    }
+    // easy or no tier
+    return 'TIER easy (recognition): you may explain what the numerator and denominator mean and point to the top/bottom positions, but still never read out the correct value — let the student pick it.';
+  }
+  // build / compare / add_subtract — the value is the prompt; only the strategy tiers.
+  if (tier === 'hard') {
+    return 'TIER hard: do NOT name the target fraction value or how many parts to shade; ask the student what they see shaded on the bar and let them reason from the fraction alone.';
+  }
+  if (tier === 'medium') {
+    return 'TIER medium: nudge the execution (compare shaded parts to the target) without counting the parts for them.';
+  }
+  // easy or no tier
+  return 'TIER easy: you may name the strategy and walk the student through counting parts toward the target.';
+}
+
 const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
   const {
     title,
@@ -87,6 +139,10 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     challenges = [],
     challengeType: sessionChallengeType,
     showDecimal = true,
+    showPartitionNumerals = true,
+    showShadedReadout = true,
+    showPromptGloss = true,
+    supportTier,
     gradeLevel,
     instanceId,
     skillId,
@@ -167,6 +223,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       currentChallengeIndex: currentIndex + 1,
       totalChallenges: challenges.length,
       challengeType: sessionChallengeType,
+      supportTier,
       gradeLevel: gradeLevel || 'Grade 3',
     }),
     [
@@ -177,6 +234,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       currentIndex,
       challenges.length,
       sessionChallengeType,
+      supportTier,
       gradeLevel,
     ],
   );
@@ -199,10 +257,11 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
       `[ACTIVITY_START] Multi-challenge fraction bar activity for ${gradeLevel || 'Grade 3'}. `
         + `Mode: ${sessionChallengeType}. The student will work through ${challenges.length} different fractions, `
         + `each running through three phases (identify numerator, identify denominator, build on the bar). `
-        + `Introduce the session warmly and briefly.`,
+        + `Introduce the session warmly and briefly. `
+        + tutorRevealClause(supportTier, sessionChallengeType),
       { silent: true },
     );
-  }, [isConnected, challenges.length, sessionChallengeType, gradeLevel, sendText]);
+  }, [isConnected, challenges.length, sessionChallengeType, supportTier, gradeLevel, sendText]);
 
   // ── Evaluation hook ──────────────────────────────────────────
   const {
@@ -361,11 +420,12 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
 
       sendText(
         `[ANSWER_INCORRECT] Student chose ${selectedNumerator} but the correct numerator is ${numerator}. `
-          + `Attempt ${nextAttempts}. Give a gentle hint about what the numerator means without giving the answer.`,
+          + `Attempt ${nextAttempts}. Give a gentle hint about what the numerator means without giving the answer. `
+          + tutorRevealClause(supportTier, sessionChallengeType),
         { silent: true },
       );
     }
-  }, [selectedNumerator, challengeDone, numerator, denominator, numeratorAttempts, sendText]);
+  }, [selectedNumerator, challengeDone, numerator, denominator, numeratorAttempts, supportTier, sessionChallengeType, sendText]);
 
   // ── Phase 2: Check denominator ───────────────────────────────
   const handleCheckDenominator = useCallback(() => {
@@ -410,11 +470,12 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
 
       sendText(
         `[ANSWER_INCORRECT] Student chose ${selectedDenominator} but the correct denominator is ${denominator}. `
-          + `Attempt ${nextAttempts}. Give a gentle hint about what the denominator means without giving the answer.`,
+          + `Attempt ${nextAttempts}. Give a gentle hint about what the denominator means without giving the answer. `
+          + tutorRevealClause(supportTier, sessionChallengeType),
         { silent: true },
       );
     }
-  }, [selectedDenominator, challengeDone, numerator, denominator, denominatorAttempts, sendText]);
+  }, [selectedDenominator, challengeDone, numerator, denominator, denominatorAttempts, supportTier, sessionChallengeType, sendText]);
 
   // ── Phase 3: Toggle partition ────────────────────────────────
   const togglePartition = useCallback(
@@ -454,7 +515,8 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
             shadedCount < numerator
               ? `They shaded too few parts (${numerator - shadedCount} short). Encourage them to shade more.`
               : `They shaded too many parts (${shadedCount - numerator} extra). Encourage them to unshade some.`
-          }`,
+          } `
+          + tutorRevealClause(supportTier, sessionChallengeType),
         { silent: true },
       );
       return;
@@ -496,6 +558,8 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
     numeratorAttempts,
     denominatorAttempts,
     shadingChanges,
+    supportTier,
+    sessionChallengeType,
     sendText,
     completeCurrentChallenge,
   ]);
@@ -715,7 +779,8 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
                     {numerator}/{denominator}
                   </span>
                   , which number is the{' '}
-                  <span className="text-purple-300 font-semibold">numerator</span> (the top number)?
+                  <span className="text-purple-300 font-semibold">numerator</span>
+                  {showPromptGloss && ' (the top number)'}?
                 </p>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -762,8 +827,8 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
                     {numerator}/{denominator}
                   </span>
                   , which number is the{' '}
-                  <span className="text-blue-300 font-semibold">denominator</span> (the bottom
-                  number)?
+                  <span className="text-blue-300 font-semibold">denominator</span>
+                  {showPromptGloss && ' (the bottom number)'}?
                 </p>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -815,24 +880,28 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
                   .
                 </p>
 
-                {/* Current vs target */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-lg font-mono text-white">
-                    Shaded:{' '}
-                    <span
-                      className={`font-bold ${shadedCount === numerator ? 'text-emerald-300' : 'text-purple-300'}`}
-                    >
-                      {shadedCount}
-                    </span>
-                    <span className="text-slate-500">/{denominator}</span>
+                {/* Current vs target — withdrawn at the hard tier so the student
+                    shades from the fraction alone (the top fraction display, which
+                    IS the prompt, always stays visible above). */}
+                {showShadedReadout && (
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-lg font-mono text-white">
+                      Shaded:{' '}
+                      <span
+                        className={`font-bold ${shadedCount === numerator ? 'text-emerald-300' : 'text-purple-300'}`}
+                      >
+                        {shadedCount}
+                      </span>
+                      <span className="text-slate-500">/{denominator}</span>
+                    </div>
+                    <div className="text-sm text-slate-400">
+                      Target:{' '}
+                      <span className="font-mono text-white">
+                        {numerator}/{denominator}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-sm text-slate-400">
-                    Target:{' '}
-                    <span className="font-mono text-white">
-                      {numerator}/{denominator}
-                    </span>
-                  </div>
-                </div>
+                )}
 
                 {/* The fraction bar */}
                 <div
@@ -860,7 +929,7 @@ const FractionBar: React.FC<FractionBarProps> = ({ data, className }) => {
                         }`}
                         title={`${isShaded ? 'Unshade' : 'Shade'} part ${i + 1}`}
                       >
-                        {denominator <= 12 && (
+                        {showPartitionNumerals && denominator <= 12 && (
                           <span className="text-xs text-white/40 font-mono">{i + 1}</span>
                         )}
                       </button>

@@ -26,8 +26,13 @@ const DotPlot = lazy(() => import('../../../primitives/visual-primitives/math/Do
 const Histogram = lazy(() => import('../../../primitives/visual-primitives/math/Histogram'));
 const TwoWayTable = lazy(() => import('../../../primitives/visual-primitives/math/TwoWayTable'));
 
-// Map of component IDs to their lazy-loaded components
-const PRIMITIVE_COMPONENTS: Record<string, ComponentType<{ data: unknown }>> = {
+// Map of component IDs to their lazy-loaded components.
+// Each primitive requires its own concrete `data` shape, so the registry value
+// type must accept any of them — component props are contravariant, meaning a
+// `ComponentType<{ data: unknown }>` would reject every primitive that needs a
+// narrower data type. `any` here is the heterogeneous-registry escape hatch;
+// the public-facing PrimitiveRendererProps.data stays `unknown` for callers.
+const PRIMITIVE_COMPONENTS: Record<string, ComponentType<{ data: any }>> = {
   'fraction-bar': FractionBar,
   'fraction-circles': FractionCircles,
   'number-line': NumberLine,

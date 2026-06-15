@@ -9,12 +9,12 @@
 |-----------|-------|--------|--------|-------------|--------|
 | regrouping-workbench | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | array-grid | 3 | 3 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
-| fraction-bar | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/fraction-bar-2026-03-15.md) |
-| percent-bar | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/percent-bar-2026-03-15.md) |
+| fraction-bar | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/fraction-bar-2026-06-14.md) |
+| percent-bar | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/percent-bar-2026-06-14.md) |
 | measurement-tools | 4 | 4 | 0 | 2026-05-22 | [report](eval-reports/measurement-tools-2026-05-22.md) |
-| tape-diagram | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/tape-diagram-2026-03-15.md) |
-| sorting-station | 6 | 6 | 0 | 2026-04-01 | [report](eval-reports/sorting-station-2026-04-01.md) |
-| number-sequencer | 5 | 5 | 0 | 2026-06-11 | [report](eval-reports/number-sequencer-2026-06-11.md) |
+| tape-diagram | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/tape-diagram-2026-06-14.md) |
+| sorting-station | 6 | 6 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/sorting-station-2026-06-14.md) |
+| number-sequencer | 5 | 5 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-sequencer-2026-06-14.md) |
 | base-ten-blocks | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | phonics-blender | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phonics-blender-2026-03-15.md) |
 | rhyme-studio | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/rhyme-studio-2026-03-15.md) |
@@ -37,38 +37,38 @@
 | ten-frame | 4 | 4 | 0 | 2026-05-28 | [report](eval-reports/ten-frame-2026-05-28.md) |
 | factor-tree | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | addition-subtraction-scene | 4 | 4 | 0 | 2026-06-13 | [report](eval-reports/addition-subtraction-scene-2026-06-13.md) |
-| number-line | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout-2026-06-11.md) |
+| number-line | 5 | 5 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-line-2026-06-14.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/fraction-circles-2026-03-17.md) |
-| number-bond | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| number-bond | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-bond-2026-06-14.md) |
 | pattern-builder | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/pattern-builder-2026-03-17.md) |
-| comparison-builder | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| comparison-builder | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/comparison-builder-2026-06-14.md) |
 | balance-scale | 6 | 6 | 0 | 2026-05-21 | [report](eval-reports/balance-scale-2026-05-21.md) |
 | ordinal-line | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout-2026-06-11.md) |
 | shape-sorter | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/shape-sorter-2026-03-17.md) |
 | math-fact-fluency | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
-| multiplication-explorer | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
-| skip-counting-runner | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| multiplication-explorer | 6 | 6 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/multiplication-explorer-2026-06-14.md) |
+| skip-counting-runner | 5 | 5 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/skip-counting-runner-2026-06-14.md) |
 | shape-builder | 6 | 5 | 1 | 2026-03-28 | [report](eval-reports/shape-builder-2026-03-28.md) |
 | shape-tracer | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/shape-tracer-2026-03-17.md) |
 | 3d-shape-explorer | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/3d-shape-explorer-2026-03-17.md) |
 | strategy-picker | 5 | 5 | 0 | 2026-05-23 | [report](eval-reports/strategy-picker-2026-05-23.md) |
-| ratio-table | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/ratio-table-2026-03-17.md) |
+| ratio-table | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/ratio-table-2026-06-14.md) |
 | matrix-display | 4 | 4 | 0 | 2026-05-23 | [report](eval-reports/matrix-display-2026-05-23.md) |
-| double-number-line | 3 | 2 | 1 | 2026-05-24 | [report](eval-reports/double-number-line-2026-05-24.md) |
-| place-value-chart | 4 | 4 | 0 | 2026-05-15 | [report](eval-reports/place-value-chart-2026-05-15.md) |
-| function-machine | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/function-machine-2026-03-17.md) |
+| double-number-line | 3 | 3 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/double-number-line-2026-06-14.md) |
+| place-value-chart | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/place-value-2026-06-14.md) |
+| function-machine | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/function-machine-2026-06-14.md) |
 | knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
 | how-it-works | 3 | 1 | 2 | 2026-05-03 | [report](eval-reports/how-it-works-2026-05-03.md) |
 | light-shadow-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/light-shadow-lab-2026-03-29.md) |
 | constellation-builder | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/constellation-builder-2026-03-29.md) |
 | sound-wave-explorer | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/sound-wave-explorer-2026-03-29.md) |
-| hundreds-chart | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout-2026-06-11.md) |
+| hundreds-chart | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/hundreds-chart-2026-06-14.md) |
 | length-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/length-lab-2026-03-29.md) |
 | analog-clock | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/analog-clock-2026-03-29.md) |
 | media-player | 1 | 0 | 1 | 2026-04-02 | [report](eval-reports/media-player-2026-04-02.md) |
 | shape-strength-tester | 0 | 0 | 0 | 2026-04-03 | [report](eval-reports/shape-strength-tester-2026-04-03.md) |
 | gear-train-builder | 0 | 0 | 0 | 2026-04-03 | [report](eval-reports/gear-train-builder-2026-04-03.md) |
-| coin-counter | 7 | 7 | 0 | 2026-04-04 | [report](eval-reports/coin-counter-2026-04-04.md) |
+| coin-counter | 7 | 7 | 0 | 2026-06-14 | [difficulty sweep](eval-reports/coin-counter-2026-06-14.md) |
 | time-sequencer | 6 | 6 | 0 | 2026-04-04 | [report](eval-reports/time-sequencer-2026-04-04.md) |
 
 | spatial-scene | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/spatial-scene-2026-04-04.md) |
@@ -79,7 +79,7 @@
 | figurative-language-finder | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/figurative-language-finder-2026-04-05.md) |
 | word-sorter | 3 | 3 | 0 | 2026-04-05 | [report](eval-reports/word-sorter-2026-04-05.md) |
 | decodable-reader | 1 | 1 | 0 | 2026-04-05 | [report](eval-reports/decodable-reader-2026-04-05.md) |
-| equation-builder | 6 | 6 | 0 | 2026-05-24 | [report](eval-reports/equation-builder-2026-05-24.md) |
+| equation-builder | 6 | 6 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/equation-builder-2026-06-14.md) |
 | word-builder | 4 | 4 | 0 | 2026-04-11 | [report](eval-reports/word-builder-2026-04-11.md) |
 | dot-plot | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/dot-plot-2026-04-19.md) |
 | bar-model | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/bar-model-2026-04-19.md) |
@@ -87,13 +87,16 @@
 | function-sketch | 4 | 3 | 1 | 2026-05-23 | [report](eval-reports/function-sketch-2026-05-23.md) |
 | histogram | 4 | 4 | 0 | 2026-05-22 | [report](eval-reports/histogram-2026-05-22.md) |
 | slope-triangle | 3 | 3 | 0 | 2026-05-23 | [report](eval-reports/slope-triangle-2026-05-23.md) |
-| compare-objects | 4 | 4 | 0 | 2026-05-24 | [report](eval-reports/compare-objects-2026-05-24.md) |
+| compare-objects | 4 | 4 | 0 | 2026-06-14 | [difficulty sweep](eval-reports/compare-objects-2026-06-14.md) |
 | number-tracer | 4 | 4 | 0 | 2026-06-02 | [report](eval-reports/number-tracer-2026-06-02.md) |
 | polygon-area-builder | 5 | 5 | 0 | 2026-06-06 | [report](eval-reports/polygon-area-builder-2026-06-06.md) |
-| circle-explorer | 5 | 5 | 0 | 2026-06-06 | [report](eval-reports/circle-explorer-2026-06-06.md) |
+| circle-explorer | 5 | 5 | 0 | 2026-06-14 | [report](eval-reports/circle-explorer-2026-06-14.md) |
 | transformation-lab | 5 | 5 | 0 | 2026-06-07 | [report](eval-reports/transformation-lab-2026-06-07.md) |
+| coordinate-graph | 4 | 4 | 0 | 2026-06-14 | [difficulty sweep](eval-reports/coordinate-graph-2026-06-14.md) |
 
-**Totals:** 320/331 modes passing (96.7%) | 25 open issues (3 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 324/335 modes passing (96.7%) | 25 open issues (3 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
+
+Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier difficulty sweep (scaffold withdrawal, structural lever, magnitude invariance, no leak, null-tier no-op). A CRITICAL blocker was found AND fixed in the same run: the generator was the only math generator still pinned to the retired `gemini-2.0-flash-lite` (404) — swapped to `gemini-flash-lite-latest`. See SP-22.
 
 Note: polygon-area-builder and circle-explorer each have 5 IRT-pinned modes all passing; their "Auto (mixed)" paths (PAB-1 / CE-1) were both fixed 2026-06-06 (SP-21) — each now interleaves all five tiers, scaled easy→hard, across 8 problems.
 
@@ -226,6 +229,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 2. **Post-process sanitizer** — detect violations (digit checks, phrase blacklists) and replace with canonical templates. Brittle — number words slip past digit checks, benign phrases produce false positives, list grows every release.
 3. **SCHEMA-SIMPLIFY (preferred when feasible)** — remove the `instruction` field from the schema entirely. Generate it deterministically inside the post-process from the same primitives (type + skipValue + cells) that drive everything else. Topic personality stays in `title`/`description`. Eliminates the bug class by construction — no LLM field, no desync, no validator can produce false negatives. Trade-off: instructions are uniform per challenge type rather than topic-flavored. For primitives where the instruction must reference exact cell counts/positions, clarity beats variety. Applied to hundreds-chart 2026-05-19 — reference implementation for future SP-17 fixes.
 **Status:** Structurally eliminated for hundreds-chart and compare-objects (order_three only) via schema removal. **Also applied to number-tracer 2026-05-30** — removed `instruction` from the schema and synthesize via `buildInstruction()`; this closed an answer-leak vector in `sequence` mode (the missing number is the hidden answer, and the LLM-owned instruction could name it). Consider for other pool-service primitives whose instruction text must make exact structural claims.
+**Answer-bearing-lever variant (SCR-2, 2026-06-14):** the desync can come from a *support-tier* recompute, not just a pool-service one. Here the LLM kept `instruction` AND `hiddenPositions` consistent, but the tier code (`/add-support-tiers` `hiddenCount` lever) re-derived `hiddenPositions` from a candidate pool that **excluded a valid answer position (`endAt`)**, discarding the LLM's instruction-matching choice. Fix shape differs from the schema-removal pattern: **honor the LLM's valid answer-bearing choice and only top-up to the tier count; never narrow the candidate set so an instruction-referenceable answer becomes invalid.** Captured as a permanent rule in `/add-support-tiers` ("Answer-bearing levers — keep the checker, instruction, and recomputed value in sync").
 
 ### SP-18: Bundled multi-type eval modes only ever surface the first allowed type
 
@@ -286,6 +290,14 @@ setWorkspaceSlots(prev => [...prev, tile]);
 **Root cause:** Difficulty rollout added band-driven parameters to builders without auditing whether each parameter is observable by the student (visible in data, or stated in the instruction). Answer derivability (Rule G4) was only checked at default difficulty.
 **Fix pattern:** For each band-driven parameter, either (1) constrain it to the value the mode's pedagogy doc implies (count_from = "sequential counting" → step 1 always), or (2) thread it into the instruction template (`Count forward by ${step}s`). Then add a HIGH-θ derivability spot-check to the difficulty sweep: for every mode, can the answer be computed from instruction + visible sequence alone?
 **Status:** Resolved for number-sequencer 2026-06-11 (NS-2, option 1 — step pinned to 1 for count_from; fill_missing/order_cards keep stepped bands because their steps are derivable from visible terms). Other rollout pool-service generators still need the HIGH-θ derivability audit.
+
+### SP-23: Generator pinned to a retired Gemini model ID — every mode 404s and returns 0 challenges
+
+**Affected:** ~~coordinate-graph (all modes — CG-1, `gemini-2.0-flash-lite` retired)~~ Resolved 2026-06-14.
+**Risk:** Any generator hardcoding a dated model ID (`gemini-2.0-flash-lite`, `gemini-1.5-*`, etc.) rather than a rolling alias. Google retires dated Flash/Lite snapshots; once gone the `generateContent` call 404s, the generator's try/catch (if any) yields an empty challenge list, and the eval-test surfaces `status: error`. Invisible until that specific primitive is exercised. Audit any generator NOT on `gemini-flash-lite-latest` / `gemini-3-flash-preview`.
+**Root cause:** Model IDs were copied at authoring time and never migrated when the rest of the fleet moved to the rolling `-latest` alias. coordinate-graph was the lone straggler (every sibling math generator already used `gemini-flash-lite-latest`).
+**Fix pattern:** Prefer rolling aliases (`gemini-flash-lite-latest`) over dated snapshots in generators. Periodically grep `service/**/gemini-*.ts` for `model:` strings and reconcile against the currently-served model list.
+**Status:** Resolved for coordinate-graph 2026-06-14 (one-line swap to `gemini-flash-lite-latest`).
 
 ---
 
@@ -359,6 +371,7 @@ setWorkspaceSlots(prev => [...prev, tile]);
 | ~~CO-2~~ | ~~compare-objects~~ | ~~order_three~~ | ~~CRITICAL~~ | ~~Answer leak via array order~~ | ~~Generator emitted `objects[]` in already-sorted order; component rendered in array order. 11/12 challenges trivially solvable by tapping in display order.~~ Fixed 2026-05-24: added `shuffleNonTrivial(objects)` in `reconstructOrderThree` ([gemini-compare-objects.ts:461-478](my-tutoring-app/src/components/lumina/service/math/gemini-compare-objects.ts#L461-L478)) — Fisher-Yates shuffle that rejects results matching ascending or descending sort by `actualValue`, with a deterministic rotation fallback `[1,2,0]` after 10 retries. `correctAnswer` is name-keyed so the shuffle is order-invariant. Verified 3 runs / 12 challenges: 0/12 trivial. **Candidate SP**: audit other "put these in order" primitives (sorting-station, number-sequencer, time-sequencer) for the same anti-pattern. | ~~GENERATOR~~ |
 | ~~CO-3~~ | ~~compare-objects~~ | ~~order_three (weight only)~~ | ~~CRITICAL~~ | ~~Missing visual data~~ | ~~Component's seesaw hardcodes 2 pans (`objects[0]`, `objects[1]`); dispatcher routed all weight challenges with `objects.length >= 2` to it, so `order_three` weight silently dropped the 3rd object — student saw 3 buttons but only 2 fruits on the balance.~~ Fixed 2026-05-24: tightened the dispatcher condition at [CompareObjects.tsx:576](my-tutoring-app/src/components/lumina/primitives/visual-primitives/math/CompareObjects.tsx#L576) to `objects.length === 2`. 3-object weight now falls through to the default horizontal-bar renderer where all three objects render side-by-side sized by `visualSize`. | ~~COMPONENT~~ |
 | ~~SCR-1~~ | ~~skip-counting-runner~~ | ~~predict~~ | ~~CRITICAL~~ | ~~State race / stale closure~~ | ~~After correct `predict`, two untracked `setTimeout`s (800ms wrapper + 400ms nested) fired after `advanceToNextChallenge`, overwriting the new challenge's state with closure-captured values from the previous one. Fixed 2026-05-24: track both timers in `predictAdvanceTimerRef`/`jumpAnimationTimerRef`, `clearPendingJumpTimers()` cancels them + resets `isAnimating`, called at the top of `advanceToNextChallenge` and on unmount.~~ | ~~COMPONENT~~ |
+| ~~SCR-2~~ | ~~skip-counting-runner~~ | ~~fill_missing (support-tier path)~~ | ~~CRITICAL~~ | ~~Instruction-data desync — answer-bearing lever (SP-17 variant)~~ | ~~Support-tier `hiddenCount` recompute built the hideable pool as `positions.filter(p => p !== startFrom && p !== endAt)`, **excluding endAt**. When the LLM authored an end-referencing gap ("the final jump lands on 30", `hiddenPositions=[30]`), `[30]` was filtered out and the stride fallback substituted a mid-sequence position (e.g. 5). The on-screen "?" desynced from the instruction and `checkFillMissing` rejected the correct answer ("50 doesn't fit. We're counting by 5s."). Fixed 2026-06-14: include `endAt` in the hideable pool (exclude only `startFrom`, which is always a landing spot → unsolvable if hidden), so the LLM's instruction-matching choice is honored. Verified easy/medium/hard: 0 desynced gaps, endAt now correctly hideable (`[20,30]`, `[30,40,50]`).~~ | ~~GENERATOR~~ |
 | ~~HC-1~~ | ~~hundreds-chart~~ | ~~complete_sequence~~ | ~~CRITICAL~~ | ~~Instruction-data desync (SP-17)~~ | ~~All 5 challenges say "Tap the next three numbers" but check requires the full remainder of the sequence to 100. Fixed 2026-05-19: removed `instruction` from schema; now derived deterministically from type+skipValue in buildChallenge.~~ | ~~GENERATOR~~ |
 | ~~HC-2~~ | ~~hundreds-chart~~ | ~~highlight_sequence~~ | ~~CRITICAL~~ | ~~Instruction-data desync (SP-17)~~ | ~~C3 instruction "Tap on every even number you see in the first two rows" but `correctCells` holds all 50 evens 1-100. Fixed 2026-05-19 via schema removal of instruction field.~~ | ~~GENERATOR~~ |
 | ~~HC-3~~ | ~~hundreds-chart~~ | ~~find_skip_value~~ | ~~HIGH~~ | ~~Instruction-data desync (SP-17)~~ | ~~C4 instruction names 12,14,16,18 but `givenCells=[2,4,6,8]`. Fixed 2026-05-19 via schema removal of instruction field.~~ | ~~GENERATOR~~ |

@@ -22,6 +22,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { createNumberPool } from "./numberPoolService";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -69,6 +70,10 @@ export interface BarModelChallenge {
   expectedDataset?: { label: string; value: number }[];
   expectedScaleStep?: number;
   availableScaleSteps?: number[];
+  /** Support-tier scaffolds (set in post-process when config.difficulty present). */
+  showBarValues?: boolean;
+  showTargetHighlight?: boolean;
+  supportTier?: SupportTier;
 }
 
 export interface BarModelData {
@@ -216,11 +221,226 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   build_graph: { promptDoc: 'G3-5 construct + pick scale.', schemaDescription: "'build_graph' (G3-5)" },
 };
 
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — second axis of the two-field
+// contract: targetEvalMode = WHICH skill, difficulty = HOW MUCH on-screen
+// scaffolding within it. A tier withdraws perception/tracking aids and dials
+// hint explicitness — it NEVER changes the bar values, scale step, or dataset
+// (those are owned by the eval mode + scope). See memory
+// [[structural-difficulty-not-numeric]] / [[feedback_llm-window-code-builds-structure]].
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; current defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Numeric value readout next to NON-answer bars (perception aid #1). The
+   *  answer bar's value is hidden by the component at EVERY tier, so this can
+   *  never reveal the answer. */
+  showBarValues: boolean;
+  /** Amber "read this one" cue on the bar the prompt names (tracking aid #1). */
+  showTargetHighlight: boolean;
+  /** Prompt lines describing the tier to the sub-generator (hint-tone only #2). */
+  promptLines: string[];
+}
+
+const TIER_GUARDRAIL =
+  'Keep every number within this lesson/grade-band scope. This tier changes ' +
+  'problem STRUCTURE (height gaps, axis steps, multipliers, steps-to-solve) and ' +
+  'on-screen help — NOT raw magnitude. Never just "make the numbers bigger".';
+
+/** easy → hard support gradient, per pinned eval mode. */
+function resolveSupportStructure(mode: BarModelEvalMode, tier: SupportTier): SupportScaffold {
+  switch (mode) {
+    case 'read_scale':
+    case 'scaled_bar_graph':
+      return {
+        showBarValues: tier === 'easy',       // neighbour bars model the axis-read
+        showTargetHighlight: tier !== 'hard', // hard = locate the named bar yourself
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: the target bar is highlighted and the OTHER bars show their numbers as worked references. Hint may name the axis step.'
+            : tier === 'medium'
+              ? 'MEDIUM: the target bar is highlighted, but no bar shows its number — the student reads the axis unaided.'
+              : 'HARD: no bar is highlighted and no numbers are shown — the student locates the named bar AND reads the axis alone. Hint asks what the bar lines up with; never names the step or value.',
+        ],
+      };
+    case 'picture_graph':
+      return {
+        showBarValues: false,                 // picture rows never show a number
+        showTargetHighlight: tier !== 'hard',
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'hard'
+            ? 'HARD: no row is highlighted — the student finds the named row, counts icons, and multiplies unaided.'
+            : 'EASY/MEDIUM: the target row is highlighted so the student knows which row to count.',
+        ],
+      };
+    case 'graph_word_problem':
+      return {
+        showBarValues: tier !== 'hard',
+        showTargetHighlight: false,           // integration across bars — no single target
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: every bar shows its number, so the student focuses on the arithmetic. The hint may NAME the operation ("subtract", "add").'
+            : tier === 'medium'
+              ? 'MEDIUM: bars still show their numbers, but the hint nudges the operation without naming it.'
+              : 'HARD: bars show NO numbers — the student reads both values off the axis first, then computes. Hint must NOT name the operation; ask what the question is really asking.',
+        ],
+      };
+    case 'build_graph':
+      // No clean perception lever (the student is constructing); the built-value
+      // readout stays on as essential feedback. The tier dials hint explicitness.
+      return {
+        showBarValues: true,
+        showTargetHighlight: false,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: hint may walk the scale choice — "look at your largest value; a step of 1 needs many marks, a bigger step needs fewer."'
+            : tier === 'medium'
+              ? 'MEDIUM: hint nudges toward checking the largest value, without describing how to pick the step.'
+              : 'HARD: hint only says "set each bar, then choose a scale that fits" — the student reasons out the step alone.',
+        ],
+      };
+    case 'compare_bars':
+    default:
+      return {
+        showBarValues: tier !== 'hard',       // hard = compare heights by eye
+        showTargetHighlight: false,           // no target cue in compare mode
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'hard'
+            ? 'HARD: the bars show NO numbers — the student compares heights by eye. Hint coaches visual comparison, never reads off a value.'
+            : 'EASY/MEDIUM: each bar shows its number, so the student can connect height to quantity.',
+        ],
+      };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Structural PROBLEM difficulty (the second thing config.difficulty drives).
+//
+// Distinct from the scaffolding above: this makes the generated PROBLEM itself
+// genuinely harder per tier — but STRUCTURALLY, never by inflating magnitude
+// beyond scope and never by crossing into another eval mode (the eval mode is
+// the task identity; see memory [[structural-difficulty-not-numeric]]). Each
+// mode exposes ONE in-mode structural lever:
+//   compare_bars      → height gap |a-b| (4 obvious → 1 subtle)
+//   read_scale        → axis step 1 → 2 (count the axis by 2s, still on-tick)
+//   scaled_bar_graph  → axis step 2 → 5 → 10 (coarser ticks = harder interpolation)
+//   picture_graph     → icon multiplier 2 → 5 (skip-count by 5s)
+//   graph_word_problem→ operation depth (one difference → total → two-step)
+//   build_graph       → scale-choice ambiguity (obvious → genuinely ambiguous)
+// Numeric levers (compareGap / forcedStep / iconValue) are enforced in each
+// sub-generator's post-process; the rest are prompt-shaped + LLM-validated.
+// ---------------------------------------------------------------------------
+
+interface ProblemShape {
+  promptLines: string[];
+  /** compare_bars: exact height gap |a-b| to enforce. */
+  compareGap?: number;
+  /** read_scale / scaled_bar_graph: forced axis step. */
+  forcedStep?: number;
+  /** picture_graph: forced icon multiplier. */
+  iconValue?: 2 | 5;
+}
+
+function resolveProblemShape(mode: BarModelEvalMode, tier: SupportTier): ProblemShape {
+  switch (mode) {
+    case 'read_scale':
+      return {
+        forcedStep: tier === 'easy' ? 1 : 2,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: axis counts by 1 (every value on a tick), values 0-10 — a direct read.'
+            : 'PROBLEM: axis counts by 2, values 0-20 and all even (still on a tick) — the student skip-counts the axis by 2s.',
+        ],
+      };
+    case 'scaled_bar_graph':
+      return {
+        forcedStep: tier === 'easy' ? 2 : tier === 'medium' ? 5 : 10,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: axis step 2 — fine ticks, the target sits just past a mark.'
+            : tier === 'medium'
+              ? 'PROBLEM: axis step 5 — coarser ticks; the target bar lands between marks.'
+              : 'PROBLEM: axis step 10 — very coarse ticks; the target lands clearly BETWEEN marks, so interpolation is harder.',
+        ],
+      };
+    case 'picture_graph':
+      return {
+        iconValue: tier === 'easy' ? 2 : 5,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: each icon stands for 2 — small, easy multiples.'
+            : 'PROBLEM: each icon stands for 5 — the student skip-counts by 5s.',
+        ],
+      };
+    case 'graph_word_problem':
+      return {
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: a ONE-STEP difference question ("How many more X than Y?") between two easy-to-read bars.'
+            : tier === 'medium'
+              ? 'PROBLEM: a TOTAL question ("What is the total of X and Y?").'
+              : 'PROBLEM: a TWO-STEP question (e.g. add two bars, then compare the total to a third) — more than one operation.',
+        ],
+      };
+    case 'build_graph':
+      return {
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: pick a dataset whose best scale step is obvious (the largest value clearly suits one step).'
+            : tier === 'medium'
+              ? 'PROBLEM: pick a dataset where the scale step takes a little thought.'
+              : 'PROBLEM: pick a dataset where the right step is genuinely ambiguous — the largest value sits just over a step boundary, so a too-small step needs many marks and a too-large step wastes space.',
+        ],
+      };
+    case 'compare_bars':
+    default:
+      return {
+        compareGap: tier === 'easy' ? 4 : tier === 'medium' ? 2 : 1,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: make the two bars CLEARLY different — a large, obvious height gap.'
+            : tier === 'medium'
+              ? 'PROBLEM: make the two bars only a little different in height.'
+              : 'PROBLEM: make the two bars VERY close — the difference should be just 1, so the student must look carefully.',
+        ],
+      };
+  }
+}
+
+/**
+ * Combined tier prompt block: scaffolding tone (resolveSupportStructure) PLUS
+ * structural problem difficulty (resolveProblemShape). One section so the LLM
+ * sees both axes of config.difficulty together.
+ */
+function buildTierPromptSection(mode: BarModelEvalMode, tier: SupportTier): string {
+  const lines = [
+    ...resolveSupportStructure(mode, tier).promptLines,
+    ...resolveProblemShape(mode, tier).promptLines,
+  ];
+  return `\n\n## SUPPORT TIER "${tier}" (scaffolding + structural problem difficulty — NOT bigger numbers)\n${lines.map((l) => `- ${l}`).join('\n')}`;
+}
+
 // ===========================================================================
 // Sub-generator: compare_bars
 // ===========================================================================
 
-async function generateCompareBars(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
+async function generateCompareBars(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null): Promise<SubGenResult> {
+  const shape = tier ? resolveProblemShape('compare_bars', tier) : null;
+  const tierSection = tier ? buildTierPromptSection('compare_bars', tier) : '';
   const slots = barSlots(2);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -247,7 +467,7 @@ RULES:
 - Concrete labels from friendly K-1 contexts: pets, fruits, toys, classroom items.
 - prompt: ask comparison ("Which bar is taller?" / "Which group has MORE?"). Do NOT name the answer.
 - hint: guide student to compare bar heights, never name answer.
-- tallerBarLabel MUST exactly match bar0Label OR bar1Label.`;
+- tallerBarLabel MUST exactly match bar0Label OR bar1Label.${tierSection}`;
 
   const response = await ai.models.generateContent({
     model: MODEL,
@@ -262,8 +482,16 @@ RULES:
     value: Math.max(1, Math.min(10, b.value)),
   })));
 
-  // Enforce ≥ 2 difference
-  if (Math.abs(bars[0].value - bars[1].value) < 2) {
+  if (shape?.compareGap != null) {
+    // Structural difficulty: enforce the EXACT height gap for this tier (4/2/1),
+    // keeping both bars in 1-10. Taller bar wins; never inflates magnitude.
+    const gap = shape.compareGap;
+    const hiIdx = bars[0].value >= bars[1].value ? 0 : 1;
+    const hi = Math.min(10, Math.max(gap + 1, Math.max(bars[0].value, bars[1].value)));
+    bars[hiIdx].value = hi;
+    bars[1 - hiIdx].value = Math.max(1, hi - gap);
+  } else if (Math.abs(bars[0].value - bars[1].value) < 2) {
+    // Default (no tier): just guarantee a ≥ 2 visible difference.
     if (bars[0].value >= bars[1].value) {
       bars[0].value = Math.min(10, bars[0].value + 2);
     } else {
@@ -296,7 +524,9 @@ RULES:
 // Sub-generator: read_scale
 // ===========================================================================
 
-async function generateReadScale(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
+async function generateReadScale(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null): Promise<SubGenResult> {
+  const shape = tier ? resolveProblemShape('read_scale', tier) : null;
+  const tierSection = tier ? buildTierPromptSection('read_scale', tier) : '';
   const slots = barSlots(4);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -325,7 +555,7 @@ RULES:
 - hint: guide student to look at the axis and count tick marks. Never names the answer.
 - targetBarLabel MUST exactly match one of bar0Label..bar3Label.
 - expectedValue MUST equal that bar's value.
-- Concrete, child-friendly labels.`;
+- Concrete, child-friendly labels.${tierSection}`;
 
   const response = await ai.models.generateContent({
     model: MODEL,
@@ -335,16 +565,22 @@ RULES:
   if (!response.text) throw new Error("No content generated (read_scale)");
   const raw = JSON.parse(response.text) as Record<string, unknown>;
 
-  const bars = uniquifyLabels(extractBars(raw, 4, 5).map((b) => ({
-    ...b,
-    value: Math.max(0, Math.min(20, b.value)),
-  })));
+  // Structural difficulty: easy → step 1 (values 0-10, direct read); else step 2
+  // (values 0-20, snapped to even so they stay ON a tick — read_scale never
+  // becomes interpolation, which is the distinct scaled_bar_graph mode).
+  const forcedStep = shape?.forcedStep ?? null;
+  const cap = forcedStep === 1 ? 10 : 20;
+  const bars = uniquifyLabels(extractBars(raw, 4, 5).map((b) => {
+    let value = Math.max(0, Math.min(cap, b.value));
+    if (forcedStep === 2) value = Math.min(cap, Math.round(value / 2) * 2);
+    return { ...b, value };
+  }));
 
   const targetLabel = String(raw.targetBarLabel ?? bars[0].label);
   const targetIdx = findBarIndex(bars, targetLabel, Number(raw.expectedValue));
   const expectedValue = bars[targetIdx].value;
 
-  const step = expectedValue > 10 ? 2 : 1;
+  const step = forcedStep ?? (expectedValue > 10 ? 2 : 1);
   const max = ceilToMultiple(Math.max(...bars.map((b) => b.value), 1), step);
 
   return {
@@ -369,7 +605,9 @@ RULES:
 // Sub-generator: picture_graph
 // ===========================================================================
 
-async function generatePictureGraph(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
+async function generatePictureGraph(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null): Promise<SubGenResult> {
+  const shape = tier ? resolveProblemShape('picture_graph', tier) : null;
+  const tierSection = tier ? buildTierPromptSection('picture_graph', tier) : '';
   const slots = barSlots(4);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -400,7 +638,7 @@ RULES:
   Examples: iconValue=2 → values from {2,4,6,8,10,12}. iconValue=5 → values from {5,10,15,20,25,30}.
 - prompt: name the target bar by label. State "Each [icon] stands for [N]". Ask "How many [items]..." — do NOT reveal the number.
 - hint: guide student to count icons and multiply.
-- targetBarLabel MUST match one of the bar labels; expectedValue MUST equal that bar's value.`;
+- targetBarLabel MUST match one of the bar labels; expectedValue MUST equal that bar's value.${tierSection}`;
 
   const response = await ai.models.generateContent({
     model: MODEL,
@@ -410,7 +648,8 @@ RULES:
   if (!response.text) throw new Error("No content generated (picture_graph)");
   const raw = JSON.parse(response.text) as Record<string, unknown>;
 
-  let iconValue = Number(raw.iconValue ?? 2);
+  // Structural difficulty: the tier forces the icon multiplier (easy 2 → hard 5).
+  let iconValue = shape?.iconValue ?? Number(raw.iconValue ?? 2);
   if (iconValue !== 2 && iconValue !== 5) iconValue = 2;
   const iconEmoji = String(raw.iconEmoji ?? '⭐').slice(0, 4) || '⭐';
 
@@ -448,7 +687,9 @@ RULES:
 // Sub-generator: scaled_bar_graph
 // ===========================================================================
 
-async function generateScaledBarGraph(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
+async function generateScaledBarGraph(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null): Promise<SubGenResult> {
+  const shape = tier ? resolveProblemShape('scaled_bar_graph', tier) : null;
+  const tierSection = tier ? buildTierPromptSection('scaled_bar_graph', tier) : '';
   const slots = barSlots(5);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -478,7 +719,7 @@ RULES:
   This forces the student to reason, not just read labels.
 - prompt: name target bar by label. Ask for its value. NEVER state the number.
 - hint: guide student to interpolate between tick marks.
-- targetBarLabel MUST match one of bar0Label..bar4Label; expectedValue MUST equal that bar's value.`;
+- targetBarLabel MUST match one of bar0Label..bar4Label; expectedValue MUST equal that bar's value.${tierSection}`;
 
   const response = await ai.models.generateContent({
     model: MODEL,
@@ -488,7 +729,9 @@ RULES:
   if (!response.text) throw new Error("No content generated (scaled_bar_graph)");
   const raw = JSON.parse(response.text) as Record<string, unknown>;
 
-  let step = Number(raw.scaleStep ?? 5);
+  // Structural difficulty: the tier forces step coarseness (2 → 5 → 10); a
+  // coarser step makes the off-tick interpolation genuinely harder.
+  let step = shape?.forcedStep ?? Number(raw.scaleStep ?? 5);
   if (![2, 5, 10].includes(step)) step = 5;
 
   const bars = uniquifyLabels(extractBars(raw, 5, step * 2).map((b) => ({
@@ -524,7 +767,29 @@ RULES:
 // Sub-generator: graph_word_problem
 // ===========================================================================
 
-async function generateGraphWordProblem(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
+async function generateGraphWordProblem(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null): Promise<SubGenResult> {
+  const tierSection = tier ? buildTierPromptSection('graph_word_problem', tier) : '';
+  // Number pool service (per PRD §6a #2): Gemini structured output is convergent
+  // for numeric values, so left to itself every parallel call picks bars that
+  // back-solve to the same clean answer (the "all hard answers = 5" cluster).
+  // We OWN the randomness — inject a fresh random pool of candidate bar values
+  // per call so the four independent challenges diverge. SAFE here (unlike the
+  // counting-to-N primitives the pool once broke) because these magnitudes are
+  // incidental graph data, NOT the learning target — the pedagogy is the
+  // operation, so the pool draws freely from the mode's 2-40 display band. The
+  // tier owns operation DEPTH (structural), never the magnitude → pool range is
+  // tier-independent. See [[feedback_llm-window-code-builds-structure]].
+  const pool = createNumberPool({ min: 2, max: 40 }, { count: 8, integers: true });
+  const poolSection = pool
+    ? '\n\n' + pool.toPromptSection({
+        label: 'BAR VALUE POOL',
+        usePrimaryInstruction: false,
+        extraInstructions:
+          '- Assign FOUR DIFFERENT numbers from this pool to bar0Value..bar3Value.\n' +
+          '- Build your question around the bars you assigned, then set expectedValue to the EXACT arithmetic result on those values.\n' +
+          '- Do NOT reshape the pool to hit a round answer — the answer is whatever your chosen bars produce.',
+      })
+    : '';
   const slots = barSlots(4);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -547,13 +812,13 @@ AUDIENCE: ${gradeContext}
 INTENT: ${intent}
 
 RULES:
-- EXACTLY 4 bars. Integer values 2-40.
+- EXACTLY 4 bars. Use FOUR DIFFERENT values from the BAR VALUE POOL below — do NOT invent your own.
 - scaleStep MUST be 2, 5, or 10.
 - prompt asks ONE of: "How many more X than Y?" / "How many fewer X than Y?" / "What's the total of X and Y?"
   Name two specific bar labels in the question. Sums ≤ 40, differences ≤ 20.
-- expectedValue MUST be the correct arithmetic result from the bars you generated.
+- expectedValue MUST be the correct arithmetic result from the bars you assigned.
 - hint: guide the operation ("subtract", "add") without naming the answer.
-- Do NOT hint at or name a single bar as the "target" — this is integration across bars.`;
+- Do NOT hint at or name a single bar as the "target" — this is integration across bars.${poolSection}${tierSection}`;
 
   const response = await ai.models.generateContent({
     model: MODEL,
@@ -595,7 +860,8 @@ RULES:
 // Sub-generator: build_graph
 // ===========================================================================
 
-async function generateBuildGraph(topic: string, gradeContext: string, intent: string): Promise<SubGenResult> {
+async function generateBuildGraph(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null): Promise<SubGenResult> {
+  const tierSection = tier ? buildTierPromptSection('build_graph', tier) : '';
   const slots = barSlots(4);
   const schema: Schema = {
     type: Type.OBJECT,
@@ -626,7 +892,7 @@ RULES:
 - expectedScaleStep MUST be 2, 5, or 10 (avoid 1 — that's not pedagogically interesting here).
 - Pick expectedScaleStep so the largest bar fits in ≤ 10 tick marks.
 - prompt: present the dataset in a single sentence with all 4 label=value pairs. Ask the student to "Build the graph and choose the best scale."
-- hint: guide scale choice without naming the step.`;
+- hint: guide scale choice without naming the step.${tierSection}`;
 
   const response = await ai.models.generateContent({
     model: MODEL,
@@ -669,7 +935,7 @@ RULES:
 // Orchestrator: fan out N parallel sub-generator calls for one eval mode
 // ===========================================================================
 
-function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: string, intent: string) => Promise<SubGenResult> {
+function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: string, intent: string, tier?: SupportTier | null) => Promise<SubGenResult> {
   switch (mode) {
     case 'read_scale':         return generateReadScale;
     case 'picture_graph':      return generatePictureGraph;
@@ -690,6 +956,12 @@ export const generateBarModel = async (
     instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   },
 ): Promise<BarModelData> => {
   const evalConstraint = resolveEvalModeConstraint(
@@ -710,12 +982,18 @@ export const generateBarModel = async (
     ),
   );
 
+  // Support tier (config.difficulty) drives BOTH axes: scaffolding withdrawal
+  // (applied to the rendered challenge below) AND structural problem difficulty
+  // (threaded into each sub-generator's prompt + post-process). bar-model is
+  // single-mode per session, so the tier resolves once for `mode`.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+
   // Fan out N parallel calls of the same per-mode sub-generator. Variance
   // comes from independent generations (per PRD §6a #2 — structured output
   // converges per-call, not across independent calls).
   const runOne = subGeneratorFor(mode);
   const subResults = await Promise.all(
-    Array.from({ length: instanceCount }, () => runOne(topic, gradeContext, intent)),
+    Array.from({ length: instanceCount }, () => runOne(topic, gradeContext, intent, supportTier)),
   );
 
   // First sub-result provides session-level title/description; both are
@@ -725,6 +1003,20 @@ export const generateBarModel = async (
     ...r.challenge,
     id: `bm-${idx + 1}`,
   }));
+
+  // Apply the support tier deterministically AFTER structural assembly. Resolve
+  // each challenge's scaffold from its OWN mode (so a future blended session
+  // still gets difficulty); single-mode just gives every challenge the same one.
+  // Code owns the support STRUCTURE; the LLM only chose the numbers (unchanged).
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.evalMode, supportTier);
+      ch.showBarValues = sc.showBarValues;
+      ch.showTargetHighlight = sc.showTargetHighlight;
+      ch.supportTier = supportTier;
+    }
+    console.log(`[BarModel] Support tier "${supportTier}" applied per-challenge (single-mode ${mode})`);
+  }
 
   console.log('📊 Bar Model generated:', {
     topic,

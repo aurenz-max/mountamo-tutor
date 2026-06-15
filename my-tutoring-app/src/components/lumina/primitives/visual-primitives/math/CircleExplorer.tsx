@@ -76,6 +76,14 @@ export interface CircleExplorerChallenge {
   expectedAnswer: number;
   /** Absolute tolerance for accepting the numeric answer (covers π ≈ 3.14 rounding). */
   tolerance: number;
+
+  /**
+   * Support-tier perception lever (set by the generator's difficulty tier).
+   * When false (hard tier), the canvas withholds the explicit formula/answer
+   * labels on the manipulative reveal so the student connects visual → symbol
+   * unaided. Absent/true = show them (default; no-tier behavior).
+   */
+  showFormulaReveal?: boolean;
 }
 
 export interface CircleExplorerData {
@@ -85,6 +93,8 @@ export interface CircleExplorerData {
   gradeBand?: '7';
   /** 3-6 challenges per session. Required. Built by the generator's pool service. */
   challenges: CircleExplorerChallenge[];
+  /** Within-mode support tier (from config.difficulty) — drives the tutor's reveal level. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer / tester)
   instanceId?: string;
@@ -137,6 +147,23 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 // ============================================================================
+// Tutor reveal policy — keep the AI tutor's help in sync with the on-screen tier
+// so it never names a formula the instruction/figure deliberately withheld.
+// ============================================================================
+
+function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
+  switch (tier) {
+    case 'easy':
+      return 'SUPPORT TIER easy: you may name the relevant circle formula and walk the setup step by step.';
+    case 'hard':
+      return 'SUPPORT TIER hard: the instruction and figure deliberately withhold the formula. Do NOT name the formula or the operation — ask what the student sees in the figure (radius, diameter, the unrolled length) and guide conceptually. Never reveal the answer.';
+    case 'medium':
+    default:
+      return 'SUPPORT TIER medium: the formula is on screen in the hint. Nudge the execution and check the radius-vs-diameter choice; do not re-derive the whole formula unprompted.';
+  }
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -150,6 +177,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     title,
     description,
     gradeBand = '7',
+    supportTier,
     challenges = [],
     instanceId,
     skillId,
@@ -259,11 +287,16 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
       setUnrolled(true);
       SoundManager.snap();
       if (challengeType === 'discover_pi') {
-        setFeedback('See? The circumference wraps a little more than 3 diameters — always about 3.14.');
+        // At hard the tier withholds the "≈ 3.14" reveal — nudge to measure instead.
+        setFeedback(
+          currentChallenge?.showFormulaReveal === false
+            ? 'Now lay the unrolled length against the diameter — how many diameters long is it?'
+            : 'See? The circumference wraps a little more than 3 diameters — always about 3.14.',
+        );
         setFeedbackType('info');
       }
     });
-  }, [unrolled, runAnimation, challengeType]);
+  }, [unrolled, runAnimation, challengeType, currentChallenge]);
 
   const handleSlice = useCallback(() => {
     SoundManager.tick();
@@ -300,6 +333,9 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     const unit = currentChallenge.unitLabel;
     const r = currentChallenge.radius;
     const diameter = 2 * r;
+    // Support-tier perception lever: at the hard tier the generator sets this
+    // false so the canvas withholds the explicit formula/answer labels.
+    const showFormula = currentChallenge.showFormulaReveal !== false;
 
     const label = (x: number, y: number, txt: string, color = '#e2e8f0', align: CanvasTextAlign = 'center') => {
       ctx.fillStyle = color;
@@ -352,7 +388,11 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
       const cy = 130;
       drawCircle(cx, cy, RV);
       drawDiameter(cx, cy, RV, `d = ${diameter} ${unit}`);
-      label(cx, cy - RV - 18, `C = ${round1(Math.PI * diameter)} ${unit}`, CIRCLE_STROKE);
+      // At hard, withhold the circumference value so the student must measure it
+      // off the unrolled track rather than just dividing two given labels.
+      if (showFormula) {
+        label(cx, cy - RV - 18, `C = ${round1(Math.PI * diameter)} ${unit}`, CIRCLE_STROKE);
+      }
 
       // Unroll track: a straight segment of length = π diameters, with diameter ticks.
       const trackY = 300;
@@ -387,7 +427,9 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
           ctx.moveTo(x0, trackY + 14);
           ctx.lineTo(x0, trackY + 36);
           ctx.stroke();
-          label(x0 + diaPx / 2, trackY + 46, `1 d`, 'rgba(148,163,184,0.8)');
+          if (showFormula) {
+            label(x0 + diaPx / 2, trackY + 46, `1 d`, 'rgba(148,163,184,0.8)');
+          }
         }
       }
 
@@ -399,7 +441,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
       ctx.lineTo(trackStartX + drawnLen, trackY);
       ctx.stroke();
       label(trackStartX, trackY - 18, 'Circumference unrolled', CIRCLE_STROKE, 'left');
-      if (unrollProgress >= 1) {
+      if (unrollProgress >= 1 && showFormula) {
         label(trackStartX + fullLen + 4, trackY, '≈ 3.14 d', CIRCLE_STROKE, 'left');
       }
     } else if (challengeType === 'circumference') {
@@ -422,7 +464,13 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
         ctx.moveTo(trackStartX, trackY);
         ctx.lineTo(trackStartX + fullLen * unrollProgress, trackY);
         ctx.stroke();
-        label(trackStartX, trackY - 18, 'C = 2 × π × r = π × d', CIRCLE_STROKE, 'left');
+        label(
+          trackStartX,
+          trackY - 18,
+          showFormula ? 'C = 2 × π × r = π × d' : 'Circumference unrolled',
+          CIRCLE_STROKE,
+          'left',
+        );
       }
     } else if (challengeType === 'area') {
       const cx = CANVAS_W / 2;
@@ -466,9 +514,13 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
           ctx.stroke();
         }
         if (sliceProgress >= 1) {
-          label(CANVAS_W / 2, baseY + 26, `base ≈ π × r`, ACCENT_2);
           label(stripStartX - 26, (baseY + topY) / 2, `r`, RADIUS_COLOR);
-          label(CANVAS_W / 2, topY - 18, `A = π × r²`, CIRCLE_STROKE);
+          // Formula labels are withheld at the hard tier — the rearranged strip
+          // (a rectangle ≈ πr by r) stays visible; the symbol is up to the student.
+          if (showFormula) {
+            label(CANVAS_W / 2, baseY + 26, `base ≈ π × r`, ACCENT_2);
+            label(CANVAS_W / 2, topY - 18, `A = π × r²`, CIRCLE_STROKE);
+          }
         }
       }
     } else if (challengeType === 'reverse') {
@@ -595,6 +647,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     unitLabel: currentChallenge?.unitLabel ?? 'units',
     expectedAnswer: currentChallenge?.expectedAnswer ?? null,
     gradeBand,
+    supportTier: supportTier ?? 'medium',
     attemptNumber: currentAttempts + 1,
   }), [
     challengeType,
@@ -602,6 +655,7 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     currentChallengeIndex,
     challenges.length,
     gradeBand,
+    supportTier,
     currentAttempts,
   ]);
 
@@ -618,10 +672,11 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
     hasIntroducedRef.current = true;
     sendText(
       `[ACTIVITY_START] Circle session: ${challenges.length} circles, mode "${challengeType}", grade 7. `
-      + `Introduce briefly: circumference and area both come from one number, π — the ratio of a circle's distance around to its width. Then read the first task.`,
+      + `Introduce briefly: circumference and area both come from one number, π — the ratio of a circle's distance around to its width. Then read the first task. `
+      + tutorRevealPolicy(supportTier),
       { silent: true },
     );
-  }, [isConnected, challenges.length, challengeType, sendText]);
+  }, [isConnected, challenges.length, challengeType, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Submit handler (handler-driven with stale-state guard)
@@ -694,13 +749,14 @@ const CircleExplorer: React.FC<CircleExplorerProps> = ({ data, className }) => {
         `[ANSWER_INCORRECT] Student answered ${parsed} but the answer is ${currentChallenge.expectedAnswer} `
         + `(${challengeType}, radius ${currentChallenge.radius}, ${currentChallenge.answerKind}). `
         + `Attempt ${currentAttempts + 1}. Point at the specific step that needs another look — do NOT give the answer. `
-        + `Common slip: using diameter where radius is needed, or forgetting to square the radius for area.`,
+        + `Common slip: using diameter where radius is needed, or forgetting to square the radius for area. `
+        + tutorRevealPolicy(supportTier),
         { silent: true },
       );
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, needsUnrollFirst, answerInput,
-    incrementAttempts, completeChallenge, currentAttempts, sendText, challengeType,
+    incrementAttempts, completeChallenge, currentAttempts, sendText, challengeType, supportTier,
   ]);
 
   const handleShowHint = useCallback(() => {

@@ -76,6 +76,144 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tiers (config.difficulty) — scaffolding + structural axis
+//
+// Two axes, both within ONE eval mode and NEVER changing magnitude:
+//  1. Scaffolding (resolveSupportStructure) — withdraw on-screen read-outs.
+//  2. Structural problem shape (resolveProblemShape) — discriminability gap,
+//     distractor count. Code-enforced; in-mode; structural, not magnitude.
+// See memory: structural-difficulty-not-numeric, add-support-tiers skill.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+const TIER_GUARDRAIL =
+  'Keep every number/answer within scope — this tier changes problem STRUCTURE '
+  + '(discriminability gap, distractor count, on-screen read-outs), NOT raw magnitude.';
+
+/** Scaffolding levers — perception read-outs withdrawn at harder tiers. */
+interface SupportScaffold {
+  /** non_standard: number the unit boxes 1..n (count-along aid). hard → unnumbered. */
+  showUnitNumbers?: boolean;
+  /** order_three weight: show the digital scale read-out. hard → order by platform drop. */
+  showScaleReadout?: boolean;
+  promptLines: string[];
+}
+
+function resolveSupportStructure(mode: ChallengeType, tier: SupportTier): SupportScaffold {
+  const lines: string[] = [TIER_GUARDRAIL];
+  switch (mode) {
+    case 'non_standard': {
+      const showUnitNumbers = tier !== 'hard';
+      lines.push(showUnitNumbers
+        ? 'Unit boxes are numbered 1..n so the student can count along.'
+        : 'Unit boxes are UNNUMBERED — the student must count the units unaided.');
+      return { showUnitNumbers, promptLines: lines };
+    }
+    case 'order_three': {
+      const showScaleReadout = tier !== 'hard';
+      lines.push(showScaleReadout
+        ? 'Weight scales show a digital read-out the student can read and compare.'
+        : 'Weight scales hide the read-out — the student orders by how far each platform sinks.');
+      return { showScaleReadout, promptLines: lines };
+    }
+    default:
+      // compare_two / identify_attribute have no on-screen read-out to withdraw;
+      // their difficulty rides the structural axis (gap / distractor count).
+      lines.push('Same task; difficulty comes from the structural axis below.');
+      return { promptLines: lines };
+  }
+}
+
+/** Structural problem-shape levers — in-mode, structural, NEVER magnitude. */
+interface ProblemShape {
+  /** compare_two: target |visualSize gap| between the two objects (discriminability). */
+  compareGap?: number;
+  /** order_three: target adjacent visualSize spacing between rank-ordered objects. */
+  orderSpacing?: number;
+  /** identify_attribute: max attribute options shown (fewer distractors = easier). */
+  maxOptions?: number;
+  promptLines: string[];
+}
+
+function resolveProblemShape(mode: ChallengeType, tier: SupportTier): ProblemShape {
+  const lines: string[] = [];
+  switch (mode) {
+    case 'compare_two': {
+      // visualSize is rendered on a 5..95 scale; the answer (actualValue) is untouched.
+      const compareGap = tier === 'easy' ? 44 : tier === 'medium' ? 30 : 16;
+      lines.push(tier === 'hard'
+        ? 'Make the two objects CLOSE in size — a subtle difference the student must look carefully to see.'
+        : tier === 'medium'
+          ? 'Make the two objects moderately different in size.'
+          : 'Make the two objects obviously different in size.');
+      return { compareGap, promptLines: lines };
+    }
+    case 'order_three': {
+      const orderSpacing = tier === 'easy' ? 28 : tier === 'medium' ? 20 : 12;
+      lines.push(tier === 'hard'
+        ? "Space the three objects' sizes CLOSE together — a subtle ordering."
+        : tier === 'medium'
+          ? "Space the three objects' sizes moderately apart."
+          : "Space the three objects' sizes far apart, easy to rank.");
+      return { orderSpacing, promptLines: lines };
+    }
+    case 'identify_attribute': {
+      const maxOptions = tier === 'hard' ? 4 : 3;
+      lines.push(`Offer ${maxOptions} attribute choices (${tier === 'hard' ? 'more distractors' : 'fewer distractors'}).`);
+      return { maxOptions, promptLines: lines };
+    }
+    default:
+      // non_standard: unitCount IS the answer/magnitude — no structural lever, scaffold-only.
+      return { promptLines: lines };
+  }
+}
+
+/** One ## SUPPORT TIER block fed to a single mode's sub-generator (tone + shape). */
+function buildTierPromptSection(mode: ChallengeType, tier: SupportTier): string {
+  const lines = [
+    ...resolveSupportStructure(mode, tier).promptLines,
+    ...resolveProblemShape(mode, tier).promptLines,
+  ];
+  return `\n## SUPPORT TIER "${tier}" (within-mode difficulty — scaffolding + problem shape)\n${lines.map(l => `- ${l}`).join('\n')}\n`;
+}
+
+// --- Deterministic structural enforcement (code owns the shape; LLM only the numbers) ---
+
+/** Assign the two objects' visualSizes around a midpoint at the exact target gap,
+ *  preserving actualValue rank so the render still matches the answer. */
+function applyCompareGap(objects: CompareObject[], gap: number): void {
+  const mid = 50;
+  const [small, large] = [...objects].sort((a, b) => a.actualValue - b.actualValue);
+  small.visualSize = clampVisualSize(mid - gap / 2);
+  large.visualSize = clampVisualSize(mid + gap / 2);
+}
+
+/** Space three objects' visualSizes evenly by actualValue rank at the target spacing. */
+function applyOrderSpacing(objects: CompareObject[], spacing: number): void {
+  const mid = 50;
+  [...objects]
+    .sort((a, b) => a.actualValue - b.actualValue)
+    .forEach((o, i) => { o.visualSize = clampVisualSize(mid + (i - 1) * spacing); });
+}
+
+/** Keep at most `max` options, always including the correct attribute. */
+function trimOptions(options: string[], correct: string | undefined, max: number): string[] {
+  if (options.length <= max) return options;
+  const kept = options.slice(0, max);
+  if (correct && !kept.includes(correct)) kept[max - 1] = correct;
+  return kept;
+}
+
+// ---------------------------------------------------------------------------
 // Per-type schemas (flat fields, no arrays inside challenges)
 // ---------------------------------------------------------------------------
 
@@ -569,9 +707,11 @@ async function generateIdentifyAttributeChallenges(
   topic: string,
   gradeLevel: string,
   count: number,
+  tierSection = '',
 ): Promise<CompareObjectsChallenge[]> {
   const prompt = `
 Create ${count} "identify the measurable attribute" challenges for teaching "${topic}" to ${gradeLevel} students.
+${tierSection}
 
 Each challenge shows two real-world objects side by side. The student must identify WHICH attribute
 (length, height, weight, or capacity) these objects can be compared by.
@@ -624,6 +764,7 @@ async function generateCompareTwoChallenges(
   gradeLevel: string,
   count: number,
   attribute?: string,
+  tierSection = '',
 ): Promise<CompareObjectsChallenge[]> {
   const attrHint = attribute
     ? `Focus ALL challenges on the "${attribute}" attribute.`
@@ -631,6 +772,7 @@ async function generateCompareTwoChallenges(
 
   const prompt = `
 Create ${count} "compare two objects" challenges for teaching "${topic}" to ${gradeLevel} students.
+${tierSection}
 
 Each challenge shows two objects. The student picks which object is longer/shorter/taller/heavier/etc.
 
@@ -686,6 +828,7 @@ async function generateOrderThreeChallenges(
   gradeLevel: string,
   count: number,
   attribute?: string,
+  tierSection = '',
 ): Promise<CompareObjectsChallenge[]> {
   const attrHint = attribute
     ? `Focus ALL challenges on the "${attribute}" attribute.`
@@ -693,6 +836,7 @@ async function generateOrderThreeChallenges(
 
   const prompt = `
 Create ${count} "order three objects" challenges for teaching "${topic}" to ${gradeLevel} students.
+${tierSection}
 
 Each challenge shows three objects. The student orders them from smallest to largest (or largest to smallest).
 
@@ -750,12 +894,14 @@ async function generateNonStandardChallenges(
   topic: string,
   gradeLevel: string,
   count: number,
+  tierSection = '',
 ): Promise<CompareObjectsChallenge[]> {
   const isKinder = gradeLevel.toLowerCase().includes('kinder') || gradeLevel === 'K';
   const maxUnits = isKinder ? 5 : 10;
 
   const prompt = `
 Create ${count} "non-standard measurement" challenges for teaching "${topic}" to ${gradeLevel} students.
+${tierSection}
 
 Each challenge shows ONE object and a row of non-standard units (paper clips, cubes, crayons, etc.)
 laid end-to-end below it. The student counts the units to determine the object's length.
@@ -816,7 +962,15 @@ Return exactly ${count} challenges.
 export const generateCompareObjects = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = within-mode scaffolding + structural shape. NEVER magnitude.
+     */
+    difficulty?: string;
+  }>,
 ): Promise<CompareObjectsData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -831,20 +985,30 @@ export const generateCompareObjects = async (
     'identify_attribute', 'compare_two', 'order_three', 'non_standard',
   ];
 
+  // ── Support tier (within-mode difficulty) ──
+  const supportTier = normalizeSupportTier(config?.difficulty); // the STUDENT's tier — DRIVES application (single OR blend)
+  // pinnedType is ONLY for logging which prompt path ran; each sub-generator gets
+  // its OWN mode's tier section, so blends are described correctly per type.
+  const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
+    ? evalConstraint.allowedTypes[0] as ChallengeType
+    : undefined;
+  const sectionFor = (mode: ChallengeType): string =>
+    supportTier ? buildTierPromptSection(mode, supportTier) : '';
+
   // ── Run sub-generators for allowed types in parallel ──
   const generators: Promise<CompareObjectsChallenge[]>[] = [];
 
   if (allowedTypes.includes('identify_attribute')) {
-    generators.push(generateIdentifyAttributeChallenges(topic, gradeLevel, resolveCount('identify_attribute')));
+    generators.push(generateIdentifyAttributeChallenges(topic, gradeLevel, resolveCount('identify_attribute'), sectionFor('identify_attribute')));
   }
   if (allowedTypes.includes('compare_two')) {
-    generators.push(generateCompareTwoChallenges(topic, gradeLevel, resolveCount('compare_two')));
+    generators.push(generateCompareTwoChallenges(topic, gradeLevel, resolveCount('compare_two'), undefined, sectionFor('compare_two')));
   }
   if (allowedTypes.includes('order_three')) {
-    generators.push(generateOrderThreeChallenges(topic, gradeLevel, resolveCount('order_three')));
+    generators.push(generateOrderThreeChallenges(topic, gradeLevel, resolveCount('order_three'), undefined, sectionFor('order_three')));
   }
   if (allowedTypes.includes('non_standard')) {
-    generators.push(generateNonStandardChallenges(topic, gradeLevel, resolveCount('non_standard')));
+    generators.push(generateNonStandardChallenges(topic, gradeLevel, resolveCount('non_standard'), sectionFor('non_standard')));
   }
 
   const results = await Promise.all(generators);
@@ -860,6 +1024,36 @@ export const generateCompareObjects = async (
   // ── Assign sequential IDs to prevent duplicates ──
   for (let i = 0; i < allChallenges.length; i++) {
     allChallenges[i].id = `co-${i + 1}`;
+  }
+
+  // ── Apply the support tier deterministically, per challenge from its OWN mode ──
+  // Difficulty is a STUDENT property: a blended/auto session gets it too (single
+  // mode just happens to give every challenge the same tier). Gate on supportTier
+  // only — never on pinnedType — so blends aren't silently dropped. Runs AFTER the
+  // order_three visualSize-rank repair so tier spacing wins. No-tier path is
+  // byte-identical to before (every branch guarded).
+  if (supportTier) {
+    for (const ch of allChallenges) {
+      const scaffold = resolveSupportStructure(ch.type, supportTier);
+      const shape = resolveProblemShape(ch.type, supportTier);
+      ch.supportTier = supportTier;
+
+      // Scaffolding read-outs (perception aids)
+      if (ch.type === 'non_standard') ch.showUnitNumbers = scaffold.showUnitNumbers;
+      if (ch.type === 'order_three') ch.showScaleReadout = scaffold.showScaleReadout;
+
+      // Structural problem shape (code-enforced; actualValue/answer untouched)
+      if (shape.compareGap != null && ch.objects.length === 2) {
+        applyCompareGap(ch.objects, shape.compareGap);
+      }
+      if (shape.orderSpacing != null && ch.objects.length >= 3) {
+        applyOrderSpacing(ch.objects, shape.orderSpacing);
+      }
+      if (shape.maxOptions != null && ch.attributeOptions) {
+        ch.attributeOptions = trimOptions(ch.attributeOptions, ch.correctAttribute, shape.maxOptions);
+      }
+    }
+    console.log(`[CompareObjects] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
   }
 
   const gradeBand = gradeLevel.toLowerCase().includes('kinder') || gradeLevel === 'K' ? 'K' : '1';

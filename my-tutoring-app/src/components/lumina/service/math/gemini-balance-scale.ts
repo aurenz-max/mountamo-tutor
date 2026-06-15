@@ -66,6 +66,75 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 type ChallengeType = BalanceScaleChallenge['type'];
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — second axis of the two-field
+// contract. targetEvalMode = WHICH skill; difficulty = HOW MUCH balance feedback
+// is on screen within it. A tier withdraws perception aids; it NEVER changes the
+// equations or numbers (the builders + per-mode tables own those).
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; component defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Exact per-side numeric totals (Left: 12 / Right: 12). */
+  showSideValues: boolean;
+  /** BALANCED / UNBALANCED status pill. */
+  showBalanceStatus: boolean;
+  /** Beam tilts toward the heavier side (qualitative balance feedback). */
+  showTilt: boolean;
+  promptLines: string[];
+}
+
+/**
+ * Easy→hard withdrawal of the three balance-feedback aids, most-explicit first:
+ * exact side totals → BALANCED pill → beam tilt. The aids are mode-independent
+ * (the `_mode` param is kept for signature parity with the skill pattern and
+ * future per-mode tuning). Numbers are NEVER touched.
+ */
+function resolveSupportStructure(_mode: ChallengeType, tier: SupportTier): SupportScaffold {
+  const base = 'This tier changes ONLY how much balance feedback is on screen — it never changes the equations or the numbers.';
+  if (tier === 'easy') {
+    return {
+      showSideValues: true,
+      showBalanceStatus: true,
+      showTilt: true,
+      promptLines: [
+        base,
+        'EASY: full self-check support — exact side totals, a BALANCED/UNBALANCED readout, and a tilting beam are all visible. Title/description may reassure the student the scale will show them when both sides match.',
+      ],
+    };
+  }
+  if (tier === 'medium') {
+    return {
+      showSideValues: false,
+      showBalanceStatus: true,
+      showTilt: true,
+      promptLines: [
+        base,
+        'MEDIUM: the exact side totals are hidden, but the tilting beam and the BALANCED/UNBALANCED readout remain — the student adds each side themselves and confirms with the scale. Keep the tone matter-of-fact; do not reveal which operation to use.',
+      ],
+    };
+  }
+  // hard
+  return {
+    showSideValues: false,
+    showBalanceStatus: false,
+    showTilt: false,
+    promptLines: [
+      base,
+      'HARD: all balance feedback is withdrawn — no side totals, no BALANCED readout, and the beam stays level. The student must reason about balance from the equation alone. Title/description should invite careful, justified reasoning and must never hint at the operation to use.',
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
 // ---------------------------------------------------------------------------
 // T2 modes bumped 4→5 in the B4 sweep (equality / equality_hard / one_step).
@@ -389,6 +458,12 @@ export const generateBalanceScale = async (
     showTilt?: boolean;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen balance feedback within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   }
 ): Promise<BalanceScaleData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -406,6 +481,22 @@ export const generateBalanceScale = async (
       })
     : balanceScaleSchema;
 
+  // ── Resolve the within-mode support tier (drives application below) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is ONLY for the prompt tone. This generator is always single-mode,
+  // so a single pinned eval mode (when present) is the mode; otherwise fall back
+  // for the (mode-independent) tier prose.
+  const pinnedType: ChallengeType | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold = supportTier
+    ? resolveSupportStructure(pinnedType ?? 'one_step', supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
@@ -418,7 +509,7 @@ CONTEXT:
 - Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific equation — the session walks through several.
 2. Provide a 1-2 sentence educational description of what students will practice across the session.
@@ -459,7 +550,22 @@ Return ONLY the wrapper fields described above.
 
   const gradeBand = GRADE_BAND_BY_TYPE[challengeType];
   const allowOperations = ALLOW_OPS_BY_TYPE[challengeType];
-  const showTilt = config?.showTilt ?? wrapper.showTilt ?? true;
+
+  // ── Apply the support tier (perception aids only — numbers untouched) ──
+  // Tier owns the three balance-feedback aids when present; otherwise component
+  // defaults stand (all on) and showTilt honors any explicit config/wrapper value.
+  // This generator is always single-mode, so the session-level flags are correct
+  // for every challenge in the session.
+  let showTilt = config?.showTilt ?? wrapper.showTilt ?? true;
+  let showSideValues = true;
+  let showBalanceStatus = true;
+  if (supportTier) {
+    const sc = resolveSupportStructure(challengeType, supportTier);
+    showSideValues = sc.showSideValues;
+    showBalanceStatus = sc.showBalanceStatus;
+    showTilt = sc.showTilt;
+    console.log(`[BalanceScale] Support tier "${supportTier}" applied (single-mode ${challengeType})`);
+  }
 
   // First challenge populates the legacy session-level leftSide/rightSide/variableValue
   // fields so the component's initial render has data before the per-challenge reset
@@ -473,6 +579,9 @@ Return ONLY the wrapper fields described above.
     rightSide: first.rightSide,
     variableValue: first.variableValue,
     showTilt,
+    showSideValues,
+    showBalanceStatus,
+    supportTier: supportTier ?? undefined,
     allowOperations,
     gradeBand,
     challenges,

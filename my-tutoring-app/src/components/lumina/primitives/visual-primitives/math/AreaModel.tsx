@@ -24,6 +24,7 @@ import {
 } from '../../../ui';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 /**
  * Area Model — multi-challenge multiplication / area / perimeter / factoring.
@@ -65,6 +66,16 @@ export interface AreaModelChallenge {
   showDimensions: boolean;
   algebraicMode: boolean;
   highlightCell: [number, number] | null;
+  /**
+   * Support-tier levers (config.difficulty). Default true = max scaffolding.
+   * - showCellEquations (forward modes): pre-label each cell with its two
+   *   factors + name them in the input panel. Withdraw (hard) → student reads
+   *   the row/column headers to identify the factors. Numbers are unchanged.
+   * - showPerimeterExpansion (perimeter): write out L + W + L + W. Withdraw
+   *   (hard) → recall Perimeter = 2 × (L + W).
+   */
+  showCellEquations?: boolean;
+  showPerimeterExpansion?: boolean;
   labels?: {
     factor1?: string[];
     factor2?: string[];
@@ -79,6 +90,12 @@ export interface AreaModelData {
   /** Eval mode pinned for this session (all challenges share one mode). */
   challengeType: AreaModelChallengeType;
   gradeLevel?: string;
+  /**
+   * Within-mode support tier (config.difficulty). Surfaced to the live tutor so
+   * its reveal level matches the on-screen scaffold — at 'hard' the tutor must
+   * not supply the cell pre-labeling / side-sum the on-screen UI withheld.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation integration (auto-injected by ManifestOrderRenderer / tester)
   instanceId?: string;
@@ -120,6 +137,41 @@ function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (attempts - 1) * 20);
 }
 
+/**
+ * How much the live tutor may reveal, calibrated to the on-screen support tier
+ * and the eval mode. Keeps the tutor (a second information channel) consistent
+ * with the on-screen scaffold: at 'hard' the UI withholds the cell pre-labeling
+ * (or the side-sum), so the tutor must not supply it either. The final numbers
+ * (partial products, total, perimeter, or — in factor mode — the dimensions)
+ * are the answer and are never stated at any tier.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  mode: AreaModelChallengeType,
+): string {
+  if (!tier) return '';
+  const common =
+    mode === 'perimeter'
+      ? 'Never state the perimeter value or add the four sides for the student.'
+      : mode === 'factor'
+        ? 'Never state the dimension numbers — discovering the factors IS the task.'
+        : 'Never state a partial product or the total product for the student.';
+  const method =
+    mode === 'perimeter'
+      ? 'add all four sides, or use Perimeter = 2 × (length + width)'
+      : mode === 'factor'
+        ? 'each cell equals its column header × its row header, so one cell pins down a dimension'
+        : 'multiply the column header by the row header for each cell, then add the partial products';
+  switch (tier) {
+    case 'easy':
+      return `SUPPORT TIER easy: maximum scaffolding. You may name the method (${method}) and walk the setup step by step. ${common}`;
+    case 'medium':
+      return `SUPPORT TIER medium: the method is shown on screen; nudge the next step and let the student do the arithmetic. ${common}`;
+    default:
+      return `SUPPORT TIER hard: the on-screen scaffold is withdrawn (cells are NOT pre-labeled, or the side-sum is not written out). Do NOT supply that withheld step — ask the student to read the row and column headers (or the labeled sides) and map it themselves. ${common}`;
+  }
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -130,6 +182,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     description,
     challenges = [],
     challengeType: sessionChallengeType,
+    gradeLevel,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -161,6 +215,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
   const algebraicMode = currentChallenge?.algebraicMode ?? false;
   const highlightCell = currentChallenge?.highlightCell ?? null;
   const labels = currentChallenge?.labels;
+  // Support-tier levers (default true = max scaffolding when unset).
+  const showCellEquations = currentChallenge?.showCellEquations ?? true;
+  const showPerimeterExpansion = currentChallenge?.showPerimeterExpansion ?? true;
 
   const isFactorMode = sessionChallengeType === 'factor';
   const isPerimeterMode = sessionChallengeType === 'perimeter';
@@ -267,6 +324,48 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
         : Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length),
   });
 
+  // ── AI tutoring ────────────────────────────────────────────────
+  // aiPrimitiveData carries the current problem + tier so the tutor's reveal
+  // level matches the on-screen scaffold. Mode is session-level (all challenges
+  // share sessionChallengeType), so the reveal policy is resolved once.
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    challengeType: sessionChallengeType,
+    currentChallengeIndex: currentIndex + 1,
+    totalChallenges: challenges.length,
+    factor1Parts,
+    factor2Parts,
+    factor1Total,
+    factor2Total,
+    algebraicMode,
+    supportTier: supportTier ?? null,
+  }), [
+    title, sessionChallengeType, currentIndex, challenges.length,
+    factor1Parts, factor2Parts, factor1Total, factor2Total, algebraicMode, supportTier,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'area-model',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
+  const revealPolicy = tutorRevealPolicy(supportTier, sessionChallengeType);
+
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Area-model session: ${challenges.length} problems, mode "${sessionChallengeType}". `
+      + `Introduce briefly: the area model breaks a multiplication (or a rectangle) into parts so each piece is easy, `
+      + `then we combine the pieces. Then read the first task.`
+      + (revealPolicy ? ` ${revealPolicy}` : ''),
+      { silent: true },
+    );
+  }, [isConnected, challenges.length, sessionChallengeType, revealPolicy, sendText]);
+
   // ── Per-challenge content match (stale-state guard, §6a #8) ────
   const stateMatchesChallenge = useCallback(
     (challenge: AreaModelChallenge | null): boolean => {
@@ -301,8 +400,17 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
         hintsUsed: challengeHintCount,
         ...extras,
       });
+      sendText(
+        `[CHALLENGE_CORRECT] Student finished problem ${currentIndex + 1} of ${challenges.length} `
+        + `(${sessionChallengeType}) in ${attempts} attempt${attempts === 1 ? '' : 's'}. `
+        + `Celebrate briefly and reinforce the area-model idea they just used.`,
+        { silent: true },
+      );
     },
-    [currentChallenge, stateMatchesChallenge, recordResult, challengeHintCount],
+    [
+      currentChallenge, stateMatchesChallenge, recordResult, challengeHintCount,
+      sendText, currentIndex, challenges.length, sessionChallengeType,
+    ],
   );
 
   // ── Session complete → aggregate metrics + submitEvaluation ────
@@ -351,9 +459,16 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
         },
       });
     }
+
+    sendText(
+      `[ALL_COMPLETE] All ${challenges.length} ${sessionChallengeType} problems done. `
+      + `Correct: ${correctCount}/${challenges.length}. First-try: ${firstTryCount}. Accuracy: ${overallAccuracy}%. `
+      + `Give an encouraging, area-model-focused summary.`,
+      { silent: true },
+    );
   }, [
     isComplete, results, challenges, sessionChallengeType,
-    submitEvaluation, hasSubmittedEvaluation,
+    submitEvaluation, hasSubmittedEvaluation, sendText,
   ]);
 
   // ── Helpers ────────────────────────────────────────────────────
@@ -408,6 +523,12 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
       setCurrentInput('');
     } else {
       SoundManager.playIncorrect();
+      sendText(
+        `[CELL_INCORRECT] Student entered "${currentInput}" for the cell ${formatCellEquation(row, col)} `
+        + `(attempt ${newState.attempts}). Give a brief hint about this one cell without giving the product.`
+        + (revealPolicy ? ` ${revealPolicy}` : ''),
+        { silent: true },
+      );
     }
   };
 
@@ -426,6 +547,12 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
     if (!isCorrect) {
       SoundManager.playIncorrect();
+      sendText(
+        `[SUM_INCORRECT] Student summed the partial products to "${sumInput}" but that is wrong `
+        + `(attempt ${nextSumAttempts}). All cell products are already correct. `
+        + `Nudge them to re-add the partial products carefully; do NOT give the total.`,
+        { silent: true },
+      );
       return; // let the student try again
     }
     SoundManager.playCorrect();
@@ -470,6 +597,13 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
     if (!isCorrect) {
       SoundManager.playIncorrect();
+      sendText(
+        `[PERIMETER_INCORRECT] Student answered "${perimeterInput}" for the perimeter of a `
+        + `${factor1Total} × ${factor2Total} rectangle (attempt ${nextAttempts}). `
+        + `Give a brief hint without giving the value.`
+        + (revealPolicy ? ` ${revealPolicy}` : ''),
+        { silent: true },
+      );
       return;
     }
     SoundManager.playCorrect();
@@ -520,6 +654,13 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     const allCorrect = topResults.every(Boolean) && leftResults.every(Boolean);
     if (!allCorrect) {
       SoundManager.playIncorrect();
+      sendText(
+        `[FACTOR_INCORRECT] Student's dimension guesses are wrong (attempt ${nextAttempts}). `
+        + `They entered top: [${factorTopInputs.join(', ')}], left: [${factorLeftInputs.join(', ')}]. `
+        + `Point them at a corner cell to deduce one dimension; do NOT give the factors.`
+        + (revealPolicy ? ` ${revealPolicy}` : ''),
+        { silent: true },
+      );
       return;
     }
     SoundManager.playCorrect();
@@ -537,7 +678,19 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
   };
 
   // ── Advance to next challenge ──────────────────────────────────
+  // Send exactly one end_of_turn message carrying the NEXT problem's data, so
+  // the tutor introduces the real problem (the auto context update is silent).
   const handleNextChallenge = () => {
+    const next = challenges[currentIndex + 1];
+    if (next) {
+      const nf1 = next.factor1Parts.reduce((s, v) => s + v, 0);
+      const nf2 = next.factor2Parts.reduce((s, v) => s + v, 0);
+      sendText(
+        `[NEXT_ITEM] Problem ${currentIndex + 2} of ${challenges.length} (${sessionChallengeType}): `
+        + `a ${nf1} × ${nf2} model. Introduce it briefly — same strategy, new numbers.`,
+        { silent: true },
+      );
+    }
     advance();
   };
 
@@ -925,9 +1078,11 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                             </div>
                           ) : (
                             <>
-                              <div className="text-xs text-slate-400 mb-2">
-                                {formatCellEquation(rowIndex, colIndex)}
-                              </div>
+                              {showCellEquations && (
+                                <div className="text-xs text-slate-400 mb-2">
+                                  {formatCellEquation(rowIndex, colIndex)}
+                                </div>
+                              )}
 
                               {cellState?.isCorrect && (
                                 <div className="text-center">
@@ -972,7 +1127,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
               <LuminaCardContent className="space-y-4">
                 <div>
                   <label className="block text-sm text-slate-300 mb-2">
-                    What is {formatCellEquation(selectedCell[0], selectedCell[1])}?
+                    {showCellEquations
+                      ? `What is ${formatCellEquation(selectedCell[0], selectedCell[1])}?`
+                      : "What is this cell's partial product? Multiply its column header (top) by its row header (left)."}
                   </label>
                   <div className="flex gap-2">
                     <LuminaInput
@@ -1061,8 +1218,12 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
               <LuminaCardContent className="space-y-4">
                 <div className="text-center font-mono text-slate-300">
                   The rectangle has sides of {factor1Total} and {factor2Total}.
-                  <br />
-                  Perimeter = {factor1Total} + {factor2Total} + {factor1Total} + {factor2Total}
+                  {showPerimeterExpansion && (
+                    <>
+                      <br />
+                      Perimeter = {factor1Total} + {factor2Total} + {factor1Total} + {factor2Total}
+                    </>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm text-slate-300 mb-2">

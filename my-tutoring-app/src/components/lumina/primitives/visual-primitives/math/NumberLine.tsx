@@ -47,6 +47,13 @@ export interface NumberLineChallenge {
   startValue?: number;
   /** Per-challenge operations for show_jump challenges */
   operations?: NumberLineOperation[];
+  /**
+   * Per-challenge benchmark anchor marks (support-tier scaffold, set by the
+   * generator at the 'easy' tier). Rendered + auto-zoomed for THIS challenge only,
+   * so an anchor for one target never widens another challenge's view. NEVER
+   * equal to a target value (leak guard). Falls back to data-level `highlights`.
+   */
+  highlights?: { label: string; value: number }[];
 }
 
 export interface NumberLineData {
@@ -62,6 +69,13 @@ export interface NumberLineData {
   challenges?: NumberLineChallenge[];
   gradeBand?: 'K-2' | '3-5';
   tickInterval?: number;
+
+  /**
+   * Within-mode support tier ('easy' | 'medium' | 'hard') the generator applied.
+   * Surfaced to the AI tutor so its reveal level matches the on-screen scaffold
+   * (e.g. at 'hard' the tutor must not name a strategy the instruction withheld).
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -195,6 +209,29 @@ function challengeTypeToPhase(type: string): InteractionPhase {
   return 'explore';
 }
 
+/**
+ * Mode-aware tutor reveal clause keyed off the support tier the generator applied.
+ * Keeps the AI tutor from leaking what a tier withheld on screen (sparse labels,
+ * no anchor, no worked arc): easy = may name the strategy/walk the setup; medium
+ * = nudge only; hard = do NOT name the withheld strategy, ask what the student
+ * sees on the line, never reveal the answer.
+ */
+function tutorRevealClause(tier: NumberLineData['supportTier'], challengeType: string): string {
+  if (!tier) return '';
+  const what = challengeType === 'show_jump'
+    ? 'the hop count / direction'
+    : challengeType === 'order_values'
+      ? 'which value is furthest left'
+      : 'which tick marks the value sits between';
+  if (tier === 'easy') {
+    return ` SUPPORT TIER easy: you MAY name the strategy and walk the setup step by step (e.g. point out ${what}); a benchmark helper mark is on the line — refer to it.`;
+  }
+  if (tier === 'medium') {
+    return ` SUPPORT TIER medium: the strategy is on-screen — only NUDGE the execution, do not name ${what} or solve it.`;
+  }
+  return ` SUPPORT TIER hard: scaffolds are withdrawn (sparse labels, no helper mark${challengeType === 'show_jump' ? ', no worked arc, two chained jumps' : ''}). Do NOT name ${what} or any strategy the instruction withheld — ask the student what they SEE on the line and let them reason. Never reveal the answer.`;
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -216,6 +253,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     challenges = [],
     gradeBand = 'K-2',
     tickInterval: customTickInterval,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -287,6 +325,11 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   const activeOperations: NumberLineOperation[] = currentChallenge?.operations?.length
     ? currentChallenge.operations
     : operations;
+
+  // Per-challenge benchmark anchors (support-tier scaffold) take priority over
+  // the data-level highlights, so an anchor for one target never bleeds into (or
+  // widens the auto-zoom of) another challenge.
+  const activeHighlights = currentChallenge?.highlights ?? highlights;
 
   // -------------------------------------------------------------------------
   // Coordinate Conversion
@@ -367,10 +410,11 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     attemptNumber: currentAttempts + 1,
     zoomLevel,
     currentPhase,
+    supportTier,
   }), [
     rangeMin, rangeMax, activeNumberType, interactionMode, gradeBand,
     challenges.length, currentChallengeIndex, currentChallenge,
-    placedPoints, currentAttempts, zoomLevel, currentPhase,
+    placedPoints, currentAttempts, zoomLevel, currentPhase, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -389,10 +433,11 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
       `[ACTIVITY_START] Number line activity for ${gradeBand}. Range: ${rangeMin} to ${rangeMax}. `
       + `Mode: ${interactionMode}, number type: ${activeNumberType}. `
       + `${challenges.length} challenges. First: "${currentChallenge?.instruction}". `
-      + `Introduce warmly and read the first instruction.`,
+      + `Introduce warmly and read the first instruction.`
+      + tutorRevealClause(supportTier, currentChallenge?.type ?? interactionMode),
       { silent: true }
     );
-  }, [isConnected, challenges.length, rangeMin, rangeMax, interactionMode, activeNumberType, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, rangeMin, rangeMax, interactionMode, activeNumberType, gradeBand, currentChallenge, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Interaction Handlers
@@ -486,7 +531,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
       const end = op.type === 'add' ? op.startValue + op.changeValue : op.startValue - op.changeValue;
       return [op.startValue, end];
     });
-    const highlightValues = highlights.map(h => h.value);
+    const highlightValues = activeHighlights.map(h => h.value);
 
     const allValues = [...targets, ...opValues, ...highlightValues]
       .filter(v => v >= rangeMin && v <= rangeMax);
@@ -606,13 +651,14 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_INCORRECT] Challenge: "${currentChallenge.instruction}". `
         + `Student placed: [${placedPoints.join(', ')}]. Target: [${targets.join(', ')}]. `
-        + `Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.`,
+        + `Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.`
+        + tutorRevealClause(supportTier, currentChallenge.type),
         { silent: true }
       );
     }
   }, [currentChallenge, placedPoints, jumpEndPoints, orderedPlacements, activeOperations,
       activeNumberType, zoomLevel, rangeMin, rangeMax, isK2, currentAttempts, sendText,
-      incrementAttempts, recordResult]);
+      incrementAttempts, recordResult, supportTier]);
 
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
@@ -962,8 +1008,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
               );
             })}
 
-            {/* Pre-placed Highlights */}
-            {highlights.map((hl, i) => {
+            {/* Pre-placed Highlights (benchmark anchors — per-challenge at easy tier) */}
+            {activeHighlights.map((hl, i) => {
               const x = valueToX(hl.value);
               if (x < SVG_PADDING || x > SVG_WIDTH - SVG_PADDING) return null;
               return (

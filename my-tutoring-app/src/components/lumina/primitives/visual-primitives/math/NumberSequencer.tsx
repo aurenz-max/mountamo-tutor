@@ -45,6 +45,9 @@ export interface NumberSequencerData {
   gradeBand: 'K' | '1';
   showNumberLine: boolean;
   showDotArrays: boolean;
+  /** Within-mode support tier (set by the generator when config.difficulty is present).
+   *  Keeps the AI tutor's reveal level in sync with the on-screen scaffolding. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -134,6 +137,32 @@ function TrainCar({
 }
 
 // ============================================================================
+// Tutor reveal policy — keeps the AI tutor in sync with the on-screen scaffold
+// ============================================================================
+// At a hard tier the on-screen instruction withholds the strategy/direction cue;
+// the tutor must not name it back, or the scaffold is half-applied. Mode-aware so
+// it's correct in a blended session (keyed off the CURRENT challenge's type).
+
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  challengeType: NumberSequencerChallenge['type'],
+): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return challengeType === 'count-from'
+      ? ' SUPPORT TIER easy: you MAY name the counting strategy and model the first step (e.g. "start here, then say the next number").'
+      : challengeType === 'before-after'
+        ? ' SUPPORT TIER easy: you MAY remind them to count one step before/after and name the direction.'
+        : ' SUPPORT TIER easy: you MAY name the ordering/pattern strategy explicitly and walk the first step.';
+  }
+  if (tier === 'medium') {
+    return ' SUPPORT TIER medium: the strategy is implied on screen; nudge the EXECUTION only — do not name the full strategy or give the answer.';
+  }
+  // hard
+  return ' SUPPORT TIER hard: the on-screen prompt deliberately withholds the strategy. Do NOT name it. Ask what the student SEES (which number is next to the blank, what changes each step) and let them reason it out; never reveal the answer.';
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -150,6 +179,7 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
     gradeBand = 'K',
     showNumberLine = false,
     showDotArrays = false,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -232,9 +262,10 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
     rangeMin: currentChallenge?.rangeMin ?? 0,
     rangeMax: currentChallenge?.rangeMax ?? 20,
     startNumber: currentChallenge?.startNumber,
+    supportTier,
   }), [
     gradeBand, challenges.length, currentChallengeIndex,
-    currentChallenge, currentAttempts,
+    currentChallenge, currentAttempts, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -254,10 +285,11 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
       `[ACTIVITY_START] Number Sequencer for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
       + `${challenges.length} challenges covering number sequences and patterns. `
       + `First challenge: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
-      + `Introduce warmly: "Let's explore number patterns! Numbers like to be in order — let's figure out where they go."`,
+      + `Introduce warmly: "Let's explore number patterns! Numbers like to be in order — let's figure out where they go."`
+      + (currentChallenge ? tutorRevealPolicy(supportTier, currentChallenge.type) : ''),
       { silent: true }
     );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText, supportTier]);
 
   // ── Derived: blank positions in current sequence ──────────────
 
@@ -351,13 +383,15 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
       sendText(
         `[ANSWER_INCORRECT] Student answered "${studentAnswerStr}" but correct is "${correctStr}". `
         + `Challenge: "${currentChallenge.instruction}" (${currentChallenge.type}). Attempt ${currentAttempts + 1}. `
-        + `Give a hint without revealing the answer.`,
+        + `Give a hint without revealing the answer.`
+        + tutorRevealPolicy(supportTier, currentChallenge.type),
         { silent: true }
       );
     }
   }, [
     currentChallenge, hasSubmittedEvaluation, incrementAttempts, blankIndices,
     fillAnswers, orderedCards, countInputs, currentAttempts, recordResult, sendText,
+    supportTier,
   ]);
 
   // ── Advance to Next Challenge ─────────────────────────────────

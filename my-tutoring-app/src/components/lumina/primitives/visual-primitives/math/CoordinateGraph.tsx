@@ -45,6 +45,21 @@ export interface CoordinateGraphChallenge {
   correctOptionIndex?: number;
   /** Optional equation label shown on the graph for find_intercept */
   equationLabel?: string;
+
+  /**
+   * Support-tier scaffold flags (set by the generator when config.difficulty is
+   * applied; absent ⇒ default behavior). Existing aids default ON when absent so
+   * the no-tier path is unchanged; the NEW `showDropLines` aid defaults OFF.
+   */
+  showHoverReadout?: boolean; // plot_point: live (x,y) echo under the hover ghost
+  showDropLines?: boolean; // read_point: dashed lines from point to each axis
+  showAxisLabels?: boolean; // numeric tick labels on the axes
+  showRiseRunGuides?: boolean; // find_slope: dashed rise/run triangle
+  showRiseRunLabels?: boolean; // find_slope: "rise = N" / "run = N" labels
+  showPointLabels?: boolean; // find_slope: (x,y) text beside each point
+  showEquationLabel?: boolean; // find_intercept: y = mx + b label
+  showInterceptMarker?: boolean; // find_intercept: pulsing "?" marker at the crossing
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface CoordinateGraphData {
@@ -78,6 +93,32 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   find_slope:     { label: 'Find Slope',      icon: '📈', accentColor: 'purple' },
   find_intercept: { label: 'Find Intercept',  icon: '🎯', accentColor: 'emerald' },
 };
+
+// ============================================================================
+// Tutor reveal policy — keep the AI tutor in sync with the on-screen scaffold so
+// it never names what a harder tier withheld.
+// ============================================================================
+
+function tutorRevealClause(type: string, tier?: string): string {
+  if (!tier) return '';
+  if (tier === 'easy')
+    return ' Support tier EASY: you may name the method and walk the first step.';
+  if (tier === 'medium')
+    return ' Support tier MEDIUM: on-screen guides are reduced — nudge the next step, do not state the full method.';
+  // hard — the screen withholds the key aid; the tutor must not leak it.
+  switch (type) {
+    case 'plot_point':
+      return ' Support tier HARD: no hover readout or axis labels — ask which direction each coordinate moves; do NOT confirm the exact cell.';
+    case 'read_point':
+      return ' Support tier HARD: axis labels are hidden — ask the student to count gridlines from the origin; do NOT read the coordinates for them.';
+    case 'find_slope':
+      return ' Support tier HARD: rise/run guides are hidden — ask which two points they see; do NOT give rise, run, or the slope.';
+    case 'find_intercept':
+      return ' Support tier HARD: the equation and crossing marker are hidden — ask where the line meets the y-axis; do NOT name the intercept.';
+    default:
+      return ' Support tier HARD: minimal scaffolding — guide with questions, never reveal the answer.';
+  }
+}
 
 // ============================================================================
 // Component
@@ -122,6 +163,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
   const aiData = useMemo(() => ({
     title: data.title,
     challenge: challenge ? { type: challenge.type, instruction: challenge.instruction } : null,
+    supportTier: challenge?.supportTier,
     progress: `${currentIndex + 1}/${challenges.length}`,
   }), [data.title, challenge, currentIndex, challenges.length]);
 
@@ -189,7 +231,7 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
         sendText(`[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: Student answered "${student}" but correct is "${answer}". Attempt 2. Show answer and explain.`, { silent: true });
       } else {
         setFeedback('incorrect');
-        sendText(`[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: Student answered "${student}" but correct is "${answer}". Attempt 1. Give a hint.`, { silent: true });
+        sendText(`[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: Student answered "${student}" but correct is "${answer}". Attempt 1. Give a hint.${tutorRevealClause(challenge!.type, challenge!.supportTier)}`, { silent: true });
       }
     }
   }, [feedback, challenge, currentIndex, challenges.length, currentAttempts, recordResult, incrementAttempts, sendText]);
@@ -369,8 +411,8 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                   </>
                 )}
 
-                {/* Axis labels */}
-                {gridValues.filter(v => v !== 0 && v % labelStep === 0).map(v => (
+                {/* Axis labels (withdrawn at the hard tier) */}
+                {challenge.showAxisLabels !== false && gridValues.filter(v => v !== 0 && v % labelStep === 0).map(v => (
                   <React.Fragment key={`l-${v}`}>
                     <text x={toX(v)} y={toY(0) + 14} fill="white" fillOpacity={0.35}
                       fontSize={9} textAnchor="middle" fontFamily="ui-monospace, monospace">{v}</text>
@@ -387,10 +429,13 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                     <>
                       <circle cx={toX(hoverPt.x)} cy={toY(hoverPt.y)} r={7}
                         fill="#fbbf24" fillOpacity={0.25} stroke="#fbbf24" strokeOpacity={0.5} strokeWidth={1.5} />
-                      <text x={toX(hoverPt.x)} y={toY(hoverPt.y) - 12} fill="white" fillOpacity={0.5}
-                        fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
-                        ({hoverPt.x}, {hoverPt.y})
-                      </text>
+                      {/* Live coordinate echo — withdrawn at medium/hard */}
+                      {challenge.showHoverReadout !== false && (
+                        <text x={toX(hoverPt.x)} y={toY(hoverPt.y) - 12} fill="white" fillOpacity={0.5}
+                          fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
+                          ({hoverPt.x}, {hoverPt.y})
+                        </text>
+                      )}
                     </>
                   )}
 
@@ -418,6 +463,15 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                   {/* read_point: displayed point */}
                   {challenge.type === 'read_point' && (
                     <>
+                      {/* Easy-tier drop-lines: connect the point straight to each axis */}
+                      {challenge.showDropLines && (
+                        <>
+                          <line x1={toX(challenge.x1)} y1={toY(challenge.y1)} x2={toX(challenge.x1)} y2={toY(0)}
+                            stroke="#60a5fa" strokeOpacity={0.45} strokeWidth={1.5} strokeDasharray="4 3" />
+                          <line x1={toX(challenge.x1)} y1={toY(challenge.y1)} x2={toX(0)} y2={toY(challenge.y1)}
+                            stroke="#60a5fa" strokeOpacity={0.45} strokeWidth={1.5} strokeDasharray="4 3" />
+                        </>
+                      )}
                       <circle cx={toX(challenge.x1)} cy={toY(challenge.y1)} r={12}
                         fill="#60a5fa" fillOpacity={0.15} stroke="#60a5fa" strokeOpacity={0.4} strokeWidth={1}>
                         <animate attributeName="r" values="12;16;12" dur="2s" repeatCount="indefinite" />
@@ -434,40 +488,52 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                       <line x1={toX(challenge.x1)} y1={toY(challenge.y1)}
                         x2={toX(challenge.x2)} y2={toY(challenge.y2)}
                         stroke="#60a5fa" strokeWidth={2.5} strokeLinecap="round" />
-                      {/* Run (horizontal) */}
-                      <line x1={toX(challenge.x1)} y1={toY(challenge.y1)}
-                        x2={toX(challenge.x2)} y2={toY(challenge.y1)}
-                        stroke="#34d399" strokeWidth={1.5} strokeDasharray="6 4" />
-                      {/* Rise (vertical) */}
-                      <line x1={toX(challenge.x2)} y1={toY(challenge.y1)}
-                        x2={toX(challenge.x2)} y2={toY(challenge.y2)}
-                        stroke="#f472b6" strokeWidth={1.5} strokeDasharray="6 4" />
+                      {/* Rise/run triangle — withdrawn at the hard tier */}
+                      {challenge.showRiseRunGuides !== false && (
+                        <>
+                          {/* Run (horizontal) */}
+                          <line x1={toX(challenge.x1)} y1={toY(challenge.y1)}
+                            x2={toX(challenge.x2)} y2={toY(challenge.y1)}
+                            stroke="#34d399" strokeWidth={1.5} strokeDasharray="6 4" />
+                          {/* Rise (vertical) */}
+                          <line x1={toX(challenge.x2)} y1={toY(challenge.y1)}
+                            x2={toX(challenge.x2)} y2={toY(challenge.y2)}
+                            stroke="#f472b6" strokeWidth={1.5} strokeDasharray="6 4" />
+                        </>
+                      )}
                       {/* Points */}
                       <circle cx={toX(challenge.x1)} cy={toY(challenge.y1)} r={6}
                         fill="#60a5fa" stroke="white" strokeWidth={2} />
                       <circle cx={toX(challenge.x2)} cy={toY(challenge.y2)} r={6}
                         fill="#60a5fa" stroke="white" strokeWidth={2} />
-                      {/* Point labels */}
-                      <text x={toX(challenge.x1)} y={toY(challenge.y1) - 12} fill="white"
-                        fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
-                        ({challenge.x1}, {challenge.y1})
-                      </text>
-                      <text x={toX(challenge.x2)} y={toY(challenge.y2) - 12} fill="white"
-                        fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
-                        ({challenge.x2}, {challenge.y2})
-                      </text>
-                      {/* Rise label */}
-                      <text x={toX(challenge.x2) + 12}
-                        y={(toY(challenge.y1) + toY(challenge.y2)) / 2 + 4}
-                        fill="#f472b6" fontSize={10} fontFamily="ui-monospace, monospace">
-                        rise = {challenge.y2 - challenge.y1}
-                      </text>
-                      {/* Run label */}
-                      <text x={(toX(challenge.x1) + toX(challenge.x2)) / 2}
-                        y={toY(challenge.y1) + 16}
-                        fill="#34d399" fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
-                        run = {challenge.x2 - challenge.x1}
-                      </text>
+                      {/* Point labels — withdrawn at the hard tier */}
+                      {challenge.showPointLabels !== false && (
+                        <>
+                          <text x={toX(challenge.x1)} y={toY(challenge.y1) - 12} fill="white"
+                            fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
+                            ({challenge.x1}, {challenge.y1})
+                          </text>
+                          <text x={toX(challenge.x2)} y={toY(challenge.y2) - 12} fill="white"
+                            fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
+                            ({challenge.x2}, {challenge.y2})
+                          </text>
+                        </>
+                      )}
+                      {/* Rise/run numeric labels — withdrawn at medium/hard */}
+                      {challenge.showRiseRunLabels !== false && (
+                        <>
+                          <text x={toX(challenge.x2) + 12}
+                            y={(toY(challenge.y1) + toY(challenge.y2)) / 2 + 4}
+                            fill="#f472b6" fontSize={10} fontFamily="ui-monospace, monospace">
+                            rise = {challenge.y2 - challenge.y1}
+                          </text>
+                          <text x={(toX(challenge.x1) + toX(challenge.x2)) / 2}
+                            y={toY(challenge.y1) + 16}
+                            fill="#34d399" fontSize={10} textAnchor="middle" fontFamily="ui-monospace, monospace">
+                            run = {challenge.x2 - challenge.x1}
+                          </text>
+                        </>
+                      )}
                     </>
                   )}
 
@@ -486,17 +552,21 @@ const CoordinateGraph: React.FC<{ data: CoordinateGraphData; className?: string 
                         fill="#60a5fa" stroke="white" strokeWidth={1.5} />
                       <circle cx={toX(challenge.x2)} cy={toY(challenge.y2)} r={5}
                         fill="#60a5fa" stroke="white" strokeWidth={1.5} />
-                      {/* Y-intercept marker */}
-                      <circle cx={toX(0)} cy={toY(interceptData.yInt)} r={10}
-                        fill="#fbbf24" fillOpacity={0.15} stroke="#fbbf24" strokeOpacity={0.4} strokeWidth={1}>
-                        <animate attributeName="r" values="10;14;10" dur="2s" repeatCount="indefinite" />
-                      </circle>
-                      <circle cx={toX(0)} cy={toY(interceptData.yInt)} r={7}
-                        fill="#fbbf24" stroke="white" strokeWidth={2} />
-                      <text x={toX(0)} y={toY(interceptData.yInt) + 4} fill="white"
-                        fontSize={11} textAnchor="middle" fontWeight="bold">?</text>
-                      {/* Equation label */}
-                      {challenge.equationLabel && (
+                      {/* Y-intercept marker — withdrawn at the hard tier */}
+                      {challenge.showInterceptMarker !== false && (
+                        <>
+                          <circle cx={toX(0)} cy={toY(interceptData.yInt)} r={10}
+                            fill="#fbbf24" fillOpacity={0.15} stroke="#fbbf24" strokeOpacity={0.4} strokeWidth={1}>
+                            <animate attributeName="r" values="10;14;10" dur="2s" repeatCount="indefinite" />
+                          </circle>
+                          <circle cx={toX(0)} cy={toY(interceptData.yInt)} r={7}
+                            fill="#fbbf24" stroke="white" strokeWidth={2} />
+                          <text x={toX(0)} y={toY(interceptData.yInt) + 4} fill="white"
+                            fontSize={11} textAnchor="middle" fontWeight="bold">?</text>
+                        </>
+                      )}
+                      {/* Equation label (states the intercept) — withdrawn at medium/hard */}
+                      {challenge.equationLabel && challenge.showEquationLabel !== false && (
                         <text x={toX(gridMax) - 8} y={toY(interceptData.lineY2) - 8}
                           fill="white" fillOpacity={0.6} fontSize={11} textAnchor="end"
                           fontFamily="ui-monospace, monospace">

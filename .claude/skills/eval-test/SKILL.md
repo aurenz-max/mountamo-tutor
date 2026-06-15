@@ -135,6 +135,8 @@ Eval Rollup — <date>
 | **Missing visual data** | Count challenge with no `displayedCoins` | Empty render, can't answer |
 | **Silent fallback** | Missing field → hardcoded default | Wrong answer or trivial challenge |
 | **Eval mode bleed** | Two modes share challengeType, no differentiation | Mode doesn't test what it claims |
+| **Tier not wired** | easy/medium/hard produce identical scaffolds + shape | `config.difficulty` ignored — adaptivity is a no-op |
+| **Difficulty = bigger numbers** | hard just inflates magnitude past the band | Violates structural-not-numeric; can break scope |
 
 ## Step 2a: Generator↔Component Sync Check (NEW — run for every eval)
 
@@ -253,6 +255,102 @@ value generator that *rejects* every collapsed draw (e.g. requiring a 2×2 grid)
 empties the session — make it degrade to the minimal valid pair instead, never
 zero challenges. A sweep that returns 0 challenges reads as "scope OK" (max 0 ≤
 ceiling) but is actually a CRITICAL empty-render — always assert challenge count > 0.
+
+## Step 2c: Support-Tier Difficulty Sweep (primitives with `config.difficulty`)
+
+This is a DIFFERENT difficulty axis from Step 2b. Step 2b's numeric `&theta=`
+within-mode path was retired (no generator reads `config.studentTheta`). The live
+within-mode difficulty axis is the **support tier**: the manifest stamps
+`config.difficulty = 'easy' | 'medium' | 'hard'` per component, and tier-aware
+generators read it. The two-field contract is: `targetEvalMode` = WHICH skill
+(task identity), `difficulty` = HOW HARD within it. Per
+[[structural-difficulty-not-numeric]] the tier raises difficulty STRUCTURALLY and
+withdraws on-screen scaffolds — it must NEVER just inflate raw magnitude or cross
+into another eval mode.
+
+The harness now threads the tier: add `&difficulty=easy|medium|hard` to the
+eval-test URL (wired in `route.ts` → `config.difficulty`).
+
+**Which primitives have it:** a generator supports tiers if it reads
+`config.difficulty`. As of 2026-06-14: **bar-model**, **area-model**,
+**addition-subtraction-scene** (more being added via `/add-support-tiers`). Grep
+the generator for `difficulty` / `normalizeSupportTier` / `resolveSupportStructure`
+/ `resolveProblemShape` to confirm and to read the PER-MODE lever table. If the
+generator has no such code, skip this step (there is no tier to test).
+
+### How to sweep
+
+For the pinned eval mode, run the SAME mode at all three tiers (and once with no
+tier for the baseline):
+
+```bash
+M="read_scale"   # or whichever mode you're testing
+curl -s ".../eval-test?componentId=bar-model&evalMode=$M&topic=Books%20read%20this%20week&gradeLevel=grade%202"            # baseline (no tier)
+curl -s ".../eval-test?componentId=bar-model&evalMode=$M&topic=Books%20read%20this%20week&gradeLevel=grade%202&difficulty=easy"
+curl -s ".../eval-test?componentId=bar-model&evalMode=$M&topic=Books%20read%20this%20week&gradeLevel=grade%202&difficulty=hard"
+```
+
+Generation has natural variance (each challenge is an independent Gemini call), so
+judge the DISTRIBUTION across a tier's challenges, not one challenge — and compare
+easy-vs-hard, not adjacent tiers, for the clearest signal.
+
+### What to assert
+
+**1. Scaffold withdrawal is deterministic (code-set — must flip).**
+The generator sets scaffold fields in post-process from the tier, so they are NOT
+subject to LLM variance — they MUST change exactly as the generator's support
+table declares. For bar-model, read `resolveSupportStructure(mode, tier)` and
+check each challenge's `showBarValues`, `showTargetHighlight`, `supportTier`
+fields in `fullData.challenges[]`. Example (read_scale): easy→`showBarValues:true,
+showTargetHighlight:true`; medium→`false,true`; hard→`false,false`. If a field
+that the table says should differ is identical across tiers, the tier is **not
+wired** → **HIGH** (fix in GENERATOR).
+
+**2. Structural problem difficulty moves (the PROBLEM gets harder, not bigger).**
+Read `resolveProblemShape(mode, tier)` for the mode's ONE structural lever and
+assert it moves across tiers. For bar-model:
+
+| Mode | Lever | easy → hard |
+|------|-------|-------------|
+| `compare_bars` | height gap `\|a−b\|` | 4 → 2 → 1 (bars get closer) |
+| `read_scale` | `scale.step` | 1 → 2 |
+| `scaled_bar_graph` | `scale.step` | 2 → 5 → 10 (coarser ticks) |
+| `picture_graph` | `scale.iconValue` | 2 → 5 |
+| `graph_word_problem` | operation depth (read `prompt`) | 1-step diff → total → 2-step |
+| `build_graph` | scale-choice ambiguity (read `prompt`/dataset) | obvious → ambiguous |
+
+Numeric levers (gap, step, iconValue) are post-process-enforced → assert exactly.
+Prompt-shaped levers (operation depth, ambiguity) are LLM-validated → read the
+`prompt` text and judge it moved in the right direction across several challenges.
+A lever that doesn't move is **HIGH** (fix in GENERATOR).
+
+**3. Magnitude invariance — difficulty is structural, NOT bigger numbers.**
+The whole point ([[structural-difficulty-not-numeric]]): the bar VALUES must stay
+inside the SAME mode value band at every tier. Hard must not push values past the
+mode's declared range (compare_bars 1-10, read_scale 0-20, scaled_bar_graph 2-60,
+picture_graph multiples ≤ iconValue×8, etc.). If the only thing that changes
+between tiers is "the numbers got bigger," that's the anti-pattern → **HIGH**.
+If hard pushes values past the scope ceiling, that's a scope violation →
+**CRITICAL** (pedagogy rule #1).
+
+**4. No answer leak at ANY tier (scaffold withdrawal must not reveal/conceal wrongly).**
+Withdrawing a scaffold at hard must not expose the answer, and must not be the
+thing that was hiding it. For bar-model the answer bar's value is hidden at EVERY
+tier (`answerBarIndex`), independent of `showBarValues`; verify the read-mode
+target bar's number is never in the rendered values readout regardless of tier.
+Conversely, confirm the EASY scaffold genuinely helps (the aid is present) so the
+gradient is real. An answer visible at any tier is **CRITICAL**.
+
+**5. Null-tier no-op.** Omit `&difficulty=` and confirm scaffold fields are
+absent/undefined (component defaults them ON), `supportTier` is undefined, and the
+structural lever sits at its un-tiered default — i.e. pre-tier behavior is
+unchanged. A baseline that already looks like "hard" means the default path
+regressed → **HIGH**.
+
+A tier that fails to change scaffolds OR structural shape is a **HIGH** "tier not
+wired" finding (the manifest will stamp `difficulty` but the student sees no
+difference). Magnitude inflation or scope breakage is the more serious failure —
+flag per above.
 
 ## Key Files
 

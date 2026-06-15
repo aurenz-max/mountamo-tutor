@@ -59,6 +59,17 @@ export interface BalanceScaleData {
   rightSide: BalanceScaleObject[];
   variableValue: number;
   showTilt?: boolean;
+  /** Perception aid: exact per-side numeric totals (Left: 12 / Right: 12). Default true. */
+  showSideValues?: boolean;
+  /** Perception aid: BALANCED / UNBALANCED status pill. Default true. */
+  showBalanceStatus?: boolean;
+  /**
+   * Within-mode support tier ('easy' | 'medium' | 'hard') — how much balance
+   * feedback is on screen. Set by the generator from config.difficulty; drives
+   * showSideValues / showBalanceStatus / showTilt and the tutor's reveal level.
+   * Never changes the equations or numbers.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
   allowOperations?: ('add' | 'subtract' | 'multiply' | 'divide')[];
   stepHistory?: string[];
   gradeBand?: 'K-2' | '3-4' | '5';
@@ -181,6 +192,9 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     rightSide: initialRight = [],
     variableValue,
     showTilt = true,
+    showSideValues = true,
+    showBalanceStatus = true,
+    supportTier,
     allowOperations = ['add', 'subtract'],
     gradeBand = '3-4',
     challenges = [],
@@ -314,12 +328,25 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     currentEquation: formatEquation(currentLeft, currentRight),
     variableValue: activeVariableValue,
     gradeBand,
+    supportTier,
     phase,
     stepCount: userSteps.length,
     isSolved,
     isBalanced,
     attemptNumber: currentAttempts + 1,
-  }), [challengeType, currentChallengeIndex, challenges.length, currentChallenge, initialLeft, initialRight, currentLeft, currentRight, activeVariableValue, gradeBand, phase, userSteps.length, isSolved, isBalanced, currentAttempts]);
+  }), [challengeType, currentChallengeIndex, challenges.length, currentChallenge, initialLeft, initialRight, currentLeft, currentRight, activeVariableValue, gradeBand, supportTier, phase, userSteps.length, isSolved, isBalanced, currentAttempts]);
+
+  // Keep the tutor's reveal level in sync with the on-screen support tier so it
+  // never names a strategy the tier deliberately withheld (esp. at 'hard', where
+  // all balance feedback is off and the student must reason from the equation).
+  const tutorTierClause =
+    supportTier === 'easy'
+      ? ' [SUPPORT easy] You may name the solving strategy and walk the first step concretely; the scale shows full feedback.'
+      : supportTier === 'hard'
+        ? ' [SUPPORT hard] All balance feedback is hidden. Do NOT name the operation or strategy — ask what the student notices about the two sides; never reveal the answer.'
+        : supportTier === 'medium'
+          ? ' [SUPPORT medium] Side totals are hidden but the scale still shows balance. Nudge the next move without naming the full strategy; do not reveal the answer.'
+          : '';
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'balance-scale',
@@ -337,10 +364,11 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     sendText(
       `[ACTIVITY_START] Balance scale session: ${totalCh > 1 ? `${totalCh} equations` : 'one equation'}. Grade band: ${gradeBand}. `
       + `${gradeBand === 'K-2' ? 'Use concrete language — "mystery number" not "variable".' : ''} `
-      + `Introduce: "Look at this balance scale! Can you find the mystery number?"`,
+      + `Introduce: "Look at this balance scale! Can you find the mystery number?"`
+      + tutorTierClause,
       { silent: true }
     );
-  }, [isConnected, challenges.length, gradeBand, sendText]);
+  }, [isConnected, challenges.length, gradeBand, sendText, tutorTierClause]);
 
   // Per-challenge reset — fires whenever advance() flips currentChallengeId.
   // Resets every per-challenge UI slot so the next equation starts clean.
@@ -559,11 +587,12 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student guessed x = ${answer} but it's ${activeVariableValue}. `
-        + `Hint: "Substitute your answer back into the original equation. Does it balance?"`,
+        + `Hint: "Substitute your answer back into the original equation. Does it balance?"`
+        + tutorTierClause,
         { silent: true }
       );
     }
-  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, incrementAttempts, sendText]);
+  }, [verifyInput, activeVariableValue, currentAttempts, challenges.length, currentChallenge, currentChallengeIndex, userSteps.length, recordResult, incrementAttempts, sendText, tutorTierClause]);
 
   // Challenge advance — per-challenge UI reset is handled by the reset useEffect.
   const advanceChallenge = useCallback(() => {
@@ -703,18 +732,20 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
           ))}
         </div>
 
-        {/* Balance Status — bespoke simulation readout */}
-        <div className="flex justify-center">
-          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono ${
-            isBalanced
-              ? 'bg-green-500/15 border border-green-500/40 text-green-300'
-              : 'bg-yellow-500/15 border border-yellow-500/40 text-yellow-300'
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${isBalanced ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse`} />
-            {isBalanced ? 'BALANCED' : 'UNBALANCED'}
-            {isSolved && <span className="text-purple-300 ml-2">SOLVED</span>}
+        {/* Balance Status — bespoke simulation readout (support-tier perception aid) */}
+        {showBalanceStatus && (
+          <div className="flex justify-center">
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono ${
+              isBalanced
+                ? 'bg-green-500/15 border border-green-500/40 text-green-300'
+                : 'bg-yellow-500/15 border border-yellow-500/40 text-yellow-300'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${isBalanced ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse`} />
+              {isBalanced ? 'BALANCED' : 'UNBALANCED'}
+              {isSolved && <span className="text-purple-300 ml-2">SOLVED</span>}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Scale Visual — bespoke interaction surface (drag/click) */}
         <div className="relative flex justify-center" style={{ minHeight: 220 }}>
@@ -793,10 +824,13 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
             <span className="text-slate-500">=</span>
             <span className="text-cyan-300">{currentRight.map(formatObj).join(' + ') || '0'}</span>
           </div>
-          <div className="flex justify-center gap-6 mt-2 text-xs text-slate-500">
-            <span>Left: <span className="text-blue-300 font-mono">{leftValue}</span></span>
-            <span>Right: <span className="text-cyan-300 font-mono">{rightValue}</span></span>
-          </div>
+          {/* Exact side totals — support-tier perception aid (hidden at medium/hard) */}
+          {showSideValues && (
+            <div className="flex justify-center gap-6 mt-2 text-xs text-slate-500">
+              <span>Left: <span className="text-blue-300 font-mono">{leftValue}</span></span>
+              <span>Right: <span className="text-cyan-300 font-mono">{rightValue}</span></span>
+            </div>
+          )}
         </LuminaPanel>
 
         {/* Block Palette — bespoke drag source */}

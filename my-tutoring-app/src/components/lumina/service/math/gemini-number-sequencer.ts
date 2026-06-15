@@ -59,6 +59,132 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+type ChallengeType =
+  | 'count-from'
+  | 'before-after'
+  | 'order-cards'
+  | 'fill-missing'
+  | 'decade-fill';
+
+// ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract (same as counting-board / ten-frame): config.targetEvalMode
+// says WHICH skill (task identity, matched to the objective by the manifest);
+// config.difficulty says how much on-workspace SUPPORT the student gets while doing
+// it ('easy' = max scaffolding, 'hard' = min). The tier is per-component. It NEVER
+// changes the numbers or the range: rangeMin/rangeMax and the pedagogical scope own
+// magnitude. A harder tier withdraws the CPA dot model + number-line reference and
+// adds STRUCTURAL load (more blanks / more cards / a cross-hundred decade boundary),
+// never a bigger number. See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** CPA dot model under each number — the concrete representation lever (#3). */
+  showDotArrays: boolean;
+  /** Number-line tick reference — the perception/tracking lever (#1). */
+  showNumberLine: boolean;
+  /** Target structural load: how many blanks/slots/cards/missing-decades.
+   *  Code enforces this via correctAnswers.length / sequence.length, NEVER by
+   *  changing the magnitude of any number. null = leave the LLM's choice. */
+  structuralCount: number | null;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-workspace support structure for a tier on a pinned challenge type.
+ * Support is withdrawn as the tier hardens (CPA dots → number line → bare), and the
+ * structural load grows (more blanks/cards) — the SAME task, never a bigger number,
+ * never a different mode.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  // Default CPA/perception levers: easy = both on, medium = number line only,
+  // hard = both off. (decade-fill keeps a thinner number-line ladder — see below.)
+  let showDotArrays = tier === 'easy';
+  let showNumberLine = tier !== 'hard';
+  let structuralCount: number | null = null;
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-workspace SCAFFOLDING + STRUCTURAL load only (${tier === 'easy' ? 'maximum support: the dot model and number line help the student see and track the sequence' : tier === 'medium' ? 'moderate support: only the number line remains; the student tracks the values themselves' : 'minimum support: no dot model, no number line; the student reasons from the numbers alone'}). Keep every number within the pedagogical scope and the per-mode range; a harder tier NEVER means bigger numbers — only less on-screen help and more structural load (more blanks/cards, a harder boundary).`,
+  ];
+
+  switch (pinnedType) {
+    case 'count-from':
+      structuralCount = tier === 'easy' ? 3 : tier === 'medium' ? 4 : 5;
+      promptLines.push(
+        tier === 'easy'
+          ? `Give EXACTLY ${structuralCount} continuation values in correctAnswers. The instruction should NAME the strategy and model the first step (e.g. "Start at 3, then say 4, 5, 6…"). Forward counting only.`
+          : tier === 'medium'
+            ? `Give EXACTLY ${structuralCount} continuation values in correctAnswers. The instruction states the task only ("Keep counting forward from N") without modelling the steps.`
+            : `Give EXACTLY ${structuralCount} continuation values in correctAnswers. Bare instruction ("Continue the count"); for Grade 1 you may count backward to add structural load. Never enlarge the numbers beyond scope.`,
+      );
+      break;
+    case 'before-after':
+      // Structural axis is thin here (always a 2-cell sequence, 1 blank), so lean
+      // on CPA + instruction. structuralCount stays 1 (the single adjacent blank).
+      structuralCount = 1;
+      promptLines.push(
+        tier === 'easy'
+          ? `Keep the single blank. The instruction should cue the DIRECTION explicitly ("What number comes right BEFORE 8? Count back one.").`
+          : tier === 'medium'
+            ? `Keep the single blank. Neutral instruction ("What number is missing?") — no direction-counting cue.`
+            : `Keep the single blank. Bare prompt only; the student infers the adjacency relationship unaided.`,
+      );
+      break;
+    case 'order-cards':
+      structuralCount = tier === 'easy' ? 3 : tier === 'medium' ? 4 : 6;
+      promptLines.push(
+        `Provide EXACTLY ${structuralCount} cards (sequence has ${structuralCount} numbers, correctAnswers is the same ${structuralCount} sorted ascending). `
+        + (tier === 'easy'
+          ? 'Smaller, easy-to-order set.'
+          : tier === 'hard'
+            ? 'A larger set to order; no dot model or number line to lean on.'
+            : 'A moderate set.'),
+      );
+      break;
+    case 'fill-missing':
+      structuralCount = tier === 'easy' ? 1 : tier === 'medium' ? 2 : 3;
+      promptLines.push(
+        tier === 'easy'
+          ? `Use EXACTLY 1 blank (one null; correctAnswers has 1 value).`
+          : tier === 'medium'
+            ? `Use EXACTLY 2 blanks (two nulls; correctAnswers has 2 values). Keep the two blanks NON-ADJACENT so each is solved from its own neighbours.`
+            : `Use EXACTLY 3 blanks (three nulls; correctAnswers has 3 values). Spread the blanks out (non-adjacent) so the student reconstructs more of the pattern unaided.`,
+      );
+      break;
+    case 'decade-fill':
+      // decade-fill is symbolic; keep a thinner CPA ladder (no dots — too many),
+      // number line only as the easy/medium aid, withdrawn at hard.
+      showDotArrays = false;
+      showNumberLine = tier !== 'hard';
+      structuralCount = tier === 'easy' ? 1 : tier === 'medium' ? 2 : 3;
+      promptLines.push(
+        tier === 'easy'
+          ? `Use EXACTLY 1 missing decade (one null; correctAnswers has 1 value). Keep the chart visible so the surrounding decades support the answer.`
+          : tier === 'medium'
+            ? `Use EXACTLY 2 missing decades (two nulls; correctAnswers has 2 values), NON-ADJACENT so the visible decades around each still support it.`
+            : `Use EXACTLY 3 missing decades (three nulls; correctAnswers has 3 values), non-adjacent, and spread across the visible range (≤ 100 — never beyond the grade ceiling). Keep at least one non-adjacent visible decade between gaps so visible decades never trivially reveal the missing ones.`,
+      );
+      break;
+  }
+
+  return { showDotArrays, showNumberLine, structuralCount, promptLines };
+}
+
 // ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
@@ -152,7 +278,13 @@ export const generateNumberSequencer = async (
   topic: string,
   gradeLevel: string,
   config?: {
-    difficulty?: number;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding + structural load within it.
+     * NEVER changes the numbers or the range.
+     */
+    difficulty?: string;
     challengeCount?: number;
     gradeBand?: 'K' | '1';
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
@@ -182,7 +314,20 @@ export const generateNumberSequencer = async (
 
   const gradeBand = config?.gradeBand || (gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1');
   const challengeCount = config?.challengeCount || 5;
-  const difficulty = config?.difficulty || 1;
+
+  // ── Within-mode support tier (config.difficulty) ──
+  // The student's tier DRIVES the deterministic application below (per challenge).
+  // pinnedType (exactly one mode) is used ONLY for the prompt tierSection tone.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding + structural level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   // ── Pedagogical scope — binds output to the lesson objective (topic wins over grade band) ──
   const scope = resolvePedagogicalScope(topic, config, config?.intent);
@@ -197,7 +342,7 @@ CONTEXT:
 - Key skills: number sequence, before/after, counting on/back, number ordering, decade patterns
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
@@ -221,11 +366,6 @@ GUIDELINES FOR GRADE LEVELS:
   * showDotArrays: false for numbers > 20 (too many dots)
   * showNumberLine: true
 ` : ''}
-
-DIFFICULTY LEVEL: ${difficulty} (1=easy, 2=medium, 3=hard)
-- Easy: shorter sequences, fewer blanks, smaller numbers
-- Medium: standard sequences, moderate blanks
-- Hard: longer sequences, more blanks, larger numbers
 
 REQUIREMENTS:
 1. Generate ${challengeCount} challenges
@@ -381,6 +521,123 @@ Return the complete number sequencer configuration.
     };
     console.log(`[NumberSequencer] No valid challenges — using ${fallbackType} fallback`);
     data.challenges = [{ id: 'seq1', ...fallbacks[fallbackType] ?? fallbacks['fill-missing'] }];
+  }
+
+  // ── Apply the support-tier structure deterministically (code owns the SUPPORT
+  // structure; the LLM only chose the numbers). Withdraws the CPA dot model +
+  // number-line reference and tunes structural load (blank/slot/card counts) per
+  // challenge as the tier hardens — NEVER alters any number's magnitude or the
+  // range. Runs AFTER all structural fixups so a 'hard' tier can withdraw them.
+  // Gated ONLY on a tier being present (blends get difficulty too). ──
+  if (supportTier) {
+    type Ch = {
+      type: ChallengeType;
+      sequence: (number | null)[];
+      correctAnswers: number[];
+      direction?: string;
+    };
+
+    for (const ch of data.challenges as Ch[]) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      if (sc.structuralCount == null) continue;
+      const target = sc.structuralCount;
+
+      // Re-shape structural load WITHOUT changing magnitudes. We only add/remove
+      // blanks/cards from the values the LLM already chose, keeping the
+      // correctAnswers ↔ null-count / sequence-length contract the check logic needs.
+      if (ch.type === 'count-from') {
+        // correctAnswers = the continuation values (the # of slots). Grow/shrink the
+        // run by extending the arithmetic step the LLM established, never by scaling.
+        const ans = ch.correctAnswers.filter((n) => typeof n === 'number');
+        if (ans.length >= 2) {
+          const step = ans[1] - ans[0];
+          const start = ans[0];
+          ch.correctAnswers = Array.from({ length: target }, (_, i) => start + step * i);
+        } else if (ans.length === 1) {
+          const dir = ch.direction === 'backward' ? -1 : 1;
+          ch.correctAnswers = Array.from({ length: target }, (_, i) => ans[0] + dir * i);
+        }
+        // sequence stays [] or [startNumber] for count-from; canCheck reads countInputs
+        // sized off correctAnswers.length, so the contract holds.
+      } else if (ch.type === 'order-cards') {
+        // sequence = the shuffled cards (no nulls); correctAnswers = sorted same set.
+        // Resize the set by trimming the largest cards or extending by the established
+        // step from the existing sorted values — magnitudes already in scope.
+        const sorted = [...ch.correctAnswers].filter((n) => typeof n === 'number').sort((a, b) => a - b);
+        if (sorted.length >= 1) {
+          let set = sorted;
+          if (set.length > target) {
+            set = set.slice(0, target);
+          } else if (set.length < target) {
+            const step = set.length >= 2 ? Math.max(1, set[1] - set[0]) : 1;
+            while (set.length < target) set.push(set[set.length - 1] + step);
+          }
+          ch.correctAnswers = [...set];
+          // Re-shuffle the same values for the card pool (deterministic rotation).
+          ch.sequence = [...set.slice(1), set[0]];
+        }
+      } else if (ch.type === 'fill-missing' || ch.type === 'decade-fill') {
+        // Re-derive a complete value list (fill the existing nulls with the answers
+        // in order), then choose `target` NON-ADJACENT positions to blank back out —
+        // every value is one the LLM already produced, so nothing's magnitude changes.
+        const answers = ch.correctAnswers.filter((n) => typeof n === 'number');
+        // Reconstruct full sequence: walk sequence, substitute answers for nulls.
+        let ai = 0;
+        const full: number[] = [];
+        let ok = true;
+        for (const v of ch.sequence) {
+          if (v === null) {
+            if (ai < answers.length) full.push(answers[ai++]);
+            else { ok = false; break; }
+          } else if (typeof v === 'number') {
+            full.push(v);
+          }
+        }
+        // Only reshape when we have a clean full reconstruction and room to place
+        // `target` non-adjacent blanks (need at least 2*target-1 positions).
+        if (ok && ai === answers.length && full.length >= Math.max(2, 2 * target - 1)) {
+          const want = Math.min(target, Math.floor((full.length + 1) / 2));
+          // Pick interior, non-adjacent indices (avoid the first/last anchor when possible).
+          const blankIdx: number[] = [];
+          let pos = full.length >= 3 ? 1 : 0;
+          while (blankIdx.length < want && pos < full.length) {
+            blankIdx.push(pos);
+            pos += 2; // guarantees non-adjacency
+          }
+          if (blankIdx.length === want) {
+            const newSeq: (number | null)[] = full.map((n, i) => (blankIdx.includes(i) ? null : n));
+            ch.sequence = newSeq;
+            ch.correctAnswers = blankIdx.map((i) => full[i]);
+          }
+        }
+        // before-after intentionally untouched here (always its single adjacent blank).
+      }
+    }
+
+    // CPA / perception levers are component-global booleans (one per render), so they
+    // can only be resolved for a single pinned mode. For a blend, leave the LLM/grade
+    // defaults (the per-challenge structural load above still applies).
+    if (tierScaffold) {
+      data.showDotArrays = tierScaffold.showDotArrays;
+      data.showNumberLine = tierScaffold.showNumberLine;
+      // Honor the existing K>20 dot-suppression contract — never re-enable noisy dots.
+      const maxNum = Math.max(
+        0,
+        ...(data.challenges as Array<{ sequence: (number | null)[]; correctAnswers: number[] }>).flatMap((c) =>
+          [...c.sequence.filter((n): n is number => typeof n === 'number'), ...c.correctAnswers],
+        ),
+      );
+      if (maxNum > 20) data.showDotArrays = false;
+    }
+
+    // Persist the tier so the live tutor matches what's on screen (per-challenge blends included).
+    data.supportTier = supportTier;
+
+    console.log(
+      `[NumberSequencer] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) `
+      + `→ dotArrays=${data.showDotArrays}, numberLine=${data.showNumberLine}`,
+    );
   }
 
   // Final summary log

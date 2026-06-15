@@ -38,6 +38,181 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ============================================================================
+// Support Tiers (config.difficulty — within-mode scaffolding + problem shape)
+// ============================================================================
+
+type SupportTier = "easy" | "medium" | "hard";
+const SUPPORT_TIERS: readonly SupportTier[] = ["easy", "medium", "hard"];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? "";
+  return (SUPPORT_TIERS as readonly string[]).includes(d)
+    ? (d as SupportTier)
+    : null;
+}
+
+/**
+ * Per-challenge on-screen scaffold flags. Each maps to one always-on (or, for
+ * drop-lines, newly-added) perception aid in CoordinateGraph.tsx. Existing aids
+ * default ON when the flag is absent (no-tier path unchanged); the NEW
+ * `showDropLines` aid defaults OFF and only turns on at the easy tier.
+ */
+interface SupportScaffold {
+  showHoverReadout: boolean; // plot_point: live (x,y) echo under the hover ghost
+  showDropLines: boolean; // read_point: dashed lines from point to each axis (NEW)
+  showAxisLabels: boolean; // all: numeric tick labels on the axes
+  showRiseRunGuides: boolean; // find_slope: dashed rise/run triangle
+  showRiseRunLabels: boolean; // find_slope: "rise = N" / "run = N" numeric labels
+  showPointLabels: boolean; // find_slope: (x,y) text beside each point
+  showEquationLabel: boolean; // find_intercept: y = mx + b label (states the intercept!)
+  showInterceptMarker: boolean; // find_intercept: pulsing "?" marker at the crossing
+  promptLines: string[];
+}
+
+/** Withdraw on-screen support as the tier hardens. Resolved per challenge from
+ *  its OWN mode so blended/auto sessions get difficulty too. NEVER changes numbers. */
+function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffold {
+  const base: SupportScaffold = {
+    showHoverReadout: true,
+    showDropLines: false,
+    showAxisLabels: true,
+    showRiseRunGuides: true,
+    showRiseRunLabels: true,
+    showPointLabels: true,
+    showEquationLabel: true,
+    showInterceptMarker: true,
+    promptLines: [],
+  };
+
+  switch (type) {
+    case "plot_point":
+      if (tier === "easy") {
+        base.promptLines.push(
+          'EASY: the live "(x, y)" hover readout and labeled axis ticks stay on — the student can confirm the coordinates before clicking.'
+        );
+      } else if (tier === "medium") {
+        base.showHoverReadout = false;
+        base.promptLines.push(
+          "MEDIUM: hide the live hover readout (the student commits without the coordinate echo); axis ticks stay labeled."
+        );
+      } else {
+        base.showHoverReadout = false;
+        base.showAxisLabels = false;
+        base.promptLines.push(
+          "HARD: no hover readout and no axis-tick labels — the student counts from the origin and plots unaided."
+        );
+      }
+      break;
+    case "read_point":
+      if (tier === "easy") {
+        base.showDropLines = true;
+        base.promptLines.push(
+          "EASY: dashed drop-lines connect the point to each axis and the ticks are labeled — the student reads each coordinate directly."
+        );
+      } else if (tier === "medium") {
+        base.promptLines.push(
+          "MEDIUM: no drop-lines; axis ticks stay labeled."
+        );
+      } else {
+        base.showAxisLabels = false;
+        base.promptLines.push(
+          "HARD: no drop-lines and no axis labels — the student counts gridlines from the origin."
+        );
+      }
+      break;
+    case "find_slope":
+      if (tier === "easy") {
+        base.promptLines.push(
+          'EASY: the rise/run triangle is drawn with "rise = " / "run = " values and both point coordinates are labeled.'
+        );
+      } else if (tier === "medium") {
+        base.showRiseRunLabels = false;
+        base.promptLines.push(
+          "MEDIUM: keep the rise/run triangle but hide its numeric labels — the student measures rise and run. Point coordinates stay labeled."
+        );
+      } else {
+        base.showRiseRunGuides = false;
+        base.showRiseRunLabels = false;
+        base.showPointLabels = false;
+        base.promptLines.push(
+          "HARD: no rise/run triangle, no numeric guides, no point-coordinate labels — the student reads both points off the grid and computes the slope unaided."
+        );
+      }
+      break;
+    case "find_intercept":
+      if (tier === "easy") {
+        base.promptLines.push(
+          "EASY: the y = mx + b equation label and the highlighted y-axis crossing marker are both shown."
+        );
+      } else if (tier === "medium") {
+        base.showEquationLabel = false;
+        base.promptLines.push(
+          "MEDIUM: hide the equation label (it states the intercept); keep the highlighted crossing marker so the student knows where to read."
+        );
+      } else {
+        base.showEquationLabel = false;
+        base.showInterceptMarker = false;
+        base.promptLines.push(
+          "HARD: no equation label and no crossing marker — the student locates where the line meets the y-axis unaided."
+        );
+      }
+      break;
+  }
+  return base;
+}
+
+/** Second axis: one in-mode STRUCTURAL lever (slope/intercept cleanliness) so the
+ *  MC compute-modes don't produce byte-identical problems across tiers. Prompt-shaped
+ *  (the existing post-validation keeps slopes clean); stays in-grid — structure, not magnitude. */
+function resolveProblemShape(type: string, tier: SupportTier): { promptLines: string[] } {
+  const lines: string[] = [];
+  if (type === "find_slope") {
+    if (tier === "easy")
+      lines.push(
+        "STRUCTURE: use only integer slopes (e.g. 1, 2, -3) with small, exact rise and run."
+      );
+    else if (tier === "medium")
+      lines.push(
+        "STRUCTURE: mix integer and unit-fraction slopes (1/2, -1/3, 2). Keep all points in range and fractions clean."
+      );
+    else
+      lines.push(
+        "STRUCTURE: use non-unit fraction slopes (2/3, -3/4, 3/5) that require reducing rise/run. Keep every point in range — harder STRUCTURE, not bigger numbers."
+      );
+  } else if (type === "find_intercept") {
+    if (tier === "easy")
+      lines.push(
+        "STRUCTURE: integer slopes so the line crosses the y-axis at an obvious integer; a defining point may sit on the y-axis."
+      );
+    else if (tier === "medium")
+      lines.push(
+        "STRUCTURE: integer or simple-fraction slopes; neither defining point lies on the y-axis (the student extends the line)."
+      );
+    else
+      lines.push(
+        "STRUCTURE: fractional slopes with defining points far from the y-axis, so the crossing must be extrapolated. Keep numbers in range — harder STRUCTURE, not bigger."
+      );
+  }
+  return { promptLines: lines };
+}
+
+const TIER_GUARDRAIL =
+  "Keep every coordinate within the stated grid range — this tier changes how much on-screen help is shown and the problem STRUCTURE (slope cleanliness, point placement), NOT the size of the numbers.";
+
+/** Merge the scaffolding (how much help) and problem-shape (how hard a problem)
+ *  prompt lines into one block the sub-generator injects. */
+function buildTierPromptSection(type: string, tier: SupportTier): string {
+  const all = [
+    TIER_GUARDRAIL,
+    ...resolveSupportStructure(type, tier).promptLines,
+    ...resolveProblemShape(type, tier).promptLines,
+  ];
+  return `\n\n## SUPPORT TIER "${tier}"\n${all.map((l) => `- ${l}`).join("\n")}\n`;
+}
+
+// ============================================================================
 // Helpers
 // ============================================================================
 
@@ -311,7 +486,7 @@ async function callGemini(
   prompt: string
 ): Promise<RawResult> {
   const result = await ai.models.generateContent({
-    model: "gemini-2.0-flash-lite",
+    model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -326,7 +501,8 @@ async function generatePlotPoint(
   topic: string,
   gradeLevel: string,
   gridMin: number,
-  gridMax: number
+  gridMax: number,
+  tier: SupportTier | null
 ): Promise<{ title: string; challenges: CoordinateGraphChallenge[] }> {
   const prompt = `Generate 5 coordinate plane challenges where a student must plot a point at given coordinates.
 
@@ -341,7 +517,7 @@ RULES:
 4. Each instruction must state the exact point, e.g. "Plot the point (3, -2) on the coordinate plane"
 5. Vary hints: some about x-axis direction, some about y-axis, some about quadrants
 6. Make instructions age-appropriate for ${gradeLevel}
-7. DO NOT place points at (0,0)`;
+7. DO NOT place points at (0,0)${tier ? buildTierPromptSection("plot_point", tier) : ""}`;
 
   const raw = await callGemini(plotPointSchema, prompt);
   const title = raw.title || `Plot Points: ${topic}`;
@@ -391,7 +567,8 @@ async function generateReadPoint(
   topic: string,
   gradeLevel: string,
   gridMin: number,
-  gridMax: number
+  gridMax: number,
+  tier: SupportTier | null
 ): Promise<{ title: string; challenges: CoordinateGraphChallenge[] }> {
   const prompt = `Generate 5 coordinate plane challenges where a point is displayed and the student must identify its coordinates from 4 multiple-choice options.
 
@@ -406,7 +583,7 @@ RULES:
 4. All options must be in "(x, y)" format
 5. correctOptionIndex must point to the correct option (0-3)
 6. Vary point locations across challenges
-7. DO NOT place points at (0,0)`;
+7. DO NOT place points at (0,0)${tier ? buildTierPromptSection("read_point", tier) : ""}`;
 
   const raw = await callGemini(readPointSchema, prompt);
   const title = raw.title || `Read Coordinates: ${topic}`;
@@ -478,7 +655,8 @@ async function generateFindSlope(
   topic: string,
   gradeLevel: string,
   gridMin: number,
-  gridMax: number
+  gridMax: number,
+  tier: SupportTier | null
 ): Promise<{ title: string; challenges: CoordinateGraphChallenge[] }> {
   const prompt = `Generate 5 find-slope challenges. Two points are shown on a coordinate plane and the student must calculate the slope.
 
@@ -494,7 +672,7 @@ RULES:
 5. Distractors: include reciprocal (run/rise), negated slope, and one random plausible value
 6. correctOptionIndex must point to the correct slope (0-3)
 7. Vary slopes: include positive, negative, and zero slopes across the 5 challenges
-8. Make points well-separated (at least 2 units apart on each axis)`;
+8. Make points well-separated (at least 2 units apart on each axis)${tier ? buildTierPromptSection("find_slope", tier) : ""}`;
 
   const raw = await callGemini(findSlopeSchema, prompt);
   const title = raw.title || `Find the Slope: ${topic}`;
@@ -573,7 +751,8 @@ async function generateFindIntercept(
   topic: string,
   gradeLevel: string,
   gridMin: number,
-  gridMax: number
+  gridMax: number,
+  tier: SupportTier | null
 ): Promise<{ title: string; challenges: CoordinateGraphChallenge[] }> {
   const prompt = `Generate 5 find-y-intercept challenges. A line is drawn on a coordinate plane and the student must identify where it crosses the y-axis.
 
@@ -589,7 +768,7 @@ RULES:
 5. Options should be integer y-intercept values as strings, e.g. "3", "-2"
 6. Distractors: include the slope value, x-intercept, negated intercept, off-by-one
 7. correctOptionIndex must point to the correct y-intercept (0-3)
-8. Choose points that define lines with clean slopes (integers or simple fractions)`;
+8. Choose points that define lines with clean slopes (integers or simple fractions)${tier ? buildTierPromptSection("find_intercept", tier) : ""}`;
 
   const raw = await callGemini(findInterceptSchema, prompt);
   const title = raw.title || `Find the Y-Intercept: ${topic}`;
@@ -684,7 +863,7 @@ RULES:
 export const generateCoordinateGraph = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>
+  config?: Partial<{ targetEvalMode?: string; difficulty?: string }>
 ): Promise<CoordinateGraphData> => {
   // Resolve eval mode to challenge type(s)
   const constraint = resolveEvalModeConstraint(
@@ -693,6 +872,14 @@ export const generateCoordinateGraph = async (
     CHALLENGE_TYPE_DOCS
   );
   logEvalModeResolution("coordinate-graph", config?.targetEvalMode, constraint);
+
+  // Within-mode support tier (config.difficulty). DRIVES scaffold application for
+  // single OR blended sessions; pinnedType is only the prompt tone for one mode.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    constraint && constraint.allowedTypes.length === 1
+      ? constraint.allowedTypes[0]
+      : undefined;
 
   const challengeTypes = constraint
     ? constraint.allowedTypes
@@ -712,7 +899,8 @@ export const generateCoordinateGraph = async (
       t: string,
       g: string,
       min: number,
-      max: number
+      max: number,
+      tier: SupportTier | null
     ) => Promise<{ title: string; challenges: CoordinateGraphChallenge[] }>
   > = {
     plot_point: generatePlotPoint,
@@ -725,7 +913,7 @@ export const generateCoordinateGraph = async (
     const gen = generators[ct];
     if (!gen) continue;
     const ctRange = getGridRange(gradeLevel, ct);
-    const result = await gen(topic, gradeLevel, ctRange.gridMin, ctRange.gridMax);
+    const result = await gen(topic, gradeLevel, ctRange.gridMin, ctRange.gridMax, supportTier);
     if (allChallenges.length === 0) title = result.title;
     allChallenges.push(...result.challenges);
   }
@@ -745,6 +933,29 @@ export const generateCoordinateGraph = async (
     gradeBand = "3-5";
   else if (/algebra|9|10|11|12|pre-?calc/i.test(gradeLevel))
     gradeBand = "9-12";
+
+  // Apply support tier per challenge (mode-correct for blends). Code owns the
+  // scaffold STRUCTURE; the LLM only chose the numbers. Gated on a tier being
+  // present, NOT on pinnedType — so blended/auto sessions get difficulty too.
+  if (supportTier) {
+    for (const ch of allChallenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.supportTier = supportTier;
+      ch.showHoverReadout = sc.showHoverReadout;
+      ch.showDropLines = sc.showDropLines;
+      ch.showAxisLabels = sc.showAxisLabels;
+      ch.showRiseRunGuides = sc.showRiseRunGuides;
+      ch.showRiseRunLabels = sc.showRiseRunLabels;
+      ch.showPointLabels = sc.showPointLabels;
+      ch.showEquationLabel = sc.showEquationLabel;
+      ch.showInterceptMarker = sc.showInterceptMarker;
+    }
+    console.log(
+      `[coordinate-graph] Support tier "${supportTier}" applied per-challenge (${
+        pinnedType ? `single-mode ${pinnedType}` : "blended"
+      })`
+    );
+  }
 
   return {
     title,

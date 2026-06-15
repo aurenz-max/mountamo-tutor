@@ -46,6 +46,28 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — second axis of the two-field
+// contract: targetEvalMode = WHICH skill, difficulty = HOW MUCH on-screen
+// scaffolding within it. A tier withdraws perception/tracking aids (tick labels,
+// benchmark anchors, the worked jump arc) and dials hint explicitness — it NEVER
+// changes the target values, the scope `range`, or the snap precision/tolerance
+// (those are owned by the eval mode + scope + numberType). The one STRUCTURAL
+// lever is show_jump's steps-to-solve (1 op easy/med → 2 chained ops hard), and
+// even that keeps every cumulative landing INSIDE the same scope `range`. See
+// memory [[structural-difficulty-not-numeric]] / [[feedback_llm-window-code-builds-structure]].
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ---------------------------------------------------------------------------
 // Tuning — per-mode instance counts (see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a)
 // ---------------------------------------------------------------------------
 
@@ -69,6 +91,159 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
 
 function resolveCount(type: ChallengeType): number {
   return Math.max(1, Math.min(MAX_INSTANCE_COUNT, COUNT_BY_MODE[type] ?? DEFAULT_INSTANCE_COUNT));
+}
+
+// ---------------------------------------------------------------------------
+// Bespoke support-tier levers (the creative 20%) — one field per lever found in
+// the COMPONENT. Number-line's interaction surface exposes:
+//   • tickInterval (NumberLineData)  → coarser interval = sparse labels = harder
+//     to read a position. getLabelInterval() then derives label density from it.
+//   • highlights[] (NumberLineData)  → benchmark anchor dots ("a helper mark") the
+//     student reads from. NEVER the target value (leak guard, see addAnchors()).
+//   • operations[].showJumpArc       → the worked arc + ±N label = near-complete
+//     worked example; ON only at EASY, withdrawn by MEDIUM.
+//   • operations[] length            → STRUCTURAL steps-to-solve: 1 op (easy/med)
+//     → 2 chained ops (hard). Cumulative landing clamped inside `range`.
+//   • instruction/hint tone          → modality #2 (text), shaped via promptLines.
+// Snap precision / answer tolerance stays tied to numberType, NEVER the tier.
+// ---------------------------------------------------------------------------
+
+interface SupportScaffold {
+  /** Forced tick-label coarseness multiplier vs. the default interval. 1 = default
+   *  major ticks; >1 = sparser labels (coarser interval); <1 (never used) denser.
+   *  null = leave the component default. plot_point/find_between/order_values. */
+  labelCoarseness: number | null;
+  /** Show a benchmark anchor highlight NEAR (never equal to) each target so the
+   *  student counts from a helper mark. plot_point / find_between only. */
+  showAnchors: boolean;
+  /** show_jump only: draw the worked arc + ±N (a worked example). EASY only. */
+  showJumpArc: boolean;
+  /** show_jump only: STRUCTURAL steps-to-solve. 1 op (easy/med) → 2 chained (hard). */
+  jumpSteps: 1 | 2;
+  /** Prompt lines describing the tier to the sub-generator (hint-tone only #2). */
+  promptLines: string[];
+}
+
+const TIER_GUARDRAIL =
+  'Support tier sets on-screen SCAFFOLDING and (for jumps) problem STRUCTURE only — ' +
+  'it NEVER changes the target numbers, the number-line range, or how precisely the ' +
+  'student must place a point. Keep every value within the given range.';
+
+/** easy → hard support gradient, per challenge type. Code owns the structure
+ *  (anchors, arc, tick coarseness, jump steps); the LLM only writes the words. */
+function resolveSupportStructure(type: ChallengeType, tier: SupportTier): SupportScaffold {
+  switch (type) {
+    case 'show_jump':
+      return {
+        labelCoarseness: null,
+        showAnchors: false,
+        showJumpArc: tier === 'easy',          // worked arc + ±N only at easy
+        jumpSteps: tier === 'hard' ? 2 : 1,    // STRUCTURAL: chained ops at hard
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: a single jump, and the worked arc + size are drawn on the line. The hint may NAME the hop count ("count 3 hops to the right").'
+            : tier === 'medium'
+              ? 'MEDIUM: a single jump, the start marker is shown but the arc is hidden — the student counts the hops themselves. The hint nudges direction/count without naming the landing.'
+              : 'HARD: TWO chained jumps (multi-step) — the student performs the first hop, then jumps again from where they landed. No arc, no anchors. Hint is terse: ask which way each jump goes; never name a landing value.',
+        ],
+      };
+    case 'order_values':
+      return {
+        labelCoarseness: tier === 'easy' ? 1 : tier === 'hard' ? 2 : null,
+        showAnchors: tier === 'easy',          // benchmark dots to compare against
+        showJumpArc: false,
+        jumpSteps: 1,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: dense tick labels and benchmark anchor dots are on the line. Hint may say "find each number on the line first".'
+            : tier === 'medium'
+              ? 'MEDIUM: default labels, no anchors — the student locates each value unaided.'
+              : 'HARD: sparse tick labels and no anchors — the student estimates positions. No hint hand-holding; ask them to compare two at a time.',
+        ],
+      };
+    case 'find_between':
+      return {
+        labelCoarseness: tier === 'easy' ? 1 : tier === 'hard' ? 2 : null,
+        showAnchors: tier === 'easy',          // anchors in the gap (never the bounds-as-answer)
+        showJumpArc: false,
+        jumpSteps: 1,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: dense labels in the gap and benchmark anchor dots between the two marks. Hint may name the tick marks that sit between the bounds.'
+            : tier === 'medium'
+              ? 'MEDIUM: default labels, a wider gap, no anchors — the student reasons about what lies between.'
+              : 'HARD: sparse labels, a wide gap, no anchors — the student estimates. Vague hint only ("somewhere in the middle of the two"); never name a tick.',
+        ],
+      };
+    case 'plot_point':
+    default:
+      return {
+        labelCoarseness: tier === 'easy' ? 1 : tier === 'hard' ? 2 : null,
+        showAnchors: tier === 'easy',          // a benchmark anchor NEAR (≠) the target
+        showJumpArc: false,
+        jumpSteps: 1,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: every tick is labeled and a benchmark anchor dot sits near the target. The instruction may name the neighbouring tick marks the target lives between.'
+            : tier === 'medium'
+              ? 'MEDIUM: major ticks only, no anchor — the student finds the spot using the labeled ticks.'
+              : 'HARD: sparse tick labels (coarser interval) and no anchor — an estimate-style placement. The hint is vague ("about how far along?"); never name the neighbouring numbers.',
+        ],
+      };
+  }
+}
+
+/**
+ * Build benchmark anchor highlights for a challenge WITHOUT ever including a
+ * target value (the leak guard — an anchor equal to the answer trivialises the
+ * task for plot_point/find_between). Anchors sit on labeled ticks NEAR the
+ * targets and stay inside `range`, so the auto-zoom (which fits all highlights)
+ * does not widen the view and undermine the aid.
+ */
+function buildAnchorsForChallenge(
+  ch: NumberLineChallenge,
+  range: { min: number; max: number },
+  tickInterval: number,
+): { label: string; value: number }[] {
+  const targets = ch.targetValues ?? [];
+  if (targets.length === 0) return [];
+  const lo = Math.min(...targets);
+  const hi = Math.max(...targets);
+
+  // Candidate anchor values: labeled ticks (multiples of tickInterval) that are
+  // NEAR the target span but never coincide with any target.
+  const isTarget = (v: number) => targets.some((t) => Math.abs(t - v) < 1e-6);
+  const step = Math.max(tickInterval, 1);
+
+  const candidates: number[] = [];
+  if (ch.type === 'find_between') {
+    // Anchors strictly BETWEEN the two bounds, on a tick, not equal to a bound.
+    for (let v = Math.ceil((lo + step) / step) * step; v < hi; v += step) {
+      if (!isTarget(v)) candidates.push(v);
+    }
+  } else {
+    // A helper mark just below and just above the target span (on a tick).
+    const below = Math.floor((lo - step) / step) * step;
+    const above = Math.ceil((hi + step) / step) * step;
+    for (const v of [below, above]) {
+      if (v >= range.min && v <= range.max && !isTarget(v)) candidates.push(v);
+    }
+  }
+
+  // Keep at most 2 anchors, all in-range, de-duplicated, never a target.
+  const seen = new Set<number>();
+  const anchors: { label: string; value: number }[] = [];
+  for (const v of candidates) {
+    if (v < range.min || v > range.max || isTarget(v) || seen.has(v)) continue;
+    seen.add(v);
+    anchors.push({ label: 'helper', value: v });
+    if (anchors.length >= 2) break;
+  }
+  return anchors;
 }
 
 // ---------------------------------------------------------------------------
@@ -321,6 +496,11 @@ async function generatePlotPointChallenges(
     ? 'IDENTIFY MODE (Kindergarten): use very warm, simple language. Every tick is labeled; this is pure number recognition.'
     : `GRADE BAND: ${gradeBand}. ${gradeBand === 'K-2' ? 'Use counting language, warm tone.' : 'Concise, neutral tone.'}`;
 
+  const tier = normalizeSupportTier(config?.difficulty);
+  const tierSection = tier
+    ? `\n\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding level — NOT number size)\n${resolveSupportStructure('plot_point', tier).promptLines.map((l) => `- ${l}`).join('\n')}`
+    : '';
+
   const promptFor = (target: number, index: number) => `Create text for ONE Number Line PLOT challenge for "${topic}" (Grade ${gradeLevel}).
 
 ${modeBanner}
@@ -333,7 +513,7 @@ Return ONLY:
 - title: an engaging session title (will be shared across all challenges in this session)
 - description: a brief session-level learning goal
 - instruction: a warm, grade-appropriate instruction that asks the student to plot ${target} on the number line (you may vary phrasing across calls — "Can you find...", "Show me where...", "Place a point at...", etc.)
-- hint: a hint that guides the student to ${target} WITHOUT naming the number directly (e.g. reference neighboring tick marks or counting from a benchmark)`;
+- hint: a hint that guides the student to ${target} WITHOUT naming the number directly (e.g. reference neighboring tick marks or counting from a benchmark)${tierSection}`;
 
   const texts = await Promise.all(targets.map((t, i) => generateChallengeText(promptFor(t, i))));
 
@@ -371,10 +551,38 @@ async function generateShowJumpChallenges(
 ): Promise<SubResult> {
   const gradeBand = resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
+  const tier = normalizeSupportTier(config?.difficulty);
+  const scaffold = tier ? resolveSupportStructure('show_jump', tier) : null;
+  const tierSection = tier
+    ? `\n\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding + jump steps — NOT number size)\n${scaffold!.promptLines.map((l) => `- ${l}`).join('\n')}`
+    : '';
+
   const tuples = selectShowJumpTuples(range, gradeBand, resolveCount('show_jump'));
   if (tuples.length === 0) return emptySubResult('jump');
 
-  const promptFor = (t: ShowJumpTuple, index: number) => `Create text for ONE Number Line JUMP challenge for "${topic}" (Grade ${gradeLevel}).
+  // STRUCTURAL lever: at the hard tier each challenge is TWO chained jumps — the
+  // student lands, then jumps again from there. We build the second op from the
+  // first op's landing and CLAMP the cumulative landing inside `range` (mirroring
+  // the single-op clamp in selectShowJumpTuples). The magnitude stays in scope.
+  const wantSteps = scaffold?.jumpSteps ?? 1;
+  const jumpChoices = gradeBand === 'K-2' ? [1, 2, 3, 4, 5] : [2, 3, 5, 7, 10];
+
+  /** Pick a second op from `from` that lands in range and is non-trivial. */
+  function secondOp(from: number): { opType: 'add' | 'subtract'; change: number; landing: number } | null {
+    const opts: { opType: 'add' | 'subtract'; change: number; landing: number }[] = [];
+    for (const change of jumpChoices) {
+      for (const opType of ['add', 'subtract'] as const) {
+        const landing = opType === 'add' ? from + change : from - change;
+        if (landing < range.min || landing > range.max) continue;
+        opts.push({ opType, change, landing });
+      }
+    }
+    if (opts.length === 0) return null;
+    return opts[Math.floor(Math.random() * opts.length)];
+  }
+
+  const promptFor = (t: ShowJumpTuple, index: number, steps: number, secondLanding: number | null) =>
+    `Create text for ONE Number Line JUMP challenge for "${topic}" (Grade ${gradeLevel}).
 
 GRADE BAND: ${gradeBand}. ${gradeBand === 'K-2' ? 'Use counting language, warm tone.' : 'Concise, neutral tone.'}
 
@@ -382,36 +590,66 @@ This is challenge ${index + 1} of ${tuples.length} in a session on a number line
 
 For THIS challenge:
 - Start position: ${t.startValue}
-- Operation: ${t.opType === 'add' ? `add ${t.change} (jump right)` : `subtract ${t.change} (jump left)`}
-- Landing value: ${t.targetValue}
+- ${steps === 2
+        ? `TWO chained jumps: first ${t.opType === 'add' ? `add ${t.change}` : `subtract ${t.change}`}, then from where you land jump again to reach ${secondLanding}. The student places BOTH landings.`
+        : `Operation: ${t.opType === 'add' ? `add ${t.change} (jump right)` : `subtract ${t.change} (jump left)`}`}
+- Final landing value: ${steps === 2 ? secondLanding : t.targetValue}
 
 Return ONLY:
 - title: an engaging session title (shared across all challenges)
 - description: a brief session-level learning goal
-- instruction: a warm, grade-appropriate instruction telling the student to start at ${t.startValue} and ${t.opType === 'add' ? 'jump forward' : 'jump back'} ${t.change} (you may vary phrasing — "Start at X and hop forward Y", "Begin at X. Take Y jumps to the right", etc.)
-- hint: a hint that guides counting the hops WITHOUT giving the landing number directly`;
+- instruction: a warm, grade-appropriate instruction telling the student to ${steps === 2
+        ? `start at ${t.startValue}, make the first jump, then jump again from where they landed`
+        : `start at ${t.startValue} and ${t.opType === 'add' ? 'jump forward' : 'jump back'} ${t.change}`} (vary phrasing — do NOT state the final landing number)
+- hint: a hint that guides counting the hops WITHOUT giving any landing number directly${tierSection}`;
 
-  const texts = await Promise.all(tuples.map((t, i) => generateChallengeText(promptFor(t, i))));
+  // Pre-resolve the (possibly chained) operations per tuple so prompt + data agree.
+  const ops: NumberLineOperation[][] = tuples.map((t) => {
+    const first: NumberLineOperation = {
+      type: t.opType,
+      startValue: t.startValue,
+      changeValue: t.change,
+      showJumpArc: scaffold?.showJumpArc ?? false,
+    };
+    if (wantSteps !== 2) return [first];
+    const second = secondOp(t.targetValue);
+    if (!second) return [first]; // no in-range second hop → stay single-step
+    return [first, {
+      type: second.opType,
+      startValue: t.targetValue,   // chain: second jump begins at the first landing
+      changeValue: second.change,
+      showJumpArc: false,          // arc never shown at hard (jumpSteps===2 ⇒ hard)
+    }];
+  });
+
+  const texts = await Promise.all(tuples.map((t, i) => {
+    const chainLanding = ops[i].length === 2
+      ? (ops[i][1].type === 'add' ? ops[i][1].startValue + ops[i][1].changeValue : ops[i][1].startValue - ops[i][1].changeValue)
+      : null;
+    return generateChallengeText(promptFor(t, i, ops[i].length, chainLanding));
+  }));
 
   const wrapperSource = texts.find(t => t && t.title) ?? texts.find(t => !!t) ?? null;
   const challenges: NumberLineChallenge[] = tuples.map((t, i) => {
     const text = texts[i];
+    const challengeOps = ops[i];
+    const last = challengeOps[challengeOps.length - 1];
+    const finalLanding = last.type === 'add' ? last.startValue + last.changeValue : last.startValue - last.changeValue;
     const instruction = text?.instruction
-      ?? `Start at ${t.startValue} and jump ${t.opType === 'add' ? 'forward' : 'back'} ${t.change}. Where do you land?`;
-    const hint = text?.hint ?? `Count ${t.change} hops to the ${t.opType === 'add' ? 'right' : 'left'} from ${t.startValue}.`;
+      ?? (challengeOps.length === 2
+        ? `Start at ${t.startValue}. Make the first jump, then jump again. Where do you land?`
+        : `Start at ${t.startValue} and jump ${t.opType === 'add' ? 'forward' : 'back'} ${t.change}. Where do you land?`);
+    const hint = text?.hint ?? `Count the hops one jump at a time, starting from ${t.startValue}.`;
     return {
       id: `show_jump-${i}`,
       type: 'show_jump',
       instruction,
-      targetValues: [t.targetValue],
+      // For chained jumps the answer is BOTH landings (the component checks each
+      // op's endpoint); for single jumps it is the one landing.
+      targetValues: challengeOps.length === 2 ? [t.targetValue, finalLanding] : [t.targetValue],
       hint,
       startValue: t.startValue,
-      operations: [{
-        type: t.opType,
-        startValue: t.startValue,
-        changeValue: t.change,
-        showJumpArc: false,
-      }],
+      operations: challengeOps,
     };
   });
 
@@ -443,6 +681,11 @@ async function generateOrderValuesChallenges(
   const sets = selectOrderValueSets(poolNumbers, resolveCount('order_values'), perSet);
   if (sets.length === 0) return emptySubResult('order');
 
+  const tier = normalizeSupportTier(config?.difficulty);
+  const tierSection = tier
+    ? `\n\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding level — NOT number size)\n${resolveSupportStructure('order_values', tier).promptLines.map((l) => `- ${l}`).join('\n')}`
+    : '';
+
   const promptFor = (values: number[], index: number) => `Create text for ONE Number Line ORDER challenge for "${topic}" (Grade ${gradeLevel}).
 
 GRADE BAND: ${gradeBand}.
@@ -455,7 +698,7 @@ Return ONLY:
 - title: an engaging session title (shared across all challenges)
 - description: a brief session-level learning goal
 - instruction: a warm, grade-appropriate instruction asking the student to put the values in order from smallest to largest
-- hint: a hint that guides comparison WITHOUT giving the answer (e.g. "Find each number on the line first" or "Compare two at a time")`;
+- hint: a hint that guides comparison WITHOUT giving the answer (e.g. "Find each number on the line first" or "Compare two at a time")${tierSection}`;
 
   const texts = await Promise.all(sets.map((s, i) => generateChallengeText(promptFor(s, i))));
 
@@ -497,6 +740,11 @@ async function generateFindBetweenChallenges(
   const pairs = selectFindBetweenPairs(poolNumbers, resolveCount('find_between'));
   if (pairs.length === 0) return emptySubResult('compare');
 
+  const tier = normalizeSupportTier(config?.difficulty);
+  const tierSection = tier
+    ? `\n\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding level — NOT number size)\n${resolveSupportStructure('find_between', tier).promptLines.map((l) => `- ${l}`).join('\n')}`
+    : '';
+
   const promptFor = ([b0, b1]: [number, number], index: number) => `Create text for ONE Number Line FIND-BETWEEN challenge for "${topic}" (Grade ${gradeLevel}).
 
 GRADE BAND: ${gradeBand}.
@@ -509,7 +757,7 @@ Return ONLY:
 - title: an engaging session title (shared across all challenges)
 - description: a brief session-level learning goal
 - instruction: a warm, grade-appropriate instruction asking the student to find a number between ${b0} and ${b1}
-- hint: a hint that guides reasoning between the two boundaries WITHOUT naming a specific answer`;
+- hint: a hint that guides reasoning between the two boundaries WITHOUT naming a specific answer${tierSection}`;
 
   const texts = await Promise.all(pairs.map((p, i) => generateChallengeText(promptFor(p, i))));
 
@@ -603,6 +851,12 @@ export const generateNumberLine = async (
     intent: string;
     targetEvalMode: string;
     numberRange: { min: number; max: number };
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes the
+     * target numbers, the scope range, or the snap precision/answer tolerance.
+     */
     difficulty: string;
   }>
 ): Promise<NumberLineData> => {
@@ -617,6 +871,15 @@ export const generateNumberLine = async (
   const allowedTypes = evalConstraint
     ? evalConstraint.allowedTypes
     : ['plot_point', 'show_jump', 'order_values', 'find_between'];
+
+  // Within-mode support tier (config.difficulty). The STUDENT's tier DRIVES the
+  // application below (gated only on the tier being present, resolved per-challenge
+  // from each challenge's own type so a blended session gets difficulty too).
+  // pinnedType is for the application LOG tone only.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType = (evalConstraint?.allowedTypes.length === 1
+    ? evalConstraint.allowedTypes[0]
+    : undefined) as ChallengeType | undefined;
 
   const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
   console.log(`[NumberLine] display:`, pool?.displayRange ?? 'none', `pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
@@ -702,6 +965,76 @@ export const generateNumberLine = async (
   }
   if (!Array.isArray(data.operations)) {
     data.operations = [];
+  }
+
+  // ── Apply the support-tier scaffold deterministically AFTER all structural
+  // fixups + the range clamps. Gated ONLY on a tier being present; each lever is
+  // resolved from each challenge's OWN type and guarded to its modes. Code owns
+  // the support STRUCTURE; the LLM only wrote the words + (already-clamped) numbers.
+  // The number magnitudes, scope `range`, and snap precision are untouched here. ──
+  if (supportTier) {
+    // Persist the tier onto the data so the AI tutor's reveal level matches the
+    // on-screen scaffold (set whenever a tier is present, blends included).
+    data.supportTier = supportTier;
+
+    // tickInterval (label coarseness) is a single line-level field. Drive it from
+    // the coarseness of whichever non-jump challenge type is present (uniform in a
+    // single-mode session; in a blend the coarsest non-null wins so labels never
+    // imply a finer read than any challenge allows). show_jump leaves labels alone.
+    // Base label interval: respect an LLM-set tickInterval if present, else fall
+    // back to a unit tick for small spans and a ~10-segment default for wide ones.
+    // (No magnitude change — this only governs how many ticks are LABELLED.)
+    const span = Math.max(1, data.range.max - data.range.min);
+    const baseInterval =
+      typeof data.tickInterval === 'number' && data.tickInterval > 0
+        ? data.tickInterval
+        : Math.max(1, Math.round(span / 10));
+    let coarseness: number | null = null;
+    for (const ch of data.challenges) {
+      const c = resolveSupportStructure(ch.type as ChallengeType, supportTier).labelCoarseness;
+      if (c != null) coarseness = coarseness == null ? c : Math.max(coarseness, c);
+    }
+    if (coarseness != null) {
+      // Coarser interval = sparser labels (hard); finer/default = denser (easy).
+      data.tickInterval = Math.max(baseInterval, Math.round(baseInterval * coarseness));
+    }
+
+    // Benchmark anchors are written PER-CHALLENGE (ch.highlights) — NOT into the
+    // line-level data.highlights — so an anchor built for one target never renders
+    // during (or widens the auto-zoom of) another challenge. show_jump's worked
+    // arc is likewise per-challenge/per-operation. buildAnchorsForChallenge
+    // guarantees no anchor equals a target (leak guard) and all sit inside `range`.
+    const anchorInterval = data.tickInterval ?? baseInterval;
+    let anchorTotal = 0;
+    for (const ch of data.challenges) {
+      const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
+      // show_jump worked-arc lever (per challenge, per operation).
+      if (ch.type === 'show_jump' && ch.operations?.length) {
+        // Only the FIRST op may ever show the worked arc; chained (hard) ops never do.
+        ch.operations = ch.operations.map((op, i) => ({
+          ...op,
+          showJumpArc: i === 0 ? sc.showJumpArc : false,
+        }));
+      }
+      // Benchmark anchors (plot_point / find_between / order_values when easy).
+      if (sc.showAnchors && (ch.type === 'plot_point' || ch.type === 'find_between' || ch.type === 'order_values')) {
+        ch.highlights = buildAnchorsForChallenge(ch, data.range, anchorInterval);
+        anchorTotal += ch.highlights.length;
+      } else {
+        ch.highlights = [];
+      }
+    }
+
+    // Keep the backward-compat global operations array in sync with the first
+    // challenge's (possibly arc-toggled) operations.
+    data.operations = data.challenges[0]?.operations ?? data.operations;
+
+    console.log(
+      `[NumberLine] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → `
+      + `tickInterval=${data.tickInterval ?? 'default'}, anchors=${anchorTotal}, `
+      + `jumpArc=${data.challenges.some(c => c.operations?.[0]?.showJumpArc) ? 'on' : 'off'}`,
+    );
   }
 
   const typeBreakdown = data.challenges.map(c => c.type).join(', ');

@@ -8,6 +8,7 @@ import {
 } from '../../../evaluation';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -58,6 +59,15 @@ export interface ArrayGridData {
   maxRows?: number;
   maxColumns?: number;
 
+  // Within-mode support tier (resolved by the generator from config.difficulty).
+  /** Support tier applied to this session ('easy'|'medium'|'hard'). Metadata only. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /**
+   * Number-free strategy hint shown under the task header. Present at the easy
+   * tier (names the approach, never the answer); withdrawn at medium/hard.
+   */
+  strategyHint?: string;
+
   // Evaluation integration (auto-injected by ManifestOrderRenderer / tester)
   instanceId?: string;
   skillId?: string;
@@ -88,6 +98,34 @@ function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (attempts - 1) * 20);
 }
 
+/**
+ * Keeps the tutor's reveal level consistent with the on-screen support tier
+ * (the strategyHint added by /add-support-tiers, modality #2). At 'hard' the
+ * instruction withholds the strategy, so the tutor must not name it either.
+ *
+ * Mode-aware: in count_array / multiply_array the row & column counts ARE part
+ * of what the student must find, so the tutor never states them. In build_array
+ * the dimensions are given on screen, so only the total stays hidden.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  challengeType: ArrayGridChallengeType,
+): string {
+  if (!tier) return '';
+  const dimsGiven = challengeType === 'build_array';
+  const common = dimsGiven
+    ? 'Never state the total (rows × columns) — the student must count it.'
+    : 'Never state the total, and never state the row or column counts — identifying them from the array is part of the task.';
+  switch (tier) {
+    case 'easy':
+      return `SUPPORT TIER easy: maximum scaffolding. You may name the strategy — count the rows, then how many are in each row, then skip-count or multiply — and point to the axis labels. ${common}`;
+    case 'medium':
+      return `SUPPORT TIER medium: the axis labels are on screen but the strategy tip is withdrawn. Nudge one next step (e.g. "try skip-counting one row at a time"); do not walk the whole strategy. ${common}`;
+    default:
+      return `SUPPORT TIER hard: no axis labels and no strategy tip — working out the structure is part of the task. Do NOT name the skip-count/multiply strategy; ask what the student notices about the rows and how many are in each. ${common}`;
+  }
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -102,6 +140,8 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     showLabels = true,
     maxRows = 6,
     maxColumns = 8,
+    strategyHint,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -199,6 +239,43 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
         : Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length),
   });
 
+  // ── AI tutoring ────────────────────────────────────────────────
+  const aiPrimitiveData = useMemo(
+    () => ({
+      title,
+      challengeType: sessionChallengeType,
+      currentChallengeIndex: currentIndex + 1,
+      totalChallenges: challenges.length,
+      targetRows,
+      targetColumns,
+      supportTier: supportTier ?? null,
+      attemptNumber: attempts + 1,
+    }),
+    [
+      title, sessionChallengeType, currentIndex, challenges.length,
+      targetRows, targetColumns, supportTier, attempts,
+    ],
+  );
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'array-grid',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+  });
+
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
+    hasIntroducedRef.current = true;
+    const policy = tutorRevealPolicy(supportTier, sessionChallengeType);
+    sendText(
+      `[ACTIVITY_START] Array session: ${challenges.length} arrays, mode "${sessionChallengeType}". `
+      + `Introduce briefly: an array is rows and columns of items, and the total is rows × columns — you can skip-count by rows to find it. Then read the first task.`
+      + (policy ? ` ${policy}` : ''),
+      { silent: true },
+    );
+  }, [isConnected, challenges.length, sessionChallengeType, supportTier, sendText]);
+
   // ── Per-challenge content match (stale-state guard, §6a #8) ────
   const stateMatchesChallenge = useCallback(
     (challenge: ArrayGridChallenge | null): boolean => {
@@ -288,9 +365,16 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
         },
       });
     }
+
+    sendText(
+      `[ALL_COMPLETE] All ${challenges.length} arrays done. Correct: ${correctCount}/${challenges.length}. `
+      + `First-try: ${firstTryCount}. Accuracy: ${overallAccuracy}%. `
+      + `Give an encouraging, arrays-as-multiplication summary.`,
+      { silent: true },
+    );
   }, [
     isComplete, results, challenges, sessionChallengeType,
-    submitEvaluation, hasSubmittedEvaluation,
+    submitEvaluation, hasSubmittedEvaluation, sendText,
   ]);
 
   // ── Build-mode controls ────────────────────────────────────────
@@ -331,10 +415,24 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
       setFeedbackType('success');
       const score = phaseScore(nextAttempts);
       completeCurrentChallenge(true, score, nextAttempts);
+      sendText(
+        `[ANSWER_CORRECT] Student gave total ${studentTotal} for a ${sessionChallengeType} array `
+        + `(${targetRows} rows × ${targetColumns} columns) on attempt ${nextAttempts}. `
+        + `Celebrate briefly and reinforce that rows × columns gives the total.`,
+        { silent: true },
+      );
       return;
     }
 
     SoundManager.playIncorrect();
+    const revealPolicy = tutorRevealPolicy(supportTier, sessionChallengeType);
+    sendText(
+      `[ANSWER_INCORRECT] Student answered total ${studentTotal} for a ${targetRows}×${targetColumns} `
+      + `${sessionChallengeType} array (correct total is ${targetProduct}). Attempt ${nextAttempts}. `
+      + `Give a brief hint without stating the total — point at how to skip-count the rows.`
+      + (revealPolicy ? ` ${revealPolicy}` : ''),
+      { silent: true },
+    );
     if (correctArray && !correctTotal) {
       setFeedback(
         sessionChallengeType === 'count_array'
@@ -379,6 +477,11 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
       setFeedbackType('success');
       const score = phaseScore(nextAttempts);
       completeCurrentChallenge(true, score, nextAttempts);
+      sendText(
+        `[ANSWER_CORRECT] Student wrote ${studentRows} × ${studentColumns} = ${studentTotal} (correct) `
+        + `on attempt ${nextAttempts}. Celebrate briefly and reinforce the array → multiplication link.`,
+        { silent: true },
+      );
       return;
     }
 
@@ -389,6 +492,14 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
     if (!correctTotal) hints.push('multiply rows × columns for the total');
     setFeedback(`Not quite. Try to ${hints.join(', ')}.`);
     setFeedbackType(hints.length === 1 ? 'hint' : 'error');
+    const revealPolicy = tutorRevealPolicy(supportTier, sessionChallengeType);
+    sendText(
+      `[ANSWER_INCORRECT] Student wrote ${studentRows} × ${studentColumns} = ${studentTotal} for an array `
+      + `that is ${targetRows} × ${targetColumns} = ${targetProduct}. Attempt ${nextAttempts}. `
+      + `Point at the specific part that needs another look (rows, columns, or the product) — do NOT give the answer.`
+      + (revealPolicy ? ` ${revealPolicy}` : ''),
+      { silent: true },
+    );
   };
 
   const handleSubmit = () => {
@@ -398,8 +509,18 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
   };
 
   // ── Advance to next challenge ──────────────────────────────────
+  // One end_of_turn message per advance, and number-free so the tutor doesn't
+  // reveal the next array's dimensions (see ADDING_TUTORING_SCAFFOLD turn-race).
   const handleNextChallenge = () => {
     advance();
+    const nextIdx = currentIndex + 1;
+    if (nextIdx < challenges.length) {
+      sendText(
+        `[NEXT_ITEM] Array ${nextIdx + 1} of ${challenges.length} — same kind of task, a new array. `
+        + `Introduce it briefly without giving its size.`,
+        { silent: true },
+      );
+    }
   };
 
   // ── Can submit? ────────────────────────────────────────────────
@@ -540,6 +661,14 @@ const ArrayGrid: React.FC<ArrayGridProps> = ({ data, className }) => {
               Array {currentIndex + 1} / {challenges.length}
             </span>
           </div>
+
+          {/* Strategy hint (support tier: shown at easy, withdrawn at medium/hard) */}
+          {strategyHint && !challengeDone && (
+            <div className="mb-6 mx-auto max-w-2xl flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-200 text-sm">
+              <span aria-hidden>💡</span>
+              <span>{strategyHint}</span>
+            </div>
+          )}
 
           {/* Step 1: Build (build_array mode only) */}
           {!isPreBuilt && !challengeDone && (

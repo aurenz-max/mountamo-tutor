@@ -51,6 +51,12 @@ export interface RatioTableData {
   showUnitRate?: boolean;
   showBarChart?: boolean;
   maxMultiplier?: number;
+  /**
+   * Within-mode support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Drives the tutor's reveal policy so it never names what the on-screen
+   * scaffold withdrew. Set by the generator whenever a tier is present.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -101,6 +107,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     showUnitRate = true,
     showBarChart = true,
     maxMultiplier = 10,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -234,10 +241,11 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     currentChallengeIndex,
     totalChallenges: challenges.length,
     currentAttempts,
+    supportTier: supportTier ?? null,
   }), [
     baseRatio, rowLabels, currentChallenge?.type, targetMultiplier,
     studentAnswer, targetValue, unitRate, hintsUsed, currentChallengeIndex,
-    challenges.length, currentAttempts,
+    challenges.length, currentAttempts, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -245,6 +253,32 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
   });
+
+  // -------------------------------------------------------------------------
+  // Tutor reveal policy — keep the tutor in sync with the on-screen scaffold so
+  // it never names what a hard tier withheld. Mode-aware: unit-rate's identity
+  // is finding the rate, so the rate is never named at any tier there.
+  // Declared BEFORE the intro effect that consumes it.
+  // -------------------------------------------------------------------------
+  const tutorRevealClause = useCallback(
+    (challengeType: RatioTableChallenge['type']): string => {
+      if (!supportTier) return '';
+      const isUnitRate = challengeType === 'unit-rate';
+      if (supportTier === 'easy') {
+        return isUnitRate
+          ? ` SUPPORT TIER easy: you may walk the B÷A division step by step, but never state the final unit-rate number — let the student compute it.`
+          : ` SUPPORT TIER easy: you may name the strategy explicitly (find how many ${rowLabels[1]} per 1 ${rowLabels[0]}, then scale) and reference the on-screen unit-rate banner.`;
+      }
+      if (supportTier === 'medium') {
+        return ` SUPPORT TIER medium: nudge the execution only — name the strategy if needed but do not state the unit rate or the answer.`;
+      }
+      // hard
+      return isUnitRate
+        ? ` SUPPORT TIER hard: the bar chart is withdrawn. Ask the student what B÷A gives; do NOT state the unit-rate value.`
+        : ` SUPPORT TIER hard: the unit-rate banner and bar chart are withdrawn. Do NOT state the unit rate. Ask what is the same per 1 ${rowLabels[0]}; never reveal the answer.`;
+    },
+    [supportTier, rowLabels],
+  );
 
   // Activity introduction
   const hasIntroducedRef = useRef(false);
@@ -257,10 +291,11 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
       `[ACTIVITY_START] Student is working on ratio tables with ${challenges.length} challenges covering: ${types}. `
       + `First challenge: "${currentChallenge?.instruction}". `
       + `Base ratio: ${baseRatio[0]} ${rowLabels[0]} to ${baseRatio[1]} ${rowLabels[1]}. `
-      + `Introduce the activity warmly and read the first instruction.`,
+      + `Introduce the activity warmly and read the first instruction.`
+      + (currentChallenge ? tutorRevealClause(currentChallenge.type) : ''),
       { silent: true },
     );
-  }, [isConnected, challenges.length, currentChallenge, baseRatio, rowLabels, sendText]);
+  }, [isConnected, challenges.length, currentChallenge, baseRatio, rowLabels, tutorRevealClause, sendText]);
 
   // -------------------------------------------------------------------------
   // Answer Checking
@@ -346,10 +381,17 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         SoundManager.playIncorrect();
         setFeedback(`Not quite. ${hintMsg}`);
         setFeedbackType('error');
+        const guideToward =
+          currentChallenge.type === 'unit-rate'
+            ? 'dividing B by A to find the unit rate'
+            : supportTier === 'hard'
+            ? 'finding how many of the second quantity go with 1 of the first (do NOT state the number)'
+            : 'the unit rate (' + formatNum(unitRate) + ')';
         sendText(
           `[ANSWER_INCORRECT] Student answered ${formatNum(parsed)} but target is ${formatNum(targetValue)} `
           + `(${percentError.toFixed(1)}% off). Attempt ${currentAttempts + 1}. `
-          + `Guide toward ${currentChallenge.type === 'unit-rate' ? 'dividing to find unit rate' : 'the unit rate (' + formatNum(unitRate) + ')'}.`,
+          + `Guide toward ${guideToward}.`
+          + tutorRevealClause(currentChallenge.type),
           { silent: true },
         );
       }
@@ -368,6 +410,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     currentChallenge, studentAnswer, sliderMultiplier, targetValue, targetMultiplier,
     unitRate, tolerance, hiddenValue, rowLabels, baseRatio, hintsUsed,
     currentAttempts, incrementAttempts, recordResult, sendText,
+    supportTier, tutorRevealClause,
   ]);
 
   // -------------------------------------------------------------------------
@@ -378,13 +421,32 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     const newHints = hintsUsed + 1;
     setHintsUsed(newHints);
 
+    // Tier-aware hint ladder. The unit rate (baseRatio[1]/baseRatio[0]) is a
+    // one-step answer for find-multiplier / missing-value, so at HARD the ladder
+    // must NEVER state it verbatim — only nudge the strategy. unit-rate mode is
+    // the exception: finding the rate IS the task, so naming it would give the
+    // answer at ANY tier — there the hint stays strategic (divide B ÷ A).
+    const isHard = supportTier === 'hard';
+    const isUnitRateMode = currentChallenge.type === 'unit-rate';
+    const mayStateUnitRate = !isHard && !isUnitRateMode;
+
     if (newHints === 1) {
-      setFeedback(`Hint: The unit rate is ${formatNum(unitRate)} ${rowLabels[1]} per ${rowLabels[0]}.`);
+      if (mayStateUnitRate) {
+        setFeedback(`Hint: The unit rate is ${formatNum(unitRate)} ${rowLabels[1]} per ${rowLabels[0]}.`);
+      } else {
+        // Strategy nudge — does NOT reveal the unit-rate number.
+        setFeedback(
+          `Hint: Start by finding how many ${rowLabels[1]} go with just 1 ${rowLabels[0]}.`,
+        );
+      }
     } else if (newHints === 2) {
       if (currentChallenge.type === 'find-multiplier') {
         setFeedback(`Hint: Divide the scaled value by the base value to find the multiplier.`);
       } else if (currentChallenge.type === 'unit-rate') {
-        setFeedback(`Hint: Divide ${baseRatio[1]} ÷ ${baseRatio[0]}.`);
+        setFeedback(`Hint: Divide ${rowLabels[1]} ÷ ${rowLabels[0]} (${baseRatio[1]} ÷ ${baseRatio[0]}).`);
+      } else if (isHard) {
+        // Hard missing-value: keep the strategy nudge, still no unit-rate number.
+        setFeedback(`Hint: Find the per-1 rate first, then scale it to the known quantity.`);
       } else {
         setFeedback(`Hint: Multiply the unit rate (${formatNum(unitRate)}) by the known quantity.`);
       }
@@ -399,7 +461,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
       + `Provide scaffolding at level ${Math.min(newHints, 3)} without revealing the answer.`,
       { silent: true },
     );
-  }, [hasSubmittedEvaluation, currentChallenge, hintsUsed, unitRate, rowLabels, baseRatio, sendText]);
+  }, [hasSubmittedEvaluation, currentChallenge, hintsUsed, unitRate, rowLabels, baseRatio, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation

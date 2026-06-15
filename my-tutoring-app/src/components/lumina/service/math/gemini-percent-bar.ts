@@ -50,6 +50,111 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Support tiers (within-mode scaffolding axis — config.difficulty)
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * Bespoke support-lever set for percent-bar. Every field withdraws on-screen /
+ * instructional help WITHOUT changing the target percent or whole magnitude.
+ *  - showPercentLabels / showValueLabels / benchmarkLines / doubleBar — visual aids.
+ *  - showCalculation — gates the LIVE `currentPercent% of whole = value` panel
+ *    (a leak: at hard it would let the student dial the value, not the percent).
+ *  - rateClass — STRUCTURAL lever: 'benchmark' (25/50/75 only) vs 'any' (also
+ *    10/30/40/60/70/90). SAME magnitude pool, harder placement. Code-enforced.
+ *  - hintExplicitness — 'explicit' hints encode the answer ("slide to 70%",
+ *    "100 - 30 = ?"); 'strategy' hints name only the approach, no target number.
+ */
+interface SupportScaffold {
+  showPercentLabels: boolean;
+  showValueLabels: boolean;
+  benchmarkLines: number[];
+  doubleBar: boolean;
+  showCalculation: boolean;
+  rateClass: 'benchmark' | 'any';
+  hintExplicitness: 'explicit' | 'strategy';
+  promptLines: string[];
+}
+
+const BENCHMARK_RATES = [25, 50, 75] as const;
+
+/**
+ * easy→hard scaffolding gradient, per pinned challenge type.
+ * identify_percent (direct) is the recognition mode: full aids + double bar +
+ * calc panel + benchmark-only rates at easy, everything withdrawn at hard.
+ * find_part/find_whole/convert: aids on + explicit hint → aids off, strategy hint.
+ * INVARIANT: never changes the target percent or whole magnitude — rateClass
+ * picks from the SAME pool (benchmark subset vs full), not a bigger number.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const guardrail =
+    'This tier sets the SCAFFOLDING LEVEL only — it never changes the target percent or the whole-value magnitude.';
+
+  if (pinnedType === 'direct') {
+    // Recognition / placement mode — the benchmark-vs-any rate lever lives here.
+    switch (tier) {
+      case 'easy':
+        return {
+          showPercentLabels: true, showValueLabels: true,
+          benchmarkLines: [...BENCHMARK_RATES], doubleBar: true,
+          showCalculation: true, rateClass: 'benchmark', hintExplicitness: 'explicit',
+          promptLines: [guardrail, 'Easy: all labels, benchmark guide lines, the value bar, and the calculation panel are shown; hints may name the exact percent. Targets land on benchmark percents (25/50/75).'],
+        };
+      case 'medium':
+        return {
+          showPercentLabels: true, showValueLabels: true,
+          benchmarkLines: [50], doubleBar: false,
+          showCalculation: true, rateClass: 'any', hintExplicitness: 'explicit',
+          promptLines: [guardrail, 'Medium: percent + value labels and the calculation panel stay on, but only the 50% guide line remains and the value bar is hidden. Hints may still reference the target.'],
+        };
+      case 'hard':
+      default:
+        return {
+          showPercentLabels: false, showValueLabels: false,
+          benchmarkLines: [], doubleBar: false,
+          showCalculation: false, rateClass: 'any', hintExplicitness: 'strategy',
+          promptLines: [guardrail, 'Hard: NO percent labels, NO value labels, NO benchmark lines, NO calculation panel. The student must place the percent unaided. Hints name only the strategy — never the target percent or the arithmetic.'],
+        };
+    }
+  }
+
+  // subtraction / addition / comparison — multi-step word problems.
+  switch (tier) {
+    case 'easy':
+      return {
+        showPercentLabels: true, showValueLabels: true,
+        benchmarkLines: [...BENCHMARK_RATES], doubleBar: false,
+        showCalculation: true, rateClass: 'any', hintExplicitness: 'explicit',
+        promptLines: [guardrail, 'Easy: all on-screen aids (labels, benchmark lines, calculation panel) are shown and the hint spells out the operation (e.g. "100 - discount", "the rate is stated").'],
+      };
+    case 'medium':
+      return {
+        showPercentLabels: true, showValueLabels: true,
+        benchmarkLines: [50], doubleBar: false,
+        showCalculation: true, rateClass: 'any', hintExplicitness: 'explicit',
+        promptLines: [guardrail, 'Medium: labels and the calculation panel stay on with a single 50% guide line; the hint still names the operation.'],
+      };
+    case 'hard':
+    default:
+      return {
+        showPercentLabels: false, showValueLabels: false,
+        benchmarkLines: [], doubleBar: false,
+        showCalculation: false, rateClass: 'any', hintExplicitness: 'strategy',
+        promptLines: [guardrail, 'Hard: NO labels, NO benchmark lines, NO calculation panel. The hint names only the strategy (e.g. "what percent is left over?") — never the target number or the arithmetic.'],
+      };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Pool service — per-mode scenario builders
 // ---------------------------------------------------------------------------
 
@@ -78,15 +183,26 @@ interface ChallengeSpec {
   wholeValueLabel: string;
   question: string;
   targetPercent: number;
+  /** Explicit hint (may encode the target/arithmetic) — used at easy/medium. */
   hint: string;
+  /** Strategy-only hint (no target number, no answer arithmetic) — used at hard. */
+  hintStrategy: string;
   context: PercentContext;
 }
+
+/** A built scenario carries BOTH hint variants so the tier can pick at the end. */
+type ScenarioParts = Omit<ChallengeSpec, 'targetPercent' | 'context' | 'hint'> & {
+  /** Explicit hint — may encode the target number / arithmetic. */
+  hintExplicit: string;
+  /** Strategy hint — names the approach only, no target number, no answer arithmetic. */
+  hintStrategy: string;
+};
 
 // -- Direct mode pool ----------------------------------------------------------
 
 interface DirectTemplate {
   id: string;
-  build: (rate: number, base: number) => Omit<ChallengeSpec, 'targetPercent' | 'context'>;
+  build: (rate: number, base: number) => ScenarioParts;
 }
 
 const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
@@ -96,8 +212,9 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `A batch of ${base} cookies is on the table.`,
       wholeValue: base,
       wholeValueLabel: 'Total Cookies',
-      question: `Show ${rate}% on the bar to mark that portion of the batch.`,
-      hint: `${rate}% means ${rate} out of every 100 cookies. Slide the bar until it reads ${rate}%.`,
+      question: `Show the stated percent on the bar to mark that portion of the batch.`,
+      hintExplicit: `${rate}% means ${rate} out of every 100 cookies. Slide the bar until it reads ${rate}%.`,
+      hintStrategy: `The percent in the question tells you how far along the 0%–100% bar to slide.`,
     }),
   },
   {
@@ -106,8 +223,9 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `There are ${base} students in the class.`,
       wholeValue: base,
       wholeValueLabel: 'Total Students',
-      question: `Show what ${rate}% of the class looks like on the bar.`,
-      hint: `Think of the bar as the whole class (100%). Where is ${rate}% of that?`,
+      question: `Show what the stated percent of the class looks like on the bar.`,
+      hintExplicit: `Think of the bar as the whole class (100%). Where is ${rate}% of that?`,
+      hintStrategy: `The bar is the whole class (100%). Place the part the question names.`,
     }),
   },
   {
@@ -116,8 +234,9 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `You took a ${base}-point test.`,
       wholeValue: base,
       wholeValueLabel: 'Total Points',
-      question: `You scored ${rate}% on the test. Show ${rate}% on the bar.`,
-      hint: `${rate}% of ${base} points — slide the bar to ${rate}%.`,
+      question: `You scored the stated percent on the test. Show that percent on the bar.`,
+      hintExplicit: `${rate}% of ${base} points — slide the bar to ${rate}%.`,
+      hintStrategy: `Find the score percent in the question and place it on the bar.`,
     }),
   },
   {
@@ -126,8 +245,9 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `Your book has ${base} pages.`,
       wholeValue: base,
       wholeValueLabel: 'Total Pages',
-      question: `You have read ${rate}% of the book so far. Show ${rate}% on the bar.`,
-      hint: `Slide the bar to ${rate}% — the value display tells you how many pages that is.`,
+      question: `You have read the stated percent of the book so far. Show that percent on the bar.`,
+      hintExplicit: `Slide the bar to ${rate}% — the value display tells you how many pages that is.`,
+      hintStrategy: `Place the percent of the book you have read; the whole book is 100%.`,
     }),
   },
   {
@@ -136,8 +256,9 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `A party platter has ${base} slices of pizza.`,
       wholeValue: base,
       wholeValueLabel: 'Total Slices',
-      question: `${rate}% of the slices have been eaten. Show ${rate}% on the bar.`,
-      hint: `${rate}% out of the ${base} slices — slide the bar to ${rate}%.`,
+      question: `The stated percent of the slices have been eaten. Show that percent on the bar.`,
+      hintExplicit: `${rate}% out of the ${base} slices — slide the bar to ${rate}%.`,
+      hintStrategy: `Place the percent of slices eaten; the full platter is 100%.`,
     }),
   },
   {
@@ -146,8 +267,9 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `A jar holds ${base} marbles.`,
       wholeValue: base,
       wholeValueLabel: 'Total Marbles',
-      question: `${rate}% of the marbles are blue. Show ${rate}% on the bar.`,
-      hint: `Where on the 0%–100% bar does ${rate}% sit?`,
+      question: `The stated percent of the marbles are blue. Show that percent on the bar.`,
+      hintExplicit: `Where on the 0%–100% bar does ${rate}% sit?`,
+      hintStrategy: `Place the percent of marbles that are blue on the 0%–100% bar.`,
     }),
   },
   {
@@ -156,8 +278,9 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `A sticker sheet has ${base} stickers.`,
       wholeValue: base,
       wholeValueLabel: 'Total Stickers',
-      question: `You have already used ${rate}% of them. Show ${rate}% on the bar.`,
-      hint: `${rate} out of every 100 stickers — that is where the bar should land.`,
+      question: `You have already used the stated percent of them. Show that percent on the bar.`,
+      hintExplicit: `${rate} out of every 100 stickers — that is where the bar should land.`,
+      hintStrategy: `Place the percent of stickers you have used on the bar.`,
     }),
   },
 ];
@@ -165,14 +288,27 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
 const DIRECT_RATES = [10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90] as const;
 const DIRECT_BASES = [20, 25, 40, 50, 60, 80, 100] as const;
 
-function buildDirect(): ChallengeSpec {
+/** Structural rate lever: benchmark = 25/50/75 only; any = full pool.
+ *  SAME magnitude pool — benchmark is a subset, not smaller numbers. */
+function pickRate(pool: readonly number[], rateClass: 'benchmark' | 'any'): number {
+  if (rateClass === 'benchmark') {
+    const bench = pool.filter((r) => (BENCHMARK_RATES as readonly number[]).includes(r));
+    if (bench.length > 0) return pick(bench);
+  }
+  return pick(pool);
+}
+
+function buildDirect(rateClass: 'benchmark' | 'any' = 'any'): ChallengeSpec {
   const template = pick(DIRECT_TEMPLATES);
-  const rate = pick(DIRECT_RATES);
+  const rate = pickRate(DIRECT_RATES, rateClass);
   const base = pick(DIRECT_BASES);
-  const partial = template.build(rate, base);
+  const parts = template.build(rate, base);
+  const { hintExplicit, hintStrategy, ...partial } = parts;
   const finalValue = (base * rate) / 100;
   return {
     ...partial,
+    hint: hintExplicit,
+    hintStrategy,
     targetPercent: rate,
     context: {
       problemType: 'direct',
@@ -188,7 +324,7 @@ function buildDirect(): ChallengeSpec {
 
 interface SubtractionTemplate {
   id: string;
-  build: (rate: number, base: number) => Omit<ChallengeSpec, 'targetPercent' | 'context'>;
+  build: (rate: number, base: number) => ScenarioParts;
 }
 
 const SUBTRACTION_TEMPLATES: readonly SubtractionTemplate[] = [
@@ -199,7 +335,8 @@ const SUBTRACTION_TEMPLATES: readonly SubtractionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Original Price ($)',
       question: `What percent of the original price do you still pay after the ${rate}% discount? Show that percent on the bar.`,
-      hint: `Start at 100% (the full price) and subtract the discount: 100 - ${rate} = ?`,
+      hintExplicit: `Start at 100% (the full price) and subtract the discount: 100 - ${rate} = ?`,
+      hintStrategy: `The full price is 100%. Take away the discount to find the percent you still pay.`,
     }),
   },
   {
@@ -209,7 +346,8 @@ const SUBTRACTION_TEMPLATES: readonly SubtractionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Original Price ($)',
       question: `What percent of the original price is the sale price? Place that percent on the bar.`,
-      hint: `Sale price as a percent = 100% minus the discount percent.`,
+      hintExplicit: `Sale price as a percent = 100% minus the discount percent.`,
+      hintStrategy: `Begin from the whole (100%) and remove what is taken off.`,
     }),
   },
   {
@@ -219,7 +357,8 @@ const SUBTRACTION_TEMPLATES: readonly SubtractionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Original Price ($)',
       question: `What percent of the original price remains after the discount?`,
-      hint: `Subtract the discount from 100%. 100 - ${rate} = ?`,
+      hintExplicit: `Subtract the discount from 100%. 100 - ${rate} = ?`,
+      hintStrategy: `The whole is 100%; find what is left after the part is removed.`,
     }),
   },
   {
@@ -229,7 +368,8 @@ const SUBTRACTION_TEMPLATES: readonly SubtractionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Original Price ($)',
       question: `What percent of the price will you pay with the coupon? Place that percent on the bar.`,
-      hint: `If ${rate}% is removed, then 100% - ${rate}% remains.`,
+      hintExplicit: `If ${rate}% is removed, then 100% - ${rate}% remains.`,
+      hintStrategy: `Start from 100% and take away the part that is removed.`,
     }),
   },
   {
@@ -239,7 +379,8 @@ const SUBTRACTION_TEMPLATES: readonly SubtractionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Original Price ($)',
       question: `What percent of the original price is the new price? Show it on the bar.`,
-      hint: `New price percent = 100% - markdown percent.`,
+      hintExplicit: `New price percent = 100% - markdown percent.`,
+      hintStrategy: `The original is 100%; remove the markdown to find what remains.`,
     }),
   },
   {
@@ -249,7 +390,8 @@ const SUBTRACTION_TEMPLATES: readonly SubtractionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Original Price ($)',
       question: `What percent of the list price will you actually pay? Place that on the bar.`,
-      hint: `Take 100% and remove the discount: 100 - ${rate}.`,
+      hintExplicit: `Take 100% and remove the discount: 100 - ${rate}.`,
+      hintStrategy: `Start at the whole price (100%) and subtract what is discounted.`,
     }),
   },
 ];
@@ -261,11 +403,13 @@ function buildSubtraction(): ChallengeSpec {
   const template = pick(SUBTRACTION_TEMPLATES);
   const rate = pick(SUBTRACTION_RATES);
   const base = pick(SUBTRACTION_BASES);
-  const partial = template.build(rate, base);
+  const { hintExplicit, hintStrategy, ...partial } = template.build(rate, base);
   const remainingPercent = 100 - rate;
   const finalValue = (base * remainingPercent) / 100;
   return {
     ...partial,
+    hint: hintExplicit,
+    hintStrategy,
     targetPercent: remainingPercent,
     context: {
       problemType: 'subtraction',
@@ -281,7 +425,7 @@ function buildSubtraction(): ChallengeSpec {
 
 interface AdditionTemplate {
   id: string;
-  build: (rate: number, base: number) => Omit<ChallengeSpec, 'targetPercent' | 'context'>;
+  build: (rate: number, base: number) => ScenarioParts;
 }
 
 const ADDITION_TEMPLATES: readonly AdditionTemplate[] = [
@@ -292,7 +436,8 @@ const ADDITION_TEMPLATES: readonly AdditionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Purchase Price ($)',
       question: `What percent IS the sales tax? Place that percent on the bar.`,
-      hint: `The tax rate is given right in the scenario — that is what you are placing.`,
+      hintExplicit: `The tax rate is given right in the scenario — that is what you are placing.`,
+      hintStrategy: `The percent being added is named in the scenario; place that rate.`,
     }),
   },
   {
@@ -302,7 +447,8 @@ const ADDITION_TEMPLATES: readonly AdditionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Bill ($)',
       question: `What percent of the bill IS the tip? Show it on the bar.`,
-      hint: `Tip percent = the rate stated in the problem.`,
+      hintExplicit: `Tip percent = the rate stated in the problem.`,
+      hintStrategy: `Find the rate being added in the scenario and place it.`,
     }),
   },
   {
@@ -312,7 +458,8 @@ const ADDITION_TEMPLATES: readonly AdditionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Cost ($)',
       question: `What percent IS the markup? Place it on the bar.`,
-      hint: `Markup percent = the rate stated in the scenario.`,
+      hintExplicit: `Markup percent = the rate stated in the scenario.`,
+      hintStrategy: `The added rate is stated in the scenario; place that percent.`,
     }),
   },
   {
@@ -322,7 +469,8 @@ const ADDITION_TEMPLATES: readonly AdditionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Bill ($)',
       question: `What percent IS the service charge? Show it on the bar.`,
-      hint: `The service charge percent is stated in the scenario.`,
+      hintExplicit: `The service charge percent is stated in the scenario.`,
+      hintStrategy: `Identify the rate being added and place it on the bar.`,
     }),
   },
   {
@@ -332,7 +480,8 @@ const ADDITION_TEMPLATES: readonly AdditionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Order ($)',
       question: `What percent IS the delivery fee? Place that percent on the bar.`,
-      hint: `Read the scenario — the delivery fee percent is given.`,
+      hintExplicit: `Read the scenario — the delivery fee percent is given.`,
+      hintStrategy: `The fee rate is stated in the scenario; place that percent.`,
     }),
   },
   {
@@ -342,7 +491,8 @@ const ADDITION_TEMPLATES: readonly AdditionTemplate[] = [
       wholeValue: base,
       wholeValueLabel: 'Sale Price ($)',
       question: `What percent IS the commission? Show it on the bar.`,
-      hint: `The commission rate is given right in the problem.`,
+      hintExplicit: `The commission rate is given right in the problem.`,
+      hintStrategy: `Find the rate being added in the scenario and place it.`,
     }),
   },
 ];
@@ -354,10 +504,12 @@ function buildAddition(): ChallengeSpec {
   const template = pick(ADDITION_TEMPLATES);
   const rate = pick(ADDITION_RATES);
   const base = pick(ADDITION_BASES);
-  const partial = template.build(rate, base);
+  const { hintExplicit, hintStrategy, ...partial } = template.build(rate, base);
   const finalValue = (base * (100 + rate)) / 100;
   return {
     ...partial,
+    hint: hintExplicit,
+    hintStrategy,
     targetPercent: rate,
     context: {
       problemType: 'addition',
@@ -373,7 +525,7 @@ function buildAddition(): ChallengeSpec {
 
 interface ComparisonTemplate {
   id: string;
-  build: (rateA: number, rateB: number) => Omit<ChallengeSpec, 'targetPercent' | 'context'>;
+  build: (rateA: number, rateB: number) => ScenarioParts;
 }
 
 const COMPARISON_TEMPLATES: readonly ComparisonTemplate[] = [
@@ -384,7 +536,8 @@ const COMPARISON_TEMPLATES: readonly ComparisonTemplate[] = [
       wholeValue: 100,
       wholeValueLabel: 'Reference (100%)',
       question: `Which store has the larger discount? Place the LARGER percent on the bar.`,
-      hint: `Compare ${rateA} and ${rateB}. Place the bigger number.`,
+      hintExplicit: `Compare ${rateA} and ${rateB}. Place the bigger number.`,
+      hintStrategy: `Compare the two discount percents and place whichever is larger.`,
     }),
   },
   {
@@ -394,7 +547,8 @@ const COMPARISON_TEMPLATES: readonly ComparisonTemplate[] = [
       wholeValue: 100,
       wholeValueLabel: 'Reference (100%)',
       question: `Which school had higher attendance? Place that percent on the bar.`,
-      hint: `Pick the larger of ${rateA} and ${rateB}.`,
+      hintExplicit: `Pick the larger of ${rateA} and ${rateB}.`,
+      hintStrategy: `Compare the two attendance percents and place the larger one.`,
     }),
   },
   {
@@ -404,7 +558,8 @@ const COMPARISON_TEMPLATES: readonly ComparisonTemplate[] = [
       wholeValue: 100,
       wholeValueLabel: 'Reference (100%)',
       question: `Which phone has more battery left? Place that percent on the bar.`,
-      hint: `Whichever number is bigger is the larger battery percent.`,
+      hintExplicit: `Whichever number is bigger is the larger battery percent.`,
+      hintStrategy: `Compare the two battery percents and place the larger one.`,
     }),
   },
   {
@@ -414,7 +569,8 @@ const COMPARISON_TEMPLATES: readonly ComparisonTemplate[] = [
       wholeValue: 100,
       wholeValueLabel: 'Reference (100%)',
       question: `Which movie has the better score? Place that percent on the bar.`,
-      hint: `Place the larger of ${rateA} and ${rateB}.`,
+      hintExplicit: `Place the larger of ${rateA} and ${rateB}.`,
+      hintStrategy: `Compare the two scores and place whichever is larger.`,
     }),
   },
   {
@@ -424,7 +580,8 @@ const COMPARISON_TEMPLATES: readonly ComparisonTemplate[] = [
       wholeValue: 100,
       wholeValueLabel: 'Reference (100%)',
       question: `Which suggested tip is larger? Place that percent on the bar.`,
-      hint: `Compare the two rates and place the bigger one.`,
+      hintExplicit: `Compare the two rates and place the bigger one.`,
+      hintStrategy: `Compare the two suggested tips and place the larger percent.`,
     }),
   },
 ];
@@ -437,10 +594,12 @@ function buildComparison(): ChallengeSpec {
   let rateA = pick(COMPARISON_RATES);
   let rateB = pick(COMPARISON_RATES);
   while (rateB === rateA) rateB = pick(COMPARISON_RATES);
-  const partial = template.build(rateA, rateB);
+  const { hintExplicit, hintStrategy, ...partial } = template.build(rateA, rateB);
   const target = Math.max(rateA, rateB);
   return {
     ...partial,
+    hint: hintExplicit,
+    hintStrategy,
     targetPercent: target,
     context: {
       problemType: 'comparison',
@@ -454,11 +613,13 @@ function buildComparison(): ChallengeSpec {
 
 // -- Pool service entry --------------------------------------------------------
 
-const BUILDERS: Record<ChallengeType, () => ChallengeSpec> = {
-  direct: buildDirect,
-  subtraction: buildSubtraction,
-  addition: buildAddition,
-  comparison: buildComparison,
+/** rateClass only reaches `direct` (the only mode with the benchmark-vs-any
+ *  structural lever); the others ignore it. */
+const BUILDERS: Record<ChallengeType, (rateClass: 'benchmark' | 'any') => ChallengeSpec> = {
+  direct: (rateClass) => buildDirect(rateClass),
+  subtraction: () => buildSubtraction(),
+  addition: () => buildAddition(),
+  comparison: () => buildComparison(),
 };
 
 function challengeKey(spec: ChallengeSpec): string {
@@ -468,14 +629,17 @@ function challengeKey(spec: ChallengeSpec): string {
 export function selectPercentBarChallenges(
   challengeType: ChallengeType,
   count: number = DEFAULT_INSTANCE_COUNT,
+  opts?: { rateClass?: 'benchmark' | 'any'; hintExplicitness?: 'explicit' | 'strategy' },
 ): PercentBarChallenge[] {
   const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, count));
+  const rateClass = opts?.rateClass ?? 'any';
+  const useStrategyHint = opts?.hintExplicitness === 'strategy';
   const builder = BUILDERS[challengeType];
   const seen = new Set<string>();
   const specs: ChallengeSpec[] = [];
 
   for (let i = 0; i < target * 6 && specs.length < target; i++) {
-    const spec = builder();
+    const spec = builder(rateClass);
     const key = challengeKey(spec);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -483,7 +647,7 @@ export function selectPercentBarChallenges(
   }
 
   // Fallback — if the pool can't produce N distinct, fill with possible repeats.
-  while (specs.length < target) specs.push(builder());
+  while (specs.length < target) specs.push(builder(rateClass));
 
   // Shuffle so order is not template-aligned.
   return shuffle(specs).map((spec, i) => ({
@@ -494,7 +658,8 @@ export function selectPercentBarChallenges(
     wholeValueLabel: spec.wholeValueLabel,
     question: spec.question,
     targetPercent: spec.targetPercent,
-    hint: spec.hint,
+    // Strategy-only hint at hard (no target number / no answer arithmetic).
+    hint: useStrategyHint ? spec.hintStrategy : spec.hint,
     context: spec.context,
   }));
 }
@@ -542,6 +707,14 @@ export const generatePercentBar = async (
     doubleBar?: boolean;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes the
+     * target percent or whole-value magnitude (the benchmark-vs-any rate lever
+     * draws from the SAME pool, so it is structural, not magnitude).
+     */
+    difficulty?: string;
   }
 ): Promise<PercentBarData> => {
   // Resolve eval mode from catalog (single source of truth)
@@ -565,6 +738,19 @@ export const generatePercentBar = async (
     CHALLENGE_TYPE_DOCS,
   );
 
+  // --- Support tier (within-mode scaffolding axis) ---
+  const supportTier = normalizeSupportTier(config?.difficulty); // STUDENT's tier — DRIVES application
+  // pinnedType is ONLY for the prompt tone (single-mode sessions describe one mode to the LLM).
+  const pinnedType =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier) : null; // tone only — NOT the application
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const prompt = `
 Create the wrapper metadata for a multi-challenge percent-bar session on "${topic}" for ${gradeLevel} students.
 
@@ -574,7 +760,7 @@ CONTEXT:
 - Your job is only to write the session-level title and description, and to set the challengeType.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific scenario — the session walks through several.
 2. Provide a 1-2 sentence educational description of what students will practice across the session.
@@ -606,8 +792,16 @@ Return ONLY the wrapper fields described above.
     : (evalConstraint?.allowedTypes[0] as ChallengeType) ?? 'direct';
   if (!validTypes.includes(challengeType)) challengeType = 'direct';
 
+  // Resolve the support scaffold for this session's pinned type (content-affecting
+  // levers — rateClass + hint explicitness — must be set at build time).
+  const sessionScaffold = supportTier
+    ? resolveSupportStructure(challengeType, supportTier)
+    : null;
+
   // Build challenges from the local pool service
-  const challenges = selectPercentBarChallenges(challengeType, config?.instanceCount);
+  const challenges = selectPercentBarChallenges(challengeType, config?.instanceCount, sessionScaffold
+    ? { rateClass: sessionScaffold.rateClass, hintExplicitness: sessionScaffold.hintExplicitness }
+    : undefined);
 
   const data: PercentBarData = {
     title: wrapper.title,
@@ -617,7 +811,26 @@ Return ONLY the wrapper fields described above.
     showValueLabels: config?.showValueLabels ?? true,
     benchmarkLines: config?.benchmarkLines ?? [25, 50, 75],
     doubleBar: config?.doubleBar ?? false,
+    // showCalculation defaults to true (current behavior); the tier withdraws it at hard.
+    showCalculation: true,
   };
+
+  // --- Apply support tier deterministically (AFTER defaults, before return) ---
+  // Gate ONLY on a tier being present. The visual levers override the manifest's
+  // explicit config so a hard tier genuinely withdraws aids. Magnitude untouched.
+  if (supportTier && sessionScaffold) {
+    data.showPercentLabels = sessionScaffold.showPercentLabels;
+    data.showValueLabels = sessionScaffold.showValueLabels;
+    data.benchmarkLines = sessionScaffold.benchmarkLines;
+    data.doubleBar = sessionScaffold.doubleBar;
+    data.showCalculation = sessionScaffold.showCalculation;
+    data.supportTier = supportTier;
+    console.log(
+      `[PercentBar] Support tier "${supportTier}" applied (${pinnedType ? `single-mode ${pinnedType}` : `type ${challengeType}`}): `
+      + `labels=${sessionScaffold.showPercentLabels}/${sessionScaffold.showValueLabels} benchmarks=[${sessionScaffold.benchmarkLines.join(',')}] `
+      + `doubleBar=${sessionScaffold.doubleBar} calc=${sessionScaffold.showCalculation} rateClass=${sessionScaffold.rateClass} hint=${sessionScaffold.hintExplicitness}`,
+    );
+  }
 
   const summary = challenges
     .map((c) => `${c.targetPercent}%@${c.wholeValue}`)

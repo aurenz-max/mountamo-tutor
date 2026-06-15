@@ -44,6 +44,10 @@ export interface HundredsChartChallenge {
   /** Multiple choice options for identify_pattern / find_skip_value */
   options: string[];
   hint: string;
+  /** Within-mode support tier (set by the generator when config.difficulty is
+   *  present). Drives the tutor's reveal depth so it doesn't leak what a hard
+   *  tier withheld on screen. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface HundredsChartData {
@@ -72,6 +76,36 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   identify_pattern:    { label: 'Identify',  icon: '🔍', accentColor: 'emerald' },
   find_skip_value:     { label: 'Find Skip', icon: '🧮', accentColor: 'amber' },
 };
+
+/**
+ * Mode-aware tutor reveal clause — keeps the tutor's disclosure consistent with
+ * the on-screen support tier so it never leaks what the tier withheld.
+ * identify_pattern is a RECOGNITION mode (the shape IS the answer), so the tutor
+ * must never name the pattern at ANY tier; there the tier only dials coaching depth.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  type: string,
+): string {
+  if (!tier) return '';
+  if (type === 'identify_pattern') {
+    // Recognition: never name the correct shape, any tier.
+    return tier === 'easy'
+      ? ' [TIER easy] You may use shape vocabulary (rows vs columns, diagonal) to guide LOOKING, but never name the correct pattern.'
+      : tier === 'medium'
+        ? ' [TIER medium] Nudge where to look; do not name the correct pattern.'
+        : ' [TIER hard] Terse coaching only; never name or strongly hint the correct pattern.';
+  }
+  switch (tier) {
+    case 'easy':
+      return ' [TIER easy] You may NAME the strategy (count by the skip value; the ones digits repeat) and walk it step by step.';
+    case 'medium':
+      return ' [TIER medium] The strategy is on screen; nudge the execution, do not name the skip value or count-by rule.';
+    case 'hard':
+    default:
+      return ' [TIER hard] Do NOT name the count-by rule or skip value. Ask what changes from one highlighted cell to the next; never reveal the answer.';
+  }
+}
 
 const CELL_COLORS = [
   'bg-purple-500/60',
@@ -185,6 +219,7 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
     attemptNumber: currentAttempts + 1,
     currentPhase: currentChallenge?.type ?? '',
     selectedCount: selectedCells.size,
+    supportTier: currentChallenge?.supportTier ?? '',
   }), [title, currentChallenge, currentAttempts, selectedCells.size]);
 
   const { sendText } = useLuminaAI({
@@ -331,7 +366,8 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
 
       sendText(
         `[ANSWER_INCORRECT] Challenge: "${currentChallenge.instruction}". ` +
-        `Type: ${type}. Skip value: ${skipValue}. Give a hint without revealing the answer.`,
+        `Type: ${type}. Skip value: ${skipValue}. Give a hint without revealing the answer.` +
+        tutorRevealPolicy(currentChallenge.supportTier, type),
         { silent: true }
       );
     }
@@ -378,12 +414,14 @@ const HundredsChart: React.FC<HundredsChartProps> = ({ data, className }) => {
       return;
     }
 
+    const nextCh = challenges[currentChallengeIndex + 1];
     sendText(
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. ` +
-      `Introduce it briefly.`,
+      `Introduce it briefly.` +
+      (nextCh ? tutorRevealPolicy(nextCh.supportTier, nextCh.type) : ''),
       { silent: true }
     );
-  }, [advanceProgress, challengeResults, challenges.length, currentChallengeIndex,
+  }, [advanceProgress, challengeResults, challenges, currentChallengeIndex,
       phaseResults, sendText, submitEvaluation]);
 
   // -------------------------------------------------------------------------

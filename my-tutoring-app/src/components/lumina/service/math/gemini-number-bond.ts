@@ -73,6 +73,147 @@ const COUNT_BY_MODE: Record<NumberBondChallengeType, number> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract: config.targetEvalMode says WHICH skill (task identity,
+// matched to the objective by the manifest); config.difficulty says how much
+// on-workspace SUPPORT the student gets while doing it ('easy' = max scaffolding,
+// 'hard' = min). It NEVER changes the magnitude: the grade band + maxNumber own
+// the whole/part ranges. A harder tier means LESS visible help (dots, the live
+// equation mirror, the fact-family worked example) and — for missing-part — a
+// structurally harder unknown SIDE, never a bigger number.
+// See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * The structural lever for missing-part: WHICH side is the unknown.
+ *  - 'larger'  → unknown is the LARGER part (known = smaller). Easiest: count up.
+ *  - 'smaller' → unknown is the SMALLER part (known = larger).
+ *  - null      → either part may be unknown (let the generator's choice stand).
+ */
+type UnknownSide = 'larger' | 'smaller' | null;
+
+interface SupportScaffold {
+  /** Dot pips inside the part circles. Decompose: tracks the student's live
+   *  placement (safe). Other modes: dots sit on GIVEN parts and reveal the
+   *  answer-by-counting — must be OFF at hard. */
+  showCounters: boolean;
+  /** Live part-whole equation mirror (`? + ? = whole`, `p1 + p2 = whole`). The
+   *  free part-whole frame; withdrawn at the harder tiers. */
+  showEquation: boolean;
+  /** Fact-family worked-example helper (all 4 forms). Reveals the whole task if
+   *  left up at hard — gate it. easy → visible+expanded, medium → collapsed,
+   *  hard → hidden. */
+  showFactFamilyHelper: boolean;
+  /** Whether to offer an early hint (before the usual 2-attempt gate). Currently
+   *  prompt-only tone for missing-part; the component still gates the hint panel
+   *  on attempts, so this rides the instruction/narration warmth. */
+  showEarlyHint: boolean;
+  /** missing-part structural lever: which side the student must find. */
+  unknownSide: UnknownSide;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-workspace support structure for a tier on a pinned challenge type.
+ * Support is withdrawn as the tier hardens; the SAME task with less scaffolding —
+ * never a different task, never a bigger number. The unknown-side lever for
+ * missing-part is STRUCTURAL (harder problem) and is CODE-ENFORCED below, not
+ * trusted to the LLM.
+ */
+function resolveSupportStructure(
+  pinnedType: NumberBondChallengeType,
+  tier: SupportTier,
+): SupportScaffold {
+  // Defaults — withdrawn per-mode below.
+  let showCounters = tier !== 'hard';
+  let showEquation = tier === 'easy';
+  let showFactFamilyHelper = tier !== 'hard';
+  let showEarlyHint = tier === 'easy';
+  let unknownSide: UnknownSide = null;
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-workspace SCAFFOLDING and (for missing-part) the unknown SIDE only (${tier === 'easy' ? 'maximum support: the workspace shows dots, the live equation, and worked examples so the student can self-check' : tier === 'medium' ? 'moderate support: fewer on-screen aids; the student reasons more unaided' : 'minimum support: numerals only, no equation mirror or worked example; the student works unaided and justifies their thinking'}). Keep every whole and part within the grade band and maxNumber; a harder tier NEVER means bigger numbers, only less help.`,
+  ];
+
+  switch (pinnedType) {
+    case 'decompose':
+      // Decompose dots track the STUDENT's live placement (not a given answer),
+      // so they can stay through medium; the found-pairs tracker is always-on in
+      // the component and is a legitimate self-tracking aid kept at every tier.
+      showCounters = tier !== 'hard';
+      showEquation = tier === 'easy';
+      promptLines.push(
+        tier === 'easy'
+          ? 'Show dot counters and the live "L + R = whole" equation, plus the running found-pairs tracker, so the student can self-check each split as they build it.'
+          : tier === 'hard'
+            ? 'Numerals only — no dot counters and no equation mirror. The student tracks splits mentally; the found-pairs list remains so they can see which ways they have already found.'
+            : 'Show dot counters but hide the live equation mirror; the student reads the split from the numbers themselves.',
+      );
+      break;
+
+    case 'missing-part':
+      // Dots on a GIVEN part render the answer-by-counting → OFF except easy.
+      showCounters = tier === 'easy';
+      showEquation = tier === 'easy';
+      showEarlyHint = tier === 'easy';
+      // Structural unknown-side lever (code-enforced): easy → unknown is the
+      // LARGER part (count up from a small known part — easiest); medium →
+      // unknown is the SMALLER part; hard → either part (no steer).
+      unknownSide = tier === 'easy' ? 'larger' : tier === 'medium' ? 'smaller' : null;
+      promptLines.push(
+        tier === 'easy'
+          ? 'Show dot counters on the known part and the live equation mirror; the unknown is the LARGER part so the student can count up from the small known part. An early, gentle hint is welcome.'
+          : tier === 'hard'
+            ? 'Numerals only — no dot counters and no equation mirror, and no early hint. Either part may be the unknown; the student finds it unaided.'
+            : 'Show dot counters but hide the equation mirror; the unknown is the SMALLER part so the student reasons about the remaining amount.',
+      );
+      break;
+
+    case 'fact-family':
+      showCounters = tier !== 'hard';
+      showFactFamilyHelper = tier !== 'hard';
+      promptLines.push(
+        tier === 'easy'
+          ? 'Show dot counters and keep the fact-family worked example VISIBLE and expanded so the student can model their 4 equations on it.'
+          : tier === 'hard'
+            ? 'Numerals only — hide the worked-example helper entirely. The instruction names ONLY the three numbers; the student recalls all 4 equation forms unaided.'
+            : 'Show dot counters; the worked-example helper is available but collapsed so the student tries before peeking.',
+      );
+      break;
+
+    case 'build-equation':
+      showCounters = tier !== 'hard';
+      showFactFamilyHelper = tier === 'easy';
+      showEquation = tier === 'easy';
+      promptLines.push(
+        tier === 'easy'
+          ? 'Show dot counters and the live equation mirror; the instruction NAMES the target equation form to build, and the worked-example helper is available.'
+          : tier === 'hard'
+            ? 'Numerals only — no helper. Use a generic instruction ("build an equation with these numbers"); the student chooses and constructs a valid form unaided.'
+            : 'Show dot counters; use a generic instruction with no named target form and no helper.',
+      );
+      break;
+  }
+
+  return { showCounters, showEquation, showFactFamilyHelper, showEarlyHint, unknownSide, promptLines };
+}
+
+// ---------------------------------------------------------------------------
 // Per-type field relevance — controls which fields appear in the schema
 // ---------------------------------------------------------------------------
 
@@ -253,6 +394,12 @@ export const generateNumberBond = async (
     challengeCount: number;
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * The second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-workspace scaffolding within it. NEVER changes numbers.
+     */
+    difficulty: string;
   }>
 ): Promise<NumberBondData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -280,6 +427,16 @@ export const generateNumberBond = async (
     ),
   );
 
+  // ── Within-mode support tier (config.difficulty). The STUDENT's tier DRIVES
+  // application per-challenge below; pinnedType only sets the prompt tone (a
+  // blend has no single mode to describe to the LLM). ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   // ── Build mode-constrained schema (strips irrelevant fields per type) ──
   const activeSchema = buildNumberBondSchema(evalConstraint?.allowedTypes ?? effectiveChallengeTypes);
 
@@ -295,7 +452,7 @@ CONTEXT:
 - This builds addition/subtraction fluency through visual part-part-whole reasoning
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
@@ -561,6 +718,84 @@ Return the complete number bond configuration.
     if (config.maxNumber !== undefined) {
       data.maxNumber = Math.min(config.maxNumber, data.gradeBand === 'K' ? 5 : 10);
     }
+  }
+
+  // ── Apply the support-tier structure deterministically (code owns the SUPPORT
+  // structure; the LLM only chose the numbers). Withdraws scaffolds as the tier
+  // hardens and enforces the missing-part unknown SIDE — never alters magnitude.
+  // Gated only on a tier being present and resolved PER CHALLENGE from its own
+  // type, so blended/auto sessions get difficulty too. Runs at the very end so
+  // structural fixups can't re-enable a withdrawn scaffold. ──
+  if (supportTier) {
+    // showFactFamilyHelper defaults to current (always-shown) behavior — only
+    // set it when a tier is present, so the no-tier path stays byte-identical.
+    // A primitive-level (not per-challenge) flag: derive it from the strictest
+    // tier requirement across the challenge mix (hide only if NO challenge wants
+    // it). In practice eval-mode sessions are single-mode so this is exact.
+    let anyWantsHelper = false;
+
+    for (const ch of data.challenges as Array<{
+      type: NumberBondChallengeType;
+      whole: number;
+      part1?: number | null;
+    }>) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      if (sc.showFactFamilyHelper) anyWantsHelper = true;
+
+      // Missing-part structural lever: choose WHICH value is the known part so
+      // the UNKNOWN is the larger/smaller side. part1 = the KNOWN part; the
+      // component computes the answer as whole - part1. We never touch `whole`
+      // or `maxNumber` — only which of the two complementary parts is revealed.
+      if (ch.type === 'missing-part' && sc.unknownSide) {
+        // Current known part (validated upstream to be 1.. whole-1).
+        const known = ch.part1 ?? Math.max(1, Math.floor(ch.whole / 2));
+        const other = ch.whole - known;
+        const smaller = Math.min(known, other);
+        const larger = Math.max(known, other);
+        // unknown = 'larger' → known is the smaller; unknown = 'smaller' → known
+        // is the larger. Keep the known part a non-trivial 1.. whole-1 value;
+        // if the bond is symmetric (smaller === larger) either choice is fine.
+        const newKnown = sc.unknownSide === 'larger' ? smaller : larger;
+        // Guard: never let the known part become 0 or the whole (would trivialize
+        // or break the "find the OTHER part" contract). Stepper bounds 0..maxNumber
+        // are NOT narrowed — only which part is shown changes.
+        if (newKnown >= 1 && newKnown < ch.whole) {
+          ch.part1 = newKnown;
+        }
+      }
+    }
+
+    // FactFamilyHelper visibility (new field; defaults to true when no tier).
+    data.showFactFamilyHelper = anyWantsHelper;
+    // Persist the tier for the live tutor so its reveal level matches the screen.
+    data.supportTier = supportTier;
+
+    // showCounters / showEquation are primitive-level booleans in this primitive.
+    // For a single pinned mode, apply that mode's scaffold directly. For a blend,
+    // OR across the challenge mix (a scaffold stays ON if ANY challenge needs it),
+    // since these are not per-challenge fields — the per-challenge unknown-side
+    // and helper-gating above carry the finer-grained withdrawal.
+    if (pinnedType) {
+      const sc = resolveSupportStructure(pinnedType, supportTier);
+      data.showCounters = sc.showCounters;
+      data.showEquation = sc.showEquation;
+    } else {
+      let anyCounters = false;
+      let anyEquation = false;
+      for (const ch of data.challenges as Array<{ type: NumberBondChallengeType }>) {
+        const sc = resolveSupportStructure(ch.type, supportTier);
+        if (sc.showCounters) anyCounters = true;
+        if (sc.showEquation) anyEquation = true;
+      }
+      data.showCounters = anyCounters;
+      data.showEquation = anyEquation;
+    }
+
+    console.log(
+      `[NumberBond] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → `
+      + `counters=${data.showCounters}, equation=${data.showEquation}, factFamilyHelper=${data.showFactFamilyHelper}`,
+    );
   }
 
   // Final summary log

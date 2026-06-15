@@ -64,6 +64,128 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract: config.targetEvalMode says WHICH skill (task identity,
+// matched to the objective by the manifest); config.difficulty says how much
+// on-chart SUPPORT the student gets while doing it ('easy' = max scaffolding,
+// 'hard' = min). It NEVER changes the number or its magnitude: the per-mode
+// numberRange + pool service own those. A harder tier means LESS on-chart help
+// (multiplier labels, the expanded-form panel) and terser hints — never a bigger
+// number. See memory: structural-difficulty-not-numeric.
+//
+// SCAFFOLD-WITHDRAWAL ONLY. The structural prefilled-column lever was deferred.
+//
+// Levers (both already plumbed generator↔component, no new component field):
+//   showMultipliers   — ×1 / ×10 / ×100 column headers (place-value crutch)
+//   showExpandedForm  — the worked expanded-form panel during Build / the
+//                       primary scaffold of expanded_form mode
+// Plus hintDepth — drives hint terseness + the tutor reveal level (the tutor is
+//   the second scaffold channel; the generator emits no instruction text).
+//
+// HARD GUARDS (UI contracts that are the task — never withdrawn by tier):
+//   • Place-name column headers (Ones/Tens/Hundreds) ARE the identify + build
+//     task — they have no toggle and stay rendered at every tier.
+//   • The highlighted-digit echo ("Highlighted digit: N") tells the student
+//     WHICH digit to reason about in Phases 1–2 — never withdrawn.
+//   • showExpandedForm is the PRIMARY scaffold of expanded_form mode — withdrawn
+//     only at HARD, never easy/medium.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+type ChallengeType = 'identify' | 'build' | 'compare' | 'expanded_form';
+
+interface SupportScaffold {
+  /** ×1/×10/×100 multiplier-label column headers — a place-value crutch. */
+  showMultipliers: boolean;
+  /** The worked expanded-form panel. Primary scaffold of expanded_form mode —
+   *  withdraw it there only at HARD. */
+  showExpandedForm: boolean;
+  /** Hint terseness + tutor reveal level: easy = name the strategy / show
+   *  decomposition; hard = ask what each column is worth, never gift it. */
+  hintDepth: 'full' | 'nudge' | 'terse';
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-chart support structure for a tier on a pinned challenge type.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * task with less scaffolding — never a different task, never a bigger number.
+ *
+ * Per-mode table (approved design):
+ *   | mode          | easy            | medium          | hard               |
+ *   | identify      | mult ON, exp ON | mult OFF, exp ON | mult OFF, exp OFF   |
+ *   | build         | mult ON, exp ON | mult OFF, exp ON | mult OFF, exp OFF   |
+ *   | compare       | mult ON, exp ON | mult OFF, exp ON | both OFF           |
+ *   | expanded_form | mult ON, panel  | mult OFF, panel  | panel OFF (recall) |
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  // Multipliers: a uniform crutch across all modes — ON at easy only.
+  const showMultipliers = tier === 'easy';
+  // Expanded-form panel: ON at easy + medium, withdrawn only at HARD (it is the
+  // primary scaffold of expanded_form mode, so it must survive easy/medium).
+  const showExpandedForm = tier !== 'hard';
+  const hintDepth: SupportScaffold['hintDepth'] =
+    tier === 'easy' ? 'full' : tier === 'medium' ? 'nudge' : 'terse';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-chart SCAFFOLDING only (${tier === 'easy' ? 'maximum support: multiplier labels and the worked expanded-form panel help the student check each digit’s value' : tier === 'medium' ? 'moderate support: multiplier labels withdrawn; the expanded-form panel still confirms the decomposition' : 'minimum support: the student recalls the place values and decomposition unaided'}). Keep the number within the per-mode range; a harder tier NEVER means a bigger number, only less on-chart help.`,
+  ];
+  switch (pinnedType) {
+    case 'identify':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep multiplier headers and the expanded-form panel visible so the student can confirm which place the highlighted digit sits in.'
+          : tier === 'hard'
+            ? 'Withhold multiplier headers and the expanded-form panel; the student names the place from the column headers alone. Hints stay terse — ask what each column is worth, never name the place.'
+            : 'Withhold multiplier headers but keep the expanded-form panel; the student reasons about the place with the decomposition still in view.',
+      );
+      break;
+    case 'build':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep multiplier headers and the live expanded-form panel visible so the student can self-check each digit as they build.'
+          : tier === 'hard'
+            ? 'Withhold multiplier headers and the expanded-form panel; the student builds the number from the place-name headers alone and verifies it themselves.'
+            : 'Withhold multiplier headers but keep the expanded-form panel as a self-check while building.',
+      );
+      break;
+    case 'compare':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep multiplier headers and the expanded-form panel visible to support multi-digit place reasoning.'
+          : tier === 'hard'
+            ? 'Withhold both multiplier headers and the expanded-form panel; the student reasons about the interior place unaided.'
+            : 'Withhold multiplier headers but keep the expanded-form panel to anchor the place reasoning.',
+      );
+      break;
+    case 'expanded_form':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep multiplier headers and the worked expanded-form panel visible — the panel shows the decomposition for the student to read.'
+          : tier === 'hard'
+            ? 'Withhold the expanded-form panel entirely; the student recalls and produces the decomposition unaided (the panel is this mode’s primary scaffold, so it is withdrawn only at hard).'
+            : 'Withhold multiplier headers but keep the worked expanded-form panel so the student still sees the decomposition.',
+      );
+      break;
+  }
+  return { showMultipliers, showExpandedForm, hintDepth, promptLines };
+}
+
+// ---------------------------------------------------------------------------
 // Wrapper schema — Gemini emits session-level metadata only.
 // Per-challenge data (targetNumber etc.) is selected locally below.
 // ---------------------------------------------------------------------------
@@ -409,6 +531,13 @@ export const generatePlaceValueChart = async (
     instanceCount?: number;
     showExpandedForm?: boolean;
     showMultipliers?: boolean;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-chart scaffolding within it. NEVER changes the
+     * number or its magnitude.
+     */
+    difficulty?: string;
   },
 ): Promise<PlaceValueChartData> => {
   // ── Eval-mode constraint resolution ──────────────────────────────
@@ -423,6 +552,22 @@ export const generatePlaceValueChart = async (
     ? constrainChallengeTypeEnum(placeValueWrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
     : placeValueWrapperSchema;
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
+  // ── Within-mode support tier ─────────────────────────────────────
+  // The eval mode owns WHAT skill; config.difficulty owns how much on-chart
+  // scaffolding within it. supportTier DRIVES the deterministic application
+  // below (gated only on a tier being present). pinnedType is for the prompt
+  // tone ONLY — a single pinned mode to describe to the LLM for title/desc.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   const instanceCount = Math.max(
     1,
@@ -439,7 +584,7 @@ This session walks the student through ${instanceCount} DIFFERENT numbers. Each 
   Phase 3: "Build the Number"   — enter each digit in the chart
 
 ${challengeTypeSection}
-
+${tierSection}
 DO NOT include specific numbers in the title or description — the system picks ${instanceCount} numbers locally and the same session covers all of them.
 
 GUIDELINES:
@@ -480,13 +625,39 @@ Return ONLY the wrapper metadata in the response schema.
     numbers: challenges.map(c => c.targetNumber),
   });
 
+  // ── Resolve the session-level show flags (default = current behavior) ──
+  let showExpandedForm = config?.showExpandedForm ?? wrapper.showExpandedForm ?? true;
+  let showMultipliers = config?.showMultipliers ?? wrapper.showMultipliers ?? true;
+  let resolvedSupportTier: SupportTier | undefined;
+
+  // ── Apply the support-tier scaffold deterministically at the END (code owns
+  // the SUPPORT structure; the LLM only chose metadata). Withdraws scaffolds as
+  // the tier hardens — never alters the number. Gated ONLY on supportTier being
+  // present (not on pinnedType), so a session reached via challengeType inference
+  // still gets difficulty. showExpandedForm / showMultipliers are SESSION-level
+  // flags and every challenge in this primitive shares one mode (challengeType),
+  // so the scaffold resolves once from that mode. Mode guards live inside
+  // resolveSupportStructure (e.g. expanded_form keeps the panel through medium).
+  // The place-name column headers and highlighted-digit echo are NOT data flags
+  // — they have no toggle and stay rendered at every tier (UI contract). ──
+  if (supportTier) {
+    resolvedSupportTier = supportTier;
+    const sc = resolveSupportStructure(challengeType as ChallengeType, supportTier);
+    showMultipliers = sc.showMultipliers;
+    showExpandedForm = sc.showExpandedForm;
+    console.log(
+      `[PlaceValue] Support tier "${supportTier}" applied (${pinnedType ? `single-mode ${pinnedType}` : `mode ${challengeType}`}) → multipliers=${showMultipliers}, expandedForm=${showExpandedForm}`,
+    );
+  }
+
   return {
     title: wrapper.title || 'Place Value Practice',
     description: wrapper.description || `Explore place values across ${instanceCount} different numbers.`,
     challenges,
     challengeType: challengeType as PlaceValueChartData['challengeType'],
-    showExpandedForm: config?.showExpandedForm ?? wrapper.showExpandedForm ?? true,
-    showMultipliers: config?.showMultipliers ?? wrapper.showMultipliers ?? true,
+    showExpandedForm,
+    showMultipliers,
+    supportTier: resolvedSupportTier,
     gradeLevel: wrapper.gradeLevel || gradeLevel,
   };
 };

@@ -71,6 +71,15 @@ export interface CoinCounterData {
   challenges: CoinCounterChallenge[];
   gradeBand?: 'K' | '1' | '2' | '3';
 
+  // ── Within-mode support tier (config.difficulty) — set by the generator ──
+  /** Show the ¢ value label on each coin (recognition aid). Withdrawn at the hard tier.
+   *  Always ignored for 'identify' (revealing the value reveals the coin). Default: true. */
+  showCoinValues?: boolean;
+  /** Show the running placed-total in make-amount (tracking aid). Withdrawn past easy. Default: true. */
+  showRunningTotal?: boolean;
+  /** The applied support tier — kept in sync with the tutor's reveal level. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
@@ -161,6 +170,30 @@ function expandCoins(coins: CoinDef[]): CoinType[] {
   return result;
 }
 
+/**
+ * Keeps the AI tutor's reveal level in sync with the on-screen support tier so it
+ * never speaks the value a hard tier hid. 'identify' is a recognition mode — the
+ * tutor must never name which coin to tap at any tier; the tier only dials coaching depth.
+ */
+function tierRevealClause(tier: string | undefined, type: string): string {
+  if (!tier) return '';
+  const recognition = type === 'identify';
+  if (tier === 'easy') {
+    return recognition
+      ? ' [TIER easy] You may richly describe the coin (size, color, name) but never say which one to tap.'
+      : ' [TIER easy] You may name the strategy (skip-count / subtract) and the value of each coin shown.';
+  }
+  if (tier === 'medium') {
+    return recognition
+      ? ' [TIER medium] Give ONE size/color cue; do not say which coin to tap.'
+      : ' [TIER medium] Nudge the next step only; do not state any coin value or the total.';
+  }
+  // hard
+  return recognition
+    ? ' [TIER hard] Ask what the student notices about the coin; reveal nothing.'
+    : ' [TIER hard] On-screen coin values are HIDDEN — do NOT state any coin\'s value, the total, or the answer; ask which coins they see and what each is worth.';
+}
+
 function formatCents(cents: number): string {
   if (cents >= 100) {
     const dollars = Math.floor(cents / 100);
@@ -189,6 +222,9 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     description,
     challenges = [],
     gradeBand = '1',
+    showCoinValues = true,
+    showRunningTotal = true,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -273,8 +309,9 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     correctGroup: currentChallenge?.correctGroup,
     correctChange: currentChallenge?.correctChange,
     attemptNumber: currentAttempts + 1,
+    supportTier,
   }), [
-    gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts,
+    gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -292,10 +329,11 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     sendText(
       `[ACTIVITY_START] Coin Counter activity for Grade ${gradeBand}. `
       + `${challenges.length} challenges. First: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
-      + `Introduce warmly: "Let's learn about coins and money!" Then read the first instruction.`,
+      + `Introduce warmly: "Let's learn about coins and money!" Then read the first instruction.`
+      + tierRevealClause(supportTier, currentChallenge?.type ?? 'count'),
       { silent: true },
     );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText, supportTier]);
 
   // ── Reset domain state on challenge change ─────────────────────────
   const resetDomainState = useCallback(() => {
@@ -328,12 +366,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student chose "${selectedCoin}" but correct is "${currentChallenge.targetCoin}". `
-        + `Hint about size/color: "${currentChallenge.hint || `Look at the coin's value and name.`}"`,
+        + `Hint about size/color: "${currentChallenge.hint || `Look at the coin's value and name.`}"`
+        + tierRevealClause(supportTier, 'identify'),
         { silent: true },
       );
     }
     return correct;
-  }, [currentChallenge, selectedCoin, incrementAttempts, sendText]);
+  }, [currentChallenge, selectedCoin, incrementAttempts, sendText, supportTier]);
 
   const handleCheckCount = useCallback(() => {
     if (!currentChallenge) return;
@@ -356,12 +395,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       const coinList = coins.map(c => `${c.count} ${c.type}${c.count > 1 ? 's' : ''}`).join(', ');
       sendText(
         `[ANSWER_INCORRECT] Student answered ${answer}¢ but correct is ${target}¢. `
-        + `Coins shown: ${coinList}. Hint: "Try skip-counting. Start with the biggest coins first."`,
+        + `Coins shown: ${coinList}. Hint: "Try skip-counting. Start with the biggest coins first."`
+        + tierRevealClause(supportTier, 'count'),
         { silent: true },
       );
     }
     return correct;
-  }, [currentChallenge, countInput, incrementAttempts, sendText]);
+  }, [currentChallenge, countInput, incrementAttempts, sendText, supportTier]);
 
   const handleCheckMakeAmount = useCallback(() => {
     if (!currentChallenge) return;
@@ -382,12 +422,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student placed ${formatCents(placed)} but needs ${formatCents(target)}. `
-        + `Difference: ${formatCents(Math.abs(target - placed))}. Give a hint about which coin to add or remove.`,
+        + `Difference: ${formatCents(Math.abs(target - placed))}. Give a hint about which coin to add or remove.`
+        + tierRevealClause(supportTier, 'make-amount'),
         { silent: true },
       );
     }
     return correct;
-  }, [currentChallenge, placedCoins, incrementAttempts, sendText]);
+  }, [currentChallenge, placedCoins, incrementAttempts, sendText, supportTier]);
 
   const handleCheckCompare = useCallback(() => {
     if (!currentChallenge || !selectedGroup) return;
@@ -409,12 +450,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student chose "${selectedGroup}" but correct is "${currentChallenge.correctGroup}". `
-        + `Group A = ${formatCents(aTotal)}, Group B = ${formatCents(bTotal)}. Hint: "Count each group separately."`,
+        + `Group A = ${formatCents(aTotal)}, Group B = ${formatCents(bTotal)}. Hint: "Count each group separately."`
+        + tierRevealClause(supportTier, 'compare'),
         { silent: true },
       );
     }
     return correct;
-  }, [currentChallenge, selectedGroup, incrementAttempts, sendText]);
+  }, [currentChallenge, selectedGroup, incrementAttempts, sendText, supportTier]);
 
   const handleCheckMakeChange = useCallback(() => {
     if (!currentChallenge) return;
@@ -433,12 +475,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_INCORRECT] Student answered ${answer}¢ but change is ${target}¢. `
         + `Paid: ${currentChallenge.paidAmount}¢, Cost: ${currentChallenge.itemCost}¢. `
-        + `Hint: "Subtract the cost from what you paid."`,
+        + `Hint: "Subtract the cost from what you paid."`
+        + tierRevealClause(supportTier, 'make-change'),
         { silent: true },
       );
     }
     return correct;
-  }, [currentChallenge, changeInput, incrementAttempts, sendText]);
+  }, [currentChallenge, changeInput, incrementAttempts, sendText, supportTier]);
 
   // ── Master Check Handler ───────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
@@ -553,7 +596,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
         {label && <span className="text-slate-400 text-sm font-medium">{label}</span>}
         <div className="flex flex-wrap gap-2 justify-center p-3 rounded-xl bg-slate-800/30 border border-white/5 min-h-[60px]">
           {expanded.map((coin, i) => (
-            <CoinVisual key={`${coin}-${i}`} type={coin} disabled />
+            <CoinVisual key={`${coin}-${i}`} type={coin} disabled showValue={showCoinValues} />
           ))}
         </div>
       </div>
@@ -634,6 +677,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                 setPlacedCoins((prev) => [...prev, coin]);
               }}
               disabled={isCurrentChallengeCorrect}
+              showValue={showCoinValues}
             />
           ))}
         </div>
@@ -643,9 +687,11 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
         <div className="p-3 rounded-xl bg-slate-800/30 border border-white/5 min-h-[60px]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-400 text-xs">Your coins:</span>
-            <span className={`text-sm font-bold ${placedTotal === target ? 'text-emerald-300' : 'text-slate-300'}`}>
-              {formatCents(placedTotal)}
-            </span>
+            {showRunningTotal && (
+              <span className={`text-sm font-bold ${placedTotal === target ? 'text-emerald-300' : 'text-slate-300'}`}>
+                {formatCents(placedTotal)}
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap gap-2 justify-center">
             {placedCoins.map((coin, i) => (
@@ -662,6 +708,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                   });
                 }}
                 disabled={isCurrentChallengeCorrect}
+                showValue={showCoinValues}
                 className="hover:ring-2 hover:ring-red-400/50"
               />
             ))}

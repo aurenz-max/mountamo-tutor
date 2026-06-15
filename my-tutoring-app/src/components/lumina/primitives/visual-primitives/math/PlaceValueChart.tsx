@@ -64,6 +64,13 @@ export interface PlaceValueChartData {
   // Session-level flags
   showExpandedForm?: boolean;
   showMultipliers?: boolean;
+  /**
+   * Within-mode support tier ('easy' | 'medium' | 'hard'). Set by the generator
+   * whenever the manifest pins config.difficulty. Drives the tutor's reveal level
+   * so it stays in sync with the on-chart scaffolds (multipliers / expanded-form
+   * panel) the tier withdrew. Absent = no tier (legacy default behavior).
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
   gradeLevel?: string;
 
   // Evaluation integration (optional, auto-injected by ManifestOrderRenderer)
@@ -148,6 +155,28 @@ function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (attempts - 1) * 20);
 }
 
+/**
+ * Tutor reveal level, calibrated to match the on-chart scaffolds the support
+ * tier withdrew. Keeps the tutor from leaking what the tier hid:
+ *   easy   → may name the place-value strategy / show expanded-form decomposition.
+ *   medium → strategy is on-screen; nudge execution only, don't decompose for them.
+ *   hard   → multipliers + panel gone; do NOT gift the decomposition — ask what
+ *            each column is worth and let the student produce it.
+ * Absent tier → legacy default coaching (treated like medium-ish nudging).
+ */
+function tutorRevealClause(tier?: 'easy' | 'medium' | 'hard'): string {
+  switch (tier) {
+    case 'easy':
+      return 'TIER easy: maximum support — you may name the place-value strategy and walk the expanded-form decomposition (e.g. "300 + 40 + 7") step by step.';
+    case 'medium':
+      return 'TIER medium: the expanded-form panel is on-screen but multiplier labels are gone — nudge the student to read it and reason about each column; do NOT decompose the whole number for them.';
+    case 'hard':
+      return 'TIER hard: multiplier labels and the expanded-form panel are withdrawn — do NOT name the decomposition or the place value. Ask what each column is worth and let the student produce it; never reveal the answer.';
+    default:
+      return '';
+  }
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -160,6 +189,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     challengeType: sessionChallengeType,
     showExpandedForm = true,
     showMultipliers = true,
+    supportTier,
     gradeLevel,
     instanceId,
     skillId,
@@ -278,11 +308,12 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     highlightedPlace: correctPlaceName,
     highlightedValue,
     currentPhase,
+    supportTier,
     gradeLevel: gradeLevel || 'Grade 3',
   }), [
     title, sessionChallengeType, currentIndex, challenges.length,
     targetNumber, highlightedDigit, correctPlaceName, highlightedValue,
-    currentPhase, gradeLevel,
+    currentPhase, supportTier, gradeLevel,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -297,13 +328,15 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
     if (!isConnected || hasIntroducedRef.current) return;
     if (challenges.length === 0 || !currentChallenge) return;
     hasIntroducedRef.current = true;
+    const tierClause = tutorRevealClause(supportTier);
     sendText(
       `[ACTIVITY_START] Place value chart session: ${sessionChallengeType} mode, ${challenges.length} numbers. `
       + `Each number runs through three phases (identify place, find value, build). `
-      + `First number: ${targetNumber.toLocaleString()}. Guide warmly.`,
+      + `First number: ${targetNumber.toLocaleString()}. Guide warmly.`
+      + (tierClause ? ` ${tierClause}` : ''),
       { silent: true },
     );
-  }, [isConnected, currentChallenge, challenges.length, sessionChallengeType, targetNumber, sendText]);
+  }, [isConnected, currentChallenge, challenges.length, sessionChallengeType, targetNumber, supportTier, sendText]);
 
   const lastAnnouncedIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -448,15 +481,17 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
       );
       setFeedbackType('error');
       sendText(
-        `[ANSWER_INCORRECT] Phase 1. Student chose "${selectedPlaceName}" but digit ${highlightedDigit} is in the ${correctPlaceName} place. `
-        + `Attempt ${nextPlaceAttempts}. Gentle hint about counting positions.`,
+        `[ANSWER_INCORRECT] Phase 1 (identify the place — the place name IS the answer, so NEVER name it). `
+        + `Student chose "${selectedPlaceName}" but digit ${highlightedDigit} is in the ${correctPlaceName} place. `
+        + `Attempt ${nextPlaceAttempts}. Gentle hint about counting positions. `
+        + tutorRevealClause(supportTier),
         { silent: true },
       );
       SoundManager.playIncorrect();
     }
   }, [
     currentChallenge, selectedPlaceName, correctPlaceName, highlightedDigit,
-    targetNumber, placeAttempts, currentIndex, challenges.length, sendText,
+    targetNumber, placeAttempts, currentIndex, challenges.length, supportTier, sendText,
   ]);
 
   // ── Phase 2: Check digit value ─────────────────────────────────
@@ -496,8 +531,10 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
       );
       setFeedbackType('error');
       sendText(
-        `[ANSWER_INCORRECT] Phase 2. Student chose "${chosen?.wordForm ?? selectedValue}" but correct is the spoken value of digit ${highlightedDigit} in the ${correctPlaceName} place. `
-        + `Attempt ${nextValueAttempts}. Coach the student to verbalize the place-value vocabulary (e.g., "thirty", "two hundred", "five tenths") — do NOT give the answer word directly.`,
+        `[ANSWER_INCORRECT] Phase 2 (the spoken value IS the answer, so NEVER say the answer word directly). `
+        + `Student chose "${chosen?.wordForm ?? selectedValue}" but correct is the spoken value of digit ${highlightedDigit} in the ${correctPlaceName} place. `
+        + `Attempt ${nextValueAttempts}. Coach the student to verbalize the place-value vocabulary (e.g., "thirty", "two hundred", "five tenths"). `
+        + tutorRevealClause(supportTier),
         { silent: true },
       );
       SoundManager.playIncorrect();
@@ -505,7 +542,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
   }, [
     currentChallenge, selectedValue, highlightedValue, highlightedDigit,
     correctPlaceName, highlightedDigitPlace, valueAttempts,
-    currentIndex, challenges.length, sendText,
+    currentIndex, challenges.length, supportTier, sendText,
   ]);
 
   // ── Phase 3: Digit entry ───────────────────────────────────────
@@ -566,7 +603,8 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
       sendText(
         `[BUILD_INCORRECT] Phase 3 (challenge ${currentIndex + 1}/${challenges.length}). `
         + `Built ${studentValue.toLocaleString()}; target ${targetNumber.toLocaleString()}. Attempt ${nextBuildAttempts}. `
-        + `Help find the wrong digit without giving the answer.`,
+        + `Help find the wrong digit without giving the answer. `
+        + tutorRevealClause(supportTier),
         { silent: true },
       );
       return;
@@ -600,7 +638,7 @@ const PlaceValueChart: React.FC<PlaceValueChartProps> = ({ data, className }) =>
   }, [
     currentChallenge, currentPhase, buildAttempts, calculateStudentValue,
     targetNumber, placeAttempts, valueAttempts, digitChangeCount,
-    currentIndex, challenges.length, completeCurrentChallenge, sendText,
+    currentIndex, challenges.length, completeCurrentChallenge, supportTier, sendText,
   ]);
 
   // ── Advance to next challenge ──────────────────────────────────

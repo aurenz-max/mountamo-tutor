@@ -82,6 +82,87 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tiers (config.difficulty → scaffolding level)
+// ---------------------------------------------------------------------------
+// Second axis of the two-field contract: targetEvalMode = WHICH skill,
+// difficulty = HOW MUCH on-screen support within it. NEVER changes the numbers.
+// BaseTenBlocks has no showOptions — its scaffolds are hardcoded renders, so the
+// levers are new per-challenge component fields (showColumnCounts, showBlocksTotal):
+//   - showColumnCounts: the digit readout above each place column (perception aid)
+//   - showBlocksTotal:  the live "Blocks Total" panel (self-check aid)
+// read_blocks keeps BOTH off at every tier (BT-2: showing them leaks the answer).
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  showColumnCounts: boolean; // per-column digit readout
+  showBlocksTotal: boolean;  // running "Blocks Total" self-check panel
+  promptLines: string[];
+}
+
+/**
+ * Map (challenge type, tier) → on-screen scaffolds. Scaffolding-only: the target
+ * numbers never change, only how much the workspace helps the student self-check.
+ * easy = workspace reads + verifies for them; hard = they place blocks and verify
+ * mentally before typing the answer.
+ */
+function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffold {
+  const numbersNeverChange =
+    'This tier changes only on-screen SUPPORT, never the numbers — the target stays exactly as generated.';
+
+  // read_blocks: counts + total are contractually hidden (they leak the answer).
+  // The tier cannot turn them on; it only sets the tutor/instruction tone.
+  if (type === 'read_blocks') {
+    return {
+      showColumnCounts: false,
+      showBlocksTotal: false,
+      promptLines: [
+        numbersNeverChange,
+        'read_blocks always hides the column counts and total — keep the instruction a generic "what number do these blocks show?" prompt so the student reads the blocks unaided.',
+      ],
+    };
+  }
+
+  switch (tier) {
+    case 'easy':
+      return {
+        showColumnCounts: true,
+        showBlocksTotal: true,
+        promptLines: [
+          numbersNeverChange,
+          'EASY support: the per-column digit counts and the running Blocks Total are both shown — the student can read each place and self-check their total. Keep the hint concrete and step-by-step (name the place values).',
+        ],
+      };
+    case 'medium':
+      return {
+        showColumnCounts: false,
+        showBlocksTotal: true,
+        promptLines: [
+          numbersNeverChange,
+          'MEDIUM support: per-column digit counts are hidden (the student counts each place themselves) but the running Blocks Total stays on for self-checking. Hint should nudge, not narrate every step.',
+        ],
+      };
+    case 'hard':
+      return {
+        showColumnCounts: false,
+        showBlocksTotal: false,
+        promptLines: [
+          numbersNeverChange,
+          'HARD support: both the per-column counts AND the running Blocks Total are hidden — the student places blocks and verifies the total mentally before answering. Keep the hint a minimal conceptual nudge that does not reveal the total.',
+        ],
+      };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -201,6 +282,19 @@ export const generateBaseTenBlocks = async (
     ? constrainChallengeTypeEnum(baseTenBlocksSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
     : baseTenBlocksSchema;
 
+  // ── Resolve within-mode support tier (the STUDENT's tier — drives application) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is ONLY for the prompt tone (operate mode = 2 types → no single mode to describe).
+  const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
+    ? evalConstraint.allowedTypes[0]
+    : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
@@ -222,7 +316,7 @@ CONTEXT:
 Generate base-ten blocks content that helps students understand place value (ones, tens, hundreds, thousands).
 
 ${challengeTypeSection}
-
+${tierSection}
 ${rangeSection}
 
 ${!evalConstraint && !pool ? `
@@ -367,6 +461,19 @@ Return the complete base-ten blocks data structure.`;
     };
     console.log(`[BaseTenBlocks] No valid challenges — using ${fallbackType} fallback`);
     data.challenges = [fallbacks[fallbackType] ?? fallbacks.build_number];
+  }
+
+  // ── Apply within-mode support tier per challenge (mode-correct, blends included) ──
+  // Difficulty is a STUDENT property, so every challenge gets it — single-mode just
+  // happens to give them all the same scaffold. Resolve from each challenge's OWN type
+  // so a blended/operate session withdraws the right aids. read_blocks self-guards (both off).
+  if (supportTier) {
+    data.challenges = (data.challenges as BaseTenBlocksChallenge[]).map((c) => {
+      const sc = resolveSupportStructure(c.type, supportTier);
+      return { ...c, showColumnCounts: sc.showColumnCounts, showBlocksTotal: sc.showBlocksTotal };
+    });
+    data.supportTier = supportTier; // mirror onto data so the tutor matches the screen
+    console.log(`[BaseTenBlocks] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended/operate'})`);
   }
 
   // Final summary log

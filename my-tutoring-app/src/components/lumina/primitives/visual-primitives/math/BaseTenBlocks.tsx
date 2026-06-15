@@ -34,6 +34,11 @@ export interface BaseTenBlocksChallenge {
   targetNumber: number;
   secondNumber?: number; // For operations
   hint: string;
+  // Support-tier scaffolds (set by the generator from config.difficulty).
+  // Perception/self-check aids withdrawn at higher tiers; never change the answer.
+  // read_blocks ignores these — its readouts are contractually off (BT-2).
+  showColumnCounts?: boolean; // digit readout above each place column
+  showBlocksTotal?: boolean;  // live "Blocks Total" self-check panel
 }
 
 export interface BaseTenBlocksData {
@@ -46,6 +51,7 @@ export interface BaseTenBlocksData {
   supplyTray?: boolean;
   challenges?: BaseTenBlocksChallenge[];
   gradeBand?: 'K-1' | '2-3' | '4-5';
+  supportTier?: 'easy' | 'medium' | 'hard'; // within-mode scaffolding level (mirrors per-challenge scaffolds for the tutor)
 
   // Evaluation props
   instanceId?: string;
@@ -98,6 +104,29 @@ function decomposeNumber(num: number, places: PlaceValue[]): Record<PlaceValue, 
   return result as Record<PlaceValue, number>;
 }
 
+/**
+ * Keeps the tutor's reveal level in sync with the on-screen support tier so it
+ * never reads aloud a readout the tier deliberately withdrew. read_blocks is
+ * always treated as max-withhold (its counts/total are contractually hidden).
+ */
+function tutorRevealClause(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  challengeType?: string,
+): string {
+  if (challengeType === 'read_blocks') {
+    return `[TIER] The column counts and total are hidden. NEVER state how many blocks are in any column or the total — ask the student to count each place themselves.`;
+  }
+  switch (tier) {
+    case 'easy':
+      return `[TIER easy] Full support is on screen (column counts + running total). You may read the columns aloud and name the place-value strategy step by step.`;
+    case 'hard':
+      return `[TIER hard] The column counts AND running total are hidden. Do NOT read off any column count or the total for the student, and never state the answer — ask what they see in each place and have them track it mentally.`;
+    case 'medium':
+    default:
+      return `[TIER medium] The running total is visible but per-column counts are hidden. Nudge the execution — point to a place to check — but do not count each column for the student.`;
+  }
+}
+
 function computeTotal(columns: Record<PlaceValue, number>, places: PlaceValue[]): number {
   let total = 0;
   for (const place of places) {
@@ -126,6 +155,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     supplyTray = true,
     challenges = [],
     gradeBand = '2-3',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -209,8 +239,13 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     ? currentChallenge.type !== 'read_blocks'
     : supplyTray;
 
-  // BT-2: Hide digit counts and total for read_blocks — showing them leaks the answer
-  const hideBlockCounts = currentChallenge?.type === 'read_blocks';
+  // BT-2: read_blocks ALWAYS hides digit counts and total — showing them leaks the answer.
+  // For every other mode the support tier decides: the generator withdraws these
+  // perception/self-check aids at higher tiers (counts off at medium, total off at hard).
+  // Defaults (undefined) preserve the original "always shown" behavior for no-tier sessions.
+  const isReadBlocks = currentChallenge?.type === 'read_blocks';
+  const showColumnCounts = isReadBlocks ? false : (currentChallenge?.showColumnCounts ?? true);
+  const showBlocksTotal = isReadBlocks ? false : (currentChallenge?.showBlocksTotal ?? true);
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -245,7 +280,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     instruction: currentChallenge?.instruction ?? description,
     attemptNumber: currentAttempts + 1,
     regroupsUsed: regroupCount,
-  }), [numberValue, interactionMode, decimalMode, gradeBand, currentTotal, activePlaces, columns, currentChallenge, currentAttempts, regroupCount, description]);
+    supportTier: supportTier ?? 'medium',
+  }), [numberValue, interactionMode, decimalMode, gradeBand, currentTotal, activePlaces, columns, currentChallenge, currentAttempts, regroupCount, description, supportTier]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'base-ten-blocks',
@@ -267,10 +303,11 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
       `[ACTIVITY_START] Base-ten blocks activity for ${gradeBand}. Mode: ${mode}. `
       + `Number: ${numberValue}. ${challengesWithIds.length} challenges. `
       + `Introduce warmly: "Let's explore place value with our blocks!" `
-      + `${currentChallenge ? `First challenge: "${currentChallenge.instruction}"` : ''}`,
+      + `${currentChallenge ? `First challenge: "${currentChallenge.instruction}" ` : ''}`
+      + tutorRevealClause(supportTier, currentChallenge?.type),
       { silent: true }
     );
-  }, [isConnected, interactionMode, gradeBand, numberValue, challengesWithIds.length, currentChallenge, sendText]);
+  }, [isConnected, interactionMode, gradeBand, numberValue, challengesWithIds.length, currentChallenge, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Interaction Handlers
@@ -395,11 +432,12 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_INCORRECT] Student entered ${parsed} but target is ${target}. `
         + `Attempt ${currentAttempts + 1}. `
-        + `Help: "Look at each column. How many ${parsed < target ? 'more' : 'fewer'} do you need?"`,
+        + `Help: "Look at each column. How many ${parsed < target ? 'more' : 'fewer'} do you need?" `
+        + tutorRevealClause(supportTier, currentChallenge?.type),
         { silent: true }
       );
     }
-  }, [currentChallenge, typedAnswer, currentAttempts, regroupCount, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, typedAnswer, currentAttempts, regroupCount, supportTier, incrementAttempts, recordResult, sendText]);
 
   // Auto-submit evaluation when all challenges complete
   useEffect(() => {
@@ -586,7 +624,7 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
                   <span className={`text-xs font-mono uppercase tracking-wider ${config.color}`}>
                     {config.label}
                   </span>
-                  {!hideBlockCounts && (
+                  {showColumnCounts && (
                     <div className={`text-2xl font-bold ${config.color}`}>{count}</div>
                   )}
                 </div>
@@ -652,8 +690,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
           })}
         </div>
 
-        {/* Running Total from blocks (helper display) — hidden for read_blocks (BT-2) */}
-        {!hideBlockCounts && (
+        {/* Running Total from blocks (self-check aid) — off for read_blocks (BT-2) and withdrawn at the hard tier */}
+        {showBlocksTotal && (
           <LuminaPanel className="flex items-center justify-center gap-4 p-3">
             <span className="text-slate-400 text-sm">Blocks Total:</span>
             <span className="text-white font-bold text-2xl font-mono">{currentTotal}</span>

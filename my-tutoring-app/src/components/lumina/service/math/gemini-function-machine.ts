@@ -92,6 +92,168 @@ const RULE_POOLS: Record<'oneStep' | 'twoStep' | 'expression', string[]> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract (same as ten-frame / counting-board): config.targetEvalMode
+// says WHICH skill (task identity = the eval mode, matched to the objective by the
+// manifest); config.difficulty says how much on-screen SUPPORT the student gets while
+// doing it ('easy' = max scaffolding, 'hard' = min).
+//
+// ⚠️ MODE-IDENTITY GUARD (the hard invariant for THIS primitive): a tier NEVER flips
+// `showRule`. `showRule` is owned by the mode (observe/predict = true, discover/create
+// = false) and DEFINES the task. Revealing the rule in discover/create would turn it
+// into observe/predict — a different eval mode. Tiers in discover/create withdraw
+// PAIRS and HINTS, never the rule. Magnitude (the rule pool) is fixed by
+// `ruleComplexity`; a tier NEVER changes it. See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /**
+   * How many I/O pairs the student must feed before the challenge can complete.
+   * Drives observe-hard ("require all inputs fed") and predict-hard ("more inputs
+   * to predict"). null = use the mode's default completion gate. Bounded to the
+   * mode's inputQueue length — NEVER grows the queue or the numbers.
+   */
+  pairsRequiredToComplete: number | null;
+  /**
+   * For create_rule only: how many rows of the I/O table are pre-revealed.
+   * Withdrawing rows makes the student extrapolate. MUST stay ≥2 so the rule is
+   * uniquely determinable. null = full table (default). Never < 2.
+   */
+  prefilledPairCount: number | null;
+  /** Show the rule-complexity badge ("One-Step"/"Two-Step"/"Expression") chrome cue. */
+  showComplexityBadge: boolean;
+  /** How-it-works / hint scaffolding level. 'full' = how-it-works + early hints;
+   *  'minimal' = standard (hint after 2 attempts); 'none' = no scaffolding hints. */
+  hintLevel: 'full' | 'minimal' | 'none';
+  /** outputDisplay override for the tier (observe/predict only). null = keep mode default. */
+  outputDisplay: 'immediate' | 'animated' | 'hidden' | null;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-screen support structure for a tier on a pinned challenge type.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * task with less scaffolding — never a different task, never a different rule.
+ *
+ * ⚠️ This function NEVER touches `showRule`. Rule visibility is the mode's identity
+ * (observe/predict show it, discover/create hide it); a tier may only withdraw
+ * PAIRS / HINTS / chrome, never reveal a hidden rule.
+ */
+function resolveSupportStructure(
+  pinnedType: FunctionMachineChallengeType,
+  tier: SupportTier,
+): SupportScaffold {
+  // Defaults = current behavior (so a no-tier path is byte-identical).
+  const queueLen = MODE_PROFILES[pinnedType]?.inputQueue.length ?? 5;
+
+  let pairsRequiredToComplete: number | null = null;
+  let prefilledPairCount: number | null = null;
+  let showComplexityBadge = true;
+  let hintLevel: 'full' | 'minimal' | 'none' = 'minimal';
+  let outputDisplay: 'immediate' | 'animated' | 'hidden' | null = null;
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-screen SCAFFOLDING only (${tier === 'easy' ? 'maximum support: the workspace coaches and self-checks for the student' : tier === 'medium' ? 'moderate support: the student does the reasoning with light cues' : 'minimum support: the student works unaided and justifies their thinking'}). The rule pool and every number are fixed by the eval mode and ruleComplexity — a harder tier NEVER changes the rule or the numbers, only how much help the student gets. NEVER reveal the rule in discover_rule/create_rule (that is a DIFFERENT eval mode); harder tiers there withdraw pre-fed pairs and hints instead.`,
+  ];
+
+  switch (pinnedType) {
+    case 'observe':
+      // easy: badge + how-it-works + all pairs. medium: drop step-list (how-it-works),
+      // badge stays. hard: require ALL inputs fed, hide badge, output immediate→animated.
+      hintLevel = tier === 'easy' ? 'full' : 'none'; // medium drops the step-list too
+      showComplexityBadge = tier !== 'hard';
+      if (tier === 'hard') {
+        pairsRequiredToComplete = queueLen; // require all inputs fed
+        outputDisplay = 'animated';
+      }
+      promptLines.push(
+        tier === 'easy'
+          ? 'Full guidance: complexity badge, the how-it-works step list, and all I/O pairs are shown so the student can watch every transformation.'
+          : tier === 'hard'
+            ? 'Minimal guidance: the student must feed every input themselves before continuing; no how-it-works list, no complexity badge.'
+            : 'Moderate guidance: the complexity badge stays, but the how-it-works step list is withdrawn.',
+      );
+      break;
+    case 'predict':
+      // easy: badge + how-it-works. medium: drop how-it-works. hard: more inputs to
+      // predict, hide running score, outputDisplay hidden.
+      hintLevel = tier === 'easy' ? 'full' : tier === 'medium' ? 'minimal' : 'none';
+      showComplexityBadge = tier !== 'hard';
+      if (tier === 'hard') {
+        pairsRequiredToComplete = queueLen; // more inputs to predict (the full queue)
+        outputDisplay = 'hidden';
+      }
+      promptLines.push(
+        tier === 'easy'
+          ? 'Full guidance: complexity badge and the how-it-works step list support the student before each prediction.'
+          : tier === 'hard'
+            ? 'Minimal guidance: the student predicts the full input queue with the running score hidden and the badge withdrawn.'
+            : 'Moderate guidance: the how-it-works step list is withdrawn; the complexity badge stays.',
+      );
+      break;
+    case 'discover_rule':
+      // Rule HIDDEN (mode identity). easy: MORE pairs pre-revealed + early hint.
+      // medium: standard, hint after 2 attempts (current). hard: FEWER pre-fed pairs / no hint.
+      hintLevel = tier === 'easy' ? 'full' : tier === 'hard' ? 'none' : 'minimal';
+      if (tier === 'easy') {
+        prefilledPairCount = queueLen; // pre-reveal the whole queue's pairs
+      } else if (tier === 'hard') {
+        prefilledPairCount = Math.max(2, Math.ceil(queueLen / 2)); // fewer, but ≥2
+      }
+      promptLines.push(
+        tier === 'easy'
+          ? 'The rule stays HIDDEN (mode identity) but MORE I/O pairs are pre-revealed and an early hint is offered.'
+          : tier === 'hard'
+            ? 'The rule stays HIDDEN; FEWER pairs are pre-fed and no hint is offered — the student must reason from less evidence. NEVER show the rule.'
+            : 'The rule stays HIDDEN; the standard pair set, with a hint after two attempts.',
+      );
+      break;
+    case 'create_rule':
+      // Rule HIDDEN (mode identity). easy: FULL table + 1 worked-exemplar row + hint.
+      // medium: full table, no exemplar (current). hard: PARTIAL table (≥2 rows), no hint.
+      hintLevel = tier === 'easy' ? 'full' : tier === 'hard' ? 'none' : 'minimal';
+      if (tier === 'hard') {
+        // PARTIAL table: fewer rows, but ALWAYS ≥2 so the rule stays uniquely determinable.
+        prefilledPairCount = Math.max(2, Math.ceil(queueLen / 2));
+      } else {
+        prefilledPairCount = queueLen; // full table for easy + medium
+      }
+      promptLines.push(
+        tier === 'easy'
+          ? 'The rule stays HIDDEN (mode identity) but the FULL I/O table is shown with one worked-exemplar row and a hint.'
+          : tier === 'hard'
+            ? 'The rule stays HIDDEN; only a PARTIAL table (≥2 rows) is shown and no hint — the student must extrapolate. NEVER show the rule.'
+            : 'The rule stays HIDDEN; the FULL I/O table is shown with no worked exemplar.',
+      );
+      break;
+  }
+
+  return {
+    pairsRequiredToComplete,
+    prefilledPairCount,
+    showComplexityBadge,
+    hintLevel,
+    outputDisplay,
+    promptLines,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Mode profiles
 // ---------------------------------------------------------------------------
 
@@ -325,6 +487,13 @@ export const generateFunctionMachine = async (
     gradeBand?: '3-4' | '5' | 'advanced';
     outputDisplay?: 'immediate' | 'animated' | 'hidden';
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * The second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes the rule
+     * or any number, and NEVER flips showRule (that is the eval mode's identity).
+     */
+    difficulty?: string;
   }
 ): Promise<FunctionMachineData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -334,6 +503,21 @@ export const generateFunctionMachine = async (
     CHALLENGE_TYPE_DOCS,
   );
   logEvalModeResolution('FunctionMachine', config?.targetEvalMode, evalConstraint);
+
+  // ── Within-mode support tier ──
+  // supportTier is the STUDENT's tier and DRIVES application (per challenge from its
+  // own mode). pinnedType is ONLY for the prompt tone (a curated blend has no single
+  // mode to describe to the LLM). NEVER flips showRule — that is the eval mode's identity.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as FunctionMachineChallengeType)
+      : undefined;
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null; // tone only
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT the rule or numbers)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
@@ -355,7 +539,7 @@ CONTEXT:
 - Your job is to write the session-level title and description, and to set the mode flags (challengeType, ruleComplexity, gradeBand, outputDisplay).
 
 ${challengeTypeSection}
-
+${tierSection}
 GRADE-COMPLEXITY MATCHING:
 - Grades 3-4 → ruleComplexity 'oneStep' (rules like x+3, 2*x)
 - Grade 5 → ruleComplexity 'twoStep' (rules like 2*x+1, 3*x-2)
@@ -416,6 +600,60 @@ Return ONLY the wrapper fields described above.
 
   const challenges = buildChallenges(rules, wrapper.challengeType);
 
+  // ── Apply the support-tier structure deterministically (code owns the SUPPORT
+  // structure; the LLM only chose the wrapper text). Runs at the END, after the
+  // challenges are built. Gated ONLY on a tier being present, resolved per challenge
+  // from its OWN mode, so blended/auto sessions get difficulty too. NEVER touches
+  // `showRule` (the eval mode's identity) and NEVER changes the rule/numbers. ──
+  // Every challenge in a session shares the session's challengeType (this primitive
+  // pins ONE mode per session — there is no per-challenge `type` field), so the
+  // mode is wrapper.challengeType for all of them.
+  const sessionMode = wrapper.challengeType as FunctionMachineChallengeType;
+  let tieredOutputDisplay: 'immediate' | 'animated' | 'hidden' | undefined;
+  if (supportTier) {
+    const sc = resolveSupportStructure(sessionMode, supportTier);
+    for (const ch of challenges) {
+      // Pairs/rows are STRUCTURAL withdrawal levers — never reveal the rule.
+      if (sc.pairsRequiredToComplete != null) {
+        ch.pairsRequiredToComplete = Math.min(sc.pairsRequiredToComplete, ch.inputQueue.length);
+      }
+      if (sc.prefilledPairCount != null) {
+        // INVARIANT (create_rule): ≥2 rows so the rule stays uniquely determinable.
+        const minRows = sessionMode === 'create_rule' ? 2 : 1;
+        ch.prefilledPairCount = Math.max(
+          minRows,
+          Math.min(sc.prefilledPairCount, ch.inputQueue.length),
+        );
+      }
+      ch.hintLevel = sc.hintLevel;
+    }
+    // outputDisplay is a session-level field — observe-hard / predict-hard set it.
+    if (sc.outputDisplay) tieredOutputDisplay = sc.outputDisplay;
+  }
+
+  // Session-level chrome: complexity badge follows the tier (hidden at hard).
+  const showComplexityBadge =
+    supportTier && tierScaffold ? tierScaffold.showComplexityBadge : undefined;
+
+  if (supportTier) {
+    // INVARIANT assert: create_rule must keep ≥2 pre-filled rows so the rule stays
+    // uniquely determinable (a 1-row table fits infinitely many rules).
+    if (sessionMode === 'create_rule') {
+      for (const ch of challenges) {
+        if (ch.prefilledPairCount != null && ch.prefilledPairCount < 2) {
+          console.warn(
+            `[FunctionMachine] create_rule prefilledPairCount<2 (${ch.prefilledPairCount}) — clamping to 2`
+          );
+          ch.prefilledPairCount = 2;
+        }
+      }
+    }
+    console.log(
+      `[FunctionMachine] Support tier "${supportTier}" applied per-challenge ` +
+      `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}); showRule untouched (mode identity)`
+    );
+  }
+
   console.log(
     `[FunctionMachine] Final: challengeType=${wrapper.challengeType}, complexity=${wrapper.ruleComplexity}, ` +
     `instances=${challenges.length} [${rules.join(' | ')}]`
@@ -428,6 +666,8 @@ Return ONLY the wrapper fields described above.
     challenges,
     ruleComplexity: wrapper.ruleComplexity,
     gradeBand: wrapper.gradeBand,
-    outputDisplay: wrapper.outputDisplay,
+    outputDisplay: tieredOutputDisplay ?? wrapper.outputDisplay,
+    ...(supportTier ? { supportTier } : {}),
+    ...(showComplexityBadge !== undefined ? { showComplexityBadge } : {}),
   };
 };

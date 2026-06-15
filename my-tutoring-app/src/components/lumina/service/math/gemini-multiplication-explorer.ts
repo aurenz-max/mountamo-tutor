@@ -89,6 +89,165 @@ const COUNT_BY_MODE: Record<MultiplicationExplorerChallengeType, number> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract (same as ten-frame / counting-board): config.targetEvalMode
+// says WHICH skill (task identity, matched to the objective by the manifest);
+// config.difficulty says how much on-screen SUPPORT the student gets while doing it
+// ('easy' = max scaffolding, 'hard' = min). The tier is per-component — the manifest
+// withdraws support across Introduce → Visualize → Apply, and personalization routes
+// through this field. It NEVER changes the FACT: factor1/factor2/product stay
+// scope-bound; the grade band + per-mode tables own magnitude. A harder tier means
+// fewer on-screen readouts/representations and a less explicit hint, never bigger
+// factors. See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** Hint explicitness level — names the cognitive sub-steps to withdraw (modality #2). */
+type HintDepth = 'enumerated' | 'strategy' | 'generic';
+
+interface SupportScaffold {
+  /** The big fact header + per-rep product readout. CAUTION: when the product IS the
+   *  asked value (hiddenValue==='product') this is the on-screen ANSWER — the apply
+   *  step in code forces it OFF in that case regardless of this preference. */
+  showProduct: boolean;
+  /** Commutative flip button + rotated array scaffold (commutative mode). */
+  showCommutativeFlip: boolean;
+  /** Fact-family (× and ÷) reveal button (missing_factor / fluency families). */
+  showFactFamily: boolean;
+  /** Fully-worked distributive breakdown panel (distributive mode, strategy phase). */
+  showDistributiveBreakdown: boolean;
+  /** How many representations stay visible. 'all' = every rep; 'core' = groups+array
+   *  (+ the mode's signature rep); 'minimal' = symbol-leaning. NEVER null/empty —
+   *  the panels ARE the primitive (build/connect keep models at every tier). */
+  repSet: 'all' | 'core' | 'minimal';
+  /** Hint explicitness ladder (modality #2 — instruction-as-scaffold). */
+  hintDepth: HintDepth;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-screen support structure for a tier on a pinned challenge type.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * fact with less scaffolding — never a different fact, never bigger factors.
+ *
+ * showProduct here is the PREFERENCE; the leak guard in the apply step (and the
+ * promptLines below) force it OFF wherever the product is the asked value.
+ */
+function resolveSupportStructure(
+  pinnedType: MultiplicationExplorerChallengeType,
+  tier: SupportTier,
+): SupportScaffold {
+  const repSet: SupportScaffold['repSet'] =
+    tier === 'easy' ? 'all' : tier === 'medium' ? 'core' : 'minimal';
+  const hintDepth: HintDepth =
+    tier === 'easy' ? 'enumerated' : tier === 'medium' ? 'strategy' : 'generic';
+
+  // Defaults — per-mode switch overrides where the lever has mode-specific meaning.
+  const scaffold: SupportScaffold = {
+    showProduct: tier === 'easy',
+    showCommutativeFlip: false,
+    showFactFamily: false,
+    showDistributiveBreakdown: false,
+    repSet,
+    hintDepth,
+    promptLines: [
+      `Support tier: ${tier.toUpperCase()} — this sets on-screen SCAFFOLDING only (${tier === 'easy' ? 'maximum support: readouts/representations help the student see the fact' : tier === 'medium' ? 'moderate support: the model is visible but the student tracks the total themselves' : 'minimum support: the student works the fact unaided and justifies it'}). Keep factor1, factor2 and the product within the pedagogical scope and grade band; a harder tier NEVER means bigger factors, only less on-screen help.`,
+    ],
+  };
+
+  switch (pinnedType) {
+    case 'build':
+      // hiddenValue = product → showProduct is the ANSWER. Scaffold via reps + hint,
+      // NOT the product readout. Force product OFF at every tier here.
+      scaffold.showProduct = false;
+      scaffold.promptLines.push(
+        tier === 'easy'
+          ? 'Show the full array/groups model. The hint should enumerate the skip-count chain to the total (e.g. "5, 10, 15, 20") so the student can follow the count.'
+          : tier === 'hard'
+            ? 'Keep the array/groups model visible but the student must count it themselves; the hint stays generic ("Use the model to find the total — count carefully").'
+            : 'Keep the model visible; the hint should NAME the strategy only (e.g. "Skip-count by the group size") without listing the numbers.',
+      );
+      break;
+    case 'connect':
+      // hiddenValue = null → the product is NOT the asked value, so showProduct is a
+      // legitimate "same fact" linking cue at easy and not a leak.
+      scaffold.showProduct = tier === 'easy';
+      scaffold.promptLines.push(
+        tier === 'easy'
+          ? 'Show all representations with the product visible; the instruction/hint should state explicitly that every picture shows the SAME fact.'
+          : tier === 'hard'
+            ? 'Show fewer representations and hide the product; give NO linking hint — the student must find what the pictures share on their own.'
+            : 'Show all representations but hide the product; the hint should ask "what is the same across these pictures?" without answering it.',
+      );
+      break;
+    case 'commutative':
+      // hiddenValue = null → product not asked; flip is the scaffold lever.
+      scaffold.showCommutativeFlip = tier !== 'hard';
+      scaffold.showProduct = tier === 'easy';
+      scaffold.promptLines.push(
+        tier === 'easy'
+          ? 'Provide the flip button, show both arrays and the product so the student can verify a×b and b×a land on the same total.'
+          : tier === 'hard'
+            ? 'No flip scaffold and product hidden — the student must PREDICT whether the total stays the same BEFORE checking, then justify why.'
+            : 'Keep the flip button but hide the product; the hint should ask "is the total the same when you swap?" without confirming it.',
+      );
+      break;
+    case 'distributive':
+      // hiddenValue = product → showProduct is the ANSWER. Scaffold via the breakdown
+      // panel + hint, never the product readout. Force product OFF at every tier.
+      scaffold.showProduct = false;
+      scaffold.showDistributiveBreakdown = tier !== 'hard';
+      scaffold.promptLines.push(
+        tier === 'easy'
+          ? 'Show the distributive breakdown fully worked (both partial products and their sum); the hint walks the split step by step.'
+          : tier === 'hard'
+            ? 'No breakdown shown — the student must CHOOSE the split themselves; the hint stays generic ("Break the hard fact into two easier ones").'
+            : 'Show the breakdown structure but the student fills in the partial products; the hint names which factor to split, not the parts.',
+      );
+      break;
+    case 'missing_factor':
+      // hiddenValue = factor1/factor2 → the PRODUCT is given, so showProduct is fine
+      // (it is part of the prompt, not the answer). The asked factor is never shown.
+      scaffold.showProduct = tier !== 'hard';
+      scaffold.showFactFamily = tier === 'easy';
+      scaffold.promptLines.push(
+        tier === 'easy'
+          ? 'Show the model and the product; the hint should give the skip-count-to-the-product chain (e.g. "Count by the known factor: 4, 8, 12, 16 — how many jumps?").'
+          : tier === 'hard'
+            ? 'Symbol-only — no model; the hint stays generic ("Think: what times the known factor makes the product?").'
+            : 'Show the model; the hint should say "count by the known factor until you reach the product" without listing the multiples.',
+      );
+      break;
+    case 'fluency':
+      // hiddenValue = product → product readout is the ANSWER. Always OFF.
+      scaffold.showProduct = false;
+      scaffold.promptLines.push(
+        tier === 'easy'
+          ? 'Bare fact recall, no representations. Provide a brief recall hint (e.g. "Think of it as groups of the smaller factor").'
+          : tier === 'hard'
+            ? 'Bare fact recall, no representations and no hint — pure rapid recall (current behaviour).'
+            : 'Bare fact recall, no representations and no hint.',
+      );
+      break;
+  }
+  return scaffold;
+}
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -198,6 +357,13 @@ export const generateMultiplicationExplorer = async (
     intent?: string;
     /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for all T2 modes). */
     instanceCount?: number;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes the
+     * factors or the product — only readouts, representations, and hint depth.
+     */
+    difficulty?: string;
   }
 ): Promise<MultiplicationExplorerData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -225,6 +391,17 @@ export const generateMultiplicationExplorer = async (
   // For config.challengeTypes without an eval mode, use them as a hint
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
 
+  // ── Within-mode support tier ──
+  // The eval mode owns WHAT skill; config.difficulty owns how much on-screen
+  // scaffolding within it. supportTier DRIVES application (per challenge, blends
+  // included); pinnedType only selects the single-mode prose for the prompt tone.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT factor/product size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(multiplicationExplorerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
@@ -245,7 +422,7 @@ The multiplication explorer connects 5 representations of the same fact:
 5. Area Model (3 × 4 rectangle)
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GRADE-LEVEL GUIDELINES:
 Grade 2 (gradeBand "2-3"):
@@ -385,6 +562,85 @@ Return the complete multiplication explorer configuration.
     data.representations.numberLine = false;
   }
 
+  // ── Apply the support-tier structure deterministically (code owns the SUPPORT
+  // structure; the LLM only chose the fact + words). Withdraws scaffolds as the tier
+  // hardens — never alters factor1/factor2/product. Runs AFTER showOptions/reps
+  // defaults so a hard tier can withdraw them. Gated ONLY on a tier being present
+  // (so blended/auto sessions get difficulty too); each challenge resolves its OWN
+  // mode from ch.type. ──
+  if (supportTier) {
+    const distinctTypes = Array.from(
+      new Set(
+        (data.challenges as Array<{ type: MultiplicationExplorerChallengeType }>).map((c) => c.type),
+      ),
+    );
+    const hasType = (t: MultiplicationExplorerChallengeType) => distinctTypes.includes(t);
+
+    // showProduct also drives the big fact header AND every per-rep readout — when a
+    // challenge's hiddenValue IS the product, showProduct=true is the on-screen ANSWER.
+    // So the readout may only be ON when NO challenge in this set hides the product.
+    const anyProductHidden = (data.challenges as Array<{ hiddenValue?: string | null }>).some(
+      (c) => c.hiddenValue === 'product',
+    );
+
+    // Aggregate the per-mode scaffold preferences across the (usually single-mode) set.
+    let wantProduct = false;
+    let wantCommutativeFlip = false;
+    let wantFactFamily = false;
+    let wantDistributive = false;
+    let coarsestRepSet: SupportScaffold['repSet'] = 'all';
+    const repRank: Record<SupportScaffold['repSet'], number> = { all: 0, core: 1, minimal: 2 };
+
+    for (const t of distinctTypes) {
+      const sc = resolveSupportStructure(t, supportTier);
+      wantProduct = wantProduct || sc.showProduct;
+      wantCommutativeFlip = wantCommutativeFlip || sc.showCommutativeFlip;
+      wantFactFamily = wantFactFamily || sc.showFactFamily;
+      wantDistributive = wantDistributive || sc.showDistributiveBreakdown;
+      if (repRank[sc.repSet] > repRank[coarsestRepSet]) coarsestRepSet = sc.repSet;
+    }
+
+    // LEAK GUARD: never show the product readout when any challenge's asked value IS
+    // the product (build / distributive / fluency, or an LLM-chosen product hide).
+    const showProduct = wantProduct && !anyProductHidden;
+
+    data.showOptions = {
+      ...data.showOptions,
+      showProduct,
+      showCommutativeFlip: wantCommutativeFlip,
+      showFactFamily: wantFactFamily,
+      showDistributiveBreakdown: wantDistributive,
+    };
+
+    // Representation withdrawal — NEVER strip all panels (the panels ARE the primitive).
+    // 'core' keeps groups + array (+ the mode's signature rep); 'minimal' keeps groups
+    // + array only; 'all' leaves the LLM's choice untouched. fluency owns 'minimal'
+    // but its representations are irrelevant (bare fact) so this is harmless there.
+    if (coarsestRepSet !== 'all') {
+      const isCore = coarsestRepSet === 'core';
+      data.representations = {
+        equalGroups: true, // groups + array are the irreducible core — never stripped.
+        array: true,
+        repeatedAddition: isCore,
+        numberLine: isCore && hasType('missing_factor'),
+        areaModel: isCore && hasType('distributive'),
+      };
+      // Re-apply the large-product number-line guard after the tier reshuffle.
+      if (data.fact.product > 50) data.representations.numberLine = false;
+    }
+
+    // Persist the tier so the live tutor matches what's on screen (set whenever a tier
+    // is present, blends included).
+    data.supportTier = supportTier;
+
+    console.log(
+      `[MultiplicationExplorer] Support tier "${supportTier}" applied per-challenge ` +
+        `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → ` +
+        `showProduct=${showProduct}${anyProductHidden ? ' (forced off: product is asked value)' : ''}, ` +
+        `flip=${wantCommutativeFlip}, factFamily=${wantFactFamily}, distributive=${wantDistributive}, reps=${coarsestRepSet}`,
+    );
+  }
+
   // Apply explicit config overrides
   if (config) {
     if (config.factor1 !== undefined) {
@@ -396,6 +652,20 @@ Return the complete multiplication explorer configuration.
       data.fact.product = data.fact.factor1 * config.factor2;
     }
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
+  }
+
+  // LEAK GUARD (unconditional — covers the UNTIERED default path, not just tiers):
+  // `showProduct` drives the big fact header AND every per-rep readout, so it must
+  // never be ON when any challenge's asked value IS the product. The tier block above
+  // already enforces this for tiered sessions; this final pass closes the no-tier path
+  // (where the LLM/default showOptions could otherwise leak e.g. "2 × 5 = 10").
+  if (data.showOptions?.showProduct) {
+    const productIsAsked = (data.challenges as Array<{ hiddenValue?: string | null }>).some(
+      (c) => c.hiddenValue === 'product',
+    );
+    if (productIsAsked) {
+      data.showOptions = { ...data.showOptions, showProduct: false };
+    }
   }
 
   return data;

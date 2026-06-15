@@ -61,6 +61,13 @@ export interface MultiplicationExplorerData {
   imagePrompt: string | null;
   gradeBand: '2-3' | '3-4';
 
+  /**
+   * Within-mode support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Set by the generator whenever a tier is present (blends included). Drives the
+   * tutor's reveal level so it never names a strategy the on-screen scaffold withheld.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
@@ -451,6 +458,50 @@ const PhaseIndicator: React.FC<{ current: Phase }> = ({ current }) => {
 // Main Component
 // =============================================================================
 
+/**
+ * Mode-aware reveal policy for the AI tutor, keyed off the support tier and the
+ * CURRENT challenge type (correct in a blend). Keeps the tutor's coaching depth in
+ * sync with the on-screen scaffold so a hard tier doesn't leak via the tutor.
+ *
+ * For commutative/distributive the RELATIONSHIP is the lesson — the tutor calibrates
+ * how much it coaches that relationship, but never hands over the product itself.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  challengeType: MultiplicationExplorerChallenge['type'],
+): string {
+  if (!tier) return '';
+  const base = ' SUPPORT TIER: ';
+  if (tier === 'easy') {
+    switch (challengeType) {
+      case 'build':
+      case 'missing_factor':
+        return base + 'EASY — you may name the skip-count strategy and walk the count, but never state the final answer.';
+      case 'distributive':
+        return base + 'EASY — you may walk the break-apart split step by step, but do not state the product.';
+      case 'commutative':
+        return base + 'EASY — you may explain why swapping the factors keeps the total the same, without stating the total.';
+      default:
+        return base + 'EASY — you may name the strategy and guide the setup, but never reveal the answer.';
+    }
+  }
+  if (tier === 'medium') {
+    return base + 'MEDIUM — the model is on screen; nudge the student to use it. Do NOT name the full strategy or solve it for them.';
+  }
+  // hard
+  switch (challengeType) {
+    case 'build':
+    case 'missing_factor':
+      return base + 'HARD — do NOT name the skip-count strategy. Ask what the array/groups show and let the student find it.';
+    case 'distributive':
+      return base + 'HARD — do NOT suggest the split. Ask how they could break the hard fact into easier ones.';
+    case 'commutative':
+      return base + 'HARD — do NOT confirm whether the total stays the same. Ask the student to predict first, then check.';
+    default:
+      return base + 'HARD — do not name the strategy or reveal the answer; ask what the student sees in the model.';
+  }
+}
+
 const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, className }) => {
   const {
     fact,
@@ -458,6 +509,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     showOptions,
     gradeBand,
     representations,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -500,7 +552,8 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     factsCorrect,
     factsTotal,
     gradeBand,
-  }), [fact, currentPhase, challengeIndex, currentChallenge, flipped, attemptsCount, factsCorrect, factsTotal, gradeBand]);
+    supportTier: supportTier ?? null,
+  }), [fact, currentPhase, challengeIndex, currentChallenge, flipped, attemptsCount, factsCorrect, factsTotal, gradeBand, supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'multiplication-explorer',
@@ -578,7 +631,8 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       sendText(
         `[ANSWER_CORRECT] Student answered ${fact.factor1} × ${fact.factor2} = ${userAnswer} correctly ` +
         `on attempt ${attemptsCount + 1}. Challenge: "${currentChallenge?.instruction}". ` +
-        `Congratulate briefly and introduce the next step.`,
+        `Congratulate briefly and introduce the next step.` +
+        tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build'),
         { silent: true }
       );
     } else {
@@ -593,11 +647,12 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         `[ANSWER_INCORRECT] Student answered "${userAnswer}" but correct is ${expected}. ` +
         `Fact: ${fact.factor1} × ${fact.factor2} = ${fact.product}. ` +
         `Challenge: "${currentChallenge?.instruction}". Attempt ${attemptsCount + 1}. ` +
-        `Give a brief hint without revealing the answer.`,
+        `Give a brief hint without revealing the answer.` +
+        tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build'),
         { silent: true }
       );
     }
-  }, [answer, getExpectedAnswer, currentChallenge, fact, attemptsCount, fluencyStart, sendText]);
+  }, [answer, getExpectedAnswer, currentChallenge, fact, attemptsCount, fluencyStart, sendText, supportTier]);
 
   const handleNextChallenge = useCallback(() => {
     if (challengeIndex < challenges.length - 1) {
@@ -611,11 +666,12 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       const next = challenges[challengeIndex + 1];
       sendText(
         `[NEXT_CHALLENGE] Moving to challenge ${challengeIndex + 2} of ${challenges.length}: ` +
-        `"${next.instruction}". Type: ${next.type}. Briefly introduce it.`,
+        `"${next.instruction}". Type: ${next.type}. Briefly introduce it.` +
+        tutorRevealPolicy(supportTier, next.type),
         { silent: true }
       );
     }
-  }, [challengeIndex, challenges, sendText]);
+  }, [challengeIndex, challenges, sendText, supportTier]);
 
   const handlePhaseTransition = useCallback((newPhase: Phase) => {
     SoundManager.navigate();
@@ -626,10 +682,11 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       `[PHASE_CHANGE] Student moved to phase: ${newPhase}. ` +
       `${newPhase === 'connect' ? 'All 5 representations shown simultaneously. Help student see they all show the same fact.' : ''}` +
       `${newPhase === 'strategy' ? 'Distributive property phase. Coach: "Don\'t know a hard fact? Break it into easy ones!"' : ''}` +
-      `Briefly introduce this phase.`,
+      `Briefly introduce this phase.` +
+      tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build'),
       { silent: true }
     );
-  }, [sendText]);
+  }, [sendText, supportTier, currentChallenge]);
 
   const handleFlip = useCallback(() => {
     SoundManager.toggle(!flipped);

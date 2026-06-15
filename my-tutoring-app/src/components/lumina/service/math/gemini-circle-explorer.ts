@@ -52,6 +52,74 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — second axis of the two-field
+// contract. targetEvalMode = WHICH skill; difficulty = HOW MUCH on-screen help
+// within it. A tier NEVER changes the radii, given values, or answers (those are
+// pre-built and fixed); it only withdraws scaffolding. See memory
+// [[structural-difficulty-not-numeric]] / [[feedback_llm-window-code-builds-structure]].
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; current behavior stands). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** CircleExplorer's support levers (all scaffolding — never magnitude):
+ *  #2 instruction-as-scaffold (name the formula? hint = formula vs conceptual nudge)
+ *  #1/#3 perception/CPA (show the explicit formula label on the canvas manipulative reveal). */
+interface SupportScaffold {
+  /** easy: the instruction itself names the formula; med/hard: generic instruction. */
+  nameFormulaInInstruction: boolean;
+  /** 'formula' = hint states the formula (easy/medium); 'conceptual' = hint is a nudge only (hard). */
+  hintStyle: 'formula' | 'conceptual';
+  /** Show the explicit C=2πr / A=πr² / ≈3.14d labels on the manipulative reveal (off at hard). */
+  showFormulaReveal: boolean;
+  promptLines: string[];
+}
+
+/** Tier → scaffold. The withdrawal is tier-driven (mode-agnostic booleans); the
+ *  per-mode formula/nudge TEXT is built separately by formulaFor / conceptualHintFor. */
+function resolveSupportStructure(_type: CircleExplorerChallengeType, tier: SupportTier): SupportScaffold {
+  switch (tier) {
+    case 'easy':
+      return {
+        nameFormulaInInstruction: true,
+        hintStyle: 'formula',
+        showFormulaReveal: true,
+        promptLines: [
+          'This tier changes ONLY the scaffolding — never the radii, given values, or answers (those are pre-built and fixed).',
+          'EASY = maximum support: the instruction names the exact formula, the hint restates it, and the figure prints the formula on the manipulative reveal.',
+        ],
+      };
+    case 'medium':
+      return {
+        nameFormulaInInstruction: false,
+        hintStyle: 'formula',
+        showFormulaReveal: true,
+        promptLines: [
+          'This tier changes ONLY the scaffolding — never the numbers.',
+          'MEDIUM = the instruction is generic; the formula lives in the hint and on the manipulative reveal.',
+        ],
+      };
+    case 'hard':
+      return {
+        nameFormulaInInstruction: false,
+        hintStyle: 'conceptual',
+        showFormulaReveal: false,
+        promptLines: [
+          'This tier changes ONLY the scaffolding — never the numbers.',
+          'HARD = minimum support: the instruction does NOT name the formula, the hint is a conceptual nudge only, and the figure withholds the explicit formula labels. The student recalls and applies the relationship unaided.',
+        ],
+      };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Per-mode instance counts
 // ---------------------------------------------------------------------------
 
@@ -365,6 +433,63 @@ function recomputeExpected(ch: CircleExplorerChallenge): number | null {
 }
 
 // ---------------------------------------------------------------------------
+// Support-tier text helpers (per mode) — used when a tier is applied at the end
+// ---------------------------------------------------------------------------
+
+/** The formula the easy instruction names and the formula hint states. */
+function formulaFor(ch: RawChallenge): string {
+  switch (ch.type) {
+    case 'discover_pi':
+      return 'C ÷ d';
+    case 'circumference':
+      return ch.given === 'diameter' ? 'C = π × d' : 'C = 2 × π × r';
+    case 'area':
+      return 'A = π × r²';
+    case 'reverse':
+      return ch.reverseGiven === 'area' ? 'r = √(A ÷ π)' : 'r = C ÷ (2 × π)';
+    case 'composite':
+      switch (ch.compositeShape) {
+        case 'circle_in_square':
+          return 'shaded = s² − π × (s ÷ 2)²';
+        case 'semicircle_perimeter':
+          return 'P = π × r + 2 × r';
+        case 'semicircle_area':
+          return 'A = ½ × π × r²';
+        default:
+          return '';
+      }
+  }
+}
+
+/** A conceptual nudge (NO formula) — the hard-tier hint. Names a relationship to
+ *  look for, never the operation to perform. */
+function conceptualHintFor(ch: RawChallenge): string {
+  switch (ch.type) {
+    case 'discover_pi':
+      return 'Compare the unrolled length to one diameter — how many diameters wrap around the edge?';
+    case 'circumference':
+      return 'Which measurement traces all the way around the edge? It depends on π and how wide the circle is across.';
+    case 'area':
+      return 'Area is the space inside. Picture the circle re-cut into a rectangle — how do its sides relate to the radius?';
+    case 'reverse':
+      return ch.reverseGiven === 'area'
+        ? 'You know the space inside. Work the area relationship backward to get the radius.'
+        : 'You know the distance around. What single operation undoes "multiply by 2 × π"?';
+    case 'composite':
+      switch (ch.compositeShape) {
+        case 'circle_in_square':
+          return 'Start from the whole square, then take away the part the circle covers.';
+        case 'semicircle_perimeter':
+          return 'Trace the boundary: the curved part plus the straight edge across.';
+        case 'semicircle_area':
+          return 'It is half of a full circle — find the whole, then take half.';
+        default:
+          return ch.hint;
+      }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Build N distinct challenges for a single-mode session, with variance rules
 // ---------------------------------------------------------------------------
 
@@ -555,6 +680,12 @@ export const generateCircleExplorer = async (
   config?: {
     instanceCount?: number;
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   },
 ): Promise<CircleExplorerData> => {
   const validTypes: CircleExplorerChallengeType[] = [
@@ -581,6 +712,20 @@ export const generateCircleExplorer = async (
 
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Within-mode support tier (the STUDENT's tier — drives application below) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is ONLY for the prompt tone (a blended/auto session has no single
+  // mode to describe to the LLM); the per-challenge application keys off each
+  // challenge's own type, so blended sessions get difficulty too.
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as CircleExplorerChallengeType)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const prompt = `
 Create the wrapper metadata for a multi-circle geometry session on "${topic}" for ${gradeLevel} students.
 
@@ -590,7 +735,7 @@ CONTEXT:
 - Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific radius, value, or answer.
 2. Provide a 1-2 sentence educational description of what students will practice.
@@ -651,12 +796,43 @@ Return ONLY the wrapper fields described above.
     }
   }
 
+  // ── Apply the support tier deterministically, per challenge (mode-correct) ──
+  // Gated only on a tier being present (NOT on pinnedType) so blended/auto
+  // sessions get difficulty too. Runs AFTER post-validation: it only rewrites
+  // instruction/hint text and toggles the formula reveal — never the numbers.
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.showFormulaReveal = sc.showFormulaReveal;
+
+      // Hint: formula (easy/medium baseline) vs conceptual nudge (hard).
+      if (sc.hintStyle === 'conceptual') {
+        ch.hint = conceptualHintFor(ch);
+      }
+
+      // Instruction: easy names the formula; discover_pi already names "C ÷ d",
+      // so don't double it — instead soften it at hard so it stops naming the op.
+      const formula = formulaFor(ch);
+      if (sc.nameFormulaInInstruction && formula && ch.type !== 'discover_pi') {
+        ch.instruction = `${ch.instruction} Use ${formula}.`;
+      }
+      if (ch.type === 'discover_pi' && supportTier === 'hard') {
+        ch.instruction = 'Unroll the circumference, then estimate how many diameters fit around the edge.';
+      }
+    }
+    console.log(
+      `[CircleExplorer] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`,
+    );
+  }
+
   const data: CircleExplorerData = {
     title: wrapper.title,
     description: wrapper.description,
     challengeType,
     gradeBand: '7',
     challenges,
+    ...(supportTier ? { supportTier } : {}),
   };
 
   const summary = challenges

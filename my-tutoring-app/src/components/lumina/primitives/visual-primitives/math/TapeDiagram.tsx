@@ -64,8 +64,26 @@ export interface TapeDiagramChallenge {
   multiStepData?: {
     step1Hint: string;
     step2Hint: string;
+    /** Third-step hint — present only on hard-tier 3-step chains. */
+    step3Hint?: string;
     solveOrder: number[];
   };
+
+  // ── Support-tier scaffolds (set by the generator when config.difficulty is
+  // present). All default to current always-on behavior when undefined. ──────
+  /** Within-mode support tier ('easy' | 'medium' | 'hard'); drives tutor reveal. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Print the numeric value on KNOWN segments. Default true (current behavior).
+   *  The UNKNOWN/answer segment is hidden at every tier regardless. */
+  showKnownValues?: boolean;
+  /** part-whole only: how much of the Explore→Practice→Apply ramp to show.
+   *  Default 'full' (current behavior). */
+  phaseScaffold?: 'full' | 'skip-explore' | 'apply-only';
+  /** multi_step only: lock later steps until earlier ones are solved.
+   *  Default true (current behavior). hard → false (unlock all). */
+  lockSteps?: boolean;
+  /** comparison hard: hide the non-answer bar's value so the student re-reads it. */
+  hideNonAnswerValue?: boolean;
 }
 
 export interface TapeDiagramData {
@@ -290,6 +308,16 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   const comparisonData = currentChallenge?.comparisonData;
   const multiStepData = currentChallenge?.multiStepData;
 
+  // ── Support-tier scaffolds (default to current always-on behavior) ─────────
+  const supportTier = currentChallenge?.supportTier;
+  const showKnownValues = currentChallenge?.showKnownValues ?? true;
+  const lockSteps = currentChallenge?.lockSteps ?? true;
+  // Comparison hard hides the non-answer bar's value (re-read from problem). For
+  // comparison this is equivalent to withdrawing known-value display, so we fold
+  // it into the effective `showKnownValues` the renderer consumes.
+  const hideNonAnswerValue = currentChallenge?.hideNonAnswerValue ?? false;
+  const effectiveShowKnownValues = showKnownValues && !hideNonAnswerValue;
+
   // ── Per-challenge interaction state (resets on advance) ────────────────────
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<Record<string, 'correct' | 'incorrect' | null>>({});
@@ -317,9 +345,21 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     setSegmentAttempts(new Map());
     setShowHints(false);
     setChallengeHintCount(0);
-    setCurrentPhase('explore');
+    // Honor the support-tier phase ramp for part-whole: medium skips Explore
+    // (start at Practice); hard collapses to Apply (all unknowns at once).
+    const startPhase: LearningPhase =
+      currentChallenge.challengeType === 'solve_part_whole'
+        ? currentChallenge.phaseScaffold === 'apply-only'
+          ? 'apply'
+          : currentChallenge.phaseScaffold === 'skip-explore'
+            ? 'practice'
+            : 'explore'
+        : 'explore';
+    setCurrentPhase(startPhase);
+    // If Explore is skipped, mark the whole as "found" so progression FSM and
+    // bracket gating treat the skipped step as complete.
+    setWholeFound(startPhase !== 'explore');
     setWholeValue('');
-    setWholeFound(false);
     setPhaseAttempts({ explore: 0, practice: 0, apply: 0 });
     setCurrentStepIndex(0);
     recordedRef.current = false;
@@ -426,6 +466,53 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   );
 
   // ── AI Tutoring ────────────────────────────────────────────────────────────
+  // Keep the tutor's reveal level consistent with the on-screen scaffold so it
+  // can't leak what the support tier withheld. Mode-aware + tier-aware: at easy
+  // the tutor may name the operation/strategy and the setup; at hard it must NOT
+  // name the operation the instruction hid — ask what the bars show — and it must
+  // NEVER reveal the total or the answer at any tier.
+  const tutorRevealPolicy = useCallback(
+    (mode: TapeDiagramChallengeType, tier: 'easy' | 'medium' | 'hard' | undefined): string => {
+      if (!tier) return '';
+      if (tier === 'easy') {
+        if (mode === 'solve_part_whole')
+          return ' SUPPORT=easy: you may name the part-whole strategy (add parts to find the whole; subtract a part from the whole to find another) and walk the setup. Never state a missing value or the total.';
+        if (mode === 'solve_comparison')
+          return ' SUPPORT=easy: you may name the operation AND the two numbers to compare. Never state the missing answer.';
+        if (mode === 'multi_step')
+          return ' SUPPORT=easy: you may name each step\'s operation explicitly. Never state an intermediate or final value.';
+        return ' SUPPORT=easy: you may point out that each number in the story maps to one segment. Never state a value.';
+      }
+      if (tier === 'medium') {
+        return ' SUPPORT=medium: nudge the operation without naming the full strategy or any number. Never reveal a value or the total.';
+      }
+      // hard
+      if (mode === 'solve_part_whole')
+        return ' SUPPORT=hard: do NOT name the operation or strategy the instruction hid. The total is unlabeled — never reveal it. Ask what the bars and the whole show.';
+      if (mode === 'solve_comparison')
+        return ' SUPPORT=hard: a bar\'s value is hidden — make the student re-read it from the problem. Do NOT name the operation or any number; ask what "how many more" is really asking.';
+      if (mode === 'multi_step')
+        return ' SUPPORT=hard: all steps are unlocked and the total is unlabeled. Do NOT name operations; ask what must be found before the final answer. Never reveal a value.';
+      return ' SUPPORT=hard: ask which numbers the problem gave; do not map them for the student. Never reveal a value.';
+    },
+    [],
+  );
+
+  // Wrong-answer nudge — fires a tier-calibrated coaching cue to the tutor so its
+  // reveal level matches the on-screen scaffold even mid-attempt. Defined after
+  // sendText below via a ref so it can be called from the mode handlers.
+  const sendTextRef = useRef<typeof sendText | null>(null);
+  const nudgeOnWrong = useCallback(
+    (mode: TapeDiagramChallengeType) => {
+      sendTextRef.current?.(
+        `[STUDENT_STUCK] The student answered incorrectly on a ${mode} problem.`
+        + tutorRevealPolicy(mode, supportTier),
+        { silent: true },
+      );
+    },
+    [tutorRevealPolicy, supportTier],
+  );
+
   const aiPrimitiveData = useMemo(() => ({
     title,
     challengeType,
@@ -437,9 +524,10 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     solvedSegments: Object.values(feedback).filter((f) => f === 'correct').length,
     currentWordProblem: wordProblem,
     challengeHintCount,
+    supportTier,
   }), [
     title, challengeType, currentIndex, challenges.length, currentPhase,
-    bars.length, allUnknowns.length, feedback, wordProblem, challengeHintCount,
+    bars.length, allUnknowns.length, feedback, wordProblem, challengeHintCount, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -448,6 +536,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     primitiveData: aiPrimitiveData,
     gradeLevel: 'Grade 3',
   });
+  sendTextRef.current = sendText;
 
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
@@ -457,12 +546,13 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     sendText(
       `[ACTIVITY_START] Tape diagram session: ${challengeType} mode, ${challenges.length} challenges. `
       + `First problem: ${wordProblem ? `"${wordProblem}". ` : `${allUnknowns.length} unknowns. `}`
-      + `Guide the student through the diagram.`,
+      + `Guide the student through the diagram.`
+      + tutorRevealPolicy(challengeType, supportTier),
       { silent: true },
     );
   }, [
     isConnected, currentChallenge, challenges.length, challengeType,
-    wordProblem, allUnknowns.length, sendText,
+    wordProblem, allUnknowns.length, sendText, supportTier, tutorRevealPolicy,
   ]);
 
   const lastAnnouncedIdRef = useRef<string | null>(null);
@@ -648,7 +738,11 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
                         <div className="text-3xl font-bold text-yellow-400">?</div>
                       )
                     ) : (
-                      segment.value !== undefined && (
+                      // Known segment value. `showKnownValues` (support tier)
+                      // gates this on KNOWN segments only — the unknown/answer
+                      // segment is handled by the isUnknown branch above, so this
+                      // can never withhold (or reveal) the answer.
+                      segment.value !== undefined && effectiveShowKnownValues && (
                         <div className="text-2xl font-bold text-white">{segment.value}</div>
                       )
                     )}
@@ -709,6 +803,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
+      if (!isCorrect && supportTier) nudgeOnWrong('represent');
 
       if (isCorrect) {
         const nowAllCorrect = allUnknowns.every(({ barIndex: bi, segmentIndex: si }) =>
@@ -749,7 +844,11 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
             </LuminaButton>
             {showHints && wordProblem && (
               <LuminaFeedbackCard status="insight" label="Hint" className="text-left">
-                Re-read the word problem carefully. Each number mentioned corresponds to one segment on the diagram.
+                {supportTier === 'hard'
+                  ? 'Which numbers did the problem give you?'
+                  : supportTier === 'easy'
+                    ? 'Each number in the story is one segment on the diagram — place them in order.'
+                    : 'Re-read the word problem carefully. Each number mentioned corresponds to one segment on the diagram.'}
               </LuminaFeedbackCard>
             )}
           </div>
@@ -805,6 +904,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       } else {
         SoundManager.playIncorrect();
         setFeedback({ explore: 'incorrect' });
+        if (supportTier) nudgeOnWrong('solve_part_whole');
       }
     };
 
@@ -824,6 +924,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
+      if (!isCorrect && supportTier) nudgeOnWrong('solve_part_whole');
 
       if (isCorrect) {
         if (currentPhase === 'practice') {
@@ -973,6 +1074,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
+      if (!isCorrect && supportTier) nudgeOnWrong('solve_comparison');
 
       if (isCorrect) {
         const allSolved = allUnknowns.every(({ barIndex: bi, segmentIndex: si }) =>
@@ -1017,11 +1119,19 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
             </LuminaButton>
             {showHints && comparisonData && (
               <LuminaFeedbackCard status="insight" label="Hint" className="text-left">
-                {comparisonData.unknownPart === 'difference'
-                  ? `Subtract the smaller value (${comparisonData.quantity2}) from the larger value (${comparisonData.quantity1}).`
-                  : comparisonData.unknownPart === 'quantity2'
-                    ? `The difference is ${comparisonData.difference}. Subtract it from the larger value.`
-                    : `The difference is ${comparisonData.difference}. Add it to the smaller value.`}
+                {supportTier === 'hard'
+                  ? `What is "how many ${comparisonData.comparisonWord}" really asking you to find? Re-read the problem for the value you need.`
+                  : supportTier === 'medium'
+                    ? (comparisonData.unknownPart === 'difference'
+                        ? 'Subtract the smaller value from the larger value.'
+                        : comparisonData.unknownPart === 'quantity2'
+                          ? 'Subtract the difference from the larger value.'
+                          : 'Add the difference to the smaller value.')
+                    : (comparisonData.unknownPart === 'difference'
+                        ? `Subtract the smaller value (${comparisonData.quantity2}) from the larger value (${comparisonData.quantity1}).`
+                        : comparisonData.unknownPart === 'quantity2'
+                          ? `The difference is ${comparisonData.difference}. Subtract it from the larger value.`
+                          : `The difference is ${comparisonData.difference}. Add it to the smaller value.`)}
               </LuminaFeedbackCard>
             )}
           </div>
@@ -1039,7 +1149,11 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
     const currentSolveSegIdx = solveOrder[currentStepIndex];
     const totalSteps = solveOrder.length;
 
+    // Support-tier lever: `lockSteps` (default true) gates whether later steps
+    // are locked until earlier ones are solved. hard → false: all unknowns are
+    // unlocked and the student may solve them in any order.
     const isSegmentLocked = (segIdx: number) => {
+      if (!lockSteps) return false; // hard tier: nothing locked
       const orderIdx = solveOrder.indexOf(segIdx);
       if (orderIdx < 0) return false;
       return orderIdx > currentStepIndex;
@@ -1047,7 +1161,10 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
     const handleMultiStepSubmit = (barIndex: number, segmentIndex: number) => {
       if (isComplete || recordedRef.current) return;
-      if (segmentIndex !== currentSolveSegIdx) return;
+      // When steps are locked, only the current step's segment is submittable;
+      // when unlocked (hard), any unknown segment may be submitted in any order.
+      if (lockSteps && segmentIndex !== currentSolveSegIdx) return;
+      if (!solveOrder.includes(segmentIndex)) return;
 
       const key = getSegmentKey(barIndex, segmentIndex);
       const userVal = parseFloat(userAnswers[key]);
@@ -1062,23 +1179,34 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
+      if (!isCorrect && supportTier) nudgeOnWrong('multi_step');
 
       if (isCorrect) {
-        const nextStep = currentStepIndex + 1;
-        if (nextStep >= totalSteps) {
-          completeCurrentChallenge(true);
+        if (lockSteps) {
+          const nextStep = currentStepIndex + 1;
+          if (nextStep >= totalSteps) {
+            completeCurrentChallenge(true);
+          } else {
+            setTimeout(() => {
+              setCurrentStepIndex(nextStep);
+              setShowHints(false);
+            }, 1200);
+          }
         } else {
-          setTimeout(() => {
-            setCurrentStepIndex(nextStep);
-            setShowHints(false);
-          }, 1200);
+          // Unlocked (hard): complete once every solve-order segment is correct.
+          const allSolved = solveOrder.every((si) =>
+            newFeedback[getSegmentKey(barIndex, si)] === 'correct',
+          );
+          if (allSolved) completeCurrentChallenge(true);
         }
       }
     };
 
     const currentHint = currentStepIndex === 0
       ? multiStepData?.step1Hint
-      : multiStepData?.step2Hint;
+      : currentStepIndex === 1
+        ? multiStepData?.step2Hint
+        : multiStepData?.step3Hint || multiStepData?.step2Hint;
 
     return (
       <>

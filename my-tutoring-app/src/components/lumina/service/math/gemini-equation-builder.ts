@@ -81,6 +81,185 @@ type EquationBuilderChallengeType =
   | 'balance'
   | 'rewrite';
 
+/** The eval-mode IDs this primitive resolves (the manifest's targetEvalMode). */
+type EquationBuilderEvalMode =
+  | 'build-simple'
+  | 'missing-result'
+  | 'true-false'
+  | 'missing-operand'
+  | 'balance-both-sides'
+  | 'rewrite';
+
+const EQUATION_BUILDER_EVAL_MODES: readonly EquationBuilderEvalMode[] = [
+  'build-simple', 'missing-result', 'true-false', 'missing-operand', 'balance-both-sides', 'rewrite',
+];
+
+/** Narrow an arbitrary targetEvalMode string to a known eval mode (else null). */
+function asEquationBuilderEvalMode(mode?: string): EquationBuilderEvalMode | null {
+  return mode && (EQUATION_BUILDER_EVAL_MODES as readonly string[]).includes(mode)
+    ? (mode as EquationBuilderEvalMode)
+    : null;
+}
+
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — second axis of the two-field
+// contract: targetEvalMode = WHICH skill, difficulty = HOW MUCH on-screen
+// scaffolding within it. For equation-builder the clean, magnitude-preserving
+// lever is the AVAILABLE-CHOICE BREADTH: the tile-palette distractor count
+// (build/rewrite) and the MC distractor spread (missing-value modes), plus the
+// instruction tone. A tier NEVER changes the operands — those are owned by the
+// gradeBand/maxNumber scope. See memory [[structural-difficulty-not-numeric]] /
+// [[feedback_llm-window-code-builds-structure]].
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; current "≥2 distractors" defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Instruction tone for the LLM (strategy-named → conceptual → bare goal). */
+  instructionTone: 'strategy' | 'conceptual' | 'bare';
+  /** Prompt lines describing the tier to the LLM (tone/hint-explicitness only). */
+  promptLines: string[];
+}
+
+interface ProblemShape {
+  /** build / rewrite: exact number of distractor tiles to add beyond the needed
+   *  tile set. easy = 0 (exact tiles), medium = 2 (current default), hard = 4. */
+  distractorCount?: number;
+  /** build / rewrite: at hard, include a distractor OPERATOR in the palette. */
+  paletteIncludesOperator?: boolean;
+  /** missing-value: total MC option count (easy = 3, medium/hard = 4). */
+  optionCount?: number;
+  /** missing-value: distractor spread. 'far' = widely-spaced (easy),
+   *  'near' = ±1 near-misses (hard), undefined = current mixed default. */
+  optionSpread?: 'far' | 'near';
+}
+
+const TIER_GUARDRAIL =
+  'Keep every number within this lesson/grade-band scope (maxNumber). This tier ' +
+  'changes how many CHOICES the student sifts (tile distractors / MC spread) and ' +
+  'the instruction tone — NOT the operands. Never just "make the numbers bigger".';
+
+/** Instruction-tone scaffold (hint explicitness), per eval mode. */
+function resolveSupportStructure(mode: EquationBuilderEvalMode, tier: SupportTier): SupportScaffold {
+  const tone: SupportScaffold['instructionTone'] =
+    tier === 'easy' ? 'strategy' : tier === 'medium' ? 'conceptual' : 'bare';
+  switch (mode) {
+    case 'build-simple':
+      return {
+        instructionTone: tone,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: the instruction NAMES the strategy ("Use addition to make a true equation that equals the total"). Still never write the actual equation.'
+            : tier === 'medium'
+              ? 'MEDIUM: a conceptual instruction ("Use the tiles to build a true equation") — no strategy named.'
+              : 'HARD: a bare goal only ("Build a true equation from the tiles"). No strategy hint.',
+        ],
+      };
+    case 'missing-result':
+      return {
+        instructionTone: tone,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: the instruction may give a strategy hint ("Add the two numbers to find the result").'
+            : tier === 'medium'
+              ? 'MEDIUM: a neutral instruction ("What number is missing?").'
+              : 'HARD: a bare prompt ("Find the missing number.") — no strategy hint.',
+        ],
+      };
+    case 'missing-operand':
+      return {
+        instructionTone: tone,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: a relational hint ("Both sides must be the same — what makes the left equal the right?").'
+            : tier === 'medium'
+              ? 'MEDIUM: a neutral instruction ("What number is missing?").'
+              : 'HARD: a bare prompt ("Find the missing number.") — no relational hint.',
+        ],
+      };
+    case 'true-false':
+      // No structural lever for a binary task — INSTRUCTION-ONLY gradient (accepted thinner).
+      return {
+        instructionTone: tone,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: the instruction NAMES the strategy ("Compute each side, then compare — are they the same amount?").'
+            : tier === 'medium'
+              ? 'MEDIUM: a neutral nudge ("Is this equation true or false? Check both sides.").'
+              : 'HARD: a bare prompt — exactly "True or false?" — no strategy.',
+        ],
+      };
+    case 'balance-both-sides':
+      return {
+        instructionTone: tone,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: the hint ANCHORS by naming the left-side value to find first ("First work out the left side, then make the right side match that amount").'
+            : tier === 'medium'
+              ? 'MEDIUM: a neutral hint ("Make both sides equal.").'
+              : 'HARD: a bare prompt ("What number balances both sides?") — no anchor.',
+        ],
+      };
+    case 'rewrite':
+      return {
+        instructionTone: tone,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: the hint reminds the relational idea ("The = can flip — the same amounts can sit on either side").'
+            : tier === 'medium'
+              ? 'MEDIUM: a neutral instruction ("Write this equation another way.").'
+              : 'HARD: a bare prompt ("Rewrite this equation.") — no relational hint.',
+        ],
+      };
+  }
+}
+
+/**
+ * Code-enforced problem shape per eval mode + tier: the EXACT distractor count
+ * (build/rewrite) or MC option count/spread (missing-value). These are applied
+ * deterministically in the validators — never trusted to the LLM.
+ */
+function resolveProblemShape(mode: EquationBuilderEvalMode, tier: SupportTier): ProblemShape {
+  switch (mode) {
+    case 'build-simple':
+    case 'rewrite':
+      // easy: exact tiles (0 distractors) — palette still holds every needed tile.
+      // medium: +2 (current default). hard: full palette (4 distractors incl. an operator).
+      return {
+        distractorCount: tier === 'easy' ? 0 : tier === 'medium' ? 2 : 4,
+        paletteIncludesOperator: tier === 'hard',
+      };
+    case 'missing-result':
+    case 'missing-operand':
+      // easy: 3 options, FAR-spread distractors. medium: 4 (current default, mixed).
+      // hard: 4 options with NEAR-miss (±1) distractors.
+      return {
+        optionCount: tier === 'easy' ? 3 : 4,
+        optionSpread: tier === 'easy' ? 'far' : tier === 'hard' ? 'near' : undefined,
+      };
+    case 'true-false':
+    case 'balance-both-sides':
+    default:
+      // No structural choice-breadth lever (binary / numeric-input tasks) —
+      // the gradient is instruction-tone only (resolveSupportStructure).
+      return {};
+  }
+}
+
 const DEFAULT_INSTANCE_COUNT = 5; // T2 fallback
 const MAX_INSTANCE_COUNT = 6;
 
@@ -272,11 +451,26 @@ function tokenize(eq: string): string[] {
   return eq.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
 }
 
-/** Generate distractor numbers near a target, within [0, max] */
-function generateDistractors(correct: number, count: number, max: number): number[] {
+/**
+ * Generate distractor numbers near a target, within [0, max].
+ * `spread` (support-tier lever) picks the candidate ordering — magnitude-neutral:
+ *   - 'far'  → widely-spaced distractors (easy: obvious wrong answers)
+ *   - 'near' → ±1 near-misses (hard: must compute exactly)
+ *   - undefined → current mixed default (nearby-first).
+ */
+function generateDistractors(
+  correct: number,
+  count: number,
+  max: number,
+  spread?: 'far' | 'near',
+): number[] {
   const distractors = new Set<number>();
-  // Try nearby values first
-  const candidates = [correct + 1, correct - 1, correct + 2, correct - 2, correct + 3];
+  const candidates =
+    spread === 'near'
+      ? [correct + 1, correct - 1, correct + 2, correct - 2]
+      : spread === 'far'
+        ? [correct + 3, correct - 3, correct + 4, correct - 4, correct + 2, correct - 2]
+        : [correct + 1, correct - 1, correct + 2, correct - 2, correct + 3];
   for (const c of candidates) {
     if (c !== correct && c >= 0 && c <= max && distractors.size < count) {
       distractors.add(c);
@@ -290,6 +484,44 @@ function generateDistractors(correct: number, count: number, max: number): numbe
     attempts++;
   }
   return Array.from(distractors).slice(0, count);
+}
+
+/**
+ * Append EXACTLY `count` distractor tiles to an existing needed-tile set,
+ * mutating `tiles` + `tileSet` in place. Support-tier lever for build/rewrite:
+ * the needed tiles are already present (the invariant) — this only ADDS noise.
+ * Magnitude-neutral: distractors are spare numbers in [0, max] (never operands
+ * of a bigger equation) plus, when `includeOperator`, one extra operator.
+ */
+function addDistractorTiles(
+  tiles: string[],
+  tileSet: Set<string>,
+  count: number,
+  max: number,
+  neededTokens: string[],
+  includeOperator: boolean,
+): void {
+  if (count <= 0) return;
+  let added = 0;
+
+  // First, optionally add one distractor OPERATOR (the opposite of what's used).
+  if (includeOperator) {
+    const op = neededTokens.includes('+') && !tileSet.has('-')
+      ? '-'
+      : neededTokens.includes('-') && !tileSet.has('+')
+        ? '+'
+        : null;
+    if (op) { tiles.push(op); tileSet.add(op); added++; }
+  }
+
+  // Fill the rest with spare numbers in scope (never already-present tiles).
+  for (let n = 0; n <= max && added < count; n++) {
+    const s = String(n);
+    if (!tileSet.has(s)) { tiles.push(s); tileSet.add(s); added++; }
+  }
+  // If scope is tiny and we still need more, allow a second distractor operator.
+  if (added < count && !tileSet.has('-')) { tiles.push('-'); tileSet.add('-'); added++; }
+  if (added < count && !tileSet.has('+')) { tiles.push('+'); tileSet.add('+'); added++; }
 }
 
 /** Shuffle an array in place (Fisher-Yates) */
@@ -333,18 +565,28 @@ function validateChallenge(
   raw: RawChallenge,
   maxNumber: number,
   evalMode?: string,
+  tier?: SupportTier | null,
 ): import("../../primitives/visual-primitives/math/EquationBuilder").EquationBuilderChallenge | null {
   if (!raw.id || !raw.type || !raw.instruction) {
     console.log(`[EquationBuilder] REJECT challenge — missing id/type/instruction:`, JSON.stringify(raw));
     return null;
   }
 
+  // The support-tier choice-breadth lever keys off the EVAL MODE (the same
+  // 'missing-value' type backs two modes). Gate on tier present (the no-tier
+  // path keeps the current "≥2 distractors / 4 options" behavior byte-identical).
+  const evalModeNarrowed = asEquationBuilderEvalMode(evalMode);
+  const shape =
+    tier && evalModeNarrowed && (SUPPORT_TIERS as readonly string[]).includes(tier)
+      ? resolveProblemShape(evalModeNarrowed, tier)
+      : null;
+
   switch (raw.type) {
-    case 'build': return validateBuild(raw, maxNumber);
-    case 'missing-value': return validateMissingValue(raw, maxNumber, evalMode);
+    case 'build': return validateBuild(raw, maxNumber, shape);
+    case 'missing-value': return validateMissingValue(raw, maxNumber, evalMode, shape);
     case 'true-false': return validateTrueFalse(raw);
     case 'balance': return validateBalance(raw, maxNumber);
-    case 'rewrite': return validateRewrite(raw, maxNumber);
+    case 'rewrite': return validateRewrite(raw, maxNumber, shape);
     default:
       console.log(`[EquationBuilder] REJECT challenge — unknown type: "${raw.type}"`);
       return null;
@@ -355,7 +597,7 @@ function buildValidChallenge(fields: Record<string, unknown>) {
   return fields as unknown as import("../../primitives/visual-primitives/math/EquationBuilder").EquationBuilderChallenge;
 }
 
-function validateBuild(raw: RawChallenge, maxNumber: number) {
+function validateBuild(raw: RawChallenge, maxNumber: number, shape?: ProblemShape | null) {
   if (!raw.targetEquation) {
     console.log(`[EquationBuilder] REJECT build — missing targetEquation`);
     return null;
@@ -378,37 +620,47 @@ function validateBuild(raw: RawChallenge, maxNumber: number) {
   // then add unique distractors. Never trust Gemini's flat tile fields for dedup.
   const targetTokens = tokenize(target);
 
-  // Start with exactly the tokens needed for the target equation
+  // Start with exactly the tokens needed for the target equation. This set is
+  // the INVARIANT: the palette ALWAYS contains every target token, at every tier
+  // (easy=0 distractors keeps exactly these). Distractors are only ever ADDED.
   const tiles: string[] = [...targetTokens];
   const tileSet = new Set(tiles);
 
-  // Collect Gemini's extra tiles as candidate distractors (deduplicated)
-  for (let i = 0; i <= 6; i++) {
-    const val = raw[`tile${i}`] as string | undefined;
-    if (val != null && val !== '' && !tileSet.has(val)) {
-      tiles.push(val);
-      tileSet.add(val);
-    }
-  }
-
-  // Ensure at least 2 distractors
-  const distractorCount = tiles.length - targetTokens.length;
-  if (distractorCount < 2) {
-    const existingNumbers = new Set(tiles.filter(t => /^\d+$/.test(t)).map(Number));
-    const distractorsNeeded = 2 - distractorCount;
-    let added = 0;
-    for (let n = 0; n <= maxNumber && added < distractorsNeeded; n++) {
-      if (!existingNumbers.has(n)) {
-        tiles.push(String(n));
-        tileSet.add(String(n));
-        added++;
+  // Support-tier choice-breadth lever (code-enforced): the EXACT distractor count.
+  // When a tier is active we IGNORE Gemini's flat tile fields entirely and build
+  // the distractor set deterministically (easy 0 / medium 2 / hard 4 incl. op).
+  // Default (no tier): collect Gemini's extras, then guarantee ≥ 2 (current behavior).
+  if (shape?.distractorCount != null) {
+    addDistractorTiles(tiles, tileSet, shape.distractorCount, maxNumber, targetTokens, shape.paletteIncludesOperator === true);
+  } else {
+    // Collect Gemini's extra tiles as candidate distractors (deduplicated)
+    for (let i = 0; i <= 6; i++) {
+      const val = raw[`tile${i}`] as string | undefined;
+      if (val != null && val !== '' && !tileSet.has(val)) {
+        tiles.push(val);
+        tileSet.add(val);
       }
     }
-    // Add a distractor operator if only numbers were added
-    if (!tileSet.has('-') && targetTokens.includes('+')) {
-      tiles.push('-');
-    } else if (!tileSet.has('+') && targetTokens.includes('-')) {
-      tiles.push('+');
+
+    // Ensure at least 2 distractors
+    const distractorCount = tiles.length - targetTokens.length;
+    if (distractorCount < 2) {
+      const existingNumbers = new Set(tiles.filter(t => /^\d+$/.test(t)).map(Number));
+      const distractorsNeeded = 2 - distractorCount;
+      let added = 0;
+      for (let n = 0; n <= maxNumber && added < distractorsNeeded; n++) {
+        if (!existingNumbers.has(n)) {
+          tiles.push(String(n));
+          tileSet.add(String(n));
+          added++;
+        }
+      }
+      // Add a distractor operator if only numbers were added
+      if (!tileSet.has('-') && targetTokens.includes('+')) {
+        tiles.push('-');
+      } else if (!tileSet.has('+') && targetTokens.includes('-')) {
+        tiles.push('+');
+      }
     }
   }
 
@@ -433,7 +685,7 @@ function validateBuild(raw: RawChallenge, maxNumber: number) {
   });
 }
 
-function validateMissingValue(raw: RawChallenge, maxNumber: number, evalMode?: string) {
+function validateMissingValue(raw: RawChallenge, maxNumber: number, evalMode?: string, shape?: ProblemShape | null) {
   if (!raw.equation) {
     console.log(`[EquationBuilder] REJECT missing-value — missing equation`);
     return null;
@@ -563,20 +815,33 @@ function validateMissingValue(raw: RawChallenge, maxNumber: number, evalMode?: s
   // Use computed missingPosition (0-based token index of ?)
   const missingPosition = qIndex;
 
-  // Reconstruct options from flat fields
+  // Support-tier choice-breadth lever (code-enforced): option COUNT + distractor
+  // SPREAD per tier (easy = 3 far-spread, medium = 4 mixed, hard = 4 near-miss).
+  // When a tier forces the shape we IGNORE Gemini's flat option fields and build
+  // the set deterministically so the count/spread is exact. Default (no tier):
+  // current behavior — seed from Gemini's options, fill to 4. correctValue is
+  // ALWAYS added first, so the answer is present at every tier (the invariant).
+  const targetOptionCount = shape?.optionCount ?? 4;
   const optionsSet = new Set<number>();
-  for (let i = 0; i <= 3; i++) {
-    const val = raw[`option${i}`] as number | undefined;
-    if (val != null && !isNaN(val)) optionsSet.add(val);
-  }
-  // Ensure correctValue is in options
   optionsSet.add(correctValue);
-  // Fill to 4 options with distractors
-  if (optionsSet.size < 4) {
-    const distractors = generateDistractors(correctValue, 4 - optionsSet.size, maxNumber);
+  if (shape?.optionCount == null) {
+    // Default path: seed from Gemini's flat option fields (byte-identical to before).
+    for (let i = 0; i <= 3; i++) {
+      const val = raw[`option${i}`] as number | undefined;
+      if (val != null && !isNaN(val)) optionsSet.add(val);
+    }
+  }
+  // Fill to the target count with tier-spread distractors.
+  if (optionsSet.size < targetOptionCount) {
+    const distractors = generateDistractors(
+      correctValue,
+      targetOptionCount - optionsSet.size,
+      maxNumber,
+      shape?.optionSpread,
+    );
     for (const d of distractors) optionsSet.add(d);
   }
-  const options = shuffle(Array.from(optionsSet).slice(0, 4));
+  const options = shuffle(Array.from(optionsSet).slice(0, targetOptionCount));
 
   return buildValidChallenge({
     id: raw.id,
@@ -676,7 +941,7 @@ function validateBalance(raw: RawChallenge, maxNumber: number) {
   });
 }
 
-function validateRewrite(raw: RawChallenge, maxNumber: number) {
+function validateRewrite(raw: RawChallenge, maxNumber: number, shape?: ProblemShape | null) {
   if (!raw.originalEquation) {
     console.log(`[EquationBuilder] REJECT rewrite — missing originalEquation`);
     return null;
@@ -762,14 +1027,10 @@ function validateRewrite(raw: RawChallenge, maxNumber: number) {
     acceptedForms.push(`${eqParts[1]} = ${eqParts[0]}`.replace(/(\d)([+\-])/g, '$1 $2 ').replace(/([+\-=])(\d)/g, '$1 $2'));
   }
 
-  // Reconstruct availableTiles from flat fields
-  const tiles: string[] = [];
-  for (let i = 0; i <= 6; i++) {
-    const val = raw[`tile${i}`] as string | undefined;
-    if (val != null && val !== '') tiles.push(val);
-  }
-
-  // Ensure tiles cover all tokens needed for accepted forms
+  // Compute the tokens needed for ANY accepted form (the INVARIANT: the palette
+  // must always contain every one of these, at every tier — easy=0 keeps exactly
+  // this set). Built FROM the accepted forms + original, not from Gemini's tiles,
+  // so withdrawing distractors can never drop a needed tile.
   const neededTokens = new Set<string>();
   for (const form of acceptedForms) {
     for (const token of tokenize(form)) {
@@ -781,22 +1042,34 @@ function validateRewrite(raw: RawChallenge, maxNumber: number) {
     neededTokens.add(token);
   }
 
-  const neededArr = Array.from(neededTokens);
-  for (let ni = 0; ni < neededArr.length; ni++) {
-    if (!tiles.includes(neededArr[ni])) {
-      tiles.push(neededArr[ni]);
-    }
-  }
+  // Start the palette with exactly the needed tiles (the invariant set).
+  const neededTokenArr = Array.from(neededTokens);
+  const tiles: string[] = [...neededTokenArr];
+  const tileSet = new Set(tiles);
 
-  // Ensure distractors
-  const distractorCount = tiles.length - neededTokens.size;
-  if (distractorCount < 2) {
-    const existingNumbers = new Set(tiles.filter(t => /^\d+$/.test(t)).map(Number));
-    let added = 0;
-    for (let n = 0; n <= maxNumber && added < 2 - distractorCount; n++) {
-      if (!existingNumbers.has(n)) {
-        tiles.push(String(n));
-        added++;
+  if (shape?.distractorCount != null) {
+    // Support-tier lever (code-enforced): IGNORE Gemini's flat tile fields and
+    // add EXACTLY the tier's distractor count (easy 0 / medium 2 / hard 4 incl op).
+    addDistractorTiles(tiles, tileSet, shape.distractorCount, maxNumber, neededTokenArr, shape.paletteIncludesOperator === true);
+  } else {
+    // Default (no tier): fold in Gemini's extras as distractors, then guarantee ≥ 2.
+    for (let i = 0; i <= 6; i++) {
+      const val = raw[`tile${i}`] as string | undefined;
+      if (val != null && val !== '' && !tileSet.has(val)) {
+        tiles.push(val);
+        tileSet.add(val);
+      }
+    }
+    const distractorCount = tiles.length - neededTokens.size;
+    if (distractorCount < 2) {
+      let added = 0;
+      for (let n = 0; n <= maxNumber && added < 2 - distractorCount; n++) {
+        const s = String(n);
+        if (!tileSet.has(s)) {
+          tiles.push(s);
+          tileSet.add(s);
+          added++;
+        }
       }
     }
   }
@@ -932,6 +1205,12 @@ export const generateEquationBuilder = async (
     challengeCount: number;
     /** Target eval mode from the IRT calibration system */
     targetEvalMode: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty: string;
   }>
 ): Promise<EquationBuilderData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -958,6 +1237,33 @@ export const generateEquationBuilder = async (
     ),
   );
 
+  // ── Resolve the within-mode support tier (config.difficulty) ──
+  // supportTier DRIVES application (validators code-enforce the per-mode distractor
+  // count / option spread). pinnedEvalMode is ONLY for the prompt tier section: it
+  // is the resolved eval-mode ID (e.g. 'missing-result') — distinct from the
+  // challenge type, since one type backs two eval modes.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedEvalMode =
+    evalConstraint?.allowedTypes.length === 1
+      ? asEquationBuilderEvalMode(config?.targetEvalMode)
+      : null;
+  let tierSection = '';
+  if (pinnedEvalMode && supportTier) {
+    const scaffold = resolveSupportStructure(pinnedEvalMode, supportTier);
+    const shape = resolveProblemShape(pinnedEvalMode, supportTier);
+    const lines = [...scaffold.promptLines];
+    if (shape.distractorCount != null) {
+      lines.push(
+        `Tile palette: the code adds exactly ${shape.distractorCount} distractor tile(s) `
+        + `beyond the needed tiles — write the instruction to match this support level.`,
+      );
+    }
+    tierSection =
+      `\n## WITHIN-MODE SUPPORT TIER "${supportTier}" (scaffolding level — NOT number size)\n`
+      + lines.map((l) => `- ${l}`).join('\n')
+      + '\n';
+  }
+
   // ── Build mode-constrained schema ──
   const activeSchema = buildEquationBuilderSchema(evalConstraint?.allowedTypes ?? effectiveChallengeTypes);
 
@@ -974,7 +1280,7 @@ CONTEXT:
 - This is a K-2 math manipulative for equation understanding
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
@@ -1066,10 +1372,20 @@ Return the complete equation builder configuration.
       continue;
     }
 
-    const validated = validateChallenge(raw, data.maxNumber, config?.targetEvalMode);
+    const validated = validateChallenge(raw, data.maxNumber, config?.targetEvalMode, supportTier);
     if (validated) {
       validatedChallenges.push(validated);
     }
+  }
+
+  if (supportTier) {
+    // Persist the tier so the live tutor matches the on-screen scaffold level
+    // (keeps the tutor from leaking what a hard tier's instruction withheld).
+    data.supportTier = supportTier;
+    console.log(
+      `[EquationBuilder] Support tier "${supportTier}" applied`
+      + `${pinnedEvalMode ? ` (mode ${pinnedEvalMode})` : ' (multi-mode)'}`,
+    );
   }
 
   // Use validated challenges or fallbacks

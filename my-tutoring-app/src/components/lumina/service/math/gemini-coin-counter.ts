@@ -49,6 +49,88 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tiers (config.difficulty)
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+const TIER_GUARDRAIL =
+  'This tier sets the SCAFFOLDING level and problem STRUCTURE only. Keep every coin value and '
+  + 'amount within the grade-appropriate scope — change which supports are visible and the structural '
+  + 'shape (comparison gap, decomposition depth, regrouping), NOT raw magnitude.';
+
+interface SupportScaffold {
+  /** per-coin ¢ readout (recognition aid). identify always hides it in the component (that IS the task). */
+  showCoinValues: boolean;
+  /** make-amount running placed-total tracker. */
+  showRunningTotal: boolean;
+  promptLines: string[];
+}
+
+/**
+ * easy = workspace helps the student self-check; hard = student works unaided.
+ * Scaffolding is visual (showCoinValues / showRunningTotal) + instructional (promptLines);
+ * the structural levers (compare gap, decomposition depth, regrouping) are prompt-shaped
+ * because coin totals are discrete and cannot be code-snapped to an exact gap.
+ */
+function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffold {
+  const lines: string[] = [TIER_GUARDRAIL];
+  let showCoinValues = true;
+  let showRunningTotal = false;
+
+  switch (type) {
+    case 'identify':
+      // value labels are ALWAYS hidden for identify (revealing the value reveals the coin).
+      showCoinValues = false;
+      if (tier === 'easy') lines.push('EASY: the instruction may hint at the coin\'s size/color (e.g. "the small silver coin").');
+      else if (tier === 'medium') lines.push('MEDIUM: name the target coin plainly; no size/color giveaway.');
+      else lines.push('HARD: terse "Which coin is the X?" with no descriptive cue.');
+      break;
+    case 'count':
+      showCoinValues = tier !== 'hard';
+      if (tier === 'easy') lines.push('EASY: the instruction NAMES the skip-counting strategy (e.g. "count by 10s for the dimes, then add the pennies").');
+      else if (tier === 'medium') lines.push('MEDIUM: neutral "How much money is shown?"; no strategy named.');
+      else lines.push('HARD: terse prompt, no strategy named — on-screen coin ¢ labels are HIDDEN, so the student must recall each coin\'s value before skip-counting.');
+      break;
+    case 'compare':
+      showCoinValues = tier !== 'hard';
+      if (tier === 'easy') lines.push('EASY: make the two group totals differ by a LARGE, obvious margin (≥20¢).');
+      else if (tier === 'medium') lines.push('MEDIUM: a moderate margin (~10¢) between the groups.');
+      else lines.push('HARD: a SMALL, subtle margin (≤5¢) between groups so the student must total both precisely — coin ¢ labels are HIDDEN on screen.');
+      break;
+    case 'make-amount':
+      showCoinValues = tier !== 'hard';
+      showRunningTotal = tier === 'easy';
+      if (tier === 'easy') lines.push('EASY: target reachable with an obvious coin set; the running total is shown so the student can self-check.');
+      else if (tier === 'medium') lines.push('MEDIUM: target needs a small mix of coins; running total is hidden.');
+      else lines.push('HARD: target requires combining 3+ coins (no single-coin or trivial-pair shortcut); running total AND coin ¢ labels are HIDDEN — the student tracks the build mentally.');
+      break;
+    case 'make-change':
+      // no visual coin levers (numeric paid/cost layout); instruction + structure only.
+      if (tier === 'easy') lines.push('EASY: the instruction sets up the subtraction explicitly ("subtract the cost from what you paid"); choose amounts whose change needs NO regrouping across 10s.');
+      else if (tier === 'medium') lines.push('MEDIUM: neutral wording; change may cross one 10s boundary.');
+      else lines.push('HARD: terse "What is the change?" with no strategy named; choose amounts whose difference requires regrouping across 10s.');
+      break;
+  }
+  return { showCoinValues, showRunningTotal, promptLines: lines };
+}
+
+/** Per-mode prompt block (scaffolding tone + structural shape). Empty when no tier is set. */
+function buildTierSection(type: string, tier: SupportTier | null): string {
+  if (!tier) return '';
+  const { promptLines } = resolveSupportStructure(type, tier);
+  return `\n## SUPPORT TIER "${tier}" (scaffolding + structure — NOT magnitude)\n${promptLines.map((l) => `- ${l}`).join('\n')}\n`;
+}
+
+// ---------------------------------------------------------------------------
 // Coin value lookup & helpers
 // ---------------------------------------------------------------------------
 
@@ -305,6 +387,7 @@ async function generateIdentifyChallenges(
   topic: string,
   gradeLevel: string,
   gradeBand: string,
+  tier: SupportTier | null,
 ): Promise<CoinCounterChallenge[]> {
   const pool = gradeCoinPool(gradeBand);
   const prompt = `
@@ -322,7 +405,7 @@ For each challenge:
 - Set option0..option2 (or option3) — multiple-choice coin names. targetCoin MUST be one of the options.
 - Use at least 3 different coin types per challenge.
 - Vary which coin is the target across challenges.
-
+${buildTierSection("identify", tier)}
 Generate 5-6 challenges progressing in difficulty. Use warm, encouraging instructions.
 `;
 
@@ -373,6 +456,7 @@ async function generateCountChallenges(
   gradeLevel: string,
   gradeBand: string,
   singleCoinType: boolean,
+  tier: SupportTier | null,
 ): Promise<CoinCounterChallenge[]> {
   const coinConstraint = singleCoinType
     ? "IMPORTANT: Each challenge MUST use ONLY ONE type of coin (e.g., all pennies, or all nickels). Do NOT mix coin types within a single challenge."
@@ -393,7 +477,7 @@ For each challenge:
 - Optionally set displayedCoin2Type/Count and displayedCoin3Type/Count for harder challenges.
 - Each count is how many of that coin (e.g., displayedCoin0Type="nickel", displayedCoin0Count=3 means 3 nickels).
 - Start with 2 coin slots and progress to 3-4 for harder challenges.
-
+${buildTierSection("count", tier)}
 Generate 5-6 challenges progressing in difficulty. Use warm, encouraging instructions.
 `;
 
@@ -433,6 +517,7 @@ async function generateMakeAmountChallenges(
   topic: string,
   gradeLevel: string,
   gradeBand: string,
+  tier: SupportTier | null,
 ): Promise<CoinCounterChallenge[]> {
   const prompt = `
 Create an educational MAKE AMOUNT activity for "${topic}" (${gradeLevel} students).
@@ -446,7 +531,7 @@ For each challenge:
 - Set targetAmount (in cents). K: under 25¢. Grade 1: up to 50¢. Grade 2+: up to 100¢.
 - Set availableCoin0..availableCoin2 (required), optionally availableCoin3 — the coin types the student can use.
 - The target amount MUST be achievable using the available coins.
-
+${buildTierSection("make-amount", tier)}
 Generate 5-6 challenges progressing in difficulty. Use warm, encouraging instructions.
 `;
 
@@ -483,6 +568,7 @@ async function generateCompareChallenges(
   topic: string,
   gradeLevel: string,
   gradeBand: string,
+  tier: SupportTier | null,
 ): Promise<CoinCounterChallenge[]> {
   const prompt = `
 Create an educational coin COMPARISON activity for "${topic}" (${gradeLevel} students).
@@ -498,7 +584,7 @@ For each challenge:
 - Optionally add a 3rd coin to each group (groupACoin2, groupBCoin2).
 - Groups should differ by at least 5¢ so the comparison is meaningful.
 - Mix the correct answer across challenges (sometimes A is more, sometimes B, rarely equal).
-
+${buildTierSection("compare", tier)}
 Generate 5-6 challenges progressing in difficulty. Use warm, encouraging instructions.
 `;
 
@@ -540,6 +626,7 @@ async function generateMakeChangeChallenges(
   topic: string,
   gradeLevel: string,
   gradeBand: string,
+  tier: SupportTier | null,
 ): Promise<CoinCounterChallenge[]> {
   const prompt = `
 Create an educational MAKE CHANGE activity for "${topic}" (${gradeLevel} students).
@@ -559,7 +646,7 @@ For each challenge:
     : "Grade 2+: paidAmount can be up to 100¢ ($1.00). itemCost up to 75¢."}
 - The instruction text MUST match the numeric values exactly. If paidAmount is 50 and itemCost is 35,
   the instruction must say "50 cents" and "35 cents" — never different numbers.
-
+${buildTierSection("make-change", tier)}
 Generate 5-6 challenges progressing in difficulty. Use warm, encouraging instructions.
 `;
 
@@ -657,7 +744,15 @@ const FALLBACKS: Record<string, CoinCounterChallenge> = {
 export const generateCoinCounter = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER inflates magnitude.
+     */
+    difficulty?: string;
+  }>,
 ): Promise<CoinCounterData> => {
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -670,6 +765,9 @@ export const generateCoinCounter = async (
   const gradeBand = resolveGradeBand(gradeLevel);
   const allowedTypes = evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
 
+  // ── Resolve support tier (drives application for single OR blended sessions) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+
   // ── Dispatch sub-generators in parallel ──
   const generators: Promise<CoinCounterChallenge[]>[] = [];
   const typeOrder: string[] = [];
@@ -678,7 +776,7 @@ export const generateCoinCounter = async (
     typeOrder.push(type);
     switch (type) {
       case "identify":
-        generators.push(generateIdentifyChallenges(topic, gradeLevel, gradeBand));
+        generators.push(generateIdentifyChallenges(topic, gradeLevel, gradeBand, supportTier));
         break;
       case "count":
         // count-like = single coin type, count-mixed or unconstrained = mixed
@@ -688,17 +786,18 @@ export const generateCoinCounter = async (
             gradeLevel,
             gradeBand,
             config?.targetEvalMode === "count-like",
+            supportTier,
           ),
         );
         break;
       case "make-amount":
-        generators.push(generateMakeAmountChallenges(topic, gradeLevel, gradeBand));
+        generators.push(generateMakeAmountChallenges(topic, gradeLevel, gradeBand, supportTier));
         break;
       case "compare":
-        generators.push(generateCompareChallenges(topic, gradeLevel, gradeBand));
+        generators.push(generateCompareChallenges(topic, gradeLevel, gradeBand, supportTier));
         break;
       case "make-change":
-        generators.push(generateMakeChangeChallenges(topic, gradeLevel, gradeBand));
+        generators.push(generateMakeChangeChallenges(topic, gradeLevel, gradeBand, supportTier));
         break;
     }
   }
@@ -746,10 +845,26 @@ export const generateCoinCounter = async (
   const typeBreakdown = challenges.map((c) => c.type).join(", ");
   console.log(`[CoinCounter] Final: ${challenges.length} challenge(s) → [${typeBreakdown}]`);
 
-  return {
+  const data: CoinCounterData = {
     title,
     description,
     challenges,
     gradeBand: gradeBand as "K" | "1" | "2" | "3",
   };
+
+  // ── Apply support tier (visual scaffolds are data-level; identify ignores
+  //    showCoinValues by component contract, so a single value is correct for any blend) ──
+  if (supportTier) {
+    // value-label withdrawal is uniform across every value-bearing mode at a given tier.
+    data.showCoinValues = resolveSupportStructure("count", supportTier).showCoinValues;
+    // running total is the make-amount tracking aid.
+    data.showRunningTotal = resolveSupportStructure("make-amount", supportTier).showRunningTotal;
+    data.supportTier = supportTier;
+    console.log(
+      `[CoinCounter] Support tier "${supportTier}" applied `
+      + `(showCoinValues=${data.showCoinValues}, showRunningTotal=${data.showRunningTotal})`,
+    );
+  }
+
+  return data;
 };

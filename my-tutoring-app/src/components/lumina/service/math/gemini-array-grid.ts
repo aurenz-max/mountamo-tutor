@@ -55,6 +55,93 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — SECOND AXIS of the contract.
+//   targetEvalMode = WHICH skill;  difficulty = HOW MUCH on-screen support.
+// A tier withdraws SCAFFOLDING, never changes the (rows, columns) numbers —
+// those are owned entirely by dimensionRangeFor / selectDimensionPairs.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * ArrayGrid's support levers (discovered from the component, ArrayGrid.tsx):
+ *  - showLabels (perception #1): row/column index labels number the DIMENSIONS,
+ *    never the product → always answer-safe.
+ *  - strategyHint (instruction #2): number-free tip naming the approach.
+ * Both are session-level (array-grid runs one mode per session).
+ */
+interface ArrayGridSupportScaffold {
+  /** Axis index labels (rows 1..R / columns 1..C). */
+  showLabels: boolean;
+  /** Strategy-naming hint shown under the task header. null = withdrawn. */
+  strategyHint: string | null;
+  /** Prompt lines describing the tier to the LLM (title/description tone only). */
+  promptLines: string[];
+}
+
+/** Number-free, answer-free strategy tips — names the approach, not the result. */
+const STRATEGY_HINT_BY_MODE: Record<ArrayGridChallengeType, string> = {
+  build_array:
+    'Set the rows first, then the columns, then count every item to find the total.',
+  count_array:
+    'Skip-count one row at a time instead of counting each item one by one.',
+  multiply_array:
+    'Count how many rows, then how many are in each row — then multiply those two numbers.',
+};
+
+/**
+ * Map easy→hard to the on-screen scaffold. The gradient withdraws SUPPORT only:
+ *   easy   = axis labels ON  + strategy tip shown
+ *   medium = axis labels ON  + tip withdrawn (student recalls the approach)
+ *   hard   = axis labels OFF + tip withdrawn (count rows/columns unaided)
+ */
+function resolveSupportStructure(
+  type: ArrayGridChallengeType,
+  tier: SupportTier,
+): ArrayGridSupportScaffold {
+  const hint = STRATEGY_HINT_BY_MODE[type];
+  const base =
+    'This tier changes ON-SCREEN SUPPORT only — never the row/column counts or the product (the dimension ranges own those).';
+  switch (tier) {
+    case 'easy':
+      return {
+        showLabels: true,
+        strategyHint: hint,
+        promptLines: [
+          base,
+          'EASY: axis labels number every row and column, and a strategy tip is shown. Write a warm, encouraging title/description that invites the student in.',
+        ],
+      };
+    case 'medium':
+      return {
+        showLabels: true,
+        strategyHint: null,
+        promptLines: [
+          base,
+          'MEDIUM: axis labels stay on but the strategy tip is withdrawn — the student recalls the approach. Keep the title/description neutral and matter-of-fact.',
+        ],
+      };
+    case 'hard':
+      return {
+        showLabels: false,
+        strategyHint: null,
+        promptLines: [
+          base,
+          'HARD: no axis labels and no strategy tip — the student counts rows and columns unaided and justifies the total. Keep the title/description brief and challenge-oriented.',
+        ],
+      };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Wrapper schema — Gemini emits session-level metadata only.
 // Per-challenge (rows, columns) pairs are built locally below.
 // ---------------------------------------------------------------------------
@@ -212,6 +299,12 @@ export const generateArrayGrid = async (
     targetEvalMode?: string;
     /** Number of challenges in this session. Default 4 (PRD §5 floor). */
     instanceCount?: number;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   },
 ): Promise<ArrayGridData> => {
   // ── Eval-mode constraint resolution ──────────────────────────────
@@ -252,6 +345,18 @@ export const generateArrayGrid = async (
     ),
   );
 
+  // ── Within-mode support tier ─────────────────────────────────────
+  // supportTier is the STUDENT's tier — it drives the deterministic application
+  // at the end. pinnedType (the single resolved mode) only tones the prompt.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType = resolvedMode; // single pinned mode, or undefined when unresolved
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
 Create the wrapper metadata for a MULTI-CHALLENGE array session for "${topic}" (${gradeLevel}).
@@ -259,7 +364,7 @@ Create the wrapper metadata for a MULTI-CHALLENGE array session for "${topic}" (
 This session walks the student through ${instanceCount} DIFFERENT (rows, columns) pairs of the SAME challenge type.
 
 ${challengeTypeSection}
-
+${tierSection}
 DO NOT include specific numbers in the title or description — the system picks ${instanceCount} dimension pairs locally and the same session covers all of them.
 
 GUIDELINES:
@@ -298,6 +403,21 @@ Return ONLY the wrapper metadata in the response schema.
     (wrapper.iconType as ArrayGridIconType) ||
     (challengeType === 'multiply_array' ? 'dot' : 'star');
 
+  // ── Apply the support tier deterministically (code owns the scaffold) ──
+  // Resolved from the session's actual mode; array-grid is single-mode so the
+  // scaffold is session-level. An explicit config.showLabels override wins.
+  let showLabels = config?.showLabels !== undefined ? config.showLabels : true;
+  let strategyHint: string | undefined;
+  if (supportTier) {
+    const sc = resolveSupportStructure(challengeType, supportTier);
+    if (config?.showLabels === undefined) showLabels = sc.showLabels;
+    strategyHint = sc.strategyHint ?? undefined;
+    console.log(
+      `[ArrayGrid] Support tier "${supportTier}" applied (single-mode ${challengeType}): ` +
+        `showLabels=${showLabels}, strategyHint=${strategyHint ? 'shown' : 'withdrawn'}`,
+    );
+  }
+
   console.log('⊞ Array Grid generated:', {
     topic,
     challengeType,
@@ -313,8 +433,10 @@ Return ONLY the wrapper metadata in the response schema.
     challenges,
     challengeType,
     iconType,
-    showLabels: config?.showLabels !== undefined ? config.showLabels : true,
+    showLabels,
     maxRows: config?.maxRows ?? ROW_BUTTON_CAP,
     maxColumns: config?.maxColumns ?? COL_BUTTON_CAP,
+    supportTier: supportTier ?? undefined,
+    strategyHint,
   };
 };

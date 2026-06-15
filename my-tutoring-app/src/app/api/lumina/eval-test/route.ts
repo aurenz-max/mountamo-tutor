@@ -29,6 +29,12 @@ export async function GET(request: NextRequest) {
     // difficulty (the cognitive tier). Mirrors config.objectiveVerb as
     // flattenManifestToLayout stamps it, so the keystone is testable in isolation.
     const objectiveVerb = searchParams.get('verb') || undefined;
+    // Optional ?difficulty= — the per-component support tier ('easy'|'medium'|
+    // 'hard') the manifest stamps onto config.difficulty. Generators that
+    // implement support tiers (bar-model, area-model, …) read this to withdraw
+    // scaffolding AND raise structural problem difficulty within the eval mode.
+    // Threaded through verbatim so a tier sweep is testable in isolation.
+    const difficulty = searchParams.get('difficulty') || undefined;
 
     const component = UNIVERSAL_CATALOG.find((c) => c.id === componentId);
     const modeDefinition = component?.evalModes?.find((m) => m.evalMode === evalMode);
@@ -40,6 +46,7 @@ export async function GET(request: NextRequest) {
         targetEvalMode: evalMode,
         ...(studentTheta !== undefined && Number.isFinite(studentTheta) ? { studentTheta } : {}),
         ...(objectiveVerb ? { objectiveVerb } : {}),
+        ...(difficulty ? { difficulty } : {}),
       },
     };
 

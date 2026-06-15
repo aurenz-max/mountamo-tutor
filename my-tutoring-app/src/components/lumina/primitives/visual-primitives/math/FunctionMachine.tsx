@@ -37,6 +37,16 @@ export interface FunctionMachineChallenge {
   rule: string;
   inputQueue: number[];
   showRule: boolean;
+  // ── Support-tier structural fields (optional; default = current behavior) ──
+  /** How many I/O pairs must be fed before observe/predict can complete.
+   *  Withdrawn-scaffold lever (hard requires the whole queue). Never grows the queue. */
+  pairsRequiredToComplete?: number;
+  /** For discover_rule/create_rule: how many I/O pairs/rows are pre-revealed.
+   *  ALWAYS ≥2 for create_rule so the rule stays uniquely determinable. */
+  prefilledPairCount?: number;
+  /** Hint scaffolding level: 'full' = how-it-works + early hint; 'minimal' = standard
+   *  (hint after 2 attempts); 'none' = no scaffolding hints. */
+  hintLevel?: 'full' | 'minimal' | 'none';
 }
 
 export interface FunctionMachineData {
@@ -48,6 +58,11 @@ export interface FunctionMachineData {
   ruleComplexity?: 'oneStep' | 'twoStep' | 'expression';
   gradeBand?: '3-4' | '5' | 'advanced';
   outputDisplay?: 'immediate' | 'animated' | 'hidden';
+  /** Within-mode support tier from the manifest. Set whenever a tier is applied.
+   *  Used to keep the AI tutor's reveal level in sync with the on-screen scaffold. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Session chrome: show the rule-complexity badge. Withdrawn at hard. Default true. */
+  showComplexityBadge?: boolean;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -124,6 +139,35 @@ const gradeLabel = (band?: string): string => {
 /** Per-attempt decay (§6a #11). */
 const phaseScore = (attempts: number): number => Math.max(20, 100 - (attempts - 1) * 20);
 
+/**
+ * Tutor reveal policy — keeps the AI tutor's reveal level in sync with the on-screen
+ * support tier so it never leaks what the tier withheld. For discover_rule/create_rule
+ * the rule is the ANSWER: the tutor must NEVER name it at any tier (the on-screen rule
+ * is hidden — that's the mode identity); the tier only dials coaching depth. For
+ * observe/predict the rule is already on screen, so the tutor may reference it freely.
+ */
+const tutorRevealClause = (
+  challengeType: FunctionMachineChallengeType,
+  tier?: 'easy' | 'medium' | 'hard',
+): string => {
+  const ruleIsAnswer = challengeType === 'discover_rule' || challengeType === 'create_rule';
+  if (ruleIsAnswer) {
+    // NEVER name the rule. Tier dials how much strategy coaching is allowed.
+    if (tier === 'easy') {
+      return 'REVEAL POLICY: never state the rule. Coach the discovery strategy: point out how the output changes as the input grows by 1, and which pairs to compare.';
+    }
+    if (tier === 'hard') {
+      return 'REVEAL POLICY: never state the rule and do NOT name the operation. Only ask what changes from input to output; let the student reason from the pairs.';
+    }
+    return 'REVEAL POLICY: never state the rule. Nudge the student toward the pattern without naming the operation.';
+  }
+  // observe/predict: rule is on screen; tier dials coaching depth.
+  if (tier === 'hard') {
+    return 'REVEAL POLICY: the rule is visible. Nudge the student to apply it themselves; do not pre-compute outputs for them.';
+  }
+  return 'REVEAL POLICY: the rule is visible. You may walk through how it transforms an input step by step.';
+};
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -142,6 +186,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     ruleComplexity = 'oneStep',
     gradeBand = '3-4',
     outputDisplay = 'animated',
+    supportTier,
+    showComplexityBadge = true,
     instanceId,
     skillId,
     subskillId,
@@ -220,11 +266,33 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!currentChallenge) return;
-    setProcessedPairs([]);
+    // discover_rule support tier may PRE-REVEAL some I/O pairs (easy = more, hard =
+    // fewer). These are tier-derived; they MUST be seeded here so they reset per rule
+    // and never leak across challenges. The rule itself stays hidden (mode identity).
+    const prefill =
+      currentChallenge.showRule === false &&
+      challengeType === 'discover_rule' &&
+      currentChallenge.prefilledPairCount != null
+        ? Math.min(currentChallenge.prefilledPairCount, currentChallenge.inputQueue.length)
+        : 0;
+    if (prefill > 0) {
+      const seeded: Array<{ input: number; output: number }> = [];
+      const seededInputs = currentChallenge.inputQueue.slice(0, prefill);
+      for (const input of seededInputs) {
+        const output = evaluateRule(currentChallenge.rule, input);
+        if (output !== null) seeded.push({ input, output });
+      }
+      setProcessedPairs(seeded);
+      setAvailableInputs(
+        currentChallenge.inputQueue.filter((v) => !seededInputs.includes(v)),
+      );
+    } else {
+      setProcessedPairs([]);
+      setAvailableInputs(currentChallenge.inputQueue);
+    }
     setCurrentInput(null);
     setCurrentOutput(null);
     setIsProcessing(false);
-    setAvailableInputs(currentChallenge.inputQueue);
     setPrediction('');
     setPredictionFeedback(null);
     setPredictionsCorrect(0);
@@ -237,16 +305,23 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
   }, [currentChallenge?.id]);
 
   // -------------------------------------------------------------------------
-  // For create_rule: pre-populate the I/O pair table from the rule
+  // For create_rule: pre-populate the I/O pair table from the rule.
+  // Support tier may withhold rows (hard) — but ALWAYS ≥2 so the rule is
+  // uniquely determinable. The generator already enforces ≥2; we clamp again here.
   // -------------------------------------------------------------------------
   const createRulePairs = useMemo(() => {
     if (challengeType !== 'create_rule' || !currentChallenge) return [];
-    return currentChallenge.inputQueue
+    const allPairs = currentChallenge.inputQueue
       .map((input) => {
         const output = evaluateRule(currentChallenge.rule, input);
         return output === null ? null : { input, output };
       })
       .filter((p): p is { input: number; output: number } => p !== null);
+    const prefill = currentChallenge.prefilledPairCount;
+    if (prefill != null && prefill < allPairs.length) {
+      return allPairs.slice(0, Math.max(2, prefill));
+    }
+    return allPairs;
   }, [challengeType, currentChallenge]);
 
   // -------------------------------------------------------------------------
@@ -277,6 +352,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     totalChallenges: challenges.length,
     rule: currentChallenge?.rule ?? '',
     showRule: currentChallenge?.showRule ?? false,
+    supportTier,
     processedPairs,
     guessedRule,
     gradeBand,
@@ -288,7 +364,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     ruleDiscovered: guessResult === 'correct',
   }), [
     challengeType, title, currentIndex, challenges.length, currentChallenge,
-    processedPairs, guessedRule, gradeBand, ruleComplexity, predictionsCorrect,
+    supportTier, processedPairs, guessedRule, gradeBand, ruleComplexity, predictionsCorrect,
     predictionsTotal, guessAttempts, guessResult,
   ]);
 
@@ -308,6 +384,8 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
       `[ACTIVITY_START] Function machine session "${title}". `
       + `${challenges.length} function rules, mode: ${challengeType}. `
       + `Grade band: ${gradeBand}. Complexity: ${ruleComplexity}. `
+      + `${supportTier ? `Support tier: ${supportTier}. ` : ''}`
+      + `${tutorRevealClause(challengeType, supportTier)} `
       + `Introduce the activity warmly and explain the first step.`,
       { silent: true },
     );
@@ -345,7 +423,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
       if (predictionWasCorrect) {
         sendText(`[PREDICTION_CORRECT] Student predicted ${predicted} for input ${input}. Output ${output}. Celebrate briefly.`, { silent: true });
       } else {
-        sendText(`[PREDICTION_INCORRECT] Student predicted ${predicted} for input ${input}, actual output ${output}. Encourage and hint at the pattern.`, { silent: true });
+        sendText(`[PREDICTION_INCORRECT] Student predicted ${predicted} for input ${input}, actual output ${output}. ${tutorRevealClause('predict', supportTier)} Encourage and hint at the pattern.`, { silent: true });
       }
     }
 
@@ -360,7 +438,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
     setCurrentInput(null);
     setCurrentOutput(null);
     setIsProcessing(false);
-  }, [isProcessing, currentChallenge, challengeType, prediction, sendText]);
+  }, [isProcessing, currentChallenge, challengeType, prediction, sendText, supportTier]);
 
   // -------------------------------------------------------------------------
   // Completion helpers — each mode has its own submit, all share stale-state guard
@@ -449,11 +527,11 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
       );
     } else {
       sendText(
-        `[GUESS_INCORRECT] Student guessed "${guessedRule}" but rule is "${currentChallenge.rule}". Attempt ${nextAttempts}. ${challengeType === 'discover_rule' ? `Pairs seen: ${processedPairs.map((p) => `${p.input}→${p.output}`).join(', ')}.` : ''} Give a targeted hint.`,
+        `[GUESS_INCORRECT] Student guessed "${guessedRule}" but rule is "${currentChallenge.rule}". Attempt ${nextAttempts}. ${challengeType === 'discover_rule' ? `Pairs seen: ${processedPairs.map((p) => `${p.input}→${p.output}`).join(', ')}.` : ''} ${tutorRevealClause(challengeType, supportTier)} Give a targeted hint without naming the rule.`,
         { silent: true },
       );
     }
-  }, [currentChallenge, guessedRule, guessAttempts, challengeType, processedPairs, completeCurrentChallenge, sendText]);
+  }, [currentChallenge, guessedRule, guessAttempts, challengeType, processedPairs, completeCurrentChallenge, sendText, supportTier]);
 
   // -------------------------------------------------------------------------
   // Submit aggregate evaluation when all challenges complete
@@ -528,6 +606,16 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
 
   const showRule = currentChallenge.showRule || guessResult === 'correct';
 
+  // Tier-derived UI gates (default = current behavior when no tier present).
+  // hintLevel 'full' = how-it-works + early hint; 'minimal' = standard (hint after 2
+  // attempts); 'none' = no scaffolding hints. NEVER affects rule visibility.
+  const hintLevel = currentChallenge.hintLevel;
+  const showHowItWorks = hintLevel == null ? true : hintLevel === 'full';
+  // discover/create hint text: 'none' suppresses it; 'full' offers it early (after 1
+  // attempt); otherwise the standard "after 2 attempts" gate.
+  const ruleHintThreshold = hintLevel === 'full' ? 1 : 2;
+  const showRuleHint = hintLevel !== 'none' && guessAttempts >= ruleHintThreshold;
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -550,9 +638,11 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
               <LuminaBadge accent="blue" className="text-xs">
                 {CHALLENGE_TYPE_LABEL[challengeType]}
               </LuminaBadge>
-              <LuminaBadge accent="purple" className="text-xs">
-                {ruleComplexity === 'oneStep' ? 'One-Step' : ruleComplexity === 'twoStep' ? 'Two-Step' : 'Expression'}
-              </LuminaBadge>
+              {showComplexityBadge && (
+                <LuminaBadge accent="purple" className="text-xs">
+                  {ruleComplexity === 'oneStep' ? 'One-Step' : ruleComplexity === 'twoStep' ? 'Two-Step' : 'Expression'}
+                </LuminaBadge>
+              )}
             </div>
           </div>
         </LuminaCardHeader>
@@ -708,7 +798,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                   {predictionFeedback === 'incorrect' && (
                     <LuminaBadge accent="rose">Not quite</LuminaBadge>
                   )}
-                  {predictionsTotal > 0 && (
+                  {predictionsTotal > 0 && hintLevel !== 'none' && (
                     <span className="text-xs text-amber-300/70 ml-auto">
                       {predictionsCorrect}/{predictionsTotal} correct
                     </span>
@@ -805,6 +895,16 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                 <p className="mt-4 text-sm text-slate-400">
                   Look at the pattern. What rule transforms each input into its output?
                 </p>
+                {/* Worked-exemplar (create_rule easy only — process, NOT the rule) */}
+                {hintLevel === 'full' && createRulePairs.length > 0 && (
+                  <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-400/30">
+                    <p className="text-xs text-amber-200/90">
+                      <span className="font-semibold">Worked example:</span> start with the first row
+                      (input {createRulePairs[0].input} → output {createRulePairs[0].output}).
+                      Try a rule on it, then check it gives the right output for the next row too.
+                    </p>
+                  </div>
+                )}
               </LuminaCardContent>
             </LuminaCard>
           )}
@@ -839,7 +939,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
                 {guessResult === 'incorrect' && (
                   <div className="mt-3 p-3 bg-red-500/15 border border-red-400/30 rounded-lg text-center">
                     <span className="text-red-200 text-sm">
-                      Not quite — try again. {guessAttempts >= 2 && 'Hint: look at how the output changes as the input grows by 1.'}
+                      Not quite — try again. {showRuleHint && 'Hint: look at how the output changes as the input grows by 1.'}
                     </span>
                     <div className="mt-1 text-center text-xs text-slate-500">
                       {guessAttempts} attempt{guessAttempts !== 1 ? 's' : ''} so far
@@ -850,8 +950,10 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
             </LuminaCard>
           )}
 
-          {/* Observe completion button */}
-          {challengeType === 'observe' && processedPairs.length >= 3 && (
+          {/* Observe completion button — tier may require ALL inputs fed (hard). */}
+          {challengeType === 'observe'
+            && processedPairs.length >= (currentChallenge.pairsRequiredToComplete ?? 3)
+            && (
             <div className="flex justify-center">
               <LuminaButton
                 onClick={completeObserve}
@@ -863,7 +965,7 @@ const FunctionMachine: React.FC<FunctionMachineProps> = ({ data, className }) =>
           )}
 
           {/* How to Use (first challenge only) */}
-          {currentIndex === 0 && processedPairs.length === 0 && challengeType !== 'create_rule' && (
+          {currentIndex === 0 && processedPairs.length === 0 && challengeType !== 'create_rule' && showHowItWorks && (
             <LuminaCard className="bg-amber-500/5 border-amber-400/20">
               <LuminaCardContent className="py-4">
                 <div className="flex items-start gap-3">

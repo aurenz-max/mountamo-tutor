@@ -477,7 +477,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     constraints: 'The manifest must NOT supply specific factor numbers, decompositions, or display flags — the generator picks 3-6 pairs locally per the selected eval mode. Algebraic mode is reserved for future expansion (no eval mode currently uses it).',
     tutoring: {
       taskDescription: 'Area model session: {{challengeType}}, {{totalChallenges}} problems. Currently on problem {{currentChallengeIndex}}/{{totalChallenges}}.',
-      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'factor1Parts', 'factor2Parts', 'algebraicMode'],
+      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'factor1Parts', 'factor2Parts', 'algebraicMode', 'supportTier'],
       scaffoldingLevels: {
         level1: '"What two numbers are multiplied in this cell?"',
         level2: '"This cell is {{factor1Part}} × {{factor2Part}}. What is that product?"',
@@ -497,6 +497,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'For ALGEBRAIC mode (grades 7+): use proper algebraic language — "Multiply each term in the first '
             + 'binomial by each term in the second." Reference FOIL for binomials. '
             + 'In both modes, emphasize the distributive property: "We are breaking a hard multiplication into easier pieces."',
+        },
+        {
+          title: 'SUPPORT TIER — REVEAL POLICY',
+          instruction:
+            'The student is at support tier {{supportTier}} (easy = max on-screen scaffolding, hard = min). '
+            + 'Keep your reveal level in sync with what is on screen. '
+            + 'easy: you may name the method (multiply column header × row header, then add the parts; '
+            + 'or Perimeter = 2 × (length + width)) and walk the setup. '
+            + 'medium: the method is shown on screen — nudge the next step, let the student do the arithmetic. '
+            + 'hard: the on-screen cells are NOT pre-labeled (and the side-sum is hidden) on purpose — '
+            + 'do NOT supply that withheld step; ask the student to read the row/column headers (or the labeled sides) '
+            + 'and map it themselves. NEVER state a partial product, the total product, the perimeter, '
+            + 'or (in factor mode) the dimension numbers at any tier — those are the answer.',
         },
       ],
     },
@@ -550,7 +563,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     constraints: 'The manifest must NOT supply specific row/column counts — the generator picks 3-6 dimension pairs locally per the selected eval mode. Keep arrays within the component caps (rows 2-6, columns 2-8).',
     tutoring: {
       taskDescription: 'Array session: {{challengeType}}, {{totalChallenges}} arrays. Currently on array {{currentChallengeIndex}}/{{totalChallenges}}.',
-      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetRows', 'targetColumns'],
+      contextKeys: ['title', 'challengeType', 'currentChallengeIndex', 'totalChallenges', 'targetRows', 'targetColumns', 'supportTier'],
       scaffoldingLevels: {
         level1: '"How many rows do you need? How many columns?"',
         level2: '"You need {{targetRows}} rows of {{targetColumns}}. Can you count by {{targetColumns}}s?"',

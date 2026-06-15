@@ -75,6 +75,19 @@ export interface DoubleNumberLineData {
 
   showVerticalGuides?: boolean;
   showUnitRate?: boolean;
+  /**
+   * Tick value-label density. 'all' (default) labels every tick; 'endpoints'
+   * keeps only the first + last tick label; 'none' hides interior labels but
+   * the min/max ENDPOINTS are ALWAYS kept so the scale magnitude is preserved.
+   */
+  showTickLabels?: 'all' | 'endpoints' | 'none';
+  /**
+   * Whether the given-pair value badge is shown on the bottom line (the dot
+   * always stays). Defaults true. A support-tier scaffold withdrawal.
+   */
+  showGivenValues?: boolean;
+  /** Active support tier — calibrates the live tutor's reveal policy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -176,6 +189,34 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 };
 
 // ---------------------------------------------------------------------------
+// Tutor reveal policy — keep the tutor in sync with the on-screen scaffold.
+// The eval mode here is a STRATEGY (scale / find-the-rate / divide), not the
+// answer, so easy may name it; harder tiers must withhold it, matching what the
+// withdrawn hints/labels show on screen. No-tier → undefined → tutor stays at
+// its default coaching depth.
+// ---------------------------------------------------------------------------
+function tutorRevealClause(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  type: DoubleNumberLineChallengeType | undefined,
+): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    const strat =
+      type === 'unit_rate'
+        ? 'you may name the divide-to-find-the-unit-rate strategy and walk the steps'
+        : type === 'find_missing'
+          ? 'you may name the find-the-unit-rate-then-multiply strategy and walk the steps'
+          : 'you may name the multiply-by-the-unit-rate strategy and walk the steps';
+    return ` SUPPORT TIER easy: ${strat}; the on-screen guides and labels back you up.`;
+  }
+  if (tier === 'medium') {
+    return ' SUPPORT TIER medium: nudge the execution only — point at the unit rate, do not solve it for them.';
+  }
+  // hard
+  return ' SUPPORT TIER hard: the on-screen hints are withheld — do NOT name the strategy or the operation. Ask what the rate per 1 unit is and what they see on the lines; never reveal the answer.';
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -190,6 +231,9 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     challenges = [],
     showVerticalGuides = true,
     showUnitRate = true,
+    showTickLabels = 'all',
+    showGivenValues = true,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -274,9 +318,10 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     targetTopValue: currentChallenge?.targetPoints[0]?.topValue,
     targetBottomValue: currentChallenge?.targetPoints[0]?.bottomValue,
     attemptNumber: currentAttempts,
+    supportTier,
   }), [
     title, topLabel, bottomLabel, unitRate, currentIndex,
-    challenges.length, currentChallenge, currentAttempts,
+    challenges.length, currentChallenge, currentAttempts, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -296,12 +341,13 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
       `[ACTIVITY_START] Double number line: ${topLabel} vs ${bottomLabel}. `
       + `${challenges.length} ratio challenges in this session (mode: ${currentChallenge.challengeType}). `
       + `${contextQuestion ? `Context: "${contextQuestion}". ` : ''}`
-      + `First challenge: ${currentChallenge.prompt}`,
+      + `First challenge: ${currentChallenge.prompt}`
+      + tutorRevealClause(supportTier, currentChallenge.challengeType),
       { silent: true },
     );
   }, [
     isConnected, challenges.length, currentChallenge, topLabel, bottomLabel,
-    contextQuestion, sendText,
+    contextQuestion, sendText, supportTier,
   ]);
 
   // Per-challenge handoff (skips the first because intro covers it)
@@ -425,11 +471,17 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
       SoundManager.playIncorrect();
       setFeedback('incorrect');
       setShowHint(true);
+      sendText(
+        `[WRONG_ANSWER] Challenge ${currentIndex + 1}/${challenges.length} (mode: ${currentChallenge.challengeType}), attempt ${currentAttempts + 1}. `
+        + `The student's bottom value is off. Coach the next step.`
+        + tutorRevealClause(supportTier, currentChallenge.challengeType),
+        { silent: true },
+      );
     }
   }, [
     currentChallenge, feedback, isComplete, studentValues,
     incrementAttempts, recordResult, currentAttempts,
-    sendText, currentIndex, challenges.length,
+    sendText, currentIndex, challenges.length, supportTier,
   ]);
 
   const handleAdvance = () => {
@@ -466,6 +518,18 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
       return { value: Math.round(value * 100) / 100, position: getBottomPosition(value) };
     });
   }, [bottomScale]);
+
+  // Tick value-label visibility per support tier. 'all' → every tick;
+  // 'endpoints' → first + last only; 'none' → still keep first + last so the
+  // scale magnitude is NEVER hidden (hiding all labels could read as a
+  // magnitude change). Interior labels are withdrawn at 'endpoints'/'none'.
+  const showTickLabelAt = useCallback(
+    (index: number, total: number): boolean => {
+      if (showTickLabels === 'all') return true;
+      return index === 0 || index === total - 1; // endpoints always kept
+    },
+    [showTickLabels],
+  );
 
   // ── Empty state ────────────────────────────────────────────────────────────
   if (challenges.length === 0) {
@@ -572,16 +636,28 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                       className="absolute w-px h-4 bg-slate-500 top-full mt-1 flex flex-col items-center -translate-x-1/2"
                       style={{ left: `${tick.position}%` }}
                     >
-                      <span className="mt-2 text-sm text-slate-400 font-mono font-semibold">
-                        {tick.value}
-                      </span>
+                      {showTickLabelAt(i, topTicks.length) && (
+                        <span className="mt-2 text-sm text-slate-400 font-mono font-semibold">
+                          {tick.value}
+                        </span>
+                      )}
                     </div>
                   ))}
 
                   {/* Given (hint) points */}
                   {currentChallenge.givenPoints.map((point, i) => {
+                    const isUnitRatePoint = Math.abs(point.topValue - 1) < 0.01 && point.label === 'Unit Rate';
+                    // When showUnitRate is withdrawn (medium/hard), drop the
+                    // unit-rate dot entirely — re-rendering it as a plain given
+                    // point would leak the very cue the tier withheld.
+                    if (isUnitRatePoint && !showUnitRate) return null;
                     const position = getTopPosition(point.topValue);
-                    const isUnitRate = showUnitRate && Math.abs(point.topValue - 1) < 0.01;
+                    const isUnitRate = showUnitRate && isUnitRatePoint;
+                    // The "Given"/unit-rate top label badge is a scaffold tag —
+                    // withdrawn with the given-value badges at harder tiers.
+                    // (ORIGIN's 'Start' label likewise.) The unit-rate badge
+                    // rides showUnitRate, which is already false here if hidden.
+                    const showLabelBadge = isUnitRate || showGivenValues;
                     return (
                       <div
                         key={`given-top-${i}`}
@@ -589,7 +665,7 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                         style={{ left: `${position}%` }}
                       >
                         <div className={`w-4 h-4 rounded-full ${isUnitRate ? 'bg-yellow-500' : 'bg-purple-500'} border-2 border-white shadow-[0_0_15px_rgba(168,85,247,0.5)]`} />
-                        {point.label && (
+                        {point.label && showLabelBadge && (
                           <div className={`absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs rounded whitespace-nowrap ${isUnitRate ? 'bg-yellow-600 text-white' : 'bg-purple-600 text-white'}`}>
                             {isUnitRate ? 'Unit Rate' : point.label}
                           </div>
@@ -642,14 +718,20 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                       className="absolute w-px h-4 bg-slate-500 top-full mt-1 flex flex-col items-center -translate-x-1/2"
                       style={{ left: `${tick.position}%` }}
                     >
-                      <span className="mt-2 text-sm text-slate-400 font-mono font-semibold">
-                        {tick.value}
-                      </span>
+                      {showTickLabelAt(i, bottomTicks.length) && (
+                        <span className="mt-2 text-sm text-slate-400 font-mono font-semibold">
+                          {tick.value}
+                        </span>
+                      )}
                     </div>
                   ))}
 
                   {/* Given (hint) points on bottom */}
                   {currentChallenge.givenPoints.map((point, i) => {
+                    // Mirror the top line: drop the unit-rate point's bottom dot
+                    // when the unit-rate cue is withdrawn, so it can't leak.
+                    const isUnitRatePoint = Math.abs(point.topValue - 1) < 0.01 && point.label === 'Unit Rate';
+                    if (isUnitRatePoint && !showUnitRate) return null;
                     const position = getBottomPosition(point.bottomValue);
                     return (
                       <div
@@ -658,9 +740,13 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                         style={{ left: `${position}%` }}
                       >
                         <div className="w-4 h-4 rounded-full bg-purple-500 border-2 border-white shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
-                        <div className="absolute top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-white bg-slate-800/90 px-2 py-1 rounded whitespace-nowrap">
-                          {point.bottomValue}
-                        </div>
+                        {/* Given-pair value badge — withdrawn at harder tiers
+                            (showGivenValues=false) while the dot stays plotted. */}
+                        {showGivenValues && (
+                          <div className="absolute top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-white bg-slate-800/90 px-2 py-1 rounded whitespace-nowrap">
+                            {point.bottomValue}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

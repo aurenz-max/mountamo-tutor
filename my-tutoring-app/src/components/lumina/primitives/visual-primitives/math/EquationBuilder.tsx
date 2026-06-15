@@ -68,6 +68,10 @@ export interface EquationBuilderData {
   maxNumber: number;
   gradeBand: 'K' | '1' | '2';
 
+  /** Within-mode support tier (config.difficulty). Calibrates the tutor's reveal
+   *  level to match the on-screen scaffold so it never leaks what a tier withheld. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
@@ -295,6 +299,40 @@ function matchesAcceptedForm(built: string[], acceptedForms: string[]): boolean 
   return acceptedForms.some(form => form.replace(/\s+/g, '') === builtStr);
 }
 
+/**
+ * Mode-aware tutor reveal policy keyed off the support tier + current challenge
+ * type. Mirrors the on-screen scaffold so the tutor never hands over what a hard
+ * tier's instruction deliberately withheld. easy = name the strategy/setup;
+ * medium = nudge execution only; hard = ask what the student sees, name nothing.
+ * Returns an empty string when no tier is set (no-tier path byte-identical).
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  challengeType: EquationBuilderChallenge['type'],
+): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    switch (challengeType) {
+      case 'build':
+        return 'TIER easy: you MAY name the building strategy (e.g. "try adding two tiles, then place the = and the total") but NEVER state the target equation.';
+      case 'balance':
+        return 'TIER easy: you MAY walk the strategy — "work out the left side first, then find what makes the right side match" — without stating the answer.';
+      case 'rewrite':
+        return 'TIER easy: you MAY remind that the = can flip (same amounts either side) without giving an accepted form.';
+      case 'missing-value':
+        return 'TIER easy: you MAY name the relationship ("both sides must be the same amount") without stating the missing number.';
+      case 'true-false':
+        return 'TIER easy: you MAY name the strategy ("compute each side, then compare") without saying whether it is true or false.';
+      default:
+        return 'TIER easy: you may name the strategy without revealing the answer.';
+    }
+  }
+  if (tier === 'medium') {
+    return 'TIER medium: the strategy is on screen — nudge the next step only, do not name the full strategy or the answer.';
+  }
+  return 'TIER hard: the instruction withheld the strategy — do NOT name it or set up the equation. Ask what the student sees, never reveal the answer.';
+}
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -315,6 +353,7 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     challenges = [],
     maxNumber = 10,
     gradeBand = 'K',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -401,9 +440,10 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
     attemptNumber: currentAttempts + 1,
     gradeBand,
     maxNumber,
+    supportTier,
     currentChallengeIndex,
     totalChallenges: challenges.length,
-  }), [currentChallenge, currentAttempts, gradeBand, maxNumber, currentChallengeIndex, challenges.length]);
+  }), [currentChallenge, currentAttempts, gradeBand, maxNumber, supportTier, currentChallengeIndex, challenges.length]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'equation-builder',
@@ -417,14 +457,16 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
+    const startPolicy = tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build');
     sendText(
       `[ACTIVITY_START] Equation Builder for ${gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`}. `
       + `${challenges.length} challenges. Max number: ${maxNumber}. `
       + `First challenge: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
-      + `Introduce warmly: "Let's explore equations! An equation uses the = sign to show two sides are the same."`,
+      + `Introduce warmly: "Let's explore equations! An equation uses the = sign to show two sides are the same."`
+      + (startPolicy ? ` ${startPolicy}` : ''),
       { silent: true }
     );
-  }, [isConnected, challenges.length, maxNumber, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, maxNumber, gradeBand, supportTier, currentChallenge, sendText]);
 
   // -------------------------------------------------------------------------
   // Reset domain state when challenge changes
@@ -518,11 +560,12 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
       sendText(
         `[ANSWER_INCORRECT] Student built "${builtStr}" but target is "${target}". `
         + `${isValidMath ? 'Valid math but wrong target.' : 'Not valid math.'} `
-        + `Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.`,
+        + `Attempt ${currentAttempts + 1}. Give a hint without revealing the answer. `
+        + tutorRevealPolicy(supportTier, 'build'),
         { silent: true }
       );
     }
-  }, [currentChallenge, workspaceSlots, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, workspaceSlots, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Missing-value: check selection
@@ -555,11 +598,12 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
       sendText(
         `[ANSWER_INCORRECT] Student chose ${selectedOption} but correct is ${currentChallenge.correctValue}. `
         + `Equation: "${currentChallenge.equation}". Attempt ${currentAttempts + 1}. `
-        + `Hint about what = means — both sides must balance.`,
+        + `Hint about what = means — both sides must balance. `
+        + tutorRevealPolicy(supportTier, 'missing-value'),
         { silent: true }
       );
     }
-  }, [currentChallenge, selectedOption, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, selectedOption, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // True-false: check answer
@@ -595,11 +639,12 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student said ${selectedTruthValue ? 'true' : 'false'} but "${currentChallenge.displayEquation}" is ${currentChallenge.isTrue ? 'true' : 'false'}. `
-        + `Attempt ${currentAttempts + 1}. Guide them to compute each side separately.`,
+        + `Attempt ${currentAttempts + 1}. Guide them to compute each side separately. `
+        + tutorRevealPolicy(supportTier, 'true-false'),
         { silent: true }
       );
     }
-  }, [currentChallenge, selectedTruthValue, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, selectedTruthValue, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Balance: check answer
@@ -634,11 +679,12 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
       sendText(
         `[ANSWER_INCORRECT] Student answered ${answer} but correct is ${currentChallenge.correctAnswer}. `
         + `Left: "${currentChallenge.leftSide}", Right: "${currentChallenge.rightSide}". `
-        + `Attempt ${currentAttempts + 1}. Guide: compute the left side first, then figure out what makes the right side match.`,
+        + `Attempt ${currentAttempts + 1}. Guide: compute the left side first, then figure out what makes the right side match. `
+        + tutorRevealPolicy(supportTier, 'balance'),
         { silent: true }
       );
     }
-  }, [currentChallenge, balanceAnswer, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, balanceAnswer, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Rewrite: check equation
@@ -685,11 +731,12 @@ const EquationBuilder: React.FC<EquationBuilderProps> = ({ data, className }) =>
       sendText(
         `[ANSWER_INCORRECT] Student wrote "${builtStr}" to rewrite "${currentChallenge.originalEquation}". `
         + `Accepted forms: ${acceptedForms.join(', ')}. `
-        + `Attempt ${currentAttempts + 1}. Hint: the = sign can go in different places.`,
+        + `Attempt ${currentAttempts + 1}. Hint: the = sign can go in different places. `
+        + tutorRevealPolicy(supportTier, 'rewrite'),
         { silent: true }
       );
     }
-  }, [currentChallenge, workspaceSlots, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, workspaceSlots, currentAttempts, incrementAttempts, recordResult, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Advance to next challenge

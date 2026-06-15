@@ -47,6 +47,18 @@ export interface NumberBondData {
   maxNumber: number;
   showCounters: boolean;
   showEquation: boolean;
+  /**
+   * Whether the fact-family worked-example helper ("How do fact families work?")
+   * is shown. Defaults to true (current always-rendered behavior) when omitted so
+   * the no-tier path is byte-identical. The hard support tier hides it.
+   */
+  showFactFamilyHelper?: boolean;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Set by the generator only when a tier is present. Drives the AI tutor's
+   * reveal level so it matches what the on-screen scaffold withheld.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
   gradeBand: 'K' | '1';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -344,9 +356,9 @@ const EXAMPLE_EQUATIONS = [
   { eq: '5 − 3 = 2', tip: 'Same idea — take away the other part instead.' },
 ];
 
-function FactFamilyHelper() {
+function FactFamilyHelper({ defaultOpen = false }: { defaultOpen?: boolean }) {
   return (
-    <Collapsible>
+    <Collapsible defaultOpen={defaultOpen}>
       <CollapsibleTrigger asChild>
         <button className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors mx-auto">
           <span>💡</span>
@@ -419,6 +431,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     maxNumber = 10,
     showCounters = true,
     showEquation = true,
+    showFactFamilyHelper = true,
+    supportTier,
     gradeBand = 'K',
     instanceId,
     skillId,
@@ -516,7 +530,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     maxNumber,
     currentChallengeIndex,
     totalChallenges: challenges.length,
-  }), [currentChallenge, foundPairs.length, currentAttempts, gradeBand, maxNumber, currentChallengeIndex, challenges.length]);
+    supportTier: supportTier ?? null,
+  }), [currentChallenge, foundPairs.length, currentAttempts, gradeBand, maxNumber, currentChallengeIndex, challenges.length, supportTier]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'number-bond',
@@ -524,6 +539,27 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
   });
+
+  // -------------------------------------------------------------------------
+  // Tutor reveal policy — keeps the tutor's reveal level in sync with the
+  // on-screen support tier so it never hands over what the scaffold withheld.
+  // Mode-aware: keyed off the CURRENT challenge type so it's correct in a blend.
+  // -------------------------------------------------------------------------
+  const tutorRevealClause = useCallback((challengeType?: string): string => {
+    if (!supportTier) return '';
+    if (supportTier === 'easy') {
+      // Easy: tutor may name the decomposition strategy and walk the setup.
+      if (challengeType === 'decompose') return ' [REVEAL: easy tier — you MAY name a decomposition strategy, e.g. "try counting down from the whole, 0 and 5, then 1 and 4". Walk one step, never list every pair.]';
+      if (challengeType === 'missing-part') return ' [REVEAL: easy tier — you MAY suggest counting up from the known part to the whole; do NOT state the missing number itself.]';
+      if (challengeType === 'fact-family') return ' [REVEAL: easy tier — you MAY remind that the same three numbers make addition and subtraction facts and point to the worked example.]';
+      return ' [REVEAL: easy tier — you MAY name which equation form to build and walk the setup, but do not place the final tiles for them.]';
+    }
+    if (supportTier === 'medium') {
+      return ' [REVEAL: medium tier — the strategy is on screen; nudge execution only, do not name the full strategy or reveal any part/answer.]';
+    }
+    // hard
+    return ' [REVEAL: hard tier — the scaffold is withdrawn; do NOT name the strategy and do NOT reveal the missing part. Ask what parts the student sees making the whole; never reveal the answer.]';
+  }, [supportTier]);
 
   // Activity introduction
   const hasIntroducedRef = useRef(false);
@@ -534,10 +570,11 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       `[ACTIVITY_START] Number Bond activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
       + `${challenges.length} challenges. Max number: ${maxNumber}. `
       + `First challenge: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}, whole: ${currentChallenge?.whole}). `
-      + `Introduce warmly: "Let's explore how numbers break apart! We'll look at number bonds today."`,
+      + `Introduce warmly: "Let's explore how numbers break apart! We'll look at number bonds today."`
+      + tutorRevealClause(currentChallenge?.type),
       { silent: true }
     );
-  }, [isConnected, challenges.length, maxNumber, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, maxNumber, gradeBand, currentChallenge, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Reset domain state when challenge changes
@@ -613,7 +650,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[DUPLICATE_PAIR] Student tried ${leftCount} + ${rightCount} but already found this pair. `
-        + `Encourage: "You already found that one! Can you think of a different way to split ${whole}?"`,
+        + `Encourage: "You already found that one! Can you think of a different way to split ${whole}?"`
+        + tutorRevealClause('decompose'),
         { silent: true }
       );
       return;
@@ -634,7 +672,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       `[PAIR_FOUND] Student found ${leftCount} + ${rightCount} = ${whole}. `
       + `${newPairs.length} of ${totalExpected} pairs found. `
       + `Celebrate: "Great! ${leftCount} and ${rightCount} make ${whole}!" `
-      + `${newPairs.length < totalExpected ? `Guide: "Can you find another way to make ${whole}?"` : ''}`,
+      + `${newPairs.length < totalExpected ? `Guide: "Can you find another way to make ${whole}?"` : ''}`
+      + tutorRevealClause('decompose'),
       { silent: true }
     );
 
@@ -685,11 +724,12 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_INCORRECT] Student answered ${answer} but correct is ${expected}. `
         + `Whole: ${currentChallenge.whole}, known part: ${currentChallenge.part1 ?? currentChallenge.part2}. `
-        + `Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.`,
+        + `Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.`
+        + tutorRevealClause(currentChallenge.type),
         { silent: true }
       );
     }
-  }, [currentChallenge, missingAnswer, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, missingAnswer, currentAttempts, incrementAttempts, recordResult, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Fact-family: semantic check for all 4 equations
@@ -764,11 +804,12 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_INCORRECT] Fact family for ${w}=${p1}+${p2}: ${uniqueCorrect} unique facts found, ${remaining} still needed. `
         + `Issues: ${hints.join('; ')}. Student wrote: ${familyInputs.join(', ')}. `
-        + `Remind them: "A fact family uses the SAME three numbers (${p1}, ${p2}, ${w}) in addition AND subtraction."`,
+        + `Remind them: "A fact family uses the SAME three numbers (${p1}, ${p2}, ${w}) in addition AND subtraction."`
+        + tutorRevealClause('fact-family'),
         { silent: true }
       );
     }
-  }, [currentChallenge, familyInputs, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, familyInputs, currentAttempts, incrementAttempts, recordResult, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Build-equation: tile management
@@ -825,7 +866,8 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student built "${builtEq}" but the math is wrong. `
-        + `Attempt ${currentAttempts + 1}. Hint about checking their arithmetic.`,
+        + `Attempt ${currentAttempts + 1}. Hint about checking their arithmetic.`
+        + tutorRevealClause('build-equation'),
         { silent: true }
       );
     } else {
@@ -834,11 +876,12 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student built "${builtEq}" — math is correct but wrong numbers. `
-        + `Attempt ${currentAttempts + 1}. Remind them to look at the number bond diagram.`,
+        + `Attempt ${currentAttempts + 1}. Remind them to look at the number bond diagram.`
+        + tutorRevealClause('build-equation'),
         { silent: true }
       );
     }
-  }, [currentChallenge, equationSlots, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, equationSlots, currentAttempts, incrementAttempts, recordResult, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -1171,7 +1214,7 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
               <span className="text-purple-300 font-semibold">{currentChallenge.part2 ?? 0}</span>, and{' '}
               <span className="text-purple-300 font-semibold">{currentChallenge.whole}</span>:
             </p>
-            <FactFamilyHelper />
+            {showFactFamilyHelper && <FactFamilyHelper defaultOpen={supportTier === 'easy'} />}
             <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
               {familyInputs.map((val, i) => (
                 <div key={i} className="relative">

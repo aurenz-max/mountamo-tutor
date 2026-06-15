@@ -66,6 +66,14 @@ export interface BarModelChallenge {
   expectedDataset?: { label: string; value: number }[];
   expectedScaleStep?: number;
   availableScaleSteps?: number[];
+  /**
+   * Support-tier scaffolds (set by the generator from config.difficulty).
+   * showBarValues = numeric readout next to NON-answer bars; showTargetHighlight
+   * = amber "read this" cue. Both default ON when absent (no tier applied).
+   */
+  showBarValues?: boolean;
+  showTargetHighlight?: boolean;
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface BarModelData {
@@ -111,6 +119,10 @@ const resolveColor = (color: string | undefined, i: number): string => {
   return COLOR_PALETTE[ORDERED_COLORS[i % ORDERED_COLORS.length]];
 };
 
+/** Re-alpha an `rgb(r, g, b)` string to `rgba(r, g, b, a)`; passthrough otherwise. */
+const withAlpha = (color: string, a: number): string =>
+  color.startsWith('rgb(') ? color.replace('rgb(', 'rgba(').replace(')', `, ${a})`) : color;
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -124,6 +136,10 @@ interface BarsAreaProps {
   onBarClick?: (i: number) => void;
   clickable?: boolean;
   feedbackIndex?: { index: number; correct: boolean } | null;
+  /** Support tier: show the numeric value readout next to each bar (perception aid). */
+  showBarValues?: boolean;
+  /** The bar whose value IS the answer — its number is NEVER shown, at any tier. */
+  answerBarIndex?: number | null;
 }
 
 const BarsArea: React.FC<BarsAreaProps> = ({
@@ -135,6 +151,8 @@ const BarsArea: React.FC<BarsAreaProps> = ({
   onBarClick,
   clickable = false,
   feedbackIndex = null,
+  showBarValues = true,
+  answerBarIndex = null,
 }) => {
   const showAxis = (graphStyle === 'scaled_bar' || graphStyle === 'picture') && !!scale;
   const maxBar = Math.max(1, ...values.map((v) => v.value));
@@ -199,15 +217,18 @@ const BarsArea: React.FC<BarsAreaProps> = ({
               ? (item.value / maxBar) * 100
               : (item.value / Math.max(1, axisMax)) * 100;
 
+            // The answer bar's value is hidden at EVERY tier; other bars' values
+            // are a tier-controlled perception aid, anchored to the bar's tip.
+            const showValueLabel = graphStyle !== 'picture' && showBarValues && i !== answerBarIndex;
+            const fillColor = resolveColor(item.color, i);
+            const clampedWidth = Math.max(0, Math.min(100, widthPct));
+
             return (
               <div key={i} className="space-y-1">
-                <div className="flex justify-between text-sm">
+                <div className="flex text-sm">
                   <span className={`font-medium ${isHighlighted ? 'text-amber-300' : 'text-slate-200'}`}>
                     {item.label}
                   </span>
-                  {graphStyle !== 'picture' && !isHighlighted ? (
-                    <span className="font-mono text-slate-400 text-xs">{item.value}</span>
-                  ) : null}
                 </div>
 
                 {graphStyle === 'picture' && scale?.iconEmoji && scale?.iconValue ? (
@@ -220,20 +241,32 @@ const BarsArea: React.FC<BarsAreaProps> = ({
                     onClick={clickable && onBarClick ? () => onBarClick(i) : undefined}
                   />
                 ) : (
-                  <button
-                    type="button"
-                    disabled={!(clickable && onBarClick)}
-                    onClick={clickable && onBarClick ? () => onBarClick(i) : undefined}
-                    className={`relative h-10 w-full bg-slate-800/50 rounded-lg overflow-hidden border ${ringClass} ${clickable ? 'cursor-pointer hover:border-white/30' : 'cursor-default'} transition`}
-                  >
-                    <div
-                      className="h-full transition-all duration-500"
-                      style={{
-                        width: `${Math.max(0, Math.min(100, widthPct))}%`,
-                        backgroundColor: resolveColor(item.color, i),
-                      }}
-                    />
-                  </button>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      disabled={!(clickable && onBarClick)}
+                      onClick={clickable && onBarClick ? () => onBarClick(i) : undefined}
+                      className={`relative h-10 w-full bg-black/20 rounded-xl overflow-hidden border ${ringClass} ${clickable ? 'cursor-pointer hover:border-white/30' : 'cursor-default'} transition`}
+                    >
+                      <div
+                        className="h-full rounded-xl transition-all duration-500"
+                        style={{
+                          width: `${clampedWidth}%`,
+                          background: `linear-gradient(90deg, ${withAlpha(fillColor, 0.75)} 0%, ${fillColor} 100%)`,
+                          boxShadow: `0 0 18px ${withAlpha(fillColor, 0.45)}, inset 0 1px 0 rgba(255,255,255,0.18)`,
+                        }}
+                      />
+                    </button>
+                    {/* Value pinned to the bar's tip — "this bar reaches N". */}
+                    {showValueLabel ? (
+                      <span
+                        className="absolute top-1/2 -translate-y-1/2 font-mono text-xs text-slate-300 pointer-events-none transition-all duration-500"
+                        style={{ left: `min(calc(${clampedWidth}% + 8px), calc(100% - 22px))` }}
+                      >
+                        {item.value}
+                      </span>
+                    ) : null}
+                  </div>
                 )}
               </div>
             );
@@ -383,6 +416,24 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   graph: { label: 'Graph', icon: '📊', accentColor: 'emerald' },
 };
 
+/**
+ * Keep the tutor's reveal level in sync with the on-screen support tier so it
+ * never leaks a scaffold the tier withheld (e.g. naming which bar to read, or
+ * the operation, at the hard tier). Mirrors the generator's resolveSupportStructure.
+ */
+const tierTutorClause = (tier?: 'easy' | 'medium' | 'hard'): string => {
+  switch (tier) {
+    case 'easy':
+      return ' SUPPORT TIER EASY: you may name the strategy — point to which bar to read, or name the operation, and walk the student through it step by step.';
+    case 'medium':
+      return ' SUPPORT TIER MEDIUM: the strategy is on screen — nudge the student\'s execution, do not solve it for them.';
+    case 'hard':
+      return ' SUPPORT TIER HARD: on-screen aids are withdrawn — do NOT name which bar to read or which operation to use; ask what the student sees in the graph, and never reveal the answer.';
+    default:
+      return '';
+  }
+};
+
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
@@ -483,6 +534,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     iconValue: currentChallenge?.scale?.iconValue,
     currentPrompt: currentChallenge?.prompt,
     attemptNumber: currentAttempts,
+    supportTier: currentChallenge?.supportTier,
   }), [title, currentIndex, challenges.length, currentChallenge, graphStyle, currentAttempts]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -504,7 +556,8 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     sendText(
       currentChallenge.narration
         ?? `[ACTIVITY_START] ${title}. ${challenges.length} graph challenges in this session. ` +
-          `Mode: ${currentChallenge.evalMode}. First graph bars: ${labels}. ${currentChallenge.prompt}`,
+          `Mode: ${currentChallenge.evalMode}. First graph bars: ${labels}. ${currentChallenge.prompt}` +
+          tierTutorClause(currentChallenge.supportTier),
       { silent: true },
     );
   }, [isConnected, challenges.length, currentChallenge, title, sendText]);
@@ -525,7 +578,8 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
       .join(', ');
     sendText(
       `[CHALLENGE_START] Challenge ${currentIndex + 1} of ${challenges.length}. ` +
-      `Bars: ${labels}. ${currentChallenge.prompt}`,
+      `Bars: ${labels}. ${currentChallenge.prompt}` +
+      tierTutorClause(currentChallenge.supportTier),
       { silent: true },
     );
   }, [currentChallenge, currentIndex, challenges.length, isConnected, sendText]);
@@ -693,13 +747,22 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
     || currentChallenge.evalMode === 'graph_word_problem'
   );
 
-  const highlightedIndex =
+  // The bar named by the prompt (read modes only). Its value is the answer, so
+  // BarsArea hides it at every tier regardless of the highlight cue below.
+  const answerBarIndex =
     currentChallenge && (
       currentChallenge.evalMode === 'read_scale'
       || currentChallenge.evalMode === 'picture_graph'
       || currentChallenge.evalMode === 'scaled_bar_graph'
     ) && typeof currentChallenge.targetBarIndex === 'number'
       ? currentChallenge.targetBarIndex
+      : null;
+
+  // Amber "read this one" cue — a tracking aid the support tier can withdraw
+  // (showTargetHighlight === false at the hard tier). Defaults ON when absent.
+  const highlightedIndex =
+    answerBarIndex != null && currentChallenge?.showTargetHighlight !== false
+      ? answerBarIndex
       : null;
 
   const compareFeedback =
@@ -779,6 +842,8 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                   onBarClick={currentChallenge.evalMode === 'compare_bars' ? handleBarClick : undefined}
                   clickable={currentChallenge.evalMode === 'compare_bars' && feedback !== 'correct'}
                   feedbackIndex={compareFeedback}
+                  showBarValues={currentChallenge.showBarValues ?? true}
+                  answerBarIndex={answerBarIndex}
                 />
               </div>
 
@@ -800,7 +865,7 @@ const BarModel: React.FC<BarModelProps> = ({ data, className }) => {
                         state={choiceState}
                         disabled={feedback === 'correct'}
                         onClick={() => handleOptionClick(opt)}
-                        className="w-auto min-w-[64px] px-4 py-2 text-center font-mono text-lg"
+                        className="w-auto min-w-[72px] pl-5 pr-9 py-3 text-center font-mono text-lg"
                       >
                         {opt}
                       </LuminaAnswerChoice>

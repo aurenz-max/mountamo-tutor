@@ -51,6 +51,10 @@ export interface CompareObjectsChallenge {
   unitCount?: number;
   // weight order_three: unit shown on each scale readout (e.g. 'lbs', 'kg')
   weightUnit?: string;
+  // ── Support-tier scaffolding (set by generator when config.difficulty present) ──
+  supportTier?: 'easy' | 'medium' | 'hard';
+  showUnitNumbers?: boolean;  // non_standard: number the unit boxes 1..n (hard → hidden)
+  showScaleReadout?: boolean; // order_three weight: show digital readout (hard → hidden)
 }
 
 export interface CompareObjectsData {
@@ -168,7 +172,7 @@ function renderWeightObject(obj: CompareObject, _index: number, objects: Compare
   );
 }
 
-function renderThreeScaleWeights(objects: CompareObject[], weightUnit: string) {
+function renderThreeScaleWeights(objects: CompareObject[], weightUnit: string, showReadout = true) {
   // Three platform scales side-by-side. Each object sinks the platform by
   // visualSize (heavier = bigger drop), and the readout below shows the weight.
   const platformColors = [
@@ -203,10 +207,10 @@ function renderThreeScaleWeights(objects: CompareObject[], weightUnit: string) {
               className="w-3 bg-slate-500/70 border-x border-slate-400/60"
               style={{ height: `${Math.max(4, 24 - dropPx)}px`, transition: 'height 0.4s' }}
             />
-            {/* Scale body with digital readout */}
+            {/* Scale body with digital readout (hidden at the hard tier — order by drop) */}
             <div className="w-28 h-12 bg-slate-700 rounded-md border border-slate-500 flex items-center justify-center shadow-md">
               <div className="bg-black/70 px-2 py-0.5 rounded font-mono text-amber-300 text-sm font-bold border border-amber-400/30">
-                {displayWeight} {weightUnit}
+                {showReadout ? `${displayWeight} ${weightUnit}` : '— ?'}
               </div>
             </div>
             {/* Base */}
@@ -241,7 +245,7 @@ function renderCapacityObject(obj: CompareObject, index: number, _maxHeight: num
   );
 }
 
-function renderNonStandardMeasure(obj: CompareObject, unitName: string, unitCount: number) {
+function renderNonStandardMeasure(obj: CompareObject, unitName: string, unitCount: number, showNumbers = true) {
   const width = Math.max(60, (obj.visualSize / 100) * 320);
   return (
     <div className="flex flex-col items-center gap-3 w-full">
@@ -263,13 +267,32 @@ function renderNonStandardMeasure(obj: CompareObject, unitName: string, unitCoun
               className="h-6 border border-dashed border-cyan-400/50 bg-cyan-500/10 rounded-sm flex items-center justify-center"
               style={{ width: `${width / unitCount}px` }}
             >
-              <span className="text-[10px] text-cyan-300">{i + 1}</span>
+              {showNumbers && <span className="text-[10px] text-cyan-300">{i + 1}</span>}
             </div>
           ))}
         </div>
       </div>
     </div>
   );
+}
+
+// ============================================================================
+// Tutor reveal policy — keep the AI tutor in sync with the on-screen scaffold
+// so a hard tier (read-outs hidden, differences subtle) isn't undone by the
+// tutor naming the answer. The task identity (taller/heavier/longer) is the
+// same at every tier; the tier only dials how much the tutor may reveal.
+// ============================================================================
+function tutorRevealClause(tier?: 'easy' | 'medium' | 'hard'): string {
+  switch (tier) {
+    case 'easy':
+      return ' [TIER:easy] Max scaffolding — you may name the comparison strategy and walk it step by step.';
+    case 'medium':
+      return ' [TIER:medium] Nudge the comparison; do not give the answer outright.';
+    case 'hard':
+      return ' [TIER:hard] Read-outs are hidden and the differences are subtle — do NOT reveal which object or the count; ask what the student notices about the sizes/units and let them decide.';
+    default:
+      return '';
+  }
 }
 
 // ============================================================================
@@ -366,6 +389,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
     comparisonWord: currentChallenge?.comparisonWord ?? '',
     instruction: currentChallenge?.instruction ?? '',
     challengeType: currentChallenge?.type ?? 'compare_two',
+    supportTier: currentChallenge?.supportTier ?? null,
     totalChallenges: challenges.length,
     currentChallengeIndex,
     attemptNumber: currentAttempts + 1,
@@ -388,7 +412,8 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
       `[ACTIVITY_START] CompareObjects activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
       + `${challenges.length} challenges about comparing measurable attributes. `
       + `First challenge: "${currentChallenge?.instruction}". `
-      + `Introduce warmly: "Let's look at some objects and figure out which is bigger, longer, or heavier!"`,
+      + `Introduce warmly: "Let's look at some objects and figure out which is bigger, longer, or heavier!"`
+      + tutorRevealClause(currentChallenge?.supportTier),
       { silent: true },
     );
   }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
@@ -454,7 +479,8 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
           setFeedback(`Not quite. Look at the objects again - what can we measure about them?`);
           setFeedbackType('error');
           sendText(
-            `[ANSWER_INCORRECT] Student chose "${selectedAttribute}" but correct attribute is "${currentChallenge.correctAttribute}". Give a hint about what's different between these objects.`,
+            `[ANSWER_INCORRECT] Student chose "${selectedAttribute}" but correct attribute is "${currentChallenge.correctAttribute}". Give a hint about what's different between these objects.`
+            + tutorRevealClause(currentChallenge.supportTier),
             { silent: true },
           );
         }
@@ -479,7 +505,8 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
           setFeedback(`Look more carefully - which one is ${currentChallenge.comparisonWord}?`);
           setFeedbackType('error');
           sendText(
-            `[ANSWER_INCORRECT] Student chose "${selectedObject}" but "${currentChallenge.correctAnswer}" is ${currentChallenge.comparisonWord}. Hint: "${currentChallenge.hint}".`,
+            `[ANSWER_INCORRECT] Student chose "${selectedObject}" but "${currentChallenge.correctAnswer}" is ${currentChallenge.comparisonWord}. Hint: "${currentChallenge.hint}".`
+            + tutorRevealClause(currentChallenge.supportTier),
             { silent: true },
           );
         }
@@ -506,7 +533,8 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
           setFeedbackType('error');
           setOrderSelection([]);
           sendText(
-            `[ANSWER_INCORRECT] Student ordered: ${orderSelection.join(', ')} but correct is: ${correctOrder.join(', ')}. Hint: "${currentChallenge.hint}".`,
+            `[ANSWER_INCORRECT] Student ordered: ${orderSelection.join(', ')} but correct is: ${correctOrder.join(', ')}. Hint: "${currentChallenge.hint}".`
+            + tutorRevealClause(currentChallenge.supportTier),
             { silent: true },
           );
         }
@@ -532,7 +560,8 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
           setFeedback(`Count the ${currentChallenge.unitName}s again carefully!`);
           setFeedbackType('error');
           sendText(
-            `[ANSWER_INCORRECT] Student answered ${answer} but correct is ${currentChallenge.unitCount} ${currentChallenge.unitName}s. Give a counting hint.`,
+            `[ANSWER_INCORRECT] Student answered ${answer} but correct is ${currentChallenge.unitCount} ${currentChallenge.unitName}s. Give a counting hint.`
+            + tutorRevealClause(currentChallenge.supportTier),
             { silent: true },
           );
         }
@@ -644,6 +673,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
         objects[0],
         currentChallenge.unitName ?? 'unit',
         currentChallenge.unitCount ?? 5,
+        currentChallenge.showUnitNumbers ?? true,
       );
     }
 
@@ -653,7 +683,11 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
       return renderWeightObject(objects[0], 0, objects);
     }
     if (attribute === 'weight' && objects.length >= 3) {
-      return renderThreeScaleWeights(objects, currentChallenge.weightUnit ?? 'lbs');
+      return renderThreeScaleWeights(
+        objects,
+        currentChallenge.weightUnit ?? 'lbs',
+        currentChallenge.showScaleReadout ?? true,
+      );
     }
 
     switch (attribute) {

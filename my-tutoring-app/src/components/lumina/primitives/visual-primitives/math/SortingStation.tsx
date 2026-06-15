@@ -50,6 +50,14 @@ export interface SortingStationChallenge {
   oddOneOutReason?: string;
   comparisonQuestion?: string;
   correctComparison?: 'more' | 'fewer' | 'equal';
+  /**
+   * Worked-example fade (easy tier, sort-family modes): the id of ONE object pre-placed in
+   * its correct bin as a model. It is EXCLUDED from the gradeable set (not counted toward
+   * "all placed", not gradeable, not removable) so it never doubles as a freebie answer.
+   */
+  modelItemId?: string;
+  /** Bin index the model item is pre-placed into (its correct category). */
+  modelItemBin?: number;
 }
 
 export interface SortingStationData {
@@ -60,6 +68,9 @@ export interface SortingStationData {
   showCounts: boolean;
   showTallyChart: boolean;
   gradeBand: 'K' | '1';
+  /** Within-mode support tier ('easy' = max scaffolding). Set when a tier was applied;
+   *  the tutor reads it to keep its reveal level consistent with the on-screen scaffold. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -127,6 +138,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     maxCategories = 3,
     showCounts = true,
     gradeBand = 'K',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -177,6 +189,22 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     () => challenges[currentChallengeIndex] || null,
     [challenges, currentChallengeIndex],
   );
+
+  // ─── Worked-example model item (easy tier, sort-family) ────────
+  // Pre-place the model object in its correct bin so the student sees ONE done for them.
+  // It is excluded from the gradeable set everywhere below (denominator, grading loop,
+  // removal) so it can never double as a freebie answer.
+  const modelItemId = currentChallenge?.modelItemId;
+  useEffect(() => {
+    if (!currentChallenge?.modelItemId || currentChallenge.modelItemBin == null) return;
+    setBinAssignments(prev => {
+      if (prev.has(currentChallenge.modelItemId!)) return prev;
+      const next = new Map(prev);
+      next.set(currentChallenge.modelItemId!, currentChallenge.modelItemBin!);
+      return next;
+    });
+    // Re-run when the active challenge changes (advance resets binAssignments to empty).
+  }, [currentChallenge?.id, currentChallenge?.modelItemId, currentChallenge?.modelItemBin]);
 
   // ─── Derived categories for sort-by-attribute ──────────────────
   const derivedCategories = useMemo(() => {
@@ -259,6 +287,26 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
+  // ─── Tutor reveal policy (keeps the tutor consistent with the on-screen scaffold) ──
+  // easy → tutor may name the sorting rule / strategy; medium → nudge execution only;
+  // hard → must NOT name the category or which object — ask what attribute differs.
+  // odd-one-out is a RECOGNITION mode: the "odd" object/reason IS the answer, so the tutor
+  // must never name it at ANY tier (the on-screen UI already never reveals oddOneOutReason).
+  const tutorRevealClause = useCallback((type: string | undefined): string => {
+    const tier = supportTier;
+    if (!tier) return '';
+    if (type === 'odd-one-out') {
+      return ` SUPPORT TIER ${tier}: NEVER reveal which object is the odd one or why — that is the answer. ${tier === 'easy' ? 'You may ask what most of them have in common.' : tier === 'hard' ? 'Only ask the student to compare attributes closely; give no hints toward the answer.' : 'Nudge them to look at shared attributes, without naming the odd one.'}`;
+    }
+    if (tier === 'easy') {
+      return ` SUPPORT TIER easy: you MAY name the sorting rule/strategy and walk one example, but never give the final answer.`;
+    }
+    if (tier === 'hard') {
+      return ` SUPPORT TIER hard: do NOT name the category, attribute, or rule the student must find — ask what attribute they see differs, and never reveal the answer.`;
+    }
+    return ` SUPPORT TIER medium: the rule is on screen — nudge the student's execution only, do not name the answer.`;
+  }, [supportTier]);
+
   // ─── AI Tutoring ───────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
     challengeType: currentChallenge?.type ?? '',
@@ -270,9 +318,10 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     currentChallengeIndex,
     totalChallenges: challenges.length,
     gradeBand,
+    ...(supportTier ? { supportTier } : {}),
   }), [
     currentChallenge, selectedAttribute, derivedCategories, binAssignments.size,
-    currentAttempts, currentChallengeIndex, challenges.length, gradeBand,
+    currentAttempts, currentChallengeIndex, challenges.length, gradeBand, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -292,10 +341,11 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       `[ACTIVITY_START] This is a Sorting Station activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
       + `${challenges.length} challenges total. First challenge: "${currentChallenge?.instruction}" (${currentChallenge?.type}). `
       + `Objects: ${currentChallenge?.objects.map(o => `${o.emoji} ${o.label}`).join(', ')}. `
-      + `Introduce warmly: "Look at all these things! Let's sort them together."`,
+      + `Introduce warmly: "Look at all these things! Let's sort them together."`
+      + tutorRevealClause(currentChallenge?.type),
       { silent: true },
     );
-  }, [isConnected, challenges.length, currentChallenge, gradeBand, sendText]);
+  }, [isConnected, challenges.length, currentChallenge, gradeBand, sendText, tutorRevealClause]);
 
   // ─── Interaction handlers ──────────────────────────────────────
 
@@ -331,6 +381,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
 
   const handleRemoveFromBin = useCallback((objId: string) => {
     if (hasSubmittedEvaluation) return;
+    if (objId === modelItemId) return; // worked-example model item is locked, not removable
     setBinAssignments(prev => {
       const next = new Map(prev);
       next.delete(objId);
@@ -338,7 +389,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     });
     setFeedback('');
     setFeedbackType('');
-  }, [hasSubmittedEvaluation]);
+  }, [hasSubmittedEvaluation, modelItemId]);
 
   const handleAttributeSelect = useCallback((attr: string) => {
     SoundManager.select();
@@ -368,6 +419,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       let totalPlaced = 0;
 
       for (const [objId, binIdx] of Array.from(binAssignments.entries())) {
+        if (objId === modelItemId) continue; // model item is a freebie — never graded
         totalPlaced++;
         const obj = currentChallenge.objects.find(o => o.id === objId);
         if (obj && binIdx < cats.length && objectMatchesRule(obj, cats[binIdx].rule)) {
@@ -375,7 +427,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         }
       }
 
-      const allPlaced = totalPlaced === currentChallenge.objects.length;
+      const gradeableTotal = currentChallenge.objects.length - (modelItemId ? 1 : 0);
+      const allPlaced = totalPlaced === gradeableTotal;
       const allCorrect = allPlaced && correctCount === totalPlaced;
 
       if (allCorrect) {
@@ -389,10 +442,10 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         );
       } else if (!allPlaced) {
         SoundManager.invalid();
-        setFeedback(`Place all objects into bins first! (${totalPlaced}/${currentChallenge.objects.length} placed)`);
+        setFeedback(`Place all objects into bins first! (${totalPlaced}/${gradeableTotal} placed)`);
         setFeedbackType('error');
         sendText(
-          `[INCOMPLETE] Student only placed ${totalPlaced} of ${currentChallenge.objects.length} objects. Encourage: "Keep going! There are more to sort."`,
+          `[INCOMPLETE] Student only placed ${totalPlaced} of ${gradeableTotal} objects. Encourage: "Keep going! There are more to sort."`,
           { silent: true },
         );
       } else {
@@ -403,7 +456,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         setFeedbackType('error');
         sendText(
           `[ANSWER_INCORRECT] ${wrongCount} of ${totalPlaced} objects misplaced. `
-          + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "Look at each object's ${currentChallenge.sortingAttribute || selectedAttribute || 'attribute'} — does it match the bin name?"` : attempt >= 2 ? `Hint: "Check each bin — do all the objects in it share the same ${currentChallenge.sortingAttribute || selectedAttribute || 'attribute'}?"` : 'Give a hint about the sorting rule.'}`,
+          + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "Look at each object's ${currentChallenge.sortingAttribute || selectedAttribute || 'attribute'} — does it match the bin name?"` : attempt >= 2 ? `Hint: "Check each bin — do all the objects in it share the same ${currentChallenge.sortingAttribute || selectedAttribute || 'attribute'}?"` : 'Give a hint about the sorting rule.'}`
+          + tutorRevealClause(currentChallenge.type),
           { silent: true },
         );
       }
@@ -526,7 +580,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         const ruleKeys = Object.keys(rule);
         sendText(
           `[ANSWER_INCORRECT] Missed ${missed}, selected ${extra} extras. `
-          + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "You need objects that are BOTH ${ruleKeys.map(k => `${k}=${rule[k]}`).join(' AND ')}. Check each one."` : attempt >= 2 ? `[ATTRIBUTE_HINT] Hint: "Remember, it needs TWO things: the right ${ruleKeys[0]} AND the right ${ruleKeys[1]}."` : 'Give a two-attribute hint.'}`,
+          + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "You need objects that are BOTH ${ruleKeys.map(k => `${k}=${rule[k]}`).join(' AND ')}. Check each one."` : attempt >= 2 ? `[ATTRIBUTE_HINT] Hint: "Remember, it needs TWO things: the right ${ruleKeys[0]} AND the right ${ruleKeys[1]}."` : 'Give a two-attribute hint.'}`
+          + tutorRevealClause('two-attributes'),
           { silent: true },
         );
       }
@@ -553,7 +608,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         setSelectedOddOne(null);
         sendText(
           `[ANSWER_INCORRECT] Student chose wrong object for odd-one-out. `
-          + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "Most of these are the same kind of thing. One is totally different. Which one?"` : attempt >= 2 ? 'Hint: "Look at what makes most of them similar. One doesn\'t share that."' : 'Hint: "What do most of these have in common?"'}`,
+          + `Attempt ${attempt}. ${attempt >= 3 ? `Very specific: "Most of these are the same kind of thing. One is totally different. Which one?"` : attempt >= 2 ? 'Hint: "Look at what makes most of them similar. One doesn\'t share that."' : 'Hint: "What do most of these have in common?"'}`
+          + tutorRevealClause('odd-one-out'),
           { silent: true },
         );
       }
@@ -570,6 +626,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         let totalPlaced = 0;
 
         for (const [objId, binIdx] of Array.from(binAssignments.entries())) {
+          if (objId === modelItemId) continue; // model item is a freebie — never graded
           totalPlaced++;
           const obj = currentChallenge.objects.find(o => o.id === objId);
           if (obj && binIdx < cats.length && objectMatchesRule(obj, cats[binIdx].rule)) {
@@ -577,7 +634,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
           }
         }
 
-        const allPlaced = totalPlaced === currentChallenge.objects.length;
+        const gradeableTotal = currentChallenge.objects.length - (modelItemId ? 1 : 0);
+        const allPlaced = totalPlaced === gradeableTotal;
         const allCorrect = allPlaced && correctCount === totalPlaced;
 
         if (allCorrect) {
@@ -592,10 +650,10 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
           );
         } else if (!allPlaced) {
           SoundManager.invalid();
-          setFeedback(`Sort all objects first! (${totalPlaced}/${currentChallenge.objects.length} placed)`);
+          setFeedback(`Sort all objects first! (${totalPlaced}/${gradeableTotal} placed)`);
           setFeedbackType('error');
           sendText(
-            `[INCOMPLETE] Student placed ${totalPlaced} of ${currentChallenge.objects.length} objects. Encourage: "Keep going — sort them all!"`,
+            `[INCOMPLETE] Student placed ${totalPlaced} of ${gradeableTotal} objects. Encourage: "Keep going — sort them all!"`,
             { silent: true },
           );
         } else {
@@ -650,7 +708,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     currentChallenge, derivedCategories, binAssignments, selectedAttribute,
     comparisonAnswer, selectedObjects, selectedOddOne, tallyCounts,
     autoSortedBins, objectsInBins, currentAttempts, incrementAttempts, recordResult, sendText,
-    countComparePhase, enteredBinCounts, tallyRecordPhase,
+    countComparePhase, enteredBinCounts, tallyRecordPhase, modelItemId,
   ]);
 
   // ─── Advance ───────────────────────────────────────────────────
@@ -712,12 +770,14 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     sendText(
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
       + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). `
-      + `Introduce it briefly.`,
+      + `Introduce it briefly.`
+      + tutorRevealClause(nextChallenge.type),
       { silent: true },
     );
   }, [
     advanceProgress, phaseResults, challenges, challengeResults, sendText,
     hasSubmittedEvaluation, submitEvaluation, maxCategories, currentChallengeIndex,
+    tutorRevealClause,
   ]);
 
   // ─── Auto-submit on complete ───────────────────────────────────
@@ -847,16 +907,25 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-1.5 justify-center min-h-[32px]">
-                      {itemsInBin.map(obj => (
-                        <button
-                          key={obj.id}
-                          onClick={(e) => { e.stopPropagation(); handleRemoveFromBin(obj.id); }}
-                          className="flex flex-col items-center gap-0.5 rounded-lg px-1.5 py-1 bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-105 transition-all duration-150 cursor-pointer"
-                        >
-                          <span className="text-lg">{obj.emoji}</span>
-                          <span className="text-[9px] text-slate-400 leading-tight text-center break-words max-w-[72px]">{obj.label}</span>
-                        </button>
-                      ))}
+                      {itemsInBin.map(obj => {
+                        const isModel = obj.id === modelItemId;
+                        return (
+                          <button
+                            key={obj.id}
+                            onClick={(e) => { e.stopPropagation(); if (!isModel) handleRemoveFromBin(obj.id); }}
+                            title={isModel ? 'Example — already placed for you' : undefined}
+                            className={`flex flex-col items-center gap-0.5 rounded-lg px-1.5 py-1 border transition-all duration-150 ${
+                              isModel
+                                ? 'bg-emerald-500/10 border-emerald-400/30 cursor-default'
+                                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:scale-105 cursor-pointer'
+                            }`}
+                          >
+                            <span className="text-lg">{obj.emoji}</span>
+                            <span className="text-[9px] text-slate-400 leading-tight text-center break-words max-w-[72px]">{obj.label}</span>
+                            {isModel && <span className="text-[8px] text-emerald-300 leading-none">example</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 );

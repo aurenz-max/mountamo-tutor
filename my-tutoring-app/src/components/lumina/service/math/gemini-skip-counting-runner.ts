@@ -35,6 +35,65 @@ function resolveCount(
 }
 
 // ---------------------------------------------------------------------------
+// Skip-value resolution — code owns the ENTROPY, scope owns the TARGET
+// ---------------------------------------------------------------------------
+// skipValue is the LEARNING TARGET (the objective literally IS "count by Ns"),
+// not incidental data — so it is NEVER pooled from a numeric band (that is the
+// "Counting to 10" regression the add-number-pool-service safety rule guards
+// against). Precedence:
+//   1. config.skipValue       — an explicit manifest/scope pin → honor verbatim.
+//   2. value named in topic    — e.g. "Skip counting by 5s" → honor verbatim.
+//   3. code-chosen from the band — ONLY when the objective is OPEN. The candidate
+//      set IS the grade-band scope of legal intervals, so a random pick can never
+//      teach past the objective. This is what fixes Gemini's convergent collapse
+//      onto +5 for open ("skip counting patterns") objectives.
+// Only branch 3 is randomness, and its pool == scope. See memory:
+// structural-difficulty-not-numeric / add-number-pool-service safety rule.
+
+const GRADE_BAND_SKIP_VALUES: Record<'1-2' | '2-3', readonly number[]> = {
+  '1-2': [2, 5, 10],
+  '2-3': [2, 3, 4, 5, 10],
+};
+
+/** Parse an interval the topic explicitly names ("by 5s", "count by 3", "10s"). */
+function parseSkipValueFromTopic(topic: string): number | null {
+  const m =
+    topic.match(/by\s+(\d+)\s*'?s?\b/i) ?? // "by 5s", "by 5", "by 10's"
+    topic.match(/\b(\d+)\s*'?s\b/i);        // "5s", "10s"
+  if (!m) return null;
+  const v = parseInt(m[1], 10);
+  return v > 0 ? v : null;
+}
+
+interface ResolvedSkipValue {
+  skipValue: number;
+  source: 'config' | 'topic' | 'pool';
+}
+
+/**
+ * Resolve the lesson's skip value. Scope (config / topic) wins; only an OPEN
+ * objective falls through to a code-chosen interval drawn from the grade band's
+ * legal set — never a contiguous numeric pool.
+ */
+function resolveSkipValue(
+  configSkipValue: number | undefined,
+  topic: string,
+  band: '1-2' | '2-3',
+): ResolvedSkipValue {
+  if (typeof configSkipValue === 'number' && configSkipValue > 0) {
+    return { skipValue: configSkipValue, source: 'config' };
+  }
+  const fromTopic = parseSkipValueFromTopic(topic);
+  if (fromTopic !== null) {
+    return { skipValue: fromTopic, source: 'topic' };
+  }
+  // Open objective → we own the randomness, but only across scope-legal intervals.
+  const candidates = GRADE_BAND_SKIP_VALUES[band];
+  const picked = candidates[Math.floor(Math.random() * candidates.length)];
+  return { skipValue: picked, source: 'pool' };
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
@@ -80,6 +139,208 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'connect_multiplication' (link to multiplication facts)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract (same as ten-frame / counting-board): config.targetEvalMode
+// says WHICH skill (task identity, matched to the objective by the manifest);
+// config.difficulty says how much on-workspace SUPPORT the student gets while doing
+// it ('easy' = max scaffolding, 'hard' = min). It NEVER changes skipValue / startFrom /
+// endAt magnitude — the per-mode count table + grade band own those. A harder tier
+// means LESS help tracking the count, never a bigger skip value or longer track.
+// See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Arc trails over each jump — the strongest visual "how far is one jump" cue. */
+  showJumpArcs: boolean;
+  /** Multiplication equation (jumpCount × skipValue = position). Computes the
+   *  answer for connect_multiplication, so it MUST be off at hard for that mode. */
+  showEquation: boolean;
+  /** Parallel array model (rows × skipValue) — concrete CPA support. */
+  showArray: boolean;
+  /** Ones-digit pattern readout (5,0,5,0…) — perception aid. */
+  showDigitPattern: boolean;
+  /** Auto-advance the jumps (watch mode). EASY-ONLY: it flips the interaction
+   *  from watch to tap, so it is never on at medium/hard. */
+  autoPlay: boolean;
+  /** Numeric labels under the number-line ticks (prior landings). */
+  showTrackLabels: boolean;
+  /** Bottom sequence-chip row + "→ ?" next cue (written running record). */
+  showSequenceChips: boolean;
+  /** "Count by Ns" header badge AND the "+N" in the Jump button. LEAK GUARD:
+   *  for find_skip_value / predict the skip value is the ANSWER, so this is off
+   *  at hard for those modes (gates BOTH surfaces, not just track labels). */
+  showSkipValueBadge: boolean;
+  /** Structural lever for fill_missing: how many positions to hide (1 → 2 → 3).
+   *  Code-enforced as valid multiples within [startFrom, endAt]. null = N/A. */
+  hiddenCount: number | null;
+  /** Instruction-as-scaffold hint explicitness ('explicit' → 'minimal'). */
+  hintExplicitness: 'explicit' | 'guided' | 'minimal';
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-workspace support structure for a tier on a pinned challenge type.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * task with less scaffolding — never a different task, never bigger numbers.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const easy = tier === 'easy';
+  const hard = tier === 'hard';
+
+  // Shared defaults; per-mode switch overrides where a lever is the answer or N/A.
+  let showJumpArcs = !hard;
+  let showEquation = easy; // off by medium for most modes
+  let showArray = easy;
+  let showDigitPattern = easy;
+  const autoPlay = false; // mode-specific; only count_along easy turns it on
+  let showTrackLabels = !hard;
+  let showSequenceChips = !hard;
+  let showSkipValueBadge = true;
+  let hiddenCount: number | null = null;
+  const hintExplicitness: SupportScaffold['hintExplicitness'] =
+    easy ? 'explicit' : hard ? 'minimal' : 'guided';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-workspace SCAFFOLDING only (${
+      easy
+        ? 'maximum support: arcs, labels, and aids help the student track and self-check'
+        : hard
+          ? 'minimum support: the student tracks the sequence unaided and justifies the pattern'
+          : 'moderate support: the student tracks the count themselves with a few aids'
+    }). Keep skipValue, startFrom, and endAt EXACTLY in pedagogical scope; a harder tier NEVER means a bigger skip value or a longer track, only less on-screen help.`,
+  ];
+
+  switch (pinnedType) {
+    case 'count_along':
+      // easy: autoPlay watch + all aids; medium: student taps, arcs on, eq/array off;
+      // hard: student taps, arcs off, only landing ticks, minimal labels.
+      promptLines.push(
+        easy
+          ? 'Use autoPlay so the character demonstrates the rhythm; show arcs, the equation, the array, and digit pattern with all track labels and the sequence chips so the count is fully supported.'
+          : hard
+            ? 'The student taps each jump with NO arcs and only the landing ticks (numeric track labels withdrawn); narration counts rhythmically but the workspace gives minimal written support.'
+            : 'The student taps each jump; keep the jump arcs but withdraw the equation and array so they track the count themselves.',
+      );
+      // autoPlay is the watch/tap lever — easy only.
+      return {
+        showJumpArcs: !hard,
+        showEquation: easy,
+        showArray: easy,
+        showDigitPattern: easy,
+        autoPlay: easy,
+        showTrackLabels: !hard,
+        showSequenceChips: !hard,
+        showSkipValueBadge: true,
+        hiddenCount: null,
+        hintExplicitness,
+        promptLines,
+      };
+
+    case 'predict':
+      // arcs on except hard; prior landing labels thin as tier hardens; at hard the
+      // skip-value cue is suppressed (it would hand the +N answer).
+      showJumpArcs = !hard;
+      showTrackLabels = !hard;        // hard hides prior landing labels
+      showSequenceChips = !hard;
+      showSkipValueBadge = !hard;     // LEAK GUARD: +N is the answer at predict
+      showEquation = false;
+      showArray = false;
+      showDigitPattern = easy;
+      promptLines.push(
+        easy
+          ? 'Show arcs and label prior landings; hints may give an early "+N" cue and name what to add. The next-landing cue is visible.'
+          : hard
+            ? 'Hide the prior-landing labels and the arcs; SUPPRESS the skip-value cue (do not show "+N") — the student must infer how much the number grows. Hints ask what changes from one landing to the next, never naming the amount.'
+            : 'Show arcs with fewer prior-landing labels; offer a hint only after a couple of tries.',
+      );
+      break;
+
+    case 'fill_missing':
+      // structural lever: hide 1 → 2 → 3 positions; arcs withdrawn at hard;
+      // neighbor labels thinned at hard.
+      showJumpArcs = !hard;
+      showTrackLabels = !hard;        // hard thins the neighbor labels
+      showSequenceChips = !hard;
+      showEquation = false;
+      showArray = false;
+      showDigitPattern = easy;
+      hiddenCount = easy ? 1 : hard ? 3 : 2;
+      promptLines.push(
+        easy
+          ? 'Hide exactly ONE position with both neighbors labeled and the arcs on, so the gap is easy to bridge.'
+          : hard
+            ? 'Hide THREE positions (a larger structural gap), turn the arcs off, and thin the neighbor labels so the student reconstructs more of the sequence unaided.'
+            : 'Hide TWO positions with the arcs on so the student bridges a slightly larger gap.',
+      );
+      break;
+
+    case 'find_skip_value':
+      // The skip value IS the answer → suppress the badge/button cue at hard.
+      showJumpArcs = !hard;
+      showEquation = easy;            // equation reveals the multiplier — easy only
+      showArray = easy;
+      showDigitPattern = easy;
+      showTrackLabels = true;         // labels are the DATA they reason from — keep on
+      showSequenceChips = true;
+      showSkipValueBadge = !hard;     // LEAK GUARD: badge/button names the answer
+      promptLines.push(
+        easy
+          ? 'Show 4-5 jumps with all landing labels, the arcs, and the equation so the constant interval is easy to read off.'
+          : hard
+            ? 'Show only 2-3 jumps; SUPPRESS the skip-value badge and the "+N" button cue (they would reveal the answer). The student must compute the interval from the labels alone.'
+            : 'Show about 3 jumps with the arcs on but the equation off.',
+      );
+      break;
+
+    case 'connect_multiplication':
+      // equation + array fade; at hard equation is HIDDEN (it computes the product).
+      showJumpArcs = !hard;
+      showArray = easy;               // array off by medium
+      showEquation = !hard;           // HARD: equation off — it is the answer
+      showDigitPattern = easy;
+      showTrackLabels = !hard;
+      showSequenceChips = !hard;
+      promptLines.push(
+        easy
+          ? 'Show the equation and the array alongside the arcs so the jump-count → multiplication link is explicit.'
+          : hard
+            ? 'Turn OFF the array AND the equation and hide the prior-landing labels — the student must infer the jump count and state the multiplication fact unaided (the equation would compute the answer).'
+            : 'Keep the arcs but turn the array off; the student reads the jump count themselves.',
+      );
+      break;
+  }
+
+  return {
+    showJumpArcs,
+    showEquation,
+    showArray,
+    showDigitPattern,
+    autoPlay,
+    showTrackLabels,
+    showSequenceChips,
+    showSkipValueBadge,
+    hiddenCount,
+    hintExplicitness,
+    promptLines,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Base schema (all challenge types) — count is templated at build time
@@ -238,6 +499,14 @@ export const generateSkipCountingRunner = async (
     characterType?: string;
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-workspace scaffolding within it. NEVER changes
+     * skipValue / startFrom / endAt magnitude — only labels, aids, and the
+     * fill_missing gap count.
+     */
+    difficulty?: string;
     /** Intent or title from the manifest item. */
     intent?: string;
     /** Override for instance count (clamped to [1, MAX_INSTANCE_COUNT]). Falls back to COUNT_BY_MODE table. */
@@ -262,6 +531,27 @@ export const generateSkipCountingRunner = async (
     : undefined;
   const targetCount = resolveCount(singleMode, config?.instanceCount);
 
+  // ── Within-mode support tier ──
+  // supportTier is the STUDENT's tier — it DRIVES the deterministic application
+  // below (per challenge, from each challenge's own mode). pinnedType is ONLY for
+  // the prompt tone (describes one mode to the LLM for title/instruction voice).
+  const pinnedType = singleMode;
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
+  // ── Resolve the skip value (target = scope, entropy = code, never a band) ──
+  const skipBand: '1-2' | '2-3' =
+    config?.gradeBand ?? (gradeLevel.toLowerCase().includes('1') ? '1-2' : '2-3');
+  const { skipValue: resolvedSkipValue, source: skipValueSource } = resolveSkipValue(
+    config?.skipValue,
+    topic,
+    skipBand,
+  );
+
   // ── Build mode-constrained schema (count templated into description) ──
   const baseSchema = buildSkipCountingRunnerSchema(targetCount);
   const activeSchema = evalConstraint
@@ -281,7 +571,7 @@ CONTEXT:
 - Arrays built alongside connect to multiplication models
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Grades 1-2 (gradeBand "1-2"):
@@ -324,7 +614,10 @@ CHARACTER TYPES: frog, kangaroo, rabbit, rocket
 
 ${(() => {
   const hints: string[] = [];
-  if (config?.skipValue) hints.push(`- Skip value: ${config.skipValue}`);
+  hints.push(
+    `- Skip value: ${resolvedSkipValue} — use EXACTLY this as skipValue. Do NOT choose a different interval.`
+    + (skipValueSource === 'pool' ? ' (selected by the adaptive system for variety across lessons)' : ''),
+  );
   if (config?.gradeBand) hints.push(`- Grade band: ${config.gradeBand}`);
   if (config?.direction) hints.push(`- Direction: ${config.direction}`);
   if (effectiveChallengeTypes) hints.push(`- Challenge types: ${effectiveChallengeTypes.join(', ')}`);
@@ -364,9 +657,14 @@ Return the complete skip counting runner configuration.
     throw new Error('No valid skip counting runner data returned from Gemini API');
   }
 
-  // Validation: ensure skipValue is a positive number
-  if (!data.skipValue || data.skipValue <= 0) {
-    data.skipValue = 5;
+  // ── Authoritative skip-value pin: the TARGET is owned by scope/code, never the
+  // LLM (which converges on +5). Applied before the grade-band clamp + endAt
+  // computation so the whole sequence is built from the resolved interval. ──
+  data.skipValue = resolvedSkipValue;
+  if (!GRADE_BAND_SKIP_VALUES['1-2'].includes(resolvedSkipValue)) {
+    // 3s/4s are a Grades 2-3 skill — keep the band consistent so the 1-2 clamp
+    // below cannot reset the interval back to 5.
+    data.gradeBand = '2-3';
   }
 
   // Validation: ensure direction is valid
@@ -537,6 +835,87 @@ Return the complete skip counting runner configuration.
         break;
     }
   });
+
+  // ── Apply the support-tier structure deterministically (code owns the SUPPORT
+  // structure; the LLM only chose numbers/character/text). Runs AFTER all
+  // structural fixups + startPosition computation so a hard tier can withdraw the
+  // already-set scaffolds. Gated ONLY on supportTier being present, and each
+  // challenge's scaffold is resolved from its OWN mode (ch.type) so blended/auto
+  // sessions get difficulty too. NEVER changes skipValue / startFrom / endAt. ──
+  if (supportTier) {
+    if (!data.showOptions) {
+      data.showOptions = {
+        showArray: data.gradeBand === '2-3',
+        showJumpArcs: true,
+        showEquation: data.gradeBand === '2-3',
+        showDigitPattern: data.skipValue === 5 || data.skipValue === 10,
+        autoPlay: false,
+      };
+    }
+
+    // showOptions is a single object shared by all challenges. In a single-mode
+    // session every challenge has the same type, so resolve from the pinned type;
+    // in a blend, resolve from the FIRST challenge's mode for the shared toggles
+    // and let per-challenge structural levers (hiddenCount) key off ch.type below.
+    const sharedType = (pinnedType ?? data.challenges[0]?.type ?? 'count_along') as ChallengeType;
+    const sharedScaffold = resolveSupportStructure(sharedType, supportTier);
+
+    data.showOptions.showJumpArcs = sharedScaffold.showJumpArcs;
+    data.showOptions.showArray = sharedScaffold.showArray;
+    data.showOptions.showDigitPattern = sharedScaffold.showDigitPattern;
+    data.showOptions.autoPlay = sharedScaffold.autoPlay;
+    data.showOptions.showTrackLabels = sharedScaffold.showTrackLabels;
+    data.showOptions.showSequenceChips = sharedScaffold.showSequenceChips;
+    data.showOptions.showSkipValueBadge = sharedScaffold.showSkipValueBadge;
+    // Equation: for connect_multiplication HARD it computes the answer, so it MUST
+    // stay off. resolveSupportStructure already encodes showEquation=false at hard
+    // for that mode (and easy-only elsewhere); honor it directly.
+    data.showOptions.showEquation = sharedScaffold.showEquation;
+
+    // ── Structural lever: fill_missing hidden-position count (1 → 2 → 3). ──
+    // Hideable = every sequence multiple EXCEPT startFrom. startFrom is the
+    // character's home and is always a landing spot, so checkFillMissing's
+    // `!landingSpots.includes(answer)` guard makes it unsolvable if hidden.
+    // endAt IS hideable: "what's the final number?" is a valid and LLM-preferred
+    // fill_missing instruction. Excluding it desynced the on-screen gap from the
+    // instruction (LLM asked for the end → "?" rendered mid-sequence → the correct
+    // answer was rejected). Code-enforced so the count is exact regardless of LLM.
+    const hideableMultiples = positions.filter((p) => p !== data.startFrom);
+    for (const ch of data.challenges as Array<{ type: string; hiddenPositions?: number[] }>) {
+      const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
+      if (ch.type === 'fill_missing' && sc.hiddenCount != null && hideableMultiples.length > 0) {
+        const want = Math.min(sc.hiddenCount, hideableMultiples.length);
+        // Prefer the LLM's chosen hidden positions if they are valid sequence
+        // multiples; the instruction text was authored around them, so honoring
+        // them keeps gap and instruction in sync. Top up / trim to the exact tier
+        // count, evenly spaced, only when the LLM under-provided.
+        const llmValid = (ch.hiddenPositions ?? []).filter((p) => hideableMultiples.includes(p));
+        const chosen = new Set<number>(llmValid.slice(0, want));
+        if (chosen.size < want) {
+          // Spread the remaining picks evenly across the hideable multiples.
+          const stride = Math.max(1, Math.floor(hideableMultiples.length / want));
+          for (let i = 0; i < hideableMultiples.length && chosen.size < want; i += stride) {
+            chosen.add(hideableMultiples[i]);
+          }
+          // Final top-up if striding under-filled.
+          for (let i = 0; i < hideableMultiples.length && chosen.size < want; i++) {
+            chosen.add(hideableMultiples[i]);
+          }
+        }
+        ch.hiddenPositions = Array.from(chosen).sort((a, b) => a - b);
+      }
+    }
+
+    // Persist the tier so the live tutor's reveal policy matches the on-screen
+    // scaffold (component reads data.supportTier → aiPrimitiveData).
+    data.supportTier = supportTier;
+
+    console.log(
+      `[SkipCountingRunner] Support tier "${supportTier}" applied per-challenge (${
+        pinnedType ? `single-mode ${pinnedType}` : 'blended'
+      }) → arcs=${data.showOptions.showJumpArcs}, equation=${data.showOptions.showEquation}, array=${data.showOptions.showArray}, trackLabels=${data.showOptions.showTrackLabels}, sequenceChips=${data.showOptions.showSequenceChips}, skipValueBadge=${data.showOptions.showSkipValueBadge}, autoPlay=${data.showOptions.autoPlay}`,
+    );
+  }
 
   return data;
 };

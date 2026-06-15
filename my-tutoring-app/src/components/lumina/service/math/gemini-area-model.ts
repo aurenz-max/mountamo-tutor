@@ -105,6 +105,92 @@ const areaModelWrapperSchema: Schema = {
 type ChallengeType = 'build_model' | 'find_area' | 'perimeter' | 'multiply' | 'factor';
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — second axis of the two-field
+// contract. targetEvalMode = WHICH skill; difficulty = HOW MUCH on-screen
+// scaffolding within it. A tier withdraws SCAFFOLDING ONLY — it NEVER changes
+// the factor pairs or any number. See memory [[structural-difficulty-not-numeric]].
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * Area-model support levers (bespoke — these are THIS primitive's actual levers):
+ *  - showCellEquations  (forward modes) — whether each grid cell is pre-labeled
+ *    with the two factors to multiply (and the input panel names them). Withdraw
+ *    → the student reads the row/column headers to identify the factors. The
+ *    headers (showDimensions) stay ON at every tier, so the numbers are present.
+ *  - showPerimeterExpansion (perimeter) — whether the side-sum addition
+ *    (L + W + L + W) is written out. Withdraw → recall Perimeter = 2 × (L + W).
+ *  - highlightFirstCell (grid modes) — a start-here / deduction-anchor cue.
+ */
+interface SupportScaffold {
+  showCellEquations: boolean;
+  showPerimeterExpansion: boolean;
+  highlightFirstCell: boolean;
+  promptLines: string[];
+}
+
+const TIER_INVARIANT_LINE =
+  'This tier changes ON-SCREEN SCAFFOLDING ONLY. The factor pairs and every '
+  + 'number are identical across easy/medium/hard — only the amount of '
+  + 'locating / pre-computation help changes. NEVER change the numbers.';
+
+function resolveSupportStructure(
+  mode: ChallengeType,
+  tier: SupportTier,
+): SupportScaffold {
+  // Defaults = max scaffolding (easy-equivalent); per-mode/tier code overrides.
+  const sc: SupportScaffold = {
+    showCellEquations: true,
+    showPerimeterExpansion: true,
+    highlightFirstCell: false,
+    promptLines: [TIER_INVARIANT_LINE],
+  };
+
+  if (mode === 'perimeter') {
+    sc.showPerimeterExpansion = tier !== 'hard';
+    sc.promptLines.push(
+      tier === 'hard'
+        ? 'Perimeter: the side-by-side addition is HIDDEN; the student recalls Perimeter = 2 × (length + width) from the labeled sides.'
+        : 'Perimeter: the side-by-side addition (length + width + length + width) is written out as a self-check.',
+    );
+    return sc;
+  }
+
+  if (mode === 'factor') {
+    // Factor cells must keep their partial products (showPartialProducts) — the
+    // task IS reading them. The only lever is an anchor-cell highlight.
+    sc.highlightFirstCell = tier === 'easy';
+    sc.promptLines.push(
+      tier === 'easy'
+        ? 'Factor: one corner cell is highlighted as an anchor for deducing a dimension.'
+        : 'Factor: no anchor highlight — the student picks where to start unaided.',
+    );
+    return sc;
+  }
+
+  // Forward modes: build_model / find_area / multiply.
+  sc.showCellEquations = tier !== 'hard';
+  sc.highlightFirstCell = tier === 'easy';
+  if (tier === 'easy') {
+    sc.promptLines.push('Each cell is pre-labeled with the two factors to multiply, and the first cell is highlighted as a starting point.');
+  } else if (tier === 'medium') {
+    sc.promptLines.push('Each cell is pre-labeled with the two factors to multiply; no start-here highlight.');
+  } else {
+    sc.promptLines.push('Cells are NOT pre-labeled: the student reads the row and column headers (still shown) to identify which two numbers to multiply in each cell.');
+  }
+  return sc;
+}
+
+// ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
 // ---------------------------------------------------------------------------
 // T2 modes (find_area, perimeter, factor) bumped 3 → 5 in the B4 sweep.
@@ -310,6 +396,12 @@ export const generateAreaModel = async (
     targetEvalMode?: string;
     /** Number of challenges in this session. Default 3 (pilot per PRD §6e). */
     instanceCount?: number;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   },
 ): Promise<AreaModelData> => {
   // ── Eval-mode constraint resolution ──────────────────────────────
@@ -324,6 +416,22 @@ export const generateAreaModel = async (
     ? constrainChallengeTypeEnum(areaModelWrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, { fieldName: 'challengeType', rootLevel: true })
     : areaModelWrapperSchema;
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
+  // ── Within-mode support tier ─────────────────────────────────────
+  // supportTier is the STUDENT's tier and DRIVES the deterministic application
+  // at the end (single-mode here, so every challenge gets the same scaffold).
+  // pinnedType is ONLY for the prompt tone (describes one mode to the LLM).
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   // Resolve session instance count up-front from the eval-mode constraint so
   // the prompt + description stay consistent with what the pool builds.
@@ -344,7 +452,7 @@ Create the wrapper metadata for a MULTI-CHALLENGE area model session for "${topi
 This session walks the student through ${instanceCount} DIFFERENT factor pairs of the SAME challenge type.
 
 ${challengeTypeSection}
-
+${tierSection}
 DO NOT include specific numbers in the title or description — the system picks ${instanceCount} factor pairs locally and the same session covers all of them.
 
 GUIDELINES:
@@ -380,6 +488,27 @@ Return ONLY the wrapper metadata in the response schema.
 
   const challenges = buildChallenges(challengeType, instanceCount);
 
+  // ── Apply the support tier deterministically (code owns the SUPPORT
+  // structure; the LLM only chose the metadata). Area-model is strictly
+  // single-mode per session, so the scaffold is resolved once from
+  // challengeType and applied to every challenge. Gated on supportTier
+  // being present, NOT on pinnedType (which only drives the prompt tone).
+  if (supportTier) {
+    const sc = resolveSupportStructure(challengeType, supportTier);
+    for (const ch of challenges) {
+      if (challengeType === 'perimeter') {
+        ch.showPerimeterExpansion = sc.showPerimeterExpansion;
+      } else if (challengeType !== 'factor') {
+        // Forward modes. Headers (showDimensions) stay ON so the numbers are
+        // always present; only the in-cell factor pre-labeling is withdrawn.
+        ch.showCellEquations = sc.showCellEquations;
+      }
+      // Start-here / anchor cue (top-left cell) for grid modes.
+      ch.highlightCell = sc.highlightFirstCell ? [0, 0] : null;
+    }
+    console.log(`[AreaModel] Support tier "${supportTier}" applied (mode ${challengeType})`);
+  }
+
   console.log('📐 Area Model generated:', {
     topic,
     challengeType,
@@ -400,5 +529,8 @@ Return ONLY the wrapper metadata in the response schema.
     challenges,
     challengeType,
     gradeLevel: wrapper.gradeLevel || gradeLevel,
+    // Surface the tier so the live tutor's reveal level matches the on-screen
+    // scaffold (set whenever a tier is present).
+    supportTier: supportTier ?? undefined,
   };
 };

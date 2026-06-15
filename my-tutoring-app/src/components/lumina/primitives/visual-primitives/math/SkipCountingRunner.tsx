@@ -56,6 +56,17 @@ export interface SkipCountingRunnerData {
     showEquation?: boolean;
     showDigitPattern?: boolean;
     autoPlay?: boolean;
+    /** Gate the always-on multiple-number labels under the number-line ticks.
+     *  Support lever: at hard tiers (predict / find_skip_value) hiding prior
+     *  landing labels forces the student to track the sequence unaided. */
+    showTrackLabels?: boolean;
+    /** Gate the bottom sequence-chip row AND the "→ ?" next cue. Withdrawing it
+     *  removes the running written record of landings the student can read off. */
+    showSequenceChips?: boolean;
+    /** Gate the "Count by Ns" header badge AND the "+N" in the Jump button label.
+     *  CRITICAL leak guard: for find_skip_value / predict the skip value N is the
+     *  ANSWER, so a hard tier MUST suppress BOTH surfaces, not just track labels. */
+    showSkipValueBadge?: boolean;
   };
   gameMode?: {
     enabled?: boolean;
@@ -63,6 +74,9 @@ export interface SkipCountingRunnerData {
     timeLimit?: number | null;
   };
   gradeBand?: '1-2' | '2-3';
+  /** Within-mode support tier persisted from the generator so the live tutor's
+   *  reveal policy matches what the on-screen scaffold withholds. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -133,6 +147,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     challenges = [],
     showOptions = {},
     gradeBand = '1-2',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -147,6 +162,11 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     showEquation = false,
     showDigitPattern = false,
     autoPlay = false,
+    // New support-tier levers — default ON so the no-tier path is byte-identical
+    // to the prior always-on scaffolds. The generator withdraws them per tier.
+    showTrackLabels = true,
+    showSequenceChips = true,
+    showSkipValueBadge = true,
   } = showOptions;
 
   // -------------------------------------------------------------------------
@@ -327,11 +347,39 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     currentStreak,
     landingSpots: landingSpots.join(', '),
     gradeBand,
+    supportTier,
   }), [
     skipValue, startFrom, endAt, direction, currentPosition, jumpCount,
     challenges.length, currentChallengeIndex, currentChallenge,
     currentAttempts, currentPhase, currentStreak, landingSpots, gradeBand,
+    supportTier,
   ]);
+
+  // Mode-aware tutor reveal policy — keeps the tutor's spoken help consistent
+  // with what the on-screen support tier withholds (so the tutor doesn't leak a
+  // withdrawn scaffold). For find_skip_value / predict the skip value is the
+  // ANSWER, so at hard the tutor must NOT name it — it asks how much the number
+  // grows each jump instead. No tier present → empty (legacy behavior unchanged).
+  const tutorRevealClause = useCallback(
+    (challengeType: string): string => {
+      if (!supportTier) return '';
+      const answerIsSkipValue =
+        challengeType === 'find_skip_value' || challengeType === 'predict';
+      if (supportTier === 'easy') {
+        return answerIsSkipValue
+          ? ` SUPPORT TIER: easy — you may name the count-by-${skipValue} strategy and walk the next step with the student.`
+          : ` SUPPORT TIER: easy — you may name the count-by-${skipValue} strategy and model the setup step by step.`;
+      }
+      if (supportTier === 'medium') {
+        return ` SUPPORT TIER: medium — the strategy is partly on screen; nudge the student's execution, do not solve it for them.`;
+      }
+      // hard
+      return answerIsSkipValue
+        ? ` SUPPORT TIER: hard — the skip value is the ANSWER and is hidden on screen. Do NOT name it or say "count by ${skipValue}". Ask the student how much the number GROWS from one jump to the next, and what they notice. Never reveal the answer.`
+        : ` SUPPORT TIER: hard — scaffolds are withdrawn. Do NOT name the strategy; ask the student what they see in the sequence. Never reveal the answer.`;
+    },
+    [supportTier, skipValue],
+  );
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'skip-counting-runner',
@@ -347,16 +395,25 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     hasIntroducedRef.current = true;
 
     const charName = character.type === 'custom' ? 'our friend' : `the ${character.type}`;
+    // When the skip value is the hidden answer (showSkipValueBadge=false at a hard
+    // find_skip_value / predict tier), do NOT hand it to the tutor in the intro.
+    const skipPhrase = showSkipValueBadge
+      ? `Skip value: ${skipValue}. Count ${direction} from ${startFrom} to ${endAt}. `
+      : `Count ${direction} from ${startFrom} to ${endAt} (the skip value is the answer the student must discover — do not state it). `;
+    const introExcitement = showSkipValueBadge
+      ? `Introduce the activity with excitement: "${charName} is going to jump by ${skipValue}s! Let's count together!" `
+      : `Introduce the activity with excitement: "${charName} is going to jump! Watch the pattern and figure out how far each jump goes!" `;
     sendText(
       `[ACTIVITY_START] This is a skip counting activity for ${gradeBand === '1-2' ? 'Grades 1-2' : 'Grades 2-3'}. `
-      + `Skip value: ${skipValue}. Count ${direction} from ${startFrom} to ${endAt}. `
+      + skipPhrase
       + `Character: ${charName}. There are ${challenges.length} challenges. `
       + `First challenge: "${currentChallenge?.instruction}". `
-      + `Introduce the activity with excitement: "${charName} is going to jump by ${skipValue}s! Let's count together!" `
-      + `Then read the first instruction.`,
+      + introExcitement
+      + `Then read the first instruction.`
+      + tutorRevealClause(currentChallenge?.type ?? 'count_along'),
       { silent: true }
     );
-  }, [isConnected, challenges.length, skipValue, direction, startFrom, endAt, character.type, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, skipValue, direction, startFrom, endAt, character.type, gradeBand, currentChallenge, sendText, tutorRevealClause, showSkipValueBadge]);
 
   // -------------------------------------------------------------------------
   // Jump Logic
@@ -390,13 +447,14 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
             `[JUMP_LANDING] The character landed on ${nextExpectedPosition}! `
             + `That's ${jumpNum} jumps of ${skipValue}. `
             + `${nextExpectedPosition === endAt ? 'They reached the end!' : `Count along: "${landingSpots.slice(-2).join('... ')}... ${nextExpectedPosition}!"`} `
-            + `${jumpNum >= 3 ? `Connect to multiplication: "${jumpNum} × ${skipValue} = ${nextExpectedPosition}!"` : 'Keep counting along rhythmically.'}`,
+            + `${jumpNum >= 3 ? `Connect to multiplication: "${jumpNum} × ${skipValue} = ${nextExpectedPosition}!"` : 'Keep counting along rhythmically.'}`
+            + tutorRevealClause(currentChallenge?.type ?? 'count_along'),
             { silent: true }
           );
         }
       }
     }, 400);
-  }, [isAnimating, hasSubmittedEvaluation, nextExpectedPosition, jumpCount, skipValue, endAt, landingSpots, isConnected, sendText]);
+  }, [isAnimating, hasSubmittedEvaluation, nextExpectedPosition, jumpCount, skipValue, endAt, landingSpots, isConnected, sendText, tutorRevealClause, currentChallenge]);
 
   // Auto-play mode
   useEffect(() => {
@@ -452,12 +510,13 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
       sendText(
         `[PREDICT_INCORRECT] Student predicted ${answer} but the next landing is ${nextExpectedPosition}. `
         + `Current position: ${currentPosition}, skip value: ${skipValue}. `
-        + `Hint: "We're counting by ${skipValue}s. What is ${currentPosition} plus ${skipValue}?"`,
+        + `Hint: "We're counting by ${skipValue}s. What is ${currentPosition} plus ${skipValue}?"`
+        + tutorRevealClause('predict'),
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, nextExpectedPosition, predictionInput, currentPosition, skipValue, currentAttempts, currentStreak, sendText, performJump]);
+  }, [currentChallenge, nextExpectedPosition, predictionInput, currentPosition, skipValue, currentAttempts, currentStreak, sendText, performJump, tutorRevealClause]);
 
   const checkFillMissing = useCallback(() => {
     if (!currentChallenge) return false;
@@ -482,12 +541,13 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
       setFeedbackType('error');
       sendText(
         `[FILL_INCORRECT] Student guessed ${answer} but it's not a multiple of ${skipValue} from ${startFrom}. `
-        + `Hint: "Start from ${startFrom} and add ${skipValue} each time."`,
+        + `Hint: "Start from ${startFrom} and add ${skipValue} each time."`
+        + tutorRevealClause('fill_missing'),
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, fillInput, skipValue, startFrom, landingSpots, currentAttempts, sendText]);
+  }, [currentChallenge, fillInput, skipValue, startFrom, landingSpots, currentAttempts, sendText, tutorRevealClause]);
 
   const checkFindSkipValue = useCallback(() => {
     if (!currentChallenge) return false;
@@ -507,14 +567,21 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     } else {
       setFeedback(`Not quite. Look at the difference between each number.`);
       setFeedbackType('error');
+      // find_skip_value is a recognition mode — the skip value IS the answer.
+      // At a hard tier the tutor must not be told it; tutorRevealClause('hard')
+      // redirects it to "how much does the number grow each jump?".
       sendText(
-        `[SKIP_VALUE_INCORRECT] Student guessed ${answer} but the skip value is ${skipValue}. `
-        + `Hint: "Look at the numbers: ${allPositions.slice(0, 4).join(', ')}. What do you add each time?"`,
+        (supportTier === 'hard'
+          ? `[SKIP_VALUE_INCORRECT] Student guessed ${answer}, which is not the skip value. `
+            + `Do NOT reveal the correct skip value. Point them to the sequence: "${allPositions.slice(0, 4).join(', ')}". `
+          : `[SKIP_VALUE_INCORRECT] Student guessed ${answer} but the skip value is ${skipValue}. `
+            + `Hint: "Look at the numbers: ${allPositions.slice(0, 4).join(', ')}. What do you add each time?"`)
+        + tutorRevealClause('find_skip_value'),
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, fillInput, skipValue, allPositions, currentAttempts, sendText]);
+  }, [currentChallenge, fillInput, skipValue, allPositions, currentAttempts, sendText, supportTier, tutorRevealClause]);
 
   const checkMultiplication = useCallback(() => {
     if (!currentChallenge) return false;
@@ -542,12 +609,13 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
       setFeedbackType('error');
       sendText(
         `[MULTIPLY_INCORRECT] Student answered "${multiplicationInput}" but the fact is: ${targetFact}. `
-        + `Hint: "You made ${jumpCount} jumps, each jump was ${skipValue}. What is ${jumpCount} × ${skipValue}?"`,
+        + `Hint: "You made ${jumpCount} jumps, each jump was ${skipValue}. What is ${jumpCount} × ${skipValue}?"`
+        + tutorRevealClause('connect_multiplication'),
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, jumpCount, skipValue, currentPosition, startFrom, multiplicationInput, currentAttempts, sendText]);
+  }, [currentChallenge, jumpCount, skipValue, currentPosition, startFrom, multiplicationInput, currentAttempts, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -694,7 +762,8 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     sendText(
       `[PHASE_TRANSITION] Moving to challenge ${nextIndex + 1} of ${challenges.length}: `
       + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). `
-      + `Read the instruction and encourage them.`,
+      + `Read the instruction and encourage them.`
+      + tutorRevealClause(nextChallenge.type),
       { silent: true }
     );
   }, [
@@ -702,7 +771,7 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
     jumpCount, longestStreak, hasSubmittedEvaluation, skipValuesExplored,
     backwardCountingAttempted, multiplicationConnectionMade, patternIdentified,
     submitEvaluation, startFrom, currentChallengeIndex, direction,
-    clearPendingJumpTimers,
+    clearPendingJumpTimers, tutorRevealClause,
   ]);
 
   // -------------------------------------------------------------------------
@@ -765,9 +834,14 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
             <LuminaBadge accent="orange" className="text-xs">
               {gradeBand === '1-2' ? 'Grades 1-2' : 'Grades 2-3'}
             </LuminaBadge>
-            <LuminaBadge accent="emerald" className="text-xs">
-              Count by {skipValue}s
-            </LuminaBadge>
+            {/* "Count by Ns" badge — gated by showSkipValueBadge. CRITICAL leak
+                guard: for find_skip_value / predict the skip value N IS the
+                answer, so a hard tier suppresses this surface. */}
+            {showSkipValueBadge && (
+              <LuminaBadge accent="emerald" className="text-xs">
+                Count by {skipValue}s
+              </LuminaBadge>
+            )}
             {direction === 'backward' && (
               <LuminaBadge accent="purple" className="text-xs">
                 Backward
@@ -852,8 +926,13 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
                     stroke={isLanding ? '#f97316' : isMultiple ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'}
                     strokeWidth={isLanding ? 2 : 1}
                   />
-                  {/* Label */}
-                  {isMultiple && (
+                  {/* Label — gated by showTrackLabels. At hard tiers all numeric
+                       labels (including prior landings) are withdrawn so the
+                       student tracks the sequence unaided; the orange landing
+                       tick + glow still render ("only landing ticks"). The
+                       hidden "?" placeholder for fill_missing always renders so
+                       the gap is still marked. */}
+                  {isMultiple && (showTrackLabels || (isHidden && !isLanding)) && (
                     <text
                       x={x}
                       y={lineY + TICK_HEIGHT + 14}
@@ -937,25 +1016,29 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
           </svg>
         </div>
 
-        {/* Sequence Display */}
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          {landingSpots.map((pos, i) => (
-            <React.Fragment key={pos}>
-              {i > 0 && <span className="text-slate-600 text-xs">→</span>}
-              <span className={`text-sm font-mono font-bold ${
-                pos === currentPosition ? 'text-orange-400' : 'text-slate-300'
-              }`}>
-                {pos}
-              </span>
-            </React.Fragment>
-          ))}
-          {nextExpectedPosition !== null && (
-            <>
-              <span className="text-slate-600 text-xs">→</span>
-              <span className="text-slate-600 text-sm font-mono">?</span>
-            </>
-          )}
-        </div>
+        {/* Sequence Display — gated by showSequenceChips. The written running
+            record of landings (and the "→ ?" next cue) is a strong self-check
+            scaffold; hard tiers withdraw it so the student tracks mentally. */}
+        {showSequenceChips && (
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {landingSpots.map((pos, i) => (
+              <React.Fragment key={pos}>
+                {i > 0 && <span className="text-slate-600 text-xs">→</span>}
+                <span className={`text-sm font-mono font-bold ${
+                  pos === currentPosition ? 'text-orange-400' : 'text-slate-300'
+                }`}>
+                  {pos}
+                </span>
+              </React.Fragment>
+            ))}
+            {nextExpectedPosition !== null && (
+              <>
+                <span className="text-slate-600 text-xs">→</span>
+                <span className="text-slate-600 text-sm font-mono">?</span>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Equation Display */}
         {showEquation && jumpCount > 0 && (
@@ -1081,7 +1164,10 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
                     onClick={performJump}
                     disabled={isAnimating || hasSubmittedEvaluation}
                   >
-                    {charEmoji} Jump! (+{skipValue})
+                    {/* "+N" suffix gated by showSkipValueBadge — same leak guard
+                        as the header badge: it would otherwise hand the student
+                        the skip value (the answer) for find_skip_value / predict. */}
+                    {charEmoji} Jump!{showSkipValueBadge ? ` (+${skipValue})` : ''}
                   </LuminaButton>
                 )}
 

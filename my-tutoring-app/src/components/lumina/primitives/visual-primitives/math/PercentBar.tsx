@@ -63,6 +63,13 @@ export interface PercentBarData {
   showValueLabels?: boolean;
   benchmarkLines?: number[];
   doubleBar?: boolean;
+  /** Gates the live "currentPercent% of whole = value" calculation panel.
+   *  Default true. Withdrawn at the hard support tier so the panel can't be
+   *  used to dial the answer value instead of placing the percent. */
+  showCalculation?: boolean;
+  /** Within-mode support tier (set by the generator when a tier is active).
+   *  Keeps the AI tutor's reveal level in sync with the on-screen scaffold. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -93,6 +100,32 @@ const PHASE_CONFIG: Record<PercentBarChallengeType, PhaseConfig> = {
 
 const TOLERANCE = 2; // ±2% for accepting answers
 
+/**
+ * Mode-aware tutor reveal clause — keeps the AI tutor in sync with the on-screen
+ * support tier so it does not leak what the tier withheld.
+ *  - easy: tutor may name the percent-of-whole strategy and walk the setup.
+ *  - medium: nudge execution; do not solve.
+ *  - hard: never gift the target percent or the answer arithmetic — ask what the
+ *    student sees / reads in the scenario. (subtraction never states the 100-rate
+ *    answer; comparison never names which is larger.)
+ */
+function tierRevealClause(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  type: PercentBarChallengeType,
+): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return type === 'subtraction'
+      ? ' SUPPORT TIER easy: you may name the strategy (start at 100%, subtract the discount) and walk the setup step by step.'
+      : ' SUPPORT TIER easy: you may name the percent-of-whole strategy and walk the student through where the percent sits on the 0%-100% bar.';
+  }
+  if (tier === 'medium') {
+    return ' SUPPORT TIER medium: the on-screen aids are partly withdrawn — nudge the student toward the next step, do not solve it for them.';
+  }
+  // hard
+  return ' SUPPORT TIER hard: aids are off. Do NOT name the target percent or the arithmetic that produces it. Ask what the scenario states and where that lands on the bar; the student works unaided.';
+}
+
 // Map the local feedback channel to the kit's feedback-card status.
 const FEEDBACK_STATUS: Record<'success' | 'error' | 'info', FeedbackStatus> = {
   success: 'correct',
@@ -122,6 +155,8 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     showValueLabels = true,
     benchmarkLines = [25, 50, 75],
     doubleBar = false,
+    showCalculation = true,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -223,9 +258,11 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     currentPercent,
     currentValue,
     attemptNumber: currentAttempts + 1,
+    ...(supportTier ? { supportTier } : {}),
   }), [
     challengeType, currentChallengeIndex, challenges.length, currentChallenge,
     wholeValue, wholeValueLabel, currentPercent, currentValue, currentAttempts,
+    supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -244,10 +281,11 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     sendText(
       `[ACTIVITY_START] Percent bar session: ${challenges.length} ${CHALLENGE_TYPE_LABEL[challengeType]} problems. `
       + `Title: "${title}". First scenario: "${first.scenario}" — "${first.question}". `
-      + `Introduce warmly and read the first question.`,
+      + `Introduce warmly and read the first question.`
+      + tierRevealClause(supportTier, first.type),
       { silent: true },
     );
-  }, [isConnected, challenges, challengeType, title, sendText]);
+  }, [isConnected, challenges, challengeType, title, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Per-challenge reset — fires whenever advance() flips currentChallenge.id
@@ -364,12 +402,13 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_INCORRECT] Student placed ${currentPercent}% but target is ${target}%. `
         + `Difference: ${Math.abs(diff)}%. Attempt ${attempts}. `
-        + `Give a directional hint without revealing the exact answer.`,
+        + `Give a directional hint without revealing the exact answer.`
+        + tierRevealClause(supportTier, currentChallenge.type),
         { silent: true },
       );
     }
   }, [
-    currentChallenge, currentPercent, currentAttempts,
+    currentChallenge, currentPercent, currentAttempts, supportTier,
     incrementAttempts, recordResult, sendText,
   ]);
 
@@ -600,8 +639,9 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Calculation Display */}
-        {!allChallengesComplete && (
+        {/* Calculation Display — gated: withdrawn at the hard support tier so it
+            can't be used to dial the answer value instead of placing the percent. */}
+        {!allChallengesComplete && showCalculation && (
           <LuminaPanel className="text-center">
             <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">Calculation</div>
             <div className="text-lg font-mono">

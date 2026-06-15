@@ -58,6 +58,21 @@ export interface ComparisonBuilderData {
   showCorrespondenceLines: boolean;
   useAlligatorMnemonic: boolean;
 
+  // Support-tier scaffold fields (set by the generator from config.difficulty;
+  // all default to current behavior so a no-tier session is byte-identical).
+  /** Gate the always-on "Left: N / Right: N" count badges (compare-groups). */
+  showCountBadges?: boolean;
+  /** Correspondence-line lifecycle: 'live' = during solve, 'on-check' = after
+   *  answering (legacy default), 'off' = never. */
+  correspondenceMode?: 'live' | 'on-check' | 'off';
+  /** Gate the amber number-line target pre-highlight (one-more-one-less). The
+   *  amber Target box is the stimulus and is always shown regardless. */
+  showTargetMarker?: boolean;
+  /** Gate the slot-index placeholders (1,2,3…) in the ordering drop slots. */
+  showSlotHints?: boolean;
+  /** Within-mode support tier — kept in sync so the AI tutor matches the screen. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
@@ -117,6 +132,29 @@ function generateGridPositions(
   return Array.from({ length: count }, (_, i) => ({
     x: startX + (i % cols) * spacing,
     y: startY + Math.floor(i / cols) * spacing,
+  }));
+}
+
+/**
+ * Scattered positions for the HARD compare-groups tier — irregular layout (no
+ * grid rows) so the student can't subitize the arrangement and must count.
+ * Deterministic per (count, offset) so it's stable across re-renders.
+ */
+function generateScatterPositions(
+  count: number,
+  offsetX: number,
+  offsetY: number,
+): Array<{ x: number; y: number }> {
+  const pad = 28;
+  const w = GROUP_WIDTH - pad * 2;
+  const h = GROUP_HEIGHT - pad * 2;
+  const rand = (seed: number) => {
+    const s = Math.sin(seed) * 43758.5453;
+    return s - Math.floor(s);
+  };
+  return Array.from({ length: count }, (_, i) => ({
+    x: offsetX + pad + rand((i + 1) * 12.9898 + offsetX) * w,
+    y: offsetY + pad + rand((i + 1) * 78.233 + offsetX) * h,
   }));
 }
 
@@ -227,6 +265,13 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     gradeBand = 'K',
     showCorrespondenceLines = true,
     useAlligatorMnemonic = true,
+    // New scaffold fields default to CURRENT behavior so a no-tier session is
+    // byte-identical: badges shown, lines on-check, target marker on, slot hints on.
+    showCountBadges = true,
+    correspondenceMode = 'on-check',
+    showTargetMarker = true,
+    showSlotHints = true,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -328,14 +373,57 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     askFor: currentChallenge?.askFor,
     gradeBand,
     useAlligatorMnemonic,
+    supportTier,
     instruction: currentChallenge?.instruction ?? '',
     totalChallenges: challenges.length,
     currentChallengeIndex,
     attemptNumber: currentAttempts + 1,
   }), [
-    currentChallenge, gradeBand, useAlligatorMnemonic,
+    currentChallenge, gradeBand, useAlligatorMnemonic, supportTier,
     challenges.length, currentChallengeIndex, currentAttempts,
   ]);
+
+  // -------------------------------------------------------------------------
+  // Tutor reveal policy — keeps the tutor's coaching depth in sync with the
+  // on-screen scaffold so it doesn't leak what a hard tier withheld. Mode-aware:
+  // for compare-numbers the > / < relationship IS the answer, so the tutor must
+  // never name it at any tier (only dial coaching depth).
+  // -------------------------------------------------------------------------
+  const tutorRevealClause = useCallback(
+    (type: ComparisonBuilderChallenge['type']): string => {
+      const tier = supportTier;
+      if (!tier) return '';
+      if (type === 'compare-numbers') {
+        // The relationship is the answer — never name it; tier dials depth only.
+        return tier === 'easy'
+          ? ' [TIER easy] You may remind them the alligator eats the bigger number; do NOT state the symbol.'
+          : tier === 'medium'
+            ? ' [TIER medium] Nudge: ask which number is bigger; do NOT name the symbol.'
+            : ' [TIER hard] No mnemonic on screen — ask which digit to compare (tens, then ones); never name the symbol.';
+      }
+      if (type === 'compare-groups') {
+        return tier === 'easy'
+          ? ' [TIER easy] You may name the matching/one-to-one strategy and which side has more.'
+          : tier === 'medium'
+            ? ' [TIER medium] Nudge them to count each side; do NOT state which has more.'
+            : ' [TIER hard] Counts are hidden and objects scattered — ask them to count each group themselves; do NOT name which side has more or state either count.';
+      }
+      if (type === 'one-more-one-less') {
+        return tier === 'easy'
+          ? ' [TIER easy] You may count forward/backward by one aloud with them.'
+          : tier === 'medium'
+            ? ' [TIER medium] Nudge them to count by one in the asked direction.'
+            : ' [TIER hard] No number-line highlight — ask them to find the target then count one step each way; do NOT state the answers.';
+      }
+      // order
+      return tier === 'easy'
+        ? ' [TIER easy] You may name the smallest/largest to start and the direction.'
+        : tier === 'medium'
+          ? ' [TIER medium] Nudge them toward the next number; do NOT order it for them.'
+          : ' [TIER hard] Descending with no slot hints — ask which is biggest first; do NOT name the sequence.';
+    },
+    [supportTier],
+  );
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'comparison-builder',
@@ -355,10 +443,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       `[ACTIVITY_START] Comparison activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
       + `${challenges.length} challenges covering: ${types}. `
       + `${useAlligatorMnemonic ? 'Using alligator mnemonic for inequality symbols. ' : ''}`
-      + `First challenge: "${currentChallenge?.instruction}". Introduce warmly.`,
+      + `First challenge: "${currentChallenge?.instruction}". Introduce warmly.`
+      + (currentChallenge ? tutorRevealClause(currentChallenge.type) : ''),
       { silent: true },
     );
-  }, [isConnected, challenges.length, gradeBand, useAlligatorMnemonic, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, gradeBand, useAlligatorMnemonic, currentChallenge, tutorRevealClause, sendText]);
 
   // -------------------------------------------------------------------------
   // Check Answer — compare-groups
@@ -390,7 +479,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         + `Left has ${leftCount}, right has ${rightCount}. Attempt ${currentAttempts + 1}. `
         + `${useAlligatorMnemonic
           ? 'Hint: "Count the objects on each side. Which side has more?"'
-          : 'Give a gentle hint to count each group.'}`,
+          : 'Give a gentle hint to count each group.'}`
+        + tutorRevealClause('compare-groups'),
         { silent: true },
       );
     }
@@ -398,7 +488,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     return correct;
   }, [
     currentChallenge, selectedAnswer, incrementAttempts,
-    showCorrespondenceLines, useAlligatorMnemonic, currentAttempts, sendText,
+    showCorrespondenceLines, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause,
   ]);
 
   // -------------------------------------------------------------------------
@@ -428,13 +518,14 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         + `Attempt ${currentAttempts + 1}. `
         + `${useAlligatorMnemonic
           ? '"Remember, the alligator always eats the bigger number! Which number is bigger?"'
-          : 'Give a hint about which is bigger.'}`,
+          : 'Give a hint about which is bigger.'}`
+        + tutorRevealClause('compare-numbers'),
         { silent: true },
       );
     }
 
     return correct;
-  }, [currentChallenge, selectedAnswer, incrementAttempts, useAlligatorMnemonic, currentAttempts, sendText]);
+  }, [currentChallenge, selectedAnswer, incrementAttempts, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Check Answer — order
@@ -464,13 +555,14 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         `[ANSWER_INCORRECT] Student ordered: ${orderedNumbers.join(', ')} but correct is: `
         + `${expected.join(', ')} (${currentChallenge.direction}). `
         + `Attempt ${currentAttempts + 1}. `
-        + `Hint: "Which number is the ${currentChallenge.direction === 'ascending' ? 'smallest' : 'biggest'}? Start with that one."`,
+        + `Hint: "Which number is the ${currentChallenge.direction === 'ascending' ? 'smallest' : 'biggest'}? Start with that one."`
+        + tutorRevealClause('order'),
         { silent: true },
       );
     }
 
     return correct;
-  }, [currentChallenge, orderedNumbers, incrementAttempts, currentAttempts, sendText]);
+  }, [currentChallenge, orderedNumbers, incrementAttempts, currentAttempts, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Check Answer — one-more-one-less
@@ -514,13 +606,14 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         `[ANSWER_INCORRECT] Target: ${target}, askFor: ${askFor}. Student answered: ${studentAnswers}. `
         + `Correct: one more=${target + 1}, one less=${target - 1}. `
         + `Attempt ${currentAttempts + 1}. `
-        + `Hint: "Start at ${target} and count ${askFor === 'one-less' ? 'backward' : 'forward'} by one."`,
+        + `Hint: "Start at ${target} and count ${askFor === 'one-less' ? 'backward' : 'forward'} by one."`
+        + tutorRevealClause('one-more-one-less'),
         { silent: true },
       );
     }
 
     return correct;
-  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, incrementAttempts, currentAttempts, sendText]);
+  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, incrementAttempts, currentAttempts, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Master check handler
@@ -703,9 +796,24 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     const leftEmoji = OBJECT_EMOJI[left.objectType] || '⭐';
     const rightEmoji = OBJECT_EMOJI[right.objectType] || '⭐';
 
-    const leftPositions = generateGridPositions(left.count, 0, 20);
-    const rightPositions = generateGridPositions(right.count, GROUP_WIDTH + GAP, 20);
+    // HARD tier (correspondenceMode 'off') scatters the objects so the student
+    // can't read the quantity off the grid arrangement.
+    const scattered = correspondenceMode === 'off';
+    const leftPositions = scattered
+      ? generateScatterPositions(left.count, 0, 20)
+      : generateGridPositions(left.count, 0, 20);
+    const rightPositions = scattered
+      ? generateScatterPositions(right.count, GROUP_WIDTH + GAP, 20)
+      : generateGridPositions(right.count, GROUP_WIDTH + GAP, 20);
     const pairCount = Math.min(left.count, right.count);
+
+    // Correspondence-line visibility:
+    //   'live'     → drawn during solve (strongest self-check) AND after answering
+    //   'on-check' → only after the student answers (legacy default)
+    //   'off'      → never
+    const linesVisible =
+      showCorrespondenceLines &&
+      (correspondenceMode === 'live' || (correspondenceMode === 'on-check' && showLines));
 
     return (
       <div className="space-y-4">
@@ -754,7 +862,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
             </text>
 
             {/* Correspondence lines */}
-            {showLines && showCorrespondenceLines && (
+            {linesVisible && (
               <>
                 {Array.from({ length: pairCount }, (_, i) => (
                   <line
@@ -771,7 +879,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
             {/* Left objects */}
             {leftPositions.map((pos, i) => {
-              const isLeftover = showLines && i >= pairCount;
+              const isLeftover = linesVisible && i >= pairCount;
               return (
                 <g key={`left-${i}`}>
                   {isLeftover && (
@@ -797,7 +905,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
             {/* Right objects */}
             {rightPositions.map((pos, i) => {
-              const isLeftover = showLines && i >= pairCount;
+              const isLeftover = linesVisible && i >= pairCount;
               return (
                 <g key={`right-${i}`}>
                   {isLeftover && (
@@ -823,16 +931,20 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
           </svg>
         </div>
 
-        {/* Count labels */}
-        <div className="flex items-center justify-center gap-8 text-sm">
-          <span className="text-orange-300">
-            Left: <span className="font-bold text-lg">{left.count}</span>
-          </span>
-          <span className="text-slate-500">vs</span>
-          <span className="text-blue-300">
-            Right: <span className="font-bold text-lg">{right.count}</span>
-          </span>
-        </div>
+        {/* Count labels — withdrawn at the HARD tier (showCountBadges=false) so the
+            student must count both groups; the post-answer feedback still names the
+            counts, which is fine (it's the reveal, not a pre-answer crutch). */}
+        {showCountBadges && (
+          <div className="flex items-center justify-center gap-8 text-sm">
+            <span className="text-orange-300">
+              Left: <span className="font-bold text-lg">{left.count}</span>
+            </span>
+            <span className="text-slate-500">vs</span>
+            <span className="text-blue-300">
+              Right: <span className="font-bold text-lg">{right.count}</span>
+            </span>
+          </div>
+        )}
 
         {/* Answer buttons */}
         {!isCurrentChallengeComplete && (
@@ -860,8 +972,9 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
           </div>
         )}
 
-        {/* Toggle correspondence lines button */}
-        {showCorrespondenceLines && !showLines && isCurrentChallengeComplete && (
+        {/* Toggle correspondence lines button — only relevant in 'on-check' mode
+            ('live' already shows them; 'off' withholds them entirely). */}
+        {showCorrespondenceLines && correspondenceMode === 'on-check' && !showLines && isCurrentChallengeComplete && (
           <div className="flex justify-center">
             <LuminaButton
               tone="subtle"
@@ -1008,7 +1121,9 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
                   {orderedNumbers[i]}
                 </span>
               ) : (
-                <span className="text-slate-600 text-sm">{i + 1}</span>
+                /* Slot-index hint (1,2,3…) withdrawn at the HARD tier so the
+                   student tracks position unaided. */
+                showSlotHints ? <span className="text-slate-600 text-sm">{i + 1}</span> : null
               )}
             </div>
           ))}
@@ -1072,7 +1187,10 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
             // Bespoke number-line cells: selected uses tokenized grading color;
             // the target marker stays an amber affordance unique to this surface.
             const cellState = selected === i ? 'selected' : 'idle';
-            const isTarget = i === target && selected !== i;
+            // Number-line target pre-highlight — withdrawn at the HARD tier
+            // (showTargetMarker=false). The amber Target box above still shows the
+            // number (the stimulus), so the problem stays solvable.
+            const isTarget = showTargetMarker && i === target && selected !== i;
             return (
               <button
                 key={i}

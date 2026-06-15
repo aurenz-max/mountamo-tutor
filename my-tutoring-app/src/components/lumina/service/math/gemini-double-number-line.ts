@@ -79,6 +79,23 @@ export interface DoubleNumberLineData {
 
   showVerticalGuides?: boolean;
   showUnitRate?: boolean;
+  /**
+   * Tick value-label density. 'all' = every tick labeled (default, current
+   * behavior); 'endpoints' = only the first + last tick labeled (interior
+   * thinned); 'none' = no interior labels (the component STILL keeps the
+   * min/max endpoint labels so scale magnitude is never hidden). Support-tier
+   * lever — never changes the scale, only how much of it is read for you.
+   */
+  showTickLabels?: 'all' | 'endpoints' | 'none';
+  /**
+   * Whether the given-pair value BADGE is shown on the bottom line (the dot
+   * always stays). true = current behavior. false withdraws the printed value
+   * while keeping the point plotted — a support-tier scaffold withdrawal, not
+   * a magnitude change. Never affects the target's given topValue.
+   */
+  showGivenValues?: boolean;
+  /** Active support tier, persisted for the live tutor's reveal policy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -120,6 +137,135 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'unit_rate' (discover unit rate from non-unit pair)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// Two-field contract: config.targetEvalMode says WHICH skill (task identity,
+// matched to the objective by the manifest); config.difficulty says how much
+// on-screen SUPPORT the student gets while doing it ('easy' = max scaffolding,
+// 'hard' = min). NEVER changes the ratio numbers or the scale magnitude — the
+// per-mode builders + scope own those. A harder tier withdraws guides, the
+// unit-rate dot, tick value labels, and given-value badges; it never makes the
+// numbers bigger. See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ * Unknown/absent → null (no tier applied; defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+type HintExplicitness = 'explicit' | 'strategy' | 'generic';
+
+interface SupportScaffold {
+  /** Vertical alignment guides linking top→bottom positions. Withdrawn at hard. */
+  showVerticalGuides: boolean;
+  /** Yellow unit-rate dot + 'Unit Rate' badge on the top line. */
+  showUnitRate: boolean;
+  /** Tick value-label density. 'endpoints'/'none' still keep the min/max labels. */
+  showTickLabels: 'all' | 'endpoints' | 'none';
+  /** Whether the given-pair value badge is printed (the dot always stays). */
+  showGivenValues: boolean;
+  /** How explicit the hint text is: explicit (numbers baked in) → strategy → generic. */
+  hintExplicitness: HintExplicitness;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-screen support structure for a tier on a pinned challenge type.
+ * Support withdraws as the tier hardens; every line reframes the SAME task with
+ * less scaffolding — never a different task, never bigger numbers, never a
+ * different scale. Endpoint tick labels are ALWAYS preserved downstream so the
+ * scale magnitude reads identically at every tier.
+ */
+function resolveSupportStructure(pinnedType: DoubleNumberLineChallengeType, tier: SupportTier): SupportScaffold {
+  const showVerticalGuides = tier !== 'hard';
+  // unit-rate dot: equivalent_ratios shows it at easy only (withdrawn med+);
+  // find_missing/unit_rate never plot a unit-rate dot (they give a non-unit pair).
+  const showUnitRate = pinnedType === 'equivalent_ratios' ? tier === 'easy' : false;
+  const showTickLabels: 'all' | 'endpoints' | 'none' =
+    tier === 'easy' ? 'all' : tier === 'medium' ? 'endpoints' : 'none';
+  // given-pair value badge: shown easy, withdrawn med+ (dot stays). For
+  // equivalent_ratios the "given" is the unit-rate dot, governed by showUnitRate.
+  const showGivenValues = tier === 'easy';
+  const hintExplicitness: HintExplicitness =
+    tier === 'easy' ? 'explicit' : tier === 'medium' ? 'strategy' : 'generic';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-screen SCAFFOLDING only (${tier === 'easy' ? 'maximum support: guides, labels, and the unit-rate cue help the student read the lines' : tier === 'medium' ? 'moderate support: guides stay but labels/badges thin out; the student reads more of the scale unaided' : 'minimum support: guides off, value labels off, the student reasons about the rate unaided'}). Keep every ratio value and the scale within scope; a harder tier NEVER means bigger numbers or a different scale, only less on-screen help reading them.`,
+  ];
+  switch (pinnedType) {
+    case 'equivalent_ratios':
+      promptLines.push(
+        tier === 'easy'
+          ? 'State the unit rate explicitly and have the hint name the multiply step with the numbers.'
+          : tier === 'hard'
+            ? 'Keep the hint generic ("use the rate you know"); do not name the operation or numbers.'
+            : 'Name the scaling strategy in the hint but do not bake the arithmetic into it.',
+      );
+      break;
+    case 'find_missing':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Label the given pair and have the hint walk both steps (find the unit rate, then multiply).'
+          : tier === 'hard'
+            ? 'Keep the hint generic; the student must identify the relationship from the line unaided.'
+            : 'Hint should prompt "find the unit rate first" without giving the full arithmetic.',
+      );
+      break;
+    case 'unit_rate':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Show the given value and have the hint name the division explicitly.'
+          : tier === 'hard'
+            ? 'Keep the hint generic; the student must decide to divide unaided.'
+            : 'Hint should cue "divide" without giving the full computation.',
+      );
+      break;
+  }
+  return {
+    showVerticalGuides,
+    showUnitRate,
+    showTickLabels,
+    showGivenValues,
+    hintExplicitness,
+    promptLines,
+  };
+}
+
+/**
+ * Rewrite a per-challenge hint toward the tier's explicitness WITHOUT touching
+ * the value/ask logic (which the builders own). 'explicit' keeps the
+ * builder's number-baked hint; 'strategy' names the approach; 'generic' gives a
+ * bare nudge. Mode-aware so the strategy named matches the task.
+ */
+function applyHintExplicitness(
+  mode: DoubleNumberLineChallengeType,
+  explicitness: HintExplicitness,
+  builtHint: string,
+): string {
+  if (explicitness === 'explicit') return builtHint;
+  if (explicitness === 'strategy') {
+    switch (mode) {
+      case 'equivalent_ratios':
+        return 'Scale the unit rate up to the value you need.';
+      case 'find_missing':
+        return 'Find the unit rate from the given pair first, then use it.';
+      case 'unit_rate':
+        return 'Divide the given pair to find the amount per 1 unit.';
+    }
+  }
+  // generic
+  return 'Use what the number line shows you to find the value.';
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -351,6 +497,13 @@ export const generateDoubleNumberLine = async (
     instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes the
+     * ratio numbers or the scale magnitude.
+     */
+    difficulty?: string;
   },
 ): Promise<DoubleNumberLineData> => {
   // Resolve eval mode from catalog (single source of truth)
@@ -373,6 +526,21 @@ export const generateDoubleNumberLine = async (
     CHALLENGE_TYPE_DOCS,
   );
 
+  // ── Within-mode support tier ──────────────────────────────────────────────
+  // supportTier is the STUDENT's tier and DRIVES application (single mode only
+  // here — every challenge in a session shares one challengeType). pinnedType is
+  // used both for the prompt tone and for application (one mode per session).
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as DoubleNumberLineChallengeType)
+      : undefined;
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number/scale size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const instanceCount = Math.min(
     MAX_INSTANCE_COUNT,
     Math.max(MIN_INSTANCE_COUNT, config?.instanceCount ?? DEFAULT_INSTANCE_COUNT),
@@ -386,7 +554,7 @@ relationship (e.g., all flour→cookies, all dollars→hours). Per-challenge tar
 will be derived locally — your job is to set up the SHARED session context.
 
 ${challengeTypeSection}
-
+${tierSection}
 WHAT YOU NEED TO CREATE:
 - title: Short, clear title (e.g., "Baking Cookies: Flour to Cookies")
 - description: One sentence describing what students will practice across all ${instanceCount} challenges
@@ -531,6 +699,38 @@ Return the session setup. Per-challenge ask-points are derived locally from askI
   // Apply config overrides (kept for backwards-compat with manifest payloads)
   if (config?.topLabel) data.topLabel = config.topLabel;
   if (config?.bottomLabel) data.bottomLabel = config.bottomLabel;
+
+  // ── Apply the support-tier structure deterministically (code owns the SUPPORT
+  // structure; the LLM/builders only chose the numbers). Runs AFTER everything
+  // else, gated only on a tier being present, resolved per challenge from its OWN
+  // mode. PRESENTATION only — the value/ask logic (incl. the fragile unit_rate
+  // builders) is left untouched. NEVER changes the ratio numbers or the scale.
+  // Endpoint tick labels are preserved by the component, so 'none' never hides
+  // the scale magnitude. The target's given topValue stays (not a leak); the
+  // target BOTTOM value is never pre-plotted. ──
+  if (supportTier) {
+    // Session-level flags follow the (single) session mode's scaffold.
+    const sessionType = (pinnedType ?? data.challenges[0]?.challengeType) as
+      | DoubleNumberLineChallengeType
+      | undefined;
+    if (sessionType) {
+      const sc = resolveSupportStructure(sessionType, supportTier);
+      data.showVerticalGuides = sc.showVerticalGuides;
+      data.showUnitRate = sc.showUnitRate;
+      data.showTickLabels = sc.showTickLabels;
+      data.showGivenValues = sc.showGivenValues;
+    }
+    data.supportTier = supportTier;
+    // Hint explicitness withdraws per challenge from the challenge's own mode.
+    for (const ch of data.challenges) {
+      const sc = resolveSupportStructure(ch.challengeType, supportTier);
+      ch.hint = applyHintExplicitness(ch.challengeType, sc.hintExplicitness, ch.hint);
+    }
+    console.log(
+      `[DoubleNumberLine] Support tier "${supportTier}" applied (${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → `
+      + `guides=${data.showVerticalGuides}, unitRate=${data.showUnitRate}, tickLabels=${data.showTickLabels}, givenValues=${data.showGivenValues}`,
+    );
+  }
 
   return data;
 };
