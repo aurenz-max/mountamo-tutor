@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 
 export type DotPlotEvalMode =
@@ -21,6 +22,13 @@ export interface DotPlotChallenge {
   targetStat?: 'median' | 'mode' | 'range';
   targetAnswer?: number;
   comparisonAnswer?: string;
+  // ── Support-tier scaffolding (set by generator when config.difficulty present) ──
+  /** Easy only: a count badge sits atop each stack. Withdrawn at medium/hard so
+   *  the student reads stack HEIGHT unaided. Display-only — never the answer. */
+  showStackCounts?: boolean;
+  /** Easy/medium: hovering a value reads out its count. Withdrawn at hard. */
+  showFrequencyTooltip?: boolean;
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 /**
@@ -49,6 +57,10 @@ export interface DotPlotData {
   iconEmoji?: string;
   /** IRT-aligned task. When present, drives the instruction banner and gates the stats panel. */
   challenges?: DotPlotChallenge[];
+
+  // ── Tutoring / evaluation plumbing (optional, auto-injected by the renderer) ──
+  instanceId?: string;
+  gradeLevel?: string;
 }
 
 interface DotPlotProps {
@@ -63,6 +75,27 @@ interface StatCardInfo {
   description: string;
   example: string;
   icon: React.ReactNode;
+}
+
+// ============================================================================
+// Tutor reveal policy — keep the AI tutor in sync with the on-screen scaffold so
+// a hard tier (count badges + hover readout withdrawn) isn't undone by the tutor
+// naming the count or value. The task identity (read/build the plot, compute the
+// stat, compare the plots) is the same at every tier; the tier only dials how
+// much the tutor may reveal. For compute_stats / compare_datasets the answer is
+// derived in code, so the tutor NEVER names it at any tier — it coaches the read.
+// ============================================================================
+function tutorRevealClause(tier?: 'easy' | 'medium' | 'hard'): string {
+  switch (tier) {
+    case 'easy':
+      return ' [TIER:easy] Max scaffolding — count badges and the hover readout are visible, so you may name the read strategy ("look for the tallest stack", "count the dots above each value") and walk it step by step. Never state the final answer value.';
+    case 'medium':
+      return ' [TIER:medium] Count badges are hidden but the hover readout still works — nudge the read; do not name a count or the answer.';
+    case 'hard':
+      return ' [TIER:hard] Count badges AND the hover readout are hidden — the student must read each stack\'s HEIGHT by eye. Do NOT name any count or value; ask what the student notices about which stacks are taller/shorter and let them decide.';
+    default:
+      return '';
+  }
 }
 
 const statExplanations: Record<Exclude<StatType, null>, StatCardInfo> = {
@@ -122,6 +155,8 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
     stackStyle = 'dots',
     iconEmoji = '●',
     challenges,
+    instanceId,
+    gradeLevel,
   } = data;
 
   const [dataPoints, setDataPoints] = useState<number[]>(data.dataPoints || []);
@@ -146,6 +181,12 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
     getChallengeId: (c) => c.id,
   });
   const currentChallenge = activeChallenges[currentChallengeIndex] ?? null;
+
+  // ── Support tier scaffolds (default to fully-on when no tier present, so the
+  //    no-tier path is byte-identical to the original component) ──
+  const supportTier = currentChallenge?.supportTier;
+  const showStackCounts = currentChallenge?.showStackCounts ?? false;
+  const showFrequencyTooltip = currentChallenge?.showFrequencyTooltip ?? true;
 
   // Pedagogy guardrail: force-hide statistics for β < 4.5 modes (grades 2-5 frequency work).
   const effectiveShowStatistics = useMemo(() => {
@@ -198,6 +239,60 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
 
   const primaryStats = useMemo(() => calculateStats(dataPoints), [dataPoints, calculateStats]);
   const secondaryStats = useMemo(() => calculateStats(secondaryDataPoints), [secondaryDataPoints, calculateStats]);
+
+  // -------------------------------------------------------------------------
+  // AI Tutoring (live tutor — previously orphaned: catalog block + hook import
+  // existed but useLuminaAI was never called). aiPrimitiveData carries the
+  // current challenge data + the derived correct answer + the support tier so
+  // the tutor can calibrate reveal without ever naming what a hard tier hid.
+  // -------------------------------------------------------------------------
+  const stableInstanceIdRef = useRef(instanceId || `dot-plot-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  const aiPrimitiveData = useMemo(() => ({
+    challengeType: currentChallenge?.evalMode ?? 'whole_number_plot',
+    instruction: currentChallenge?.instruction ?? '',
+    dataPoints,
+    secondaryDataPoints: parallel ? secondaryDataPoints : undefined,
+    primaryLabel: parallel ? primaryLabel : undefined,
+    secondaryLabel: parallel ? secondaryLabel : undefined,
+    showStatistics: effectiveShowStatistics,
+    targetStat: currentChallenge?.targetStat ?? null,
+    // Derived correct answer — for the tutor's reference ONLY (it must not reveal it).
+    correctAnswer: currentChallenge?.comparisonAnswer ?? currentChallenge?.targetAnswer ?? null,
+    mean: primaryStats.mean,
+    median: primaryStats.median,
+    mode: primaryStats.mode,
+    supportTier: supportTier ?? null,
+    totalChallenges: activeChallenges.length,
+    currentChallengeIndex,
+    attemptNumber: currentAttempts + 1,
+  }), [
+    currentChallenge, dataPoints, secondaryDataPoints, parallel, primaryLabel, secondaryLabel,
+    effectiveShowStatistics, primaryStats, supportTier, activeChallenges.length,
+    currentChallengeIndex, currentAttempts,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'dot-plot',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: gradeLevel,
+  });
+
+  // Activity introduction
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || activeChallenges.length === 0) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] DotPlot activity. ${activeChallenges.length} challenge(s), mode: ${currentChallenge?.evalMode}. `
+      + `First challenge: "${currentChallenge?.instruction}". `
+      + `Introduce warmly and invite the student to read the stacked dots before answering.`
+      + tutorRevealClause(supportTier),
+      { silent: true },
+    );
+  }, [isConnected, activeChallenges.length, currentChallenge, supportTier, sendText]);
 
   // Handle click on number line to add/remove points
   const handleNumberLineClick = useCallback((value: number) => {
@@ -316,6 +411,11 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
                 <span className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
                   · mode: {currentChallenge.evalMode}
                 </span>
+                {supportTier && (
+                  <span className="text-[10px] uppercase tracking-wider text-amber-400/80 font-mono">
+                    · tier: {supportTier}
+                  </span>
+                )}
               </div>
               <p className="text-base font-medium text-white">{currentChallenge.instruction}</p>
               {currentAttempts > 0 && currentChallenge.hint && (
@@ -332,6 +432,11 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
                         correct: true,
                         attempts: currentAttempts + 1,
                       });
+                      sendText(
+                        `[ANSWER_CORRECT] Student completed the "${currentChallenge.evalMode}" challenge. Congratulate briefly and reinforce the read strategy.`
+                        + tutorRevealClause(supportTier),
+                        { silent: true },
+                      );
                     }}
                     className="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-medium hover:bg-emerald-500/30 transition-all"
                   >
@@ -503,6 +608,15 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
                         } ${isHighlighted ? 'scale-125 z-20' : ''}`}
                         style={{ left: `${percent}%`, transform: 'translateX(-50%)' }}
                       >
+                        {/* Easy-tier perception aid: running-count badge atop the stack.
+                            Withdrawn at medium/hard (showStackCounts=false) so the
+                            student reads stack HEIGHT unaided. Display-only — the
+                            answer is derived from dataPoints, never from this badge. */}
+                        {showStackCounts && freq > 0 && (
+                          <span className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/40 text-[10px] font-mono font-bold text-cyan-300 leading-none">
+                            {freq}
+                          </span>
+                        )}
                         {Array.from({ length: freq }).map((_, dotIndex) =>
                           renderMarker(dotIndex, true)
                         )}
@@ -535,6 +649,12 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
                           className="absolute bottom-0 flex flex-col-reverse items-center gap-0.5"
                           style={{ left: `${percent}%`, transform: 'translateX(-50%)' }}
                         >
+                          {/* Easy-tier running-count badge (secondary plot) */}
+                          {showStackCounts && freq > 0 && (
+                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-[10px] font-mono font-bold text-amber-300 leading-none">
+                              {freq}
+                            </span>
+                          )}
                           {Array.from({ length: freq }).map((_, dotIndex) =>
                             renderMarker(dotIndex, false)
                           )}
@@ -576,15 +696,19 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
                       isHovered ? 'bg-cyan-400 h-5' : ''
                     }`}></div>
 
-                    {/* Value label */}
+                    {/* Value label — the axis scale; a STRUCTURAL label, stays ON at
+                        every tier (defines where each value sits; not a tier lever). */}
                     <div className={`mt-2 text-xs font-mono font-semibold transition-all ${
                       isHovered ? 'text-cyan-400 scale-110' : 'text-slate-400'
                     }`}>
                       {value}
                     </div>
 
-                    {/* Frequency tooltip */}
-                    {isHovered && totalFreq > 0 && (
+                    {/* Frequency tooltip — perception aid #1, gated by the support
+                        tier (showFrequencyTooltip). Withdrawn at the hard tier so
+                        the student cannot probe each stack's exact count and must
+                        read height by eye. Display-only; never the answer. */}
+                    {showFrequencyTooltip && isHovered && totalFreq > 0 && (
                       <div className="absolute bottom-full mb-16 left-1/2 -translate-x-1/2 px-3 py-2 bg-slate-800 rounded-lg border border-cyan-500/30 shadow-lg whitespace-nowrap z-20">
                         <div className="text-cyan-400 text-xs font-medium">
                           {parallel ? (

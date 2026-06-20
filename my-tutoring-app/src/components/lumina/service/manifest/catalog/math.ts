@@ -445,8 +445,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       { evalMode: 'derive_hard', label: 'Derive — Hard (Tier 3)', beta: 0.7, scaffoldingMode: 4, challengeTypes: ['derive'], description: '4-6 step derivation requiring strategy choice (substitution, case split, identity selection). Stretch problems.' },
     ],
     tutoring: {
-      taskDescription: 'Student is solving a {{difficulty}} math derivation by hand on a whiteboard: "{{problem}}". They are currently in the {{currentPhase}} phase with {{strokeCount}} strokes drawn so far. The canonical solution has {{stepCount}} steps.',
-      contextKeys: ['title', 'problem', 'equations', 'difficulty', 'stepCount', 'currentPhase', 'strokeCount'],
+      taskDescription: 'Student is solving a {{difficulty}}-band math derivation by hand on a whiteboard: "{{problem}}". They are currently in the {{currentPhase}} phase with {{strokeCount}} strokes drawn so far. The canonical solution has {{stepCount}} steps. On-screen support tier: {{supportTier}} (easy = worked-step skeleton + first-step prompt visible; hard = bare problem, scaffolds withdrawn).',
+      contextKeys: ['title', 'problem', 'equations', 'difficulty', 'stepCount', 'currentPhase', 'strokeCount', 'supportTier'],
       scaffoldingLevels: {
         level1: '"Take a moment to look at the problem. What do you see, and what do you think the first move should be?"',
         level2: '"Try writing the first transformation on the canvas. What rule applies to the left-hand side of {{equations}}? Don\'t worry about getting all {{stepCount}} steps at once."',
@@ -466,6 +466,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'Use the live reviewer\'s status (on-track / shortcut / off-track) when the student asks for help — if they\'re on-track, encourage continuation; if off-track, ask them to re-examine the latest line; if shortcut, ask them to articulate the rule they applied. '
             + 'After the verdict returns, focus on metacognition: which step was hardest, what would they try differently next time, what rule did they use. '
             + 'For hard difficulty problems, lean into strategy talk — substitution choice, case-split decisions, identity selection — rather than mechanical hints.',
+        },
+        {
+          title: 'CALIBRATE REVEAL TO THE SUPPORT TIER',
+          instruction:
+            'The {{supportTier}} support tier mirrors what scaffolds are on screen — match your help to it. '
+            + 'easy: the worked-step skeleton (step titles) and a first-step prompt are visible, so you MAY name the strategy and walk the student through the FIRST step only (never compute it, never reveal the answer). '
+            + 'medium: the skeleton is visible but no first-step prompt — nudge execution of the step they are on; do not pre-name the first move. '
+            + 'hard: NO skeleton and NO first-step prompt are shown — do NOT name any solution step or the strategy; ask what the problem is asking and what they notice, and let them choose the method. Never reveal the final answer at any tier.',
         },
       ],
     },
@@ -904,19 +912,19 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'find_whole',
-        label: 'Identify Added Rate / Tax (Tier 4)',
+        label: 'Find the Total with Tax / Tip (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['addition'],
-        description: 'Identify the percent being added — tax, tip, markup.',
+        description: 'Two steps on the bar: place the added rate (tip/tax — value shows the dollars), then place the new total (100% + rate, bar extends past 100%).',
       },
       {
         evalMode: 'convert',
-        label: 'Compare Percentages (Tier 5)',
+        label: 'Compare Final Prices (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
         challengeTypes: ['comparison'],
-        description: 'Compare two percents and place the larger one.',
+        description: 'Multi-step: compute each good\'s sale price on the bar, then choose which is cheaper — a bigger % off is not always the better deal.',
       },
     ],
     tutoring: {
@@ -944,6 +952,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Confusing part and whole', response: '"The whole (100%) is {{wholeValue}}. You are finding a part of it."' },
         { pattern: 'Difficulty with non-benchmark percents', response: '"Break it down: find 10% first (divide by 10), then scale up."' },
         { pattern: 'Subtraction-mode answer = rate, not 100 - rate', response: '"Discount mode: a {{targetPercent}}% discount means 100% - that = what you still pay. Subtract from 100."' },
+        { pattern: 'Addition-mode places only the added rate, not the total', response: '"Tax and tip ADD ON TOP. The whole bill is 100% — add the rate to get the total, which lands past the 100% mark."' },
+        { pattern: 'Comparison-mode assumes the bigger discount is cheaper', response: '"Bigger % off does not always win — it depends on the original price. Compute each sale price first, then compare the dollars."' },
       ],
       aiDirectives: [
         {
@@ -951,8 +961,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
           instruction:
             'For DIRECT mode: the answer is the percent given in the scenario — student just places it. '
             + 'For SUBTRACTION (discount) mode: answer = 100 - the discount rate. Coach the subtraction explicitly. '
-            + 'For ADDITION (tax/tip) mode: answer = the rate stated in the scenario. The bar only accepts percentages — never ask for dollar totals. '
-            + 'For COMPARISON mode: answer = the larger of the two stated percents.',
+            + 'For ADDITION (tax/tip/markup) mode: a TWO-STEP problem. Step 1 = place the added rate (the dollar value shows the tip/tax). Step 2 = place the TOTAL = 100% + the rate; the bar extends past 100%. Never name the total for them. '
+            + 'For COMPARISON mode: a MULTI-STEP shopping problem. Steps 1-2 = place each good\'s sale price as a percent of its own original (value shows the dollar price). Step 3 = choose which is cheaper/pricier. Coach the student to compare the COMPUTED PRICES, not the discount percents — a bigger % off is not always cheaper.',
         },
         {
           title: 'MULTI-PERCENT PACING',
@@ -1624,7 +1634,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     ],
     tutoring: {
       taskDescription: 'Multi-problem transformation session — the student slides, flips, turns, and scales polygons on a coordinate grid across several figures. Currently on {{challengeType}} problem {{currentChallengeIndex}} of {{totalChallenges}}.',
-      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'answerKind', 'transformLabel', 'isSimilarity', 'scaleFactor', 'gradeBand'],
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'answerKind', 'transformLabel', 'isSimilarity', 'scaleFactor', 'supportTier', 'gradeBand'],
       scaffoldingLevels: {
         level1: '"Follow ONE corner of the pre-image. Where should it land after this transformation — does it slide, flip across a line, turn around the origin, or scale away from it?"',
         level2: '"Use the coordinate rule for {{transformLabel}}. Apply it to a single vertex first: write the new (x, y), then move that corner. Reflections swap or negate a coordinate; a 90° turn sends (x, y) to (−y, x); a dilation multiplies both coordinates by the scale factor."',
@@ -2156,7 +2166,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     constraints: 'Best for grades K-3. K-1: repeating patterns with colors/shapes only (AB, AAB, ABB). Grades 2-3: growing and number patterns, translation and creation challenges.',
     tutoring: {
       taskDescription: 'Student is working through {{totalChallenges}} pattern challenges (currently {{currentChallengeIndex}}). Pattern type: {{patternType}}. Challenge: {{instruction}}. Given sequence: {{givenSequence}}. Core unit: {{coreUnit}}. Rule: {{rule}}. Student extension: {{studentExtension}}. Attempt: {{attemptNumber}}.',
-      contextKeys: ['patternType', 'instruction', 'givenSequence', 'hiddenSequence', 'coreUnit', 'rule', 'challengeType', 'attemptNumber', 'currentPhase', 'studentExtension', 'studentCreation', 'currentChallengeIndex', 'totalChallenges'],
+      contextKeys: ['patternType', 'instruction', 'givenSequence', 'hiddenSequence', 'coreUnit', 'rule', 'challengeType', 'attemptNumber', 'currentPhase', 'studentExtension', 'studentCreation', 'currentChallengeIndex', 'totalChallenges', 'supportTier', 'tutorRevealPolicy'],
       scaffoldingLevels: {
         level1: '"Look at the pattern: {{givenSequence}}. Can you see what repeats? What comes next?"',
         level2: '"Let me help. The repeating part is: {{coreUnit}}. Now that you know the core, what should come next?"',
@@ -2865,7 +2875,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     constraints: 'maxPosition 5 for Kindergarten, 10 for Grade 1. Characters array must have distinct emoji. Each challenge needs correctAnswer matching the expected response.',
     tutoring: {
       taskDescription: 'The student is working through {{totalChallenges}} ordinal-position challenges in a {{context}} context. They are on challenge {{currentChallengeIndex}} ({{challengeType}}): "{{instruction}}". The line has {{characters}} in positions up to {{maxPosition}}.',
-      contextKeys: ['challengeType', 'totalChallenges', 'currentChallengeIndex', 'targetPosition', 'targetOrdinalWord', 'characters', 'context', 'storyText', 'attemptNumber', 'correctAnswer', 'instruction', 'maxPosition', 'gradeBand'],
+      contextKeys: ['challengeType', 'totalChallenges', 'currentChallengeIndex', 'targetPosition', 'targetOrdinalWord', 'characters', 'context', 'storyText', 'attemptNumber', 'correctAnswer', 'instruction', 'maxPosition', 'gradeBand', 'supportTier'],
       scaffoldingLevels: {
         level1: '"Count from the front of the line: first, second, third... Which one is in the spot we need?"',
         level2: '"Point to each character and count: 1st, 2nd, 3rd. Which one is in the {{targetOrdinalWord}} spot? Remember, {{targetOrdinalWord}} means position number {{targetPosition}} from the front."',
@@ -3226,8 +3236,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'An interactive strategy-comparison activity where students solve the same problem using 2-3 different strategies (counting on, make-ten, doubles, tally marks, draw objects), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10.',
     constraints: 'Numbers within 5 (K) or 10 (Grade 1). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.',
     tutoring: {
-      taskDescription: 'Student is on challenge {{currentChallengeIndex}} of {{totalChallenges}}, solving {{equation}} using {{assignedStrategy}}. Challenge type: {{challengeType}}. They have completed strategies: {{strategiesCompleted}}.',
-      contextKeys: ['currentChallengeIndex', 'totalChallenges', 'challengeType', 'equation', 'assignedStrategy', 'strategySteps', 'studentAnswer', 'attemptNumber', 'chosenStrategy', 'strategiesCompleted'],
+      taskDescription: 'Student is on challenge {{currentChallengeIndex}} of {{totalChallenges}}, solving {{equation}} using {{assignedStrategy}}. Challenge type: {{challengeType}}. They have completed strategies: {{strategiesCompleted}}. Support tier: {{supportTier}}. RECOGNITION RULE: for challenge type "match-strategy" the strategy IS the answer — NEVER name the correct strategy at any tier; at easy describe what features to look for, at hard only ask what the student notices.',
+      contextKeys: ['currentChallengeIndex', 'totalChallenges', 'challengeType', 'equation', 'assignedStrategy', 'strategySteps', 'studentAnswer', 'attemptNumber', 'chosenStrategy', 'strategiesCompleted', 'supportTier'],
       scaffoldingLevels: {
         level1: '"Let\'s try this problem a different way! This time, we\'ll use {{assignedStrategy}}. What do you think the answer might be?"',
         level2: '"For counting on, start at {{operand1}} and hop forward {{operand2}} times. Let\'s count together: what comes after {{operand1}}?"',
@@ -3288,8 +3298,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'Canvas-based numeral writing practice. Students trace dotted digit paths, copy from a model, write from a prompt, or complete counting sequences. Essential for CC.K.CC.3 (write 0-20) and 1.NBT.1 (write to 120).',
     constraints: 'Best for K-Grade 1. Digit range: 0-20 for K, 0-120 for Grade 1. Use trace mode for beginners, sequence for advanced.',
     tutoring: {
-      taskDescription: 'Student is writing the numeral {{digit}}. Challenge type: {{challengeType}}. Attempt {{attemptNumber}}. Model visible: {{showModel}}.',
-      contextKeys: ['digit', 'challengeType', 'instruction', 'showModel', 'showArrows', 'attemptNumber', 'lastScore', 'gradeBand'],
+      taskDescription: 'Student is writing the numeral {{digit}}. Challenge type: {{challengeType}}. Attempt {{attemptNumber}}. Model visible: {{showModel}}. Support tier: {{supportTier}}.',
+      contextKeys: ['digit', 'challengeType', 'instruction', 'showModel', 'showArrows', 'supportTier', 'attemptNumber', 'lastScore', 'gradeBand'],
       scaffoldingLevels: {
         level1: '"Good try! Can you trace the dotted line from top to bottom?"',
         level2: '"Let\'s try together. For the number {{digit}}, start at the green dot and follow the arrows. What direction does the line go first?"',

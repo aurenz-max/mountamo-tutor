@@ -54,6 +54,128 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+type ChallengeType = 'identify' | 'count' | 'sort';
+
+// ---------------------------------------------------------------------------
+// Within-mode support tiers (config.difficulty) — scaffolding + structural axis
+//
+// Two axes, both WITHIN one eval mode and NEVER changing which attribute is
+// sorted (that is the eval-mode identity) or which shapes are in scope:
+//   1. Scaffolding (resolveSupportStructure) — withdraw on-screen self-check
+//      cues: sort bin labels + per-bin count badges; count's pre-revealed
+//      corner dots.
+//   2. Structural problem shape (resolveProblemShape) — distractor tightness
+//      for identify (far → near-miss foils). Prompt-shaped + code-guarded;
+//      in-mode; structural, not magnitude.
+// See memory: structural-difficulty-not-numeric, add-support-tiers skill,
+// support-tiers-natural-levers.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+const TIER_GUARDRAIL =
+  'Keep the SAME shapes and the SAME sort attribute in scope — this tier changes '
+  + 'on-screen SCAFFOLDS (bin labels, count badges, pre-revealed corners) and '
+  + 'distractor TIGHTNESS, NOT which attribute is sorted and NOT the shape set.';
+
+/** Scaffolding levers — self-check cues withdrawn at harder tiers. */
+interface SupportScaffold {
+  /** sort: show each bin's attribute-name label (e.g. "3 sides", "Curved").
+   *  hard → blank bins; student recalls the criterion from the "Sort by: X" badge. */
+  showBinLabels?: boolean;
+  /** sort: show each bin's running "N shapes" count badge (self-check aid). */
+  showBinCounts?: boolean;
+  /** count: pre-reveal the corner dots so the student can count them directly.
+   *  hard → off; the student must find the corners unaided. */
+  showCornerHints?: boolean;
+  /** identify: show a "find N" badge of how many shapes match (self-check count). */
+  showMatchCount?: boolean;
+  promptLines: string[];
+}
+
+function resolveSupportStructure(mode: ChallengeType, tier: SupportTier): SupportScaffold {
+  const lines: string[] = [TIER_GUARDRAIL];
+  switch (mode) {
+    case 'sort': {
+      const showBinLabels = tier !== 'hard';
+      const showBinCounts = tier === 'easy';
+      lines.push(showBinLabels
+        ? 'Each bin is LABELLED with its attribute value so the student can match against the name.'
+        : 'Bins are UNLABELLED — the student must recall the sort criterion (shown only as "Sort by: X") and infer each bin from the shapes they place.');
+      lines.push(showBinCounts
+        ? 'Each bin shows a live "N shapes" count so the student can self-check the balance.'
+        : 'Bins hide the running count — the student tracks placement unaided.');
+      return { showBinLabels, showBinCounts, promptLines: lines };
+    }
+    case 'count': {
+      const showCornerHints = tier === 'easy';
+      lines.push(showCornerHints
+        ? 'Corner dots are pre-revealed on the shape so the student can count them directly.'
+        : 'No corner dots are pre-shown — the student finds the sides and corners unaided.');
+      return { showCornerHints, promptLines: lines };
+    }
+    case 'identify': {
+      const showMatchCount = tier === 'easy';
+      lines.push(showMatchCount
+        ? 'A "find N" badge tells the student how many shapes match (self-check count).'
+        : 'No match-count hint — the student must decide which shapes match without a target number.');
+      return { showMatchCount, promptLines: lines };
+    }
+    default:
+      lines.push('Same task; difficulty rides the structural axis below.');
+      return { promptLines: lines };
+  }
+}
+
+/** Structural problem-shape levers — in-mode, structural, NEVER magnitude
+ *  and NEVER a change of the assessed attribute. */
+interface ProblemShape {
+  /** identify: distractor tightness — 'far' (clearly distinct) → 'near' (near-miss foils
+   *  sharing the target's other attributes, e.g. square vs rhombus when sorting by sides). */
+  distractorTightness?: 'far' | 'moderate' | 'near';
+  promptLines: string[];
+}
+
+function resolveProblemShape(mode: ChallengeType, tier: SupportTier): ProblemShape {
+  const lines: string[] = [];
+  switch (mode) {
+    case 'identify': {
+      const distractorTightness =
+        tier === 'easy' ? 'far' : tier === 'medium' ? 'moderate' : 'near';
+      lines.push(
+        distractorTightness === 'near'
+          ? 'Make the DISTRACTORS near-misses: shapes that share the target shape\'s OTHER attributes but differ on the rule attribute (e.g. when the rule is "triangle", include a near-pointy diamond; when the rule is "4 sides", mix squares, rectangles, rhombuses, diamonds so the student must look carefully). Keep the SAME rule attribute and target value.'
+          : distractorTightness === 'moderate'
+            ? 'Mix moderately similar distractors with the target — some share a feature, some clearly differ.'
+            : 'Make the DISTRACTORS clearly distinct from the target (e.g. a circle and a triangle as foils when finding squares) so matches are obvious at a glance.'
+      );
+      return { distractorTightness, promptLines: lines };
+    }
+    default:
+      // sort / count: the structural difficulty rides the scaffolding axis
+      // (bin labels, corner pre-reveal). No magnitude lever — adding shapes
+      // would change the in-scope set, which the guardrail forbids.
+      return { promptLines: lines };
+  }
+}
+
+/** One ## SUPPORT TIER block describing both axes for the prompt (tone + shape). */
+function buildTierPromptSection(mode: ChallengeType, tier: SupportTier): string {
+  const lines = [
+    ...resolveSupportStructure(mode, tier).promptLines,
+    ...resolveProblemShape(mode, tier).promptLines,
+  ];
+  return `\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding level + distractor tightness — NOT shape set or sort attribute)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
+}
+
 // ---------------------------------------------------------------------------
 // Base schema
 // ---------------------------------------------------------------------------
@@ -145,6 +267,13 @@ export const generateShapeSorter = async (
   config?: Partial<ShapeSorterData> & {
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = within-mode scaffolding + distractor tightness. NEVER changes
+     * the shape set or the sorted attribute (the eval-mode identity).
+     */
+    difficulty?: string;
   },
 ): Promise<ShapeSorterData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -153,6 +282,17 @@ export const generateShapeSorter = async (
     config?.targetEvalMode,
     CHALLENGE_TYPE_DOCS,
   );
+
+  // ── Support tier (within-mode difficulty) ──
+  const supportTier = normalizeSupportTier(config?.difficulty); // STUDENT's tier — DRIVES application (single OR blend)
+  // pinnedType is ONLY for the prompt tone / log; when a single mode is pinned we
+  // can describe its tier inline. Blends get a per-challenge scaffold at the end.
+  const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
+    ? evalConstraint.allowedTypes[0] as ChallengeType
+    : undefined;
+  const tierSection = pinnedType && supportTier
+    ? buildTierPromptSection(pinnedType, supportTier)
+    : '';
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
@@ -171,7 +311,7 @@ SUPPORTED SHAPES: circle, square, triangle, rectangle, diamond, rhombus, hexagon
 VALID COLORS: red, blue, green, yellow, purple, orange, pink, cyan
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 CHALLENGE PROGRESSION (generate 4-5 challenges):
 1. "identify" with ruleAttribute "color" — "Find all the blue shapes" (targetValue: "blue")
@@ -372,5 +512,41 @@ ${config?.gradeBand ? `\nGrade band: ${config.gradeBand}` : ''}
   // Apply config overrides
   if (config?.gradeBand !== undefined) data.gradeBand = config.gradeBand;
 
+  // ── Apply the support tier deterministically, per challenge from its OWN mode ──
+  // Difficulty is a STUDENT property: a blended/auto session gets it too (single
+  // mode just happens to give every challenge the same tier). Gate on supportTier
+  // ONLY — never on pinnedType — so blends aren't silently dropped. Runs AFTER all
+  // structural fixups so the tier's display flags win. No-tier path is byte-identical
+  // (every field guarded). These flags are DISPLAY-ONLY — the component's checker
+  // derives correctness from SHAPE_PROPERTIES, never from any show* flag, so a
+  // withdrawn label/badge can neither leak nor invalidate the answer.
+  if (supportTier) {
+    for (const ch of data.challenges as ShapeSorterChallengeWithTier[]) {
+      const scaffold = resolveSupportStructure(ch.type as ChallengeType, supportTier);
+      ch.supportTier = supportTier;
+      if (ch.type === 'sort') {
+        ch.showBinLabels = scaffold.showBinLabels;
+        ch.showBinCounts = scaffold.showBinCounts;
+      }
+      if (ch.type === 'count') {
+        ch.showCornerHints = scaffold.showCornerHints;
+      }
+      if (ch.type === 'identify') {
+        ch.showMatchCount = scaffold.showMatchCount;
+      }
+    }
+    console.log(`[ShapeSorter] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
+  }
+
   return data;
+};
+
+/** Local view of a challenge augmented with the tier display flags the
+ *  component reads. Mirrors the optional fields added to ShapeSorterChallenge. */
+type ShapeSorterChallengeWithTier = ShapeSorterData['challenges'][number] & {
+  supportTier?: SupportTier;
+  showBinLabels?: boolean;
+  showBinCounts?: boolean;
+  showCornerHints?: boolean;
+  showMatchCount?: boolean;
 };

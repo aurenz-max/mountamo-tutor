@@ -45,6 +45,99 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Support tiers (within-mode scaffolding withdrawal) — FIXED harness
+// ---------------------------------------------------------------------------
+
+type ChallengeType = "identify" | "place" | "describe" | "follow_directions";
+
+type SupportTier = "easy" | "medium" | "hard";
+
+const SUPPORT_TIERS: readonly SupportTier[] = ["easy", "medium", "hard"];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? "";
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * Bespoke spatial-scene scaffolds. The tier withdraws PERCEPTION/REFERENCE-FRAME
+ * aids only — it never changes the scene layout, the asked object, or which spatial
+ * relation is the answer (that axis is owned by the eval mode). Levers discovered
+ * from SpatialScene.tsx: the bordered grid (reference frame), the object name labels,
+ * and a NEW position-hint band that labels the position of OTHER (non-asked) objects.
+ */
+interface SupportScaffold {
+  /** Render clear cell borders so the student has an explicit coordinate frame
+   *  (rows/cols visible). At hard, the grid fades so position is judged unaided. */
+  showGrid: boolean;
+  /** Object name labels under each emoji (identity cue). Withdrawn at hard. */
+  showObjectLabels: boolean;
+  /** Show position-word hints on OTHER objects (never the asked relation) so the
+   *  student infers the target relation by analogy. Easy only. ANSWER-LEAK GUARD:
+   *  the component only labels non-target/non-reference relations. */
+  showPositionHints: boolean;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-workspace support structure for a tier on a pinned challenge type.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * task with less scaffolding — never a different relation, never a different scene.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const showGrid = tier !== "hard";
+  const showObjectLabels = tier !== "hard";
+  const showPositionHints = tier === "easy";
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-workspace SCAFFOLDING only (${
+      tier === "easy"
+        ? "maximum support: the reference-frame grid, object name labels, and example position hints on OTHER objects help the student read positions"
+        : tier === "medium"
+          ? "moderate support: the grid and object labels remain, but no example position hints"
+          : "minimum support: no reference grid, no labels — the student reasons about relative position unaided and explains how they know"
+    }). Keep the SAME scene layout and the SAME asked spatial relation; a harder tier NEVER changes which relation is asked or moves objects — it only removes reading aids.`,
+  ];
+  switch (pinnedType) {
+    case "identify":
+    case "describe":
+      promptLines.push(
+        tier === "easy"
+          ? "Keep the asked relation simple and clearly separated (e.g. a clear above/below along one column). Hints may name a reference direction (sky=above, ground=below)."
+          : tier === "hard"
+            ? "Hints must NOT name the position word; ask the student to compare the two objects' rows/columns themselves and justify the relationship."
+            : "Hints point to which two objects to compare without naming the position word.",
+      );
+      break;
+    case "place":
+      promptLines.push(
+        tier === "easy"
+          ? "The instruction names the relation plainly ('Put the ball ABOVE the box'); hints may restate where 'above' is on the grid."
+          : tier === "hard"
+            ? "Hints must NOT restate where the relation maps on the grid; ask the student to reason from the relation word to the cell themselves."
+            : "Hints confirm the relation word but let the student locate the cell.",
+      );
+      break;
+    case "follow_directions":
+      promptLines.push(
+        tier === "easy"
+          ? "Steps are short and reference a single fixed object; hints may restate the relation."
+          : tier === "hard"
+            ? "Hints must NOT restate each step's relation; ask the student to track placed objects and reason step-to-step unaided."
+            : "Hints help the student keep track of already-placed objects without naming the relation.",
+      );
+      break;
+  }
+  return { showGrid, showObjectLabels, showPositionHints, promptLines };
+}
+
+// ---------------------------------------------------------------------------
 // Shared constants & helpers
 // ---------------------------------------------------------------------------
 
@@ -259,6 +352,7 @@ const followDirectionsSchema: Schema = {
 
 async function generateIdentifyDescribe(
   topic: string, gradeLevel: string, theme: string, mode: "identify" | "describe",
+  tierSection: string,
 ): Promise<SpatialSceneChallenge[]> {
   const modeLabel = mode === "identify"
     ? "identify — ask 'Where is X relative to Y?' with 4 position-word options"
@@ -269,7 +363,7 @@ Create 3 spatial reasoning "${mode}" challenges for "${topic}" (${gradeLevel}).
 Theme: ${theme}.
 
 ${SHARED_CONTEXT}
-
+${tierSection}
 CHALLENGE TYPE: ${modeLabel}
 - Place 4 scene objects on a 3×3 grid. 2 are key objects (target + reference), 2 are backdrop objects that make the scene feel alive but aren't part of the question.
 - ALL 4 scene object slots (sceneObj0..sceneObj3) MUST be filled — no empty slots.
@@ -353,14 +447,14 @@ CHALLENGE TYPE: ${modeLabel}
 }
 
 async function generatePlace(
-  topic: string, gradeLevel: string, theme: string,
+  topic: string, gradeLevel: string, theme: string, tierSection: string,
 ): Promise<SpatialSceneChallenge[]> {
   const prompt = `
 Create 3 spatial reasoning "place" challenges for "${topic}" (${gradeLevel}).
 Theme: ${theme}.
 
 ${SHARED_CONTEXT}
-
+${tierSection}
 CHALLENGE TYPE: place — student taps a grid cell to place an object.
 - Place 4 scene objects on a 3×3 grid as the existing scene (reference + backdrop objects).
 - ALL 4 scene object slots (sceneObj0..sceneObj3) MUST be filled — no empty slots.
@@ -415,14 +509,14 @@ CHALLENGE TYPE: place — student taps a grid cell to place an object.
 }
 
 async function generateFollowDirections(
-  topic: string, gradeLevel: string, theme: string,
+  topic: string, gradeLevel: string, theme: string, tierSection: string,
 ): Promise<SpatialSceneChallenge[]> {
   const prompt = `
 Create 2 spatial reasoning "follow_directions" challenges for "${topic}" (${gradeLevel}).
 Theme: ${theme}.
 
 ${SHARED_CONTEXT}
-
+${tierSection}
 CHALLENGE TYPE: follow_directions — multi-step placement.
 - Place 1 reference scene object on a 3×3 grid.
 - Provide 2 steps. Each step tells the student to place an object at a position.
@@ -549,7 +643,16 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
 export const generateSpatialScene = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill/relation,
+     * difficulty = how much reference-frame scaffolding within it. NEVER changes the
+     * scene layout or which relation is asked.
+     */
+    difficulty?: string;
+  }>,
 ): Promise<SpatialSceneData> => {
   // -- Resolve eval mode --
   const evalConstraint = resolveEvalModeConstraint(
@@ -562,6 +665,18 @@ export const generateSpatialScene = async (
   const allowedTypes = evalConstraint?.allowedTypes
     ?? ["identify", "place", "describe", "follow_directions"];
 
+  // -- Resolve support tier (drives application; pinnedType only shapes prompt tone) --
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT scene/relation change)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join("\n")}\n`
+    : "";
+
   const theme = randomTheme();
 
   // -- Dispatch per-mode sub-generators in parallel --
@@ -569,25 +684,25 @@ export const generateSpatialScene = async (
 
   if (allowedTypes.includes("identify")) {
     generators.push(
-      generateIdentifyDescribe(topic, gradeLevel, theme, "identify")
+      generateIdentifyDescribe(topic, gradeLevel, theme, "identify", tierSection)
         .catch((e) => { console.error("[SpatialScene] identify failed:", e); return []; }),
     );
   }
   if (allowedTypes.includes("describe")) {
     generators.push(
-      generateIdentifyDescribe(topic, gradeLevel, theme, "describe")
+      generateIdentifyDescribe(topic, gradeLevel, theme, "describe", tierSection)
         .catch((e) => { console.error("[SpatialScene] describe failed:", e); return []; }),
     );
   }
   if (allowedTypes.includes("place")) {
     generators.push(
-      generatePlace(topic, gradeLevel, theme)
+      generatePlace(topic, gradeLevel, theme, tierSection)
         .catch((e) => { console.error("[SpatialScene] place failed:", e); return []; }),
     );
   }
   if (allowedTypes.includes("follow_directions")) {
     generators.push(
-      generateFollowDirections(topic, gradeLevel, theme)
+      generateFollowDirections(topic, gradeLevel, theme, tierSection)
         .catch((e) => { console.error("[SpatialScene] follow_directions failed:", e); return []; }),
     );
   }
@@ -603,6 +718,30 @@ export const generateSpatialScene = async (
     const fallbackType = allowedTypes[0] ?? "identify";
     console.log(`[SpatialScene] All sub-generators failed — using ${fallbackType} fallback`);
     challenges = [FALLBACKS[fallbackType] ?? FALLBACKS.identify];
+  }
+
+  // -- Apply support tier per-challenge (scaffolding withdrawal only) --
+  // Gated ONLY on supportTier being present, resolved from each challenge's OWN
+  // mode (ch.type) so blended/auto sessions get it too. Code owns the scaffold
+  // STRUCTURE; the LLM only chose the scene/numbers. The checker reads
+  // correctPosition/correctCell only — never these show* flags — so withdrawing
+  // a scaffold can never leak or invalidate the answer.
+  if (supportTier) {
+    challenges = challenges.map((ch) => {
+      const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
+      return {
+        ...ch,
+        supportTier,
+        showGrid: sc.showGrid,
+        showObjectLabels: sc.showObjectLabels,
+        showPositionHints: sc.showPositionHints,
+      };
+    });
+    console.log(
+      `[SpatialScene] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : "blended"}) → `
+      + `grid=${supportTier !== "hard"}, labels=${supportTier !== "hard"}, positionHints=${supportTier === "easy"}`,
+    );
   }
 
   // -- Determine gradeBand --

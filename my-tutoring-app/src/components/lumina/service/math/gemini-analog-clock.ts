@@ -45,6 +45,103 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+type ChallengeType = 'read' | 'set_time' | 'match' | 'elapsed';
+
+// ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract: config.targetEvalMode says WHICH skill (task identity,
+// matched to the objective by the manifest); config.difficulty says how much
+// on-clock SUPPORT the student gets while reading/setting time ('easy' = max
+// scaffolding, 'hard' = bare dial). The tier NEVER changes the time value — the
+// eval mode + grade-band granularity own that. A harder tier means fewer reading
+// aids (minute-tick numbers, hand-color legend, digital echo), never a different
+// time. See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Number labels (0,5,10..55) at the minute-tick positions around the dial —
+   *  offloads "what minute does the hand point to?". Strongest reading aid. */
+  showMinuteNumbers: boolean;
+  /** Hand-color legend ("blue = hour, white = minute") so the student doesn't
+   *  have to recall which hand is which. */
+  showHandLegend: boolean;
+  /** Live digital echo of the displayed time. ANSWER-LEAK on read/match/elapsed
+   *  (the displayed/elapsed time IS the asked answer there), so it is ONLY ever
+   *  enabled on set_time, where the TARGET time is given and the echo is a
+   *  self-check toward it — never the answer. Guarded per-mode in resolve. */
+  showDigitalEcho: boolean;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-clock reading-support structure for a tier on a pinned mode.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * "what time is it / set this time" task with fewer reading aids — never a
+ * different time, never crossing grade-band granularity.
+ *
+ * Digital-echo answer-leak guard: the echo is the time readout. On read/match
+ * the displayed time is the answer; on elapsed the duration is the answer (and
+ * the stopwatch already shows live). So the echo is enabled ONLY on set_time —
+ * and only at easy — where the asked answer is the TARGET the student is told to
+ * reach, so a readout of the *current* hand position is a legitimate self-check.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const showMinuteNumbers = tier === 'easy';
+  const showHandLegend = tier !== 'hard';
+  // ANSWER-LEAK guard: echo only on set_time (target given), and only at easy.
+  const showDigitalEcho = pinnedType === 'set_time' && tier === 'easy';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-clock READING SUPPORT only (${tier === 'easy' ? 'maximum support: minute-position numbers and a hand-color legend help the student read the dial' : tier === 'medium' ? 'moderate support: only the hand-color legend remains; the student reads the minute position themselves' : 'minimum support: a bare dial — the student reads hand positions unaided and explains what they see'}). The TIME VALUE never changes by tier — keep it on the grade-band granularity and within the eval mode. A harder tier removes reading AIDS, never changes the time.`,
+  ];
+  switch (pinnedType) {
+    case 'read':
+    case 'match':
+      promptLines.push(
+        tier === 'easy'
+          ? 'The dial shows numbered minute marks and a hand legend; hints may name which hand to read first (short = hour) but never state the time.'
+          : tier === 'hard'
+            ? 'The dial is bare (no minute numbers, no legend); hints should ask the student to describe where each hand points and reason out the time, never naming it.'
+            : 'The dial keeps the hand legend but drops the minute numbers; hints point to a hand position rather than naming the time.',
+      );
+      break;
+    case 'set_time':
+      promptLines.push(
+        tier === 'easy'
+          ? 'The student is told the TARGET time; numbered minute marks, a hand legend, and a digital echo of the current hand position help them check their progress toward the target (the echo shows what they have set, not the answer — the answer was given).'
+          : tier === 'hard'
+            ? 'Bare dial, no digital echo: the student must judge the hand positions against the target by eye and explain how they know they have it right.'
+            : 'Keep the hand legend but drop the minute numbers and the digital echo; the student aligns the hands to the target using the dial alone.',
+      );
+      break;
+    case 'elapsed':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Numbered minute marks and a hand legend help the student read the start and end positions; the duration itself is never stated.'
+          : tier === 'hard'
+            ? 'Bare dial; the student reads start and end positions and reasons out the elapsed duration unaided.'
+            : 'Keep the hand legend but drop the minute numbers; the student reads the positions to find the duration.',
+      );
+      break;
+  }
+  return { showMinuteNumbers, showHandLegend, showDigitalEcho, promptLines };
+}
+
 // ---------------------------------------------------------------------------
 // Gemini JSON schema
 // ---------------------------------------------------------------------------
@@ -143,6 +240,13 @@ export const generateAnalogClock = async (
   gradeLevel: string,
   config?: {
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-clock reading scaffolding within it. NEVER changes
+     * the time value (eval-mode/grade-band axis owns that).
+     */
+    difficulty?: string;
   },
 ): Promise<AnalogClockData> => {
   // ── Resolve eval mode ──
@@ -151,6 +255,19 @@ export const generateAnalogClock = async (
     config?.targetEvalMode,
     CHALLENGE_TYPE_DOCS,
   );
+
+  // ── Within-mode support tier (only meaningful within ONE pinned mode for the
+  // prompt tone; the deterministic application at the end runs per challenge). ──
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (reading-aid level — NOT time value)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
@@ -169,7 +286,7 @@ CONTEXT:
 - Key skills: telling time, understanding hour/minute relationship, elapsed time
 
 ${challengeTypeSection}
-
+${tierSection}
 GRADE-LEVEL TIME GRANULARITY (CRITICAL):
 - Kindergarten (gradeBand "K"): ONLY use :00 (on the hour) and :30 (half-hour). targetMinute must be 0 or 30.
 - Grades 1-2 (gradeBand "1-2"): Use :00, :15, :30, :45 (quarter-hour intervals). targetMinute must be 0, 15, 30, or 45.
@@ -335,6 +452,35 @@ Return the complete analog clock configuration.
       correctOptionIndex: 0,
       hint: 'Look at the short hand first — it points to the hour.',
     }];
+  }
+
+  // ── Apply the within-mode support tier deterministically (reading-aids only;
+  // code owns the SUPPORT structure, the LLM only chose the time values). Runs
+  // PER CHALLENGE, gated only on a tier being present (a blended session must get
+  // it too) — each challenge resolves its scaffold from its OWN mode (ch.type).
+  // NEVER touches targetHour/targetMinute/options/correctOptionIndex, so the
+  // checker (which compares the student's answer to the time value) is untouched
+  // and the digital echo can only appear where it is not the answer. ──
+  if (supportTier) {
+    for (const ch of data.challenges as Array<{
+      type: ChallengeType;
+      showMinuteNumbers?: boolean;
+      showHandLegend?: boolean;
+      showDigitalEcho?: boolean;
+      supportTier?: SupportTier;
+    }>) {
+      const sc = resolveSupportStructure(ch.type, supportTier); // per-challenge, mode-correct
+      ch.showMinuteNumbers = sc.showMinuteNumbers;
+      ch.showHandLegend = sc.showHandLegend;
+      // ANSWER-LEAK guard lives inside resolveSupportStructure: showDigitalEcho is
+      // already false for every mode except set_time, so this never leaks the
+      // read/match/elapsed answer regardless of tier.
+      ch.showDigitalEcho = sc.showDigitalEcho;
+      ch.supportTier = supportTier;
+    }
+    console.log(
+      `[AnalogClock] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`,
+    );
   }
 
   // Final summary log

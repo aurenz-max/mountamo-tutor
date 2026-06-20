@@ -51,6 +51,200 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tiers (config.difficulty → scaffolding + structural shape)
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** Reworded guardrail: this tier changes problem STRUCTURE (length gaps,
+ *  spread, scaffolding withdrawal), NEVER raw magnitude — every length stays
+ *  within the 1-12 scope. */
+const TIER_GUARDRAIL =
+  'Keep every object length within the 1-12 scope. This tier changes problem '
+  + 'STRUCTURE (how close the lengths are, how much on-screen help) and how much '
+  + 'the workspace helps the student self-check — NOT the size of the numbers.';
+
+/** Per-primitive scaffold levers (bespoke). null fields = lever N/A for that mode. */
+interface SupportScaffold {
+  /** compare/order — unit-cell dividers on the bars so the student can COUNT cells. */
+  showUnitTicks: boolean;
+  /** tile_and_count — live "not enough / too many / perfect fit" self-check text. */
+  showAlignmentFeedback: boolean;
+  /** indirect (#2 instruction-as-scaffold) — clue-chain strategy tip, or null to withdraw. */
+  instructionTip: string | null;
+  promptLines: string[];
+}
+
+/** Structural problem shape (2nd axis) — magnitude-free levers, code-enforced. */
+interface ProblemShape {
+  /** compare — exact |len0-len1| gap (subtle → obvious). */
+  compareGap: number | null;
+  /** order — exact min adjacent-length gap (tight → wide spread). */
+  orderMinGap: number | null;
+  promptLines: string[];
+}
+
+/** Scaffolding withdrawal (how much help) per mode + tier. */
+function resolveSupportStructure(mode: string, tier: SupportTier): SupportScaffold {
+  const ticksOn = tier !== 'hard';
+  switch (mode) {
+    case 'compare':
+      return {
+        showUnitTicks: ticksOn,
+        showAlignmentFeedback: false,
+        instructionTip: null,
+        promptLines: [
+          tier === 'hard'
+            ? 'HARD: the bars carry no unit gridlines — the student must judge length by eye.'
+            : 'Bars show unit gridlines so the student can count cells to self-check.',
+        ],
+      };
+    case 'order':
+      return {
+        showUnitTicks: ticksOn,
+        showAlignmentFeedback: false,
+        instructionTip: null,
+        promptLines: [
+          tier === 'hard'
+            ? 'HARD: no gridlines on the bars — order them by visual length alone.'
+            : 'Bars show unit gridlines so the student can count cells while ordering.',
+        ],
+      };
+    case 'tile_and_count':
+      return {
+        showUnitTicks: false, // ticks on the measured object would leak the count
+        showAlignmentFeedback: tier === 'easy',
+        instructionTip: null,
+        promptLines: [
+          tier === 'easy'
+            ? 'The tiling workspace gives live "not enough / too many / perfect fit" feedback to self-check.'
+            : 'The live fit feedback is withdrawn — the student must judge end-to-end alignment alone.',
+        ],
+      };
+    case 'indirect':
+      return {
+        showUnitTicks: false,
+        showAlignmentFeedback: false,
+        instructionTip:
+          tier === 'easy'
+            ? '(Tip: read the clues like a chain — one object is shorter than the reference, and the reference is shorter than the other.)'
+            : tier === 'medium'
+              ? '(Read both clues carefully before you choose.)'
+              : null, // hard: strategy fully withdrawn
+        promptLines: [
+          tier === 'hard'
+            ? 'HARD: the instruction does NOT name the chaining strategy — bare transitive question.'
+            : 'The instruction names the clue-chain strategy to scaffold the transitive reasoning.',
+        ],
+      };
+    default:
+      return { showUnitTicks: false, showAlignmentFeedback: false, instructionTip: null, promptLines: [] };
+  }
+}
+
+/** Structural shape (how hard a problem) per mode + tier. One in-mode lever each. */
+function resolveProblemShape(mode: string, tier: SupportTier): ProblemShape {
+  switch (mode) {
+    case 'compare': {
+      const compareGap = tier === 'easy' ? 4 : tier === 'medium' ? 2 : 1;
+      return {
+        compareGap,
+        orderMinGap: null,
+        promptLines: [
+          `Length difference between the two objects: ${compareGap} unit(s) (${
+            tier === 'hard' ? 'subtle — close lengths' : tier === 'medium' ? 'moderate' : 'obvious'
+          }).`,
+        ],
+      };
+    }
+    case 'order': {
+      const orderMinGap = tier === 'easy' ? 3 : tier === 'medium' ? 2 : 1;
+      return {
+        compareGap: null,
+        orderMinGap,
+        promptLines: [
+          `Adjacent objects differ by about ${orderMinGap} unit(s) (${
+            tier === 'hard' ? 'tight — hard to tell apart' : tier === 'medium' ? 'moderate spread' : 'wide spread'
+          }).`,
+        ],
+      };
+    }
+    default:
+      return { compareGap: null, orderMinGap: null, promptLines: [] };
+  }
+}
+
+/** Merge scaffolding + structural prompt lines into one tier block (LLM tone). */
+function buildTierPromptSection(mode: string, tier: SupportTier): string {
+  const lines = [
+    ...resolveSupportStructure(mode, tier).promptLines,
+    ...resolveProblemShape(mode, tier).promptLines,
+  ];
+  return `\n## WITHIN-MODE SUPPORT TIER "${tier}"\n- ${TIER_GUARDRAIL}\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
+}
+
+// ── Code-enforced structural levers (don't trust the LLM to hit an exact gap) ──
+
+interface CompareLike {
+  objectLength0: number;
+  objectLength1: number;
+  correctAnswer: string;
+}
+
+/** Force |len0-len1| to exactly `gap`, preserving direction + 1-12 scope. */
+function applyCompareGap(ch: CompareLike, gap: number): void {
+  if (ch.correctAnswer === 'same') return; // gap lever N/A for equal-length pairs
+  const obj0Longer = ch.objectLength0 >= ch.objectLength1;
+  let shorter = Math.min(ch.objectLength0, ch.objectLength1);
+  let longer = shorter + gap;
+  if (longer > 12) { longer = 12; shorter = 12 - gap; }
+  if (shorter < 1) { shorter = 1; longer = 1 + gap; }
+  ch.objectLength0 = obj0Longer ? longer : shorter;
+  ch.objectLength1 = obj0Longer ? shorter : longer;
+  ch.correctAnswer = ch.objectLength0 > ch.objectLength1 ? 'longer'
+    : ch.objectLength0 < ch.objectLength1 ? 'shorter' : 'same';
+}
+
+interface OrderLike {
+  objectName0: string; objectLength0: number;
+  objectName1: string; objectLength1: number;
+  objectName2?: string; objectLength2?: number;
+  correctOrderCsv?: string;
+  correctAnswer: string;
+}
+
+/** Re-space the three lengths to exact adjacent gap `minGap`, keeping rank order
+ *  (shortest stays shortest) + 1-12 scope. correctOrderCsv is preserved. */
+function applyOrderSpread(ch: OrderLike, minGap: number): void {
+  if (ch.objectLength2 == null || !ch.objectName2) return;
+  const slots = [
+    { key: 0, name: ch.objectName0, length: ch.objectLength0 },
+    { key: 1, name: ch.objectName1, length: ch.objectLength1 },
+    { key: 2, name: ch.objectName2, length: ch.objectLength2 },
+  ];
+  const ranked = [...slots].sort((a, b) => a.length - b.length);
+  const base = Math.max(1, Math.min(12 - 2 * minGap, ranked[0].length));
+  const newLens = [base, base + minGap, base + 2 * minGap];
+  ranked.forEach((r, i) => { r.length = newLens[i]; });
+  for (const r of ranked) {
+    if (r.key === 0) ch.objectLength0 = r.length;
+    else if (r.key === 1) ch.objectLength1 = r.length;
+    else ch.objectLength2 = r.length;
+  }
+  // ranked is ascending → names in rank order = shortest→longest
+  ch.correctOrderCsv = ranked.map((r) => r.name).join(',');
+  ch.correctAnswer = ch.correctOrderCsv;
+}
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -201,6 +395,13 @@ export const generateLengthLab = async (
   gradeLevel: string,
   config?: Partial<{
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second field of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding (and structural shape) within it.
+     * NEVER changes raw magnitude — only structure and help.
+     */
+    difficulty?: string;
   }>,
 ): Promise<LengthLabData> => {
   // ── Resolve eval mode ──
@@ -209,6 +410,14 @@ export const generateLengthLab = async (
     config?.targetEvalMode,
     CHALLENGE_TYPE_DOCS,
   );
+
+  // ── Resolve support tier (the STUDENT's tier — drives application) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is ONLY for the prompt tone (single-mode sessions get a tier block).
+  const pinnedType = evalConstraint?.allowedTypes.length === 1
+    ? evalConstraint.allowedTypes[0] : undefined;
+  const tierSection = pinnedType && supportTier
+    ? buildTierPromptSection(pinnedType, supportTier) : '';
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
@@ -241,7 +450,7 @@ CONTEXT:
 - Students learn measurement concepts: direct comparison, non-standard units, ordering
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
@@ -495,6 +704,42 @@ Return the complete length lab configuration.
       objectColor1: '#E57373',
       correctAnswer: 'longer',
     }];
+  }
+
+  // ── Apply support tier deterministically (per challenge, from its OWN mode) ──
+  // Difficulty is a STUDENT property, so a blended/auto session gets it too —
+  // gate only on a tier being present, never on pinnedType.
+  if (supportTier) {
+    for (const ch of data.challenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      const shape = resolveProblemShape(ch.type, supportTier);
+      ch.supportTier = supportTier;
+
+      // #1 perception aids (guarded per mode; protects the count-leak contract)
+      if (ch.type === 'compare' || ch.type === 'order') {
+        ch.showUnitTicks = sc.showUnitTicks;
+      }
+      if (ch.type === 'tile_and_count') {
+        ch.showAlignmentFeedback = sc.showAlignmentFeedback;
+      }
+
+      // #2 instruction-as-scaffold (indirect): append the chain tip, or leave bare
+      if (ch.type === 'indirect' && sc.instructionTip) {
+        ch.instruction = `${ch.instruction} ${sc.instructionTip}`;
+      }
+
+      // structural shape (code-enforced exact levers; guarded so no-tier path is byte-identical)
+      if (ch.type === 'compare' && shape.compareGap != null) {
+        applyCompareGap(ch, shape.compareGap);
+      }
+      if (ch.type === 'order' && shape.orderMinGap != null) {
+        applyOrderSpread(ch, shape.orderMinGap);
+      }
+    }
+    console.log(
+      `[LengthLab] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`,
+    );
   }
 
   // Final summary log

@@ -20,6 +20,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { TwoWayTableMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -35,6 +36,8 @@ export type TwoWayTableChallengeType =
   | 'conditional_probability'
   | 'independence_test';
 
+export type TwoWayTableSupportTier = 'easy' | 'medium' | 'hard';
+
 export interface TwoWayTableChallenge {
   id: string;
   challengeType: TwoWayTableChallengeType;
@@ -47,8 +50,20 @@ export interface TwoWayTableChallenge {
   question: string;
   expectedProbability: number;
   tolerance: number;
+  /** Legacy single switch — default source when no support tier present. */
   showTotals: boolean;
   hint: string;
+
+  // ── Support-tier scaffolds (set by generator when config.difficulty present) ──
+  supportTier?: TwoWayTableSupportTier;
+  /** Render the per-row total column. When undefined, falls back to showTotals. */
+  showRowTotals?: boolean;
+  /** Render the per-column total row. When undefined, falls back to showTotals. */
+  showColTotals?: boolean;
+  /** Render the grand-total corner cell. When undefined, falls back to showTotals. */
+  showGrandTotal?: boolean;
+  /** Easy-tier worked "sum reminder" anchor line (never states the answer total). */
+  sumReminder?: string;
 }
 
 export interface TwoWayTableData {
@@ -105,12 +120,32 @@ function formatProbability(p: number): string {
   return p.toFixed(2);
 }
 
+/**
+ * Resolve which totals the table renders. Support tiers set the fine-grained
+ * show* flags; when none is present we fall back to the legacy mode-fixed
+ * showTotals switch (every total on, or every total off, as before).
+ */
+function resolveTotalsVisibility(challenge: TwoWayTableChallenge): {
+  showRow: boolean;
+  showCol: boolean;
+  showGrand: boolean;
+  anyTotals: boolean;
+} {
+  const tiered = challenge.supportTier != null;
+  const showRow = tiered ? !!challenge.showRowTotals : challenge.showTotals;
+  const showCol = tiered ? !!challenge.showColTotals : challenge.showTotals;
+  const showGrand = tiered ? !!challenge.showGrandTotal : challenge.showTotals;
+  return { showRow, showCol, showGrand, anyTotals: showRow || showCol || showGrand };
+}
+
 // ============================================================================
-// Frequency Table Renderer (read-only with mode-gated totals)
+// Frequency Table Renderer (read-only with tier-gated totals)
 //
 // BESPOKE PAINTING: this is the primitive's core visual surface — a
 // pedagogically color-coded contingency table (purple columns, blue rows,
-// amber totals) the student reads counts out of. Left intentionally untouched.
+// amber totals) the student reads counts out of. Support tiers withdraw the
+// amber total scaffolds independently (row / column / grand) so a hard tier
+// makes the student compute every sum; the cell counts never change.
 // ============================================================================
 
 interface FrequencyTableProps {
@@ -124,8 +159,10 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
     rowCategories,
     columnCategories,
     frequencies,
-    showTotals,
+    sumReminder,
   } = challenge;
+
+  const { showRow, showCol, showGrand, anyTotals } = resolveTotalsVisibility(challenge);
 
   const rowTotals = useMemo(
     () => frequencies.map((row) => row.reduce((s, v) => s + v, 0)),
@@ -163,7 +200,7 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
                 {col}
               </th>
             ))}
-            {showTotals && (
+            {showRow && (
               <th className="p-2 text-center font-semibold text-amber-300 border-b border-white/10 border-l-2 border-l-white/20">
                 Total
               </th>
@@ -184,14 +221,14 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
                   {cell}
                 </td>
               ))}
-              {showTotals && (
+              {showRow && (
                 <td className="p-2 text-center font-mono text-amber-200 font-bold border-l-2 border-l-white/20">
                   {rowTotals[ri]}
                 </td>
               )}
             </tr>
           ))}
-          {showTotals && (
+          {(showCol || showGrand) && (
             <tr className="border-t-2 border-t-white/20 bg-slate-900/50">
               <td className="p-2 font-semibold text-amber-300 border-r border-white/10">
                 Total
@@ -201,17 +238,26 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
                   key={ci}
                   className="p-2 text-center font-mono text-amber-200 font-bold"
                 >
-                  {t}
+                  {showCol ? t : ''}
                 </td>
               ))}
+              {/* Grand-total corner cell — shown independently of the column row. */}
               <td className="p-2 text-center font-mono text-purple-200 font-bold text-lg border-l-2 border-l-white/20">
-                {grandTotal}
+                {showGrand ? grandTotal : ''}
               </td>
             </tr>
           )}
         </tbody>
       </table>
-      {!showTotals && (
+
+      {/* Easy-tier worked "sum reminder" — a safe (non-answer) total demonstrated. */}
+      {sumReminder && (
+        <p className="mt-2 text-xs text-emerald-300/90 italic">
+          {sumReminder}
+        </p>
+      )}
+
+      {!anyTotals && (
         <p className="mt-2 text-xs text-slate-500 italic">
           Row, column, and grand totals are hidden for this challenge — compute the totals you need from the cells.
         </p>
@@ -219,6 +265,27 @@ const FrequencyTable: React.FC<FrequencyTableProps> = ({ challenge }) => {
     </div>
   );
 };
+
+// ============================================================================
+// Tutor reveal policy — keep the AI tutor in sync with the on-screen scaffold so
+// a hard tier (every total hidden) isn't undone by the tutor naming a total or
+// the answer. The task identity (joint / marginal / conditional / independence)
+// is the SAME at every tier; the tier only dials how much the tutor may pre-sum.
+// In every mode the relationship to compute IS the assessed skill, so the tutor
+// never states the final probability at any tier.
+// ============================================================================
+function tutorRevealClause(tier?: TwoWayTableSupportTier): string {
+  switch (tier) {
+    case 'easy':
+      return ' [TIER:easy] Max scaffolding — the non-answer totals are pre-summed on screen. You may name which cell and which total to divide, and walk the setup step by step. Never state the final probability.';
+    case 'medium':
+      return ' [TIER:medium] Only the grand total is shown. Nudge which row or column the student must add up themselves; do not pre-sum it for them and do not give the answer.';
+    case 'hard':
+      return ' [TIER:hard] EVERY total is hidden — do NOT state any row, column, or grand total, and do NOT name the answer. Ask the student WHICH counts they need to add for this question, and let them compute each sum.';
+    default:
+      return '';
+  }
+}
 
 // ============================================================================
 // Component
@@ -236,6 +303,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
     challenges,
     challengeType: sessionChallengeType,
     educationalContext,
+    gradeBand = '7-8',
     instanceId,
     skillId,
     subskillId,
@@ -280,6 +348,51 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
   const hintViewedRef = useRef(false);
   const submittedRef = useRef(false);
   const startTimeRef = useRef(Date.now());
+
+  // ── AI Tutoring ───────────────────────────────────────────────────
+  // The tutor reads supportTier so it can calibrate reveal: at hard it must NOT
+  // name any total it hid, nor the answer (see tutorRevealClause).
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    challengeType: currentChallenge?.challengeType ?? sessionChallengeType,
+    scenario: currentChallenge?.scenario ?? '',
+    question: currentChallenge?.question ?? '',
+    rowLabel: currentChallenge?.rowLabel ?? '',
+    columnLabel: currentChallenge?.columnLabel ?? '',
+    supportTier: currentChallenge?.supportTier ?? null,
+    // Answer for the tutor's internal reasoning ONLY — the reveal clause forbids
+    // naming it; the tutor coaches toward it without stating it.
+    correctAnswer: currentChallenge ? formatProbability(currentChallenge.expectedProbability) : '',
+    totalChallenges: challenges.length,
+    currentChallengeIndex: currentIndex + 1,
+    attemptNumber: currentAttempts + 1,
+    gradeBand,
+  }), [
+    title, currentChallenge, sessionChallengeType, challenges.length,
+    currentIndex, currentAttempts, gradeBand,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'two-way-table',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand === 'statistics' ? 'Statistics' : 'Grade 7-8',
+  });
+
+  // Activity introduction (once, when connected)
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Two-Way Table probability session. Concept: ${sessionChallengeType}. `
+      + `${challenges.length} contingency-table problems, surfaced one at a time. `
+      + `First table: "${currentChallenge?.scenario}" — "${currentChallenge?.question}". `
+      + `Introduce warmly and orient the student to reading the table.`
+      + tutorRevealClause(currentChallenge?.supportTier),
+      { silent: true },
+    );
+  }, [isConnected, challenges.length, sessionChallengeType, currentChallenge, sendText]);
 
   // ── Reset per-challenge state on advance ──────────────────────────
   useEffect(() => {
@@ -351,7 +464,14 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
 
     const result = submitResult(overallAccuracy >= 60, overallAccuracy, metrics);
     setSubmittedResult(result);
-  }, [allChallengesComplete, challengeResults, hasSubmitted, sessionChallengeType, submitResult]);
+
+    // Tutor wrap-up
+    sendText(
+      `[ALL_COMPLETE] Session done. Overall accuracy ${overallAccuracy}% across ${totalChallenges} tables. `
+      + `Give brief encouraging feedback about their two-way-table reasoning.`,
+      { silent: true },
+    );
+  }, [allChallengesComplete, challengeResults, hasSubmitted, sessionChallengeType, submitResult, sendText]);
 
   // ── Check answer ──────────────────────────────────────────────────
   const handleCheck = useCallback(() => {
@@ -390,6 +510,11 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
         challengeType: currentChallenge.challengeType,
         hintViewed: hintViewedRef.current,
       });
+      sendText(
+        `[ANSWER_CORRECT] Student correctly answered the ${currentChallenge.challengeType} table `
+        + `("${currentChallenge.scenario}"). Congratulate briefly and, if more tables remain, encourage them onward.`,
+        { silent: true },
+      );
     } else {
       SoundManager.playIncorrect();
       setFeedback({
@@ -398,6 +523,13 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
           ? 'Not quite — re-check which counts go into the numerator and denominator.'
           : `Still off. Try the hint, or check your division.`,
       });
+      sendText(
+        `[ANSWER_INCORRECT] Student answered "${answerInput}" on the ${currentChallenge.challengeType} table `
+        + `("${currentChallenge.scenario}", question: "${currentChallenge.question}"). `
+        + `Point them at the specific cell or sum to re-examine for THIS concept — do not just repeat the formula.`
+        + tutorRevealClause(currentChallenge.supportTier),
+        { silent: true },
+      );
     }
   }, [
     currentChallenge,
@@ -406,6 +538,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
     answerInput,
     incrementAttempts,
     recordResult,
+    sendText,
   ]);
 
   const handleShowHint = useCallback(() => {
@@ -428,8 +561,17 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
         hintViewed: hintViewedRef.current,
       });
     }
-    advanceProgress();
-  }, [advanceProgress, currentAttempts, currentChallenge, recordResult]);
+    const advanced = advanceProgress();
+    if (advanced) {
+      const nextChallenge = challenges[currentIndex + 1];
+      sendText(
+        `[NEXT_ITEM] Moving to table ${currentIndex + 2} of ${challenges.length}: `
+        + `"${nextChallenge?.scenario}" — "${nextChallenge?.question}". Introduce it briefly.`
+        + tutorRevealClause(nextChallenge?.supportTier),
+        { silent: true },
+      );
+    }
+  }, [advanceProgress, currentAttempts, currentChallenge, recordResult, challenges, currentIndex, sendText]);
 
   // ── Early return ──────────────────────────────────────────────────
   if (!challenges || challenges.length === 0) {
@@ -488,7 +630,7 @@ const TwoWayTable: React.FC<TwoWayTableProps> = ({ data, className }) => {
               <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
             </LuminaPrompt>
 
-            {/* Frequency table (mode-gated totals) — bespoke painting */}
+            {/* Frequency table (tier-gated totals) — bespoke painting */}
             <FrequencyTable challenge={currentChallenge} />
 
             {/* Answer input */}

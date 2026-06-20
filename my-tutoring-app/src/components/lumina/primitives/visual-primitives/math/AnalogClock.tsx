@@ -46,6 +46,20 @@ export interface ClockChallenge {
   /** For elapsed: duration description e.g. "1 hour" */
   elapsedDescription?: string;
   hint: string;
+
+  // ── Within-mode support tier (config.difficulty) reading-aid levers ──
+  // Default = max scaffolding when unset, so a no-tier session is unchanged.
+  /** Number labels (0,5,..55) at minute-tick positions — offloads reading the
+   *  minute hand's position. Withdrawn at medium/hard. */
+  showMinuteNumbers?: boolean;
+  /** Hand-color legend (which hand is hour vs minute). Withdrawn at hard. */
+  showHandLegend?: boolean;
+  /** Live digital echo of the displayed time. ANSWER-LEAK on read/match/elapsed,
+   *  so the generator only ever sets this true on set_time/easy (target given). */
+  showDigitalEcho?: boolean;
+  /** The student's support tier — surfaced to the live tutor so its reveal level
+   *  matches the on-screen scaffold. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface AnalogClockData {
@@ -151,14 +165,32 @@ const ClockFace: React.FC<{
   hourDeg: number;
   minuteDeg: number;
   showMinuteTicks: boolean;
+  /** Reading aid: number labels (0,5,..55) at the 5-minute tick positions. */
+  showMinuteNumbers?: boolean;
   highlightColor?: string;
   isPulsing?: boolean;
-}> = ({ hourDeg, minuteDeg, showMinuteTicks, highlightColor = '#60a5fa', isPulsing }) => {
+}> = ({ hourDeg, minuteDeg, showMinuteTicks, showMinuteNumbers, highlightColor = '#60a5fa', isPulsing }) => {
   const numerals = Array.from({ length: 12 }, (_, i) => {
     const num = i + 1;
     const angle = (num * 30 - 90) * (Math.PI / 180);
     return { num, x: CENTER + NUMERAL_RADIUS * Math.cos(angle), y: CENTER + NUMERAL_RADIUS * Math.sin(angle) + 1 };
   });
+
+  // Minute-position number labels (0,5,..55) sitting just outside the dial face,
+  // aligned to each hour position (12→0, 1→5, 2→10, ...). A reading aid that
+  // offloads "what minute is the long hand pointing at?".
+  const MINUTE_LABEL_RADIUS = FACE_RADIUS + 11;
+  const minuteLabels = showMinuteNumbers
+    ? Array.from({ length: 12 }, (_, i) => {
+        const minute = (i * 5) % 60; // 12 o'clock = 0
+        const angle = (i * 30 - 90) * (Math.PI / 180);
+        return {
+          minute,
+          x: CENTER + MINUTE_LABEL_RADIUS * Math.cos(angle),
+          y: CENTER + MINUTE_LABEL_RADIUS * Math.sin(angle) + 1,
+        };
+      })
+    : [];
 
   const majorTicks = Array.from({ length: 12 }, (_, i) => {
     const angle = (i * 30) * (Math.PI / 180);
@@ -226,6 +258,22 @@ const ClockFace: React.FC<{
           strokeWidth={2.5}
           strokeLinecap="round"
         />
+      ))}
+
+      {/* Minute-position number labels (reading aid — easy tier) */}
+      {minuteLabels.map(({ minute, x, y }) => (
+        <text
+          key={`min-${minute}`}
+          x={x} y={y}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="rgba(96,165,250,0.7)"
+          fontSize={9}
+          fontWeight={500}
+          fontFamily="system-ui, sans-serif"
+        >
+          {minute}
+        </text>
       ))}
 
       {/* Numerals */}
@@ -348,6 +396,38 @@ const TimelineScrubber: React.FC<{
     </div>
   );
 };
+
+// ============================================================================
+// Tutor reveal policy — calibrate the live tutor to the on-screen support tier
+// ============================================================================
+
+/**
+ * How much the live tutor may reveal, calibrated to the on-screen support tier
+ * and the mode. The tutor is a second information channel, so at 'hard' (bare
+ * dial) it must not supply the reading aids the UI withheld (don't name the
+ * minute position, don't identify the hands). The TIME itself — and the elapsed
+ * duration — is the answer and is never stated at any tier.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  mode: ClockChallenge['type'],
+): string {
+  if (!tier) return '';
+  const answerNote =
+    mode === 'elapsed'
+      ? 'Never state the elapsed duration — that is the answer.'
+      : mode === 'set_time'
+        ? 'The target time was given; help the student align the hands, but never confirm the exact hand position is right before they check.'
+        : 'Never state the time shown — that is the answer.';
+  switch (tier) {
+    case 'easy':
+      return `SUPPORT TIER easy: maximum scaffolding. You may name which hand to read first (short = hour, long = minute) and point to the numbered minute marks. ${answerNote}`;
+    case 'medium':
+      return `SUPPORT TIER medium: the minute numbers are hidden; you may still remind the student which hand is which, but ask them to read the minute position themselves. ${answerNote}`;
+    case 'hard':
+      return `SUPPORT TIER hard: bare dial. Do NOT name the minute position or identify the hands — ask the student what they see and how they can tell. ${answerNote}`;
+  }
+}
 
 // ============================================================================
 // Props
@@ -503,6 +583,12 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
     challengeType: currentChallenge?.type ?? 'read',
     targetTime: currentChallenge ? formatTime(currentChallenge.targetHour, currentChallenge.targetMinute) : '12:00',
     attemptNumber: currentAttempts + 1,
+    // Within-mode support tier + reveal policy so the tutor stays in sync with
+    // the on-screen reading aids (at 'hard' it must not name what the dial hid).
+    supportTier: currentChallenge?.supportTier,
+    tutorRevealPolicy: currentChallenge
+      ? tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)
+      : '',
   }), [
     gradeBand, challenges.length, currentChallengeIndex,
     currentChallenge, currentAttempts,
@@ -611,10 +697,12 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
       incrementAttempts();
       setFeedback(currentAttempts === 0 ? 'Not quite — try again!' : currentChallenge.hint);
       setFeedbackType('error');
+      const revealClause = tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type);
       sendText(
         `[ANSWER_INCORRECT] Student answered wrong. Target: ${targetTime}. `
         + `Displayed: ${formatTime(displayHour, displayMinute)}. `
-        + `Attempt ${currentAttempts + 1}. Give a gentle hint.`,
+        + `Attempt ${currentAttempts + 1}. Give a gentle hint.`
+        + (revealClause ? ` ${revealClause}` : ''),
         { silent: true },
       );
     }
@@ -667,9 +755,11 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
 
     const next = challenges[currentChallengeIndex + 1];
     if (next) {
+      const nextReveal = tutorRevealPolicy(next.supportTier, next.type);
       sendText(
         `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
-        + `Type: ${next.type}. Instruction: "${next.instruction}". Introduce it briefly.`,
+        + `Type: ${next.type}. Instruction: "${next.instruction}". Introduce it briefly.`
+        + (nextReveal ? ` ${nextReveal}` : ''),
         { silent: true },
       );
     }
@@ -717,6 +807,17 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
   const minuteDeg = minuteToDegrees(displayMinute);
   const showMinuteTicks = gradeBand !== 'K';
   const digitalDisplay = formatTime(displayHour, displayMinute);
+
+  // ── Within-mode support-tier reading aids (default = max scaffolding when the
+  // generator set no tier, so an un-tiered session is unchanged). ──
+  const showMinuteNumbers = currentChallenge?.showMinuteNumbers ?? false;
+  const showHandLegend = currentChallenge?.showHandLegend ?? false;
+  // ANSWER-LEAK guard is upstream (generator only ever enables this on set_time),
+  // but defensively re-clamp here so the echo can NEVER show on read/match — the
+  // displayed time is the answer there. set_time's target was given, so the echo
+  // is a self-check; elapsed keeps its existing stopwatch readout below.
+  const showDigitalEcho =
+    (currentChallenge?.showDigitalEcho ?? false) && currentChallenge?.type === 'set_time';
 
   const isCurrentChallengeCorrect = currentChallenge
     ? challengeResults.some(r => r.challengeId === currentChallenge.id && r.correct)
@@ -780,6 +881,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
                 hourDeg={hourDeg}
                 minuteDeg={minuteDeg}
                 showMinuteTicks={showMinuteTicks}
+                showMinuteNumbers={showMinuteNumbers}
                 highlightColor={
                   feedbackType === 'success' ? '#4ade80' :
                   feedbackType === 'error' ? '#f87171' :
@@ -798,8 +900,26 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ data, className }) => {
               )}
             </div>
 
-            {/* Digital display — hidden in read/match (leaks answer) and set_time (defeats purpose) */}
-            {(currentChallenge?.type === 'elapsed' || isCurrentChallengeCorrect) && (
+            {/* Hand-color legend (support tier: easy + medium). A reading aid that
+                 names which hand is which — never reveals the time. */}
+            {showHandLegend && !isCurrentChallengeCorrect && (
+              <div className="flex items-center gap-4 text-xs text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-4 h-[5px] rounded-full" style={{ background: '#60a5fa' }} />
+                  Hour (short)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-5 h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.9)' }} />
+                  Minute (long)
+                </span>
+              </div>
+            )}
+
+            {/* Digital display.
+                - elapsed / after-correct: existing behavior (echo not the asked answer).
+                - set_time + easy tier (showDigitalEcho): a self-check toward the GIVEN
+                  target — never shown on read/match where the time IS the answer. */}
+            {(currentChallenge?.type === 'elapsed' || isCurrentChallengeCorrect || showDigitalEcho) && (
               <div className="font-mono text-3xl text-slate-100 tracking-widest bg-slate-800/50 border border-white/10 rounded-lg px-6 py-2">
                 {digitalDisplay}
               </div>

@@ -18,6 +18,60 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+// ---------------------------------------------------------------------------
+// Fraction "dice roll" — code owns the randomness, Gemini owns the pedagogy.
+//
+// Gemini's structured output converges on the canonical 1/2, 2/3, 3/4 ladder
+// every run regardless of temperature, so we roll the fractions in code and feed
+// the shuffled candidate set into the prompt. This is the createDiscretePool
+// PATTERN specialized to a fraction PAIR — kept LOCAL here (not in the shared
+// numberPoolService, which is for scalar numbers) since the shape is bespoke.
+//
+// The denominator set IS the scope (grade-band-legal: K-2 halves/thirds/fourths,
+// 3-5 up to twelfths), so a roll can never exceed the grade ceiling. The topic
+// stays authoritative in the prompt, so a named family ("fourths") still wins.
+// ---------------------------------------------------------------------------
+
+const GRADE_BAND_DENOMINATORS: Record<'K-2' | '3-5', number[]> = {
+  'K-2': [2, 3, 4],
+  '3-5': [2, 3, 4, 5, 6, 8, 10, 12],
+};
+
+/** Resolve K-2 vs 3-5 from a grade-context string (mirrors the post-process default). */
+function resolveGradeBand(gradeContext: string): 'K-2' | '3-5' {
+  const lower = gradeContext.toLowerCase();
+  return lower.includes('kinder') || lower.includes('k-2') || lower.includes('1st') || lower.includes('2nd')
+    ? 'K-2'
+    : '3-5';
+}
+
+/** Roll a Fisher-Yates–shuffled pool of grade-legal proper fractions (the shuffle
+ *  IS the entropy). Skips the trivial shade-all whole. */
+function rollFractionPool(denominators: number[], count = 9): string[] {
+  const all: string[] = [];
+  for (const d of denominators) {
+    for (let n = 1; n < d; n++) all.push(`${n}/${d}`);
+  }
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [all[i], all[j]] = [all[j], all[i]];
+  }
+  return all.slice(0, Math.min(count, all.length));
+}
+
+/** Build the prompt block that hands Gemini the rolled candidate set. */
+function buildFractionPoolSection(gradeContext: string): string {
+  const dens = GRADE_BAND_DENOMINATORS[resolveGradeBand(gradeContext)];
+  const list = rollFractionPool(dens).join(', ');
+  return `
+FRACTION POOL (pre-shuffled by the adaptive system for variety):
+- Candidate fractions: ${list}
+- The topic is AUTHORITATIVE: if it names a fraction family (e.g. "fourths", "thirds"), prefer candidates with that denominator.
+- Assign a DIFFERENT fraction from this list to each challenge — do NOT default to 1/2, 2/3, 3/4. Favor VARIED numerators, not just unit fractions.
+- For 'compare': choose TWO DIFFERENT, non-equivalent fractions from the pool (the compareFraction too).
+- For 'equivalent': pick a base fraction from the pool, then choose equivalentDenominator from the legal denominators so the equivalent has a whole-number numerator.
+- Do NOT invent a fraction whose denominator is outside this list.`;
+}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -53,6 +107,107 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'equivalent' (find equivalent fraction)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Support tiers — within-mode scaffolding withdrawal + compare proximity.
+// Second axis of the two-field contract (targetEvalMode = WHICH skill,
+// difficulty = HOW MUCH support within it). NEVER changes magnitude.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+type FractionChallengeType = 'identify' | 'build' | 'compare' | 'equivalent';
+
+/** Per-challenge scaffold flags written by the tier. All are DISPLAY-ONLY —
+ *  the component's checkers read numerator/denominator, never these — so
+ *  withdrawing a scaffold can never invalidate a correct answer. */
+interface SupportScaffold {
+  /** identify: state the total-slice count ("N equal pieces"); build: show the denominator slice label */
+  showTotalPieces: boolean;
+  /** running shaded/built tally readout (identify "M shaded", build & equivalent live count) */
+  showWorkingCount: boolean;
+  /** compare ONLY: numeric fraction labels under each circle and inside the choice buttons */
+  showFractionLabels: boolean;
+  promptLines: string[];
+}
+
+/** compare ONLY structural lever — how close the two fraction VALUES are.
+ *  Prompt-shaped (the LLM picks the fractions); in-mode (still comparing two
+ *  fractions) and structural (discrimination difficulty), never magnitude. */
+type CompareProximity = 'far' | 'moderate' | 'close';
+
+const TIER_GUARDRAIL =
+  'Keep every denominator within 2-12 and stay inside the grade band — this tier changes only '
+  + 'on-screen SUPPORT and (for compare) how CLOSE the two fraction values are, NOT raw magnitude.';
+
+function resolveSupportStructure(type: FractionChallengeType, tier: SupportTier): SupportScaffold {
+  switch (type) {
+    case 'identify':
+      if (tier === 'easy')
+        return { showTotalPieces: true, showWorkingCount: true, showFractionLabels: true,
+          promptLines: ['identify: a caption states BOTH the total and shaded counts — keep the instruction warm and direct.'] };
+      if (tier === 'medium')
+        return { showTotalPieces: true, showWorkingCount: false, showFractionLabels: true,
+          promptLines: ['identify: only the TOTAL slice count is shown; the student counts the shaded slices alone. Hint may name the total but NOT the shaded count.'] };
+      return { showTotalPieces: false, showWorkingCount: false, showFractionLabels: true,
+        promptLines: ['identify: NO count caption is shown — the student must count both total and shaded slices unaided. Hint must NOT state the numerator or denominator; ask what they see.'] };
+
+    case 'build':
+      if (tier === 'easy')
+        return { showTotalPieces: true, showWorkingCount: true, showFractionLabels: true,
+          promptLines: ['build: a live "shaded / total" tally updates as the student clicks — they can self-check.'] };
+      if (tier === 'medium')
+        return { showTotalPieces: true, showWorkingCount: false, showFractionLabels: true,
+          promptLines: ['build: only the total-slice label is shown, no running shaded tally — the student tracks their own count.'] };
+      return { showTotalPieces: false, showWorkingCount: false, showFractionLabels: true,
+        promptLines: ['build: NO count readout — the student shades and verifies the count entirely unaided. Hint must not state how many are currently shaded.'] };
+
+    case 'equivalent':
+      if (tier === 'hard')
+        return { showTotalPieces: false, showWorkingCount: false, showFractionLabels: true,
+          promptLines: ['equivalent: NO live built-fraction tally — the student tracks the equivalent they are building unaided. Hint must not state the current built count.'] };
+      return { showTotalPieces: true, showWorkingCount: true, showFractionLabels: true,
+        promptLines: ['equivalent: the live built-fraction tally is shown so the student can compare it against the reference.'] };
+
+    case 'compare':
+      if (tier === 'easy')
+        return { showTotalPieces: true, showWorkingCount: true, showFractionLabels: true,
+          promptLines: ['compare: numeric fraction labels are shown under each circle and inside the buttons — visual + symbolic support.'] };
+      return { showTotalPieces: true, showWorkingCount: true, showFractionLabels: false,
+        promptLines: ['compare: numeric fraction labels are HIDDEN — the student judges purely from the shaded area. Hint must describe the picture ("which circle has more color?"), never the fraction values.'] };
+  }
+}
+
+/** compare proximity — easy=obvious gap, hard=subtle. Other modes: no structural change. */
+function resolveCompareProximity(tier: SupportTier): CompareProximity {
+  return tier === 'easy' ? 'far' : tier === 'medium' ? 'moderate' : 'close';
+}
+
+const PROXIMITY_PROMPT: Record<CompareProximity, string> = {
+  far: 'compare STRUCTURE: pick two fractions whose values are FAR apart (e.g. 1/2 vs 1/6) so the difference in shaded area is obvious at a glance.',
+  moderate: 'compare STRUCTURE: pick two fractions a MODERATE distance apart (e.g. 1/2 vs 2/3) — distinguishable but requires a careful look.',
+  close: 'compare STRUCTURE: pick two fractions CLOSE in value (e.g. 3/5 vs 5/8) so the shaded areas look similar and the student must discriminate carefully. Still keep them non-equivalent and denominators 2-12.',
+};
+
+/** Merge scaffolding + structural prompt lines into one tier block for the given in-scope modes. */
+function buildTierPromptSection(modes: FractionChallengeType[], tier: SupportTier): string {
+  const lines = new Set<string>();
+  for (const m of modes) {
+    for (const l of resolveSupportStructure(m, tier).promptLines) lines.add(l);
+    if (m === 'compare') lines.add(PROXIMITY_PROMPT[resolveCompareProximity(tier)]);
+  }
+  return `\n## WITHIN-MODE SUPPORT TIER "${tier}"\n`
+    + `- ${TIER_GUARDRAIL}\n`
+    + Array.from(lines).map((l) => `- ${l}`).join('\n') + '\n';
+}
 
 // ---------------------------------------------------------------------------
 // Base schema (all challenge types)
@@ -186,6 +341,12 @@ export const generateFractionCircles = async (
     intent: string;
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty: string;
   }>
 ): Promise<FractionCirclesData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -194,6 +355,16 @@ export const generateFractionCircles = async (
     config?.targetEvalMode,
     CHALLENGE_TYPE_DOCS,
   );
+
+  // ── Resolve the within-mode support tier (drives BOTH the prompt tone and the
+  //    deterministic per-challenge scaffold application after generation) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierModes = (evalConstraint?.allowedTypes
+    ?? ['identify', 'build', 'compare', 'equivalent']) as FractionChallengeType[];
+  const tierSection = supportTier ? buildTierPromptSection(tierModes, supportTier) : '';
+
+  // ── Pre-roll a grade-legal fraction pool (entropy lives in the prompt) ──
+  const fractionPoolSection = buildFractionPoolSection(gradeContext);
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
@@ -212,7 +383,8 @@ CONTEXT:
 - Intent: ${config?.intent || topic}
 
 ${challengeTypeSection}
-
+${tierSection}
+${fractionPoolSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - K-2 (gradeBand "K-2"):
@@ -233,7 +405,7 @@ GUIDELINES FOR GRADE LEVELS:
 
 REQUIREMENTS:
 1. Generate 4-6 challenges that progress in difficulty
-2. Start with simpler fractions (halves, thirds) and move to harder ones
+2. Choose every fraction from the FRACTION POOL above — do NOT invent your own values and do NOT default to the 1/2, 2/3, 3/4 sequence. Use varied numerators across the session.
 3. Each challenge needs a unique id (e.g., 'fc1', 'fc2', ...)
 4. denominators must be between 2 and 12 inclusive
 5. numerators must be between 0 and the denominator (inclusive)
@@ -518,6 +690,25 @@ Return the complete fraction circles configuration.
   // Ensure title exists
   if (!data.title) {
     data.title = "Fraction Circles";
+  }
+
+  // ---- Apply the support tier deterministically, PER CHALLENGE ----
+  // Difficulty is a STUDENT property: a blended/auto session gets it too, with
+  // each challenge's scaffold resolved from its OWN mode. Gate only on a tier
+  // being present (NOT on a single pinned mode) so blended sessions are covered.
+  // Code owns the support STRUCTURE; the LLM only chose the numbers.
+  if (supportTier) {
+    for (const ch of data.challenges as FractionCirclesChallenge[]) {
+      const sc = resolveSupportStructure(ch.type as FractionChallengeType, supportTier);
+      ch.supportTier = supportTier;
+      ch.showTotalPieces = sc.showTotalPieces;
+      ch.showWorkingCount = sc.showWorkingCount;
+      // showFractionLabels is a compare-only lever; leave others undefined (renders unaffected).
+      ch.showFractionLabels = ch.type === 'compare' ? sc.showFractionLabels : undefined;
+    }
+    const pinnedType = evalConstraint?.allowedTypes.length === 1
+      ? evalConstraint.allowedTypes[0] : undefined;
+    console.log(`[FractionCircles] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
   }
 
   // Final summary log

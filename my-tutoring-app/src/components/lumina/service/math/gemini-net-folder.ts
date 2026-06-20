@@ -51,6 +51,101 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tiers (config.difficulty) — FOLD-SCAFFOLD axis
+// ---------------------------------------------------------------------------
+// The tier toggles FOLD SCAFFOLDS only (fold-line guides + face-match hints) —
+// it never changes the net, the chosen solid, or which solid the net folds into.
+// That (the net complexity / target solid) is the EVAL-MODE axis. See
+// [[feedback_support-tiers-natural-levers]] / [[structural-difficulty-not-numeric]].
+
+type ChallengeType =
+  | 'identify_solid'
+  | 'count_faces_edges_vertices'
+  | 'match_faces'
+  | 'valid_net'
+  | 'surface_area';
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Dashed fold-line guides between adjacent net faces — show where the net
+   *  hinges/folds. The core fold scaffold; withdrawn at the hard tier. */
+  showFoldGuides: boolean;
+  /** Face-match correspondence highlighting (tap a net face → its match lights
+   *  up on the solid). ANSWER-LEAK GUARD: forced false at EVERY tier on
+   *  match_faces / valid_net, where the correspondence IS the asked answer. */
+  showFaceMatchHints: boolean;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-screen FOLD scaffolds for a tier on a given challenge type.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * task with fewer fold cues — never a different net, never a different solid.
+ *
+ * ANSWER-LEAK GUARD: on match_faces / valid_net the face↔solid correspondence
+ * IS (or directly reveals) the asked answer, so face-match highlighting is OFF
+ * at every tier for those modes — it can only appear where the match is NOT the
+ * answer (identify_solid / surface_area / count_faces_edges_vertices). The
+ * component's checkers read only targetAnswer / isValidNet, never any show*
+ * flag, so the checker stays independent of these scaffolds.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const showFoldGuides = tier !== 'hard';
+  // Match-is-the-answer guard: never expose correspondence on these modes.
+  const matchIsAnswer = pinnedType === 'match_faces' || pinnedType === 'valid_net';
+  const showFaceMatchHints = !matchIsAnswer && tier === 'easy';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-screen FOLD SCAFFOLDING only (${tier === 'easy' ? 'maximum support: fold-line guides and face-match hints help the student see how the net folds' : tier === 'medium' ? 'moderate support: fold-line guides stay, face-match hints withdrawn' : 'minimum support: no fold-line guides, no face-match hints — the student imagines the fold unaided'}). NEVER change the net, the chosen solid, or which solid the net folds into (that is the eval-mode axis); only change how much fold help is on screen.`,
+  ];
+  switch (pinnedType) {
+    case 'match_faces':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Fold-line guides are shown on the net so the student can trace the hinges to the highlighted face; face-match highlighting stays OFF because the correspondence is the answer. Hints may describe the folding path without naming the target face.'
+          : tier === 'hard'
+            ? 'No fold-line guides; the student must imagine folding the net edge by edge. Hints ask the student what they picture, never name which face the highlighted net face folds to.'
+            : 'Fold-line guides are shown; hints prompt the student to follow the hinges themselves without naming the target face.',
+      );
+      break;
+    case 'valid_net':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Fold-line guides mark every hinge so the student can mentally fold and check for overlaps/gaps; face-match highlighting stays OFF (validity is the answer). Hints describe how to test the fold without revealing valid/invalid.'
+          : tier === 'hard'
+            ? 'No fold-line guides; the student must visualize the whole fold unaided. Hints ask what would happen as faces come together, never state whether it is valid.'
+            : 'Fold-line guides are shown; the student folds along them mentally and decides, with hints that do not reveal the verdict.',
+      );
+      break;
+    case 'identify_solid':
+    case 'count_faces_edges_vertices':
+    case 'surface_area':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Fold-line guides and face-match highlighting are both available so the student can connect the net to the solid; hints may walk through the fold.'
+          : tier === 'hard'
+            ? 'No fold-line guides and no face-match highlighting; hints ask the student to reason about the solid by imagining the fold themselves.'
+            : 'Fold-line guides are shown but face-match highlighting is withdrawn; hints point to the hinges without doing the matching for the student.',
+      );
+      break;
+  }
+  return { showFoldGuides, showFaceMatchHints, promptLines };
+}
+
+// ---------------------------------------------------------------------------
 // Solid geometry lookup table — NEVER trust Gemini for these values
 // ---------------------------------------------------------------------------
 
@@ -382,11 +477,13 @@ async function generateIdentifyChallenges(
   gradeBand: string,
   chosenSolid: string,
   challengeCount: number,
+  tierSection: string,
 ): Promise<{ solidType: string; challenges: NetFolderChallenge[] }> {
   const pool = gradeSolidPool(gradeBand);
   const prompt = `
 Create an educational 3D solid IDENTIFICATION activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
+${tierSection}
 
 The student sees a 3D "${chosenSolid}" displayed on screen and must identify it from multiple choice options.
 IMPORTANT: The solid shown is ALWAYS a ${chosenSolid} for every challenge. Set solidType to "${chosenSolid}".
@@ -454,12 +551,14 @@ async function generateMatchFacesChallenges(
   _gradeBand: string,
   chosenSolid: string,
   challengeCount: number,
+  tierSection: string,
 ): Promise<{ solidType: string; challenges: NetFolderChallenge[] }> {
   const geo = SOLID_GEOMETRY[chosenSolid] ?? SOLID_GEOMETRY.cube;
 
   const prompt = `
 Create an educational FACE MATCHING activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
+${tierSection}
 
 The solid is a ${chosenSolid} with face labels: ${geo.faceLabels.join(', ')}.
 Students see a 2D net with one face highlighted and must identify which face it corresponds to on the 3D solid.
@@ -525,11 +624,13 @@ async function generateValidNetChallenges(
   _gradeBand: string,
   chosenSolid: string,
   challengeCount: number,
+  tierSection: string,
 ): Promise<{ solidType: string; challenges: NetFolderChallenge[] }> {
 
   const prompt = `
 Create an educational VALID NET CHECK activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
+${tierSection}
 
 The solid is a ${chosenSolid}. Students see a 2D net arrangement and must decide if it can fold into the solid.
 
@@ -588,11 +689,13 @@ async function generateSurfaceAreaChallenges(
   _gradeBand: string,
   chosenSolid: string,
   challengeCount: number,
+  tierSection: string,
 ): Promise<{ solidType: string; challenges: NetFolderChallenge[] }> {
 
   const prompt = `
 Create an educational SURFACE AREA activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
+${tierSection}
 
 The solid is a ${chosenSolid}. Students calculate total surface area by summing face areas.
 The solid has 6 faces. Provide width and height for each face.
@@ -653,11 +756,13 @@ async function generateCountFEVChallenges(
   _gradeBand: string,
   chosenSolid: string,
   challengeCount: number,
+  tierSection: string,
 ): Promise<{ solidType: string; challenges: NetFolderChallenge[] }> {
 
   const prompt = `
 Create an educational COUNTING FACES, EDGES, AND VERTICES activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
+${tierSection}
 
 The solid is a ${chosenSolid}. Students count the number of faces, edges, and vertices.
 
@@ -767,7 +872,16 @@ const FALLBACKS: Record<string, NetFolderChallenge> = {
 export const generateNetFolder = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how many FOLD scaffolds within it. NEVER changes the net or
+     * which solid it folds into.
+     */
+    difficulty?: string;
+  }>,
 ): Promise<NetFolderData> => {
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -779,6 +893,19 @@ export const generateNetFolder = async (
 
   const gradeBand = resolveGradeBand(gradeLevel);
   const allowedTypes = evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
+
+  // ── Resolve support tier (fold-scaffold axis) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is ONLY for the prompt tone (a mixed session has no single mode).
+  const pinnedType =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (fold-scaffold level — NOT net complexity)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   // ── Pick ONE solid upfront — all sub-generators use the same shape ──
   const chosenSolidType = randomSolid(gradeBand);
@@ -794,21 +921,24 @@ export const generateNetFolder = async (
 
   for (const type of allowedTypes) {
     typeOrder.push(type);
+    // In a mixed session there is no single pinnedType, so the prompt-tone
+    // section is only injected on single-mode sessions; the deterministic
+    // scaffold is still applied per-challenge from each challenge's OWN type below.
     switch (type) {
       case 'identify_solid':
-        generators.push(generateIdentifyChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount));
+        generators.push(generateIdentifyChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
       case 'count_faces_edges_vertices':
-        generators.push(generateCountFEVChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount));
+        generators.push(generateCountFEVChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
       case 'match_faces':
-        generators.push(generateMatchFacesChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount));
+        generators.push(generateMatchFacesChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
       case 'valid_net':
-        generators.push(generateValidNetChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount));
+        generators.push(generateValidNetChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
       case 'surface_area':
-        generators.push(generateSurfaceAreaChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount));
+        generators.push(generateSurfaceAreaChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
     }
   }
@@ -851,6 +981,32 @@ export const generateNetFolder = async (
   const typeBreakdown = challenges.map(c => c.type).join(', ');
   console.log(`[NetFolder] Final: ${challenges.length} challenge(s) → [${typeBreakdown}] | solid=${chosenSolidType}`);
 
+  // ── Apply the support-tier FOLD scaffolds deterministically ──
+  // showOptions is component-global (one net rendered at a time), so we resolve
+  // each challenge's scaffold from its OWN type and combine to the SAFEST setting:
+  //   • showFoldGuides — never answer-bearing → follows the tier uniformly (ON
+  //     unless hard). True only if EVERY challenge would show it.
+  //   • showFaceMatchHints — ANSWER-LEAK GUARD: forced OFF if ANY challenge is a
+  //     match_faces / valid_net (correspondence = answer there). Code-only; the
+  //     component checkers never read these flags, so the checker stays independent.
+  // Gated ONLY on a tier being present, so the no-tier path is byte-identical.
+  let showOptions: NetFolderData['showOptions'] | undefined;
+  if (supportTier) {
+    let showFoldGuides = true;
+    let showFaceMatchHints = true;
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
+      showFoldGuides = showFoldGuides && sc.showFoldGuides;
+      showFaceMatchHints = showFaceMatchHints && sc.showFaceMatchHints;
+    }
+    showOptions = { showFoldGuides, showFaceMatchHints };
+    console.log(
+      `[NetFolder] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'mixed'}) → `
+      + `foldGuides=${showFoldGuides}, faceMatchHints=${showFaceMatchHints}`,
+    );
+  }
+
   return {
     title,
     description,
@@ -862,5 +1018,7 @@ export const generateNetFolder = async (
     },
     challenges,
     gradeBand,
+    ...(showOptions ? { showOptions } : {}),
+    ...(supportTier ? { supportTier } : {}),
   };
 };

@@ -68,6 +68,122 @@ const COUNT_BY_MODE: Record<TransformationLabChallengeType, number> = {
 };
 
 // ---------------------------------------------------------------------------
+// WITHIN-MODE SUPPORT TIERS (scaffolding withdrawal — NEVER changes the figure
+// or the transformation; those are the eval-mode / task-identity axis).
+//
+// Levers discovered in TransformationLab.tsx (the drawing block, ~lines 378-398):
+//   • showPreImageCoords  — the cyan pre-image vertex (x, y) labels. A perception
+//                           aid (modality #1): offloads reading coordinates off
+//                           the grid. SAFE at every tier on every mode — the
+//                           pre-image is the QUESTION/start figure, never the answer.
+//   • showRuleNotation    — an always-visible "transformation guide": the coordinate
+//                           mapping rule (e.g. "(x, y) → (−x, y)") shown beside the
+//                           canvas (modality #2, instruction-as-scaffold). At easy the
+//                           student is handed the rule; at hard they must apply the
+//                           transformation from the instruction's description alone.
+//
+// Intent: easy shows the pre-image reference + the rule notation; hard withdraws
+// the rule (and pre-image coords) so the student applies the motion unaided.
+//
+// ANSWER-LEAK GUARD (acute for this primitive — a result preview IS the answer):
+//   • drag modes (apply_*, dilation): the answer is the IMAGE the student produces.
+//     We NEVER render expected-image coordinates or pre→image mapping arrows. The
+//     pre-image coords are the START figure (safe). The rule notation names the
+//     METHOD, not the answer coords — the student must still apply it per vertex.
+//   • identify_transformation: the answer is the NAME of the transformation, so the
+//     rule notation would BE the answer → showRuleNotation is FALSE at every tier
+//     for this mode (only the pre-image coords lever applies).
+//   • compose_sequence: the answer is the HOW (the move sequence). The ghost target
+//     is shown by design (the WHERE). Rule notation here is generic palette guidance,
+//     not the specific sequence → safe at easy.
+//   The checker (polygonsMatch / correctOption in the component) reads expectedImage /
+//   correctOption only — it is INDEPENDENT of every show* flag.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** One field per withdrawable scaffold lever discovered in the component. */
+interface SupportScaffold {
+  /** Cyan pre-image (x, y) vertex labels — perception aid. */
+  showPreImageCoords: boolean;
+  /** Always-visible coordinate-rule notation (the "transformation guide"). */
+  showRuleNotation: boolean;
+}
+
+/** A leak-free coordinate-rule notation string for the always-on guide.
+ *  NEVER returned for identify (the rule names the answer). */
+function ruleNotation(type: TransformationLabChallengeType, transformLabel: string): string | undefined {
+  if (type === 'identify_transformation') return undefined; // rule = the answer → withheld
+  const l = transformLabel.toLowerCase();
+  if (l.startsWith('translation by')) {
+    const m = transformLabel.match(/\((-?\d+),\s*(-?\d+)\)/);
+    return m ? `(x, y) → (x + ${m[1]}, y + ${m[2]})` : '(x, y) → (x + a, y + b)';
+  }
+  if (l.includes('x-axis')) return '(x, y) → (x, −y)';
+  if (l.includes('y-axis')) return '(x, y) → (−x, y)';
+  if (l.includes('y = x')) return '(x, y) → (y, x)';
+  if (l.includes('90°')) return '(x, y) → (−y, x)';
+  if (l.includes('180°')) return '(x, y) → (−x, −y)';
+  if (l.includes('270°')) return '(x, y) → (y, −x)';
+  if (l.startsWith('dilation')) {
+    const m = transformLabel.match(/scale factor (\d+)/);
+    return m ? `(x, y) → (${m[1]}x, ${m[1]}y)` : '(x, y) → (kx, ky)';
+  }
+  // compose_sequence and anything else: generic palette guidance (not the specific sequence).
+  return 'Use the palette: flips/turns change orientation, arrows slide.';
+}
+
+/** Resolve the scaffold + prompt-tone lines for a mode at a tier.
+ *  Scaffolding-only — never changes the figure, coordinates, or transformation. */
+function resolveSupportStructure(
+  type: TransformationLabChallengeType,
+  tier: SupportTier,
+): { scaffold: SupportScaffold; promptLines: string[] } {
+  const isIdentify = type === 'identify_transformation';
+
+  // showRuleNotation ladder: easy → on, medium → on, hard → off.
+  // (identify never shows it at any tier — the rule names the answer.)
+  const ruleOn = !isIdentify && tier !== 'hard';
+  // showPreImageCoords ladder: easy → on, medium → off, hard → off.
+  const coordsOn = tier === 'easy';
+
+  const scaffold: SupportScaffold = {
+    showPreImageCoords: coordsOn,
+    showRuleNotation: ruleOn,
+  };
+
+  const promptLines: string[] = [
+    'This tier sets the on-screen SCAFFOLDING LEVEL only. The figure, its coordinates, the transformation, and the answer are IDENTICAL across easy/medium/hard — do NOT change any number, vector, angle, or scale factor.',
+  ];
+  if (isIdentify) {
+    promptLines.push(
+      tier === 'easy'
+        ? 'easy (identify): the pre-image vertex coordinates are labeled so the student can read corners off the grid; the transformation is NOT named (that is the answer).'
+        : tier === 'medium'
+        ? 'medium (identify): coordinate labels withdrawn — the student perceives the motion from the figures.'
+        : 'hard (identify): no coordinate labels; the student names the motion purely from the pre-image/image pair.',
+    );
+  } else {
+    promptLines.push(
+      tier === 'easy'
+        ? 'easy: a pre-image reference with vertex coordinates AND the coordinate-rule notation (the transformation guide) are shown — the student applies a handed rule per vertex.'
+        : tier === 'medium'
+        ? 'medium: the coordinate-rule notation stays as a guide, but pre-image coordinate labels are withdrawn.'
+        : 'hard: NO rule notation and NO coordinate labels — the student applies the transformation from the written instruction alone.',
+    );
+  }
+  return { scaffold, promptLines };
+}
+
+// ---------------------------------------------------------------------------
 // Grid bounds (must match the component's GRID_MIN / GRID_MAX)
 // ---------------------------------------------------------------------------
 
@@ -579,6 +695,12 @@ export const generateTransformationLab = async (
   config?: {
     instanceCount?: number;
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   },
 ): Promise<TransformationLabData> => {
   const validTypes: TransformationLabChallengeType[] = [
@@ -602,6 +724,20 @@ export const generateTransformationLab = async (
 
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Support tier (scaffolding level WITHIN the mode — never changes numbers) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType drives the prompt TONE only (a blended session has no single mode).
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as TransformationLabChallengeType)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT figure or transformation)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const prompt = `
 Create the wrapper metadata for a multi-problem geometry transformation session on "${topic}" for ${gradeLevel} students.
 
@@ -611,7 +747,7 @@ CONTEXT:
 - Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific coordinate, vector, angle, or answer.
 2. Provide a 1-2 sentence educational description of what students will practice.
@@ -658,6 +794,25 @@ Return ONLY the wrapper fields described above.
   const challenges = isMixed
     ? selectMixedTransformationLabChallenges(config?.instanceCount)
     : selectTransformationLabChallenges(challengeType, config?.instanceCount);
+
+  // ── Apply the support tier PER CHALLENGE, from each challenge's OWN mode ──
+  //    Gated only on a tier being present (so blended/auto sessions get it too).
+  //    Display-only: the checker reads expectedImage / correctOption, never show*.
+  if (supportTier) {
+    for (const ch of challenges) {
+      const { scaffold } = resolveSupportStructure(ch.type, supportTier);
+      ch.showPreImageCoords = scaffold.showPreImageCoords;
+      // Resolve the leak-free rule notation only when the tier shows it.
+      ch.ruleNotation = scaffold.showRuleNotation
+        ? ruleNotation(ch.type, ch.transformLabel)
+        : undefined;
+      ch.supportTier = supportTier;
+    }
+    console.log(
+      `[TransformationLab] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`,
+    );
+  }
 
   const data: TransformationLabData = {
     title: wrapper.title,

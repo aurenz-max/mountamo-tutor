@@ -65,6 +65,125 @@ const HANDWRITING_DOCS: Record<string, ChallengeTypeDoc> = {
 
 const HANDWRITING_TYPES = ['trace', 'copy', 'write'] as const;
 
+// ===========================================================================
+// Within-mode SUPPORT TIER (config.difficulty)
+// ===========================================================================
+// Two-field contract: config.targetEvalMode says WHICH skill (the task identity —
+// trace / copy / write / sequence, matched to the objective by the manifest);
+// config.difficulty says how much on-canvas TRACING SUPPORT the student gets while
+// doing it. The tier withdraws *tracing scaffolds* — the ghost (dotted) digit path
+// the student traces over, the directional stroke-order arrows, and the green
+// "start here" dot. It NEVER changes the digit, the counting sequence, the scope,
+// or the deterministic RUN, and never changes the eval mode.
+//
+// easy = ghost digit + stroke arrows + start dot; medium = start dot + faint ghost,
+// no arrows; hard = no ghost, no arrows, no dot (write the digit/missing number from
+// memory of its shape). See memory: structural-difficulty-not-numeric.
+//
+// The handwriting evaluation (stroke geometry + Gemini Vision re-scoring) is wholly
+// independent of these show* flags — they only gate which guides are PAINTED, never
+// what is scored, so a hard tier is genuinely less help, not a different answer.
+
+type ChallengeType = 'trace' | 'copy' | 'write' | 'sequence';
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** The ghost (dotted) digit path painted under the canvas for the student to
+   *  trace over. The strongest tracing scaffold — withdrawing it leaves the
+   *  student forming the numeral from memory of its shape. */
+  showGhostDigit: boolean;
+  /** Directional stroke-order arrows along the ghost path (which way each stroke
+   *  flows). */
+  showStrokeArrows: boolean;
+  /** The green "start here" dot at the first point of the stroke. */
+  showStartDot: boolean;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-canvas tracing-support structure for a tier on a pinned mode.
+ * Support is withdrawn as the tier hardens; the SAME digit / sequence stays the
+ * target. The tier only WITHDRAWS guides a mode already shows — it never adds a
+ * guide the mode's task identity excludes (write shows nothing at any tier; copy's
+ * visible model digit is the mode, not a withdrawable scaffold).
+ *
+ *   easy   = ghost digit + stroke arrows + start dot
+ *   medium = start dot + faint ghost, no arrows
+ *   hard   = no ghost, no arrows, no dot (write from memory of the digit shape)
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  // Default (used by trace, and as the ceiling for copy/sequence): the withdrawal ladder.
+  const showGhostDigit = tier !== 'hard';
+  const showStrokeArrows = tier === 'easy';
+  const showStartDot = tier !== 'hard';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-canvas TRACING SCAFFOLDING only `
+    + `(${tier === 'easy'
+      ? 'maximum support: the ghost digit path, the stroke-order arrows, and the green "start here" dot all help the student form the numeral'
+      : tier === 'medium'
+        ? 'moderate support: the stroke-order arrows are withdrawn, but a faint ghost digit and the start dot remain'
+        : 'minimum support: no ghost digit, no arrows, no start dot — the student writes the numeral from memory of its shape'}). `
+    + `Keep the SAME digit, the SAME counting sequence, and the SAME range at every tier — a harder tier withdraws tracing help, `
+    + `it NEVER changes the number, the sequence, the scope, or the deterministic run.`,
+  ];
+
+  switch (pinnedType) {
+    case 'trace':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep the dotted ghost numeral, the directional stroke arrows, and the start dot fully visible; the student traces along the guide.'
+          : tier === 'hard'
+            ? 'Show no ghost numeral, no arrows, and no start dot; hints should ask the student to recall the digit shape and decide their own stroke path.'
+            : 'Withdraw the stroke arrows; keep a faint ghost numeral and the start dot so the student forms the stroke with lighter support.',
+      );
+      break;
+    case 'copy':
+      promptLines.push(
+        'The visible MODEL digit stays at every tier (it is what defines copy mode). '
+        + (tier === 'easy'
+          ? 'Additionally paint the on-canvas ghost guide and the start dot so the student can trace as well as copy.'
+          : tier === 'hard'
+            ? 'Withdraw the on-canvas ghost guide and start dot — the student copies the model unaided onto a blank canvas.'
+            : 'Withdraw the stroke arrows; keep a faint on-canvas ghost and the start dot beside the model.'),
+      );
+      break;
+    case 'write':
+      promptLines.push(
+        'Write mode shows no on-canvas guide at any tier (its task identity is "no support") — '
+        + 'there is nothing to withdraw, so the tier changes only the hint wording: '
+        + (tier === 'hard'
+          ? 'hints should not describe the strokes; encourage recall of the digit shape.'
+          : 'hints may gently cue where the numeral begins.'),
+      );
+      break;
+    case 'sequence':
+      promptLines.push(
+        'The sequence and its hidden position never change with the tier. '
+        + (tier === 'easy'
+          ? 'Paint the ghost of the missing numeral and the start dot so the student can trace the answer once they work it out.'
+          : tier === 'hard'
+            ? 'Show no ghost and no start dot — the student works out the missing number and writes it from memory.'
+            : 'Withdraw the stroke arrows; keep a faint ghost and the start dot once the student has the missing number.'),
+      );
+      break;
+  }
+  return { showGhostDigit, showStrokeArrows, showStartDot, promptLines };
+}
+
 // ---------------------------------------------------------------------------
 // Shared config / helpers
 // ---------------------------------------------------------------------------
@@ -73,6 +192,13 @@ interface NumberTracerConfig {
   targetEvalMode?: string;
   challengeCount?: number;
   gradeBand?: 'K' | '1';
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-canvas tracing scaffolding within it. NEVER changes
+   * the digit, the counting sequence, the scope, or the deterministic run.
+   */
+  difficulty?: string;
   // Pedagogical-scope context injected by flattenManifestToLayout (scopeContext.ts).
   objectiveText?: string;
   objectiveVerb?: string;
@@ -147,6 +273,7 @@ async function generateHandwriting(
   challengeCount: number,
   config: NumberTracerConfig | undefined,
   evalConstraint: ReturnType<typeof resolveEvalModeConstraint>,
+  tierSection: string,
 ): Promise<{ title?: string; description?: string; challenges: NumberTracerChallenge[] }> {
   // Constrain the schema enum + prompt docs to the requested handwriting type(s).
   const activeSchema = constrainChallengeTypeEnum(handwritingSchema, allowedTypes, HANDWRITING_DOCS);
@@ -167,7 +294,7 @@ CONTEXT:
 - Each challenge has a single digit to write.
 
 ${challengeTypeSection}
-
+${tierSection}
 DIGIT RANGES (ceiling — the SCOPE above may narrow these):
 - Kindergarten (gradeBand "K"): digits 0-9
 - Grade 1 (gradeBand "1"): digits 0-20
@@ -344,6 +471,7 @@ async function generateSequence(
   gradeBand: 'K' | '1',
   challengeCount: number,
   config: NumberTracerConfig | undefined,
+  tierSection: string,
 ): Promise<{ title?: string; description?: string; challenges: NumberTracerChallenge[] }> {
   const maxDigit = gradeBand === 'K' ? 9 : 20;
   const scope = resolvePedagogicalScope(topic, config, config?.intent);
@@ -351,7 +479,7 @@ async function generateSequence(
 
   const prompt = `
 Pick the number window for a counting-sequence activity teaching "${topic}" to ${gradeLevel} students.
-${scopeSection}
+${scopeSection}${tierSection}
 Students will see short runs of consecutive numbers with one number hidden, and must work out
 and write the missing number by hand (e.g. "3, 4, ?, 6").
 
@@ -406,6 +534,20 @@ export async function generateNumberTracer(
   const gradeBand = resolveGradeBand(config, gradeLevel);
   const totalCount = config?.challengeCount ?? 5;
 
+  // ── Resolve the within-mode support tier (the STUDENT's tier — drives application) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is ONLY for the prompt tone (a curated blend has no single mode to describe).
+  const pinnedType =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n`
+      + `${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   // Which paths does this eval mode need? (No constraint = full mixed activity.)
   const allowed = evalConstraint?.allowedTypes ?? ['trace', 'copy', 'write', 'sequence'];
   const handwritingTypes = allowed.filter((t) => (HANDWRITING_TYPES as readonly string[]).includes(t));
@@ -418,10 +560,10 @@ export async function generateNumberTracer(
 
   const [handwriting, sequence] = await Promise.all([
     wantsHandwriting
-      ? generateHandwriting(topic, gradeLevel, gradeBand, handwritingTypes, hwCount, config, evalConstraint)
+      ? generateHandwriting(topic, gradeLevel, gradeBand, handwritingTypes, hwCount, config, evalConstraint, tierSection)
       : Promise.resolve(null),
     wantsSequence
-      ? generateSequence(topic, gradeLevel, gradeBand, seqCount, config)
+      ? generateSequence(topic, gradeLevel, gradeBand, seqCount, config, tierSection)
       : Promise.resolve(null),
   ]);
 
@@ -433,6 +575,35 @@ export async function generateNumberTracer(
 
   // Re-id sequentially so merged challenges stay unique.
   challenges.forEach((c, i) => { c.id = `c${i + 1}`; });
+
+  // ── Apply the support tier PER CHALLENGE (after all structural fixups) ──
+  // Gate ONLY on a tier being present, and resolve each challenge's scaffold from
+  // its OWN mode (ch.type) so a blended session is also tiered. This withdraws
+  // TRACING GUIDES only (the ghost digit, the stroke arrows, the start dot) — it
+  // never touches the digit, the sequenceNumbers/missingIndex, or the deterministic
+  // run. `showModel`/`showArrows` (the eval-mode task-identity flags) are left
+  // intact; the tier guards are NEW fields the component reads independently.
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
+      // write mode never paints an on-canvas guide at any tier — keep it guide-free
+      // (the tier only changed its hint wording in the prompt).
+      if (ch.type === 'write') {
+        ch.showGhostDigit = false;
+        ch.showStrokeArrows = false;
+        ch.showStartDot = false;
+      } else {
+        ch.showGhostDigit = sc.showGhostDigit;
+        ch.showStrokeArrows = sc.showStrokeArrows;
+        ch.showStartDot = sc.showStartDot;
+      }
+      ch.supportTier = supportTier;
+    }
+    console.log(
+      `[NumberTracer] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) — tracing guides only, run untouched`,
+    );
+  }
 
   const data: NumberTracerData = {
     title: handwriting?.title ?? sequence?.title ?? 'Number Writing Practice',

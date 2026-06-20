@@ -3,8 +3,16 @@ import { ai } from "../geminiClient";
 import {
   PercentBarData,
   PercentBarChallenge,
+  PercentBarPlaceStep,
+  PercentBarChoiceStep,
   PercentContext,
 } from "../../primitives/visual-primitives/math/PercentBar";
+
+// Generator-local step shapes carry BOTH hint variants; the explicit/strategy
+// pick happens at build time (the component only ever sees a resolved `hint`).
+type GenPlaceStep = PercentBarPlaceStep & { hintStrategy?: string };
+type GenChoiceStep = PercentBarChoiceStep & { hintStrategy?: string };
+type GenStep = GenPlaceStep | GenChoiceStep;
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -34,18 +42,20 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   addition: {
     promptDoc:
-      `"addition": Tax/tip/markup identification. Student places the percent being added. `
-      + `"$40 bill, 15% tip — what percent IS the tip?" → answer 15. `
-      + `The bar only accepts 0-100, never dollar amounts or totals. `
-      + `Grade 6-7 focus. Target = the additive rate.`,
-    schemaDescription: "'addition' (tax, tip, markup rate)",
+      `"addition": Tax/tip/markup, a TWO-STEP problem within each challenge. `
+      + `Step 1 — place the added rate (the tip/tax/markup portion); the value readout shows it in dollars. `
+      + `Step 2 — place the TOTAL = 100% + the rate on a bar that extends past 100% (value shows the dollar total). `
+      + `"$40 bill, 10% tip" → step 1 = 10% ($4 tip), step 2 = 110% ($44 total). `
+      + `Grade 6-7 focus.`,
+    schemaDescription: "'addition' (two steps: added rate, then total = 100 + rate)",
   },
   comparison: {
     promptDoc:
-      `"comparison": Compare two percents and place the LARGER one on the bar. `
-      + `"Store A: 30% off. Store B: 20% off. Place the larger discount." → answer 30. `
-      + `Grade 7-8 focus. Target = max of the two rates.`,
-    schemaDescription: "'comparison' (place the larger percent)",
+      `"comparison": A MULTI-STEP shopping comparison within each challenge. Two goods, each with its own `
+      + `price and discount. Step 1 — place good 1's sale price as a percent of its original (value shows the dollar price). `
+      + `Step 2 — same for good 2. Step 3 — choose which is cheaper / more expensive. `
+      + `Teaches that a bigger % discount is NOT always the cheaper price. Grade 7-8 focus.`,
+    schemaDescription: "'comparison' (compute two sale prices, then choose cheaper/pricier)",
   },
 };
 
@@ -183,6 +193,10 @@ interface ChallengeSpec {
   wholeValueLabel: string;
   question: string;
   targetPercent: number;
+  /** Bar scale max (default 100). Addition "total" mode extends past 100%. */
+  maxPercent?: number;
+  /** Ordered sub-steps for multi-step modes (addition, comparison). */
+  steps?: GenStep[];
   /** Explicit hint (may encode the target/arithmetic) — used at easy/medium. */
   hint: string;
   /** Strategy-only hint (no target number, no answer arithmetic) — used at hard. */
@@ -423,9 +437,20 @@ function buildSubtraction(): ChallengeSpec {
 
 // -- Addition mode pool --------------------------------------------------------
 
+/** Addition templates supply only the framing nouns; the two-step prompts and
+ *  hints are generated uniformly from them in buildAddition. */
 interface AdditionTemplate {
   id: string;
-  build: (rate: number, base: number) => ScenarioParts;
+  build: (rate: number, base: number) => {
+    scenario: string;
+    wholeValueLabel: string;
+    /** Noun for the whole, used in prose ('bill', 'price', 'order'). */
+    wholeNoun: string;
+    /** Noun for the added part, used in prose ('tip', 'sales tax', 'markup'). */
+    addedNoun: string;
+    /** Short label for the value readout column ('Tip', 'Tax', 'Fee'). */
+    addedShort: string;
+  };
 }
 
 const ADDITION_TEMPLATES: readonly AdditionTemplate[] = [
@@ -433,180 +458,208 @@ const ADDITION_TEMPLATES: readonly AdditionTemplate[] = [
     id: 'sales-tax',
     build: (rate, base) => ({
       scenario: `You are buying a $${base} item. The sales tax in your state is ${rate}%.`,
-      wholeValue: base,
-      wholeValueLabel: 'Purchase Price ($)',
-      question: `What percent IS the sales tax? Place that percent on the bar.`,
-      hintExplicit: `The tax rate is given right in the scenario — that is what you are placing.`,
-      hintStrategy: `The percent being added is named in the scenario; place that rate.`,
+      wholeValueLabel: 'Price ($)', wholeNoun: 'price', addedNoun: 'sales tax', addedShort: 'Tax',
     }),
   },
   {
     id: 'restaurant-tip',
     build: (rate, base) => ({
       scenario: `Your restaurant bill is $${base}. You decide to leave a ${rate}% tip.`,
-      wholeValue: base,
-      wholeValueLabel: 'Bill ($)',
-      question: `What percent of the bill IS the tip? Show it on the bar.`,
-      hintExplicit: `Tip percent = the rate stated in the problem.`,
-      hintStrategy: `Find the rate being added in the scenario and place it.`,
+      wholeValueLabel: 'Bill ($)', wholeNoun: 'bill', addedNoun: 'tip', addedShort: 'Tip',
     }),
   },
   {
     id: 'store-markup',
     build: (rate, base) => ({
       scenario: `A store buys an item for $${base} and adds a ${rate}% markup.`,
-      wholeValue: base,
-      wholeValueLabel: 'Cost ($)',
-      question: `What percent IS the markup? Place it on the bar.`,
-      hintExplicit: `Markup percent = the rate stated in the scenario.`,
-      hintStrategy: `The added rate is stated in the scenario; place that percent.`,
+      wholeValueLabel: 'Cost ($)', wholeNoun: 'cost', addedNoun: 'markup', addedShort: 'Markup',
     }),
   },
   {
     id: 'service-charge',
     build: (rate, base) => ({
       scenario: `A $${base} hotel bill has a ${rate}% service charge added.`,
-      wholeValue: base,
-      wholeValueLabel: 'Bill ($)',
-      question: `What percent IS the service charge? Show it on the bar.`,
-      hintExplicit: `The service charge percent is stated in the scenario.`,
-      hintStrategy: `Identify the rate being added and place it on the bar.`,
+      wholeValueLabel: 'Bill ($)', wholeNoun: 'bill', addedNoun: 'service charge', addedShort: 'Charge',
     }),
   },
   {
     id: 'delivery-fee',
     build: (rate, base) => ({
       scenario: `An online order of $${base} adds a ${rate}% delivery fee.`,
-      wholeValue: base,
-      wholeValueLabel: 'Order ($)',
-      question: `What percent IS the delivery fee? Place that percent on the bar.`,
-      hintExplicit: `Read the scenario — the delivery fee percent is given.`,
-      hintStrategy: `The fee rate is stated in the scenario; place that percent.`,
+      wholeValueLabel: 'Order ($)', wholeNoun: 'order', addedNoun: 'delivery fee', addedShort: 'Fee',
     }),
   },
   {
-    id: 'commission',
+    id: 'ticket-fee',
     build: (rate, base) => ({
-      scenario: `A salesperson earns a ${rate}% commission on a $${base} sale.`,
-      wholeValue: base,
-      wholeValueLabel: 'Sale Price ($)',
-      question: `What percent IS the commission? Show it on the bar.`,
-      hintExplicit: `The commission rate is given right in the problem.`,
-      hintStrategy: `Find the rate being added in the scenario and place it.`,
+      scenario: `A concert ticket costs $${base}. A ${rate}% booking fee is added.`,
+      wholeValueLabel: 'Ticket ($)', wholeNoun: 'ticket price', addedNoun: 'booking fee', addedShort: 'Fee',
     }),
   },
 ];
 
 const ADDITION_RATES = [5, 6, 7, 8, 10, 12, 15, 18, 20, 25] as const;
 const ADDITION_BASES = [20, 30, 40, 50, 60, 80, 100] as const;
+/** Bar scale for the TOTAL step: the total (100 + rate, ≤125 here) needs headroom
+ *  above 100% so the "added on top" overshoot is visible. */
+const ADDITION_BAR_MAX = 150;
 
 function buildAddition(): ChallengeSpec {
   const template = pick(ADDITION_TEMPLATES);
   const rate = pick(ADDITION_RATES);
   const base = pick(ADDITION_BASES);
-  const { hintExplicit, hintStrategy, ...partial } = template.build(rate, base);
-  const finalValue = (base * (100 + rate)) / 100;
+  const { scenario, wholeValueLabel, wholeNoun, addedNoun, addedShort } = template.build(rate, base);
+  const totalPercent = 100 + rate;
+  const totalValue = (base * totalPercent) / 100;
+
+  const steps: GenStep[] = [
+    {
+      kind: 'place',
+      prompt: `Step 1 — the ${addedNoun}: what percent of the ${wholeNoun} is the ${addedNoun}? Place it on the bar.`,
+      wholeValue: base,
+      wholeValueLabel,
+      targetPercent: rate,
+      maxPercent: 100,
+      valueLabel: `${addedShort} ($)`,
+      recapLabel: addedShort,
+      hint: `The ${addedNoun} rate is stated in the scenario — ${rate}%. Place ${rate}%; the value shows it in dollars.`,
+      hintStrategy: `The ${addedNoun} rate is named in the scenario. Place that percent.`,
+    },
+    {
+      kind: 'place',
+      prompt: `Step 2 — the total: including the ${addedNoun}, the total is what percent of the ${wholeNoun}? Place the TOTAL on the bar.`,
+      wholeValue: base,
+      wholeValueLabel,
+      targetPercent: totalPercent,
+      maxPercent: ADDITION_BAR_MAX,
+      valueLabel: 'Total ($)',
+      hint: `Add the ${addedNoun} to the whole: 100% + ${rate}% = ${totalPercent}%.`,
+      hintStrategy: `The ${addedNoun} adds on top of the ${wholeNoun} (100%). The total lands past 100%.`,
+    },
+  ];
+
   return {
-    ...partial,
-    hint: hintExplicit,
-    hintStrategy,
-    targetPercent: rate,
+    scenario,
+    wholeValue: base,
+    wholeValueLabel,
+    question: steps[0].prompt,
+    targetPercent: totalPercent,
+    maxPercent: ADDITION_BAR_MAX,
+    steps,
+    hint: steps[0].hint,
+    hintStrategy: (steps[0] as GenPlaceStep).hintStrategy!,
     context: {
       problemType: 'addition',
       initialValue: base,
       changeRate: rate,
-      discountFactor: (100 + rate) / 100,
-      finalValue,
+      discountFactor: totalPercent / 100,
+      finalValue: totalValue,
     },
   };
 }
 
 // -- Comparison mode pool ------------------------------------------------------
 
-interface ComparisonTemplate {
-  id: string;
-  build: (rateA: number, rateB: number) => ScenarioParts;
-}
-
-const COMPARISON_TEMPLATES: readonly ComparisonTemplate[] = [
-  {
-    id: 'stores',
-    build: (rateA, rateB) => ({
-      scenario: `Store A is offering ${rateA}% off everything. Store B is offering ${rateB}% off everything.`,
-      wholeValue: 100,
-      wholeValueLabel: 'Reference (100%)',
-      question: `Which store has the larger discount? Place the LARGER percent on the bar.`,
-      hintExplicit: `Compare ${rateA} and ${rateB}. Place the bigger number.`,
-      hintStrategy: `Compare the two discount percents and place whichever is larger.`,
-    }),
-  },
-  {
-    id: 'attendance',
-    build: (rateA, rateB) => ({
-      scenario: `School X reported ${rateA}% attendance today. School Y reported ${rateB}% attendance.`,
-      wholeValue: 100,
-      wholeValueLabel: 'Reference (100%)',
-      question: `Which school had higher attendance? Place that percent on the bar.`,
-      hintExplicit: `Pick the larger of ${rateA} and ${rateB}.`,
-      hintStrategy: `Compare the two attendance percents and place the larger one.`,
-    }),
-  },
-  {
-    id: 'battery',
-    build: (rateA, rateB) => ({
-      scenario: `Phone A's battery is at ${rateA}%. Phone B's battery is at ${rateB}%.`,
-      wholeValue: 100,
-      wholeValueLabel: 'Reference (100%)',
-      question: `Which phone has more battery left? Place that percent on the bar.`,
-      hintExplicit: `Whichever number is bigger is the larger battery percent.`,
-      hintStrategy: `Compare the two battery percents and place the larger one.`,
-    }),
-  },
-  {
-    id: 'reviews',
-    build: (rateA, rateB) => ({
-      scenario: `Movie A scored ${rateA}% on a review site. Movie B scored ${rateB}%.`,
-      wholeValue: 100,
-      wholeValueLabel: 'Reference (100%)',
-      question: `Which movie has the better score? Place that percent on the bar.`,
-      hintExplicit: `Place the larger of ${rateA} and ${rateB}.`,
-      hintStrategy: `Compare the two scores and place whichever is larger.`,
-    }),
-  },
-  {
-    id: 'tip-comparison',
-    build: (rateA, rateB) => ({
-      scenario: `One restaurant suggests a ${rateA}% tip. Another suggests ${rateB}%.`,
-      wholeValue: 100,
-      wholeValueLabel: 'Reference (100%)',
-      question: `Which suggested tip is larger? Place that percent on the bar.`,
-      hintExplicit: `Compare the two rates and place the bigger one.`,
-      hintStrategy: `Compare the two suggested tips and place the larger percent.`,
-    }),
-  },
+/** Two-good shopping contexts: same item, two competing sellers. */
+const COMPARISON_CONTEXTS: readonly { item: string; a: string; b: string }[] = [
+  { item: 'jeans', a: 'Store A', b: 'Store B' },
+  { item: 'sneakers', a: 'SneakerHub', b: 'FootZone' },
+  { item: 'a backpack', a: 'Pack It', b: 'Bag World' },
+  { item: 'headphones', a: 'AudioMart', b: 'SoundCity' },
+  { item: 'a jacket', a: 'Outfitters', b: 'StyleCo' },
 ];
 
-const COMPARISON_RATES = [10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 75, 80] as const;
+const COMPARISON_BASES = [20, 30, 40, 50, 60, 80] as const;
+const COMPARISON_DISCOUNTS = [10, 20, 25, 30, 40, 50] as const;
 
+/**
+ * Multi-step shopping comparison. Each good has its OWN price and discount, so a
+ * bigger % off is not always the cheaper final price — the choice step makes the
+ * student compute both sale prices before deciding.
+ */
 function buildComparison(): ChallengeSpec {
-  const template = pick(COMPARISON_TEMPLATES);
-  // Pick two distinct rates from the pool — ensure rateA != rateB.
-  let rateA = pick(COMPARISON_RATES);
-  let rateB = pick(COMPARISON_RATES);
-  while (rateB === rateA) rateB = pick(COMPARISON_RATES);
-  const { hintExplicit, hintStrategy, ...partial } = template.build(rateA, rateB);
-  const target = Math.max(rateA, rateB);
+  const ctx = pick(COMPARISON_CONTEXTS);
+  const baseA = pick(COMPARISON_BASES);
+  const discA = pick(COMPARISON_DISCOUNTS);
+  let baseB = pick(COMPARISON_BASES);
+  let discB = pick(COMPARISON_DISCOUNTS);
+
+  const priceOf = (b: number, d: number) => (b * (100 - d)) / 100;
+  let priceA = priceOf(baseA, discA);
+  let priceB = priceOf(baseB, discB);
+  // Re-roll good B until the two sale prices are clearly distinct AND the bases
+  // differ (so the discounts alone don't determine the answer).
+  let guard = 0;
+  while ((Math.abs(priceA - priceB) < 1 || baseB === baseA) && guard < 40) {
+    baseB = pick(COMPARISON_BASES);
+    discB = pick(COMPARISON_DISCOUNTS);
+    priceB = priceOf(baseB, discB);
+    guard++;
+  }
+
+  const finalPctA = 100 - discA;
+  const finalPctB = 100 - discB;
+  const askCheaper = Math.random() < 0.5;
+  const cheaperIsA = priceA < priceB;
+  const correctIsA = askCheaper ? cheaperIsA : !cheaperIsA;
+
+  const scenario =
+    `${ctx.a} sells ${ctx.item} for $${baseA} at ${discA}% off. `
+    + `${ctx.b} sells the same ${ctx.item} for $${baseB} at ${discB}% off.`;
+
+  const steps: GenStep[] = [
+    {
+      kind: 'place',
+      prompt: `Step 1 — ${ctx.a}: place the sale price as a percent of its original ($${baseA}).`,
+      wholeValue: baseA,
+      wholeValueLabel: `${ctx.a} Original ($)`,
+      targetPercent: finalPctA,
+      maxPercent: 100,
+      valueLabel: 'Sale Price ($)',
+      recapLabel: ctx.a,
+      hint: `${discA}% off means you pay 100% − ${discA}% = ${finalPctA}%. The value shows the sale price.`,
+      hintStrategy: `A ${discA}% discount means you still pay the rest of the 100%. Place what is left.`,
+    },
+    {
+      kind: 'place',
+      prompt: `Step 2 — ${ctx.b}: place the sale price as a percent of its original ($${baseB}).`,
+      wholeValue: baseB,
+      wholeValueLabel: `${ctx.b} Original ($)`,
+      targetPercent: finalPctB,
+      maxPercent: 100,
+      valueLabel: 'Sale Price ($)',
+      recapLabel: ctx.b,
+      hint: `${discB}% off means you pay 100% − ${discB}% = ${finalPctB}%. The value shows the sale price.`,
+      hintStrategy: `Take the discount off 100% to find the percent of the price you pay.`,
+    },
+    {
+      kind: 'choice',
+      prompt: `Step 3 — which is ${askCheaper ? 'cheaper' : 'more expensive'}?`,
+      options: [
+        { id: 'A', label: ctx.a, sublabel: `$${priceA.toFixed(2)}` },
+        { id: 'B', label: ctx.b, sublabel: `$${priceB.toFixed(2)}` },
+      ],
+      correctOptionId: correctIsA ? 'A' : 'B',
+      hint: `Compare the two sale prices you found. ${askCheaper ? 'The smaller price is cheaper' : 'The larger price costs more'} — a bigger % off is not always the better deal.`,
+      hintStrategy: `Look at the two prices you computed, not the discount percents. ${askCheaper ? 'Smaller price wins' : 'Larger price costs more'}.`,
+    },
+  ];
+
   return {
-    ...partial,
-    hint: hintExplicit,
-    hintStrategy,
-    targetPercent: target,
+    scenario,
+    wholeValue: baseA,
+    wholeValueLabel: `${ctx.a} Price ($)`,
+    question: steps[0].prompt,
+    targetPercent: correctIsA ? finalPctA : finalPctB,
+    steps,
+    hint: steps[0].hint,
+    hintStrategy: (steps[0] as GenPlaceStep).hintStrategy!,
     context: {
       problemType: 'comparison',
-      initialValue: Math.min(rateA, rateB),
-      changeRate: target - Math.min(rateA, rateB),
-      discountFactor: target / 100,
-      finalValue: target,
+      initialValue: Math.min(priceA, priceB),
+      changeRate: Math.abs(priceA - priceB),
+      discountFactor: (correctIsA ? finalPctA : finalPctB) / 100,
+      finalValue: correctIsA ? priceA : priceB,
     },
   };
 }
@@ -650,18 +703,28 @@ export function selectPercentBarChallenges(
   while (specs.length < target) specs.push(builder(rateClass));
 
   // Shuffle so order is not template-aligned.
-  return shuffle(specs).map((spec, i) => ({
-    id: `pb-${i + 1}`,
-    type: challengeType,
-    scenario: spec.scenario,
-    wholeValue: spec.wholeValue,
-    wholeValueLabel: spec.wholeValueLabel,
-    question: spec.question,
-    targetPercent: spec.targetPercent,
-    // Strategy-only hint at hard (no target number / no answer arithmetic).
-    hint: useStrategyHint ? spec.hintStrategy : spec.hint,
-    context: spec.context,
-  }));
+  return shuffle(specs).map((spec, i) => {
+    // Resolve each step's hint to explicit/strategy, then strip the build-time
+    // hintStrategy so the component only sees the canonical PercentBarStep shape.
+    const resolvedSteps = spec.steps?.map((s) => {
+      const { hintStrategy, ...rest } = s;
+      return useStrategyHint && hintStrategy ? { ...rest, hint: hintStrategy } : rest;
+    });
+    return {
+      id: `pb-${i + 1}`,
+      type: challengeType,
+      scenario: spec.scenario,
+      wholeValue: spec.wholeValue,
+      wholeValueLabel: spec.wholeValueLabel,
+      question: spec.question,
+      targetPercent: spec.targetPercent,
+      ...(spec.maxPercent ? { maxPercent: spec.maxPercent } : {}),
+      ...(resolvedSteps ? { steps: resolvedSteps } : {}),
+      // Strategy-only hint at hard (no target number / no answer arithmetic).
+      hint: useStrategyHint ? spec.hintStrategy : spec.hint,
+      context: spec.context,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

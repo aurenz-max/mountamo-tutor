@@ -47,6 +47,126 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+type ChallengeType = FunctionSketchChallenge['type'];
+
+// ---------------------------------------------------------------------------
+// Support tiers — config.difficulty ('easy'|'medium'|'hard') drives HOW MUCH
+// scaffolding the student gets WITHIN the pinned eval mode. Second field of the
+// two-field contract (targetEvalMode = WHICH skill, difficulty = HOW MUCH help).
+// It withdraws on-screen perception aids (the feature rings/labels), the
+// symbolic crutch on sketch-match, and tightens distractor/curve similarity.
+// It NEVER changes the numbers, axis ranges, or the task identity.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** Bespoke, primitive-specific scaffold. Component-side perception aids
+ *  (identify-features rings/labels) + instruction-as-scaffold flags
+ *  (sketch-match symbolic vs verbal). Do not try to share this shape. */
+interface SupportScaffold {
+  showFeatureHints: boolean;    // identify-features: draw the ring markers on the curve
+  showFeatureLabels: boolean;   // identify-features: name the features (canvas + legend)
+  showSketchExpression: boolean; // sketch-match: show the LaTeX expression
+  showSketchDescription: boolean; // sketch-match: show the verbal description
+  promptLines: string[];        // tone/intent for the LLM (scaffolding axis)
+}
+
+const TIER_GUARDRAIL =
+  'Keep every number, axis range, and function family within the grade-appropriate scope. '
+  + 'This tier changes the SCAFFOLDING shown and the problem STRUCTURE (which cues are visible, '
+  + 'how similar the distractors/curves are), NOT raw magnitude.';
+
+/** Scaffolding axis — "how much help?". Defaults = easy (max support); harder
+ *  tiers withdraw aids. Returns component-side flags + prompt tone. */
+function resolveSupportStructure(type: ChallengeType, tier: SupportTier): SupportScaffold {
+  const sc: SupportScaffold = {
+    showFeatureHints: true,
+    showFeatureLabels: true,
+    showSketchExpression: true,
+    showSketchDescription: true,
+    promptLines: [TIER_GUARDRAIL],
+  };
+
+  if (type === 'identify-features') {
+    if (tier === 'easy') {
+      sc.promptLines.push('EASY: the feature rings AND their names are drawn on the curve — the student confirms, not hunts. Write the instruction to name the feature TYPES to look for (e.g. "Find the two roots and the maximum").');
+    } else if (tier === 'medium') {
+      sc.showFeatureLabels = false;
+      sc.promptLines.push('MEDIUM: rings are drawn but UNNAMED — the student sees WHERE the features are but must say WHAT each is. State how many features without naming their types.');
+    } else {
+      sc.showFeatureHints = false;
+      sc.showFeatureLabels = false;
+      sc.promptLines.push('HARD: NO rings, NO names — the student locates every feature on a bare curve unaided. Instruction asks them to find the key features without listing or counting them.');
+    }
+  }
+
+  if (type === 'sketch-match') {
+    if (tier === 'easy') {
+      sc.promptLines.push('EASY: provide BOTH a rich verbal description AND the symbolic expression; the student translates a fully-specified function.');
+    } else if (tier === 'medium') {
+      sc.showSketchExpression = false;
+      sc.promptLines.push('MEDIUM: the symbolic expression is withheld — the student works from the verbal description alone, so make it concrete (name the peaks, zeros, and trend).');
+    } else {
+      sc.showSketchDescription = false;
+      sc.promptLines.push('HARD: only the symbolic expression is shown — the student must recall the parent shape from the symbol with no verbal walk-through.');
+    }
+  }
+
+  if (type === 'classify-shape') {
+    if (tier === 'easy') sc.promptLines.push('EASY: phrase the instruction to remind the student which families they are choosing among.');
+    else if (tier === 'hard') sc.promptLines.push('HARD: neutral instruction — give no hint about the family.');
+  }
+
+  if (type === 'compare-functions') {
+    if (tier === 'easy') sc.promptLines.push('EASY: use descriptive curve labels (e.g. "Steady savings" vs "Compounding interest") that hint at each curve\'s behavior.');
+    else if (tier === 'hard') sc.promptLines.push('HARD: use neutral curve labels (e.g. "Model A" / "Model B") with no behavioral hint.');
+  }
+
+  return sc;
+}
+
+/** Structural axis — "how hard a problem?". Pure prompt-shaping (no clean
+ *  numeric handle: distractor/curve similarity is semantic), in-mode only,
+ *  never magnitude. Empty for modes whose difficulty rides the scaffold axis. */
+function resolveProblemShape(type: ChallengeType, tier: SupportTier): { promptLines: string[] } {
+  const lines: string[] = [];
+
+  if (type === 'classify-shape') {
+    if (tier === 'easy') lines.push('STRUCTURE — distractors FAR APART: the four options must be unmistakable families (e.g. linear vs exponential vs sinusoidal vs constant); a glance distinguishes them.');
+    else if (tier === 'medium') lines.push('STRUCTURE — one NEAR distractor: three clear families plus one genuinely confusable with the answer over this x-range.');
+    else lines.push('STRUCTURE — distractors NEAR: options must be confusable families that look alike over the shown range (e.g. quadratic vs cubic vs quartic, or exponential vs steep quadratic). The student reasons from curvature/end-behavior, not a glance. Do NOT change the curve\'s own family — only tighten the distractors.');
+  }
+
+  if (type === 'compare-functions') {
+    if (tier === 'easy') lines.push('STRUCTURE — curves VISUALLY DISTINCT: the two curves differ obviously in shape (e.g. a straight line vs a sharp exponential); the asked-about difference is unmistakable.');
+    else if (tier === 'medium') lines.push('STRUCTURE — moderate overlap: the curves share early behavior but diverge later, so the student must look past the start.');
+    else lines.push('STRUCTURE — curves SUBTLY DIFFERENT: same or adjacent family with a small parameter difference (e.g. two exponentials with bases 1.5 vs 2, or two parabolas with slightly different vertices) overlapping for much of the range. Keep both curves in-scope and in-range.');
+  }
+
+  if (type === 'sketch-match' && tier === 'hard') {
+    lines.push('STRUCTURE — prefer a TRANSFORMED parent (shift/scale/reflect) over the bare parent so recalling the shape from the symbol takes real work; stay within the grade\'s function families and axis range.');
+  }
+
+  return { promptLines: lines };
+}
+
+/** Merge the scaffolding-axis and structural-axis prompt lines into one block. */
+function buildTierPromptSection(type: ChallengeType, tier: SupportTier): string {
+  const lines = [
+    ...resolveSupportStructure(type, tier).promptLines,
+    ...resolveProblemShape(type, tier).promptLines,
+  ];
+  return `\n## SUPPORT TIER "${tier}" (scaffolding + problem structure — NOT number size)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
+}
+
 // ---------------------------------------------------------------------------
 // Grade-appropriate guidance
 // ---------------------------------------------------------------------------
@@ -440,12 +560,14 @@ interface SubGeneratorResult {
 async function generateIdentifyFeatures(
   topic: string,
   gradeLevel: string,
+  tier: SupportTier | null,
   attempt: number = 0,
 ): Promise<SubGeneratorResult> {
   const retryHint = attempt > 0
     ? `\n\nIMPORTANT — RETRY: A previous attempt used a linear or monotonic function. You MUST choose a function with a real turning point this time. Use a quadratic, sinusoidal, or cubic-with-extrema.\n`
     : '';
-  const prompt = `${retryHint}
+  const tierSection = tier ? buildTierPromptSection('identify-features', tier) : '';
+  const prompt = `${retryHint}${tierSection}
 Create a function for a "${topic}" lesson (grade ${gradeLevel}) where the student must identify key features on the graph.
 
 CRITICAL — FUNCTION FAMILY REQUIREMENT:
@@ -518,7 +640,7 @@ EXAMPLE (quadratic):
   if (features.length < 2) {
     if (attempt < 1) {
       console.warn('[FunctionSketch] identify-features: retrying with stronger turning-point hint');
-      return generateIdentifyFeatures(topic, gradeLevel, attempt + 1);
+      return generateIdentifyFeatures(topic, gradeLevel, tier, attempt + 1);
     }
     throw new Error('[FunctionSketch] Too few valid features after semantic validation');
   }
@@ -539,8 +661,9 @@ EXAMPLE (quadratic):
   };
 }
 
-async function generateClassifyShape(topic: string, gradeLevel: string): Promise<SubGeneratorResult> {
-  const prompt = `
+async function generateClassifyShape(topic: string, gradeLevel: string, tier: SupportTier | null): Promise<SubGeneratorResult> {
+  const tierSection = tier ? buildTierPromptSection('classify-shape', tier) : '';
+  const prompt = `${tierSection}
 Create a function classification challenge for "${topic}" (grade ${gradeLevel}).
 
 ${getFunctionGuidance(gradeLevel)}
@@ -609,8 +732,9 @@ EXAMPLE:
   };
 }
 
-async function generateSketchMatch(topic: string, gradeLevel: string): Promise<SubGeneratorResult> {
-  const prompt = `
+async function generateSketchMatch(topic: string, gradeLevel: string, tier: SupportTier | null): Promise<SubGeneratorResult> {
+  const tierSection = tier ? buildTierPromptSection('sketch-match', tier) : '';
+  const prompt = `${tierSection}
 Create a sketch challenge for "${topic}" (grade ${gradeLevel}). The student will place control points to draw what they think the function looks like.
 
 ${getFunctionGuidance(gradeLevel)}
@@ -684,8 +808,9 @@ EXAMPLE:
   };
 }
 
-async function generateCompareFunctions(topic: string, gradeLevel: string): Promise<SubGeneratorResult> {
-  const prompt = `
+async function generateCompareFunctions(topic: string, gradeLevel: string, tier: SupportTier | null): Promise<SubGeneratorResult> {
+  const tierSection = tier ? buildTierPromptSection('compare-functions', tier) : '';
+  const prompt = `${tierSection}
 Create a function comparison challenge for "${topic}" (grade ${gradeLevel}). Two curves are shown and the student picks which one matches a description.
 
 ${getFunctionGuidance(gradeLevel)}
@@ -764,8 +889,6 @@ EXAMPLE:
 // eval mode (orchestrator-same-mode per PRD §6a #7).
 // ===========================================================================
 
-type ChallengeType = FunctionSketchChallenge['type'];
-
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
 // ---------------------------------------------------------------------------
@@ -786,7 +909,7 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
 
 function subGeneratorFor(
   type: ChallengeType,
-): (topic: string, gradeLevel: string) => Promise<SubGeneratorResult> {
+): (topic: string, gradeLevel: string, tier: SupportTier | null) => Promise<SubGeneratorResult> {
   switch (type) {
     case 'classify-shape':    return generateClassifyShape;
     case 'sketch-match':      return generateSketchMatch;
@@ -803,12 +926,24 @@ export const generateFunctionSketch = async (
     targetEvalMode?: string;
     /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for T2 modes, 4 for T3 sketch-match). */
     instanceCount?: number;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen / instructional scaffolding within it.
+     * NEVER changes the numbers, axis ranges, or task identity.
+     */
+    difficulty?: string;
   },
 ): Promise<FunctionSketchData> => {
   const evalConstraint = resolveEvalModeConstraint('function-sketch', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('FunctionSketch', config?.targetEvalMode, evalConstraint);
 
   const challengeType = (evalConstraint?.allowedTypes[0] ?? 'identify-features') as ChallengeType;
+  const supportTier = normalizeSupportTier(config?.difficulty); // the STUDENT's tier — drives application (single OR blend)
+  // pinnedType is for prompt tone / logging only — undefined unless exactly one mode is pinned.
+  const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
+    ? (evalConstraint.allowedTypes[0] as ChallengeType)
+    : undefined;
   const modeCount = COUNT_BY_MODE[challengeType];
   const instanceCount = Math.max(
     1,
@@ -825,7 +960,7 @@ export const generateFunctionSketch = async (
   // a Gemini fake-maximum on a linear function) doesn't kill the batch.
   const runOne = subGeneratorFor(challengeType);
   const settled = await Promise.allSettled(
-    Array.from({ length: instanceCount }, () => runOne(topic, gradeLevel)),
+    Array.from({ length: instanceCount }, () => runOne(topic, gradeLevel, supportTier)),
   );
   const subResults: SubGeneratorResult[] = settled
     .filter((s): s is PromiseFulfilledResult<SubGeneratorResult> => s.status === 'fulfilled')
@@ -848,6 +983,29 @@ export const generateFunctionSketch = async (
     ...r.challenge,
     id: `fs-${challengeType}-${idx + 1}`,
   }));
+
+  // ── Apply the support tier deterministically, per challenge, from each
+  //    challenge's OWN mode. Difficulty is a STUDENT property, so a blended
+  //    session must get it too — gate only on supportTier being present, never
+  //    on pinnedType. Code owns the scaffold STRUCTURE; the LLM only chose the
+  //    numbers. (Display-only here — none of these fields feed a checker.)
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.supportTier = supportTier;
+      if (ch.type === 'identify-features') {
+        ch.showFeatureHints = sc.showFeatureHints;
+        ch.showFeatureLabels = sc.showFeatureLabels;
+      }
+      if (ch.type === 'sketch-match') {
+        // Withdraw the symbolic crutch / verbal walk-through per tier. Always
+        // leave at least one (easy = both, medium = description, hard = expression).
+        if (!sc.showSketchExpression) delete ch.sketchExpression;
+        if (!sc.showSketchDescription) delete ch.sketchDescription;
+      }
+    }
+    console.log(`[FunctionSketch] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
+  }
 
   console.log('✏️ Function Sketch generated:', {
     topic,

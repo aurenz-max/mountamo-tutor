@@ -13,6 +13,106 @@ import {
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Support tier harness (fixed) + bespoke scaffold resolution
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+type RWChallengeType = 'add_no_regroup' | 'subtract_no_regroup' | 'add_regroup' | 'subtract_regroup';
+
+/**
+ * Per-challenge support scaffolds. Every field here is DISPLAY-ONLY — the
+ * answer checker compares the student's entered digits against the operands'
+ * computed result, never against any of these flags. A withdrawn scaffold can
+ * therefore never leak the answer, and the magnitudes (operands) never change.
+ */
+interface SupportScaffold {
+  /** Pre-marked carry/borrow digits & the column-sum regroup-hint marks in the
+   *  algorithm (the "carry box pre-filled" cue). Withdrawn at hard so the student
+   *  decides WHEN to regroup. */
+  showCarryBorrow: boolean;
+  /** Per-column "regroup needed here" hint marks (red highlight + the carry-box
+   *  outline above each column that overflows). Withdrawn at hard. */
+  showRegroupHints: boolean;
+  /** Place-value column header labels (Ones / Tens / Hundreds). Withdrawn at hard
+   *  so the student tracks place value themselves. */
+  showPlaceColumns: boolean;
+  /** Column-count badges: a small "+N" badge over each column showing how many
+   *  blocks are stacked there (helps the student read the per-column quantity).
+   *  NEVER shows the final regrouped answer digit — only the raw stacked count. */
+  showColumnBadges: boolean;
+  /** Guided step-by-step prompting. On at easy, off at hard. */
+  stepByStepMode: boolean;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-workspace support structure for a tier on a pinned challenge
+ * type. Support is withdrawn as the tier hardens; the per-mode lines reframe the
+ * SAME task with less scaffolding — never a different task, never bigger numbers.
+ *
+ * easy  → carry/borrow boxes pre-marked + column-count badges + place-value labels.
+ * medium→ keep place labels + carry/borrow row, drop the per-column regroup hint marks & badges.
+ * hard  → withdraw the regroup hint marks AND the carry/borrow boxes AND the place
+ *         labels & badges: the student decides when to regroup and tracks place value
+ *         themselves. The answer-input boxes & blocks stay — they ARE the task surface.
+ */
+function resolveSupportStructure(pinnedType: RWChallengeType, tier: SupportTier): SupportScaffold {
+  const requiresRegroup = pinnedType === 'add_regroup' || pinnedType === 'subtract_regroup';
+  const isAddition = pinnedType.startsWith('add');
+  const cue = isAddition ? 'carry' : 'borrow';
+
+  const showCarryBorrow = tier !== 'hard';       // the pre-marked carry/borrow cue
+  const showRegroupHints = tier === 'easy';      // per-column "regroup here" hint marks
+  const showPlaceColumns = tier !== 'hard';      // place-value column labels
+  const showColumnBadges = tier === 'easy';      // column-count badges
+  const stepByStepMode = tier === 'easy';        // guided prompting
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-workspace SCAFFOLDING only `
+    + `(${tier === 'easy'
+        ? 'maximum support: the workspace pre-marks where to regroup and labels every place so the student can self-check'
+        : tier === 'medium'
+          ? 'moderate support: place labels and the carry/borrow row stay, but the student decides which columns need regrouping'
+          : 'minimum support: the student decides WHEN to regroup, tracks place value unaided, and explains each trade'}). `
+    + `NEVER change the operands or the magnitude of the problem — a harder tier means LESS on-screen help, not bigger numbers. `
+    + `The numbers stay bound to the eval mode and grade band.`,
+  ];
+
+  if (requiresRegroup) {
+    promptLines.push(
+      tier === 'easy'
+        ? `Pre-mark the ${cue} cue: the column that overflows is highlighted and the ${cue} box above it is ready to fill. Narration may name which column to ${cue} from.`
+        : tier === 'hard'
+          ? `Withdraw the ${cue} hint marks and the place-value column labels. The student must NOTICE that a column overflows and decide to ${cue} without prompting; hints should ask what they see in each column, never name when to ${cue}.`
+          : `Keep the place labels and the ${cue} row visible, but do NOT pre-highlight which column needs regrouping — the student finds it.`,
+    );
+  } else {
+    promptLines.push(
+      tier === 'easy'
+        ? 'Keep place-value labels and column-count badges visible so the student lines up the columns and self-checks each place.'
+        : tier === 'hard'
+          ? 'Withdraw the place-value column labels and column-count badges; the student aligns the columns and tracks place value unaided.'
+          : 'Keep the place-value labels; drop the column-count badges so the student reads each column themselves.',
+    );
+  }
+
+  return { showCarryBorrow, showRegroupHints, showPlaceColumns, showColumnBadges, stepByStepMode, promptLines };
+}
+
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   add_no_regroup: {
     promptDoc:
@@ -242,6 +342,12 @@ export const generateRegroupingWorkbench = async (
     maxPlace?: 'tens' | 'hundreds' | 'thousands';
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   }
 ): Promise<RegroupingWorkbenchData> => {
   // Resolve eval mode from catalog (single source of truth)
@@ -263,6 +369,19 @@ export const generateRegroupingWorkbench = async (
     CHALLENGE_TYPE_DOCS,
   );
 
+  // Resolve the support tier (the STUDENT's tier — drives application below).
+  // pinnedType is ONLY for the prompt tone (single-mode sessions have one mode
+  // to describe to the LLM; blended sessions still apply per-challenge below).
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType = (evalConstraint?.allowedTypes.length === 1
+    ? evalConstraint.allowedTypes[0]
+    : undefined) as RWChallengeType | undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   // Infer operation constraint from eval mode
   const evalOperation = evalConstraint?.allowedTypes[0]?.startsWith('add') ? 'addition'
     : evalConstraint?.allowedTypes[0]?.startsWith('subtract') ? 'subtraction'
@@ -278,7 +397,7 @@ CONTEXT:
 - The blocks make the "carry" and "borrow" visible and concrete
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Grades 1-2 (gradeBand "1-2"):
@@ -427,6 +546,58 @@ Return the complete regrouping workbench configuration.
     if (config.operation !== undefined && !evalOperation) data.operation = config.operation;
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
     if (config.maxPlace !== undefined) data.maxPlace = config.maxPlace;
+  }
+
+  // -------------------------------------------------------------------------
+  // Apply the support tier (scaffolding withdrawal only — magnitudes untouched).
+  // Gated ONLY on supportTier so blended sessions get it too. Resolved per
+  // challenge from its OWN type. showOptions is a single object, so we derive the
+  // workbench-wide scaffolds from the per-challenge resolution (single-mode →
+  // uniform; blended → take the MAX support so no challenge is left unsupported
+  // beyond its tier). Every field below is display-only; the answer checker is
+  // independent of these flags.
+  // -------------------------------------------------------------------------
+  if (supportTier) {
+    data.supportTier = supportTier;
+    if (!data.showOptions) {
+      data.showOptions = {
+        showAlgorithm: true,
+        showCarryBorrow: true,
+        showPlaceColumns: true,
+        animateRegrouping: true,
+        stepByStepMode: data.gradeBand === '1-2',
+      };
+    }
+    let anyCarryBorrow = false;
+    let anyRegroupHints = false;
+    let anyPlaceColumns = false;
+    let anyColumnBadges = false;
+    let anyStepByStep = false;
+    for (const ch of data.challenges as Array<{ type?: string; supportTier?: string }>) {
+      const t = (ch.type as RWChallengeType) ?? (pinnedType ?? 'add_regroup');
+      const sc = resolveSupportStructure(t, supportTier);
+      ch.supportTier = supportTier; // per-challenge stamp for the tutor reveal level
+      anyCarryBorrow = anyCarryBorrow || sc.showCarryBorrow;
+      anyRegroupHints = anyRegroupHints || sc.showRegroupHints;
+      anyPlaceColumns = anyPlaceColumns || sc.showPlaceColumns;
+      anyColumnBadges = anyColumnBadges || sc.showColumnBadges;
+      anyStepByStep = anyStepByStep || sc.stepByStepMode;
+    }
+    // showAlgorithm stays ON at every tier — it holds the answer-input boxes and
+    // is the task surface, not a scaffold. Never withdraw it.
+    data.showOptions.showAlgorithm = true;
+    data.showOptions.showCarryBorrow = anyCarryBorrow;
+    data.showOptions.showRegroupHints = anyRegroupHints;
+    data.showOptions.showPlaceColumns = anyPlaceColumns;
+    data.showOptions.showColumnBadges = anyColumnBadges;
+    data.showOptions.stepByStepMode = anyStepByStep;
+
+    console.log(
+      `[RegroupingWorkbench] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → `
+      + `carryBorrow=${anyCarryBorrow}, regroupHints=${anyRegroupHints}, `
+      + `placeColumns=${anyPlaceColumns}, columnBadges=${anyColumnBadges}, stepByStep=${anyStepByStep}`,
+    );
   }
 
   return data;

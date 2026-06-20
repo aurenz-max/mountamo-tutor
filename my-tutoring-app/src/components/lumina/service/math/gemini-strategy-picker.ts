@@ -30,6 +30,150 @@ const STRATEGY_LABELS: Record<string, string> = {
 const TARGET_INSTANCE_COUNT = 4;
 
 // ---------------------------------------------------------------------------
+// Within-mode SUPPORT TIER (config.difficulty) — recognition-card archetype.
+// ---------------------------------------------------------------------------
+// The two-field contract: config.targetEvalMode says WHICH skill (the task
+// identity — guided/match/try-another/compare/choose — matched to the objective
+// by the manifest); config.difficulty says how much on-screen SUPPORT the
+// student gets while doing it ('easy' = max scaffolding, 'hard' = min).
+//
+// This is a RECOGNITION-CARD primitive: in match-strategy the student must
+// RECOGNIZE which strategy a worked solution uses — the strategy IS the answer.
+// So the tier is #5-led (answer-form / distractor tightness) + #4 worked-example
+// fading + #1/#2 feature-cue withdrawal. The HARD INVARIANT: the tier NEVER
+// changes which strategy is correct, NEVER changes the numbers, and the worked
+// exemplars (when shown) demonstrate strategies GENERALLY across ALL options —
+// they never point at which option is correct for THIS problem (else they'd
+// leak the answer). See memory: structural-difficulty-not-numeric;
+// .claude/skills/add-support-tiers/SKILL.md (recognition-card archetype + CAUTION).
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** match-strategy distractor proximity — the one code-enforceable structural
+ *  lever for this primitive (recognition-card structural-difficulty axis).
+ *  'wide'  → 2 distractors, prefer DISSIMILAR strategies (different operation
+ *            shape / visualization) so the right one stands out.
+ *  'tight' → up to 3 distractors, prefer strategies whose worked solutions read
+ *            SIMILARLY to the correct one (counting-on vs counting-back; doubles
+ *            vs near-doubles) so the student must discriminate cold.
+ *  Never changes the CORRECT strategy — only which plausible foils sit beside it. */
+type DistractorTightness = 'wide' | 'tight';
+
+interface SupportScaffold {
+  /** Per-option strategy descriptions under the worked solution (match-strategy)
+   *  / beside the menu (choose). A glossary of what each strategy IS — shown for
+   *  ALL options equally, so it teaches without pointing at the correct one. */
+  showStrategyDescriptions: boolean;
+  /** A worked exemplar (mini visualization preview) for EACH option strategy on
+   *  a NEUTRAL example, demonstrating the strategies generally. Shown for every
+   *  option so it can never single out the correct one for THIS problem. */
+  showStrategyExemplars: boolean;
+  /** A hint naming the PROBLEM FEATURES to attend to ("look at the two numbers —
+   *  are they the same? is it add or subtract?") WITHOUT naming any strategy. */
+  showFeatureHint: boolean;
+  /** match-strategy distractor proximity (the structural lever). */
+  distractorTightness: DistractorTightness;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the support structure for a tier on a pinned challenge type.
+ *
+ * RECOGNITION RULE: support is scaffolding only. Across all modes the tier
+ * NEVER changes which strategy is correct and NEVER changes the numbers. As the
+ * tier hardens we withdraw the strategy descriptions, then the worked exemplars,
+ * then the feature hint, and (for match-strategy) tighten the distractors so the
+ * foils read more like the correct solution. The worked solution / problem /
+ * answer-checking are untouched — those ARE the task.
+ */
+function resolveSupportStructure(pinnedType: string, tier: SupportTier): SupportScaffold {
+  // easy: full strategy descriptions + a worked exemplar per option + feature hint.
+  // medium: descriptions only (no exemplars), no feature hint.
+  // hard: terse labels only, tighter distractors — discriminate strategies cold.
+  const showStrategyDescriptions = tier === 'easy' || tier === 'medium';
+  const showStrategyExemplars = tier === 'easy';
+  const showFeatureHint = tier === 'easy';
+  const distractorTightness: DistractorTightness = tier === 'hard' ? 'tight' : 'wide';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets only how much SCAFFOLDING surrounds the recognition task and how close the wrong-answer options are. It NEVER changes which strategy is correct and NEVER changes the numbers in the problem. ${
+      tier === 'easy'
+        ? 'Maximum support: the student sees a description of every strategy option plus a neutral worked example of each, and a hint naming the problem features to notice.'
+        : tier === 'medium'
+          ? 'Moderate support: the student sees a short description of every strategy option, but no worked exemplars and no feature hint.'
+          : 'Minimum support: terse strategy labels only, no descriptions or exemplars, and the wrong-answer options are chosen to read SIMILARLY to the correct one so the student must discriminate the strategies cold.'
+    }`,
+  ];
+
+  switch (pinnedType) {
+    case 'match-strategy':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep the worked solution exactly as it is (it already hides the strategy name). The student leans on the per-option descriptions and neutral exemplars to recognize the match — never hint which option fits THIS solution.'
+          : tier === 'hard'
+            ? 'Offer no descriptions or exemplars. The distractor options are near-neighbors of the correct strategy (e.g. counting-on vs counting-back, doubles vs near-doubles) so the student must read the solution carefully to tell them apart. Do NOT make the worked solution name or imply the strategy.'
+            : 'Offer brief descriptions of each option but no exemplars; the student matches the worked solution to a strategy from the descriptions alone.',
+      );
+      break;
+    case 'choose-your-strategy':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Describe each strategy on the menu and show a neutral exemplar of each so the student can pick deliberately; add a hint pointing at the problem features (same numbers? add or subtract?) without recommending a strategy.'
+          : tier === 'hard'
+            ? 'Show only the strategy labels on the menu — the student selects from names alone and must know each strategy cold.'
+            : 'Show a short description beside each strategy on the menu, but no exemplars and no feature hint.',
+      );
+      break;
+    case 'guided-strategy':
+    case 'try-another':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep the full step-by-step scaffold and a feature hint visible; the strategy is assigned, so this tier governs how much surrounding guidance the student keeps.'
+          : tier === 'hard'
+            ? 'Keep the assigned strategy and its visualization (those ARE the task), but withdraw the surrounding descriptions and the feature hint so the student executes with minimal prose support.'
+            : 'Keep the step scaffold but drop the extra feature hint.',
+      );
+      break;
+    case 'compare':
+      // Metacognitive reflection — no correct answer, so scaffolding is light.
+      promptLines.push(
+        'Compare is reflective (no wrong answer); keep both strategy visualizations. The tier only governs whether the strategy descriptions accompany them.',
+      );
+      break;
+  }
+
+  return {
+    showStrategyDescriptions,
+    showStrategyExemplars,
+    showFeatureHint,
+    distractorTightness,
+    promptLines,
+  };
+}
+
+/** Short, problem-agnostic description of what each strategy IS. Used for the
+ *  per-option glossary surfaced at easy/medium — teaches the strategy without
+ *  referencing THIS problem, so it can never leak the correct choice. */
+const STRATEGY_DESCRIPTIONS: Record<string, string> = {
+  'counting-on': 'Start at the bigger number and count up.',
+  'counting-back': 'Start at the bigger number and count down.',
+  'make-ten': 'Break a number apart to fill a ten frame first.',
+  'doubles': 'Use a doubles fact you already know.',
+  'near-doubles': 'Use a doubles fact, then adjust by one.',
+  'tally-marks': 'Draw a tally mark for each, then count them all.',
+  'draw-objects': 'Draw a circle for each, then count them all.',
+};
+
+// ---------------------------------------------------------------------------
 // Strategy constraints — which problems each strategy's visualization can
 // legitimately represent. Without this, the pool service randomly pairs
 // strategies with operations/operands that their visualizations can't render
@@ -102,6 +246,7 @@ async function generateSetup(
     strategiesIntroduced: string[];
     gradeBand: string;
   }>,
+  tierSection = '',
 ): Promise<SetupResult> {
   const gradeBand = config?.gradeBand || (gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1');
   const maxNumber = config?.maxNumber || (gradeBand === 'K' ? 5 : 10);
@@ -114,7 +259,7 @@ async function generateSetup(
   const prompt = `
 Create a setup for a strategy-picker math activity teaching "${topic}" to ${gradeLevel} students.
 Grade band: ${gradeBand}. Strategies in play: ${strategies.join(', ')}.
-
+${tierSection}
 Return only:
 - title: fun and engaging for young children
 - description: 1-sentence educational summary
@@ -597,24 +742,68 @@ function buildProblemPayload(p: Problem): StrategyPickerChallenge['problem'] {
   };
 }
 
+/** Strategies whose worked solutions read SIMILARLY to a given strategy — the
+ *  near-neighbors a 'tight' (hard-tier) distractor pool prefers, so the student
+ *  must discriminate the strategies cold instead of eliminating obvious misfits.
+ *  Symmetric pairs; anything not listed is treated as a "far" distractor. */
+const NEAR_NEIGHBORS: Record<string, StrategyId[]> = {
+  'counting-on': ['counting-back'],
+  'counting-back': ['counting-on'],
+  'doubles': ['near-doubles'],
+  'near-doubles': ['doubles'],
+  'tally-marks': ['draw-objects'],
+  'draw-objects': ['tally-marks'],
+  'make-ten': ['counting-on'],
+};
+
+/**
+ * Build the match-strategy MC option set.
+ *
+ * `tightness` is the within-mode SUPPORT-TIER structural lever and NEVER changes
+ * the correct strategy — only which plausible foils sit beside it:
+ *  - 'wide' (easy/medium): 2 distractors, preferring strategies that read
+ *    DIFFERENTLY from the correct one, so the right answer stands out.
+ *  - 'tight' (hard): up to 3 distractors, preferring near-neighbor strategies
+ *    (counting-on↔counting-back, doubles↔near-doubles, tally↔draw) so the
+ *    student must read the worked solution carefully to tell them apart.
+ * Distractors stay plausible for the problem (operation/operand structure),
+ * otherwise a savvy student eliminates them by shape alone.
+ */
 function buildMatchOptions(
   correct: StrategyId,
   strategiesIntroduced: StrategyId[],
   problem: Problem,
+  tightness: DistractorTightness = 'wide',
 ): string[] {
-  // Distractors must be plausible for this problem, otherwise a savvy student
-  // can eliminate them by operation/operand structure alone.
+  const targetCount = tightness === 'tight' ? 4 : 3; // total options incl. correct
   const options: StrategyId[] = [correct];
+
   const plausible = strategiesIntroduced
     .filter(s => s !== correct && strategyMatchesProblem(s, problem));
-  for (const s of shuffleInPlace([...plausible])) {
-    if (options.length >= 3) break;
+  const neighbors = NEAR_NEIGHBORS[correct] ?? [];
+
+  // Order the candidate pool by the tier's preference: tight → near-neighbors
+  // first (harder to discriminate); wide → far strategies first (easier).
+  const near = plausible.filter(s => neighbors.includes(s));
+  const far = plausible.filter(s => !neighbors.includes(s));
+  const ordered = tightness === 'tight'
+    ? [...shuffleInPlace(near), ...shuffleInPlace(far)]
+    : [...shuffleInPlace(far), ...shuffleInPlace(near)];
+
+  for (const s of ordered) {
+    if (options.length >= targetCount) break;
     options.push(s);
   }
-  // If we still need fillers, pull from any compatible strategy in the global pool.
-  if (options.length < 3) {
-    for (const s of VALID_STRATEGIES) {
-      if (options.length >= 3) break;
+  // If we still need fillers, pull from any compatible strategy in the global pool
+  // (still respecting the tightness ordering preference).
+  if (options.length < targetCount) {
+    const globalNear = VALID_STRATEGIES.filter(s => neighbors.includes(s));
+    const globalFar = VALID_STRATEGIES.filter(s => !neighbors.includes(s));
+    const globalOrdered = tightness === 'tight'
+      ? [...globalNear, ...globalFar]
+      : [...globalFar, ...globalNear];
+    for (const s of globalOrdered) {
+      if (options.length >= targetCount) break;
       if (!options.includes(s) && strategyMatchesProblem(s, problem)) options.push(s);
     }
   }
@@ -738,6 +927,7 @@ async function buildMatchChallenges(
   setup: SetupResult,
   gradeLevel: string,
   count: number,
+  tightness: DistractorTightness = 'wide',
 ): Promise<StrategyPickerChallenge[]> {
   const pairs = selectStrategyProblemPairs(count, setup.strategiesIntroduced, setup.maxNumber, setup.operations);
 
@@ -751,7 +941,7 @@ async function buildMatchChallenges(
     instruction: contents[i].instruction,
     problem: buildProblemPayload(p),
     workedSolution: contents[i].workedSolution,
-    strategyOptions: buildMatchOptions(strat, setup.strategiesIntroduced, p),
+    strategyOptions: buildMatchOptions(strat, setup.strategiesIntroduced, p, tightness),
     correctStrategy: strat,
   }));
 }
@@ -761,13 +951,14 @@ async function buildSingleModeChallenges(
   setup: SetupResult,
   gradeLevel: string,
   count: number,
+  tightness: DistractorTightness = 'wide',
 ): Promise<StrategyPickerChallenge[]> {
   switch (singleType) {
     case 'guided-strategy':       return buildGuidedChallenges(setup, gradeLevel, count);
     case 'try-another':           return buildTryAnotherChallenges(setup, gradeLevel, count);
     case 'compare':               return buildCompareChallenges(setup, gradeLevel, count);
     case 'choose-your-strategy':  return buildChooseChallenges(setup, gradeLevel, count);
-    case 'match-strategy':        return buildMatchChallenges(setup, gradeLevel, count);
+    case 'match-strategy':        return buildMatchChallenges(setup, gradeLevel, count, tightness);
     default:                      return [];
   }
 }
@@ -784,6 +975,7 @@ async function buildMultiModeChallenges(
   setup: SetupResult,
   gradeLevel: string,
   allowedTypes: Set<string>,
+  tightness: DistractorTightness = 'wide',
 ): Promise<StrategyPickerChallenge[]> {
   // Shared problem + strategy pair for guided/try/compare (so compare can
   // legitimately reference the prior solve). Both strategies must apply to
@@ -853,7 +1045,7 @@ async function buildMultiModeChallenges(
       instruction: match.instruction,
       problem: buildProblemPayload(matchP),
       workedSolution: match.workedSolution,
-      strategyOptions: buildMatchOptions(matchStrategy, setup.strategiesIntroduced, matchP),
+      strategyOptions: buildMatchOptions(matchStrategy, setup.strategiesIntroduced, matchP, tightness),
       correctStrategy: matchStrategy,
     },
   ];
@@ -928,6 +1120,13 @@ export const generateStrategyPicker = async (
     gradeBand: string;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes
+     * which strategy is correct and NEVER changes the numbers.
+     */
+    difficulty?: string;
   }>,
 ): Promise<StrategyPickerData> => {
   const evalConstraint = resolveEvalModeConstraint(
@@ -940,15 +1139,76 @@ export const generateStrategyPicker = async (
   const allTypes = ['guided-strategy', 'try-another', 'compare', 'choose-your-strategy', 'match-strategy'];
   const allowedTypes = new Set(evalConstraint?.allowedTypes ?? allTypes);
 
-  const setup = await generateSetup(topic, gradeLevel, config);
+  // ── Within-mode support tier (the STUDENT's tier — drives application). ──
+  // pinnedType is ONLY for the prompt tone (a mixed-mode session has no single
+  // mode to describe to the LLM). Application below is per-challenge from each
+  // ch.type, gated only on the tier being present.
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1 ? evalConstraint.allowedTypes[0] : undefined;
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT which strategy is correct, NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
+  // match-strategy distractor tightness is the answer-set structural lever; it
+  // must be applied at BUILD time (it shapes the option set), so we resolve it up
+  // front from the student's tier. Hard → 'tight' near-neighbor foils.
+  const distractorTightness: DistractorTightness = supportTier === 'hard' ? 'tight' : 'wide';
+
+  const setup = await generateSetup(topic, gradeLevel, config, tierSection);
 
   let challenges: StrategyPickerChallenge[];
   if (allowedTypes.size === 1) {
     const [singleType] = Array.from(allowedTypes);
     const count = Math.max(1, config?.challengeCount ?? TARGET_INSTANCE_COUNT);
-    challenges = await buildSingleModeChallenges(singleType, setup, gradeLevel, count);
+    challenges = await buildSingleModeChallenges(singleType, setup, gradeLevel, count, distractorTightness);
   } else {
-    challenges = await buildMultiModeChallenges(setup, gradeLevel, allowedTypes);
+    challenges = await buildMultiModeChallenges(setup, gradeLevel, allowedTypes, distractorTightness);
+  }
+
+  // ── Apply the support scaffold PER CHALLENGE at the END, gated only on the
+  // tier being present (the global rule — a blended session must get it too).
+  // Each challenge resolves its own scaffold from its OWN mode (ch.type). The
+  // worked solution / problem / correctStrategy / strategyOptions answer-set are
+  // NOT touched here — only display scaffolds (descriptions, exemplars, hint).
+  // Recognition guard: exemplars/descriptions are problem-agnostic (drawn from
+  // STRATEGY_DESCRIPTIONS / shown for every option), so they never leak which
+  // strategy is correct for THIS problem. ──
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.supportTier = supportTier;
+      ch.showStrategyDescriptions = sc.showStrategyDescriptions;
+      ch.showStrategyExemplars = sc.showStrategyExemplars;
+      ch.showFeatureHint = sc.showFeatureHint;
+      // Per-option descriptions glossary — populated only when shown, for the
+      // options actually on screen (match/choose). Problem-agnostic by construction.
+      if (sc.showStrategyDescriptions) {
+        const optionPool: string[] =
+          ch.type === 'match-strategy'
+            ? (ch.strategyOptions ?? [])
+            : ch.type === 'choose-your-strategy'
+              ? (ch.availableStrategies ?? [])
+              : ch.type === 'compare'
+                ? (ch.strategies ?? [])
+                : ch.assignedStrategy ? [ch.assignedStrategy] : [];
+        ch.strategyDescriptions = Object.fromEntries(
+          optionPool
+            .filter((s) => STRATEGY_DESCRIPTIONS[s])
+            .map((s) => [s, STRATEGY_DESCRIPTIONS[s]]),
+        );
+      }
+    }
+    console.log(
+      `[StrategyPicker] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → `
+      + `descriptions=${tierScaffold?.showStrategyDescriptions ?? supportTier !== 'hard'}, `
+      + `exemplars=${supportTier === 'easy'}, featureHint=${supportTier === 'easy'}, `
+      + `matchDistractors=${distractorTightness}`,
+    );
   }
 
   const typeBreakdown = challenges.map(c => c.type).join(', ');
@@ -962,5 +1222,6 @@ export const generateStrategyPicker = async (
     operations: setup.operations,
     strategiesIntroduced: setup.strategiesIntroduced,
     gradeBand: setup.gradeBand,
+    ...(supportTier ? { supportTier } : {}),
   };
 };

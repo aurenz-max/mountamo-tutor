@@ -56,6 +56,68 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Support tiers — within-mode scaffolding withdrawal (FIXED harness)
+// ---------------------------------------------------------------------------
+// Second field of the two-field contract: targetEvalMode = WHICH skill (the
+// task identity), difficulty = HOW MUCH on-screen / instructional support
+// within it. A tier NEVER changes the shape widths or the unit — those are
+// owned by the per-mode width pools below. easy = the workspace helps the
+// student read the ruler; hard = the student measures unaided and counts.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * Per-primitive support scaffold. Every field is display-/instruction-only —
+ * the checker reads the typed answer against widthInches, so withdrawing any
+ * of these leaves the answer and the task identity intact.
+ */
+interface SupportScaffold {
+  /** Ruler tick-label density (perception aid #1). 'all' labels half ticks too
+   *  (read-between support for estimate); 'sparse' labels only even wholes so
+   *  the student must count marks. */
+  rulerLabels: 'all' | 'whole' | 'sparse';
+  /** How much the instruction names the align-at-0 / read-the-edge method (#2). */
+  instructionDetail: 'full' | 'standard' | 'minimal';
+  /** Attempts before the "Need a Hint?" button is offered (#2). */
+  hintThreshold: number;
+  /** convert mode: hand over the "1 inch = 2.54 cm" factor, or withdraw it (#2). */
+  showConversionFactor: boolean;
+  promptLines: string[];
+}
+
+function resolveSupportStructure(mode: ChallengeType, tier: SupportTier): SupportScaffold {
+  const rulerLabels: SupportScaffold['rulerLabels'] =
+    tier === 'easy' ? 'all' : tier === 'hard' ? 'sparse' : 'whole';
+  const instructionDetail: SupportScaffold['instructionDetail'] =
+    tier === 'easy' ? 'full' : tier === 'hard' ? 'minimal' : 'standard';
+  const hintThreshold = tier === 'easy' ? 1 : tier === 'hard' ? 3 : 2;
+  // The conversion factor is convert mode's keystone scaffold; only it withdraws.
+  const showConversionFactor = mode === 'convert' ? tier !== 'hard' : true;
+
+  const lines: string[] = [
+    'This tier changes only on-screen / instructional SUPPORT — never the shape widths or the unit. Every measurement stays exactly in scope.',
+  ];
+  if (tier === 'easy') {
+    lines.push('Easy support: warm, explicit title/description that names the measuring method (line the left edge up with 0, read where the right edge lands).');
+    if (mode === 'estimate') lines.push('Reassure that the small marks between numbers are halves.');
+    if (mode === 'convert') lines.push('State the conversion relationship plainly (1 inch = 2.54 cm).');
+  } else if (tier === 'hard') {
+    lines.push('Hard support: terse, neutral title/description. Do NOT spell out the align-at-0 / read-the-edge method or (for convert) the conversion factor — the student recalls those.');
+  } else {
+    lines.push('Medium support: standard title/description naming the task without a step-by-step method.');
+  }
+  return { rulerLabels, instructionDetail, hintThreshold, showConversionFactor, promptLines: lines };
+}
+
+// ---------------------------------------------------------------------------
 // Pool service — deterministic per-mode challenge selection
 // ---------------------------------------------------------------------------
 
@@ -262,6 +324,12 @@ export const generateMeasurementTools = async (
     gradeBand?: 'K-2' | '3-5';
     instanceCount?: number;
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   },
 ): Promise<MeasurementToolsData> => {
   // ── Resolve eval mode ──
@@ -282,8 +350,26 @@ export const generateMeasurementTools = async (
       )
     : measurementToolsSchema;
 
+  // ── Resolve support tier (scaffolding level WITHIN the mode) ──
+  // Single-mode primitive (one challengeType per session), so the scaffold is
+  // resolved once. pinnedType = the resolved mode, used only for prompt tone.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType: ChallengeType | undefined =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
+  // Tier prompt tone (the LLM only authors the title/description here, so this
+  // just steers their warmth/terseness — the scaffold fields are applied in code).
+  const tierToneScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierToneScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierToneScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   const prompt = `
 Create a measurement SESSION for teaching "${topic}" to ${gradeLevel} students.
@@ -295,7 +381,7 @@ THE STUDENT EXPERIENCE:
 - They type their answer and advance to the next shape.
 
 ${challengeTypeSection}
-
+${tierSection}
 YOUR JOB:
 - Pick the session's mode flags ONLY (challengeType, unit, gradeBand) and write
   a short title + one-sentence description.
@@ -383,6 +469,19 @@ Return only the session wrapper.
     `[MeasurementTools] ${challengeType} session: ${challenges.length} challenges → [${labels}]`,
   );
 
+  // ── Apply the support tier deterministically (scaffolding only) ──────
+  // Resolve from the session's challengeType (single-mode primitive). Fields
+  // are display-/instruction-only; left undefined when no tier so the no-tier
+  // path is byte-identical to before.
+  const scaffold = supportTier ? resolveSupportStructure(challengeType, supportTier) : null;
+  if (supportTier) {
+    console.log(
+      `[MeasurementTools] Support tier "${supportTier}" applied (mode ${challengeType}): `
+      + `labels=${scaffold!.rulerLabels}, instruction=${scaffold!.instructionDetail}, `
+      + `hintAfter=${scaffold!.hintThreshold}, conversionFactor=${scaffold!.showConversionFactor}`,
+    );
+  }
+
   return {
     title,
     description,
@@ -393,5 +492,10 @@ Return only the session wrapper.
     precision: derivedPrecision,
     gradeBand,
     convertToUnit,
+    supportTier: supportTier ?? undefined,
+    rulerLabels: scaffold?.rulerLabels,
+    instructionDetail: scaffold?.instructionDetail,
+    hintThreshold: scaffold?.hintThreshold,
+    showConversionFactor: scaffold?.showConversionFactor,
   };
 };

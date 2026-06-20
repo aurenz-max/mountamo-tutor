@@ -46,6 +46,11 @@ export interface ShapeBuilderChallenge {
   } | null;
   hint: string;
   narration: string;
+  /** Support-tier construction scaffolds (set by the generator from
+   *  config.difficulty). Display-only — the geometry checker never reads them. */
+  showTargetGhost?: boolean;
+  showSideCountBadge?: boolean;
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface PreloadedShape {
@@ -252,6 +257,36 @@ function identifyShape(props: ShapeProperties): string {
   return equalSides === 'all' ? `Regular ${base}` : base;
 }
 
+/**
+ * Build a canonical GHOST polygon for the easy-tier construction scaffold.
+ * This is a self-check model only — it is NEVER read by the geometry checker,
+ * which validates the student's placed vertices against targetProperties. The
+ * ghost is a regular n-gon snapped to integer grid points, centered on the
+ * grid, sized to fit. Returns null if there's no usable side count.
+ */
+function buildGhostVertices(
+  target: { sides?: number } | null | undefined,
+  rows: number,
+  cols: number,
+): Point[] | null {
+  const sides = target?.sides;
+  if (!sides || sides < 3) return null;
+  const cx = Math.round(cols / 2);
+  const cy = Math.round(rows / 2);
+  const radius = Math.max(2, Math.min(cx, cy) - 1);
+  const verts: Point[] = [];
+  // Start at the top, go clockwise. Round to integer grid points so the
+  // emphasized snap-dots land on real, clickable grid dots.
+  for (let i = 0; i < sides; i++) {
+    const theta = -Math.PI / 2 + (2 * Math.PI * i) / sides;
+    verts.push({
+      x: Math.max(0, Math.min(cols, Math.round(cx + radius * Math.cos(theta)))),
+      y: Math.max(0, Math.min(rows, Math.round(cy + radius * Math.sin(theta)))),
+    });
+  }
+  return verts;
+}
+
 function isLineOfSymmetry(lineP1: Point, lineP2: Point, vertices: Point[]): boolean {
   const dx = lineP2.x - lineP1.x;
   const dy = lineP2.y - lineP1.y;
@@ -368,6 +403,27 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
   const activeMode = currentChallenge?.type || mode;
   const isClassifyChallenge = activeMode === 'classify' || activeMode === 'classify_by_lines';
 
+  // -------------------------------------------------------------------------
+  // Support tier (construction scaffolds) — display-only, set by the generator
+  // -------------------------------------------------------------------------
+  const supportTier = currentChallenge?.supportTier ?? null;
+  const isConstructMode = activeMode === 'build' || activeMode === 'coordinate_shape';
+  // Ghost outline + emphasized snap-dots: only while constructing, only when the
+  // tier (easy) asked for it, and only before the student has closed their shape.
+  const showTargetGhost =
+    isConstructMode && !!currentChallenge?.showTargetGhost && !isShapeClosed;
+  const showSideCountBadge = isConstructMode && !!currentChallenge?.showSideCountBadge;
+
+  // Target side count drives the ghost + the side-count badge target. Prefer the
+  // per-challenge targetProperties, falling back to the activity-level target.
+  const targetSideCount =
+    currentChallenge?.targetProperties?.sides ?? targetShape?.properties?.sides ?? null;
+
+  const ghostVertices = useMemo(
+    () => (showTargetGhost ? buildGhostVertices({ sides: targetSideCount ?? undefined }, rows, cols) : null),
+    [showTargetGhost, targetSideCount, rows, cols],
+  );
+
   const activeShape = useMemo(() => {
     if (isClassifyChallenge) return null;
     return preloadedShapes[0] || null;
@@ -465,14 +521,34 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
       symmetryLinesFound: validSymmetryLines,
       activeTool,
       attemptNumber: currentAttempts + 1,
+      supportTier,
     }),
     [
       mode, gradeBand, gridType, targetShape, currentChallengeIndex, challenges.length,
       currentChallenge, activeMode, placedVertices.length, isShapeClosed, currentShapeName,
       currentShapeProps, classifications, preloadedShapes.length, validSymmetryLines,
-      activeTool, currentAttempts,
+      activeTool, currentAttempts, supportTier,
     ],
   );
+
+  // Tier-aware tutor reveal policy. At hard, the tutor must NOT name the vertices
+  // or sides to place, nor reveal the construction — it asks what shape the
+  // student is building and what properties it needs. The construction (and the
+  // target ghost) is hidden at hard, so the tutor must not leak it.
+  const tutorRevealClause = useMemo(() => {
+    if (!supportTier) return '';
+    if (supportTier === 'easy') {
+      return ' [TIER easy] You MAY name the target shape and walk the first corner placement; '
+        + 'the student also has a ghost outline to check against.';
+    }
+    if (supportTier === 'medium') {
+      return ' [TIER medium] Name the property to aim for (e.g. "4 equal sides") but do NOT '
+        + 'tell the student where to place each vertex.';
+    }
+    return ' [TIER hard] Do NOT name the vertices or sides to place, and do NOT reveal the '
+      + 'finished shape or the construction. Ask what shape the student is building and what '
+      + 'properties it needs; let them count their own corners.';
+  }, [supportTier]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'shape-builder',
@@ -624,7 +700,8 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         if (placedVertices.length === 0) {
           sendText(
             `[FIRST_VERTEX] Student placed first vertex at (${gridPt.x}, ${gridPt.y}). `
-            + `Encourage: "Great start! Keep placing points to build your shape."`,
+            + `Encourage: "Great start! Keep placing points to build your shape."`
+            + tutorRevealClause,
             { silent: true },
           );
         }
@@ -688,7 +765,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     [
       hasSubmittedEvaluation, svgWidth, svgHeight, rows, cols, activeMode,
       isShapeClosed, placedVertices, symmetryLineStart, activeShape, symmetryLines,
-      validSymmetryLines, preloadedShapes, sendText,
+      validSymmetryLines, preloadedShapes, sendText, tutorRevealClause,
     ],
   );
 
@@ -850,7 +927,8 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
         setFeedbackType('error');
         sendText(
           `[BUILD_INCORRECT] Shape doesn't match. Issues: ${mismatches.join(', ')}. `
-          + `Attempt ${currentAttempts + 1}. Guide without giving the answer.`,
+          + `Attempt ${currentAttempts + 1}. Guide without giving the answer.`
+          + tutorRevealClause,
           { silent: true },
         );
       }
@@ -967,7 +1045,7 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     currentChallenge, hasSubmittedEvaluation, currentAttempts, activeMode, isShapeClosed,
     currentShapeProps, currentShapeName, tools, showSideLengths, showAngles, showParallel,
     preloadedShapes, classifications, classificationsCorrect, validSymmetryLines, sendText,
-    incrementAttempts, recordResult,
+    incrementAttempts, recordResult, tutorRevealClause,
   ]);
 
   // -------------------------------------------------------------------------
@@ -1048,7 +1126,14 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
     const next = challenges[nextIndex];
     sendText(
       `[NEXT_ITEM] Challenge ${nextIndex + 1} of ${challenges.length}: `
-      + `"${next.instruction}" (type: ${next.type}). Read instruction and encourage.`,
+      + `"${next.instruction}" (type: ${next.type}). Read instruction and encourage.`
+      + (next.supportTier === 'hard'
+        ? ' [TIER hard] Do NOT name vertices/sides to place or reveal the shape; ask what shape they are building.'
+        : next.supportTier === 'medium'
+          ? ' [TIER medium] Name the target property, not the placement.'
+          : next.supportTier === 'easy'
+            ? ' [TIER easy] You may name the shape and walk the first corner.'
+            : ''),
       { silent: true },
     );
   }, [
@@ -1385,6 +1470,17 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
           </LuminaPanel>
         )}
 
+        {/* Support tier (easy/medium): live side-count badge while constructing.
+            A tracking aid that offloads counting corners — withdrawn at hard. */}
+        {showSideCountBadge && !isShapeClosed && !allChallengesComplete && (
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <Badge className="bg-violet-500/20 border-violet-400/40 text-violet-300 text-xs">
+              {placedVertices.length} corner{placedVertices.length === 1 ? '' : 's'} placed
+              {targetSideCount ? ` / ${targetSideCount} needed` : ''}
+            </Badge>
+          </div>
+        )}
+
         {/* Measurement Tools Bar */}
         {(tools.ruler || tools.protractor || tools.symmetryLine || tools.parallelMarker) &&
           !allChallengesComplete && (
@@ -1479,6 +1575,39 @@ const ShapeBuilder: React.FC<ShapeBuilderProps> = ({ data, className }) => {
 
             {/* Grid */}
             {renderGrid()}
+
+            {/* Support tier (easy): faint GHOST of the target outline + emphasized
+                vertex snap-dots — a self-check model. NEVER read by the checker. */}
+            {ghostVertices && ghostVertices.length >= 3 && (
+              <g className="pointer-events-none" key="target-ghost">
+                <polygon
+                  points={ghostVertices
+                    .map((v) => {
+                      const p = gridToPixel(v);
+                      return `${p.x},${p.y}`;
+                    })
+                    .join(' ')}
+                  fill="rgba(139,92,246,0.04)"
+                  stroke="rgba(139,92,246,0.35)"
+                  strokeWidth={2}
+                  strokeDasharray="6 5"
+                />
+                {ghostVertices.map((v, i) => {
+                  const p = gridToPixel(v);
+                  return (
+                    <circle
+                      key={`ghost-dot-${i}`}
+                      cx={p.x}
+                      cy={p.y}
+                      r={DOT_RADIUS + 3}
+                      fill="rgba(139,92,246,0.45)"
+                      stroke="rgba(255,255,255,0.4)"
+                      strokeWidth={1}
+                    />
+                  );
+                })}
+              </g>
+            )}
 
             {/* Classify mode: all preloaded shapes */}
             {isClassifyChallenge &&

@@ -1,76 +1,96 @@
 # Add Support Tiers to a Primitive
 
-This skill makes a primitive **consume `config.difficulty`** — the within-mode support tier. It is the *second axis* of the two-field contract that `/add-eval-modes` establishes:
+This skill makes a primitive's `config.difficulty` actually change what the student sees, so that **a struggling student and a strong student working the *same* skill get genuinely different content** — the struggling one keeps on-screen scaffolds (a count readout, a named strategy, a pre-built equation), the strong one works unaided and justifies their thinking.
 
-- **`config.targetEvalMode` = WHICH skill** (task identity, resolved from the objective by the manifest). Owned by `/add-eval-modes`.
-- **`config.difficulty` = HOW MUCH on-screen SUPPORT** the student gets *within that one skill* (`'easy'` = max scaffolding, `'hard'` = min). Owned by **this skill**.
+## The outcome you're designing for
 
-**The invariant that defines the whole skill:** a support tier never inflates *magnitude*. A harder tier must NOT just make the quantity bigger — that is the retired numeric-difficulty path that was reversed (`5×+5 ≈ 7×-3`). The pedagogical scope and the per-mode count/range tables own the magnitude; the tier never pushes past them. See memory [[structural-difficulty-not-numeric]] and [[feedback_llm-window-code-builds-structure]].
+> **easy = the workspace helps the student self-check. hard = the student works unaided and justifies their thinking.**
 
-Within that guardrail, `config.difficulty` drives **two** axes (both optional, build whichever the primitive supports):
-1. **Scaffolding withdrawal** *(the original focus — Phase 1-4 below)* — same problem, less on-screen/instructional help.
-2. **Structural problem difficulty** *(the second axis — see "Structural problem difficulty" below)* — a genuinely harder *problem*, made harder **structurally** (gaps, steps, multipliers, steps-to-solve), never by magnitude and never by crossing into another eval mode.
+`config.difficulty` ('easy' | 'medium' | 'hard') is the *second* field of the two-field contract `/add-eval-modes` sets up — `targetEvalMode` = WHICH skill (the task identity), `difficulty` = HOW MUCH support within it. It drives up to **two dials** (build whichever the primitive supports — many support only one):
 
-The first asks "how much help?"; the second asks "how hard a problem, structurally?". A strong tier usually does both: harder problem **and** less help.
+1. **How much help?** — *scaffolding withdrawal.* Same problem, less on-screen / instructional support.
+2. **How hard a problem, structurally?** — *structural difficulty.* A genuinely harder problem, made harder by **shape** (gaps, steps, multipliers, steps-to-solve), never by bigger numbers.
+
+A strong tier usually does both: a harder problem **and** less help.
+
+## The one hard rule (the guardrail, not the goal)
+
+**A support tier never changes the numbers.** A harder tier must not just make the quantity bigger — that is the retired numeric-difficulty path that was reversed because it didn't work (`5×+5 ≈ 7×-3`; see [[structural-difficulty-not-numeric]], [[feedback_llm-window-code-builds-structure]]). Magnitude is owned by the pedagogical scope and the per-mode count/range tables; the tier never pushes past them, and never pushes the problem into a *different* eval mode (the eval mode is the task identity). Keep this in your pocket as the review test for every lever — but design the outcome first, then check each lever against the rule.
 
 ## Why this skill exists
 
 The manifest already emits `config.difficulty` ('easy'|'medium'|'hard') for **every** component (`gemini-manifest.ts`), and `/add-eval-modes` registration already spreads `...item.config` to every generator — so the value *reaches* all ~100 generators. But almost all of them **drop it on the floor**: a struggling vs. a strong student gets byte-identical content. This skill closes that no-op, one primitive at a time.
 
-It is deliberately **per-primitive creative work**, not an auto-rollout: "scaffolding" means something different for every primitive (a ten-frame's support ≠ a number line's ≠ a counting board's). The skill gives you a fixed harness and a disciplined way to discover *that primitive's* support levers.
+It is deliberately **per-primitive creative work**, not an auto-rollout: "scaffolding" means something different for every primitive (a ten-frame's support ≠ a number line's ≠ a pH simulation's ≠ a sight-word card's). The skill gives you a fixed harness and a disciplined way to discover *that primitive's* support levers.
 
-## The 80/20 split (read this first)
+## Architecture (the dataflow)
 
-Two worked references — **ten-frame** (3 levers, all boolean/numeric) and **counting-board** (4 levers, one of them an enum) — prove what's reusable vs. what's bespoke.
+```
+┌──────────────────────────────────────────────────────────────┐
+│  gemini-manifest.ts                                          │
+│  emits config.difficulty: 'easy'|'medium'|'hard' per component│
+└───────────────┬──────────────────────────────────────────────┘
+                │ ...item.config spread (add-eval-modes registration)
+                ▼
+┌──────────────────────────────────────────────────────────────┐
+│  generator: gemini-[primitive].ts                            │
+│  normalizeSupportTier(config.difficulty) → tier              │  ← FIXED harness
+│  resolveSupportStructure(mode, tier) → {scaffold, promptLines}│
+│  [optional] resolveProblemShape(mode, tier) → structural params│  ← 2nd axis
+│  applied PER CHALLENGE at the END, after structural fixups   │
+└───────────────┬──────────────────────────────────────────────┘
+                │ challenge.showOptions / structural fields / supportTier
+                ▼
+┌──────────────────────────────────────────────────────────────┐
+│  [Primitive].tsx — renders FEWER scaffolds at harder tiers    │
+│  live tutor (if any) reads supportTier → calibrates reveal     │
+└──────────────────────────────────────────────────────────────┘
+```
 
-**Fixed scaffold — copy verbatim, zero changes:**
-- `SupportTier` type + `SUPPORT_TIERS` + `normalizeSupportTier()`
-- The tier gate: apply the scaffold whenever a tier is present, resolved **per challenge from each challenge's own mode** (so blended/auto sessions get difficulty too). Only the `tierSection` *prompt* injection is single-mode — it describes one mode to the LLM for title/description tone
-- `config.difficulty?: string` added to the config type
-- `tierSection` prompt injection (after the challenge-type section)
-- Deterministic application **at the end** of the generator, after structural fixups, with a `[Primitive] Support tier …` log line
+This is a **generator + component** task (plus a tutor touch if one exists). No backend, no manifest changes — the difficulty value already arrives at every generator; the work is making the generator *honor* it.
 
-**Bespoke — the creative 20%:**
-- The `SupportScaffold` interface fields = **that primitive's actual support levers**
-- `resolveSupportStructure()` — the easy→hard mapping, per pinned mode
-- Which levers are mode-scoped, and the guards that protect UI contracts
+## What's fixed vs. what you invent
 
-> **The single most important step is lever discovery, and it is done by reading the COMPONENT, not the generator.** A primitive's support levers live in its `showOptions` (and per-challenge structural fields like `arrangement`), which only the `.tsx` component reveals — **but the component is not the only place a lever lives** (see the modality catalog below). The generator tells you the *modes*; the component tells you most of the *levers*.
+Most of the harness is copy-paste; the value is in per-primitive lever discovery (the **bespoke** `SupportScaffold` fields + `resolveSupportStructure()` mapping). The architecture diagram above marks what's fixed; Phases 2–3 give the exact code.
 
-## Support modalities — the lever families to look for
+> **The single most important step is lever discovery — and you do it by reading the COMPONENT, not the generator.** Levers live in the `.tsx`'s `showOptions` and per-challenge structural fields (`arrangement`, unknown position); the generator only tells you the *modes*. (One family — instruction-as-scaffold — lives in the generator instead; see the modality catalog.)
 
-Scaffolding is not one thing. When you discover levers (Phase 1), sweep the **whole menu** below, not just `showOptions`. Most primitives expose 2-3 of these; the richest tiers combine families. Every family obeys the one invariant — **it withdraws help, never changes the numbers or the task identity** (the eval mode owns identity).
+**Every worked example here is a math primitive** — math (~29 generators) is the only domain wired. The other ~95 generators (chemistry, physics, literacy, engineering, …) are the frontier and expose the same lever families. On a non-math primitive, **don't pattern-match the math examples** (no count-readout or `compareGap` exists) — classify by **archetype** (below) and read the math example that shares its *archetype*, not its subject. The fixed harness is identical across domains.
 
-1. **Perception / tracking aids** *(visual, lives in `showOptions` + per-challenge structural fields)* — on-screen marks that offload the work of *seeing* the quantity: a count readout, a running tally, line-vs-scattered `arrangement`, tick labels, a protractor reading-cue dot, right-angle / equal-angle marks. Withdraw → the student perceives unaided. **This was the original focus of the skill** (ten-frame, counting-board).
+## Primitive archetypes — find yours first, then sweep its modalities
 
-2. **Instruction-as-scaffold — task-step withdrawal** *(text, lives in the generator; usually NO component change)* — **the highest-leverage, most generalizable family, and the cheapest to add.** Decompose the skill into its cognitive sub-steps and hand the student fewer of them per tier. The instruction text *is* the dial. Sub-levers:
-   - **Strategy naming** — does the instruction name which rule/relationship/operation applies, or must the student identify it from the figure?
-   - **Structure pre-assembly** — is the equation / number-sentence / setup handed over, or must the student build it? (easy `solve_algebraic` hands `(2x+10) + (x+5) = 90`; hard hands nothing.)
-   - **Hint explicitness ladder** — explicit formula → conceptual nudge → "read the figure first."
+Before discovering levers, classify the primitive by **how the student interacts with it** (archetype), not by subject. The archetype predicts which modalities carry the weight and which math example to read as a structural template. Most primitives are one archetype; a few blend two (a multi-step solver *over* a simulation).
 
-   Applies to **any** primitive whose task has ≥2 cognitive steps (identify → set up → execute). It changes only words the student reads, so the figure and every number are byte-identical across tiers. Worked reference: AngleWorkshop `solve_algebraic` (`easyAlgInstruction` / `genericInstruction` / `conceptHint` in `gemini-angle-workshop.ts`).
+| Archetype | What it is | Examples (math · non-math) | Lead modalities | Structural-difficulty lever | Math template to read |
+|---|---|---|---|---|---|
+| **Manipulative / quantity** | Student builds or reads a concrete quantity | ten-frame, base-ten · AtomBuilder, MoleculeConstructor | #1 perception + #3 CPA | parts to coordinate (1 group → many) | ten-frame, counting-board |
+| **Multi-step solver** | Identify → set up → execute over a figure/passage | angle-workshop, tape-diagram · ContextCluesDetective, FigurativeLanguageFinder | #2 instruction + #5 answer-form | step count / scenario complexity | **angle-workshop** |
+| **Living simulation** | Student drives a physics/chemistry sim with real consequences | (none in math) · PhExplorer, GasLawsSimulator, physics sims | #1 sim overlays (readouts, vectors, trace, gridlines) | # interacting / coupled variables; initial-condition complexity | bar-model (overlay-as-scaffold) |
+| **Recognition card** | Recognize / recall a single item | (flashcard-shaped) · SightWordCard, RhymingPairs, SoundSort | #5 recognition↔recall + #1 cue (audio replay, picture, letter highlight) | distractor similarity (far → near) | — (#5-led; see CAUTION) |
+| **Graph / data** | Read or build a plotted dataset | bar-model, coordinate-graph · distribution-explorer | #1 tick labels/gridlines | axis step coarseness; dataset ambiguity | **bar-model** |
+| **Builder / constructor** | Assemble parts into a valid whole | equation-builder, number-bond · EquationBalancer, word-builder | #1 slot hints/templates + #2 setup pre-assembly | # of parts; constraint count | bar-model (`answerBarIndex` decouple) |
 
-3. **Representational support — concrete → abstract (CPA)** — easy pairs a concrete/visual model with the symbol; hard is symbol-only. Withdraw the model, keep the number. The dominant lever for math primitives that have both a manipulative and a notation (array beside the product, then drop the array).
+> The lever **families** (#1–#5 below) are universal — PhExplorer has a `showOptions` struct exactly like ten-frame's; ContextCluesDetective has a `showDictionary` compare-view (#3), highlight cues (#1), a multi-phase identify→define flow (#2), and distractor options (#5). What differs by archetype is *which* families dominate and *what the structural lever is called* — never the procedure. The simulation/recognition archetypes are also where memory's [[feedback_direct-manipulation-first]] and [[feedback_living-simulation-pattern]] apply: withdraw overlays/cues, never the manipulable object itself.
 
-4. **Worked-example fading** — easy shows a fully worked *parallel* example first, medium a partial one, hard none. Strong effect, but heavier to build (needs an example surface).
+## Support modalities — the lever families to sweep
 
-5. **Answer-form — recognition vs. recall** — easy = choose among options (or fewer distractors); hard = free production. **CAUTION:** this is a support axis *only* if the underlying task is unchanged. If changing the form changes what's being assessed, you've crossed into a different eval mode — that's `/add-eval-modes`, not a tier.
+Scaffolding is not one thing. In Phase 1 sweep the **whole menu**, not just `showOptions`. Most primitives expose 2–3; the richest tiers combine families. Every family obeys the one hard rule — **withdraw help, never change the numbers or the task identity.** (The archetype table above lists each family's non-math instances.)
 
-When you reach Phase 1, ask of each family: *does this primitive expose this lever, and does withdrawing it leave the answer and the task identity intact?*
+| # | Family | Where it lives | What you withdraw | Priority |
+|---|--------|----------------|-------------------|----------|
+| **1** | **Perception / tracking aids** | `showOptions` + per-challenge structural fields | on-screen marks that offload *seeing* the quantity/state — count readout, running tally, `arrangement`, tick labels, reading-cue dot, right-angle marks; in sims = overlays (readouts, vectors, trace, gridlines). The skill's original focus (ten-frame, counting-board). | **P1** |
+| **3** | **Representational support (CPA)** | generator + component | easy pairs a concrete/visual model with the symbol; hard = symbol-only. Withdraw the model, keep the number/word (array beside the product → drop it). | **P1** |
+| **2** | **Instruction-as-scaffold** (task-step withdrawal) | the generator's instruction text (usually NO component change) | **highest-leverage, cheapest, most generalizable.** Decompose the task into cognitive sub-steps, hand the student fewer per tier: *strategy naming* (does the text name which rule applies?), *structure pre-assembly* (is the equation handed over? easy `solve_algebraic` hands `(2x+10)+(x+5)=90`, hard hands nothing), *hint-explicitness ladder*. Applies to **any** task with ≥2 steps; changes only words, so every number is byte-identical. | **P2** (complements P1; the *only* ladder for primitives with no visual levers — AngleWorkshop) |
+| **4** | **Worked-example fading** | needs an example surface | easy = full worked parallel example, medium = partial, hard = none. Strong but heavier to build. | P3 |
+| **5** | **Answer-form** (recognition vs. recall) | component | easy = choose among options (fewer/dissimilar distractors); hard = free production. Dominant for **recognition-card** archetypes. **CAUTION:** a support axis *only* if the task is unchanged — if changing the form changes what's assessed, that's a new eval mode (`/add-eval-modes`), not a tier. | P3 |
 
-### Priority order — what to reach for first
-
-**The primitives ARE the product, so the bespoke interaction-surface scaffolds come first.** Build in this order:
-
-- **P1 — primitive-specific scaffolding: #1 perception/tracking aids + #3 representational support (CPA).** The bespoke levers on the interaction surface itself — the count readout, the running tally, the manipulative beside the notation. This is the pedagogical core of the skill and the first thing to design. It's also the genuinely creative 20%.
-- **P2 — instruction-as-scaffold: #2.** Near-universal, text-cheap, and the fallback that earns a real ladder for primitives with *no* visual levers at all. Always at least consider it; for most primitives it **complements** P1 rather than replacing it (AngleWorkshop combines both).
-- **P3 — situational: #4 worked-example fading, #5 answer-form.** Real but case-by-case; not a systematic rollout.
+For each candidate ask: *does this primitive expose this lever, and does withdrawing it leave the answer and the task identity intact?* If not → not a support lever. **The bespoke interaction-surface scaffolds (P1) come first — they're the pedagogical core and the creative 20%.**
 
 ## Structural problem difficulty — the second axis (generator-side)
 
-The five modalities above all answer *"how much help?"* — same problem, scaffolding withdrawn. But a primitive can feel weak if easy/med/hard produce **byte-identical problems** with only the help toggled (a real user complaint). The second axis answers *"how hard a problem, structurally?"* — and it lives entirely **on the generator side** (no component change).
+The modalities above all answer *"how much help?"* — same problem, scaffolding withdrawn. But a primitive feels weak if easy/med/hard produce **byte-identical problems** with only the help toggled. The second axis answers *"how hard a problem, structurally?"* — entirely **generator-side** (no component change). The principle: structural difficulty is *how much the student must coordinate*, and the lever is whatever shapes that coordination **without changing magnitude or task identity** (the per-archetype lever is the "Structural-difficulty lever" column in the archetype table — gaps/steps in arithmetic, coupled variables in a sim, distractor similarity on a card).
 
-**The hard line that keeps this from becoming the retired numeric path:** difficulty here is **structural, never magnitude**. You may change the *shape* of the problem; you may not just scale the numbers up. And you may **never** push the problem into a different eval mode — the eval mode is the task identity ([[structural-difficulty-not-numeric]]). Each mode gets **one in-mode structural lever**. Worked reference (the proof this composes with the scaffolding axis): **bar-model** (`service/math/gemini-bar-model.ts`):
+**The hard line:** difficulty here is **structural, never magnitude** — change the *shape*, never just scale the numbers, and **never** cross into another eval mode ([[structural-difficulty-not-numeric]]). Each mode gets **one in-mode structural lever**. Worked reference — **bar-model** (`service/math/gemini-bar-model.ts`):
 
 | mode | structural lever (easy → hard) | where enforced |
 |---|---|---|
@@ -94,51 +114,22 @@ The five modalities above all answer *"how much help?"* — same problem, scaffo
 - **Code-enforce exact numeric levers.** An LLM asked for "gap of exactly 1" will drift; clamp it in post-process. Reserve prompt-only shaping for levers with no clean numeric handle (operation depth, ambiguity).
 - **Default (no tier) path unchanged.** Guard every structural branch on the tier being present (`shape?.compareGap != null`), so a no-tier generation is byte-identical to before.
 
-A primitive may legitimately support **only** the scaffolding axis (no clean structural lever — fine, skip this), **only** structural (a single-step task with no scaffolds to withdraw but a real difficulty knob), or **both** (bar-model). Build what fits; don't invent a fake structural lever just to fill the table.
+A primitive may legitimately support **only** the scaffolding axis, **only** structural, or **both** (bar-model). Build what fits; don't invent a fake structural lever just to fill the table.
 
-### Answer-bearing levers — keep the checker, instruction, and recomputed value in sync
+> Two gotchas apply once you build certain levers — **answer-bearing levers** (tier code writes a field the checker reads) and **a live tutor that can leak what a tier hid.** Both are covered in **Gotchas** after the workflow; Phase 4 points back to them.
 
-Most levers above are *display-only*: withdrawing a count readout or an arc changes nothing the answer-checker reads. But some structural levers **recompute the very field the component validates against** — and those need extra discipline, because the LLM authored the instruction/hint *around its own choice of that field*. Get this wrong and the primitive **rejects the student's correct answer** (the worst possible failure: the screen says "50 doesn't fit" when 50 is exactly right).
+## Prerequisites & when NOT to use
 
-**A lever is answer-bearing if the component's check function reads the field it sets.** Trace it: find the check (`checkFillMissing` reads `hiddenPositions`; a bar checker reads `answerBarIndex`; an unknown-position lever feeds the validated cell). If your tier code writes that field, you own three invariants:
+Run `/add-eval-modes` **first** — the primitive needs a generator that resolves a mode (via `resolveEvalModes` *or* legacy `resolveEvalModeConstraint`; resolver-agnostic — the gate keys off "exactly one mode pinned") plus catalog `evalModes`. It also needs **either** a component with `showOptions` / per-challenge structural fields **or** a multi-step task whose instruction can withdraw sub-steps (#2) — visual levers are not required.
 
-1. **Honor the LLM's valid choice; only top-up/trim for the tier *count*.** The tier lever controls *how many* gaps (1→2→3), not *which* — the LLM already picked positions and wrote "what's the final number?" around them. Keep every LLM choice that's structurally valid; synthesize extras only to reach the tier count. Never discard a valid LLM choice and substitute an arbitrary one — that's what desyncs the gap from the instruction.
-2. **Never narrow the candidate set so the instruction's answer becomes invalid.** The real `skip-counting-runner` SCR bug: the hideable pool excluded `endAt`, so the LLM's end-referencing gap (`hiddenPositions=[50]`, matching "where do we land at the end?") was filtered out and the code substituted a mid-sequence position. Audit your candidate filter against *every* position the instruction can legitimately reference. Exclude only positions that genuinely break the checker (e.g. `startFrom` is always a landing spot, so hiding it makes `!landingSpots.includes(answer)` unsatisfiable — exclude it; but `endAt` is a normal, common answer — keep it).
-3. **Verify the recomputed value still passes the checker for the intended answer.** After your tier code writes the field, the student's correct answer (the one the instruction asks for) must satisfy the component's check. This is the `/eval-test` post-fix check: generate at each tier and confirm `instruction → answer` is actually accepted.
-
-**The cleaner structural pattern — decouple the answer from the scaffold** (bar-model's `answerBarIndex`): when a scaffold withdrawal would otherwise move or expose the answer, give the answer its **own** field that the checker reads, independent of the display lever. Then withdrawing the scaffold at hard can't leak *or* invalidate the answer. Reach for this whenever a single field is doing double duty as both "what to show" and "what's correct."
-
-### The tutor is a second scaffold channel — keep it in sync (esp. P2)
-
-If the primitive has a live AI tutor (`useLuminaAI` / it ran `/add-tutoring-scaffold`), the tutor sees the full challenge data and can **leak what a tier withheld** — at a hard tier it might name the very relationship the instruction (#2) deliberately hid, undoing the scaffold. Whenever you apply a tier — and **always** for modality #2 — thread the tier into the tutor's context and calibrate its reveal policy:
-- **easy** → tutor may be explicit: name the strategy, walk the setup step by step.
-- **medium** → strategy is on-screen; tutor nudges the execution, doesn't solve it.
-- **hard** → the instruction withholds the strategy; tutor must NOT name it — ask what the student sees in the figure, never reveal the answer.
-
-`/add-tutoring-scaffold` owns the tutor *wiring*; this skill owns keeping the tutor's **reveal level** consistent with the on-screen scaffold (add `supportTier` to the generated data + `aiPrimitiveData`, and a tier clause in the `sendText` prompts). See Phase 4, step 11b.
-
-## Prerequisites
-
-The primitive must already have eval modes wired (run `/add-eval-modes` first). Specifically:
-- A generator that resolves a mode via `resolveEvalModes` **or** the legacy `resolveEvalModeConstraint` — **either works; this skill is resolver-agnostic.** The gate keys off "exactly one mode pinned," not which resolver produced it.
-- Catalog `evalModes` for the primitive.
-- A component (`.tsx`) with `showOptions` and/or per-challenge structural fields **OR** a multi-step task whose instruction can withdraw sub-steps (modality #2). The visual levers are not required — a text-only ladder is legitimate and often strong.
-
-If the primitive has **no real scaffold levers across the whole modality catalog** — a genuinely single-step task with no perception aids, no setup to hand over, no representation to swap (e.g. a bare flashcard) — it cannot have meaningful support tiers; stop and tell the user, don't invent fake levers. But check modality #2 before concluding this: most "single-shape display" primitives still have an identify/setup step the instruction can scaffold.
-
-## When to use / not use
-
-**Use when:** giving a primitive's `config.difficulty` real effect so personalization (struggling→easy, strong→hard) and the manifest's Introduce→Apply support withdrawal actually change the content.
-
-**Do NOT use for:**
-- Adding eval modes (that's `/add-eval-modes` — run it first).
-- **Magnitude scaling by tier** — making the target numbers bigger/smaller within scope. That is the **retired** numeric-difficulty path (the old `service/difficulty/difficultyContext.ts` / `computeDifficultyTuple`, now removed from the repo). If a primitive still scales magnitude from a theta/band, **remove it** as part of this skill (see Phase 4) — two difficulty systems must not fight on the same axis. In practice the file is gone; what remains is usually just a dead `difficulty?: number` field to delete. *(Note: changing problem **structure** by tier — gaps, steps, multipliers, steps-to-solve — is the legitimate second axis, see "Structural problem difficulty." The ban is on raw magnitude, not on structure.)*
+- **No real levers across the whole modality catalog** (a genuinely single-step task — a bare flashcard) → it can't have meaningful tiers; stop and tell the user. But check #2 first: most "single display" primitives still have an identify/setup step the instruction can scaffold.
+- **Don't use this to scale magnitude by tier** — bigger/smaller numbers is the retired numeric path (already banned by the one hard rule). If a generator still scales magnitude from a theta/band, *remove* it here (Phase 4).
 
 ## Step-by-Step Workflow
 
 ### Phase 1: Discover the support levers (the creative core)
 
-1. **Ask which primitive.** Get the `id` and domain.
+1. **Ask which primitive, then classify its archetype.** Get the `id` and domain, and place it on the **archetype map** (manipulative / multi-step solver / living simulation / recognition card / graph-data / builder). The archetype tells you which modalities to expect to carry the weight, what the structural lever will be called, and which math reference to read as a template — *especially important for non-math primitives, where no count-readout/`compareGap` analog exists.*
 
 2. **Read the COMPONENT first** — `primitives/visual-primitives/[domain]/[Primitive].tsx`:
    - List every field in `showOptions` (e.g. `showCount`, `showEquation`, `showRunningCount`, `showGroupCircles`, `showLastNumber`, `flashDuration`). Each is a candidate **perception-aid** lever (modality #1).
@@ -234,12 +225,9 @@ If the primitive has a clean **in-mode structural lever** (see "Structural probl
     }
     ```
 
-11b. **Keep the live tutor in sync (if the primitive has one — esp. for modality #2).** A tier that withholds information on screen but lets the tutor reveal it is only half-applied. Do three small things:
-    - Persist the tier onto the generated data: add `supportTier?: 'easy' | 'medium' | 'hard'` to the data type and set it **whenever a tier is present** (it now applies per challenge, blends included) — so the tutor matches what's on screen for every challenge, not just single-mode ones.
-    - Add `supportTier` to the component's `aiPrimitiveData` so `useLuminaAI` sees it.
-    - Add a **mode-aware** tier clause to the `sendText` prompts (at minimum `[ACTIVITY_START]` and the wrong-answer nudge), keyed off the *current challenge's* type so it's correct in a blend: easy → tutor may name the strategy and walk the setup; medium → nudge execution only; hard → do NOT name the strategy the instruction hid, ask what the student sees, never reveal the answer. **Watch the recognition modes** — where the strategy/relationship IS the answer (a classify/identify mode), the tutor must never name it at *any* tier; there the tier only dials coaching depth. (AngleWorkshop's `tutorRevealPolicy(tier, challengeType)` is the worked example.)
+11b. **If the primitive has a live tutor, keep it in sync** (mandatory for modality #2) — see **Gotcha #2** below. A tier that hides something on screen but lets the tutor reveal it is only half-applied.
 
-12. **Remove any retired numeric-difficulty wiring** from this primitive. The old `service/difficulty/difficultyContext.ts` / `computeDifficultyTuple` (`studentTheta` → numeric band) path has since been **fully removed from the repo** — as of 2026-06-14 that file does not exist and nothing imports it (the only `difficultyContext` hit is an unrelated `buildDifficultyContext` local in `manifest/practice-manifest.ts`). So in practice there is usually nothing to delete here. What you DO still find is a **dead vestigial `difficulty?: number` config field** declared but never read (e.g. sorting-station had one) — delete it so it can't shadow/confuse the new `config.difficulty?: string` support-tier value. If a generator genuinely still scales magnitude from a theta/band, remove that too (it changes the numbers, violating the invariant) — but verify by grep first rather than assuming any primitive on an old "known wirers" list still does; that list is obsolete.
+12. **Delete any dead `difficulty?: number` config field.** The old numeric-difficulty path (`service/difficulty/difficultyContext.ts` / `computeDifficultyTuple`) is fully removed from the repo, so usually there's nothing to do — but a vestigial `difficulty?: number` field declared-but-never-read can shadow the new `config.difficulty?: string`; remove it. If a generator genuinely still scales magnitude from a theta/band, remove that too (grep to confirm; don't trust the obsolete "known wirers" list).
 
 ### Phase 5: Verify
 
@@ -253,9 +241,19 @@ If the primitive has a clean **in-mode structural lever** (see "Structural probl
 
 15. **Remind the user to test**: in the Primitives Tester, pin the mode and toggle difficulty easy/med/hard → confirm scaffolds visibly withdraw and **the numbers stay in range**. Then run `/eval-test` (the Step 2b sweep covers easy/med/hard + a scope-conflict case).
 
+## Gotchas (read before shipping)
+
+**1. Answer-bearing levers — keep the checker, instruction, and recomputed value in sync.** Most levers are *display-only* (withdrawing a count readout changes nothing the checker reads). But a lever is **answer-bearing** if the component's check function reads the field your tier code writes (`checkFillMissing` reads `hiddenPositions`; a bar checker reads `answerBarIndex`). Get this wrong and the primitive **rejects the student's correct answer** — "50 doesn't fit" when 50 is exactly right. Three invariants:
+- **Honor the LLM's valid choice; only top-up/trim for the tier *count*.** The lever controls *how many* gaps (1→2→3), not *which* — the LLM picked positions and wrote the question around them. Synthesize extras only to reach the count; never swap a valid choice for an arbitrary one.
+- **Never narrow the candidate set so the instruction's answer becomes invalid.** The real SCR bug: the hideable pool excluded `endAt`, so the LLM's end-referencing gap was filtered out and a mid-sequence position substituted. Exclude only positions that genuinely break the checker (`startFrom` is always a landing spot → unsolvable if hidden; but `endAt` is a normal answer → keep it).
+- **Verify `instruction → answer` still passes at every tier** (the `/eval-test` post-fix check).
+- **Cleaner pattern — decouple the answer from the scaffold** (bar-model's `answerBarIndex`): give the answer its *own* field the checker reads, independent of the display lever, so withdrawing a scaffold at hard can't leak *or* invalidate it.
+
+**2. The tutor is a second scaffold channel** (esp. modality #2). If the primitive has a live AI tutor, it sees the full challenge data and can **leak what a tier withheld**. Whenever you apply a tier — always for #2 — thread the tier in and calibrate reveal: easy → name the strategy, walk the setup; medium → nudge execution only; hard → do NOT name the strategy the instruction hid, ask what the student sees, never reveal the answer. Three changes: add `supportTier` to the data type (set whenever a tier is present, per challenge) + the component's `aiPrimitiveData`, and a mode-aware tier clause in the `sendText` prompts. **Watch recognition modes** — where the relationship IS the answer, the tutor never names it at any tier. `/add-tutoring-scaffold` owns the wiring; this skill owns the reveal level. (AngleWorkshop's `tutorRevealPolicy(tier, challengeType)` is the worked example.)
+
 ## Reference implementations
 
-Three worked examples — read all three; the *differences* between them are the lesson (each anchors a different modality):
+All worked examples are **math** — the only domain wired so far. Read them by **archetype, not subject**: the archetype map tells you which one is the structural template for *your* primitive (a chemistry simulation reads bar-model for its overlay/structural pattern; a phonics card is #5-led with no direct math twin and leans on the modality catalog). The *differences* between these examples are the lesson — each anchors a different modality:
 
 | | Modality | Levers | Notable |
 |---|---|---|---|
@@ -267,21 +265,13 @@ Three worked examples — read all three; the *differences* between them are the
 
 ## Checklist
 
-- [ ] Ran `/add-eval-modes` first (primitive has eval modes + catalog `evalModes`)
-- [ ] **Swept the full modality catalog** (perception aids #1, instruction-as-scaffold #2, CPA #3, worked-example #4, answer-form #5) — not just `showOptions`
-- [ ] Considered modality #2 (instruction-as-scaffold) explicitly — it's almost always available, even with zero `showOptions`
-- [ ] Confirmed each lever withdraws *support* without changing the *answer* or the *task identity*
-- [ ] **For any answer-bearing lever** (tier code writes a field the component's check function reads — e.g. `hiddenPositions`, `answerBarIndex`, unknown position): honored the LLM's valid choices and only synthesized extras to reach the tier *count*; audited the candidate filter so no instruction-referenceable answer (e.g. `endAt`) is excluded; verified `instruction → answer` still passes the checker at every tier (the SCR "50 doesn't fit" failure mode)
+- [ ] `/add-eval-modes` run first; classified the **archetype** and read the math reference that shares it (not its subject)
+- [ ] Swept the **full modality catalog** (not just `showOptions`); considered #2 instruction-as-scaffold explicitly; each lever withdraws *support* without changing the *answer* or *task identity*
 - [ ] Designed + confirmed the easy→hard gradient per mode with the user
-- [ ] Added the fixed scaffold verbatim (`SupportTier`, `SUPPORT_TIERS`, `normalizeSupportTier`, `difficulty?: string`)
-- [ ] Wrote bespoke `SupportScaffold` (booleans and/or enums) + `resolveSupportStructure` with a numbers-never-change leading prompt line
-- [ ] Applied the scaffold **per challenge** (`resolveSupportStructure(ch.type, tier)`), gated only on a tier being present — so blended/auto sessions get difficulty too (NOT gated on `pinnedType`); `pinnedType` (resolver-agnostic: `modes.length === 1` OR `allowedTypes.length === 1`) gates only the prompt `tierSection`
-- [ ] Injected `${tierSection}` after the challenge-type section
-- [ ] Applied the scaffold deterministically at the END, after structural fixups/force-enables, guarded per mode, with a log line
-- [ ] If the primitive has a live tutor: threaded `supportTier` into the data + `aiPrimitiveData` and added a tier reveal-clause to the `sendText` prompts so the tutor doesn't leak what the tier withheld (mandatory for modality #2)
-- [ ] Protected UI contracts with per-mode guards (no scaffold turned off that breaks the interaction)
-- [ ] **(Optional second axis)** If the primitive has a clean in-mode structural lever: added `resolveProblemShape` + `buildTierPromptSection`, threaded the `tier` enum into the sub-generators, code-enforced exact numeric levers, renamed `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL`. Confirmed each lever stays **in-mode** and is **structural, not magnitude**.
-- [ ] **Checked for retired numeric-difficulty wiring** — `difficultyContext.ts` is removed from the repo (usually nothing to do); deleted any dead vestigial `difficulty?: number` config field so it can't shadow the new `config.difficulty?: string`
-- [ ] Verified the tier never inflates magnitude beyond scope (structural changes OK; scope + per-mode tables still own magnitude)
-- [ ] Project-local `tsc --noEmit` clean vs. baseline (not bare `npx tsc`)
-- [ ] Reminded user to test easy/med/hard in the Tester + `/eval-test` Step 2b sweep
+- [ ] Fixed harness verbatim (`SupportTier`/`SUPPORT_TIERS`/`normalizeSupportTier`, `difficulty?: string`); bespoke `SupportScaffold` + `resolveSupportStructure`
+- [ ] Applied the scaffold at the END, **per challenge** (`resolveSupportStructure(ch.type, tier)`), gated only on a tier being present (NOT `pinnedType`); `${tierSection}` injected; UI contracts guarded per mode; log line present
+- [ ] **Answer-bearing levers** (Gotcha #1): honored LLM choices, top-up only to the tier *count*, no instruction-referenceable answer (e.g. `endAt`) excluded, `instruction → answer` passes at every tier
+- [ ] **Live tutor** (Gotcha #2): `supportTier` threaded into data + `aiPrimitiveData` + a tier reveal-clause in `sendText` (mandatory for #2)
+- [ ] **(Optional 2nd axis)** `resolveProblemShape` + `buildTierPromptSection`, `tier` enum threaded into sub-generators, exact numeric levers code-enforced, `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL`; each lever **in-mode** and **structural, not magnitude**
+- [ ] Deleted any dead `difficulty?: number` field; tier never inflates magnitude beyond scope
+- [ ] Project-local `tsc --noEmit` clean vs. baseline (not bare `npx tsc`); reminded user to test easy/med/hard + `/eval-test`

@@ -65,6 +65,21 @@ export interface StrategyPickerChallenge {
   workedSolution?: string;
   strategyOptions?: string[];
   correctStrategy?: string;
+
+  // ── Within-mode support tier (config.difficulty) — scaffolding only. ──
+  // These NEVER change which strategy is correct or the numbers; they only
+  // withdraw on-screen recognition aids as the tier hardens.
+  /** 'easy' | 'medium' | 'hard' — set per challenge when a tier is applied. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Show a problem-agnostic description of each visible strategy option. */
+  showStrategyDescriptions?: boolean;
+  /** Show a neutral worked exemplar (mini viz preview) for each option. */
+  showStrategyExemplars?: boolean;
+  /** Show a hint naming the PROBLEM FEATURES to attend to (never a strategy). */
+  showFeatureHint?: boolean;
+  /** Per-option strategy glossary (strategyId → short description). Populated
+   *  only for the options actually on screen, so it can never leak the answer. */
+  strategyDescriptions?: Record<string, string>;
 }
 
 export interface StrategyPickerData {
@@ -75,6 +90,10 @@ export interface StrategyPickerData {
   operations: ('addition' | 'subtraction')[];
   strategiesIntroduced: StrategyId[];
   gradeBand: 'K' | '1';
+
+  /** Session-level support tier (mirrors per-challenge supportTier) — lets the
+   *  AI tutor calibrate how much it reveals. NEVER changes the assessed answer. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props
   instanceId?: string;
@@ -379,6 +398,108 @@ function StrategyVisualization({ strategy, problem, hopsRevealed }: {
 }
 
 // ============================================================================
+// Support-tier scaffolds (easy/medium): per-option descriptions + neutral
+// worked exemplars. These teach the strategies GENERALLY without referencing
+// the current problem, so they can never leak which option is correct.
+// ============================================================================
+
+/** A NEUTRAL example problem used to demo each strategy. Deliberately NOT the
+ *  challenge's own problem — a doubles fact (4+4) so every visualization renders
+ *  sensibly while never matching the live problem's operands. */
+const NEUTRAL_EXEMPLAR_PROBLEM: StrategyPickerChallenge['problem'] = {
+  equation: '4 + 4 = ?',
+  operation: 'addition',
+  operand1: 4,
+  operand2: 4,
+  result: 8,
+};
+
+function StrategyExemplarStrip({ strategies }: { strategies: StrategyId[] }) {
+  const unique = Array.from(new Set(strategies)).filter((s) => STRATEGY_INFO[s]);
+  if (unique.length === 0) return null;
+  return (
+    <LuminaPanel className="p-3 space-y-2">
+      <p className="text-slate-400 text-xs font-medium text-center">
+        How each strategy works (example: 4 + 4)
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {unique.map((strat) => (
+          <div key={strat} className="bg-slate-800/20 rounded-lg p-2 border border-white/5">
+            <p className="text-center text-[11px] text-slate-400 mb-1 font-medium">
+              {STRATEGY_INFO[strat]?.icon} {STRATEGY_INFO[strat]?.label}
+            </p>
+            <div className="scale-90 origin-top">
+              <StrategyVisualization
+                strategy={strat}
+                problem={NEUTRAL_EXEMPLAR_PROBLEM}
+                hopsRevealed={999}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </LuminaPanel>
+  );
+}
+
+function StrategyDescriptionList({
+  strategies,
+  descriptions,
+}: {
+  strategies: StrategyId[];
+  descriptions?: Record<string, string>;
+}) {
+  const unique = Array.from(new Set(strategies)).filter((s) => STRATEGY_INFO[s]);
+  if (unique.length === 0 || !descriptions) return null;
+  return (
+    <LuminaPanel className="p-3 space-y-1.5">
+      {unique.map((strat) =>
+        descriptions[strat] ? (
+          <div key={strat} className="flex items-start gap-2">
+            <span className="text-sm">{STRATEGY_INFO[strat]?.icon}</span>
+            <span className="text-slate-300 text-xs">
+              <span className="font-medium text-slate-200">{STRATEGY_INFO[strat]?.label}:</span>{' '}
+              {descriptions[strat]}
+            </span>
+          </div>
+        ) : null,
+      )}
+    </LuminaPanel>
+  );
+}
+
+/**
+ * Tier-aware tutor reveal clause. Calibrates how much the AI tutor may say.
+ *
+ * RECOGNITION RULE: for match-strategy the strategy IS the assessed answer, so
+ * the tutor NEVER names the correct strategy at ANY tier — at easy it describes
+ * what features to look for; at hard it only asks what the student notices.
+ * For solve modes (guided/try-another/choose) the assigned strategy is given,
+ * so the tutor may walk the setup at easy and only nudge execution at hard;
+ * it never states the numeric answer at any tier.
+ */
+function tutorRevealClause(
+  challengeType: ChallengeType,
+  tier?: 'easy' | 'medium' | 'hard',
+): string {
+  if (!tier) return '';
+  const isRecognition = challengeType === 'match-strategy';
+  if (isRecognition) {
+    // NEVER name the correct strategy — the recognition IS the task.
+    if (tier === 'easy')
+      return ' [TIER easy] Do NOT name the strategy. Describe the FEATURES to look for in the worked solution (number line hops? a ten frame? equal groups? tally marks?) and let the student match.';
+    if (tier === 'medium')
+      return ' [TIER medium] Do NOT name the strategy. Point the student back to one telling detail in the worked solution and ask what it suggests.';
+    return ' [TIER hard] Do NOT name or hint the strategy. Only ask what the student notices in the worked solution; let them discriminate cold.';
+  }
+  if (tier === 'easy')
+    return ' [TIER easy] You may name the assigned strategy and walk the setup step by step, but never state the final number.';
+  if (tier === 'medium')
+    return ' [TIER medium] Nudge execution of the assigned strategy only; do not re-explain it from scratch and never state the answer.';
+  return ' [TIER hard] Offer minimal prose: ask what the student sees in the visualization; do not re-teach the strategy and never state the answer.';
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -394,6 +515,7 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     challenges = [],
     gradeBand = 'K',
     strategiesIntroduced = [],
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -461,6 +583,8 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // AI Tutoring
   // -------------------------------------------------------------------------
+  const activeTier = currentChallenge?.supportTier ?? supportTier;
+
   const aiPrimitiveData = useMemo(() => ({
     gradeBand,
     totalChallenges: challenges.length,
@@ -473,9 +597,11 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
     chosenStrategy: chosenStrategy ?? '',
     strategiesCompleted: Array.from(strategiesUsed),
     studentAnswer: answerInput || matchSelection || compareAnswer || '',
+    supportTier: currentChallenge?.supportTier ?? supportTier ?? '',
   }), [
     gradeBand, challenges.length, currentChallengeIndex, currentChallenge,
     currentAttempts, chosenStrategy, strategiesUsed, answerInput, matchSelection, compareAnswer,
+    supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -553,7 +679,8 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
         setFeedbackType('error');
         sendText(
           `[ANSWER_INCORRECT] Student answered ${answer} for ${problem.equation}, correct is ${problem.result}. `
-          + `Strategy: ${currentChallenge.assignedStrategy ?? chosenStrategy}. Attempt ${currentAttempts + 1}. Give a hint.`,
+          + `Strategy: ${currentChallenge.assignedStrategy ?? chosenStrategy}. Attempt ${currentAttempts + 1}. Give a hint.`
+          + tutorRevealClause(currentChallenge.type, currentChallenge.supportTier ?? supportTier),
           { silent: true }
         );
       }
@@ -594,14 +721,15 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
         setFeedback(`Not quite — look at the steps again.`);
         setFeedbackType('error');
         sendText(
-          `[MATCH_INCORRECT] Student picked "${matchSelection}" but correct is "${currentChallenge.correctStrategy}". `
-          + `Give a hint about what makes ${currentChallenge.correctStrategy} different.`,
+          `[MATCH_INCORRECT] Student picked "${matchSelection}" (correct strategy withheld — this is a recognition task; do NOT reveal it). `
+          + `Help the student look harder at the worked solution to tell the options apart.`
+          + tutorRevealClause('match-strategy', currentChallenge.supportTier ?? supportTier),
           { silent: true }
         );
       }
     }
   }, [currentChallenge, answerInput, compareAnswer, matchSelection, chosenStrategy,
-      currentAttempts, incrementAttempts, recordResult, sendText]);
+      currentAttempts, incrementAttempts, recordResult, sendText, supportTier]);
 
   // -------------------------------------------------------------------------
   // Advance
@@ -762,6 +890,17 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
               </p>
             </LuminaPanel>
 
+            {/* Support tier (easy): feature hint — names what to NOTICE about the
+                problem, never which strategy to use (would leak the answer in
+                recognition modes). */}
+            {currentChallenge.showFeatureHint && (
+              <LuminaPanel className="p-2 text-center border-amber-400/20">
+                <p className="text-amber-300/80 text-xs">
+                  💡 Look closely: is it {currentChallenge.problem.operation === 'subtraction' ? 'a take-away' : 'a put-together'} problem? Are the two numbers the same, close, or far apart?
+                </p>
+              </LuminaPanel>
+            )}
+
             {/* Strategy Steps (guided-strategy, try-another) */}
             {(currentChallenge.type === 'guided-strategy' || currentChallenge.type === 'try-another') &&
               currentChallenge.strategySteps && currentChallenge.strategySteps.length > 0 && (
@@ -811,6 +950,21 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
               </div>
             )}
 
+            {/* Choose-your-strategy: support-tier glossary + exemplars above menu */}
+            {currentChallenge.type === 'choose-your-strategy' && !chosenStrategy &&
+              currentChallenge.showStrategyDescriptions && (
+              <StrategyDescriptionList
+                strategies={(currentChallenge.availableStrategies ?? strategiesIntroduced) as StrategyId[]}
+                descriptions={currentChallenge.strategyDescriptions}
+              />
+            )}
+            {currentChallenge.type === 'choose-your-strategy' && !chosenStrategy &&
+              currentChallenge.showStrategyExemplars && (
+              <StrategyExemplarStrip
+                strategies={(currentChallenge.availableStrategies ?? strategiesIntroduced) as StrategyId[]}
+              />
+            )}
+
             {/* Choose-your-strategy: strategy menu */}
             {currentChallenge.type === 'choose-your-strategy' && !chosenStrategy && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -826,7 +980,8 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                         setChosenStrategy(strat);
                         sendText(
                           `[STRATEGY_CHOSEN] Student chose "${info.label}" for ${currentChallenge.problem.equation}. `
-                          + `Encourage: "Great choice! Let's use ${info.label} to solve this."`,
+                          + `Encourage: "Great choice! Let's use ${info.label} to solve this."`
+                          + tutorRevealClause('choose-your-strategy', currentChallenge.supportTier ?? supportTier),
                           { silent: true }
                         );
                       }}
@@ -848,6 +1003,19 @@ const StrategyPicker: React.FC<StrategyPickerProps> = ({ data, className }) => {
                       {currentChallenge.workedSolution}
                     </p>
                   </LuminaPanel>
+                )}
+                {/* Support tier (easy/medium): per-option strategy glossary +
+                    neutral exemplars. Problem-agnostic — never leaks the answer. */}
+                {currentChallenge.showStrategyDescriptions && (
+                  <StrategyDescriptionList
+                    strategies={(currentChallenge.strategyOptions ?? []) as StrategyId[]}
+                    descriptions={currentChallenge.strategyDescriptions}
+                  />
+                )}
+                {currentChallenge.showStrategyExemplars && (
+                  <StrategyExemplarStrip
+                    strategies={(currentChallenge.strategyOptions ?? []) as StrategyId[]}
+                  />
                 )}
                 <div className="flex flex-wrap gap-2 justify-center">
                   {(currentChallenge.strategyOptions ?? []).map((opt) => (

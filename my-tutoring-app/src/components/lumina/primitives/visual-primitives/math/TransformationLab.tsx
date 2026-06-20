@@ -85,6 +85,21 @@ export interface TransformationLabChallenge {
   isSimilarity?: boolean;
   /** Scale factor for dilations (for tutor context). */
   scaleFactor?: number;
+
+  // --- within-mode support tier (scaffolding level; never changes the figure) ---
+  /** 'easy' | 'medium' | 'hard' — set by the generator when a tier is active. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /**
+   * Show (x, y) coordinate labels on the cyan PRE-IMAGE vertices (perception aid).
+   * Default ON (legacy behavior) when undefined. NEVER labels the expected image.
+   */
+  showPreImageCoords?: boolean;
+  /**
+   * Always-visible coordinate-rule notation shown beside the canvas, e.g.
+   * "(x, y) → (−x, y)" (the transformation guide). Withdrawn at hard.
+   * NEVER set for identify mode (the rule names the answer). Display-only.
+   */
+  ruleNotation?: string;
 }
 
 export interface TransformationLabData {
@@ -185,6 +200,37 @@ const SEQUENCE_PALETTE: { op: SequenceOp; label: string }[] = [
   { op: 'tr_up', label: '↑ Up' },
   { op: 'tr_down', label: '↓ Down' },
 ];
+
+/**
+ * Tier-aware tutor reveal clause. The support tier withholds on-screen guides
+ * (rule notation, pre-image coords); the tutor must not hand them back at a
+ * harder tier. Hard: never name the rule or where vertices map; ask what the
+ * transformation DOES; never reveal image coordinates. (Identify always hides
+ * the rule — the relationship IS the answer — independent of tier.)
+ */
+function tutorRevealClause(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  isIdentify: boolean,
+): string {
+  if (isIdentify) {
+    return ' [REVEAL: This is a recognition task — the transformation name IS the answer. '
+      + 'Never name it; have the student follow one corner and describe the motion they see.]';
+  }
+  if (tier === 'hard') {
+    return ' [REVEAL=hard: The rule notation and coordinate labels are HIDDEN this tier. '
+      + 'Do NOT state the coordinate rule, do NOT say where any vertex maps, and never reveal image coordinates. '
+      + 'Ask what the transformation DOES to the figure and let the student derive the rule.]';
+  }
+  if (tier === 'medium') {
+    return ' [REVEAL=medium: The rule notation is on screen but coordinate labels are hidden. '
+      + 'Nudge execution — point to the rule; do not compute the image coordinates for them.]';
+  }
+  if (tier === 'easy') {
+    return ' [REVEAL=easy: The rule notation and pre-image coordinates are on screen. '
+      + 'You may name the rule and walk one vertex through it, then let the student finish the rest.]';
+  }
+  return ''; // no tier active — default coaching
+}
 
 // ============================================================================
 // Component
@@ -377,8 +423,11 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
 
     const ch = currentChallenge;
 
-    // Pre-image is always shown (the object being transformed).
-    drawPolygon(ch.preImage, COL_PRE, FILL_PRE, { labelPts: true });
+    // Pre-image is always shown (the object being transformed). Its (x, y) vertex
+    // labels are a perception-aid scaffold withdrawn at harder tiers (default ON
+    // when the field is absent, preserving legacy behavior). Never the answer.
+    const showPreCoords = ch.showPreImageCoords !== false;
+    drawPolygon(ch.preImage, COL_PRE, FILL_PRE, { labelPts: showPreCoords });
     drawVertices(ch.preImage, COL_PRE, 4);
 
     if (ch.answerKind === 'identify') {
@@ -533,6 +582,7 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
     transformLabel: currentChallenge?.transformLabel ?? null,
     isSimilarity: currentChallenge?.isSimilarity ?? false,
     scaleFactor: currentChallenge?.scaleFactor ?? null,
+    supportTier: currentChallenge?.supportTier ?? null,
     gradeBand,
     attemptNumber: currentAttempts + 1,
   }), [
@@ -608,7 +658,8 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
         setFeedbackType('error');
         sendText(
           `[ANSWER_INCORRECT] Student chose "${ch.options?.[selectedOption ?? 0]}" but the transformation is "${ch.transformLabel}". `
-          + `Attempt ${currentAttempts + 1}. Tell them to follow one corner and notice what changed — do NOT name the answer.`,
+          + `Attempt ${currentAttempts + 1}. Tell them to follow one corner and notice what changed — do NOT name the answer.`
+          + tutorRevealClause(ch.supportTier, true),
           { silent: true },
         );
         setSelectedOption(null);
@@ -645,7 +696,8 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student's image does not match the target for ${challengeType} (${ch.transformLabel}). `
-        + `Attempt ${currentAttempts + 1}. Coach the coordinate rule for ONE vertex — do NOT give all the answer coordinates.`,
+        + `Attempt ${currentAttempts + 1}. Coach the coordinate rule for ONE vertex — do NOT give all the answer coordinates.`
+        + tutorRevealClause(ch.supportTier, false),
         { silent: true },
       );
     }
@@ -770,6 +822,14 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
             <p className="text-slate-300 text-sm italic">{currentChallenge.narration}</p>
           )}
           <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+          {/* Rule-notation guide (perception/instruction scaffold; withdrawn at hard,
+              never present for identify where the rule names the answer). */}
+          {currentChallenge.ruleNotation && (
+            <p className="text-xs text-cyan-300/90 font-mono mt-1">
+              <span className="uppercase text-cyan-400/70 mr-2">Rule</span>
+              {currentChallenge.ruleNotation}
+            </p>
+          )}
         </LuminaPanel>
 
         {/* Progress dots — tri-state (done / active / pending). */}

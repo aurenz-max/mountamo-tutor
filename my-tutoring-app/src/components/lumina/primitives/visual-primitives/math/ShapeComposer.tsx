@@ -74,6 +74,14 @@ export interface ShapeComposerChallenge {
   validSolutionCount?: number;
   // shared
   hint?: string;
+  // within-mode support tier (scaffolding level set by the generator)
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Show decomposition seams: compose-match piece-target outlines +
+   *  decompose division lines. The seam IS the answer → easy only. */
+  showSeams?: boolean;
+  /** Show snap/slot guides: compose-picture slot outlines + compose-match
+   *  snap halos. Easy + medium; withdrawn at hard. */
+  showSnapGuides?: boolean;
 }
 
 export interface ShapeComposerData {
@@ -317,10 +325,26 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
     totalPieces: currentChallenge?.pieces?.length ?? currentChallenge?.pictureSlots?.length ?? 0,
     expectedComponents: currentChallenge?.expectedComponents ?? [],
     attemptNumber: currentAttempts + 1,
+    supportTier: currentChallenge?.supportTier ?? null,
+    seamsShown: currentChallenge?.showSeams !== false,
   }), [
     gradeBand, challenges.length, currentChallengeIndex, currentChallenge,
     placedShapes.length, currentAttempts,
   ]);
+
+  // Tier-aware reveal policy — at hard the seams (the decomposition answer) are
+  // hidden on screen, so the tutor must NOT name which pieces go where; it asks
+  // how the target could be split instead. Never reveals the composition.
+  const tutorRevealClause = (): string => {
+    const tier = currentChallenge?.supportTier;
+    if (tier === 'hard')
+      return ' SUPPORT TIER hard: the decomposition seams are hidden — do NOT name which pieces go where or how the shape splits; instead ask the student how the target could be broken into smaller shapes. Never reveal the composition.';
+    if (tier === 'medium')
+      return ' SUPPORT TIER medium: seams are hidden but snap guides remain — nudge placement, do not spell out the full decomposition.';
+    if (tier === 'easy')
+      return ' SUPPORT TIER easy: the seams are visible — you may point the student to the on-screen guide lines to self-check.';
+    return '';
+  };
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'shape-composer',
@@ -617,7 +641,8 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
         `[ANSWER_INCORRECT] ${currentChallenge.type} challenge. Attempt ${currentAttempts + 1}. `
         + `${currentChallenge.type === 'compose-match' ? `${placedShapes.length}/${(currentChallenge.pieces ?? []).length} pieces placed.` : ''}`
         + `${currentChallenge.type === 'decompose' ? `Student identified: ${decomposeTaps.join(', ')}. Expected: ${(currentChallenge.expectedComponents ?? []).map(c => `${c.count} ${c.shape}`).join(', ')}.` : ''}`
-        + ` Give a spatial hint without revealing the answer.`,
+        + ` Give a spatial hint without revealing the answer.`
+        + tutorRevealClause(),
         { silent: true }
       );
     }
@@ -777,6 +802,11 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
   const renderCanvas = () => {
     if (!currentChallenge) return null;
     const shapes = currentChallenge.type === 'free-create' ? freeCreateShapes : placedShapes;
+    // Support-tier scaffolds: seams = the decomposition answer (easy only),
+    // snap guides = slot/halo hints (easy+medium). Undefined → no tier → show
+    // (default behaviour byte-identical to before).
+    const showSeams = currentChallenge.showSeams !== false;
+    const showSnapGuides = currentChallenge.showSnapGuides !== false;
 
     return (
       <svg ref={canvasRef}
@@ -796,14 +826,35 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
           ))
         )}
 
-        {/* Target silhouette for compose-match */}
+        {/* Target silhouette for compose-match (the TARGET — always shown; it is
+            the eval-mode goal, never withdrawn by a tier) */}
         {currentChallenge.type === 'compose-match' && currentChallenge.targetOutlinePath && (
           <path d={currentChallenge.targetOutlinePath}
             fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)" strokeWidth={2} strokeDasharray="8 4" />
         )}
 
-        {/* Picture slots for compose-picture */}
-        {currentChallenge.type === 'compose-picture' && currentChallenge.pictureSlots?.map(slot => (
+        {/* Decomposition SEAMS for compose-match — each piece's landing outline
+            inside the silhouette. These reveal HOW the target tiles, so they are
+            shown at easy only (showSeams). Display-only: the checker matches placed
+            pieces to piece.targetX/Y geometry, never to these outlines. */}
+        {currentChallenge.type === 'compose-match' && showSeams && currentChallenge.pieces?.map(p => (
+          (p.targetX !== undefined && p.targetY !== undefined) ? (
+            <g key={`seam-${p.id}`}
+               transform={`translate(${p.targetX}, ${p.targetY}) rotate(${p.targetRotation ?? 0}, ${p.width / 2}, ${p.height / 2})`}>
+              {p.shape === 'circle' ? (
+                <ellipse cx={p.width / 2} cy={p.height / 2} rx={p.width / 2} ry={p.height / 2}
+                  fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={1.25} strokeDasharray="5 4" />
+              ) : (
+                <path d={getShapePath(p.shape, p.width, p.height)}
+                  fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={1.25} strokeDasharray="5 4" />
+              )}
+            </g>
+          ) : null
+        ))}
+
+        {/* Picture slots for compose-picture — these are the snap GUIDES marking
+            where each shape goes. Shown easy+medium; withdrawn at hard. */}
+        {currentChallenge.type === 'compose-picture' && showSnapGuides && currentChallenge.pictureSlots?.map(slot => (
           <g key={slot.id} transform={`translate(${slot.x}, ${slot.y}) rotate(${slot.rotation}, ${slot.width / 2}, ${slot.height / 2})`}>
             {slot.shape === 'circle' ? (
               <ellipse cx={slot.width / 2} cy={slot.height / 2} rx={slot.width / 2} ry={slot.height / 2}
@@ -821,8 +872,12 @@ const ShapeComposer: React.FC<ShapeComposerProps> = ({ data, className }) => {
             fill="rgba(139,92,246,0.3)" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
         )}
 
-        {/* Division line hints for decompose */}
-        {currentChallenge.type === 'decompose' && currentChallenge.divisionLineHints?.map((line, i) => (
+        {/* Division-line SEAMS for decompose — they reveal exactly how the
+            composite splits, i.e. the decomposition answer. Shown at easy only
+            (showSeams); at hard the student mentally segments the composite.
+            Display-only: the checker reads decomposeTaps vs expectedComponents,
+            never these lines. */}
+        {currentChallenge.type === 'decompose' && showSeams && currentChallenge.divisionLineHints?.map((line, i) => (
           <line key={`div-${i}`} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
             stroke="rgba(255,255,255,0.15)" strokeWidth={1} strokeDasharray="4 4" />
         ))}

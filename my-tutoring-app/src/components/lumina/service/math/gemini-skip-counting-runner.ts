@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { SkipCountingRunnerData } from "../../primitives/visual-primitives/math/SkipCountingRunner";
 import { ai } from "../geminiClient";
+import { createDiscretePool } from "./numberPoolService";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -35,63 +36,22 @@ function resolveCount(
 }
 
 // ---------------------------------------------------------------------------
-// Skip-value resolution — code owns the ENTROPY, scope owns the TARGET
+// Skip-value entropy — a shuffled pool in the PROMPT, topic stays authoritative
 // ---------------------------------------------------------------------------
 // skipValue is the LEARNING TARGET (the objective literally IS "count by Ns"),
-// not incidental data — so it is NEVER pooled from a numeric band (that is the
-// "Counting to 10" regression the add-number-pool-service safety rule guards
-// against). Precedence:
-//   1. config.skipValue       — an explicit manifest/scope pin → honor verbatim.
-//   2. value named in topic    — e.g. "Skip counting by 5s" → honor verbatim.
-//   3. code-chosen from the band — ONLY when the objective is OPEN. The candidate
-//      set IS the grade-band scope of legal intervals, so a random pick can never
-//      teach past the objective. This is what fixes Gemini's convergent collapse
-//      onto +5 for open ("skip counting patterns") objectives.
-// Only branch 3 is randomness, and its pool == scope. See memory:
-// structural-difficulty-not-numeric / add-number-pool-service safety rule.
+// so it is never pooled from a contiguous numeric band (that is the "Counting to
+// 10" regression). But Gemini's structured output is convergent — with no entropy
+// in the prompt it collapses every open objective onto 2/5. The fix is to inject
+// a SHUFFLED pool of the grade-band-LEGAL intervals into the prompt and let the
+// LLM decide, with the TOPIC authoritative over the pool. The candidate set IS
+// the grade-band scope, so a pick can never teach past the objective; the shuffle
+// is the entropy; the LLM reads the topic natively (no brittle regex, no post-LLM
+// pin). See memory: schema-over-regex-and-prompt / structural-difficulty-not-numeric.
 
 const GRADE_BAND_SKIP_VALUES: Record<'1-2' | '2-3', readonly number[]> = {
   '1-2': [2, 5, 10],
   '2-3': [2, 3, 4, 5, 10],
 };
-
-/** Parse an interval the topic explicitly names ("by 5s", "count by 3", "10s"). */
-function parseSkipValueFromTopic(topic: string): number | null {
-  const m =
-    topic.match(/by\s+(\d+)\s*'?s?\b/i) ?? // "by 5s", "by 5", "by 10's"
-    topic.match(/\b(\d+)\s*'?s\b/i);        // "5s", "10s"
-  if (!m) return null;
-  const v = parseInt(m[1], 10);
-  return v > 0 ? v : null;
-}
-
-interface ResolvedSkipValue {
-  skipValue: number;
-  source: 'config' | 'topic' | 'pool';
-}
-
-/**
- * Resolve the lesson's skip value. Scope (config / topic) wins; only an OPEN
- * objective falls through to a code-chosen interval drawn from the grade band's
- * legal set — never a contiguous numeric pool.
- */
-function resolveSkipValue(
-  configSkipValue: number | undefined,
-  topic: string,
-  band: '1-2' | '2-3',
-): ResolvedSkipValue {
-  if (typeof configSkipValue === 'number' && configSkipValue > 0) {
-    return { skipValue: configSkipValue, source: 'config' };
-  }
-  const fromTopic = parseSkipValueFromTopic(topic);
-  if (fromTopic !== null) {
-    return { skipValue: fromTopic, source: 'topic' };
-  }
-  // Open objective → we own the randomness, but only across scope-legal intervals.
-  const candidates = GRADE_BAND_SKIP_VALUES[band];
-  const picked = candidates[Math.floor(Math.random() * candidates.length)];
-  return { skipValue: picked, source: 'pool' };
-}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -543,14 +503,24 @@ export const generateSkipCountingRunner = async (
     ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
-  // ── Resolve the skip value (target = scope, entropy = code, never a band) ──
+  // ── Skip-value entropy pool (prompt-level; topic authoritative) ──
+  // Built per call so each independent generation rolls a fresh ordering. Skipped
+  // entirely when config explicitly pins skipValue (an explicit pin needs no
+  // entropy). Candidate set = the grade-band-legal intervals (== scope).
   const skipBand: '1-2' | '2-3' =
     config?.gradeBand ?? (gradeLevel.toLowerCase().includes('1') ? '1-2' : '2-3');
-  const { skipValue: resolvedSkipValue, source: skipValueSource } = resolveSkipValue(
-    config?.skipValue,
-    topic,
-    skipBand,
-  );
+  const skipPool =
+    config?.skipValue === undefined
+      ? createDiscretePool(GRADE_BAND_SKIP_VALUES[skipBand])
+      : null;
+  const skipPoolSection = skipPool
+    ? '\n\n' +
+      skipPool.toPromptSection({
+        label: 'SKIP VALUE POOL',
+        noun: 'skip value',
+        authoritativeSource: 'the topic',
+      })
+    : '';
 
   // ── Build mode-constrained schema (count templated into description) ──
   const baseSchema = buildSkipCountingRunnerSchema(targetCount);
@@ -614,16 +584,14 @@ CHARACTER TYPES: frog, kangaroo, rabbit, rocket
 
 ${(() => {
   const hints: string[] = [];
-  hints.push(
-    `- Skip value: ${resolvedSkipValue} — use EXACTLY this as skipValue. Do NOT choose a different interval.`
-    + (skipValueSource === 'pool' ? ' (selected by the adaptive system for variety across lessons)' : ''),
-  );
+  if (config?.skipValue) hints.push(`- Skip value: ${config.skipValue} — use EXACTLY this; do not pick another interval.`);
   if (config?.gradeBand) hints.push(`- Grade band: ${config.gradeBand}`);
   if (config?.direction) hints.push(`- Direction: ${config.direction}`);
   if (effectiveChallengeTypes) hints.push(`- Challenge types: ${effectiveChallengeTypes.join(', ')}`);
   if (config?.characterType) hints.push(`- Character: ${config.characterType}`);
   return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
 })()}
+${skipPoolSection}
 
 REQUIREMENTS:
 1. Generate exactly ${targetCount} challenges that progress in difficulty
@@ -657,14 +625,9 @@ Return the complete skip counting runner configuration.
     throw new Error('No valid skip counting runner data returned from Gemini API');
   }
 
-  // ── Authoritative skip-value pin: the TARGET is owned by scope/code, never the
-  // LLM (which converges on +5). Applied before the grade-band clamp + endAt
-  // computation so the whole sequence is built from the resolved interval. ──
-  data.skipValue = resolvedSkipValue;
-  if (!GRADE_BAND_SKIP_VALUES['1-2'].includes(resolvedSkipValue)) {
-    // 3s/4s are a Grades 2-3 skill — keep the band consistent so the 1-2 clamp
-    // below cannot reset the interval back to 5.
-    data.gradeBand = '2-3';
+  // Validation: ensure skipValue is a positive number
+  if (!data.skipValue || data.skipValue <= 0) {
+    data.skipValue = 5;
   }
 
   // Validation: ensure direction is valid

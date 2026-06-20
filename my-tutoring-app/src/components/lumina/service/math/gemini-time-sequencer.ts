@@ -47,6 +47,112 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT events/times
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * Support scaffold for time-sequencer. Withdraws scaffolding intrinsic to the
+ * ordering/time-reasoning task — it NEVER changes which events appear, their
+ * labels, their times, or the correct answer.
+ *
+ * Levers (discovered from TimeSequencer.tsx):
+ *  - showTimeAnchors (#1 perception): the EventCardVisual already renders an
+ *    optional `typicalTime` per event (`showTime` prop). At easy these elapsed-time
+ *    anchors are shown so the student sequences by reading the clock; at hard they
+ *    are withdrawn and the student sequences from event reasoning alone.
+ *  - prelabelFirstSlot (#1, answer-leak-guarded): seed ONLY the first event of the
+ *    ordered sequence as a "start here" anchor — NEVER the full order. The remaining
+ *    slots stay blank. The checker reads `correctOrder` independent of this flag.
+ *  - nameStrategy (#2 instruction-as-scaffold): at easy the instruction names the
+ *    ordering/time-reasoning strategy ("read the time on each card and go earliest →
+ *    latest"); at hard the instruction is bare and the student supplies the strategy.
+ */
+interface SupportScaffold {
+  /** sequence-events / before-after / match-time-of-day: show per-event typicalTime anchors. */
+  showTimeAnchors?: boolean;
+  /** sequence-events: pre-seed ONLY the first ordered slot as a start-here anchor (never the full order). */
+  prelabelFirstSlot?: boolean;
+  /** all modes: instruction names the ordering / time-reasoning strategy. */
+  nameStrategy?: boolean;
+  promptLines: string[];
+}
+
+const SCAFFOLD_LEAD =
+  'This tier changes only how much on-screen / instructional help the student gets. '
+  + 'It NEVER changes which events appear, their labels, their times, or the correct order/answer.';
+
+/** Strategy phrasing injected into the instruction at easy/medium when nameStrategy is on.
+ *  `withAnchors` (easy) can reference the on-screen clock times; otherwise the strategy
+ *  leans on routine reasoning so it never names a cue the tier has withdrawn. */
+function strategyFor(chType: string, withAnchors: boolean): string {
+  switch (chType) {
+    case 'sequence-events':
+      return withAnchors
+        ? 'Read the time on each card and put them in order from earliest to latest.'
+        : 'Walk through your day in order — what do you do first, next, and last?';
+    case 'match-time-of-day':
+      return 'Picture when you usually do this — is it light or dark outside, before or after meals?';
+    case 'before-after':
+      return 'Walk through your routine in order, then find the event that comes right before or after.';
+    case 'duration-compare':
+      return 'Picture doing each activity and count how long it takes — one is much quicker.';
+    case 'read-schedule':
+      return 'Find the time in the left column, then read across to the activity.';
+    default:
+      return '';
+  }
+}
+
+function resolveSupportStructure(pinnedType: string, tier: SupportTier): SupportScaffold {
+  const showTimeAnchors = tier === 'easy';                 // medium + hard withdraw the clock anchors
+  const prelabelFirstSlot = tier !== 'hard';               // easy + medium seed only the first slot
+  const nameStrategy = tier !== 'hard';                    // hard gives the bare instruction
+
+  const lines: string[] = [SCAFFOLD_LEAD];
+
+  if (pinnedType === 'sequence-events') {
+    lines.push(
+      `Elapsed-time anchors (a typical clock time on each event card) are ${showTimeAnchors ? 'SHOWN so the student can order by reading the time' : 'WITHDRAWN — the student sequences from event reasoning alone'}.`,
+      `Provide a realistic typicalTime for every event regardless (e.g. "7:00 AM") — the system decides whether to display it. Keep times consistent with the correct order.`,
+      `The first event is ${prelabelFirstSlot ? 'pre-seeded as a "start here" anchor; the remaining slots stay blank for the student' : 'NOT pre-seeded — the student places every event including the first'}.`,
+      `The instruction ${nameStrategy ? 'names the ordering strategy ("read the time on each card, earliest → latest")' : 'is bare — it does NOT name a strategy; the student decides how to order the events'}.`,
+    );
+  } else if (pinnedType === 'before-after') {
+    lines.push(
+      `Elapsed-time anchors (a typical clock time on the REFERENCE event card only — never on the options) are ${showTimeAnchors ? 'SHOWN to anchor the reasoning' : 'WITHDRAWN — the student reasons from the activity alone'}.`,
+      `Provide a realistic referenceTime regardless — the system decides whether to display it.`,
+      `The instruction ${nameStrategy ? 'names the time-reasoning strategy' : 'is bare — it does NOT name a strategy'}.`,
+    );
+  } else if (pinnedType === 'match-time-of-day') {
+    // NO time anchor: the clock time trivially reveals the period (the answer).
+    lines.push(
+      `The instruction ${nameStrategy ? 'names the time-reasoning strategy (picture when you do this — light/dark, before/after meals)' : 'is bare — it does NOT name a strategy'}.`,
+      'Do NOT reveal the clock time on screen — the time would give away the period, which IS the answer.',
+    );
+  } else {
+    // duration-compare / read-schedule — no time-anchor lever; instruction-as-scaffold only.
+    lines.push(
+      `The instruction ${nameStrategy ? 'names the reasoning strategy' : 'is bare — it does NOT name a strategy; the student decides how to reason'}.`,
+      'Structural labels (schedule rows, the two activities) stay ON at every tier — they are the task, not a scaffold.',
+    );
+  }
+
+  lines.push('Keep the title and description neutral — never state the support level or reveal the correct order/answer.');
+
+  return { showTimeAnchors, prelabelFirstSlot, nameStrategy, promptLines: lines };
+}
+
+// ---------------------------------------------------------------------------
 // Shared constants
 // ---------------------------------------------------------------------------
 
@@ -91,18 +197,23 @@ const sequenceEventsSchema: Schema = {
           event0Id: { type: Type.STRING, description: "1st event ID (e.g. 'e1')" },
           event0Label: { type: Type.STRING, description: "1st event label" },
           event0Emoji: { type: Type.STRING, description: "1st event emoji" },
+          event0Time: { type: Type.STRING, description: "1st event typical clock time (e.g. '7:00 AM') — must agree with the correct order" },
           event1Id: { type: Type.STRING, description: "2nd event ID" },
           event1Label: { type: Type.STRING, description: "2nd event label" },
           event1Emoji: { type: Type.STRING, description: "2nd event emoji" },
+          event1Time: { type: Type.STRING, description: "2nd event typical clock time" },
           event2Id: { type: Type.STRING, description: "3rd event ID" },
           event2Label: { type: Type.STRING, description: "3rd event label" },
           event2Emoji: { type: Type.STRING, description: "3rd event emoji" },
+          event2Time: { type: Type.STRING, description: "3rd event typical clock time" },
           event3Id: { type: Type.STRING, description: "4th event ID (use empty string if fewer than 4 events)", nullable: true },
           event3Label: { type: Type.STRING, description: "4th event label", nullable: true },
           event3Emoji: { type: Type.STRING, description: "4th event emoji", nullable: true },
+          event3Time: { type: Type.STRING, description: "4th event typical clock time", nullable: true },
           event4Id: { type: Type.STRING, description: "5th event ID (use empty string if fewer than 5 events)", nullable: true },
           event4Label: { type: Type.STRING, description: "5th event label", nullable: true },
           event4Emoji: { type: Type.STRING, description: "5th event emoji", nullable: true },
+          event4Time: { type: Type.STRING, description: "5th event typical clock time", nullable: true },
           correctOrderCsv: { type: Type.STRING, description: "Comma-separated event IDs in correct chronological order" },
         },
         required: ["id", "instruction", "hint", "event0Id", "event0Label", "event0Emoji", "event1Id", "event1Label", "event1Emoji", "event2Id", "event2Label", "event2Emoji", "correctOrderCsv"],
@@ -128,6 +239,7 @@ const matchTimeOfDaySchema: Schema = {
           hint: { type: Type.STRING, description: "Hint" },
           eventLabel: { type: Type.STRING, description: "Activity label" },
           eventEmoji: { type: Type.STRING, description: "Activity emoji" },
+          eventTime: { type: Type.STRING, description: "Typical clock time for the activity (e.g. '8:00 AM')" },
           correctPeriod: { type: Type.STRING, description: "'morning', 'afternoon', 'evening', or 'night'" },
         },
         required: ["id", "instruction", "hint", "eventLabel", "eventEmoji", "correctPeriod"],
@@ -152,6 +264,7 @@ const beforeAfterSchema: Schema = {
           hint: { type: Type.STRING, description: "Hint" },
           referenceLabel: { type: Type.STRING, description: "Reference event label" },
           referenceEmoji: { type: Type.STRING, description: "Reference event emoji" },
+          referenceTime: { type: Type.STRING, description: "Typical clock time for the reference event (e.g. '12:00 PM')" },
           relation: { type: Type.STRING, description: "'before' or 'after'" },
           option0Label: { type: Type.STRING, description: "Option 1 label" },
           option0Emoji: { type: Type.STRING, description: "Option 1 emoji" },
@@ -246,6 +359,7 @@ async function generateSequenceEvents(
   topic: string,
   gradeLevel: string,
   count: number,
+  tierSection: string,
 ): Promise<SubResult> {
   const theme = randomTheme();
   const prompt = `
@@ -258,8 +372,9 @@ Each challenge: give 3-5 daily routine events. Student must tap them in chronolo
 - For K: 3 events max. For Grade 1-2: 4-5 events.
 - All event IDs must be unique within each challenge.
 - correctOrderCsv MUST contain exactly the same IDs as the events listed.
+- Provide a realistic typicalTime (e.g. "7:00 AM") for EVERY event; the times must agree with the correct chronological order.
 - Vary the scenarios — don't repeat the same events across challenges.
-
+${tierSection}
 ${SHARED_CONTEXT}
 `;
 
@@ -274,13 +389,14 @@ ${SHARED_CONTEXT}
 
   // Post-process: flat → structured
   const challenges: TimeSequencerChallenge[] = data.challenges.map((flat: Record<string, unknown>, i: number) => {
-    const events: { id: string; label: string; emoji: string }[] = [];
+    const events: { id: string; label: string; emoji: string; typicalTime?: string }[] = [];
     for (let j = 0; j < 5; j++) {
       const id = flat[`event${j}Id`];
       const label = flat[`event${j}Label`];
       const emoji = flat[`event${j}Emoji`];
+      const time = flat[`event${j}Time`];
       if (typeof id === "string" && id && typeof label === "string" && typeof emoji === "string") {
-        events.push({ id, label, emoji });
+        events.push({ id, label, emoji, typicalTime: typeof time === "string" && time ? time : undefined });
       }
     }
 
@@ -311,6 +427,7 @@ async function generateMatchTimeOfDay(
   topic: string,
   gradeLevel: string,
   count: number,
+  tierSection: string,
 ): Promise<SubResult> {
   const theme = randomTheme();
   const prompt = `
@@ -320,8 +437,9 @@ Theme: ${theme}.
 Each challenge: show ONE activity. Student picks whether it happens in morning, afternoon, evening, or night.
 - correctPeriod must be exactly one of: 'morning', 'afternoon', 'evening', 'night'.
 - For K: only use morning, afternoon, night (no evening).
+- Provide a realistic eventTime (e.g. "8:00 AM") that agrees with the correct period.
 - Use a variety of daily activities (eating, sleeping, school, play, etc.).
-
+${tierSection}
 ${SHARED_CONTEXT}
 `;
 
@@ -345,6 +463,7 @@ ${SHARED_CONTEXT}
         id: `evt${i + 1}`,
         label: (flat.eventLabel as string) || "Activity",
         emoji: (flat.eventEmoji as string) || "🌟",
+        typicalTime: typeof flat.eventTime === "string" && flat.eventTime ? flat.eventTime : undefined,
       },
       correctPeriod: (VALID_PERIODS.includes(period) ? period : "morning") as TimeSequencerChallenge["correctPeriod"],
     };
@@ -357,6 +476,7 @@ async function generateBeforeAfter(
   topic: string,
   gradeLevel: string,
   count: number,
+  tierSection: string,
 ): Promise<SubResult> {
   const theme = randomTheme();
   const prompt = `
@@ -367,8 +487,9 @@ Each challenge: show a reference event. Ask "What happens BEFORE/AFTER [event]?"
 Provide 3 options. correctOptionIndex is the 0-based index of the correct answer.
 - relation must be 'before' or 'after'.
 - correctOptionIndex must be 0, 1, or 2.
+- Provide a realistic referenceTime (e.g. "12:00 PM") for the reference event.
 - Use varied daily activities that have clear temporal relationships.
-
+${tierSection}
 ${SHARED_CONTEXT}
 `;
 
@@ -405,6 +526,7 @@ ${SHARED_CONTEXT}
         id: `ref${i}`,
         label: (flat.referenceLabel as string) || "Event",
         emoji: (flat.referenceEmoji as string) || "🌟",
+        typicalTime: typeof flat.referenceTime === "string" && flat.referenceTime ? flat.referenceTime : undefined,
       },
       relation: ((rel === "before" || rel === "after") ? rel : "after") as "before" | "after",
       options,
@@ -419,6 +541,7 @@ async function generateDurationCompare(
   topic: string,
   gradeLevel: string,
   count: number,
+  tierSection: string,
 ): Promise<SubResult> {
   const theme = randomTheme();
   const prompt = `
@@ -429,7 +552,7 @@ Each challenge: show two activities. Student picks which takes longer.
 - correctAnswer must be exactly 'A', 'B', or 'same'.
 - Choose activities with clearly different durations (e.g. brushing teeth vs going to school).
 - Include 1 'same' answer if ${count} >= 3.
-
+${tierSection}
 ${SHARED_CONTEXT}
 `;
 
@@ -470,6 +593,7 @@ async function generateReadSchedule(
   topic: string,
   gradeLevel: string,
   count: number,
+  tierSection: string,
 ): Promise<SubResult> {
   const theme = randomTheme();
   const prompt = `
@@ -482,7 +606,7 @@ Ask what happens at targetTime. Provide 3 wrong options plus the correct one.
 - wrongOption1/2/3 must be plausible activities NOT at that time.
 - Schedule entries should be in chronological order.
 - Grade 2+ content — use simple clock times.
-
+${tierSection}
 ${SHARED_CONTEXT}
 `;
 
@@ -547,6 +671,7 @@ type SubGenerator = (
   topic: string,
   gradeLevel: string,
   count: number,
+  tierSection: string,
 ) => Promise<SubResult>;
 
 const GENERATOR_MAP: Record<string, SubGenerator> = {
@@ -629,7 +754,16 @@ const FALLBACKS: Record<string, TimeSequencerChallenge> = {
 export const generateTimeSequencer = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen / instructional scaffolding within it.
+     * NEVER changes the events, labels, times, or the correct answer.
+     */
+    difficulty?: string;
+  }>,
 ): Promise<TimeSequencerData> => {
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -644,6 +778,26 @@ export const generateTimeSequencer = async (
   const allTypes = Object.keys(CHALLENGE_TYPE_DOCS);
   const allowedTypes = evalConstraint?.allowedTypes ?? allTypes;
 
+  // ── Within-mode support tier (config.difficulty): scaffolding level, NOT events/times.
+  //    `supportTier` is the STUDENT's tier and DRIVES the deterministic application
+  //    at the end (single OR blended session). `pinnedType` is only for prompt tone. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? evalConstraint.allowedTypes[0]
+      : undefined;
+
+  /** Build the prompt tier section for a given challenge type (empty when no tier). */
+  const buildTierSection = (chType: string): string => {
+    if (!supportTier) return "";
+    const sc = resolveSupportStructure(chType, supportTier);
+    return (
+      `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT events/times)\n`
+      + sc.promptLines.map((l) => `- ${l}`).join("\n")
+      + "\n"
+    );
+  };
+
   // ── Determine challenge count per type ──
   // Target ~5 total challenges
   const totalTarget = 5;
@@ -653,7 +807,7 @@ export const generateTimeSequencer = async (
   const results = await Promise.all(
     allowedTypes
       .filter((t) => GENERATOR_MAP[t])
-      .map((t) => GENERATOR_MAP[t](topic, gradeLevel, challengesPerType)),
+      .map((t) => GENERATOR_MAP[t](topic, gradeLevel, challengesPerType, buildTierSection(t))),
   );
 
   // ── Combine results ──
@@ -694,6 +848,38 @@ export const generateTimeSequencer = async (
   if (!title) title = "Time & Sequencing";
   if (!description) description = "Learn about the order of daily events and time concepts!";
 
+  // ── Within-mode support tier: withdraw on-screen / instructional scaffolding
+  //    (never the events, times, or the answer). Applied PER CHALLENGE from each
+  //    challenge's OWN type, so a blended (auto-mode) session gets difficulty too —
+  //    the tier is a student property, not a single-mode one. Runs at the END,
+  //    after the fallback + trim, so a tier can only REMOVE help.
+  //
+  //    ANSWER-LEAK GUARD: prelabelFirstSlot seeds ONLY the first ordered event as a
+  //    "start here" anchor — never the full order. The component's checker reads
+  //    `correctOrder` independent of show* flags, so a withdrawn anchor cannot leak
+  //    or invalidate the answer. Structural labels (schedule rows) stay ON. ──
+  if (supportTier) {
+    for (const ch of allChallenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      // #1 perception: elapsed-time anchors. EXCLUDES match-time-of-day — there the
+      // clock time would reveal the period, which is the answer (answer-leak guard).
+      if (ch.type === "sequence-events" || ch.type === "before-after") {
+        ch.showTimeAnchors = sc.showTimeAnchors ?? false;
+      }
+      // #1 answer-leak-guarded: pre-seed only the FIRST ordered slot for sequencing.
+      if (ch.type === "sequence-events") {
+        ch.prelabelFirstSlot = sc.prelabelFirstSlot ?? false;
+      }
+      // #2 instruction-as-scaffold: name the strategy at easy/medium; withhold at hard.
+      // The strategy text only references on-screen time anchors when they're shown.
+      ch.showStrategyHint = sc.nameStrategy ?? false;
+      ch.strategyHint = sc.nameStrategy ? strategyFor(ch.type, sc.showTimeAnchors ?? false) : undefined;
+    }
+    console.log(
+      `[TimeSequencer] Support tier "${supportTier}" applied per-challenge across ${allChallenges.length} challenge(s) [${pinnedType ? `single-mode ${pinnedType}` : "blended"}].`,
+    );
+  }
+
   // Final log
   const typeBreakdown = allChallenges.map((c) => c.type).join(", ");
   console.log(
@@ -704,6 +890,7 @@ export const generateTimeSequencer = async (
     title,
     description,
     gradeBand,
+    ...(supportTier ? { supportTier } : {}),
     challenges: allChallenges,
   } as TimeSequencerData;
 };

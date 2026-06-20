@@ -28,6 +28,10 @@ export interface DotPlotChallenge {
   targetAnswer?: number;
   /** For compare_datasets: short expected-answer string (for tutor reference). */
   comparisonAnswer?: string;
+  /** Support-tier scaffolds (set in post-process when config.difficulty present). */
+  showStackCounts?: boolean;
+  showFrequencyTooltip?: boolean;
+  supportTier?: SupportTier;
 }
 
 export interface DotPlotData {
@@ -57,6 +61,13 @@ interface DotPlotConfig {
   stackStyle?: 'dots' | 'x' | 'icons';
   /** Target eval mode from the IRT calibration system. */
   targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes the
+   * dataset values, counts, or axis range (those are owned by the eval mode + scope).
+   */
+  difficulty?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,6 +101,66 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'compare_datasets' (compare two parallel plots)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — second axis of the two-field
+// contract: targetEvalMode = WHICH skill, difficulty = HOW MUCH on-screen
+// perception help within it. A tier withdraws the marks that offload SEEING the
+// data (per-stack count badges, the hover frequency readout) so a hard student
+// must read stack height unaided. It NEVER changes the dataPoints, the derived
+// answer, or the axis range (those are owned by the eval mode + scope). The
+// answer is always recomputed in code from dataPoints, independent of these
+// display levers, so withdrawing one can never break the checker or leak the
+// answer. See memory [[structural-difficulty-not-numeric]].
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Number badge atop each stack showing its count (perception aid #1). Easy
+   *  only — at hard the student reads stack HEIGHT instead. Display-only: the
+   *  answer is recomputed from dataPoints, so this can never leak it. */
+  showStackCounts: boolean;
+  /** Hover tooltip that reads out the count at a value (tracking aid #1).
+   *  Withdrawn at hard so the student can't probe each stack's exact count. */
+  showFrequencyTooltip: boolean;
+  /** Prompt lines describing the tier to the sub-generator (hint-tone only). */
+  promptLines: string[];
+}
+
+const TIER_GUARDRAIL =
+  'This tier changes ON-SCREEN HELP ONLY — it NEVER changes the dataset values, ' +
+  'the number of data points, the axis range, or the answer. Keep every value in ' +
+  'scope; only the amount of perception scaffolding differs.';
+
+/**
+ * easy → hard support gradient. dot-plot exposes ONE perception family (offload
+ * "seeing" the stack counts), so a single switch drives both levers per tier.
+ * The gradient is uniform across modes — every mode is "read or build a stacked
+ * plot", and the help withdrawn is always "do I have to count the dots myself?".
+ */
+function resolveSupportStructure(_mode: EvalMode, tier: SupportTier): SupportScaffold {
+  return {
+    showStackCounts: tier === 'easy',          // easy: a count badge tops each stack
+    showFrequencyTooltip: tier !== 'hard',     // easy/medium: hover reads the count; hard: read height by eye
+    promptLines: [
+      TIER_GUARDRAIL,
+      tier === 'easy'
+        ? 'EASY: a count badge sits atop every stack and hovering a value reads out its count, so the student can self-check the heights instantly. The hint may name the read strategy ("look for the tallest stack").'
+        : tier === 'medium'
+          ? 'MEDIUM: no count badges, but hovering still reads out a count — the student reads heights but can verify. The hint nudges the strategy without naming the answer.'
+          : 'HARD: no count badges and no hover readout — the student must read each stack\'s HEIGHT unaided. The hint asks what the student notices about the stacks; it never names a count or value.',
+    ],
+  };
+}
 
 // ===========================================================================
 // Shared helpers
@@ -161,6 +232,13 @@ function applyConfigOverrides(data: DotPlotData, config?: DotPlotConfig): DotPlo
   return data;
 }
 
+/** Build the `## WITHIN-MODE SUPPORT TIER` prompt block for a mode + tier. */
+function buildTierSection(mode: EvalMode, tier: SupportTier | null): string {
+  if (!tier) return '';
+  const lines = resolveSupportStructure(mode, tier).promptLines;
+  return `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT dataset/axis size)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
+}
+
 async function runGemini<T = unknown>(schema: Schema, prompt: string): Promise<T | null> {
   const result = await ai.models.generateContent({
     model: MODEL,
@@ -201,6 +279,7 @@ async function generateWholeNumberPlot(
   gradeLevel: string,
   config?: DotPlotConfig,
 ): Promise<DotPlotData> {
+  const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a WHOLE NUMBER dot plot activity for "${topic}" at grade ${gradeLevel}.
 
@@ -214,7 +293,7 @@ CONSTRAINTS:
 - Instruction names the dataset explicitly: "Plot these values: 2, 3, 3, 4, 5, 5, 5, 6".
 - Never reveal the answer as a single value — this is representation practice.
 - Hint guides: "Add one dot for every value — repeated values stack on top of each other."
-`;
+${buildTierSection('whole_number_plot', tier)}`;
 
   const parsed = await runGemini<{
     title: string;
@@ -280,6 +359,7 @@ async function generateMeasureAndPlot(
   gradeLevel: string,
   config?: DotPlotConfig,
 ): Promise<DotPlotData> {
+  const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a MEASURE AND PLOT dot plot activity for "${topic}" at grade ${gradeLevel}.
 
@@ -292,7 +372,7 @@ CONSTRAINTS:
 - Title must reference the measurement context ("Pencil Lengths", "Ribbon Lengths").
 - Instruction: "Measure each <object> with the ruler, then plot the length."
 - Hint: guide on ruler alignment.
-`;
+${buildTierSection('measure_and_plot', tier)}`;
 
   const parsed = await runGemini<{
     title: string;
@@ -377,6 +457,7 @@ async function generateReadFrequency(
   gradeLevel: string,
   config?: DotPlotConfig,
 ): Promise<DotPlotData> {
+  const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a READ FREQUENCY dot plot activity for "${topic}" at grade ${gradeLevel}.
 
@@ -389,7 +470,7 @@ CONSTRAINTS:
 - askMostFrequent: choose true or false — the question asks about MOST or LEAST frequent.
 - Instruction: "Which number appears MOST often on the plot?" or "Which value has the FEWEST dots?"
 - DO NOT state the answer. The student reads it from the plot.
-`;
+${buildTierSection('read_frequency', tier)}`;
 
   const parsed = await runGemini<{
     title: string;
@@ -463,6 +544,7 @@ async function generateFractionalUnits(
   gradeLevel: string,
   config?: DotPlotConfig,
 ): Promise<DotPlotData> {
+  const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a FRACTIONAL UNITS dot plot activity for "${topic}" at grade ${gradeLevel}.
 
@@ -476,7 +558,7 @@ CONSTRAINTS:
 - Instruction names the dataset clearly using fraction words:
   "Plot these lengths: 1 1/2, 2, 2 1/4, 2 1/2, 2 3/4, 3, 3 1/2, 4"
 - Hint guides on using the half/quarter-inch marks between whole numbers.
-`;
+${buildTierSection('fractional_units', tier)}`;
 
   const parsed = await runGemini<{
     title: string;
@@ -547,6 +629,7 @@ async function generateComputeStats(
   gradeLevel: string,
   config?: DotPlotConfig,
 ): Promise<DotPlotData> {
+  const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a COMPUTE STATS dot plot activity for "${topic}" at grade ${gradeLevel}.
 
@@ -563,7 +646,7 @@ CONSTRAINTS:
   - range: clearly-defined min and max
 - Instruction asks for that specific stat: "What is the MEDIAN of this data set?"
 - Never reveal the numeric answer.
-`;
+${buildTierSection('compute_stats', tier)}`;
 
   const parsed = await runGemini<{
     title: string;
@@ -696,6 +779,7 @@ async function generateCompareDatasets(
   gradeLevel: string,
   config?: DotPlotConfig,
 ): Promise<DotPlotData> {
+  const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a COMPARE DATASETS dot plot activity for "${topic}" at grade ${gradeLevel}.
 
@@ -712,7 +796,7 @@ CONSTRAINTS:
   - Max 25 characters. NO numbers. NO narration. NO brackets. NO data values.
 - Instruction is the comparison question: "Which class has the higher median?" or "Which dataset is more spread out?"
 - Never reveal which label wins — the student reads it from the plots.
-`;
+${buildTierSection('compare_datasets', tier)}`;
 
   const parsed = await runGemini<{
     title: string;
@@ -805,19 +889,38 @@ export const generateDotPlot = async (
 
   const mode = (evalConstraint?.allowedTypes[0] ?? 'whole_number_plot') as EvalMode;
 
+  let data: DotPlotData;
   switch (mode) {
     case 'measure_and_plot':
-      return generateMeasureAndPlot(topic, gradeLevel, config);
+      data = await generateMeasureAndPlot(topic, gradeLevel, config); break;
     case 'read_frequency':
-      return generateReadFrequency(topic, gradeLevel, config);
+      data = await generateReadFrequency(topic, gradeLevel, config); break;
     case 'fractional_units':
-      return generateFractionalUnits(topic, gradeLevel, config);
+      data = await generateFractionalUnits(topic, gradeLevel, config); break;
     case 'compute_stats':
-      return generateComputeStats(topic, gradeLevel, config);
+      data = await generateComputeStats(topic, gradeLevel, config); break;
     case 'compare_datasets':
-      return generateCompareDatasets(topic, gradeLevel, config);
+      data = await generateCompareDatasets(topic, gradeLevel, config); break;
     case 'whole_number_plot':
     default:
-      return generateWholeNumberPlot(topic, gradeLevel, config);
+      data = await generateWholeNumberPlot(topic, gradeLevel, config); break;
   }
+
+  // Apply the support tier deterministically AFTER assembly. Resolve each
+  // challenge's scaffold from its OWN mode (so a future blended session still
+  // gets difficulty); single-mode just gives every challenge the same one. Code
+  // owns the support STRUCTURE; the LLM only chose the numbers (unchanged). These
+  // are display-only levers — the derived answer reads dataPoints, never these.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  if (supportTier && data.challenges) {
+    for (const ch of data.challenges) {
+      const sc = resolveSupportStructure(ch.evalMode, supportTier);
+      ch.showStackCounts = sc.showStackCounts;
+      ch.showFrequencyTooltip = sc.showFrequencyTooltip;
+      ch.supportTier = supportTier;
+    }
+    console.log(`[DotPlot] Support tier "${supportTier}" applied per-challenge (${mode})`);
+  }
+
+  return data;
 };

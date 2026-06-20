@@ -45,9 +45,41 @@ export interface TwoWayTableChallenge {
    * Whether to render marginal totals (row sums, column sums, grand total).
    * Mode-specific gating: hidden for marginal_distribution and conditional_probability
    * to prevent answer leak — student must compute totals.
+   *
+   * NOTE: this is the legacy single-switch. The component now reads the
+   * fine-grained show* flags below (set from showTotals when no support tier is
+   * present, or independently by the tier). showTotals is kept as the default
+   * source and for backward compatibility.
    */
   showTotals: boolean;
   hint: string;
+
+  // ── Support-tier scaffolds (set by the generator when config.difficulty present) ──
+  /** Student's within-mode support tier ('easy'|'medium'|'hard'). */
+  supportTier?: SupportTier;
+  /** Render the per-row total column on the right edge. */
+  showRowTotals?: boolean;
+  /** Render the per-column total row along the bottom. */
+  showColTotals?: boolean;
+  /** Render the grand-total corner cell. */
+  showGrandTotal?: boolean;
+  /**
+   * Easy-tier "sum reminder" — a worked anchor line shown under the table
+   * (e.g. "Tip: the Male row adds to 28 + 12"). NEVER states a total that IS
+   * the asked answer's numerator/denominator (see answerTotal guard below).
+   */
+  sumReminder?: string;
+
+  // ── Answer-decouple guard (NOT rendered; read only by resolveSupportStructure) ──
+  // Identifies the ONE margin total that equals the asked answer's key quantity
+  // for this challenge, so the tier can show every OTHER total as a scaffold while
+  // NEVER revealing this one — the two-way-table analogue of bar-model's
+  // answerBarIndex. 'none' = no single margin total is the answer (joint mode:
+  // the answer is a probability and the numerator cell is already visible).
+  /** Which margin total is answer-bearing and must stay hidden at every tier. */
+  answerTotalAxis?: 'row' | 'col' | 'both' | 'none';
+  /** Index of the answer-bearing row/col total (when axis is 'row' or 'col'). */
+  answerTotalIndex?: number;
 }
 
 export interface TwoWayTableData {
@@ -105,6 +137,108 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'independence_test' (expected joint under independence)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — second axis of the two-field
+// contract: targetEvalMode = WHICH probability concept, difficulty = HOW MUCH
+// of the table is pre-summed for the student. A tier withdraws *display* totals
+// (row sums, column sums, grand total) + a worked "sum reminder"; it NEVER
+// changes the SCENARIO_POOL counts or the asked answer (that's the eval-mode
+// axis). See memory [[structural-difficulty-not-numeric]] /
+// [[feedback_support-tiers-natural-levers]].
+//
+// CRITICAL leak guard: in a two-way table the asked answer is OFTEN a margin
+// total (marginal = a row/col total; conditional = the conditioning marginal;
+// independence = both factors). So a tier that "shows totals" must NEVER show
+// the total that equals the asked answer's numerator/denominator — it shows the
+// OTHER totals only. Each builder stamps answerTotalAxis/answerTotalIndex so
+// resolveSupportStructure can suppress exactly that one total at every tier
+// (the two-way-table analogue of bar-model's decoupled answerBarIndex).
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; mode-default showTotals stands). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  showRowTotals: boolean;
+  showColTotals: boolean;
+  showGrandTotal: boolean;
+  /** Whether to emit the easy-tier worked "sum reminder" anchor line. */
+  emitSumReminder: boolean;
+  /** Prompt lines describing the tier to the wrapper LLM (tone only). */
+  promptLines: string[];
+}
+
+const TIER_GUARDRAIL =
+  'This tier ONLY changes how many margin totals are pre-summed on screen — it ' +
+  'NEVER changes the scenario, the cell counts, or the asked answer. Never make ' +
+  'the numbers bigger; the difficulty is how much of the table the student must ' +
+  'add up themselves.';
+
+/**
+ * easy → hard support gradient. `mode` is the eval mode; `answerAxis`/`answerIdx`
+ * come from the built challenge so we can suppress the answer-bearing total.
+ *
+ * Tier intent (across modes):
+ *   easy   — show every total that is NOT answer-bearing + a worked sum reminder.
+ *   medium — show only the grand total (a shared anchor that's never the answer
+ *            in any mode), no per-row/col sums, no reminder.
+ *   hard   — hide ALL totals; the student computes every sum they need.
+ */
+function resolveSupportStructure(
+  tier: SupportTier,
+  answerAxis: 'row' | 'col' | 'both' | 'none' | undefined,
+): SupportScaffold {
+  // The grand total is never the asked answer in ANY mode (answers are
+  // probabilities or expected-joint products), so it's always a safe anchor.
+  // Row/col totals are safe ONLY on the axis that isn't answer-bearing.
+  const rowIsAnswer = answerAxis === 'row' || answerAxis === 'both';
+  const colIsAnswer = answerAxis === 'col' || answerAxis === 'both';
+
+  if (tier === 'easy') {
+    return {
+      // Show each axis's totals UNLESS that axis carries the answer.
+      showRowTotals: !rowIsAnswer,
+      showColTotals: !colIsAnswer,
+      showGrandTotal: true,
+      emitSumReminder: true,
+      promptLines: [
+        TIER_GUARDRAIL,
+        'EASY: the table pre-sums every total that is NOT the asked answer, plus a worked "sum reminder" anchor, so the student focuses on the final division.',
+      ],
+    };
+  }
+  if (tier === 'medium') {
+    return {
+      showRowTotals: false,
+      showColTotals: false,
+      showGrandTotal: true, // grand total is never the answer → safe shared anchor
+      emitSumReminder: false,
+      promptLines: [
+        TIER_GUARDRAIL,
+        'MEDIUM: only the grand total is shown; the student adds up the specific row or column they need on their own.',
+      ],
+    };
+  }
+  // hard
+  return {
+    showRowTotals: false,
+    showColTotals: false,
+    showGrandTotal: false,
+    emitSumReminder: false,
+    promptLines: [
+      TIER_GUARDRAIL,
+      'HARD: NO totals are shown — the student computes every sum (row, column, and grand total) needed before dividing.',
+    ],
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Scenario pool — pre-authored real-world contingency tables
@@ -253,6 +387,8 @@ function buildJointChallenge(template: ScenarioTemplate, idx: number): TwoWayTab
     expectedProbability: expected,
     tolerance: 0.02,
     showTotals: true,
+    // Answer = cell / grand total → no single margin total IS the answer.
+    answerTotalAxis: 'none',
     hint: `Find the cell where ${template.rowCategories[r]} and ${template.columnCategories[c]} meet (${joint}). Divide by the grand total (${total}).`,
   };
 }
@@ -277,6 +413,9 @@ function buildMarginalChallenge(template: ScenarioTemplate, idx: number): TwoWay
       expectedProbability: round(marginal / total, 4),
       tolerance: 0.02,
       showTotals: false,
+      // Answer numerator IS this row's total → never reveal it, even at easy.
+      answerTotalAxis: 'row',
+      answerTotalIndex: r,
       hint: `Add the counts in the "${template.rowCategories[r]}" row (gives ${marginal}). Divide by the grand total (sum of all cells = ${total}).`,
     };
   }
@@ -294,6 +433,9 @@ function buildMarginalChallenge(template: ScenarioTemplate, idx: number): TwoWay
     expectedProbability: round(marginal / total, 4),
     tolerance: 0.02,
     showTotals: false,
+    // Answer numerator IS this column's total → never reveal it, even at easy.
+    answerTotalAxis: 'col',
+    answerTotalIndex: c,
     hint: `Add the counts in the "${template.columnCategories[c]}" column (gives ${marginal}). Divide by the grand total (sum of all cells = ${total}).`,
   };
 }
@@ -319,6 +461,9 @@ function buildConditionalChallenge(template: ScenarioTemplate, idx: number): Two
       expectedProbability: expected,
       tolerance: 0.02,
       showTotals: false,
+      // Answer denominator IS this row's total (the conditioning marginal) → hide it.
+      answerTotalAxis: 'row',
+      answerTotalIndex: r,
       hint: `Only look at the "${template.rowCategories[r]}" row. The cell ${template.columnCategories[c]} in that row is ${joint}. The row total is ${condTotal}. Divide: ${joint} ÷ ${condTotal}.`,
     };
   }
@@ -337,6 +482,9 @@ function buildConditionalChallenge(template: ScenarioTemplate, idx: number): Two
     expectedProbability: expected,
     tolerance: 0.02,
     showTotals: false,
+    // Answer denominator IS this column's total (the conditioning marginal) → hide it.
+    answerTotalAxis: 'col',
+    answerTotalIndex: c,
     hint: `Only look at the "${template.columnCategories[c]}" column. The cell ${template.rowCategories[r]} in that column is ${joint}. The column total is ${condTotal}. Divide: ${joint} ÷ ${condTotal}.`,
   };
 }
@@ -363,8 +511,72 @@ function buildIndependenceChallenge(template: ScenarioTemplate, idx: number): Tw
     expectedProbability: expected,
     tolerance: 0.02,
     showTotals: true,
+    // Both factors are margin totals (row total → P(A), col total → P(B)) → the
+    // pair IS the answer's inputs. Showing both at easy would hand over the whole
+    // computation, so the tier suppresses BOTH per-row and per-col totals (only
+    // the grand total stays as a safe anchor).
+    answerTotalAxis: 'both',
     hint: `P(${template.rowCategories[r]}) = ${rowSum}/${total} = ${round(pA, 2)}. P(${template.columnCategories[c]}) = ${colSum}/${total} = ${round(pB, 2)}. Multiply.`,
   };
+}
+
+/**
+ * Build the easy-tier worked "sum reminder" — a single demonstrated total that
+ * is GUARANTEED not to be the asked answer (picks a safe row/col on the
+ * non-answer axis). Returns undefined if no safe total exists (independence: the
+ * grand total is the only safe anchor and it's already shown, so no reminder).
+ */
+function buildSumReminder(ch: TwoWayTableChallenge): string | undefined {
+  const f = ch.frequencies;
+  const axis = ch.answerTotalAxis ?? 'none';
+  // Pick a SAFE row whose total isn't the answer (row 0 unless it's the answer row).
+  const safeRow = axis === 'row'
+    ? f.findIndex((_, i) => i !== ch.answerTotalIndex)
+    : 0;
+  // Pick a SAFE column whose total isn't the answer.
+  const colCount = ch.columnCategories.length;
+  let safeCol = 0;
+  if (axis === 'col') {
+    for (let i = 0; i < colCount; i++) { if (i !== ch.answerTotalIndex) { safeCol = i; break; } }
+  }
+
+  if (axis === 'both') {
+    // Independence: never demonstrate a row OR col factor. Anchor on the grand total.
+    const total = grandTotal(f);
+    return `Tip: the grand total (everyone counted) is ${total}.`;
+  }
+  if (axis === 'row' && safeRow >= 0) {
+    const sum = rowTotal(f, safeRow);
+    const parts = f[safeRow].join(' + ');
+    return `Tip: the "${ch.rowCategories[safeRow]}" row adds to ${parts} = ${sum}.`;
+  }
+  if (axis === 'col') {
+    const sum = colTotal(f, safeCol);
+    const parts = f.map((row) => row[safeCol] ?? 0).join(' + ');
+    return `Tip: the "${ch.columnCategories[safeCol]}" column adds to ${parts} = ${sum}.`;
+  }
+  // axis === 'none' (joint): demonstrate a row sum as a worked anchor.
+  const sum = rowTotal(f, safeRow);
+  const parts = f[safeRow].join(' + ');
+  return `Tip: the "${ch.rowCategories[safeRow]}" row adds to ${parts} = ${sum}.`;
+}
+
+/**
+ * Apply a support tier to one challenge IN PLACE — sets the fine-grained show*
+ * flags, the sum reminder, and supportTier. Gated only on a tier being present;
+ * resolves from the challenge's OWN answerTotalAxis so the answer-bearing total
+ * is never revealed at any tier (the decoupled-answer guard). Code owns the
+ * scaffold STRUCTURE; the pool already owns the counts (unchanged).
+ */
+function applySupportTier(ch: TwoWayTableChallenge, tier: SupportTier): void {
+  const sc = resolveSupportStructure(tier, ch.answerTotalAxis);
+  ch.supportTier = tier;
+  ch.showRowTotals = sc.showRowTotals;
+  ch.showColTotals = sc.showColTotals;
+  ch.showGrandTotal = sc.showGrandTotal;
+  // Keep the legacy single switch coherent: any total visible ⇒ showTotals true.
+  ch.showTotals = sc.showRowTotals || sc.showColTotals || sc.showGrandTotal;
+  ch.sumReminder = sc.emitSumReminder ? buildSumReminder(ch) : undefined;
 }
 
 function buildChallengeOfType(
@@ -383,6 +595,9 @@ function buildChallengeOfType(
 interface SelectTwoWayTableChallengesOptions {
   count?: number;
   gradeBand?: '7-8' | 'statistics';
+  /** Within-mode support tier from config.difficulty. Withdraws display totals
+   *  per challenge; NEVER changes the SCENARIO_POOL counts or the asked answer. */
+  supportTier?: SupportTier | null;
 }
 
 export function selectTwoWayTableChallenges(
@@ -407,6 +622,20 @@ export function selectTwoWayTableChallenges(
   for (let i = 0; i < target; i++) {
     out.push(buildChallengeOfType(pickType(i), pickScenario(i), i));
   }
+
+  // Apply the support tier deterministically AFTER each challenge is built, so it
+  // can read the per-challenge answerTotalAxis and never reveal the answer total.
+  // Gated ONLY on a tier being present (not on the mode), so a future blended
+  // session still gets difficulty; single-mode just gives every challenge the
+  // same tier resolved from its own answer axis.
+  if (options.supportTier) {
+    for (const ch of out) applySupportTier(ch, options.supportTier);
+    console.log(
+      `[TwoWayTable] Support tier "${options.supportTier}" applied per-challenge `
+      + `(${allowed.length === 1 ? `single-mode ${allowed[0]}` : 'blended'})`,
+    );
+  }
+
   return out;
 }
 
@@ -459,12 +688,33 @@ export const generateTwoWayTable = async (
   config?: {
     instanceCount?: number;
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which concept,
+     * difficulty = how many margin totals are pre-summed on screen. NEVER changes
+     * the scenario counts or the asked answer.
+     */
+    difficulty?: string;
   }
 ): Promise<TwoWayTableData> => {
   console.log('[TwoWayTable Gen] Starting generation:', { topic, gradeLevel, config });
 
   const evalConstraint = resolveEvalModeConstraint('two-way-table', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('TwoWayTable', config?.targetEvalMode, evalConstraint);
+
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is ONLY for the prompt tone (which concept to describe to the LLM);
+  // application is driven per-challenge in the selector, gated on supportTier.
+  const pinnedType =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as TwoWayTableChallengeType)
+      : undefined;
+  const tierScaffold = supportTier
+    ? resolveSupportStructure(supportTier, undefined)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   const activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(wrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
@@ -484,7 +734,7 @@ CONTEXT:
 - Your job is ONLY to write the session-level title, description, and choose the challenge type.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific scenario — the session walks through several.
 2. Provide a 1-2 sentence educational description of what students will practice.
@@ -540,10 +790,11 @@ Return ONLY the wrapper fields described above.
   const challenges = selectTwoWayTableChallenges(allowedChallengeTypes, {
     count: config?.instanceCount,
     gradeBand,
+    supportTier,
   });
 
   console.log(
-    `[TwoWayTable Gen] Final: allowedTypes=[${allowedChallengeTypes.join(',')}], instances=${challenges.length}, gradeBand=${gradeBand}`
+    `[TwoWayTable Gen] Final: allowedTypes=[${allowedChallengeTypes.join(',')}], instances=${challenges.length}, gradeBand=${gradeBand}, supportTier=${supportTier ?? 'none'}${pinnedType ? `, pinned=${pinnedType}` : ''}`
   );
 
   return {

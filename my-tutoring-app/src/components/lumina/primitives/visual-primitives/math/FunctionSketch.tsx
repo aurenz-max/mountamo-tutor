@@ -101,6 +101,16 @@ export interface FunctionSketchChallenge {
   question?: string;
   correctCurve?: 'A' | 'B';
   compareExplanation?: string;
+
+  // ── Support tier (set by the generator from config.difficulty) ──
+  // identify-features perception aids — withdrawn at harder tiers.
+  // `showFeatureHints` false → no target rings on the curve (only confirmed
+  // hits light up). `showFeatureLabels` false → no feature names (canvas + legend).
+  // Both default to true (back-compat: a no-tier session keeps full scaffolds).
+  showFeatureHints?: boolean;
+  showFeatureLabels?: boolean;
+  // The resolved tier for this challenge — calibrates the AI tutor's reveal level.
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface FunctionSketchData {
@@ -141,6 +151,25 @@ function renderLatex(latex: string): string {
   }
 }
 
+/**
+ * Reveal-level clause appended to the AI tutor's hint prompt so it never leaks
+ * what the support tier withheld on screen. easy → may name the strategy and
+ * the feature types; medium → nudge the next step without naming the answer;
+ * hard → do NOT name features/family, ask what the student observes.
+ */
+function tutorRevealClause(tier?: string, type?: string): string {
+  if (!tier) return '';
+  if (tier === 'hard') {
+    return type === 'identify-features'
+      ? ' [TIER hard] Do NOT name the features or their locations; ask what the student notices about the curve\'s direction and where it crosses or turns.'
+      : ' [TIER hard] Do NOT name the function family or reveal the answer; ask what the student observes about the shape.';
+  }
+  if (tier === 'medium') {
+    return ' [TIER medium] Nudge toward the next step without naming the answer outright.';
+  }
+  return ' [TIER easy] You may name the strategy and the feature types to look for; keep it brief and encouraging.';
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -176,7 +205,9 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
   const { sendText } = useLuminaAI({
     primitiveType: 'function-sketch',
     instanceId: resolvedInstanceId,
-    primitiveData: { title, context, challengeCount: challenges.length },
+    // supportTier is session-uniform (difficulty is a student property), so the
+    // first challenge's tier represents the session for the tutor's framing.
+    primitiveData: { title, context, challengeCount: challenges.length, supportTier: challenges[0]?.supportTier },
     gradeLevel: '9-12',
   });
 
@@ -259,9 +290,13 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
     if (type === 'identify-features') {
       if (challenge.referenceCurve) drawCurve(ctx, challenge.referenceCurve, cfg, '#3b82f6');
       if (challenge.features) {
-        const markers = challenge.features.map((f, i) => ({
-          ...f, hit: hitFeatures.has(i),
-        }));
+        const hintsOn = challenge.showFeatureHints !== false;   // tier: hard hides target rings
+        const labelsOn = challenge.showFeatureLabels !== false; // tier: medium+ hides names
+        const markers = challenge.features
+          .map((f, i) => ({ ...f, label: labelsOn ? f.label : '', hit: hitFeatures.has(i) }))
+          // When hints are withdrawn, still confirm the student's OWN hits, but
+          // never draw a ring on an un-found feature (no give-away at hard).
+          .filter((m) => hintsOn || m.hit);
         drawFeatureMarkers(ctx, markers, cfg);
       }
     }
@@ -424,7 +459,7 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
     sendText(
       correct
         ? `[ANSWER_CORRECT] Challenge ${currentIndex + 1}/${challenges.length}: ${type}. Score: ${score}%. Congratulate briefly.`
-        : `[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: ${type}. Score: ${score}%. Give a hint.`,
+        : `[ANSWER_INCORRECT] Challenge ${currentIndex + 1}/${challenges.length}: ${type}. Score: ${score}%. Give a hint.${tutorRevealClause(challenge.supportTier, type)}`,
       { silent: true },
     );
 
@@ -643,7 +678,8 @@ const FunctionSketch: React.FC<{ data: FunctionSketchData }> = ({ data }) => {
                     accent={hitFeatures.has(i) ? 'emerald' : undefined}
                     className="text-xs"
                   >
-                    {hitFeatures.has(i) ? '✓' : '○'} {f.label}
+                    {hitFeatures.has(i) ? '✓' : '○'}{' '}
+                    {challenge.showFeatureLabels !== false ? f.label : `Feature ${i + 1}`}
                   </LuminaBadge>
                 ))}
               </div>

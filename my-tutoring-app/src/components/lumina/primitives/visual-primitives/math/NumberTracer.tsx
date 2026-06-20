@@ -65,6 +65,17 @@ export interface NumberTracerChallenge {
   // sequence mode
   sequenceNumbers?: number[]; // e.g. [3, 4, 5]
   missingIndex?: number; // which position to write
+
+  // ── Within-mode support tier (config.difficulty) ──
+  // These gate which TRACING GUIDES are painted on the canvas. They are set by the
+  // generator only when a support tier is active; when absent the canvas falls back
+  // to the original behaviour (derived from showArrows / showModel), so a no-tier
+  // generation is byte-identical to before. They NEVER affect what is scored — the
+  // stroke-geometry + Gemini Vision evaluation is independent of these flags.
+  showGhostDigit?: boolean;   // the dotted ghost numeral to trace over
+  showStrokeArrows?: boolean; // directional stroke-order arrows
+  showStartDot?: boolean;     // the green "start here" dot
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface NumberTracerData {
@@ -479,12 +490,35 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     instruction: currentChallenge?.instruction ?? '',
     showModel: currentChallenge?.showModel ?? true,
     showArrows: currentChallenge?.showArrows ?? true,
+    supportTier: currentChallenge?.supportTier,
     attemptNumber: currentAttempts + 1,
     gradeBand,
     totalChallenges: challenges.length,
     currentChallengeIndex,
     lastScore,
   }), [currentChallenge, currentAttempts, gradeBand, challenges.length, currentChallengeIndex, lastScore]);
+
+  // Tier-aware reveal policy: at HARD the tracing scaffolds are withdrawn on the
+  // canvas, so the tutor must not narrate the strokes or trace the digit for the
+  // student — it encourages recall of the digit's shape instead. At easy/medium it
+  // may walk the stroke order. Never reveals a sequence-mode answer at any tier.
+  const tutorRevealClause = useCallback((ch: NumberTracerChallenge | null): string => {
+    if (!ch) return '';
+    if (ch.supportTier === 'hard') {
+      return ' [SUPPORT_TIER hard] The on-screen tracing guides are withdrawn — do NOT narrate the '
+        + 'individual strokes or trace the digit for the student; encourage them from memory of the '
+        + `digit's shape (e.g. "picture how a ${ch.digit} looks, then write it"). Never reveal the answer.`;
+    }
+    if (ch.supportTier === 'medium') {
+      return ' [SUPPORT_TIER medium] A faint guide and start dot remain but the stroke arrows are gone — '
+        + 'nudge the stroke direction only; do not over-narrate every stroke.';
+    }
+    if (ch.supportTier === 'easy') {
+      return ' [SUPPORT_TIER easy] Full tracing guides are on — you may name the stroke order and walk '
+        + 'the student along the dotted path and start dot.';
+    }
+    return '';
+  }, []);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'number-tracer',
@@ -629,13 +663,29 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Draw guide paths (trace and copy modes)
-    if (currentChallenge.type === 'trace' || (currentChallenge.type === 'copy' && currentChallenge.showModel)) {
+    // ── Resolve which tracing guides to paint ──
+    // When the support-tier fields are present (a tier is active) they drive the
+    // guides directly; when absent we fall back to the original behaviour derived
+    // from showArrows / showModel, so a no-tier challenge renders identically.
+    // The tier ONLY withdraws guides — write mode never gains one, copy's separate
+    // model panel is unaffected (it's rendered in JSX, not on the canvas).
+    const tierActive = currentChallenge.supportTier != null;
+    const baseGhost = currentChallenge.type === 'trace'
+      || (currentChallenge.type === 'copy' && currentChallenge.showModel);
+    const baseArrows = currentChallenge.showArrows && currentChallenge.type === 'trace';
+    const paintGhost = tierActive ? !!currentChallenge.showGhostDigit : baseGhost;
+    const paintArrows = tierActive ? !!currentChallenge.showStrokeArrows : baseArrows;
+    const paintStartDot = tierActive ? !!currentChallenge.showStartDot : baseArrows;
+    // Faint the ghost at non-easy tiers so withdrawal feels graduated.
+    const ghostFaint = tierActive && currentChallenge.supportTier !== 'easy';
+
+    // Draw guide paths (ghost numeral the student traces over)
+    if (paintGhost) {
       for (const path of idealPaths) {
         if (path.length < 2) continue;
         // Dotted guide
         ctx.strokeStyle = currentChallenge.type === 'trace'
-          ? 'rgba(59, 130, 246, 0.4)'
+          ? (ghostFaint ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.4)')
           : 'rgba(148, 163, 184, 0.2)';
         ctx.lineWidth = currentChallenge.type === 'trace' ? 12 : 8;
         ctx.setLineDash([4, 8]);
@@ -649,14 +699,16 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Direction arrows (trace mode only)
-        if (currentChallenge.showArrows && currentChallenge.type === 'trace') {
-          // Start dot
+        // Start dot (withdrawable scaffold)
+        if (paintStartDot) {
           ctx.fillStyle = 'rgba(34, 197, 94, 0.8)';
           ctx.beginPath();
           ctx.arc(path[0].x, path[0].y, 8, 0, Math.PI * 2);
           ctx.fill();
+        }
 
+        // Direction arrows (withdrawable scaffold)
+        if (paintArrows) {
           // Arrow indicators at intervals
           for (let i = 2; i < path.length - 1; i += 3) {
             const dx = path[i + 1].x - path[i].x;
@@ -808,14 +860,15 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
         sendText(
           `[ANSWER_INCORRECT] Student wrote digit ${currentChallenge.digit} (${currentChallenge.type}). `
           + `Geo: ${geoScore}%, Gemini: ${geminiResult?.score ?? 'n/a'}% (${geminiResult?.variant ?? ''}). `
-          + `Final: ${finalScore}%. Attempt ${currentAttempts + 1}. Give a hint.`,
+          + `Final: ${finalScore}%. Attempt ${currentAttempts + 1}. Give a hint.`
+          + tutorRevealClause(currentChallenge),
           { silent: true },
         );
       }
     } finally {
       setIsEvaluating(false);
     }
-  }, [currentChallenge, allStrokes, idealPaths, currentAttempts, isEvaluating, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, allStrokes, idealPaths, currentAttempts, isEvaluating, incrementAttempts, recordResult, sendText, tutorRevealClause]);
 
   const handleClear = useCallback(() => {
     setAllStrokes([]);
@@ -869,12 +922,13 @@ const NumberTracer: React.FC<NumberTracerProps> = ({ data, className }) => {
     sendText(
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
       + `Type: ${challenges[currentChallengeIndex + 1]?.type}, digit: ${challenges[currentChallengeIndex + 1]?.digit}. `
-      + `Instruction: "${challenges[currentChallengeIndex + 1]?.instruction}". Introduce briefly.`,
+      + `Instruction: "${challenges[currentChallengeIndex + 1]?.instruction}". Introduce briefly.`
+      + tutorRevealClause(challenges[currentChallengeIndex + 1] ?? null),
       { silent: true },
     );
   }, [
     advanceProgress, challengeResults, challenges, currentChallengeIndex,
-    hasSubmittedEvaluation, phaseResults, sendText, submitEvaluation,
+    hasSubmittedEvaluation, phaseResults, sendText, submitEvaluation, tutorRevealClause,
   ]);
 
   // ── Render ──────────────────────────────────────────────────────────

@@ -44,6 +44,24 @@ export interface SystemsEquationsChallenge {
   expectedY: number;
   instruction: string;
   hint: string;
+
+  // ── Within-mode support-tier scaffolds (set ONLY when a tier is present). ──
+  // Display-only: the checker always compares to expectedX/expectedY, never to
+  // any of these flags. A tier withdraws solving help; it NEVER changes the
+  // coefficients, the system, or the answer.
+  /**
+   * Show a FUZZY translucent region around the lines' crossing (a "look here"
+   * self-check cue). NEVER the exact point and NEVER its coordinates — the
+   * intersection IS the (x, y) answer on every mode here, so the precise marker
+   * stays withdrawn at every tier. Easy only.
+   */
+  showIntersectionRegion?: boolean;
+  /** Show numbered axis tick labels (perception aid). Withdrawn at hard. */
+  showAxisLabels?: boolean;
+  /** Show the method/inverse-op step hint open by default (vs. on-demand only). */
+  showStepHint?: boolean;
+  /** Coordinate-free method hint (set with the tier). Auto-shown at easy; never the answer. */
+  stepHint?: string;
 }
 
 export interface SystemsEquationsVisualizerData {
@@ -55,6 +73,12 @@ export interface SystemsEquationsVisualizerData {
   showGrid?: boolean;
   showAxes?: boolean;
   gradeBand?: '7-8' | 'algebra-1' | 'algebra-2';
+  /**
+   * Within-mode support tier ('easy' | 'medium' | 'hard'), present only when the
+   * manifest emitted one. Tells the live tutor how much solving help to reveal.
+   * NEVER changes the system or the answer.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
   /** 3-6 challenges per session. Required. Built in-generator from the pool service. */
   challenges: SystemsEquationsChallenge[];
 }
@@ -86,6 +110,90 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'elimination' (solve via add / scale; equations in a·x + b·y = c form)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode support tier — fixed harness.
+// targetEvalMode = WHICH method (task identity); difficulty = HOW MUCH solving
+// help within it. The tier withdraws scaffolding ONLY; coefficient pools stay
+// mode-bound and the (x, y) answer never changes.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Support-tier scaffold — which solving helps are withdrawn (per pinned mode).
+// ANSWER-LEAK GUARD: the lines' intersection IS the asked (x, y) answer on every
+// mode here, so the EXACT intersection marker / its coordinates are NEVER shown
+// at any tier (pre-answer). Easy gets only a FUZZY region cue (no coordinates),
+// step hints, and axis labels; hard withdraws all three. The checker reads
+// expectedX/expectedY directly and is independent of every flag below.
+// ---------------------------------------------------------------------------
+
+interface SupportScaffold {
+  /** Easy-only fuzzy crossing-region cue (NEVER the exact point or coordinates). */
+  showIntersectionRegion: boolean;
+  /** Numbered axis tick labels (perception aid). */
+  showAxisLabels: boolean;
+  /** Open the (coordinate-free) method / inverse-op step hint by default. */
+  showStepHint: boolean;
+  promptLines: string[];
+}
+
+/** Method-only step hint — describes the SOLVING STEPS, never the (x, y) answer.
+ *  Safe to auto-open at the easy tier (the on-demand `hint` keeps the numbers). */
+function stepHintFor(type: SystemsEquationsChallengeType): string {
+  switch (type) {
+    case 'graph':
+      return 'Trace each line carefully. The solution is the single point that lies on BOTH lines — read its x first, then its y.';
+    case 'substitution':
+      return 'Both equations are solved for y, so set the two right-hand sides equal. Use inverse operations to isolate x, then substitute x back into either equation to find y.';
+    case 'elimination':
+      return 'Scale one (or both) equations so a variable\'s coefficients become opposites, add the equations to cancel that variable, solve for what remains, then back-substitute.';
+  }
+}
+
+function resolveSupportStructure(
+  pinnedType: SystemsEquationsChallengeType,
+  tier: SupportTier,
+): SupportScaffold {
+  const lead =
+    'This tier changes only how much solving help the student gets on screen. It NEVER '
+    + 'changes the equations, the coefficients, or the (x, y) answer. The exact intersection '
+    + 'point is the answer, so it is NEVER marked or its coordinates shown before the student solves.';
+
+  // Easy = self-check workspace (region cue + step hints + axis labels).
+  // Medium = lines + gridlines + axis labels, no region cue, no auto hint.
+  // Hard = bare graph / equations, student works unaided.
+  const showIntersectionRegion = tier === 'easy';
+  const showAxisLabels = tier !== 'hard';
+  const showStepHint = tier === 'easy';
+
+  const methodWord =
+    pinnedType === 'graph' ? 'reading the crossing point off the graph'
+    : pinnedType === 'substitution' ? 'setting the two y-expressions equal and using inverse operations'
+    : 'scaling/adding the equations to eliminate a variable';
+
+  return {
+    showIntersectionRegion,
+    showAxisLabels,
+    showStepHint,
+    promptLines: [
+      lead,
+      `A FUZZY region near where the lines cross is ${showIntersectionRegion ? 'highlighted as a "look here" self-check cue (no exact point, no coordinates)' : 'withdrawn — no crossing cue at all'}.`,
+      `Axis tick labels are ${showAxisLabels ? 'shown' : 'withdrawn — the student reads the bare grid'}.`,
+      `A ${methodWord} step hint is ${showStepHint ? 'open by default to guide the method' : 'available only on demand (or withdrawn at hard)'}.`,
+      'Keep the title and description neutral — never state the support level, the method steps, or any solution.',
+    ],
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Pool service (deterministic, per-challenge values built locally)
@@ -467,6 +575,12 @@ export const generateSystemsEquations = async (
     /** Optional axis range overrides. */
     xRange?: [number, number];
     yRange?: [number, number];
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which method,
+     * difficulty = how much on-screen solving help within it. NEVER changes numbers.
+     */
+    difficulty?: string;
   }
 ): Promise<SystemsEquationsVisualizerData> => {
   const evalConstraint = resolveEvalModeConstraint(
@@ -484,6 +598,22 @@ export const generateSystemsEquations = async (
 
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Within-mode support tier (config.difficulty): solving-help level, NOT numbers.
+  //    pinnedType is ONLY for the prompt tone (a curated blend has no single mode to
+  //    describe). The withdrawal happens deterministically per-challenge after the
+  //    pool is built. ──
+  const pinnedType: SystemsEquationsChallengeType | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as SystemsEquationsChallengeType)
+      : undefined;
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const prompt = `
 Create the wrapper metadata for a multi-challenge systems-of-equations session on "${topic}" for ${gradeLevel} students.
 
@@ -493,7 +623,7 @@ CONTEXT:
 - Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific equation or solution — the session walks through several systems.
 2. Provide a 1-2 sentence educational description of what students will practice across the session.
@@ -532,6 +662,26 @@ Return ONLY the wrapper fields described above.
 
   const challenges = selectSystemsEquationsChallenges(challengeType, config?.instanceCount, xRange, yRange);
 
+  // ── Within-mode support tier: withdraw on-screen solving help (never the numbers).
+  //    Applied PER CHALLENGE from each challenge's OWN type, so a blended (auto-mode)
+  //    session gets difficulty too — the tier is a student property, not a single-mode
+  //    one. Display-only: the submit-time checker compares to expectedX/expectedY,
+  //    independent of every flag set here, and the exact intersection point is never
+  //    revealed pre-answer (the region cue carries no coordinates). ──
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.showIntersectionRegion = sc.showIntersectionRegion;
+      ch.showAxisLabels = sc.showAxisLabels;
+      ch.showStepHint = sc.showStepHint;
+      ch.stepHint = stepHintFor(ch.type);
+    }
+    console.log(
+      `[SystemsEquations] Support tier "${supportTier}" applied per-challenge across ${challenges.length} challenge(s) `
+      + `[${pinnedType ? `single-mode ${pinnedType}` : 'blended'}].`,
+    );
+  }
+
   const data: SystemsEquationsVisualizerData = {
     title: wrapper.title,
     description: wrapper.description,
@@ -546,6 +696,8 @@ Return ONLY the wrapper fields described above.
         : challengeType === 'substitution'
         ? 'algebra-1'
         : 'algebra-2',
+    // Tell the live tutor the support level whenever a tier is present (blended too).
+    ...(supportTier ? { supportTier } : {}),
     challenges,
   };
 

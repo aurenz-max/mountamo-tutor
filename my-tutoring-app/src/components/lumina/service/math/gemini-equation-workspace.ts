@@ -47,6 +47,110 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT numbers
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * Support scaffold for equation-workspace (archetype: multi-step solver).
+ * Every lever WITHDRAWS solving help; none touches the equation, its coefficients,
+ * the solution path, or the answer (the eval-mode ladder owns problem difficulty).
+ *
+ * ANSWER-LEAK GUARD: a named first move / next-step hint may only point at the
+ * NEXT operation, never the solved value of the target variable; the balanced-state
+ * indicator is process feedback (both sides stay equal) and never prints x's value.
+ * The component checker stays independent of every show* flag below.
+ */
+interface EquationSupportScaffold {
+  /** Highlight the correct next operation in the menu (the "guided" affordance), any mode. */
+  showNextStepHint?: boolean;
+  /** Show the "undo what's attached to x — use the inverse operation" reminder panel. */
+  showInverseReminder?: boolean;
+  /** Show the balanced-state (✓ both sides stay equal) PROCESS indicator. Never shows x's value. */
+  showBalanceIndicator?: boolean;
+  /** Modality #2: name the first inverse move in the instruction ("Start by …"). */
+  nameFirstMove?: boolean;
+  promptLines: string[];
+}
+
+function resolveSupportStructure(
+  pinnedType: ChallengeType,
+  tier: SupportTier,
+): EquationSupportScaffold {
+  const lead =
+    'This tier changes only how much solving help the student gets on screen. It NEVER changes '
+    + 'the equation, its coefficients, the number of steps, or the answer — that is the eval-mode ladder.';
+
+  // identify-operation: the task IS choosing the next step from a menu, so a
+  // next-step highlight would hand over the answer. Withdraw the inverse reminder
+  // / balanced indicator / named move instead; never highlight the correct choice.
+  if (pinnedType === 'identify-operation') {
+    const showInverseReminder = tier === 'easy';
+    const showBalanceIndicator = tier !== 'hard';
+    return {
+      showNextStepHint: false, // would reveal the correct MC choice — never on
+      showInverseReminder,
+      showBalanceIndicator,
+      nameFirstMove: false, // naming the move would reveal the answer in this mode
+      promptLines: [
+        lead,
+        `The inverse-operation reminder ("undo what is attached to the variable") is ${showInverseReminder ? 'shown' : 'withdrawn — the student recalls the inverse idea unaided'}.`,
+        `The balanced-state indicator (both sides stay equal — PROCESS feedback only, never the value of the variable) is ${showBalanceIndicator ? 'shown' : 'withdrawn'}.`,
+        'Do NOT name which operation comes next in the instruction — choosing it is the task.',
+        'Keep the title/context neutral — never state the support level or reveal the answer.',
+      ],
+    };
+  }
+
+  // solving modes: guided-solve / solve / multi-step.
+  // easy  = highlight next step + inverse reminder + balance indicator + named first move
+  // medium= balance indicator only, no highlight, no named step
+  // hard  = bare workspace: decide every step unaided
+  const showNextStepHint = tier === 'easy';
+  const showInverseReminder = tier === 'easy';
+  const showBalanceIndicator = tier !== 'hard';
+  const nameFirstMove = tier === 'easy';
+  return {
+    showNextStepHint,
+    showInverseReminder,
+    showBalanceIndicator,
+    nameFirstMove,
+    promptLines: [
+      lead,
+      `The next-step hint (the correct operation highlighted in the menu) is ${showNextStepHint ? 'shown' : 'withdrawn — the student decides each step'}.`,
+      `The inverse-operation reminder is ${showInverseReminder ? 'shown' : 'withdrawn'}.`,
+      `The balanced-state indicator (both sides stay equal — PROCESS feedback only, never x's value) is ${showBalanceIndicator ? 'shown' : 'withdrawn'}.`,
+      `The instruction ${nameFirstMove ? 'names the first inverse move to apply ("Start by …")' : 'does NOT name any move — the student chooses where to begin'}.`,
+      'Keep the title/context neutral — never state the support level, the operations, or the answer.',
+    ],
+  };
+}
+
+/**
+ * Easy-tier instruction that names the FIRST inverse move (modality #2) without
+ * revealing the solution. Reads the first solution step's human description.
+ * ANSWER-LEAK GUARD: the step's *operation* names what to do (e.g. "Subtract 3
+ * from both sides"); it never states the value of the target variable.
+ */
+function nameFirstMoveInstruction(ch: EquationWorkspaceChallenge): string {
+  const first = ch.solutionSteps[0]?.operation?.trim();
+  const base = `Solve for ${ch.targetVariable} by isolating it one step at a time.`;
+  if (!first) return base;
+  // Lower-case the first letter so it reads as a continuation.
+  const move = first.charAt(0).toLowerCase() + first.slice(1);
+  return `${base} Start by applying the inverse operation: ${move}.`;
+}
+
+// ---------------------------------------------------------------------------
 // Grade-appropriate equation guidance
 // ---------------------------------------------------------------------------
 
@@ -400,9 +504,18 @@ async function generateSingleChallenge(
   topic: string,
   gradeLevel: string,
   index: number,
+  supportTier?: SupportTier | null,
 ): Promise<EquationWorkspaceChallenge | null> {
   const cfg = SUB_GEN_CONFIGS[type];
   const typeDoc = CHALLENGE_TYPE_DOCS[type];
+
+  // Within-mode support tier (scaffolding tone only — the deterministic withdrawal
+  // happens after generation; this just keeps the title/instruction consistent
+  // with the help that will be shown, and NEVER changes the equation/answer).
+  const tierScaffold = supportTier ? resolveSupportStructure(type, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT equation difficulty)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   const prompt = `
 Generate ONE algebraic equation challenge for a ${gradeLevel} student learning "${topic}".
@@ -411,6 +524,7 @@ Challenge type: ${type}
 ${typeDoc.promptDoc}
 
 ${getEquationGuidance(gradeLevel)}
+${tierSection}
 
 RULES:
 - The equation MUST be in valid LaTeX (use \\cdot for multiplication, \\frac{a}{b} for fractions, \\sqrt{x}, \\sin, \\log)
@@ -491,7 +605,16 @@ IMPORTANT:
 export const generateEquationWorkspace = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much solving scaffolding within it. NEVER changes the
+     * equation, its coefficients, the step count, or the answer.
+     */
+    difficulty?: string;
+  }>,
 ): Promise<EquationWorkspaceData> => {
   const evalConstraint = resolveEvalModeConstraint(
     "equation-workspace",
@@ -499,6 +622,15 @@ export const generateEquationWorkspace = async (
     CHALLENGE_TYPE_DOCS,
   );
   logEvalModeResolution("EquationWorkspace", config?.targetEvalMode, evalConstraint);
+
+  // Within-mode support tier (config.difficulty): scaffolding level, NOT numbers.
+  // The STUDENT's tier drives application (single OR blended); pinnedType is only
+  // for logging which mode (a blend has no single mode to describe).
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType: ChallengeType | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
 
   // Determine which challenge types to generate
   let typePlan: ChallengeType[];
@@ -526,7 +658,7 @@ export const generateEquationWorkspace = async (
   // Generate all challenges in parallel
   const results = await Promise.all(
     typePlan.map((type, idx) =>
-      generateSingleChallenge(type, topic, gradeLevel, idx),
+      generateSingleChallenge(type, topic, gradeLevel, idx, supportTier),
     ),
   );
 
@@ -551,9 +683,34 @@ export const generateEquationWorkspace = async (
   const challenges =
     validChallenges.length > 0 ? validChallenges : fallbackChallenges();
 
+  // ── Within-mode support tier: withdraw on-screen SOLVING scaffolds (never the
+  //    equation or the answer). Applied PER CHALLENGE from each challenge's OWN
+  //    type, so a blended (auto-mode) session gets difficulty too — the tier is a
+  //    student property, not a single-mode one. Runs at the END so a tier can only
+  //    remove help. The checker stays independent of every show* flag. ──
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.showNextStepHint = sc.showNextStepHint ?? false;
+      ch.showInverseReminder = sc.showInverseReminder ?? false;
+      ch.showBalanceIndicator = sc.showBalanceIndicator ?? false;
+      // Modality #2: name the first inverse move in the instruction (easy only).
+      // Never for identify-operation — naming the move reveals the MC answer.
+      if (sc.nameFirstMove && ch.type !== 'identify-operation') {
+        ch.instruction = nameFirstMoveInstruction(ch);
+      }
+    }
+    console.log(
+      `[EquationWorkspace] Support tier "${supportTier}" applied per-challenge across ${challenges.length} challenge(s) [${pinnedType ? `single-mode ${pinnedType}` : 'blended'}].`,
+    );
+  }
+
   return {
     title: `Equation Workspace: ${topic}`,
     context: `Solve equations by applying algebraic operations step by step.`,
+    // Tell the live tutor the support level whenever a tier is present (applies in
+    // blended sessions too — the tutor's reveal policy is mode-aware per challenge).
+    ...(supportTier ? { supportTier } : {}),
     challenges,
   };
 };

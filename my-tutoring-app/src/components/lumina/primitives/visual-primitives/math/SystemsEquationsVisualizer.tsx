@@ -56,6 +56,18 @@ export interface SystemsEquationsChallenge {
   expectedY: number;
   instruction: string;
   hint: string;
+
+  // ── Within-mode support-tier scaffolds (display-only; set by the generator when
+  //    a tier is present). The checker NEVER reads these. The exact intersection
+  //    point is the answer, so it is never marked pre-answer at any tier. ──
+  /** Easy-only fuzzy crossing-region cue (no exact point, no coordinates). */
+  showIntersectionRegion?: boolean;
+  /** Show numbered axis tick labels (perception aid). Withdrawn at hard. */
+  showAxisLabels?: boolean;
+  /** Open the method/inverse-op step hint by default (vs. on-demand). */
+  showStepHint?: boolean;
+  /** Coordinate-free method hint (auto-shown at easy; never the answer). */
+  stepHint?: string;
 }
 
 export interface SystemsEquationsVisualizerData {
@@ -67,6 +79,13 @@ export interface SystemsEquationsVisualizerData {
   showGrid?: boolean;
   showAxes?: boolean;
   gradeBand?: '7-8' | 'algebra-1' | 'algebra-2';
+  /**
+   * Within-mode support tier ('easy' | 'medium' | 'hard'), present only when the
+   * generator applied one. Calibrates the live tutor's reveal level. At 'hard'
+   * the tutor must NOT name the method or the intersection — only ask what the
+   * lines share — and never reveal the solution.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SystemsEquationsChallenge[];
 
   // Evaluation props
@@ -89,6 +108,33 @@ const PHASE_CONFIG_BY_TYPE: Record<SystemsEquationsChallengeType, PhaseConfig> =
 };
 
 // ============================================================================
+// Tutor reveal policy — calibrates how much the live tutor reveals per tier.
+// The intersection IS the (x, y) answer on every mode, so the tutor never states
+// the coordinates and, at 'hard', never names the method or the intersection —
+// it only asks what the two lines share.
+// ============================================================================
+
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  challengeType: SystemsEquationsChallengeType,
+): string {
+  if (!tier) return '';
+  const common = 'Never state the final answer — the solution (x, y) where the lines cross.';
+  const methodWord =
+    challengeType === 'graph' ? 'reading the crossing point off the graph'
+    : challengeType === 'substitution' ? 'substitution (set the two y-expressions equal, then inverse-operate)'
+    : 'elimination (scale/add the equations so one variable cancels)';
+  switch (tier) {
+    case 'easy':
+      return `SUPPORT TIER easy: maximum scaffolding. You may name the method (${methodWord}) and walk the setup step by step. ${common}`;
+    case 'medium':
+      return `SUPPORT TIER medium: the method is named on screen — let the student do the setup and arithmetic. Nudge the next step only; do not solve it. ${common}`;
+    default:
+      return `SUPPORT TIER hard: the on-screen scaffolds are withdrawn. Do NOT name the method or the intersection point; instead ask what the two lines share (the single point on BOTH). Let the student choose and execute the approach unaided. ${common}`;
+  }
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -107,6 +153,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     showAxes = true,
     showGrid = true,
     gradeBand = 'algebra-1',
+    supportTier,
     challenges,
     instanceId,
     skillId,
@@ -233,19 +280,24 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
       ctx.lineTo(yAxisX, canvasHeight - padding);
       ctx.stroke();
 
-      ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
-      ctx.font = '12px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (let x = Math.ceil(xRange[0]); x <= xRange[1]; x += gridSpacing.x) {
-        if (x === 0) continue;
-        const { x: cx, y: cy } = graphToCanvas(x, 0);
-        ctx.fillText(x.toString(), cx, cy + 16);
-      }
-      for (let y = Math.ceil(yRange[0]); y <= yRange[1]; y += gridSpacing.y) {
-        if (y === 0) continue;
-        const { x: cx, y: cy } = graphToCanvas(0, y);
-        ctx.fillText(y.toString(), cx - 18, cy);
+      // Numbered tick labels — perception aid, withdrawn at the hard support tier
+      // (showAxisLabels === false). Undefined (no tier present) → labels shown.
+      const showAxisLabels = currentChallenge.showAxisLabels !== false;
+      if (showAxisLabels) {
+        ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (let x = Math.ceil(xRange[0]); x <= xRange[1]; x += gridSpacing.x) {
+          if (x === 0) continue;
+          const { x: cx, y: cy } = graphToCanvas(x, 0);
+          ctx.fillText(x.toString(), cx, cy + 16);
+        }
+        for (let y = Math.ceil(yRange[0]); y <= yRange[1]; y += gridSpacing.y) {
+          if (y === 0) continue;
+          const { x: cx, y: cy } = graphToCanvas(0, y);
+          ctx.fillText(y.toString(), cx - 18, cy);
+        }
       }
     }
 
@@ -272,6 +324,23 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
 
       drawLine(currentChallenge.equationA.slope, currentChallenge.equationA.yIntercept, currentChallenge.equationA.color || '#3b82f6');
       drawLine(currentChallenge.equationB.slope, currentChallenge.equationB.yIntercept, currentChallenge.equationB.color || '#10b981');
+
+      // ── Support-tier (easy) FUZZY crossing-region cue — a "look here" self-check
+      //    hint. NEVER the exact point and NEVER coordinates: the intersection IS the
+      //    (x, y) answer, so this is a soft translucent blob whose radius spans ~1.6
+      //    grid units, withdrawn the instant the student answers correctly. ──
+      if (currentChallenge.showIntersectionRegion && !recordedRef.current) {
+        const center = graphToCanvas(currentChallenge.expectedX, currentChallenge.expectedY);
+        const unit = Math.abs(graphToCanvas(1, 0).x - graphToCanvas(0, 0).x);
+        const radius = unit * 1.6; // deliberately fuzzy — covers several integer points
+        const grad = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, radius);
+        grad.addColorStop(0, 'rgba(250, 204, 21, 0.28)'); // soft amber glow
+        grad.addColorStop(1, 'rgba(250, 204, 21, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, radius, 0, 2 * Math.PI);
+        ctx.fill();
+      }
 
       // Intersection marker — shown only once correct (post-correct reveal per §6m #4).
       if (recordedRef.current) {
@@ -356,6 +425,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     expectedY: currentChallenge?.expectedY ?? 0,
     systemForm: currentChallenge?.systemForm ?? 'slope-intercept',
     gradeBand,
+    supportTier: supportTier ?? null,
     attemptNumber: currentAttempts + 1,
   }), [
     challengeType,
@@ -363,6 +433,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     challenges.length,
     currentChallenge,
     gradeBand,
+    supportTier,
     currentAttempts,
   ]);
 
@@ -379,13 +450,15 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     if (!isConnected || hasIntroducedRef.current) return;
     hasIntroducedRef.current = true;
     const totalCh = challenges.length;
+    const policy = tutorRevealPolicy(supportTier, challengeType);
     sendText(
       `[ACTIVITY_START] Systems-of-equations session: ${totalCh > 1 ? `${totalCh} systems` : 'one system'}. `
       + `Mode: ${challengeType}. Grade band: ${gradeBand}. `
-      + `Introduce briefly: "Each system has two equations and one (x, y) solution — find it using ${challengeType}."`,
+      + `Introduce briefly: "Each system has two equations and one (x, y) solution — find it using ${challengeType}."`
+      + (policy ? ` ${policy}` : ''),
       { silent: true }
     );
-  }, [isConnected, challenges.length, challengeType, gradeBand, sendText]);
+  }, [isConnected, challenges.length, challengeType, gradeBand, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Submit handler (single, used by all 3 modes — answer is always (x, y))
@@ -446,9 +519,11 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
       setFeedback(`Not quite. Check both equations carefully.`);
       setFeedbackType('error');
       incrementAttempts();
+      const revealPolicy = tutorRevealPolicy(supportTier, currentChallenge.type);
       sendText(
         `[ANSWER_INCORRECT] Student tried (${xVal}, ${yVal}) for ${challengeType} mode. `
-        + `Actual: (${currentChallenge.expectedX}, ${currentChallenge.expectedY}). Coach the method without giving the answer.`,
+        + `Actual: (${currentChallenge.expectedX}, ${currentChallenge.expectedY}). Coach the method without giving the answer.`
+        + (revealPolicy ? ` ${revealPolicy}` : ''),
         { silent: true },
       );
     }
@@ -460,6 +535,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     challengeType,
     completeChallenge,
     incrementAttempts,
+    supportTier,
     sendText,
   ]);
 
@@ -476,13 +552,15 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     if (advanceProgress()) {
       const nextIdx = currentChallengeIndex + 1;
       const next = challenges[nextIdx];
+      const nextPolicy = next ? tutorRevealPolicy(supportTier, next.type) : '';
       sendText(
         `[NEXT_ITEM] System ${nextIdx + 1} of ${challenges.length}: "${next?.equationA.display}" and "${next?.equationB.display}". `
-        + `Introduce briefly: "Here's the next system. Same method, different numbers."`,
+        + `Introduce briefly: "Here's the next system. Same method, different numbers."`
+        + (nextPolicy ? ` ${nextPolicy}` : ''),
         { silent: true },
       );
     }
-  }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
+  }, [advanceProgress, currentChallengeIndex, challenges, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Session-complete: build metrics and submit exactly once.
@@ -696,7 +774,15 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
           </LuminaFeedbackCard>
         )}
 
-        {/* Hint */}
+        {/* Method step hint — easy support tier only. Coordinate-free (never the
+            answer), shown by default as a self-check scaffold; withdrawn at medium/hard. */}
+        {currentChallenge.showStepHint && currentChallenge.stepHint && !isCurrentComplete && (
+          <LuminaHintDisclosure defaultOpen label="Method steps">
+            {currentChallenge.stepHint}
+          </LuminaHintDisclosure>
+        )}
+
+        {/* Hint — on-demand (carries the numbers); unchanged by tier. */}
         {showHint && (
           <LuminaHintDisclosure defaultOpen label="Hint">
             {currentChallenge.hint}

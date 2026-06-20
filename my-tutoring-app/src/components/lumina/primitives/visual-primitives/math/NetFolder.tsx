@@ -95,11 +95,25 @@ export interface NetFolderData {
     showFaceLabels?: boolean;
     showGridOverlay?: boolean;
     showFaceCorrespondence?: boolean;
+    /** Within-mode support tier lever (#1 perception): dashed fold-line guides
+     *  drawn between adjacent net faces, showing where the net hinges when it
+     *  folds. Pure scaffold — never changes the net or which solid it folds into
+     *  (that is the eval-mode axis). Withdrawn at the hard tier. */
+    showFoldGuides?: boolean;
+    /** Within-mode support tier lever: face-match correspondence highlighting
+     *  (tap a net face → its match lights up on the solid, and vice-versa).
+     *  ANSWER-LEAK GUARD: on match_faces / valid_net the correspondence IS the
+     *  asked answer, so the generator forces this OFF at every tier for those
+     *  modes; it only appears on modes where the match is NOT the answer. */
+    showFaceMatchHints?: boolean;
     allowRotation?: boolean;
     animationSpeed?: number;
   };
   imagePrompt?: string | null;
   gradeBand?: '3-4' | '4-5';
+  /** Within-mode support tier (config.difficulty). Surfaced to the live tutor so
+   *  its reveal level stays in sync with the on-screen fold scaffolds. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props
   instanceId?: string;
@@ -374,9 +388,10 @@ const NetDisplay: React.FC<{
   faceLabels: string[];
   showLabels: boolean;
   showGrid: boolean;
+  showFoldGuides: boolean;
   highlightedFace: string | null;
   onFaceClick?: (label: string) => void;
-}> = ({ solid, layout, faceLabels, showLabels, showGrid, highlightedFace, onFaceClick }) => {
+}> = ({ solid, layout, faceLabels, showLabels, showGrid, showFoldGuides, highlightedFace, onFaceClick }) => {
   const positions = useMemo(() => getNetPositions(solid, layout), [solid, layout]);
 
   // Calculate grid bounds
@@ -384,6 +399,45 @@ const NetDisplay: React.FC<{
   const maxCol = Math.max(...positions.map(p => p.gridCol)) + 1;
   const cellSize = 62;
   const gap = 2;
+
+  // ── Fold-line guides (support scaffold) ──
+  // A fold occurs along every shared edge between two adjacent faces in the net.
+  // We draw a dashed line on the shared edge of each adjacent pair so the student
+  // can see where the net hinges. This is a perception aid only — it never changes
+  // which faces exist or which solid the net folds into.
+  const foldLines = useMemo(() => {
+    if (!showFoldGuides) return [];
+    const lines: Array<{ key: string; left: number; top: number; w: number; h: number }> = [];
+    const step = cellSize + gap;
+    for (let i = 0; i < positions.length; i++) {
+      for (let j = i + 1; j < positions.length; j++) {
+        const a = positions[i];
+        const b = positions[j];
+        const sameRow = a.gridRow === b.gridRow && Math.abs(a.gridCol - b.gridCol) === 1;
+        const sameCol = a.gridCol === b.gridCol && Math.abs(a.gridRow - b.gridRow) === 1;
+        if (sameRow) {
+          const leftCol = Math.max(a.gridCol, b.gridCol);
+          lines.push({
+            key: `f${i}-${j}`,
+            left: leftCol * step - gap / 2,
+            top: a.gridRow * step,
+            w: 0,
+            h: cellSize,
+          });
+        } else if (sameCol) {
+          const topRow = Math.max(a.gridRow, b.gridRow);
+          lines.push({
+            key: `f${i}-${j}`,
+            left: a.gridCol * step,
+            top: topRow * step - gap / 2,
+            w: cellSize,
+            h: 0,
+          });
+        }
+      }
+    }
+    return lines;
+  }, [showFoldGuides, positions, cellSize, gap]);
 
   return (
     <div
@@ -393,6 +447,21 @@ const NetDisplay: React.FC<{
         height: maxRow * (cellSize + gap),
       }}
     >
+      {/* Fold-line guides (scaffold) — dashed hinge lines on shared edges */}
+      {foldLines.map(fl => (
+        <div
+          key={fl.key}
+          className="absolute z-20 pointer-events-none"
+          style={{
+            left: fl.left,
+            top: fl.top,
+            width: fl.w,
+            height: fl.h,
+            borderTop: fl.w > 0 ? '2px dashed rgba(250, 204, 21, 0.85)' : undefined,
+            borderLeft: fl.h > 0 ? '2px dashed rgba(250, 204, 21, 0.85)' : undefined,
+          }}
+        />
+      ))}
       {positions.map((pos, i) => {
         const faceLabel = faceLabels[i] || pos.label;
         const isHighlighted = highlightedFace === pos.label || highlightedFace === faceLabel;
@@ -434,6 +503,43 @@ const NetDisplay: React.FC<{
 };
 
 // ============================================================================
+// Tutor reveal policy — keep the live tutor in sync with the fold scaffolds
+// ============================================================================
+
+/**
+ * How much the live tutor may reveal, calibrated to the on-screen support tier
+ * and the eval mode. The tutor is a second information channel: at 'hard' the UI
+ * withdraws the fold-line guides and (where shown) the face-match highlighting,
+ * so the tutor must not narrate that withheld help either. For the recognition
+ * modes where the correspondence IS the answer (match_faces / valid_net), the
+ * tutor never names which faces meet or whether the net folds, at ANY tier.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  mode: NetFolderChallenge['type'],
+): string {
+  if (!tier) return '';
+  const answerGuard =
+    mode === 'match_faces'
+      ? 'Never name which face on the solid the highlighted net face folds to — discovering the correspondence IS the task.'
+      : mode === 'valid_net'
+        ? 'Never say whether the net is valid or invalid, or whether the faces will overlap — judging the fold IS the task.'
+        : mode === 'surface_area'
+          ? 'Never state a face area or the total surface area for the student.'
+          : mode === 'identify_solid'
+            ? 'Never name the solid for the student.'
+            : 'Never state the face/edge/vertex counts for the student.';
+  switch (tier) {
+    case 'easy':
+      return `SUPPORT TIER easy: maximum scaffolding. The fold-line guides are visible on the net; you may point to where the net hinges and folds, and (when face-match highlighting is shown) talk through which net face lines up with which solid face. ${answerGuard}`;
+    case 'medium':
+      return `SUPPORT TIER medium: the fold-line guides are shown but face-match highlighting is withdrawn. Nudge the student to trace the fold lines themselves; do not call out specific face pairings. ${answerGuard}`;
+    default:
+      return `SUPPORT TIER hard: the fold-line guides and the face-match highlighting are BOTH withdrawn. Do NOT supply the fold lines or name any face pairing — ask the student to imagine folding the net up edge by edge and reason it out themselves. ${answerGuard}`;
+  }
+}
+
+// ============================================================================
 // Props
 // ============================================================================
 
@@ -456,6 +562,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
     alternativeNets = [],
     showOptions = {},
     gradeBand = '3-4',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -469,9 +576,20 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
     showFaceLabels = true,
     showGridOverlay = false,
     showFaceCorrespondence = true,
+    // Support-tier fold scaffolds. Default true = max scaffolding when unset
+    // (no tier applied → grade-band defaults stand).
+    showFoldGuides = true,
+    showFaceMatchHints = true,
     allowRotation = true,
     animationSpeed = 1,
   } = showOptions;
+
+  // Face-match correspondence highlighting is gated by BOTH the legacy
+  // showFaceCorrespondence flag AND the tier lever showFaceMatchHints. The
+  // generator forces showFaceMatchHints OFF (every tier) on match_faces /
+  // valid_net, where the correspondence IS the asked answer — so the scaffold
+  // can never leak those answers.
+  const faceMatchEnabled = showFaceCorrespondence && showFaceMatchHints;
 
   // -------------------------------------------------------------------------
   // State
@@ -555,10 +673,19 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
     instruction: currentChallenge?.instruction ?? '',
     attemptNumber: currentAttempts + 1,
     isFolded,
+    supportTier: supportTier ?? null,
   }), [
     solid, net.layout, gradeBand, challenges.length,
-    currentChallengeIndex, currentChallenge, currentAttempts, isFolded,
+    currentChallengeIndex, currentChallenge, currentAttempts, isFolded, supportTier,
   ]);
+
+  // Reveal policy keyed to the current challenge's mode + the support tier, so
+  // the tutor never narrates a scaffold the tier has withdrawn (and never reveals
+  // the answer on recognition modes).
+  const revealPolicy = tutorRevealPolicy(
+    supportTier,
+    currentChallenge?.type ?? 'identify_solid',
+  );
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'net-folder',
@@ -577,10 +704,11 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
       `[ACTIVITY_START] This is a 3D shapes activity about ${solid.name} (${solid.type}). `
       + `The student will explore this solid, its net, and answer ${challenges.length} challenges. `
       + `Grade band: ${gradeBand}. `
-      + `Introduce warmly: "Today we're going to explore a ${solid.name}! Let's discover its faces, edges, and how it unfolds."`,
+      + `Introduce warmly: "Today we're going to explore a ${solid.name}! Let's discover its faces, edges, and how it unfolds."`
+      + (revealPolicy ? ` ${revealPolicy}` : ''),
       { silent: true }
     );
-  }, [isConnected, challenges.length, solid, gradeBand, sendText]);
+  }, [isConnected, challenges.length, solid, gradeBand, revealPolicy, sendText]);
 
   // -------------------------------------------------------------------------
   // Rotation handler
@@ -594,10 +722,10 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
 
   // Face click for correspondence
   const handleFaceClick = useCallback((label: string) => {
-    if (!showFaceCorrespondence) return;
+    if (!faceMatchEnabled) return;
     SoundManager.tap();
     setHighlightedFace(prev => prev === label ? null : label);
-  }, [showFaceCorrespondence]);
+  }, [faceMatchEnabled]);
 
   // -------------------------------------------------------------------------
   // Challenge Checking
@@ -869,13 +997,17 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
       sendText(
         `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
         + `Type: ${nextChallenge.type}. Instruction: "${nextChallenge.instruction}". `
-        + `Introduce it briefly.`,
+        + `Introduce it briefly.`
+        + (() => {
+          const next = tutorRevealPolicy(supportTier, nextChallenge.type);
+          return next ? ` ${next}` : '';
+        })(),
         { silent: true }
       );
     }
   }, [
     advanceProgress, phaseResults, challengeResults, challenges, currentChallengeIndex,
-    hasSubmittedEvaluation, sendText, submitEvaluation,
+    hasSubmittedEvaluation, supportTier, sendText, submitEvaluation,
   ]);
 
   // -------------------------------------------------------------------------
@@ -1101,7 +1233,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
               solid={solid}
               rotation={rotation}
               highlightedFace={highlightedFace}
-              onFaceClick={showFaceCorrespondence ? handleFaceClick : undefined}
+              onFaceClick={faceMatchEnabled ? handleFaceClick : undefined}
               showLabels={showFaceLabels}
               allowRotation={allowRotation}
               onRotate={handleRotate}
@@ -1129,7 +1261,7 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
                   solid={solid}
                   rotation={{ x: -25, y: 35 }}
                   highlightedFace={highlightedFace}
-                  onFaceClick={showFaceCorrespondence ? handleFaceClick : undefined}
+                  onFaceClick={faceMatchEnabled ? handleFaceClick : undefined}
                   showLabels={showFaceLabels}
                   allowRotation={false}
                 />
@@ -1140,8 +1272,9 @@ const NetFolder: React.FC<NetFolderProps> = ({ data, className }) => {
                   faceLabels={net.faceLabels}
                   showLabels={showFaceLabels}
                   showGrid={showGridOverlay}
+                  showFoldGuides={showFoldGuides}
                   highlightedFace={highlightedFace}
-                  onFaceClick={showFaceCorrespondence ? handleFaceClick : undefined}
+                  onFaceClick={faceMatchEnabled ? handleFaceClick : undefined}
                 />
               )}
             </div>

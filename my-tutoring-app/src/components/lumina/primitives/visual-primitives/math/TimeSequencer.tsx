@@ -70,6 +70,16 @@ export interface TimeSequencerChallenge {
   activityOptions?: string[];
 
   hint?: string;
+
+  // ── Within-mode support tier (scaffolding only; never changes events/times/answer) ──
+  /** #1 perception: show per-event elapsed-time (typicalTime) anchors. easy = on, hard = off. */
+  showTimeAnchors?: boolean;
+  /** #1 answer-leak-guarded: pre-seed ONLY the first ordered slot as a start-here anchor. */
+  prelabelFirstSlot?: boolean;
+  /** #2 instruction-as-scaffold: surface the named ordering/time-reasoning strategy. */
+  showStrategyHint?: boolean;
+  /** The strategy text to surface when showStrategyHint is true. */
+  strategyHint?: string;
 }
 
 export interface TimeSequencerData {
@@ -77,6 +87,8 @@ export interface TimeSequencerData {
   description?: string;
   challenges: TimeSequencerChallenge[];
   gradeBand?: 'K' | '1' | '2';
+  /** Within-mode support tier ('easy' | 'medium' | 'hard') — calibrates the AI tutor reveal level. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props
   instanceId?: string;
@@ -105,6 +117,29 @@ const PERIOD_DISPLAY: Record<string, { label: string; emoji: string; color: stri
   evening: { label: 'Evening', emoji: '🌇', color: 'bg-orange-500/20 border-orange-400/50 text-orange-300' },
   night: { label: 'Night', emoji: '🌙', color: 'bg-indigo-500/20 border-indigo-400/50 text-indigo-300' },
 };
+
+// ============================================================================
+// Tutor reveal policy — calibrate AI reveal to the support tier (mode-aware)
+// ============================================================================
+
+/**
+ * The support tier withdraws on-screen anchors (elapsed-time cues, the start-here
+ * slot) and the named strategy at harder tiers — so the tutor must not hand back
+ * what the tier hid. At 'hard' the tutor must NOT name the order or the elapsed
+ * time; it asks what the student thinks happens first and never reveals the sequence.
+ */
+function tutorRevealPolicy(tier: 'easy' | 'medium' | 'hard' | undefined): string {
+  if (!tier) return '';
+  const common = 'Never state the correct order, the answer, or which option is right.';
+  switch (tier) {
+    case 'easy':
+      return `SUPPORT TIER easy: maximum scaffolding. You may name the ordering strategy (read the time on each card, go earliest to latest) and point to the time anchors on screen. ${common}`;
+    case 'medium':
+      return `SUPPORT TIER medium: the time anchors are withdrawn. Nudge the reasoning — ask what the student does first in their day — but do not name the full strategy or the elapsed times. ${common}`;
+    default:
+      return `SUPPORT TIER hard: minimal coaching. The on-screen instruction does NOT name a strategy and there are no time anchors — reasoning out the order is the task. Do NOT name the order or the elapsed time; ask the student what they think happens first and let them judge it. ${common}`;
+  }
+}
 
 // ============================================================================
 // Event Card Visual Component
@@ -170,6 +205,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     description,
     challenges = [],
     gradeBand = 'K',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -249,7 +285,8 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     challengeType: currentChallenge?.type ?? 'sequence-events',
     instruction: currentChallenge?.instruction ?? '',
     attemptNumber: currentAttempts + 1,
-  }), [gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts]);
+    supportTier: supportTier ?? null,
+  }), [gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts, supportTier]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'time-sequencer',
@@ -262,13 +299,15 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
+    const revealPolicy = tutorRevealPolicy(supportTier);
     sendText(
       `[ACTIVITY_START] Time Sequencer for ${gradeBand === 'K' ? 'Kindergarten' : `Grade ${gradeBand}`}. `
       + `${challenges.length} challenges. First: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
-      + `Introduce warmly: "Let's think about time and the order of our day!" Then read the first instruction.`,
+      + `Introduce warmly: "Let's think about time and the order of our day!" Then read the first instruction.`
+      + (revealPolicy ? ` ${revealPolicy}` : ''),
       { silent: true },
     );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, gradeBand, currentChallenge, supportTier, sendText]);
 
   // ── Reset ──────────────────────────────────────────────────────────
   const resetDomainState = useCallback(() => {
@@ -280,6 +319,21 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     setFeedback('');
     setFeedbackType('');
   }, []);
+
+  // ── Pre-seed the first ordered slot (easy/medium "start here" anchor) ──
+  // ANSWER-LEAK GUARD: seeds ONLY the first event — never the full order. The
+  // remaining slots stay blank for the student; the checker reads correctOrder.
+  useEffect(() => {
+    if (
+      currentChallenge?.type === 'sequence-events'
+      && currentChallenge.prelabelFirstSlot
+      && (currentChallenge.correctOrder?.length ?? 0) > 1
+    ) {
+      const firstId = currentChallenge.correctOrder![0];
+      setOrderedEvents((prev) => (prev.length === 0 ? [firstId] : prev));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
 
   // ── Check Handlers ─────────────────────────────────────────────────
 
@@ -557,6 +611,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
                 event={event}
                 index={i}
                 selected
+                showTime={currentChallenge.showTimeAnchors}
                 onClick={() => handleToggleSequenceEvent(event.id)}
                 disabled={isCurrentChallengeCorrect}
               />
@@ -574,6 +629,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
               <EventCardVisual
                 key={event.id}
                 event={event}
+                showTime={currentChallenge.showTimeAnchors}
                 onClick={() => handleToggleSequenceEvent(event.id)}
                 disabled={isCurrentChallengeCorrect}
               />
@@ -588,6 +644,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
     if (!currentChallenge || !currentChallenge.event) return null;
     return (
       <div className="space-y-4">
+        {/* No time anchor here — the clock time would reveal the period (the answer). */}
         <div className="flex justify-center">
           <EventCardVisual event={currentChallenge.event} disabled className="max-w-xs" />
         </div>
@@ -626,7 +683,7 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
           <span className="text-slate-400 text-xs block mb-1">
             What happens <span className="text-blue-300 font-bold">{currentChallenge.relation}</span>...
           </span>
-          {ref && <EventCardVisual event={ref} disabled className="max-w-xs mx-auto" />}
+          {ref && <EventCardVisual event={ref} disabled showTime={currentChallenge.showTimeAnchors} className="max-w-xs mx-auto" />}
         </div>
         <div className="space-y-2">
           {opts.map((event) => (
@@ -820,6 +877,14 @@ const TimeSequencer: React.FC<TimeSequencerProps> = ({ data, className }) => {
             <LuminaPanel className="p-3 rounded-xl">
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
             </LuminaPanel>
+
+            {/* #2 instruction-as-scaffold: named strategy (easy/medium; withdrawn at hard) */}
+            {currentChallenge.showStrategyHint && currentChallenge.strategyHint && (
+              <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-400/20">
+                <span className="text-base flex-shrink-0">💡</span>
+                <p className="text-blue-200/90 text-xs">{currentChallenge.strategyHint}</p>
+              </div>
+            )}
 
             {currentChallenge.type === 'sequence-events' && renderSequenceEvents()}
             {currentChallenge.type === 'match-time-of-day' && renderMatchTimeOfDay()}

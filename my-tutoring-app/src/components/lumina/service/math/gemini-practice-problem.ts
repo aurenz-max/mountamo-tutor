@@ -56,6 +56,91 @@ const VALID_EVAL_MODES = new Set<PracticeEvalMode>([
   'derive_hard',
 ]);
 
+// ── Within-mode SUPPORT TIER (config.difficulty) ─────────────────────
+//
+// ORTHOGONAL to the derive_easy/medium/hard eval mode. The eval mode is the
+// STEP-COUNT band (the task identity); the support tier controls how much of
+// the canonical worked scaffold is REVEALED to the student at a FIXED step
+// band. A tier NEVER changes the problem text, its numbers, or the step count.
+//
+//   easy   = worked-step skeleton (method-shape step titles) + first-step
+//            starter prompt + strategy preview — the workspace helps the
+//            student orient and self-check.
+//   medium = worked-step skeleton + strategy preview; no first-step prompt.
+//   hard   = bare problem — no skeleton, no first-step prompt, no preview.
+//            The student plans the whole derivation unaided.
+//
+// ANSWER-LEAK GUARD: the skeleton exposes only step TITLES (the method shape,
+// e.g. "Subtract 5 from both sides") and the first step's strategy — NEVER a
+// `canonicalBody` (which carries intermediate/final values) and NEVER the last
+// step. The judge (compareWork) reads the full canonical steps + answer
+// independently of these reveal flags, so the checker is unaffected.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; the full skeleton stands). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** Per-tier reveal of the canonical worked scaffold (NOT the answer). */
+interface SupportScaffold {
+  /** Show the StepLedger's procedural step TITLES (the method shape). */
+  showStepSkeleton: boolean;
+  /** Surface the first step's title + strategy as an on-canvas starter prompt. */
+  showFirstStepHint: boolean;
+  /** Show the one-line solutionStrategy preview above the canvas. */
+  showStrategyPreview: boolean;
+  promptLines: string[];
+}
+
+function resolveSupportStructure(tier: SupportTier): SupportScaffold {
+  const lead =
+    'This SUPPORT TIER changes only how much of the worked scaffold the student '
+    + 'SEES — it NEVER changes the problem text, the numbers, or the step count '
+    + '(the step count is owned by the derive_easy/medium/hard eval mode).';
+
+  if (tier === 'easy') {
+    return {
+      showStepSkeleton: true,
+      showFirstStepHint: true,
+      showStrategyPreview: true,
+      promptLines: [
+        lead,
+        'The student keeps the worked-step SKELETON (procedural step titles) and a first-step starter prompt visible to orient and self-check.',
+        'Author step `title`s as clear method-shape verb phrases (e.g. "Subtract 5 from both sides") — they will be shown up front as the skeleton, so they must describe the MOVE without stating any intermediate value or the final answer.',
+        'Keep `strategy` of the FIRST step a pure orientation nudge — name the approach, never the resulting number.',
+      ],
+    };
+  }
+  if (tier === 'medium') {
+    return {
+      showStepSkeleton: true,
+      showFirstStepHint: false,
+      showStrategyPreview: true,
+      promptLines: [
+        lead,
+        'The student keeps the worked-step SKELETON (procedural step titles) and the strategy preview, but the explicit first-step starter prompt is withdrawn.',
+        'Author step `title`s as method-shape verb phrases that describe each MOVE without stating any intermediate value or the final answer.',
+      ],
+    };
+  }
+  // hard
+  return {
+    showStepSkeleton: false,
+    showFirstStepHint: false,
+    showStrategyPreview: false,
+    promptLines: [
+      lead,
+      'The student gets the BARE problem — no worked-step skeleton, no first-step prompt, no strategy preview. They must plan the whole derivation unaided.',
+      'Still author the full canonical steps for the judge; the canvas simply withholds them as on-screen scaffolds.',
+    ],
+  };
+}
+
 const DIFFICULTY_INTENT: Record<PracticeDifficulty, string> = {
   easy:
     'Generate a SHORT 2-3 step derivation problem suitable for a quick warm-up. ' +
@@ -166,8 +251,9 @@ function buildCanonicalSolutionPrompt(args: {
   difficulty: PracticeDifficulty;
   problemStatement: string;
   inset?: Inset;
+  tierSection?: string;
 }): string {
-  const { topic, gradeLevel, difficulty, problemStatement, inset } = args;
+  const { topic, gradeLevel, difficulty, problemStatement, inset, tierSection } = args;
   const stepCountHint = {
     easy: '2-3 steps',
     medium: '3-5 steps',
@@ -186,7 +272,7 @@ Grade level: ${gradeLevel}
 Difficulty: ${difficulty} (${stepCountHint})
 
 Problem statement:
-${problemStatement}${insetBlock}
+${problemStatement}${insetBlock}${tierSection ?? ''}
 
 ## Your task
 
@@ -299,10 +385,17 @@ function normalizeCanonicalSolution(
 // ── Public entry point ──────────────────────────────────────────────
 
 interface GeneratePracticeProblemConfig {
-  /** Eval mode key from the manifest. Drives difficulty + intent. */
+  /** Eval mode key from the manifest. Drives the step-count band + intent. */
   targetEvalMode?: string;
   /** Optional steering text for the orchestrator (overrides difficulty default). */
   intent?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * ORTHOGONAL to targetEvalMode: targetEvalMode = the step-count band (task
+   * identity), difficulty = how much of the worked scaffold the canvas REVEALS
+   * within that band. NEVER changes the problem text, numbers, or step count.
+   */
+  difficulty?: string;
 }
 
 /**
@@ -326,11 +419,21 @@ export async function generatePracticeProblem(
   const difficulty: PracticeDifficulty = EVAL_MODE_TO_DIFFICULTY[evalMode];
   const intent = config?.intent || DIFFICULTY_INTENT[difficulty];
 
+  // ── Within-mode SUPPORT TIER (config.difficulty): scaffold reveal level,
+  //    ORTHOGONAL to the derive_* step-count band. Drives how much of the
+  //    worked scaffold the canvas shows; never changes the problem or steps. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold = supportTier ? resolveSupportStructure(supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n\n## WITHIN-MODE SUPPORT TIER (scaffold reveal level — NOT step count or numbers)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}`
+    : '';
+
   console.log('[PracticeProblem] Generating', {
     topic,
     gradeLevel,
     evalMode,
     difficulty,
+    supportTier,
     requestedEvalMode,
   });
 
@@ -354,6 +457,7 @@ export async function generatePracticeProblem(
     difficulty,
     problemStatement: problemPlan.problemStatement,
     inset: problemPlan.inset,
+    tierSection,
   });
 
   const response = await ai.models.generateContent({
@@ -393,13 +497,33 @@ export async function generatePracticeProblem(
     difficulty,
     evalMode,
     gradeLevel,
+    // Within-mode support tier: REVEAL flags only. Display-only — the judge
+    // reads `steps` + `canonicalAnswer` directly, untouched by these flags.
+    // Absent when no tier is pinned so the canvas shows the full scaffold.
+    ...(supportTier && tierScaffold
+      ? {
+          supportTier,
+          support: {
+            showStepSkeleton: tierScaffold.showStepSkeleton,
+            showFirstStepHint: tierScaffold.showFirstStepHint,
+            showStrategyPreview: tierScaffold.showStrategyPreview,
+          },
+        }
+      : {}),
   };
+
+  if (supportTier) {
+    console.log(
+      `[PracticeProblem] Support tier "${supportTier}" applied (scaffold reveal only; step band="${difficulty}" unchanged).`,
+    );
+  }
 
   console.log('[PracticeProblem] Generated', {
     title: result.title,
     subject: result.subject,
     difficulty: result.difficulty,
     evalMode: result.evalMode,
+    supportTier: result.supportTier,
     stepCount: result.steps.length,
     hasInset: Boolean(result.problem.inset),
     canonicalAnswer: result.canonicalAnswer,

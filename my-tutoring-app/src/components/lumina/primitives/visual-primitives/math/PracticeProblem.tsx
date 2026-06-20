@@ -188,6 +188,16 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
     [data.instanceId],
   );
 
+  // Within-mode SUPPORT TIER reveal flags. Absent → full scaffold (no tier).
+  // Display-only: these gate what the canvas SHOWS, never the canonical steps
+  // the judge compares against.
+  const support = data.support ?? {
+    showStepSkeleton: true,
+    showFirstStepHint: true,
+    showStrategyPreview: true,
+  };
+  const firstStep = data.steps[0];
+
   const { submitResult, hasSubmitted, elapsedMs } =
     usePrimitiveEvaluation<PracticeProblemMetrics>({
       primitiveType: 'practice-problem',
@@ -207,6 +217,10 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
       problem: data.problem.statement,
       equations: data.problem.equations ?? [],
       difficulty: data.difficulty,
+      // Support tier so the tutor calibrates how much it reveals (mirrors the
+      // on-screen scaffold withdrawal). easy → may walk the first step; hard →
+      // names no step. Absent → 'medium' default reveal posture.
+      supportTier: data.supportTier ?? 'medium',
       stepCount: data.steps.length,
       currentPhase: phase.kind,
       strokeCount: strokes.length,
@@ -240,9 +254,22 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
   // not student-facing chat. The tutor can use this for opening context
   // if the student requests help.
   useEffect(() => {
+    // Tier-aware reveal policy: mirrors the on-screen scaffold withdrawal so the
+    // tutor can't hand back what a hard tier hid. NEVER reveals the final answer
+    // at any tier.
+    const tier = data.supportTier ?? 'medium';
+    const revealClause =
+      tier === 'easy'
+        ? 'SUPPORT TIER easy: the student keeps the worked-step skeleton and a first-step prompt on screen. ' +
+          'If they ask for help you MAY name the strategy and walk them through the FIRST step only — never compute it for them, never reveal the final answer.'
+        : tier === 'hard'
+          ? 'SUPPORT TIER hard: the student has NO worked-step skeleton and NO first-step prompt. ' +
+            'Do NOT name any solution step or the strategy. Ask what the problem is asking and what they notice; let them choose the method. Never reveal the answer.'
+          : 'SUPPORT TIER medium: the student sees the worked-step skeleton (step titles) but no first-step prompt. ' +
+            'Nudge execution of the step they are on; do not pre-name the first move or reveal the answer.';
     sendText(
-      `[PROBLEM_LOADED] Practice problem "${data.title}" (${data.difficulty ?? 'unspecified'} difficulty). ` +
-        `Statement: ${data.problem.statement}. ${data.steps.length} canonical steps.`,
+      `[PROBLEM_LOADED] Practice problem "${data.title}" (${data.difficulty ?? 'unspecified'} step band). ` +
+        `Statement: ${data.problem.statement}. ${data.steps.length} canonical steps. ${revealClause}`,
       { silent: true },
     );
     // sendText is stable across renders; firing on every problem swap is correct.
@@ -467,15 +494,45 @@ export const PracticeProblem: React.FC<PracticeProblemProps> = ({ data, classNam
                     <InsetRenderer inset={data.problem.inset} />
                   </div>
                 )}
+
+                {/* Support tier — strategy preview (easy/medium). Names the
+                    approach only; the canonical solutionStrategy is authored to
+                    never reveal the answer. Withdrawn at hard. */}
+                {support.showStrategyPreview && data.solutionStrategy && (
+                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-blue-400/20 bg-blue-500/5 px-3 py-2">
+                    <Sparkles size={13} className="text-blue-300 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-blue-100/90 leading-snug italic">
+                      <MixedContent text={data.solutionStrategy} />
+                    </p>
+                  </div>
+                )}
+
+                {/* Support tier — first-step starter prompt (easy only). Shows
+                    the FIRST step's method-shape title + strategy to get the
+                    student moving; never its body/result. Withdrawn at medium+. */}
+                {support.showFirstStepHint && firstStep && (
+                  <div className="mt-2 rounded-lg border border-emerald-400/20 bg-emerald-500/5 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-1">
+                      Start here
+                    </p>
+                    <p className="text-xs text-emerald-100/90 leading-snug">
+                      <span className="font-medium">{firstStep.title}.</span>{' '}
+                      {firstStep.strategy}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* Canonical-step ledger — slot row + ambient coaching caption */}
+              {/* Canonical-step ledger — slot row + ambient coaching caption.
+                  At hard, showTitles=false withholds the method-shape titles
+                  (bare numbered slots), so the student plans unaided. */}
               {data.steps.length > 0 && (
                 <div className="px-4 pt-3">
                   <StepLedger
                     steps={data.steps}
                     liveReview={liveReview}
                     isReviewing={isReviewing}
+                    showTitles={support.showStepSkeleton}
                   />
                 </div>
               )}
@@ -655,9 +712,22 @@ interface StepLedgerProps {
   steps: Array<{ id: number; title: string }>;
   liveReview: LiveReviewState | null;
   isReviewing: boolean;
+  /**
+   * Support tier: show the procedural step TITLES (the worked-step skeleton /
+   * method shape). When false (hard tier), the ledger shows bare numbered
+   * slots so the student plans the derivation unaided. Defaults to true (no
+   * tier applied → full scaffold). Titles never carry a step's result, so
+   * showing them never leaks the answer.
+   */
+  showTitles?: boolean;
 }
 
-const StepLedger: React.FC<StepLedgerProps> = ({ steps, liveReview, isReviewing }) => {
+const StepLedger: React.FC<StepLedgerProps> = ({
+  steps,
+  liveReview,
+  isReviewing,
+  showTitles = true,
+}) => {
   const completedSteps = liveReview?.completedSteps ?? 0;
   const lineReviews = liveReview?.lineReviews ?? [];
   const allStepsComplete = liveReview?.allStepsComplete ?? false;
@@ -713,12 +783,19 @@ const StepLedger: React.FC<StepLedgerProps> = ({ steps, liveReview, isReviewing 
                   <span className={`text-[9px] font-mono flex-shrink-0 ${ordinalClass}`}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <span
-                    className={`text-xs font-medium truncate ${textClass}`}
-                    title={step.title}
-                  >
-                    {step.title}
-                  </span>
+                  {showTitles ? (
+                    <span
+                      className={`text-xs font-medium truncate ${textClass}`}
+                      title={step.title}
+                    >
+                      {step.title}
+                    </span>
+                  ) : (
+                    // Hard tier: withhold the method-shape title — bare slot only.
+                    <span className={`text-xs font-medium truncate ${textClass}`}>
+                      Step {i + 1}
+                    </span>
+                  )}
                   {isCompleted && (
                     <CheckCircle2
                       size={11}

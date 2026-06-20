@@ -82,6 +82,88 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode SUPPORT TIER (config.difficulty) — second axis of the two-field
+// contract: targetEvalMode = WHICH skill (the task / target shape), difficulty =
+// HOW MUCH on-screen construction scaffolding within it. A tier withdraws
+// build-time perception/tracking aids (the ghost target outline, the vertex
+// snap-dots, the side-count badge) — it NEVER changes the target shape or its
+// eval-mode difficulty class. The checker validates the built shape from
+// GEOMETRY (computeShapeProperties on the placed vertices), independent of any
+// show* flag, so showing the ghost at easy is a deliberate self-check aid, not
+// an auto-solve. See memory [[structural-difficulty-not-numeric]].
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; current defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** Construction-scaffold lever set, resolved per challenge type + tier. Every
+ *  field is DISPLAY-ONLY — the geometry checker never reads any of them. */
+interface SupportScaffold {
+  /** Faint dashed ghost of the target outline drawn behind the workspace, plus
+   *  emphasized snap-dots at the target vertices (perception/tracking aid #1).
+   *  Self-check only — the answer is validated from the built geometry, so the
+   *  ghost can never auto-solve, and at hard it is withdrawn entirely. */
+  showTargetGhost: boolean;
+  /** Live "N sides placed / M needed" badge while constructing (tracking aid
+   *  #1) — offloads counting corners as you go. */
+  showSideCountBadge: boolean;
+  /** Prompt lines describing the tier to the LLM (hint-tone only #2). */
+  promptLines: string[];
+}
+
+const TIER_GUARDRAIL =
+  'This tier changes only the on-screen CONSTRUCTION SCAFFOLDING (ghost outline, ' +
+  'vertex snap-dots, side-count badge, hint explicitness). It NEVER changes the ' +
+  'target shape, its properties, or the challenge type — the shape the student ' +
+  'must build is identical at every tier.';
+
+/** easy → hard construction-scaffold gradient, per pinned challenge type. */
+function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffold {
+  // Construction scaffolds only exist where the student BUILDS a shape.
+  // For measure/classify/classify_by_lines/find_symmetry/compose there is no
+  // build-ghost; the tier only dials hint explicitness via promptLines.
+  const isConstruct = type === 'build' || type === 'coordinate_shape';
+
+  if (isConstruct) {
+    return {
+      // easy: ghost outline + vertex snap-dots show WHERE to build.
+      // medium: snap-dots only (ghost withdrawn) — see the corners, not the shape.
+      // hard: no ghost, no snap-dots — construct unaided from the properties.
+      showTargetGhost: tier === 'easy',
+      showSideCountBadge: tier !== 'hard',
+      promptLines: [
+        TIER_GUARDRAIL,
+        tier === 'easy'
+          ? 'EASY: a faint ghost of the target outline and its vertex snap-dots are shown so the student can place corners against a model and self-check. Hint may name the shape and walk the first corner.'
+          : tier === 'medium'
+            ? 'MEDIUM: the ghost outline is withdrawn — only the vertex snap-dots remain, plus a running side-count. Hint names the property to aim for (e.g. "4 equal sides") but not the placement.'
+            : 'HARD: no ghost outline, no snap-dots, no side-count — the student builds the shape from its named properties alone and counts their own corners. Hint asks what properties the target needs; it must NOT name where to place vertices or reveal the finished shape.',
+      ],
+    };
+  }
+
+  return {
+    showTargetGhost: false,
+    showSideCountBadge: false,
+    promptLines: [
+      TIER_GUARDRAIL,
+      tier === 'easy'
+        ? 'EASY: hint may name the strategy and walk the first step.'
+        : tier === 'medium'
+          ? 'MEDIUM: hint nudges the next step without naming the strategy.'
+          : 'HARD: hint only asks what the student notices; it never names the rule or reveals the answer.',
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -263,6 +345,22 @@ const shapeBuilderSchema: Schema = {
           narration: {
             type: Type.STRING,
             description: "AI narration for this challenge (used by the tutor to introduce it)"
+          },
+          showTargetGhost: {
+            type: Type.BOOLEAN,
+            nullable: true,
+            description: "Construction scaffold (set by support tier, not the LLM): show a faint ghost of the target outline behind the workspace. Leave unset."
+          },
+          showSideCountBadge: {
+            type: Type.BOOLEAN,
+            nullable: true,
+            description: "Construction scaffold (set by support tier, not the LLM): show a running side-count badge while building. Leave unset."
+          },
+          supportTier: {
+            type: Type.STRING,
+            nullable: true,
+            enum: ["easy", "medium", "hard"],
+            description: "Support tier (set by the generator, not the LLM). Leave unset."
           }
         },
         required: ["id", "type", "instruction", "hint", "narration"]
@@ -339,6 +437,13 @@ export const generateShapeBuilder = async (
     targetEvalMode?: string;
     /** Intent or title from the manifest item. */
     intent?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much construction scaffolding within it. NEVER changes
+     * the target shape or its eval-mode difficulty class.
+     */
+    difficulty?: string;
   }
 ): Promise<ShapeBuilderData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -353,6 +458,20 @@ export const generateShapeBuilder = async (
     ? constrainChallengeTypeEnum(shapeBuilderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
     : shapeBuilderSchema;
 
+  // ── Resolve the support tier (the STUDENT's tier — drives application) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is ONLY for prompt tone (a blend has no single mode to describe).
+  const pinnedType =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? evalConstraint.allowedTypes[0]
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (construction scaffolding level — NOT the target shape)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
@@ -366,7 +485,7 @@ CONTEXT:
 - The AI tutor names properties as students discover them
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - K-2 (gradeBand "K-2"):
@@ -618,6 +737,28 @@ Return the complete shape builder configuration.
     if (config.tools !== undefined) data.tools = { ...data.tools, ...config.tools };
     if (config.classificationCategories !== undefined) data.classificationCategories = config.classificationCategories;
     if (config.patternBlocks !== undefined) data.patternBlocks = config.patternBlocks;
+  }
+
+  // ── Apply the support tier PER CHALLENGE (gated only on a tier being
+  //    present, never on pinnedType — a blended session must get it too).
+  //    Each challenge resolves its OWN scaffold from its own type. Display-only:
+  //    the component's geometry checker never reads these flags. ──
+  if (supportTier) {
+    for (const ch of data.challenges as Array<{
+      type: string;
+      showTargetGhost?: boolean;
+      showSideCountBadge?: boolean;
+      supportTier?: string;
+    }>) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.showTargetGhost = sc.showTargetGhost;
+      ch.showSideCountBadge = sc.showSideCountBadge;
+      ch.supportTier = supportTier;
+    }
+    console.log(
+      `[ShapeBuilder] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`,
+    );
   }
 
   return data;

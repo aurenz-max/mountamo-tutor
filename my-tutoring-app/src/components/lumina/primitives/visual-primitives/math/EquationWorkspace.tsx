@@ -57,6 +57,16 @@ export interface EquationWorkspaceChallenge {
   /** For identify-operation: the correct next operation ID */
   correctOperationId?: string;
   knownValues?: Record<string, number>;
+
+  // ── Within-mode support tier scaffolds (set by the generator from config.difficulty).
+  //    Each WITHDRAWS solving help; none changes the equation, steps, or answer.
+  //    The checker never reads these — they are display-only. ──
+  /** Highlight the correct next operation in the menu (easy, solving modes only). */
+  showNextStepHint?: boolean;
+  /** Show the "undo what's attached to the variable — use the inverse operation" reminder. */
+  showInverseReminder?: boolean;
+  /** Show the balanced-state PROCESS indicator (both sides stay equal). Never shows the answer. */
+  showBalanceIndicator?: boolean;
 }
 
 export interface EquationWorkspaceData {
@@ -68,6 +78,8 @@ export interface EquationWorkspaceData {
     name: string;
     unit?: string;
   }>;
+  /** Within-mode support tier ('easy' | 'medium' | 'hard') — calibrates tutor reveal. */
+  supportTier?: 'easy' | 'medium' | 'hard';
   challenges: EquationWorkspaceChallenge[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -115,6 +127,45 @@ function MathDisplay({ latex, display = false, className = '' }: { latex: string
 }
 
 // ============================================================================
+// Tutor reveal policy — calibrate how much the live tutor reveals per tier.
+// The tutor sees the full solution path and can leak what a tier hid on screen,
+// so its reveal level must track the support tier (mandatory for modality #2).
+// INVARIANT: never reveal the final solution at any tier.
+// For identify-operation the next operation IS the answer, so the tutor never
+// names it at any tier.
+// ============================================================================
+
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  challengeType: EquationWorkspaceChallenge['type'],
+): string {
+  if (!tier) return '';
+  const common = `Never reveal the final solution (the solved value of the target variable).`;
+
+  if (challengeType === 'identify-operation') {
+    // Choosing the next operation IS the answer — never name it at any tier.
+    switch (tier) {
+      case 'easy':
+        return `SUPPORT TIER easy: remind the student to think about the inverse operation that undoes what is attached to the variable, WITHOUT naming which operation is correct here. ${common}`;
+      case 'medium':
+        return `SUPPORT TIER medium: nudge them to look at what is currently applied to the variable; do not name the operation. ${common}`;
+      default:
+        return `SUPPORT TIER hard: minimal coaching — ask what is keeping the variable from being alone and let them choose unaided. Do not name the operation. ${common}`;
+    }
+  }
+
+  // solving modes: guided-solve / solve / multi-step
+  switch (tier) {
+    case 'easy':
+      return `SUPPORT TIER easy: maximum scaffolding. You may name the inverse operation and the first step to apply, and walk through the order of operations. ${common}`;
+    case 'medium':
+      return `SUPPORT TIER medium: the balanced-state indicator is on screen but step hints are withdrawn. Nudge which side or term to address next; do not name the operation or pre-set the first step. ${common}`;
+    default:
+      return `SUPPORT TIER hard: the workspace is bare — deciding each step is the task. Do NOT name the inverse operation or the first move; ask what is keeping the variable from being alone. ${common}`;
+  }
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -124,6 +175,7 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
     description,
     context,
     variableDefinitions,
+    supportTier,
     challenges,
     instanceId,
     skillId,
@@ -154,7 +206,8 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
     context,
     challengeCount: challenges.length,
     challengeTypes: Array.from(new Set(challenges.map(c => c.type))),
-  }), [title, context, challenges]);
+    supportTier: supportTier ?? null,
+  }), [title, context, challenges, supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'equation-workspace',
@@ -214,7 +267,7 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
       sendText(
         `[NEXT_ITEM] Challenge 1 of ${challenges.length}. Type: ${currentChallenge.type}. ` +
         `Student must solve "${currentChallenge.equation}" for ${currentChallenge.targetVariable}. ` +
-        `Introduce the challenge briefly.`,
+        `Introduce the challenge briefly. ${tutorRevealPolicy(supportTier, currentChallenge.type)}`,
         { silent: true },
       );
     }
@@ -383,14 +436,14 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
       sendText(
         `[NEXT_ITEM] Moving to challenge ${nextIdx + 1} of ${challenges.length}. ` +
         `Type: ${next.type}. Equation: "${next.equation}", solve for ${next.targetVariable}. ` +
-        `Introduce briefly.`,
+        `Introduce briefly. ${tutorRevealPolicy(supportTier, next.type)}`,
         { silent: true },
       );
     }
   }, [
     challengeSolved, currentChallenge, completedSteps, currentAttempts,
     incorrectOps, hintsUsed, recordResult, advanceProgress, challengeResults,
-    challenges, currentChallengeIndex, submitResult, sendText,
+    challenges, currentChallengeIndex, submitResult, sendText, supportTier,
   ]);
 
   // ── Compute overall score for summary ──
@@ -432,8 +485,18 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
   const isIdentifyMode = currentChallenge.type === 'identify-operation';
   const isGuidedMode = currentChallenge.type === 'guided-solve';
 
-  // In guided mode, highlight the expected operation
-  const hintOperationId = isGuidedMode && expectedStep ? expectedStep.operationId : null;
+  // Whether to highlight the correct next operation. When a support tier set the
+  // field, it governs (easy → on, medium/hard → off); otherwise fall back to the
+  // guided-solve eval-mode default. Identify-operation never highlights (the
+  // highlight would reveal the MC answer).
+  const showNextStepHint =
+    !isIdentifyMode &&
+    (currentChallenge.showNextStepHint !== undefined
+      ? currentChallenge.showNextStepHint
+      : isGuidedMode);
+
+  // The expected operation to highlight (process scaffold, never the final answer).
+  const hintOperationId = showNextStepHint && expectedStep ? expectedStep.operationId : null;
 
   return (
     <LuminaCard>
@@ -483,8 +546,33 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
               )}
             </LuminaPrompt>
 
+            {/* Support tier (easy): inverse-operation reminder — process guidance,
+                never names the answer. Withdrawn at medium/hard. */}
+            {currentChallenge.showInverseReminder && !challengeSolved && (
+              <LuminaPanel accent="blue" className="p-3 text-sm text-blue-200">
+                Reminder: to get <MathDisplay latex={currentChallenge.targetVariable} className="mx-1" /> by itself,
+                undo whatever is attached to it using the <span className="font-medium">inverse operation</span>
+                {' '}(addition ↔ subtraction, multiplication ↔ division), applied to <span className="font-medium">both sides</span>.
+              </LuminaPanel>
+            )}
+
             {/* Equation display / Step history — bespoke KaTeX readout surface */}
             <LuminaPanel className="p-6 space-y-3">
+              {/* Support tier (easy/medium): balanced-state PROCESS indicator. Confirms
+                  both sides stayed equal across the steps so far — never shows the
+                  solved value of the target variable. Withdrawn at hard. */}
+              {currentChallenge.showBalanceIndicator && (
+                <div className="flex items-center gap-2 pb-1">
+                  <LuminaBadge accent="emerald" className="text-xs">
+                    ⚖ Balanced
+                  </LuminaBadge>
+                  <span className="text-xs text-slate-400">
+                    {completedSteps.length > 0
+                      ? 'Each operation was applied to both sides — the equation stays equal.'
+                      : 'Apply every operation to both sides to keep the equation balanced.'}
+                  </span>
+                </div>
+              )}
               {/* Original equation */}
               <div className="flex items-center gap-3">
                 <LuminaBadge className="text-slate-500 text-xs shrink-0">
@@ -578,7 +666,9 @@ const EquationWorkspace: React.FC<EquationWorkspaceData> = (props) => {
                   <p className="text-sm text-slate-300">
                     Select the next operation:
                   </p>
-                  {!isGuidedMode && (
+                  {/* Manual step-hint button: available unless the next-step hint is
+                      already highlighted (easy) or the hard tier withdraws step hints. */}
+                  {!showNextStepHint && supportTier !== 'hard' && (
                     <LuminaButton
                       tone="subtle"
                       className="text-xs"

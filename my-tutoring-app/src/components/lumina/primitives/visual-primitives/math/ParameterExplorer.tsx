@@ -63,6 +63,20 @@ export interface ParameterExplorerChallenge {
   };
   /** For identify-relationship */
   correctParameter?: string;
+
+  // ── Within-mode SUPPORT TIER overlays (set by the generator when config.difficulty
+  //    is present). These withdraw EXPLANATORY OVERLAYS only — the sliders and the
+  //    formula (the manipulable simulation) stay live at every tier. Absent ⇒ all
+  //    overlays on (back-compat). See gemini-parameter-explorer.ts resolveSupportStructure. ──
+  /** Show the big focal live OUTPUT readout. Off for real predictions (hard/medium)
+   *  so the student can't slide to the asked value and read the answer off it. */
+  showOutputReadout?: boolean;
+  /** Show the numeric value beside each parameter slider. Off at hard. */
+  showParamReadouts?: boolean;
+  /** Show the amber "watch this slider" cue on the varied parameter. Off at hard. */
+  showVaryHighlight?: boolean;
+  /** Support tier for tutor-reveal calibration ('easy' | 'medium' | 'hard'). */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface ParameterExplorerData {
@@ -145,6 +159,43 @@ function evaluateFormula(
   }
 }
 
+/**
+ * Tier-aware tutor reveal clause. A living-sim tutor sees the full challenge data
+ * (including outputValue and the correct answer) and can LEAK what a hard tier hid
+ * on screen. This calibrates how much the tutor may say:
+ *  - easy   → may name the relationship and walk the effect (the readouts already show it)
+ *  - medium → nudge execution; do NOT name the relationship; ask what they predict
+ *  - hard   → never state the parameter's effect, never read the output; ask what
+ *             the student PREDICTS will happen and why, from the formula structure
+ * At every tier: never reveal the final numeric answer.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  type: ParameterExplorerChallenge['type'] | undefined,
+): string {
+  // identify-relationship: the dominant parameter IS the answer — never name it at any tier.
+  if (type === 'identify-relationship') {
+    return 'REVEAL POLICY: never name which parameter dominates — ask the student where each '
+      + 'parameter sits in the formula (multiplier vs additive, exponent) and let them decide.';
+  }
+  switch (tier) {
+    case 'hard':
+      return 'REVEAL POLICY (hard): the live output readout and value readouts are HIDDEN on '
+        + 'screen — do NOT read the output value back, do NOT state the parameter\'s effect or '
+        + 'name the relationship. Ask what the student PREDICTS will happen and why, reasoning '
+        + 'from the formula. Never reveal the answer.';
+    case 'medium':
+      return 'REVEAL POLICY (medium): the output readout is hidden — nudge the student to predict '
+        + 'the effect from the formula before sliding; do not name the relationship outright. '
+        + 'Never reveal the answer.';
+    case 'easy':
+      return 'REVEAL POLICY (easy): the readouts are visible — you may name the relationship and '
+        + 'point to the live readout as a self-check, but still let the student answer.';
+    default:
+      return 'REVEAL POLICY: guide without revealing the final answer.';
+  }
+}
+
 /** Format a number for display */
 function formatOutput(value: number): string {
   if (Math.abs(value) >= 1e6 || (Math.abs(value) < 0.001 && value !== 0)) {
@@ -165,6 +216,9 @@ interface ParameterSliderProps {
   onValueChange: (value: number) => void;
   onToggleLock: () => void;
   highlighted?: boolean;
+  /** Support-tier overlay: show the live numeric value of this parameter. The
+   *  slider itself (the manipulable object) always renders. */
+  showValueReadout?: boolean;
 }
 
 const ParameterSlider: React.FC<ParameterSliderProps> = ({
@@ -174,6 +228,7 @@ const ParameterSlider: React.FC<ParameterSliderProps> = ({
   onValueChange,
   onToggleLock,
   highlighted,
+  showValueReadout = true,
 }) => {
   return (
     <div
@@ -193,12 +248,14 @@ const ParameterSlider: React.FC<ParameterSliderProps> = ({
           <span className="text-xs text-slate-400">{param.name}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono text-slate-200">
-            {formatOutput(value)}
-            {param.unit && (
-              <span className="text-slate-500 ml-0.5">{param.unit}</span>
-            )}
-          </span>
+          {showValueReadout && (
+            <span className="text-sm font-mono text-slate-200">
+              {formatOutput(value)}
+              {param.unit && (
+                <span className="text-slate-500 ml-0.5">{param.unit}</span>
+              )}
+            </span>
+          )}
           <button
             onClick={onToggleLock}
             className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
@@ -338,6 +395,14 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
     [jsExpression, paramValues],
   );
 
+  // ── Support-tier overlay flags (default ON when the field is absent — back-compat
+  //    for sessions with no config.difficulty). The simulation object (sliders +
+  //    formula) is always rendered; only these explanatory overlays withdraw. ──
+  const showOutputReadout = currentChallenge?.showOutputReadout ?? true;
+  const showParamReadouts = currentChallenge?.showParamReadouts ?? true;
+  const showVaryHighlight = currentChallenge?.showVaryHighlight ?? true;
+  const supportTier = currentChallenge?.supportTier;
+
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
@@ -371,6 +436,7 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
       currentChallengeInstruction: currentChallenge?.instruction,
       challengeIndex: currentChallengeIndex,
       totalChallenges: challenges.length,
+      supportTier,
     }),
     [
       formula,
@@ -382,6 +448,7 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
       currentChallenge,
       currentChallengeIndex,
       challenges.length,
+      supportTier,
     ],
   );
 
@@ -553,7 +620,8 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
         `[ANSWER_INCORRECT] Challenge ${currentChallengeIndex + 1}/${challenges.length}: `
         + `"${currentChallenge.instruction}" — Student chose "${studentAnswer}" but correct is `
         + `"${currentChallenge.prediction?.correctDirection ?? currentChallenge.prediction?.correctValue ?? currentChallenge.correctParameter}". `
-        + `Attempt ${currentAttempts + 1}. Give a hint.`,
+        + `Attempt ${currentAttempts + 1}. Give a hint. `
+        + tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
@@ -586,11 +654,13 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
       // All done — evaluation auto-submits via effect
       return;
     }
+    const nextCh = challenges[currentChallengeIndex + 1];
     sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly.`,
+      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly. `
+      + tutorRevealPolicy(nextCh?.supportTier, nextCh?.type),
       { silent: true },
     );
-  }, [advanceProgress, resetAnswerState, currentChallengeIndex, challenges.length, sendText]);
+  }, [advanceProgress, resetAnswerState, currentChallengeIndex, challenges, challenges.length, sendText]);
 
   // -------------------------------------------------------------------------
   // Observation Triggers
@@ -645,15 +715,24 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
           </p>
         </LuminaPanel>
 
-        {/* ── Output Display (bespoke focal readout) ── */}
+        {/* ── Output Display (bespoke focal readout — a withdrawable OVERLAY) ──
+            At harder tiers showOutputReadout is false: the live numeric result is
+            hidden so the student must PREDICT the parameter's effect rather than
+            read it off. The sliders + formula (the manipulable sim) stay live. */}
         <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-400/20 text-center">
           <p className="text-xs text-slate-400 mb-1">{outputName}</p>
-          <p className="text-3xl font-mono font-bold text-blue-300">
-            {outputValue !== null ? formatOutput(outputValue) : '—'}
-            {outputUnit && (
-              <span className="text-base text-blue-400/60 ml-1">{outputUnit}</span>
-            )}
-          </p>
+          {showOutputReadout ? (
+            <p className="text-3xl font-mono font-bold text-blue-300">
+              {outputValue !== null ? formatOutput(outputValue) : '—'}
+              {outputUnit && (
+                <span className="text-base text-blue-400/60 ml-1">{outputUnit}</span>
+              )}
+            </p>
+          ) : (
+            <p className="text-3xl font-mono font-bold text-blue-300/40 select-none" title="Predict the result — readout hidden at this level">
+              ?
+            </p>
+          )}
         </div>
 
         {/* ── Parameter Sliders ── */}
@@ -674,10 +753,12 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
               locked={lockedParams.has(param.symbol)}
               onValueChange={(v) => handleParamChange(param.symbol, v)}
               onToggleLock={() => toggleLock(param.symbol)}
+              showValueReadout={showParamReadouts}
               highlighted={
                 currentChallenge?.type === 'predict-direction' ||
                 currentChallenge?.type === 'predict-value'
-                  ? currentChallenge.prediction?.varyParameter === param.symbol
+                  ? showVaryHighlight &&
+                    currentChallenge.prediction?.varyParameter === param.symbol
                   : currentChallenge?.type === 'identify-relationship'
                   ? selectedParameter === param.symbol
                   : false

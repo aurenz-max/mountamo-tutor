@@ -63,6 +63,19 @@ export interface SpatialSceneChallenge {
   }>;
 
   hint?: string;
+
+  // ── Support tier (within-mode scaffolding withdrawal) ──────────────
+  // Set by the generator from config.difficulty. Display-only: the checker
+  // reads correctPosition/correctCell, never these flags, so withdrawing a
+  // scaffold can never leak or invalidate the answer.
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Render an explicit reference-frame grid (clear cell borders). Off at hard. */
+  showGrid?: boolean;
+  /** Render object name labels under each emoji. Off at hard. */
+  showObjectLabels?: boolean;
+  /** Show position-word hints on OTHER (non-asked) objects. Easy only.
+   *  ANSWER-LEAK GUARD: never labels the target↔reference relation being asked. */
+  showPositionHints?: boolean;
 }
 
 export interface SpatialSceneData {
@@ -118,10 +131,15 @@ interface GridSceneProps {
   targetHighlight?: { row: number; col: number } | null;
   onCellClick?: (row: number, col: number) => void;
   interactive?: boolean;
+  /** Reference-frame grid: clear cell borders when true (easy/medium), faded at hard. */
+  showGrid?: boolean;
+  /** Object name labels under each emoji. Withdrawn at hard. */
+  showLabels?: boolean;
 }
 
 const GridScene: React.FC<GridSceneProps> = ({
   gridSize, sceneObjects, placedObjects = [], highlightCell, targetHighlight, onCellClick, interactive,
+  showGrid = true, showLabels = true,
 }) => {
   // Build a lookup map of what's in each cell
   const cellMap = useMemo(() => {
@@ -165,8 +183,8 @@ const GridScene: React.FC<GridSceneProps> = ({
                 : isHighlighted
                 ? 'border-blue-400 bg-blue-500/15 shadow-lg shadow-blue-500/20'
                 : obj
-                ? 'border-white/15 bg-slate-800/40'
-                : 'border-white/5 bg-slate-900/20'}
+                ? (showGrid ? 'border-white/15 bg-slate-800/40' : 'border-transparent bg-slate-800/30')
+                : (showGrid ? 'border-white/5 bg-slate-900/20' : 'border-transparent bg-transparent')}
               ${interactive && !obj ? 'hover:border-white/30 hover:bg-slate-800/30 cursor-pointer' : ''}
               ${!interactive ? 'cursor-default' : ''}
             `}
@@ -174,9 +192,11 @@ const GridScene: React.FC<GridSceneProps> = ({
             {obj && (
               <>
                 <span className="text-2xl sm:text-3xl leading-none">{obj.image}</span>
-                <span className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 leading-none truncate max-w-full px-1">
-                  {obj.name}
-                </span>
+                {showLabels && (
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 leading-none truncate max-w-full px-1">
+                    {obj.name}
+                  </span>
+                )}
               </>
             )}
           </button>
@@ -284,6 +304,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     referenceObjectName: currentChallenge?.referenceObjectName,
     targetObjectName: currentChallenge?.targetObject?.name,
     attemptNumber: currentAttempts + 1,
+    supportTier: currentChallenge?.supportTier,
   }), [gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -317,6 +338,26 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     setFeedbackType('');
   }, []);
 
+  // ── Tutor reveal calibration ───────────────────────────────────────
+  // The spatial RELATION (above/below/left/between) is the assessed answer, so
+  // the tutor NEVER names it at any tier — it only varies HOW MUCH it scaffolds
+  // the reasoning. easy → name a strategy/anchor; medium → nudge comparison;
+  // hard → ask only what the student sees, no strategy, no relation word.
+  const tutorRevealClause = useCallback((): string => {
+    const tier = currentChallenge?.supportTier;
+    if (tier === 'hard') {
+      return ' REVEAL POLICY (hard tier): do NOT name any position word and do NOT name a strategy. '
+        + 'Ask the student to compare the two objects\' rows/columns and say what they notice. Never reveal the answer.';
+    }
+    if (tier === 'medium') {
+      return ' REVEAL POLICY (medium tier): do NOT name the position word. '
+        + 'Nudge the student to compare the two specific objects (which is higher? which is to the side?). Never reveal the answer.';
+    }
+    // easy (or no tier): more support, but STILL never name the answer relation.
+    return ' REVEAL POLICY (easy tier): you may name a thinking strategy or anchor (sky=up, ground=down) '
+      + 'but NEVER state the correct position word — let the student say it. Never reveal the answer.';
+  }, [currentChallenge]);
+
   // ── Check Handlers ─────────────────────────────────────────────────
 
   const handleCheckIdentify = useCallback(() => {
@@ -336,12 +377,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student chose "${selectedOption}" but correct is "${currentChallenge.correctPosition}". `
-        + `Hint: "Look at the ${currentChallenge.targetObject.name}. Is it higher or lower than the ${currentChallenge.referenceObjectName}?"`,
+        + `Hint: "Look at the ${currentChallenge.targetObject.name}. Is it higher or lower than the ${currentChallenge.referenceObjectName}?"`
+        + tutorRevealClause(),
         { silent: true },
       );
     }
     return correct;
-  }, [currentChallenge, selectedOption, incrementAttempts, sendText]);
+  }, [currentChallenge, selectedOption, incrementAttempts, sendText, tutorRevealClause]);
 
   const handleCheckPlace = useCallback(() => {
     if (!currentChallenge || !selectedCell) return false;
@@ -360,13 +402,14 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student placed object at (${selectedCell.row},${selectedCell.col}) but correct is (${target?.row},${target?.col}). `
-        + `Hint: "The instruction says '${currentChallenge.correctPosition}'. Think about where that means."`,
+        + `Hint: "The instruction says '${currentChallenge.correctPosition}'. Think about where that means."`
+        + tutorRevealClause(),
         { silent: true },
       );
       setSelectedCell(null);
     }
     return correct;
-  }, [currentChallenge, selectedCell, incrementAttempts, sendText]);
+  }, [currentChallenge, selectedCell, incrementAttempts, sendText, tutorRevealClause]);
 
   const handleCheckDescribe = useCallback(() => {
     if (!currentChallenge || !selectedOption) return false;
@@ -385,12 +428,13 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student said "${selectedOption}" but correct is "${currentChallenge.correctPosition}". `
-        + `Give a hint about the spatial relationship.`,
+        + `Give a hint about the spatial relationship.`
+        + tutorRevealClause(),
         { silent: true },
       );
     }
     return correct;
-  }, [currentChallenge, selectedOption, incrementAttempts, sendText]);
+  }, [currentChallenge, selectedOption, incrementAttempts, sendText, tutorRevealClause]);
 
   const handlePlaceStep = useCallback((row: number, col: number) => {
     if (!currentChallenge || !currentChallenge.steps) return;
@@ -437,11 +481,12 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Step ${currentStep + 1}: placed at (${row},${col}) but correct is (${step.correctCell.row},${step.correctCell.col}). `
-        + `Hint: "${step.instruction}" — think about what "${currentChallenge.correctPosition}" means.`,
+        + `Hint: "${step.instruction}" — think about what "${currentChallenge.correctPosition}" means.`
+        + tutorRevealClause(),
         { silent: true },
       );
     }
-  }, [currentChallenge, currentStep, stepsCorrect, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, currentStep, stepsCorrect, currentAttempts, incrementAttempts, recordResult, sendText, tutorRevealClause]);
 
   // ── Master Check ───────────────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
@@ -546,6 +591,48 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     }
   }, [currentChallenge, selectedOption, selectedCell]);
 
+  // ── Position hints (easy tier, identify/describe only) ─────────────
+  // ANSWER-LEAK GUARD: shows example relations between NON-asked objects so the
+  // student can infer the target relation by analogy. NEVER describes the
+  // target↔reference relation that is the answer. Only shown when the generator
+  // set showPositionHints (easy tier).
+  const positionHints = useMemo<string[]>(() => {
+    if (!currentChallenge?.showPositionHints) return [];
+    if (currentChallenge.type !== 'identify' && currentChallenge.type !== 'describe') return [];
+
+    const objs = currentChallenge.sceneObjects ?? [];
+    const targetName = currentChallenge.targetObject?.name;
+    const refName = currentChallenge.referenceObjectName;
+
+    // Relation word from a→b grid positions (vertical takes precedence over horizontal).
+    const relate = (a: SceneObject, b: SceneObject): PositionWord | null => {
+      const dr = a.position.row - b.position.row;
+      const dc = a.position.col - b.position.col;
+      if (a.position.col === b.position.col && dr !== 0) return dr < 0 ? 'above' : 'below';
+      if (a.position.row === b.position.row && dc !== 0) return dc < 0 ? 'left_of' : 'right_of';
+      return null;
+    };
+
+    const hints: string[] = [];
+    for (let i = 0; i < objs.length && hints.length < 2; i++) {
+      for (let j = 0; j < objs.length && hints.length < 2; j++) {
+        if (i === j) continue;
+        const a = objs[i];
+        const b = objs[j];
+        // GUARD: skip any pair that IS the asked target↔reference relation (either direction).
+        const isAskedPair =
+          (a.name === targetName && b.name === refName) ||
+          (a.name === refName && b.name === targetName);
+        if (isAskedPair) continue;
+        const rel = relate(a, b);
+        if (rel) {
+          hints.push(`${a.name} is ${POSITION_LABELS[rel].toLowerCase()} ${b.name}`);
+        }
+      }
+    }
+    return hints;
+  }, [currentChallenge]);
+
   // ── Render Helpers ─────────────────────────────────────────────────
 
   const renderIdentifyOrDescribe = () => {
@@ -558,7 +645,21 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           gridSize={gridSize}
           sceneObjects={currentChallenge.sceneObjects}
           highlightCell={currentChallenge.targetObject.position}
+          showGrid={currentChallenge.showGrid ?? true}
+          showLabels={currentChallenge.showObjectLabels ?? true}
         />
+        {positionHints.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {positionHints.map((h, i) => (
+              <span
+                key={i}
+                className="text-[11px] px-2 py-1 rounded-full bg-slate-800/40 border border-white/10 text-slate-400"
+              >
+                {h}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
           {opts.map((opt) => {
             const label = POSITION_LABELS[opt as PositionWord] || opt;
@@ -604,6 +705,8 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           sceneObjects={currentChallenge.sceneObjects}
           highlightCell={selectedCell}
           targetHighlight={isCurrentChallengeCorrect ? currentChallenge.correctCell : undefined}
+          showGrid /* place: cells are the tap surface — keep the frame, only labels withdraw */
+          showLabels={currentChallenge.showObjectLabels ?? true}
           onCellClick={(row, col) => {
             if (!isCurrentChallengeCorrect) {
               // Don't allow placing on existing objects
@@ -661,6 +764,8 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
           gridSize={gridSize}
           sceneObjects={currentChallenge.sceneObjects}
           placedObjects={placedObjects}
+          showGrid /* follow_directions: cells are the tap surface — keep the frame */
+          showLabels={currentChallenge.showObjectLabels ?? true}
           onCellClick={(row, col) => {
             if (allStepsDone) return;
             const occupied = currentChallenge.sceneObjects.some(

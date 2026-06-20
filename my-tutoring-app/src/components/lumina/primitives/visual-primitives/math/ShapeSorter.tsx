@@ -45,6 +45,20 @@ export interface ShapeSorterChallenge {
   targetValue?: string;
   /** Pool of shapes — all challenge types use this unified array */
   shapes: ShapeSorterShape[];
+
+  // ── Within-mode support tier (config.difficulty) — display-only scaffolds.
+  //    Set by the generator per challenge; absent = no tier (defaults stand).
+  //    The checker NEVER reads these; they only withdraw on-screen self-check cues.
+  /** Tier this challenge was generated at ('easy' | 'medium' | 'hard'). */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** sort: label each bin with its attribute value. hard → blank bins (recall criterion). */
+  showBinLabels?: boolean;
+  /** sort: show each bin's live "N shapes" count badge (self-check). easy only. */
+  showBinCounts?: boolean;
+  /** count: pre-reveal the corner dots so the student counts them directly. easy only. */
+  showCornerHints?: boolean;
+  /** identify: show a "find N" badge of how many shapes match (self-check). easy only. */
+  showMatchCount?: boolean;
 }
 
 export interface ShapeSorterData {
@@ -254,9 +268,11 @@ interface IdentifyViewProps {
   targetIndices: Set<number>;
   selectedIndices: Set<number>;
   onToggle: (index: number) => void;
+  /** easy-tier scaffold: show a "find N" self-check badge of how many match. */
+  showMatchCount?: boolean;
 }
 
-const IdentifyView: React.FC<IdentifyViewProps> = ({ shapes, targetIndices, selectedIndices, onToggle }) => {
+const IdentifyView: React.FC<IdentifyViewProps> = ({ shapes, targetIndices, selectedIndices, onToggle, showMatchCount }) => {
   const cols = Math.min(shapes.length, 4);
   const cellSize = 90;
   const svgWidth = cols * cellSize;
@@ -264,7 +280,12 @@ const IdentifyView: React.FC<IdentifyViewProps> = ({ shapes, targetIndices, sele
   const svgHeight = rows * cellSize;
 
   return (
-    <div className="flex justify-center">
+    <div className="flex flex-col items-center gap-2">
+      {showMatchCount && targetIndices.size > 0 && (
+        <Badge className="bg-emerald-500/15 border-emerald-400/30 text-emerald-300 text-xs">
+          Find {targetIndices.size} shape{targetIndices.size !== 1 ? 's' : ''}
+        </Badge>
+      )}
       <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         className="max-w-full h-auto">
         {shapes.map((s, i) => {
@@ -301,6 +322,8 @@ interface CountViewProps {
   showCorners: boolean;
   sidesAnswer: string;
   cornersAnswer: string;
+  /** easy-tier scaffold: pre-reveal the corner dots regardless of the user toggle. */
+  cornerHint?: boolean;
   onTapSide: (idx: number) => void;
   onToggleCorners: () => void;
   onSidesChange: (v: string) => void;
@@ -308,12 +331,15 @@ interface CountViewProps {
 }
 
 const CountView: React.FC<CountViewProps> = ({
-  shape, tappedSides, showCorners, sidesAnswer, cornersAnswer,
+  shape, tappedSides, showCorners, sidesAnswer, cornersAnswer, cornerHint,
   onTapSide, onToggleCorners, onSidesChange, onCornersChange,
 }) => {
   const props = SHAPE_PROPERTIES[shape.shape];
   const totalSides = props?.sides ?? 0;
   const isCurved = props?.curved ?? false;
+  // Corner dots are a perception aid only — the student still types the count, so
+  // pre-revealing them at easy never auto-fills the answer.
+  const cornersVisible = showCorners || (cornerHint ?? false);
 
   return (
     <div className="space-y-4">
@@ -321,7 +347,7 @@ const CountView: React.FC<CountViewProps> = ({
         <svg width={200} height={200} viewBox="0 0 200 200">
           {renderShapeSVG(shape.shape, 100, 100, 100, shape.color, 0, {
             showSides: tappedSides,
-            showCorners,
+            showCorners: cornersVisible,
           })}
         </svg>
       </div>
@@ -345,11 +371,11 @@ const CountView: React.FC<CountViewProps> = ({
       {!isCurved && (
         <div className="flex justify-center">
           <Button variant="ghost" size="sm"
-            className={`text-xs ${showCorners
+            className={`text-xs ${cornersVisible
               ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
               : 'bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10'}`}
             onClick={onToggleCorners}>
-            {showCorners ? 'Corners shown ✓' : 'Show corners'}
+            {cornersVisible ? 'Corners shown ✓' : 'Show corners'}
           </Button>
         </div>
       )}
@@ -413,15 +439,23 @@ interface SortViewProps {
   selectedShapeIdx: number | null;
   onSelectShape: (idx: number) => void;
   onSelectBin: (binLabel: string) => void;
+  /** Tier scaffolds — default ON when undefined (no-tier path unchanged). */
+  showBinLabels?: boolean;
+  showBinCounts?: boolean;
 }
 
 const SortView: React.FC<SortViewProps> = ({
   shapes, bins, ruleAttribute, binAssignments, selectedShapeIdx,
   onSelectShape, onSelectBin,
+  showBinLabels, showBinCounts,
 }) => {
+  // Default ON so a no-tier (undefined) generation renders exactly as before.
+  const labelsVisible = showBinLabels ?? true;
+  const countsVisible = showBinCounts ?? true;
   return (
     <div className="space-y-4">
-      {/* Rule badge */}
+      {/* Rule badge — always shown: it names the sort DIMENSION, not the per-bin
+          membership, so it never trivializes which bin a given shape belongs to. */}
       <div className="flex justify-center">
         <Badge className="bg-cyan-500/20 border-cyan-400/30 text-cyan-300 text-xs capitalize">
           Sort by: {ruleAttribute}
@@ -449,7 +483,10 @@ const SortView: React.FC<SortViewProps> = ({
         })}
       </div>
 
-      {/* Bins — derived from shapes + ruleAttribute */}
+      {/* Bins — derived from shapes + ruleAttribute. binLabel is ALWAYS the
+          assignment key (passed to onSelectBin); only its DISPLAY is withdrawn at
+          harder tiers, so the checker — which compares against the derived label —
+          is unaffected. */}
       <div className="flex justify-center gap-3 flex-wrap">
         {bins.map((binLabel, i) => {
           const count = Array.from(binAssignments.values()).filter(b => b === binLabel).length;
@@ -460,10 +497,20 @@ const SortView: React.FC<SortViewProps> = ({
                   ? 'border-amber-400/50 bg-amber-400/5 hover:bg-amber-400/10 cursor-pointer'
                   : 'border-white/20 bg-white/5 cursor-default'
               }`}>
-              <div className="text-sm font-medium text-slate-200">{binLabel}</div>
-              <LuminaBadge className="mt-1 text-xs">
-                {count} shape{count !== 1 ? 's' : ''}
-              </LuminaBadge>
+              <div className="text-sm font-medium text-slate-200">
+                {labelsVisible ? binLabel : `Bin ${i + 1}`}
+              </div>
+              {countsVisible ? (
+                <LuminaBadge className="mt-1 text-xs">
+                  {count} shape{count !== 1 ? 's' : ''}
+                </LuminaBadge>
+              ) : (
+                count > 0 && (
+                  <div className="mt-1 text-xs text-slate-500">
+                    {'•'.repeat(Math.min(count, 8))}
+                  </div>
+                )
+              )}
             </button>
           );
         })}
@@ -572,6 +619,25 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
   const countProps = countShape ? SHAPE_PROPERTIES[countShape.shape] : null;
 
   // ── AI Tutoring ────────────────────────────────────────────────
+  // Tier-aware reveal policy. RECOGNITION RULE: for identify/sort the assessed
+  // answer IS which shapes match / which bin each shape belongs to, so the tutor
+  // never names that at ANY tier. The tier only modulates how much PROCESS help
+  // (strategy naming, step prompts) the tutor offers.
+  const tier = currentChallenge?.supportTier;
+  const tutorRevealClause = useMemo(() => {
+    if (!currentChallenge) return '';
+    const t = tier ?? 'medium';
+    const recall = t === 'hard'
+      ? 'HARD tier: the student works unaided. Do NOT name the strategy or which feature to use — ask what they notice ("How many straight sides does this one have?"). '
+      : t === 'easy'
+        ? 'EASY tier: name the strategy and walk the first step ("Count the straight sides one at a time — tap each side"). '
+        : 'MEDIUM tier: nudge the next step only, do not name the full strategy. ';
+    const guard = currentChallenge.type === 'count'
+      ? 'NEVER state the side/corner count — let the student count it.'
+      : 'NEVER say which shapes match or which bin a shape belongs to — that IS the answer the student must produce.';
+    return recall + guard;
+  }, [currentChallenge, tier]);
+
   const aiPrimitiveData = useMemo(() => ({
     challengeType: currentChallenge?.type ?? '',
     ruleAttribute: currentChallenge?.ruleAttribute ?? '',
@@ -584,7 +650,9 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
     currentChallengeIndex,
     instruction: currentChallenge?.instruction ?? '',
     attemptNumber: currentAttempts + 1,
-  }), [currentChallenge, countShape, countProps, gradeBand, challenges.length, currentChallengeIndex, currentAttempts]);
+    supportTier: tier ?? '',
+    tutorRevealClause,
+  }), [currentChallenge, countShape, countProps, gradeBand, challenges.length, currentChallengeIndex, currentAttempts, tier, tutorRevealClause]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'shape-sorter',
@@ -670,7 +738,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
               : `${extra} shape${extra > 1 ? 's don\'t' : ' doesn\'t'} match. Try again!`
           );
           setFeedbackType('error');
-          sendText(`[ANSWER_INCORRECT] Missed ${missed}, ${extra} extras. Rule: ${currentChallenge.ruleAttribute}=${currentChallenge.targetValue}. Attempt ${currentAttempts + 1}. Give a hint.`, { silent: true });
+          sendText(`[ANSWER_INCORRECT] Missed ${missed}, ${extra} extras. Rule: ${currentChallenge.ruleAttribute}=${currentChallenge.targetValue}. Attempt ${currentAttempts + 1}. ${tutorRevealClause} Give a hint.`, { silent: true });
         }
         break;
       }
@@ -693,7 +761,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
             : 'Check the corners again — look where the sides meet.';
           setFeedback(hint);
           setFeedbackType('error');
-          sendText(`[ANSWER_INCORRECT] Student said ${sidesAnswer} sides, ${cornersAnswer} corners for ${shapeName} (expected ${expSides}/${expCorners}). Attempt ${currentAttempts + 1}. ${hint}`, { silent: true });
+          sendText(`[ANSWER_INCORRECT] Student said ${sidesAnswer} sides, ${cornersAnswer} corners for ${shapeName} (expected ${expSides}/${expCorners}). Attempt ${currentAttempts + 1}. ${tutorRevealClause} ${hint}`, { silent: true });
         }
         break;
       }
@@ -717,7 +785,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
         } else {
           setFeedback(`${wrongCount} shape${wrongCount > 1 ? 's are' : ' is'} in the wrong bin. Try again!`);
           setFeedbackType('error');
-          sendText(`[ANSWER_INCORRECT] ${wrongCount} shapes sorted incorrectly by ${currentChallenge.ruleAttribute}. Attempt ${currentAttempts + 1}. Hint about the sorting rule.`, { silent: true });
+          sendText(`[ANSWER_INCORRECT] ${wrongCount} shapes sorted incorrectly by ${currentChallenge.ruleAttribute}. Attempt ${currentAttempts + 1}. ${tutorRevealClause} Hint about the sorting rule.`, { silent: true });
           setBinAssignments(new Map());
           setSortSelectedShape(null);
         }
@@ -739,7 +807,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
   }, [
     currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText,
     identifySelected, targetIndices, sidesAnswer, cornersAnswer, countProps, countShape,
-    binAssignments,
+    binAssignments, tutorRevealClause,
   ]);
 
   // ── Advance to next challenge ──────────────────────────────────
@@ -898,6 +966,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
                 targetIndices={targetIndices}
                 selectedIndices={identifySelected}
                 onToggle={handleIdentifyToggle}
+                showMatchCount={currentChallenge.showMatchCount}
               />
             )}
             {currentChallenge.type === 'count' && countShape && (
@@ -905,6 +974,7 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
                 shape={countShape}
                 tappedSides={tappedSides}
                 showCorners={showCorners}
+                cornerHint={currentChallenge.showCornerHints}
                 sidesAnswer={sidesAnswer}
                 cornersAnswer={cornersAnswer}
                 onTapSide={handleTapSide}
@@ -922,6 +992,8 @@ const ShapeSorter: React.FC<ShapeSorterProps> = ({ data, className }) => {
                 selectedShapeIdx={sortSelectedShape}
                 onSelectShape={handleSortSelectShape}
                 onSelectBin={handleSortSelectBin}
+                showBinLabels={currentChallenge.showBinLabels}
+                showBinCounts={currentChallenge.showBinCounts}
               />
             )}
           </>

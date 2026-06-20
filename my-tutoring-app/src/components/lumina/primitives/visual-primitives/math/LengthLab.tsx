@@ -57,6 +57,10 @@ export interface LengthLabChallenge {
   /** Indirect comparison clue (e.g. "The pencil is shorter than the string") */
   clue0?: string;
   clue1?: string;
+  /** Support-tier scaffolds (set by the generator from config.difficulty). */
+  showUnitTicks?: boolean;          // compare/order — unit-cell dividers on the bars
+  showAlignmentFeedback?: boolean;  // tile_and_count — live fit self-check (default on)
+  supportTier?: string;             // 'easy' | 'medium' | 'hard' — drives tutor reveal
 }
 
 export interface LengthLabData {
@@ -96,6 +100,26 @@ const UNIT_EMOJI: Record<string, string> = {
 const UNIT_WIDTH = 36; // px per unit cell
 const MAX_BAR_UNITS = 12;
 
+/**
+ * Tutor reveal calibration by support tier (Gotcha #2): a tier that hides a
+ * scaffold on screen must not let the AI tutor leak it. The instruction's
+ * strategy is withdrawn at hard, so the tutor must not name it there either.
+ */
+function tutorRevealPolicy(tier: string | undefined, type: string): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return ' [TIER easy] Name the strategy and walk the setup: for compare/order, tell them to line up the starting points and count the unit cells; for indirect, read the clues as a chain. Do not state the final answer.';
+  }
+  if (tier === 'medium') {
+    return ' [TIER medium] Nudge execution only — point them to compare the far ends or re-read a clue. Do not name the full strategy or the answer.';
+  }
+  // hard — scaffolds withdrawn on screen; do not reintroduce them verbally
+  if (type === 'indirect') {
+    return ' [TIER hard] Do NOT name the transitive chain or which object is longer. Ask what each clue tells them and let them chain it.';
+  }
+  return ' [TIER hard] Scaffolds are withdrawn — ask what the student sees (which bar reaches farther); do not name the strategy or count the units for them, never reveal the answer.';
+}
+
 // ============================================================================
 // Helper: Object Bar Renderer
 // ============================================================================
@@ -107,16 +131,19 @@ interface ObjectBarProps {
   maxUnits: number;
   showLabel?: boolean;
   highlighted?: boolean;
+  /** Easy/medium support tier — render unit-cell dividers so the student can count cells. */
+  showTicks?: boolean;
   onClick?: () => void;
   className?: string;
 }
 
-function ObjectBar({ name, length, color, maxUnits, showLabel = true, highlighted = false, onClick, className = '' }: ObjectBarProps) {
-  const widthPx = Math.min(length, maxUnits) * UNIT_WIDTH;
+function ObjectBar({ name, length, color, maxUnits, showLabel = true, highlighted = false, showTicks = false, onClick, className = '' }: ObjectBarProps) {
+  const units = Math.min(length, maxUnits);
+  const widthPx = units * UNIT_WIDTH;
   return (
     <div className={`flex items-center gap-3 ${className}`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
       <div
-        className={`rounded-md transition-all duration-300 ${highlighted ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-slate-900' : ''}`}
+        className={`relative overflow-hidden rounded-md transition-all duration-300 ${highlighted ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-slate-900' : ''}`}
         style={{
           width: `${widthPx}px`,
           height: '28px',
@@ -124,7 +151,15 @@ function ObjectBar({ name, length, color, maxUnits, showLabel = true, highlighte
           minWidth: '24px',
           opacity: 0.85,
         }}
-      />
+      >
+        {showTicks && Array.from({ length: Math.max(0, units - 1) }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute top-0 bottom-0"
+            style={{ left: `${(i + 1) * UNIT_WIDTH}px`, width: '1px', backgroundColor: 'rgba(255,255,255,0.5)' }}
+          />
+        ))}
+      </div>
       {showLabel && (
         <span className="text-slate-300 text-sm whitespace-nowrap">{name}</span>
       )}
@@ -144,9 +179,11 @@ interface TilingWorkspaceProps {
   correctCount: number;
   onComplete: (count: number) => void;
   disabled: boolean;
+  /** Easy support tier — show the live "fit" self-check. Defaults on (medium/hard withdraw). */
+  showAlignmentFeedback?: boolean;
 }
 
-function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled }: TilingWorkspaceProps) {
+function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true }: TilingWorkspaceProps) {
   const [placedUnits, setPlacedUnits] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const objectWidthPx = Math.min(objectLength, MAX_BAR_UNITS) * UNIT_WIDTH;
@@ -207,8 +244,8 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
             <span className="text-slate-500 text-sm italic">Tap + to add tiles</span>
           )}
         </div>
-        {/* Alignment feedback */}
-        {placedUnits > 0 && !submitted && (
+        {/* Alignment feedback (withdrawn at medium/hard support tiers) */}
+        {placedUnits > 0 && !submitted && showAlignmentFeedback && (
           <div className="text-xs text-slate-500">
             {unitWidthPx < objectWidthPx ? 'Not enough tiles yet...' :
              unitWidthPx > objectWidthPx ? 'Too many tiles! Remove some.' :
@@ -457,7 +494,9 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
     unitType,
     gradeBand: data.gradeBand,
     challengeCount: challenges.length,
-  }), [unitType, data.gradeBand, challenges.length]);
+    // Session-level support tier so the tutor calibrates its reveal level.
+    supportTier: challenges.find(c => c.supportTier)?.supportTier ?? null,
+  }), [unitType, data.gradeBand, challenges]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'length-lab',
@@ -570,7 +609,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
       });
     } else {
       SoundManager.playIncorrect();
-      sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}" for "${currentChallenge.objectName0}" vs "${currentChallenge.objectName1}". Give a hint.`, { silent: true });
+      sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}" for "${currentChallenge.objectName0}" vs "${currentChallenge.objectName1}". Give a hint.${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
       recordResult({
         challengeId: currentChallenge.id,
         correct: false,
@@ -590,7 +629,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
       sendText(`[ANSWER_CORRECT] Student correctly tiled ${count} ${unitType} for "${currentChallenge.objectName0}".`, { silent: true });
     } else {
       SoundManager.playIncorrect();
-      sendText(`[ANSWER_INCORRECT] Student placed ${count} ${unitType} but correct is ${currentChallenge.correctUnitCount} for "${currentChallenge.objectName0}". Hint about gaps or overlaps.`, { silent: true });
+      sendText(`[ANSWER_INCORRECT] Student placed ${count} ${unitType} but correct is ${currentChallenge.correctUnitCount} for "${currentChallenge.objectName0}". Hint about gaps or overlaps.${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
     }
 
     recordResult({
@@ -611,7 +650,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
       sendText(`[ANSWER_CORRECT] Student correctly ordered objects from shortest to longest.`, { silent: true });
     } else {
       SoundManager.playIncorrect();
-      sendText(`[ANSWER_INCORRECT] Student ordered incorrectly. The correct order is: ${currentChallenge.correctOrderCsv}. Encourage comparing two at a time.`, { silent: true });
+      sendText(`[ANSWER_INCORRECT] Student ordered incorrectly. The correct order is: ${currentChallenge.correctOrderCsv}. Encourage comparing two at a time.${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
     }
 
     recordResult({
@@ -636,7 +675,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
       sendText(`[ANSWER_CORRECT] Student correctly used indirect comparison: "${answer}".`, { silent: true });
     } else {
       SoundManager.playIncorrect();
-      sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}". Remind them about the clues: "${currentChallenge.clue0}" and "${currentChallenge.clue1}".`, { silent: true });
+      sendText(`[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}". Remind them about the clues: "${currentChallenge.clue0}" and "${currentChallenge.clue1}".${tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type)}`, { silent: true });
     }
 
     recordResult({
@@ -667,8 +706,8 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
           <div className="space-y-5">
             {/* Two objects on shared baseline */}
             <div className="space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
-              <ObjectBar name={ch.objectName0} length={ch.objectLength0} color={ch.objectColor0} maxUnits={MAX_BAR_UNITS} />
-              <ObjectBar name={ch.objectName1} length={ch.objectLength1} color={ch.objectColor1} maxUnits={MAX_BAR_UNITS} />
+              <ObjectBar name={ch.objectName0} length={ch.objectLength0} color={ch.objectColor0} maxUnits={MAX_BAR_UNITS} showTicks={ch.showUnitTicks} />
+              <ObjectBar name={ch.objectName1} length={ch.objectLength1} color={ch.objectColor1} maxUnits={MAX_BAR_UNITS} showTicks={ch.showUnitTicks} />
             </div>
 
             {/* Answer buttons */}
@@ -712,6 +751,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
             correctCount={ch.correctUnitCount || ch.objectLength0}
             onComplete={handleTileComplete}
             disabled={allChallengesComplete}
+            showAlignmentFeedback={ch.showAlignmentFeedback !== false}
           />
         );
 
@@ -721,7 +761,7 @@ const LengthLab: React.FC<LengthLabProps> = ({ data }) => {
             {/* Show all objects */}
             <div className="space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
               {orderItems.map(item => (
-                <ObjectBar key={item.name} name={item.name} length={item.length} color={item.color} maxUnits={MAX_BAR_UNITS} />
+                <ObjectBar key={item.name} name={item.name} length={item.length} color={item.color} maxUnits={MAX_BAR_UNITS} showTicks={ch.showUnitTicks} />
               ))}
             </div>
 

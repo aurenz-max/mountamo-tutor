@@ -61,6 +61,107 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// Two-field contract: config.targetEvalMode says WHICH skill (task identity —
+// which solid / which kind of question, chosen by the manifest to match the
+// objective); config.difficulty says how much ANNOTATION SUPPORT the student
+// gets while doing it. The tier NEVER changes which solid is shown (that is the
+// eval-mode axis) — it only withdraws the annotation overlay that helps the
+// student SEE the faces/edges/vertices.
+//   easy   = element labels (face/edge/vertex names) + per-face highlight + rotation guide
+//   medium = rotation guide only, no element labels/highlights
+//   hard   = no annotation overlay at all (student counts unaided from the solid/net)
+//
+// ANSWER-LEAK GUARD: on 'faces-and-properties' the asked answer IS a count
+// ("how many flat faces?"). The easy scaffold may HIGHLIGHT/LABEL each face to
+// aid counting, but the component never prints the TOTAL count — the total lives
+// only in propertyQuestions (the asked question the student answers), decoupled
+// from any display lever. See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+type ChallengeType =
+  | 'identify-3d'
+  | 'match-to-real-world'
+  | '2d-vs-3d'
+  | 'faces-and-properties'
+  | 'shape-riddle';
+
+interface SupportScaffold {
+  /** Face/edge/vertex NAME labels + element callouts overlaid on the solid. The
+   *  annotation overlay the worklist withdraws at hard. NEVER prints a count total. */
+  showElementLabels: boolean;
+  /** Per-face highlight cue (light up faces one at a time) to aid counting without
+   *  ever stating the total. Only meaningful where a single solid is shown. */
+  showFaceHighlight: boolean;
+  /** The auto-spin / rotation guide that helps the student perceive the 3D form. */
+  showRotationGuide: boolean;
+  /** Prompt guidance describing the annotation level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the annotation-overlay support structure for a tier on a pinned mode.
+ * Support is withdrawn as the tier hardens; the per-mode lines reframe the SAME
+ * task (same solid) with fewer annotations — never a different solid, never a
+ * printed answer count.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const showElementLabels = tier === 'easy';
+  const showFaceHighlight = tier === 'easy';
+  const showRotationGuide = tier !== 'hard';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets the on-screen ANNOTATION OVERLAY level only (${tier === 'easy' ? 'maximum support: face/edge/vertex labels + per-face highlight + a rotation guide help the student see the solid' : tier === 'medium' ? 'moderate support: only a rotation guide; no element labels or highlights' : 'minimum support: NO annotation overlay — the student counts unaided from the solid/net'}). It NEVER changes WHICH solid is shown or the correct answer — only how much the screen helps the student perceive faces, edges, and vertices.`,
+  ];
+  switch (pinnedType) {
+    case 'identify-3d':
+    case 'match-to-real-world':
+    case '2d-vs-3d':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep warm, descriptive language that names visible features (flat faces, curved surfaces, points) so the student can confirm the shape from its parts.'
+          : tier === 'hard'
+            ? 'Use plainer instructions that do NOT enumerate the shape\'s features; the student must perceive the form on their own and name/sort/match it.'
+            : 'Moderately descriptive instructions; mention the kind of features to look for without listing exact counts.',
+      );
+      break;
+    case 'faces-and-properties':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep the property questions exactly as the asked task. The on-screen labels/highlights help the student COUNT each face — but NEVER state the total count in the instruction or anywhere outside the question itself (the total is the answer).'
+          : tier === 'hard'
+            ? 'Withdraw all counting aids: no labels, no highlights, no rotation guide. The student counts faces/edges/vertices unaided and justifies their count. NEVER state any count.'
+            : 'A rotation guide is available but faces are not labelled or highlighted; the student tracks the count themselves. NEVER state the total count.',
+      );
+      break;
+    case 'shape-riddle':
+      promptLines.push(
+        tier === 'easy'
+          ? 'This is a deduction task; keep clues property-based. A rotation guide on the answer options helps perception, but never let labels name the mystery shape.'
+          : tier === 'hard'
+            ? 'No annotation overlay on the options; the student deduces the mystery shape from clues alone and justifies the match.'
+            : 'A rotation guide on the options aids perception; no element labels.',
+      );
+      break;
+  }
+  return { showElementLabels, showFaceHighlight, showRotationGuide, promptLines };
+}
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -217,6 +318,13 @@ export const generateThreeDShapeExplorer = async (
   config?: Partial<ThreeDShapeExplorerData> & {
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much annotation-overlay support within it. NEVER changes
+     * which solid is shown or the answer.
+     */
+    difficulty?: string;
   }
 ): Promise<ThreeDShapeExplorerData> => {
   // ---------------------------------------------------------------------------
@@ -238,6 +346,21 @@ export const generateThreeDShapeExplorer = async (
     CHALLENGE_TYPE_DOCS,
   );
 
+  // ── Within-mode support tier (annotation-overlay scaffolding only) ──
+  // supportTier is the STUDENT's tier — it DRIVES the per-challenge application.
+  // pinnedType is ONLY for the prompt tone (a single pinned mode has one task to
+  // describe to the LLM); a blended session still applies the tier per challenge.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (annotation level — NOT which solid is shown)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const prompt = `
 Create an educational 3D shape exploration activity for teaching "${topic}" to ${gradeLevel} students.
 
@@ -254,7 +377,7 @@ AVAILABLE 3D SHAPES (use these exact names):
 - "rectangular-prism" (like a cereal box)
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
   * Focus on identify-3d, 2d-vs-3d, and match-to-real-world
@@ -527,6 +650,34 @@ Return the complete 3D shape explorer configuration.
     if (config.show3dRotation !== undefined) data.show3dRotation = config.show3dRotation;
     if (config.title !== undefined) data.title = config.title;
     if (config.description !== undefined) data.description = config.description;
+  }
+
+  // ── Apply the within-mode support tier deterministically (annotation only) ──
+  // Runs LAST, after all config overrides. Gated ONLY on a tier being present so
+  // blended/auto sessions get the student's tier too; each challenge resolves its
+  // OWN scaffold from its own mode (ch.type). Code owns the annotation structure;
+  // the LLM only chose the solid + the (asked) questions. The COUNT total is never
+  // written to a display field — it lives only in propertyQuestions, so withdrawing
+  // labels/highlights at harder tiers can neither leak nor invalidate the answer.
+  if (supportTier) {
+    for (const ch of data.challenges as Array<{ type: string; showElementLabels?: boolean; showFaceHighlight?: boolean; supportTier?: string }>) {
+      const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
+      ch.showElementLabels = sc.showElementLabels;
+      ch.showFaceHighlight = sc.showFaceHighlight;
+      ch.supportTier = supportTier;
+    }
+    // The rotation guide is a global display field on the activity; withdraw it at hard.
+    // (Only when a tier is pinned — single-mode tone uses pinnedType's scaffold; for
+    //  blended sessions the tier still governs the global rotation guide uniformly.)
+    const rotation = pinnedType
+      ? resolveSupportStructure(pinnedType, supportTier).showRotationGuide
+      : supportTier !== 'hard';
+    data.show3dRotation = rotation;
+    console.log(
+      `[3DShapeExplorer] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → `
+      + `labels=${supportTier === 'easy'}, faceHighlight=${supportTier === 'easy'}, rotationGuide=${rotation}`,
+    );
   }
 
   // Final summary log (matches pattern from other generators)

@@ -242,6 +242,10 @@ export interface DistributionExplorerData {
   /** Phase challenges, ordered from easy to hard. The component gates them sequentially. */
   challenges: DistributionChallenge[];
 
+  // ── Tutoring plumbing (optional, auto-injected by the renderer) ──
+  instanceId?: string;
+  gradeLevel?: string;
+
   /** Optional debug payload — visible in the tester but not in production. */
   debug?: DistributionExplorerDebug;
 }

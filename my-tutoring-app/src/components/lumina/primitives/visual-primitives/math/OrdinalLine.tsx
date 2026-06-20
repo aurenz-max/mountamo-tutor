@@ -40,6 +40,14 @@ export interface OrdinalLineChallenge {
   correctAnswer: string | number;
   options?: Array<string | number>; // multiple choice options
   matchPairs?: Array<{ word: string; symbol: string }>; // for match phase
+
+  // --- Support tier (set only when the manifest pins a difficulty) ---
+  // Display-only scaffolds; defaults below preserve the no-tier render exactly.
+  supportTier?: 'easy' | 'medium' | 'hard';
+  showPositionLabels?: boolean; // ordinal labels under each character (identify, relative); default OFF
+  showSlotLabels?: boolean;     // ordinal labels above the build/story slots; default ON
+  highlightTarget?: boolean;    // glow the reference position (relative-position); default ON
+  orderMatchSymbols?: boolean;  // render the match symbol column in sequence; default OFF (shuffled)
 }
 
 export interface OrdinalLineData {
@@ -95,6 +103,31 @@ function getOrdinalLabel(position: number, format: 'word' | 'symbol' | 'both'): 
   if (format === 'word') return word;
   if (format === 'symbol') return symbol;
   return `${symbol} (${word})`;
+}
+
+/**
+ * Calibrate how much the live tutor may reveal for the current support tier, so
+ * it can't hand back the scaffold a hard tier just withdrew. The tutor sees the
+ * full challenge data; without this it would happily count out the answer.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  type: OrdinalLineChallenge['type'],
+): string {
+  // Recognition modes: the relationship/order IS the answer — never name it.
+  const recognition = type === 'relative-position' || type === 'match';
+  switch (tier) {
+    case 'easy':
+      return ' [TIER easy] On-screen ordinal labels are visible — point the student at them and name the strategy (count from the front: first, second, third).';
+    case 'medium':
+      return ' [TIER medium] Nudge execution only — prompt a careful recount touching each one; do not name the answer.';
+    case 'hard':
+      return recognition
+        ? ' [TIER hard] No labels/highlight are shown and the relationship is the answer — do NOT name who is before/after or which symbol matches. Ask what the student sees and have them count from the front themselves.'
+        : ' [TIER hard] No ordinal labels are shown — do NOT count the position out for the student or name it. Ask what they see and have them count from the front. Never reveal the answer.';
+    default:
+      return '';
+  }
 }
 
 // ============================================================================
@@ -207,6 +240,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
     storyText: currentChallenge?.storyText ?? '',
     attemptNumber: currentAttempts + 1,
     correctAnswer: currentChallenge?.correctAnswer,
+    supportTier: currentChallenge?.supportTier,
   }), [
     context, maxPosition, gradeBand, challenges.length,
     currentChallengeIndex, currentChallenge, currentAttempts,
@@ -255,7 +289,8 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student tapped position ${selectedPosition} but correct is ${currentChallenge.correctAnswer} (${currentChallenge.targetOrdinalWord}). `
-        + `Attempt ${currentAttempts + 1}. Give a hint: "Count from the front of the line."`,
+        + `Attempt ${currentAttempts + 1}. Give a hint: "Count from the front of the line."`
+        + tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
@@ -286,7 +321,8 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student has incorrect matches. Attempt ${currentAttempts + 1}. `
-        + `Hint: "Read each word slowly — first, second, third..."`,
+        + `Hint: "Read each word slowly — first, second, third..."`
+        + tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
@@ -310,7 +346,8 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student chose "${selectedOption}" but correct is "${currentChallenge.correctAnswer}". `
-        + `Challenge type: ${currentChallenge.type}. Attempt ${currentAttempts + 1}. Give a hint.`,
+        + `Challenge type: ${currentChallenge.type}. Attempt ${currentAttempts + 1}. Give a hint.`
+        + tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
@@ -341,7 +378,8 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student has characters in wrong positions. Attempt ${currentAttempts + 1}. `
-        + `Hint: "Read each clue carefully and count the positions."`,
+        + `Hint: "Read each clue carefully and count the positions."`
+        + tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
@@ -545,6 +583,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
     chars: Array<{ name: string; emoji: string }>,
     interactive: boolean,
     highlightPosition?: number,
+    showPositionLabels = false,
   ) => (
     <div className="flex items-end justify-center gap-1 sm:gap-2 py-4 px-2">
       {contextTheme.startLabel && (
@@ -574,6 +613,14 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
               }
             }}
           >
+            {/* Ordinal label scaffold (easy/medium) — withdrawn at hard so the
+                student must count from the front rather than read it off. */}
+            {showPositionLabels && (
+              <span className="text-[10px] mb-1 text-slate-400 font-medium">
+                {getOrdinalLabel(pos, labelFormat)}
+              </span>
+            )}
+
             <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl transition-all duration-200 ${
               isSelected
                 ? 'bg-orange-500/20 border-2 border-orange-400/60 shadow-lg shadow-orange-500/20'
@@ -607,6 +654,14 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
   const renderMatchPhase = () => {
     if (!currentChallenge?.matchPairs) return null;
     const pairs = currentChallenge.matchPairs;
+
+    // Scaffold (easy): present the symbol column in sequence so matching becomes
+    // reading-order. Default (medium/hard/no-tier): shuffled (must recall each).
+    const displaySymbols = currentChallenge.orderMatchSymbols
+      ? [...pairs]
+          .sort((a, b) => ORDINAL_WORDS.indexOf(a.word.toLowerCase()) - ORDINAL_WORDS.indexOf(b.word.toLowerCase()))
+          .map(p => p.symbol)
+      : shuffledMatchSymbols;
 
     return (
       <div className="space-y-4">
@@ -644,7 +699,7 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
           {/* Symbols column (shuffled) */}
           <div className="space-y-2">
             <span className="text-xs text-slate-500 uppercase tracking-wider">Symbol</span>
-            {shuffledMatchSymbols.map(symbol => {
+            {displaySymbols.map(symbol => {
               const isUsed = Array.from(matchSelections.values()).includes(symbol);
               return (
                 <Button
@@ -781,8 +836,13 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                   }
                 }}
               >
+                {/* Slot ordinal label: scaffold withdrawn at hard (showSlotLabels === false)
+                    so the student must recall which slot is "third" from left-to-right order.
+                    A muted dot keeps the slot height stable without revealing the position. */}
                 <span className="text-[10px] text-slate-500 mb-1">
-                  {getOrdinalLabel(pos, labelFormat)}
+                  {currentChallenge?.showSlotLabels === false
+                    ? '·'
+                    : getOrdinalLabel(pos, labelFormat)}
                 </span>
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl border-2 border-dashed transition-all ${
                   placed
@@ -911,7 +971,12 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
             {renderCharacterLine(
               currentChallenge.characters,
               currentChallenge.type === 'identify',
-              currentChallenge.type === 'relative-position' ? currentChallenge.targetPosition : undefined,
+              // relative-position glows the reference; withdrawn when highlightTarget === false (hard)
+              currentChallenge.type === 'relative-position' && currentChallenge.highlightTarget !== false
+                ? currentChallenge.targetPosition
+                : undefined,
+              // ordinal labels on the line: default OFF, scaffolded ON at easy/medium
+              currentChallenge.showPositionLabels === true,
             )}
           </div>
         )}

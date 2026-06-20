@@ -43,6 +43,9 @@ export interface MatrixDisplayChallenge {
   expectedScalar?: number;
   expectedMatrix?: number[][];
   hint: string;
+  /** Support tier (modality #4): when true, "Show steps" is withheld until the student
+   *  has made at least one attempt. Undefined/false = available up front. */
+  stepsAfterAttempt?: boolean;
 }
 
 export interface MatrixDisplayData {
@@ -55,6 +58,9 @@ export interface MatrixDisplayData {
   /** Educational context narrative, session-level. */
   educationalContext?: string;
   gradeBand?: '7-8' | 'algebra2' | 'precalculus' | 'advanced';
+  /** Within-mode support tier when present — surfaced for a future live tutor's reveal
+   *  policy (the catalog has a tutoring block; the component is not yet wired). */
+  supportTier?: SupportTier;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer / tester)
   instanceId?: string;
@@ -106,6 +112,72 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'inverse' (find inverse matrix)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// Second field of the two-field contract: targetEvalMode = WHICH operation,
+// difficulty = HOW MUCH support within it. Drives two axes, both grade/scope-bound:
+//   • scaffolding withdrawal — hint detail (modality #2) + "Show steps" gating (#4)
+//   • structural problem shape — matrix size / dot-product depth (NEVER the number range)
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface MatrixSupportScaffold {
+  /** modality #2 (instruction-as-scaffold): how explicit the per-challenge hint is. */
+  hintLevel: 'formula' | 'concept' | 'none';
+  /** modality #4 (worked-example fading): when the "Show steps" walkthrough is offered. */
+  stepsGating: 'always' | 'afterAttempt';
+  promptLines: string[];
+}
+
+/** Scaffolding axis — mode-independent (hint + steps apply to every matrix operation).
+ *  Structural axis lives in the build functions (grade-clamped per mode). */
+function resolveSupportStructure(tier: SupportTier): MatrixSupportScaffold {
+  const hintLevel: MatrixSupportScaffold['hintLevel'] =
+    tier === 'easy' ? 'formula' : tier === 'medium' ? 'concept' : 'none';
+  const stepsGating: MatrixSupportScaffold['stepsGating'] =
+    tier === 'hard' ? 'afterAttempt' : 'always';
+  return {
+    hintLevel,
+    stepsGating,
+    promptLines: [
+      // TIER_GUARDRAIL: support level + structural SIZE only — never the number range or answer.
+      'This tier changes only how much on-screen help the student gets and the structural SIZE of each '
+        + 'matrix problem (entry count / dot-product depth). It NEVER changes the number range or the answer.',
+      `The per-challenge hint is ${
+        hintLevel === 'formula' ? 'an explicit formula/rule'
+        : hintLevel === 'concept' ? 'a conceptual nudge only — no formula'
+        : 'withdrawn entirely — the student recalls the procedure unaided'
+      }.`,
+      `The "Show steps" walkthrough is ${
+        stepsGating === 'always' ? 'offered up front' : 'withheld until the student has attempted the problem'
+      }.`,
+      'Keep the title and description neutral — never state the support level or reveal an answer.',
+    ],
+  };
+}
+
+/** Conceptual nudge per operation (medium tier) — the idea, with NO formula/symbols. */
+function conceptHintFor(type: MatrixChallengeType): string {
+  switch (type) {
+    case 'transpose': return 'Picture each row of the original turning into a column of the result — track how the shape flips.';
+    case 'add': return 'Work position by position: combine the entries that sit in the same spot of each matrix.';
+    case 'subtract': return 'Work position by position, keeping the order A then B for each matching spot.';
+    case 'multiply': return 'Pair a row of A with a column of B, combine the matching entries, and total them — one result cell at a time.';
+    case 'determinant': return 'Think about the two diagonals of the square and how their products combine into a single number.';
+    case 'inverse': return 'Rearrange the four entries and scale by the determinant — watch the signs as you go.';
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Pool builders (one per challenge type)
@@ -228,6 +300,10 @@ function inverse2x2(m: number[][]): number[][] {
 
 interface BuildContext {
   gradeBand: '7-8' | 'algebra2' | 'precalculus' | 'advanced';
+  /** Structural-difficulty axis. null/'medium' = current alternating shapes (byte-identical
+   *  to the pre-tier behavior); 'easy' = floor shape; 'hard' = ceiling shape (grade-clamped).
+   *  Changes SHAPE/depth only — number ranges stay bound by rangeForGrade. */
+  tier: SupportTier | null;
 }
 
 function rangeForGrade(gradeBand: BuildContext['gradeBand']): [number, number] {
@@ -241,10 +317,18 @@ function rangeForGrade(gradeBand: BuildContext['gradeBand']): [number, number] {
 
 function buildTransposeChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
   const [min, max] = rangeForGrade(ctx.gradeBand);
-  // Alternate 2×3 / 3×2 across the session so the shape change is visible.
+  // Structural lever: entry count / shape size (numbers stay in grade range).
+  // easy = 2×3 (6 entries); hard = 3×4 / 4×3 (12 entries, bigger shape flip);
+  // medium/no-tier = alternate 2×3 / 3×2 so the shape change is visible.
   const isWide = idx % 2 === 0;
-  const rows = isWide ? 2 : 3;
-  const cols = isWide ? 3 : 2;
+  let rows: number, cols: number;
+  if (ctx.tier === 'easy') {
+    rows = 2; cols = 3;
+  } else if (ctx.tier === 'hard') {
+    rows = isWide ? 3 : 4; cols = isWide ? 4 : 3;
+  } else {
+    rows = isWide ? 2 : 3; cols = isWide ? 3 : 2;
+  }
   const values = makeMatrix(rows, cols, min, max);
   const expectedMatrix = transposeMatrix(values);
   return {
@@ -265,10 +349,16 @@ function buildAddSubtractChallenge(
   idx: number,
 ): MatrixDisplayChallenge {
   const [min, max] = rangeForGrade(ctx.gradeBand);
-  // 2×2 or 2×3 — keep both matrices the same size.
-  const useThreeCols = idx % 2 === 1;
-  const rows = 2;
-  const cols = useThreeCols ? 3 : 2;
+  // Structural lever: entries to coordinate (both matrices stay the same size).
+  // easy = 2×2 (4 entries); hard = 3×3 (9 entries); medium/no-tier = alternate 2×2 / 2×3.
+  let rows: number, cols: number;
+  if (ctx.tier === 'easy') {
+    rows = 2; cols = 2;
+  } else if (ctx.tier === 'hard') {
+    rows = 3; cols = 3;
+  } else {
+    rows = 2; cols = idx % 2 === 1 ? 3 : 2;
+  }
   const a = makeMatrix(rows, cols, min, max);
   const b = makeMatrix(rows, cols, min, max);
   const expectedMatrix = operation === 'add' ? addMatrices(a, b) : subtractMatrices(a, b);
@@ -291,12 +381,20 @@ function buildAddSubtractChallenge(
 
 function buildMultiplyChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
   const [min, max] = ctx.gradeBand === '7-8' ? [1, 6] : ctx.gradeBand === 'algebra2' ? [-6, 6] : rangeForGrade(ctx.gradeBand);
-  // Alternate 2×2 × 2×2 and 2×3 × 3×2 so dimensions vary.
-  const shape = idx % 2 === 0;
+  // Structural lever: dot-product DEPTH (result is 2×2 either way; numbers stay in range).
+  // easy = 2×2 × 2×2 (2-term dot products); hard = 2×3 × 3×2 (3-term dot products);
+  // medium/no-tier = alternate so dimensions vary.
   const aRows = 2;
-  const aCols = shape ? 2 : 3;
-  const bRows = aCols;
   const bCols = 2;
+  let aCols: number;
+  if (ctx.tier === 'easy') {
+    aCols = 2;
+  } else if (ctx.tier === 'hard') {
+    aCols = 3;
+  } else {
+    aCols = idx % 2 === 0 ? 2 : 3;
+  }
+  const bRows = aCols;
   const a = makeMatrix(aRows, aCols, min, max);
   const b = makeMatrix(bRows, bCols, min, max);
   const expectedMatrix = multiplyMatrices(a, b);
@@ -315,9 +413,20 @@ function buildMultiplyChallenge(ctx: BuildContext, idx: number): MatrixDisplayCh
 
 function buildDeterminantChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
   const [min, max] = rangeForGrade(ctx.gradeBand);
-  // 7-8 → only 2×2; algebra2+ → alternate 2×2 and 3×3.
+  // Structural lever: matrix order = computation depth (2×2 → 2 products; 3×3 → Sarrus).
+  // Grade ceiling wins: 7-8 stays 2×2 at EVERY tier (3×3 is out of grade scope).
+  // easy = 2×2; hard = 3×3 (algebra2+); medium/no-tier = alternate 2×2 / 3×3 (algebra2+).
   const allow3x3 = ctx.gradeBand !== '7-8';
-  const size = allow3x3 && idx % 2 === 1 ? 3 : 2;
+  let size: number;
+  if (!allow3x3) {
+    size = 2;
+  } else if (ctx.tier === 'easy') {
+    size = 2;
+  } else if (ctx.tier === 'hard') {
+    size = 3;
+  } else {
+    size = idx % 2 === 1 ? 3 : 2;
+  }
   // Retry up to 12× to avoid det = 0.
   let m: number[][] = [];
   let det = 0;
@@ -403,6 +512,8 @@ function canonKey(ch: MatrixDisplayChallenge): string {
 export interface SelectMatrixChallengesOptions {
   count?: number;
   gradeBand?: '7-8' | 'algebra2' | 'precalculus' | 'advanced';
+  /** Structural-difficulty tier (drives per-mode matrix shape/depth). Defaults to null. */
+  tier?: SupportTier | null;
 }
 
 function buildChallengeOfType(
@@ -439,7 +550,7 @@ export function selectMatrixChallenges(
       options.count ?? modeCount ?? DEFAULT_INSTANCE_COUNT,
     ),
   );
-  const ctx: BuildContext = { gradeBand: options.gradeBand ?? 'algebra2' };
+  const ctx: BuildContext = { gradeBand: options.gradeBand ?? 'algebra2', tier: options.tier ?? null };
 
   // For bundled modes, interleave the allowed types across the session so every advertised
   // type is surfaced. Shuffle once per session so order varies session-to-session (e.g.
@@ -530,12 +641,28 @@ export const generateMatrix = async (
     instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which operation,
+     * difficulty = how much scaffolding + how structurally deep within it.
+     * NEVER changes the number range.
+     */
+    difficulty?: string;
   }
 ): Promise<MatrixDisplayData> => {
   console.log('[Matrix Gen] Starting generation:', { topic, gradeLevel, config });
 
   const evalConstraint = resolveEvalModeConstraint('matrix-display', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('Matrix', config?.targetEvalMode, evalConstraint);
+
+  // ── Within-mode support tier (config.difficulty): scaffolding level + structural
+  //    size, NOT the number range. tierSection only nudges the wrapper title/description
+  //    tone; the real withdrawal/shaping happens deterministically in code below. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const tierScaffold = supportTier ? resolveSupportStructure(supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level + structural size — NOT number range)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   const activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(wrapperSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
@@ -555,7 +682,7 @@ CONTEXT:
 - Your job is ONLY to write the session-level title, description, and choose the challenge type.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific matrix — the session walks through several.
 2. Provide a 1-2 sentence educational description of what students will practice.
@@ -604,10 +731,31 @@ Return ONLY the wrapper fields described above.
   const gradeBand = (wrapper.gradeBand as '7-8' | 'algebra2' | 'precalculus' | 'advanced' | undefined) ?? inferGradeBand(gradeLevel);
 
   // ── Pre-select challenges (local, deterministic-variance) ────────
+  //    The structural tier shapes each matrix at build time (grade-clamped per mode);
+  //    tier=null reproduces the prior alternating shapes byte-for-byte.
   const challenges = selectMatrixChallenges(allowedChallengeTypes, {
     count: config?.instanceCount,
     gradeBand,
+    tier: supportTier,
   });
+
+  // ── Within-mode support tier: withdraw on-screen scaffolding (never the numbers).
+  //    Applied PER CHALLENGE (from each challenge's OWN type) so a blended session gets
+  //    difficulty too — the tier is a student property, not a single-mode one. The
+  //    scaffolding levers are mode-independent, so one resolved scaffold covers all. ──
+  if (supportTier) {
+    const sc = resolveSupportStructure(supportTier);
+    for (const ch of challenges) {
+      if (sc.hintLevel === 'concept') ch.hint = conceptHintFor(ch.challengeType);
+      else if (sc.hintLevel === 'none') ch.hint = '';
+      // 'formula' → keep the existing formula-rich hint each build function wrote.
+      if (sc.stepsGating === 'afterAttempt') ch.stepsAfterAttempt = true;
+    }
+    const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? evalConstraint.allowedTypes[0]
+      : undefined;
+    console.log(`[Matrix Gen] Support tier "${supportTier}" applied per-challenge across ${challenges.length} challenge(s) [${pinnedType ? `single-mode ${pinnedType}` : 'blended'}].`);
+  }
 
   console.log(
     `[Matrix Gen] Final: allowedTypes=[${allowedChallengeTypes.join(',')}], instances=${challenges.length}, surfaced=[${challenges.map(c => c.challengeType).join(',')}], gradeBand=${gradeBand}`
@@ -620,5 +768,7 @@ Return ONLY the wrapper fields described above.
     challengeType: sessionChallengeType,
     educationalContext: wrapper.educationalContext,
     gradeBand,
+    // Surface the tier whenever present — for a future live tutor's reveal policy.
+    ...(supportTier ? { supportTier } : {}),
   };
 };

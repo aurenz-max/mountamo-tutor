@@ -20,6 +20,7 @@ import {
 import type { HistogramMetrics } from '../../../evaluation/types';
 import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 
@@ -78,8 +79,19 @@ export interface HistogramData {
   challengeType: HistogramChallengeType;
   challenges: HistogramChallenge[];
   gradeBand: '6-7' | '7-8';
-  /** Show the mean/std-dev/min/max panel. Hidden in estimate_center mode. */
+  /** Show the mean/std-dev/min/max panel. Hidden in estimate_center mode, and
+   *  withdrawn at the 'hard' support tier. */
   showStatistics: boolean;
+  /**
+   * Show the per-bar frequency count labels. When omitted, falls back to the
+   * mode default (on for identify_shape / estimate_center). The generator sets
+   * it explicitly per support tier — 'hard' withdraws it for those two modes;
+   * it is always off for find_modal_bin / read_frequency (it'd be the answer).
+   */
+  showFrequencyLabels?: boolean;
+  /** The within-mode support tier that produced this session (debug / future
+   *  tutor calibration). Display logic keys off the resolved flags above. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props
   instanceId?: string;
@@ -123,6 +135,50 @@ const SHAPE_LABEL: Record<HistogramShapeKind, string> = {
 
 const phaseScore = (attempts: number): number =>
   Math.max(20, 100 - Math.max(0, attempts - 1) * 20);
+
+/**
+ * Keep the AI tutor's reveal level in sync with BOTH the support tier and the
+ * mode, so it never leaks what the workspace withheld. Two rules combine:
+ *  - The ANSWER is never named at any tier. For identify_shape the shape-name
+ *    IS the answer, so the tutor must never say symmetric/skewed/etc.; likewise
+ *    the modal bin, the bin count, and the mean/median are answers.
+ *  - The STRATEGY is named at easy, nudged at medium, withdrawn at hard — matching
+ *    the generator's scaffolding withdrawal (stat panel / bar-count labels / hint).
+ */
+const tutorRevealPolicy = (
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  type: HistogramChallengeType,
+): string => {
+  const neverReveal =
+    type === 'identify_shape'
+      ? ' Never name the distribution shape (symmetric / skewed / bimodal / uniform) — that IS the answer.'
+      : type === 'find_modal_bin'
+        ? ' Never say which bin is the tallest — that IS the answer.'
+        : type === 'read_frequency'
+          ? ' Never state the bin\'s count — that IS the answer.'
+          : ' Never state the mean or median value — that IS the answer.';
+  switch (tier) {
+    case 'easy':
+      return (
+        ' SUPPORT TIER EASY: you may name the STRATEGY — point to where to look' +
+        ' (the tallest bars, the balance of the tails, the height up the y-axis, the balance point)' +
+        ' and walk the student through reading it step by step.' + neverReveal
+      );
+    case 'medium':
+      return (
+        ' SUPPORT TIER MEDIUM: the workspace still shows its aids — nudge the student\'s' +
+        ' reading of the graph; do not narrate the whole strategy.' + neverReveal
+      );
+    case 'hard':
+      return (
+        ' SUPPORT TIER HARD: on-screen aids (stat panel, bar-count labels, hint) are withdrawn —' +
+        ' do NOT name the strategy or which feature to read; ask what the student notices in the bars themselves.' +
+        neverReveal
+      );
+    default:
+      return neverReveal;
+  }
+};
 
 interface Bin {
   start: number;
@@ -440,9 +496,12 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
 
   // For find_modal_bin: don't reveal frequency labels (they would give it away).
   // For read_frequency: hide labels too (they're literally the answer).
-  // For identify_shape and estimate_center: labels are fine.
+  // For identify_shape and estimate_center: labels are fine — unless the support
+  // tier withdrew them (hard). The generator drives this via data.showFrequencyLabels;
+  // when absent, fall back to the mode default so un-tiered sessions are unchanged.
   const showFrequencyLabels =
-    challengeType === 'identify_shape' || challengeType === 'estimate_center';
+    data.showFrequencyLabels ??
+    (challengeType === 'identify_shape' || challengeType === 'estimate_center');
 
   // Target bin outline for read_frequency
   const targetBin = useMemo(() => {
@@ -451,6 +510,70 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     if (currentChallenge.targetBinStart === undefined || currentChallenge.targetBinEnd === undefined) return null;
     return { start: currentChallenge.targetBinStart, end: currentChallenge.targetBinEnd };
   }, [currentChallenge, challengeType]);
+
+  // -- AI tutoring ----------------------------------------------------------
+  // Catalog `tutoring` block (catalog/math.ts) supplies the scaffold; this hook
+  // wires the runtime context + speech triggers so the tutor stops falling back
+  // to the generic message. contextKeys in the catalog mirror these field names.
+  const aiPrimitiveData = useMemo(
+    () => ({
+      challengeType,
+      currentChallengeIndex: currentIndex + 1,
+      totalChallenges: challenges.length,
+      contextTitle: currentChallenge?.contextTitle ?? '',
+      prompt: currentChallenge?.prompt ?? '',
+      xAxisLabel: currentChallenge?.xAxisLabel ?? '',
+      binWidth: currentChallenge?.binWidth,
+      binStart: currentChallenge?.binStart,
+      attempts,
+      gradeBand,
+      supportTier: data.supportTier,
+    }),
+    [challengeType, currentIndex, challenges.length, currentChallenge, attempts, gradeBand, data.supportTier],
+  );
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'histogram',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand ?? '6-8',
+  });
+
+  // Session intro — once, on the first histogram.
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    if (challenges.length === 0 || !currentChallenge) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] ${title || 'Reading Histograms'} — ${challenges.length} histograms in this session, ` +
+        `mode ${challengeType}. First histogram: ${currentChallenge.contextTitle}. Prompt: ${currentChallenge.prompt}. ` +
+        `Briefly welcome the student and orient them to the first histogram.` +
+        tutorRevealPolicy(data.supportTier, challengeType),
+      { silent: true },
+    );
+  }, [isConnected, challenges.length, currentChallenge, title, challengeType, data.supportTier, sendText]);
+
+  // Per-histogram handoff — exactly one AI turn per advance (skips the first,
+  // which the intro covers), with the FULL new-histogram data to avoid the
+  // turn-race hallucination documented in ADDING_TUTORING_SCAFFOLD.md.
+  const lastAnnouncedIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isConnected || !currentChallenge) return;
+    if (!hasIntroducedRef.current) return;
+    if (lastAnnouncedIdRef.current === null) {
+      lastAnnouncedIdRef.current = currentChallenge.id;
+      return;
+    }
+    if (lastAnnouncedIdRef.current === currentChallenge.id) return;
+    lastAnnouncedIdRef.current = currentChallenge.id;
+    sendText(
+      `[NEXT_HISTOGRAM] Histogram ${currentIndex + 1} of ${challenges.length}: ${currentChallenge.contextTitle}. ` +
+        `Prompt: ${currentChallenge.prompt}. Briefly introduce this new histogram — name its real-world context.` +
+        tutorRevealPolicy(data.supportTier, challengeType),
+      { silent: true },
+    );
+  }, [currentChallenge, currentIndex, challenges.length, isConnected, challengeType, data.supportTier, sendText]);
 
   // -- Per-challenge reset (canonical pattern, §6c) -------------------------
   useEffect(() => {
@@ -543,6 +666,14 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
             : 'Correct!',
         correct: true,
       });
+      sendText(
+        `[ANSWER_CORRECT] The student read histogram ${currentIndex + 1} of ${challenges.length} ` +
+          `(${currentChallenge.contextTitle}, mode ${challengeType}) correctly on attempt ${nextAttempts}. ` +
+          `Acknowledge briefly${
+            currentIndex + 1 < challenges.length ? ' and preview the next histogram.' : ' — the session is wrapping up.'
+          }`,
+        { silent: true },
+      );
       setTimeout(() => advance(), 1100);
     } else {
       SoundManager.playIncorrect();
@@ -555,6 +686,13 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
               ? 'Not quite — count the bar height again.'
               : 'Not quite — try a different estimate.';
       setFeedback({ message: msg, correct: false });
+      sendText(
+        `[ANSWER_INCORRECT] On histogram ${currentIndex + 1} (${currentChallenge.contextTitle}, mode ${challengeType}), ` +
+          `the student answered "${studentAnswer}" — not correct (attempt ${nextAttempts}). ` +
+          `Give ONE brief hint about how to read the graph, without revealing the answer.` +
+          tutorRevealPolicy(data.supportTier, challengeType),
+        { silent: true },
+      );
     }
   }, [
     currentChallenge,
@@ -566,6 +704,10 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     advance,
     recordResult,
     hasSubmitted,
+    sendText,
+    currentIndex,
+    challenges.length,
+    data.supportTier,
   ]);
 
   // -- Hint handler ---------------------------------------------------------
@@ -614,6 +756,12 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     submitResult(overallAccuracy >= 70, overallAccuracy, metrics, {
       challengeResults,
     });
+
+    sendText(
+      `[ALL_COMPLETE] The student finished all ${totalChallenges} histograms (mode ${challengeType}), ` +
+        `overall ${overallAccuracy}%. Celebrate the completed session in one or two sentences.`,
+      { silent: true },
+    );
   }, [
     isComplete,
     hasSubmitted,
@@ -622,6 +770,7 @@ const Histogram: React.FC<HistogramProps> = ({ data, className }) => {
     challengeType,
     hintsViewedSession,
     submitResult,
+    sendText,
   ]);
 
   // -- Reset ----------------------------------------------------------------

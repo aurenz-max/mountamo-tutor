@@ -207,6 +207,95 @@ export function createSubRangePool(
 }
 
 // ---------------------------------------------------------------------------
+// Discrete pool (pick a TARGET from a fixed legal SET, not a contiguous range)
+// ---------------------------------------------------------------------------
+
+export interface DiscretePool {
+  /** The candidate set, shuffled — the order is the entropy. */
+  values: number[];
+  /** Suggested value for this call (values[0]); used when nothing else pins it. */
+  suggested: number;
+  /** Prompt section to inject into the Gemini prompt. */
+  toPromptSection: (opts?: DiscretePromptSectionOptions) => string;
+}
+
+export interface DiscretePromptSectionOptions {
+  /** Section heading (default: "VALUE POOL"). */
+  label?: string;
+  /** Noun for the value in the prompt copy (default: "value"), e.g. "skip value". */
+  noun?: string;
+  /**
+   * A source that overrides the pool when it specifies the value (e.g. "the topic").
+   * When set, the section tells the LLM that source is AUTHORITATIVE and the pool is
+   * only the fallback — so entropy never fights an explicit instruction in the topic.
+   */
+  authoritativeSource?: string;
+  /** Extra instructions appended to the section. */
+  extraInstructions?: string;
+}
+
+/**
+ * Create an entropy pool from a FIXED discrete set of legal values (e.g. the
+ * grade-band-legal skip values {2,3,4,5,10}). Unlike createNumberPool, this never
+ * invents values *between* the candidates — use it when the pooled number is a
+ * learning TARGET drawn from a curated set, not incidental data from a range.
+ *
+ * The shuffle is the entropy: a different ordering / suggested value each call
+ * breaks Gemini's convergent collapse onto one value, while every option stays
+ * inside scope. The prompt keeps the topic authoritative over the pool, so this
+ * is a SUGGESTION the LLM can override by reading the topic — not a post-LLM pin.
+ *
+ * Returns null if no candidates are given (generator falls back to its own logic).
+ */
+export function createDiscretePool(
+  candidates: readonly number[] | undefined | null,
+  options?: { count?: number },
+): DiscretePool | null {
+  if (!candidates || candidates.length === 0) return null;
+
+  const shuffled = [...candidates];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const values =
+    options?.count && options.count > 0 ? shuffled.slice(0, options.count) : shuffled;
+
+  return {
+    values,
+    suggested: values[0],
+    toPromptSection: (opts) => buildDiscretePromptSection(values, opts),
+  };
+}
+
+function buildDiscretePromptSection(
+  values: number[],
+  opts?: DiscretePromptSectionOptions,
+): string {
+  const label = opts?.label ?? 'VALUE POOL';
+  const noun = opts?.noun ?? 'value';
+  const src = opts?.authoritativeSource;
+
+  let section = `${label} (pre-shuffled by the adaptive system for variety):
+- Candidate ${noun}s: ${values.join(', ')}`;
+
+  if (src) {
+    const Src = src.charAt(0).toUpperCase() + src.slice(1);
+    section += `\n- ${Src} is AUTHORITATIVE: if ${src} specifies a ${noun} (e.g. "by 5s", "counting in threes"), use THAT.`;
+    section += `\n- Otherwise use the FIRST candidate (${values[0]}) as this lesson's ${noun}.`;
+  } else {
+    section += `\n- Use the FIRST candidate (${values[0]}) as this lesson's ${noun}.`;
+  }
+  section += `\n- Do NOT use a ${noun} outside this list.`;
+
+  if (opts?.extraInstructions) {
+    section += `\n${opts.extraInstructions}`;
+  }
+
+  return section;
+}
+
+// ---------------------------------------------------------------------------
 // Operand pair pool (for addition/subtraction/multiplication)
 // ---------------------------------------------------------------------------
 

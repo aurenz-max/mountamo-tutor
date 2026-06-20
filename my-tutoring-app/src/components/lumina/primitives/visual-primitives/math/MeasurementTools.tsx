@@ -52,6 +52,22 @@ export interface MeasurementToolsData {
   gradeBand: 'K-2' | '3-5';
   convertToUnit?: 'inches' | 'centimeters';
 
+  // -- Support tier (within-mode scaffolding level; set by the generator) --
+  // All fields are display-/instruction-only and default to the medium-tier
+  // behavior when absent, so a no-tier session renders exactly as before.
+  /** 'easy' | 'medium' | 'hard' — drives the live tutor's reveal calibration. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Ruler tick-label density. 'all' labels half ticks too; 'sparse' labels
+   *  only even wholes so the student counts marks. Default 'whole'. */
+  rulerLabels?: 'all' | 'whole' | 'sparse';
+  /** How much the instruction spells out the align-at-0 / read-the-edge method.
+   *  Default 'standard'. */
+  instructionDetail?: 'full' | 'standard' | 'minimal';
+  /** Attempts before the "Need a Hint?" button appears. Default 2. */
+  hintThreshold?: number;
+  /** convert mode: show the "1 inch = 2.54 cm" factor. Default true. */
+  showConversionFactor?: boolean;
+
   // Evaluation props
   instanceId?: string;
   skillId?: string;
@@ -113,9 +129,12 @@ interface RulerProps {
   pixelsPerUnit: number;
   leftPad: number;
   rulerY: number;
+  /** Tick-label density (support-tier perception aid). 'all' labels half ticks
+   *  too; 'sparse' labels only even wholes; 'whole' labels every whole. */
+  labelMode?: 'all' | 'whole' | 'sparse';
 }
 
-const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerUnit, leftPad, rulerY }) => {
+const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerUnit, leftPad, rulerY, labelMode = 'whole' }) => {
   const totalWidth = lengthInches * pixelsPerUnit;
   const step = precision === 'half' ? 0.5 : 1;
   const tickCount = Math.round(lengthInches / step);
@@ -138,6 +157,14 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
         const x = leftPad + tickValue * pixelsPerUnit;
         const isWhole = Math.abs(tickValue - Math.round(tickValue)) < 0.001;
 
+        // Tier-driven label density (perception aid). Withdrawing labels forces
+        // the student to count marks — never changes the measurement itself.
+        const showLabel = isWhole
+          ? labelMode === 'sparse'
+            ? Math.round(tickValue) % 2 === 0 // even wholes only (incl. 0)
+            : true // 'whole' or 'all' → every whole labeled
+          : labelMode === 'all'; // half ticks labeled only at the easy tier
+
         return (
           <g key={i}>
             <line
@@ -148,17 +175,17 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
               stroke="rgba(255,255,255,0.6)"
               strokeWidth={isWhole ? 1.5 : 0.8}
             />
-            {isWhole && (
+            {showLabel && (
               <text
                 x={x}
-                y={rulerY + 44}
+                y={rulerY + (isWhole ? 44 : 34)}
                 textAnchor="middle"
-                fill="rgba(255,255,255,0.7)"
-                fontSize={13}
-                fontWeight="bold"
+                fill={isWhole ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.45)'}
+                fontSize={isWhole ? 13 : 10}
+                fontWeight={isWhole ? 'bold' : 'normal'}
                 className="select-none"
               >
-                {Math.round(tickValue)}
+                {isWhole ? Math.round(tickValue) : tickValue}
               </text>
             )}
           </g>
@@ -366,6 +393,11 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     unit,
     precision,
     gradeBand,
+    supportTier,
+    rulerLabels = 'whole',
+    instructionDetail = 'standard',
+    hintThreshold = 2,
+    showConversionFactor = true,
     instanceId,
     skillId,
     subskillId,
@@ -519,6 +551,26 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     setOnRuler({});
   }, [challenges, pixelsPerUnit]);
 
+  // -- Support-tier reveal calibration for the live tutor (Gotcha #2) -------
+  // The tutor sees the full challenge data and could leak what a hard tier hid
+  // on screen (the align-at-0/read-edge method; the conversion factor). These
+  // clauses calibrate how much the tutor may name at each tier.
+  const measureRevealClause = useMemo(() => {
+    if (supportTier === 'easy')
+      return ' (Tier EASY: you may name the method — line the left edge up with 0, then read where the right edge lands — but never state the measurement.)';
+    if (supportTier === 'hard')
+      return ' (Tier HARD: the step-by-step method is hidden on screen on purpose — do NOT spell out align-at-0/read-the-edge. Ask what they see at the shape\'s right edge. Never reveal the measurement.)';
+    return ' (Tier MEDIUM: nudge where to look on the ruler without walking every step or revealing the measurement.)';
+  }, [supportTier]);
+
+  const convertRevealClause = useMemo(() => {
+    if (supportTier === 'easy')
+      return ' (Tier EASY: you may restate 1 inch = 2.54 cm and name multiply vs divide, but never the final number.)';
+    if (supportTier === 'hard')
+      return ' (Tier HARD: the conversion factor is hidden on screen on purpose — do NOT state "1 inch = 2.54 cm" or which operation. Ask what they recall about inches and centimeters. Never reveal the answer.)';
+    return ' (Tier MEDIUM: nudge the operation and rough size without restating the full rule or the answer.)';
+  }, [supportTier]);
+
   // -- AI Tutoring ----------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     challengeType,
@@ -529,6 +581,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     unit,
     precision,
     gradeBand,
+    supportTier: supportTier ?? 'medium',
     isOnRuler: currentChallenge ? !!onRuler[currentChallenge.id] : false,
     currentAttempts: measureAttempts + convertAttempts,
     convertStep,
@@ -536,7 +589,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     comparePhase: measureComplete && challengeType === 'compare' && !comparisonDone,
   }), [
     challengeType, currentIndex, challenges.length, currentChallenge, unit, precision,
-    gradeBand, onRuler, measureAttempts, convertAttempts, convertStep,
+    gradeBand, supportTier, onRuler, measureAttempts, convertAttempts, convertStep,
     effectiveConvertToUnit, measureComplete, comparisonDone,
   ]);
 
@@ -752,13 +805,14 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       });
       sendText(
         `[ANSWER_INCORRECT] Student guessed ${studentNum} ${unit} for "${currentChallenge.label}" ` +
-        `(actual: ${currentChallenge.widthInches} ${unit}). Attempt ${nextAttempts}. Give a hint.`,
+        `(actual: ${currentChallenge.widthInches} ${unit}). Attempt ${nextAttempts}. Give a hint.` +
+        measureRevealClause,
         { silent: true },
       );
     }
   }, [
     currentChallenge, answerInput, precision, unit, challengeType, effectiveConvertToUnit,
-    completeChallenge, advance, currentIndex, challenges, sendText,
+    completeChallenge, advance, currentIndex, challenges, sendText, measureRevealClause,
   ]);
 
   // -- Conversion checking (convert mode) -----------------------------------
@@ -816,13 +870,14 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       });
       sendText(
         `[CONVERT_INCORRECT] Student tried ${studentNum} ${effectiveConvertToUnit} ` +
-        `(correct: ~${Math.round(correctConverted * 10) / 10}). Attempt ${nextAttempts}. Help without revealing.`,
+        `(correct: ~${Math.round(correctConverted * 10) / 10}). Attempt ${nextAttempts}. Help without revealing.` +
+        convertRevealClause,
         { silent: true },
       );
     }
   }, [
     currentChallenge, convertInput, measuredValue, unit, effectiveConvertToUnit,
-    completeChallenge, advance, currentIndex, challenges, sendText,
+    completeChallenge, advance, currentIndex, challenges, sendText, convertRevealClause,
   ]);
 
   // -- Comparison checking (compare mode session-level) ---------------------
@@ -972,16 +1027,26 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   }, [isFullyComplete, challenges.length, challengeResults, challengeType, comparisonDone, compareAttempts]);
 
   // -- Mode-specific copy ---------------------------------------------------
+  // The align-at-0 / read-the-edge method is the core instructional scaffold.
+  // 'full' (easy) names it explicitly; 'minimal' (hard) withholds it so the
+  // student recalls the method. The shape + unit never change across tiers.
+  const methodCue = instructionDetail === 'full'
+    ? ` Line up its left edge with 0, then read where the right edge lands.`
+    : '';
+
   const getInstructionText = (): string => {
     if (!currentChallenge) return '';
     if (challengeType === 'compare') {
-      return `Measure each shape by dragging it onto the ruler. After measuring all shapes, you'll compare them!`;
+      if (instructionDetail === 'minimal') return `Measure each shape with the ruler. Then you'll compare them.`;
+      return `Measure each shape by dragging it onto the ruler.${methodCue} After measuring all shapes, you'll compare them!`;
     }
     if (challengeType === 'convert') {
       if (convertStep) return `Convert your measurement of the ${currentChallenge.label} from ${unit} to ${effectiveConvertToUnit}.`;
-      return `Drag the ${currentChallenge.label} onto the ruler and measure it in ${unit}.`;
+      if (instructionDetail === 'minimal') return `Measure the ${currentChallenge.label} in ${unit}.`;
+      return `Drag the ${currentChallenge.label} onto the ruler and measure it in ${unit}.${methodCue}`;
     }
-    return `Drag the ${currentChallenge.label} onto the ruler, then tell me how many ${unit} long it is.`;
+    if (instructionDetail === 'minimal') return `Measure the ${currentChallenge.label} in ${unit}.`;
+    return `Drag the ${currentChallenge.label} onto the ruler, then tell me how many ${unit} long it is.${methodCue}`;
   };
 
   const getSubtitle = (): string => {
@@ -1209,6 +1274,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                     pixelsPerUnit={pixelsPerUnit}
                     leftPad={RULER_LEFT_PAD}
                     rulerY={rulerY}
+                    labelMode={rulerLabels}
                   />
 
                   {shapePositions[currentChallenge.id] && (
@@ -1281,7 +1347,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   </LuminaPrompt>
                 )}
 
-                {!feedback?.correct && measureAttempts >= 2 && !showHint && (
+                {!feedback?.correct && measureAttempts >= hintThreshold && !showHint && (
                   <div className="flex justify-center">
                     <LuminaButton tone="subtle" onClick={showHintHandler}>
                       Need a Hint?
@@ -1301,11 +1367,15 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                     <span className="text-blue-300 font-bold">{measuredValue} {unit}</span>.{' '}
                     How many <span className="text-amber-300 font-medium">{effectiveConvertToUnit}</span> is that?
                   </p>
-                  <p className="text-slate-500 text-xs mt-2 font-normal">
-                    {unit === 'inches'
-                      ? `Hint: 1 inch = ${INCH_TO_CM} centimeters`
-                      : `Hint: 1 inch = ${INCH_TO_CM} centimeters (divide to get inches)`}
-                  </p>
+                  {/* Conversion factor = convert mode's keystone scaffold.
+                      Withdrawn at the hard tier so the student recalls it. */}
+                  {showConversionFactor && (
+                    <p className="text-slate-500 text-xs mt-2 font-normal">
+                      {unit === 'inches'
+                        ? `Hint: 1 inch = ${INCH_TO_CM} centimeters`
+                        : `Hint: 1 inch = ${INCH_TO_CM} centimeters (divide to get inches)`}
+                    </p>
+                  )}
                 </LuminaPrompt>
 
                 <div className="flex flex-col items-center gap-2">

@@ -48,6 +48,21 @@ export interface ShapeTracerChallenge {
   dots?: Array<{ x: number; y: number; label?: string }>;
   correctOrder?: number[];
   revealShape?: string;
+
+  // ── Support-tier scaffolds (within-mode, set by the generator from
+  //    config.difficulty). Display-only — they withdraw tracing help without
+  //    changing the target shape, its vertices, or the eval mode. Undefined =
+  //    no tier applied → all scaffolds default ON (legacy behavior). ──────────
+  /** Ghost outline of the full target shape (the dotted guide path). */
+  showGuidePath?: boolean;
+  /** Animated directional ant-trail on the guide path. */
+  showDirectionArrows?: boolean;
+  /** Pulsing "next vertex / start here" cue ring. */
+  showNextCue?: boolean;
+  /** Stroke-order numbers (1,2,3…) on trace/complete vertices. */
+  showOrderNumbers?: boolean;
+  /** The support tier this challenge was generated at (for the tutor). */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface ShapeTracerData {
@@ -294,10 +309,34 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     totalChallenges: challenges.length,
     currentChallengeIndex,
     instruction: currentChallenge?.instruction ?? '',
+    supportTier: currentChallenge?.supportTier,
   }), [
     currentChallenge, sidesCompleted, totalSides, currentAttempts,
     gradeBand, challenges.length, currentChallengeIndex,
   ]);
+
+  /**
+   * Tier-aware tutor reveal level. Keeps the tutor from re-supplying the
+   * tracing help the canvas withdrew at a harder tier.
+   * easy → walk the stroke; medium → nudge progress; hard → do NOT narrate
+   * the stroke path, encourage from memory of the shape.
+   */
+  const tutorRevealClause = useCallback((tier?: 'easy' | 'medium' | 'hard') => {
+    if (tier === 'hard') {
+      return ` [REVEAL: hard tier — the guide path, arrows, and order numbers are HIDDEN. `
+        + `Do NOT narrate the stroke path or name which dot/side comes next. `
+        + `Ask what the student remembers about the shape and let them choose their own path.]`;
+    }
+    if (tier === 'medium') {
+      return ` [REVEAL: medium tier — the guide outline is hidden but a faint next cue remains. `
+        + `Nudge progress and confirm the count of sides; don't trace the whole path for them.]`;
+    }
+    if (tier === 'easy') {
+      return ` [REVEAL: easy tier — full guide path is visible. `
+        + `You may walk the student dot-by-dot along the outline.]`;
+    }
+    return '';
+  }, []);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'shape-tracer',
@@ -315,10 +354,11 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       `[ACTIVITY_START] Shape Tracer activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
       + `${challenges.length} challenges covering shape construction. `
       + `First challenge: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}, shape: ${currentChallenge?.targetShape}). `
-      + `Introduce warmly: "Let's learn to draw shapes! We'll trace, complete, and even draw shapes from descriptions."`,
+      + `Introduce warmly: "Let's learn to draw shapes! We'll trace, complete, and even draw shapes from descriptions."`
+      + tutorRevealClause(currentChallenge?.supportTier),
       { silent: true },
     );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText]);
+  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText, tutorRevealClause]);
 
   // ── Interaction Handlers ──────────────────────────────────────────
 
@@ -592,12 +632,13 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     sendText(
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
       + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}, shape: ${nextChallenge.targetShape}). `
-      + `Read the instruction and encourage the student.`,
+      + `Read the instruction and encourage the student.`
+      + tutorRevealClause(nextChallenge.supportTier),
       { silent: true },
     );
   }, [
     advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex,
+    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, tutorRevealClause,
   ]);
 
   // Auto-submit when all complete
@@ -625,20 +666,29 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     const path = currentChallenge?.tracePath;
     if (!path || path.length === 0) return null;
 
+    // Support-tier scaffolds: undefined = ON (legacy / no tier applied).
+    const showGuidePath = currentChallenge?.showGuidePath ?? true;
+    const showDirectionArrows = currentChallenge?.showDirectionArrows ?? true;
+    const showNextCue = currentChallenge?.showNextCue ?? true;
+    const showOrderNumbers = currentChallenge?.showOrderNumbers ?? true;
+
     return (
       <>
-        {/* Dotted outline of full shape */}
-        <polygon
-          points={path.map(p => `${p.x},${p.y}`).join(' ')}
-          fill={shapeComplete ? shapeFill : 'none'}
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth={2}
-          strokeDasharray="8 6"
-          className={shapeComplete ? 'transition-all duration-500' : ''}
-        />
+        {/* Dotted outline of full shape (guide path). When complete, show the
+            fill regardless of tier so the finished shape always renders. */}
+        {(showGuidePath || shapeComplete) && (
+          <polygon
+            points={path.map(p => `${p.x},${p.y}`).join(' ')}
+            fill={shapeComplete ? shapeFill : 'none'}
+            stroke={shapeComplete ? 'rgba(255,255,255,0.15)' : showGuidePath ? 'rgba(255,255,255,0.15)' : 'none'}
+            strokeWidth={2}
+            strokeDasharray="8 6"
+            className={shapeComplete ? 'transition-all duration-500' : ''}
+          />
+        )}
 
-        {/* Animated ant-trail on dotted lines */}
-        {!shapeComplete && (
+        {/* Animated ant-trail on dotted lines (directional flow) */}
+        {showDirectionArrows && !shapeComplete && (
           <polygon
             points={path.map(p => `${p.x},${p.y}`).join(' ')}
             fill="none"
@@ -689,8 +739,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
 
           return (
             <g key={`v-${idx}`} className="cursor-pointer" onClick={() => handleTraceTap(idx)}>
-              {/* Pulsing ring for next vertex */}
-              {isNext && !shapeComplete && (
+              {/* Pulsing ring for next vertex (next/start cue) */}
+              {showNextCue && isNext && !shapeComplete && (
                 <circle
                   cx={point.x} cy={point.y} r={DOT_RADIUS + 6}
                   fill="none" stroke="rgba(59, 130, 246, 0.4)" strokeWidth={2}
@@ -703,20 +753,23 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
               <circle
                 cx={point.x} cy={point.y} r={DOT_RADIUS}
                 fill={isTapped ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.08)'}
-                stroke={isTapped ? 'rgba(59, 130, 246, 0.7)' : isNext ? 'rgba(59, 130, 246, 0.5)' : 'rgba(255,255,255,0.2)'}
+                stroke={isTapped ? 'rgba(59, 130, 246, 0.7)' : (isNext && showNextCue) ? 'rgba(59, 130, 246, 0.5)' : 'rgba(255,255,255,0.2)'}
                 strokeWidth={2}
                 className="transition-colors duration-200"
               />
 
-              <text
-                x={point.x} y={point.y}
-                textAnchor="middle" dominantBaseline="central"
-                fontSize={12} fontWeight="bold"
-                fill={isTapped ? '#93c5fd' : isNext ? '#93c5fd' : '#94a3b8'}
-                className="pointer-events-none select-none"
-              >
-                {idx + 1}
-              </text>
+              {/* Stroke-order number */}
+              {showOrderNumbers && (
+                <text
+                  x={point.x} y={point.y}
+                  textAnchor="middle" dominantBaseline="central"
+                  fontSize={12} fontWeight="bold"
+                  fill={isTapped ? '#93c5fd' : isNext ? '#93c5fd' : '#94a3b8'}
+                  className="pointer-events-none select-none"
+                >
+                  {idx + 1}
+                </text>
+              )}
 
               {isTapped && (
                 <text
@@ -740,6 +793,9 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
   const renderCompleteCanvas = () => {
     const drawnSides = currentChallenge?.drawnSides ?? [];
     const remaining = currentChallenge?.remainingVertices ?? [];
+
+    // Support-tier scaffolds: undefined = ON (legacy / no tier applied).
+    const showNextCue = currentChallenge?.showNextCue ?? true;
 
     // Build all vertices for polygon fill when complete
     const allVerts: Array<{ x: number; y: number }> = [];
@@ -819,7 +875,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
           const isNext = idx === tappedIndices.length;
           return (
             <g key={`rem-${idx}`} className="cursor-pointer" onClick={() => handleCompleteTap(idx)}>
-              {isNext && !shapeComplete && (
+              {showNextCue && isNext && !shapeComplete && (
                 <circle
                   cx={point.x} cy={point.y} r={DOT_RADIUS + 6}
                   fill="none" stroke="rgba(168, 85, 247, 0.4)" strokeWidth={2}
@@ -832,12 +888,12 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
               <circle
                 cx={point.x} cy={point.y} r={DOT_RADIUS}
                 fill={isTapped ? 'rgba(168, 85, 247, 0.3)' : 'rgba(255,255,255,0.08)'}
-                stroke={isTapped ? 'rgba(168, 85, 247, 0.7)' : isNext ? 'rgba(168, 85, 247, 0.5)' : 'rgba(255,255,255,0.2)'}
+                stroke={isTapped ? 'rgba(168, 85, 247, 0.7)' : (isNext && showNextCue) ? 'rgba(168, 85, 247, 0.5)' : 'rgba(255,255,255,0.2)'}
                 strokeWidth={2}
               />
 
               {!isTapped && (
-                <circle cx={point.x} cy={point.y} r={4} fill={isNext ? 'rgba(168, 85, 247, 0.7)' : 'rgba(255,255,255,0.4)'} />
+                <circle cx={point.x} cy={point.y} r={4} fill={(isNext && showNextCue) ? 'rgba(168, 85, 247, 0.7)' : 'rgba(255,255,255,0.4)'} />
               )}
               {isTapped && (
                 <text
@@ -858,6 +914,12 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
 
   // ---- Draw-from-description Canvas ----
   const renderDrawCanvas = () => {
+    // Support-tier scaffolds: undefined = ON (legacy / no tier applied).
+    // Vertex order labels withdraw at hard; the dashed preview-closing line
+    // withdraws at medium/hard (mapped to showGuidePath = easy-only).
+    const showOrderNumbers = currentChallenge?.showOrderNumbers ?? true;
+    const showPreviewLine = currentChallenge?.showGuidePath ?? true;
+
     return (
       <>
         {/* Grid dots */}
@@ -890,8 +952,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
           );
         })}
 
-        {/* Preview closing line (dashed) */}
-        {selectedGridPoints.length >= 3 && !shapeComplete && (
+        {/* Preview closing line (dashed) — withdrawn at medium/hard */}
+        {showPreviewLine && selectedGridPoints.length >= 3 && !shapeComplete && (
           <line
             x1={selectedGridPoints[selectedGridPoints.length - 1].x}
             y1={selectedGridPoints[selectedGridPoints.length - 1].y}
@@ -920,8 +982,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
           </>
         )}
 
-        {/* Vertex labels */}
-        {selectedGridPoints.map((point, i) => (
+        {/* Vertex order labels — withdrawn at hard */}
+        {showOrderNumbers && selectedGridPoints.map((point, i) => (
           <text
             key={`lbl-${i}`}
             x={point.x} y={point.y - GRID_DOT_RADIUS - 8}
@@ -941,6 +1003,10 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
   const renderConnectDotsCanvas = () => {
     const dots = currentChallenge?.dots ?? [];
     const order = currentChallenge?.correctOrder ?? [];
+
+    // Support-tier scaffold: the pulsing next-dot cue. The dot NUMBERS are the
+    // puzzle's answer, so they always render (never withdrawn by tier).
+    const showNextCue = currentChallenge?.showNextCue ?? true;
 
     return (
       <>
@@ -985,7 +1051,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
 
           return (
             <g key={`d-${idx}`} className="cursor-pointer" onClick={() => handleConnectDotTap(idx)}>
-              {isNext && !shapeComplete && (
+              {showNextCue && isNext && !shapeComplete && (
                 <circle
                   cx={dot.x} cy={dot.y} r={DOT_RADIUS + 6}
                   fill="none" stroke="rgba(249, 115, 22, 0.4)" strokeWidth={2}
@@ -998,7 +1064,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
               <circle
                 cx={dot.x} cy={dot.y} r={DOT_RADIUS}
                 fill={isTapped ? 'rgba(249, 115, 22, 0.3)' : 'rgba(255,255,255,0.08)'}
-                stroke={isTapped ? 'rgba(249, 115, 22, 0.7)' : isNext ? 'rgba(249, 115, 22, 0.5)' : 'rgba(255,255,255,0.2)'}
+                stroke={isTapped ? 'rgba(249, 115, 22, 0.7)' : (isNext && showNextCue) ? 'rgba(249, 115, 22, 0.5)' : 'rgba(255,255,255,0.2)'}
                 strokeWidth={2}
               />
 

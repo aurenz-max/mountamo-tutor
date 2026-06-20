@@ -39,6 +39,17 @@ export interface FractionCirclesChallenge {
   equivalentDenominator?: number;
   hint: string;
   narration: string;
+
+  // ── Support-tier scaffolds (set by the generator from config.difficulty).
+  //    All DISPLAY-ONLY — the checkers read numerator/denominator, never these. ──
+  /** identify: show the "N equal pieces" caption; build: show the denominator slice label */
+  showTotalPieces?: boolean;
+  /** running shaded/built tally (identify "M shaded", build & equivalent live count) */
+  showWorkingCount?: boolean;
+  /** compare ONLY: numeric fraction labels under each circle + inside the buttons */
+  showFractionLabels?: boolean;
+  /** within-mode support tier, drives the AI tutor's reveal level */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface FractionCirclesData {
@@ -146,6 +157,27 @@ function fractionsEquivalent(n1: number, d1: number, n2: number, d2: number): bo
   const s1 = simplify(n1, d1);
   const s2 = simplify(n2, d2);
   return s1.n === s2.n && s1.d === s2.d;
+}
+
+/**
+ * Tutor reveal level for the current support tier — the tutor sees full challenge
+ * data and must NOT leak what a tier withheld on screen. easy = walk the setup;
+ * medium = nudge only; hard = state no counts. compare's relationship IS the
+ * answer, so the tutor never names which fraction is larger at any tier.
+ */
+function tutorRevealClause(
+  tier: FractionCirclesChallenge['supportTier'],
+  type: FractionCirclesChallenge['type'],
+): string {
+  if (!tier) return '';
+  if (type === 'compare') {
+    return tier === 'hard'
+      ? ' [TIER hard] Numeric labels are HIDDEN — do NOT state the fraction values. Ask only what they SEE ("which circle has more color?"). Never say which is larger.'
+      : ` [TIER ${tier}] Guide by the picture ("which circle has more color?"). Never state which fraction is larger.`;
+  }
+  if (tier === 'easy') return ' [TIER easy] You may count the slices aloud and walk the student through the setup.';
+  if (tier === 'medium') return ' [TIER medium] Nudge them to count for themselves — do NOT state the current shaded count or the answer.';
+  return ' [TIER hard] On-screen counts are hidden. Do NOT state the numerator, denominator, or shaded count — ask what the student sees and let them count unaided.';
 }
 
 // ============================================================================
@@ -257,6 +289,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
     numerator: currentChallenge?.numerator ?? 0,
     shadedCount: shadedSlices.size,
     attemptNumber: currentAttempts + 1,
+    supportTier: currentChallenge?.supportTier ?? 'none',
   }), [
     gradeBand, challenges.length, currentChallengeIndex, currentChallenge,
     shadedSlices.size, currentAttempts,
@@ -334,7 +367,8 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
       setFeedbackType('error');
       sendText(
         `[IDENTIFY_INCORRECT] Student answered "${identifyInput}" but correct is ${currentChallenge.numerator}/${currentChallenge.denominator}. `
-        + `Attempt ${currentAttempts + 1}. The circle has ${currentChallenge.denominator} slices with ${currentChallenge.numerator} shaded. Give a hint.`,
+        + `Attempt ${currentAttempts + 1}. The circle has ${currentChallenge.denominator} slices with ${currentChallenge.numerator} shaded. Give a hint.`
+        + tutorRevealClause(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
@@ -361,7 +395,8 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
       setFeedbackType('error');
       sendText(
         `[BUILD_INCORRECT] Student shaded ${shadedSlices.size} slices but target is ${currentChallenge.numerator}/${currentChallenge.denominator}. `
-        + `Attempt ${currentAttempts + 1}. Hint: "Count the shaded pieces. You need exactly ${currentChallenge.numerator}."`,
+        + `Attempt ${currentAttempts + 1}. Hint: "Count the shaded pieces. You need exactly ${currentChallenge.numerator}."`
+        + tutorRevealClause(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
@@ -401,7 +436,8 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
       setFeedbackType('error');
       sendText(
         `[COMPARE_INCORRECT] Student chose "${compareChoice}" comparing ${leftStr} vs ${rightStr} (correct: ${correctChoice}). `
-        + `Attempt ${currentAttempts + 1}. Hint: "Look at how much of each circle is filled. Which has more color?"`,
+        + `Attempt ${currentAttempts + 1}. Hint: "Look at how much of each circle is filled. Which has more color?"`
+        + tutorRevealClause(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
@@ -433,7 +469,8 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
       setFeedbackType('error');
       sendText(
         `[EQUIVALENT_INCORRECT] Student built ${builtNum}/${equivDen} trying to match ${targetNum}/${targetDen}. `
-        + `Attempt ${currentAttempts + 1}. The equivalent denominator is ${equivDen}. Give a hint without revealing the answer.`,
+        + `Attempt ${currentAttempts + 1}. The equivalent denominator is ${equivDen}. Give a hint without revealing the answer.`
+        + tutorRevealClause(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
@@ -572,9 +609,14 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
             <div className="flex justify-center">
               {renderFractionCircle(currentChallenge.numerator, currentChallenge.denominator, CIRCLE_SIZE)}
             </div>
-            <p className="text-slate-300 text-sm">
-              {currentChallenge.denominator} equal pieces, {currentChallenge.numerator} shaded
-            </p>
+            {/* Count caption — withdrawn by support tier (undefined = legacy = show both) */}
+            {(currentChallenge.showTotalPieces !== false || currentChallenge.showWorkingCount !== false) && (
+              <p className="text-slate-300 text-sm">
+                {currentChallenge.showTotalPieces !== false && `${currentChallenge.denominator} equal pieces`}
+                {currentChallenge.showTotalPieces !== false && currentChallenge.showWorkingCount !== false && ', '}
+                {currentChallenge.showWorkingCount !== false && `${currentChallenge.numerator} shaded`}
+              </p>
+            )}
             {/* Input */}
             <div className="flex items-center gap-3">
               <span className="text-slate-300 text-sm">What fraction is shaded?</span>
@@ -606,23 +648,34 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
                 accentColor: '#a855f7',
               })}
             </div>
+            {/* Count readout — withdrawn by support tier (running tally → total-only → none) */}
             <p className="text-slate-400 text-xs">
-              Click slices to shade them ({shadedSlices.size}/{currentChallenge.denominator} shaded)
+              Click slices to shade them
+              {currentChallenge.showWorkingCount !== false
+                ? ` (${shadedSlices.size}/${currentChallenge.denominator} shaded)`
+                : currentChallenge.showTotalPieces !== false
+                  ? ` (${currentChallenge.denominator} slices)`
+                  : ''}
             </p>
           </div>
         );
 
       case 'compare': {
         const cmp = currentChallenge.compareFraction!;
+        // Numeric fraction labels are withdrawn at harder tiers → pure visual
+        // area comparison (undefined = legacy = show labels).
+        const showLabels = currentChallenge.showFractionLabels !== false;
         return (
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-8">
               {/* Left circle */}
               <div className="flex flex-col items-center gap-2">
                 {renderFractionCircle(currentChallenge.numerator, currentChallenge.denominator, CIRCLE_SIZE_SM)}
-                <span className="text-slate-200 font-mono text-lg">
-                  {currentChallenge.numerator}/{currentChallenge.denominator}
-                </span>
+                {showLabels && (
+                  <span className="text-slate-200 font-mono text-lg">
+                    {currentChallenge.numerator}/{currentChallenge.denominator}
+                  </span>
+                )}
               </div>
 
               <span className="text-slate-500 text-2xl font-bold">vs</span>
@@ -632,9 +685,11 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
                 {renderFractionCircle(cmp.numerator, cmp.denominator, CIRCLE_SIZE_SM, {
                   accentColor: '#f59e0b',
                 })}
-                <span className="text-slate-200 font-mono text-lg">
-                  {cmp.numerator}/{cmp.denominator}
-                </span>
+                {showLabels && (
+                  <span className="text-slate-200 font-mono text-lg">
+                    {cmp.numerator}/{cmp.denominator}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -649,7 +704,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
                 }`}
                 onClick={() => { SoundManager.select(); setCompareChoice('left'); setFeedback(''); setFeedbackType(''); }}
               >
-                Left ({currentChallenge.numerator}/{currentChallenge.denominator}) is larger
+                {showLabels ? `Left (${currentChallenge.numerator}/${currentChallenge.denominator}) is larger` : 'Left is larger'}
               </Button>
               <Button
                 variant="ghost"
@@ -671,7 +726,7 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
                 }`}
                 onClick={() => { SoundManager.select(); setCompareChoice('right'); setFeedback(''); setFeedbackType(''); }}
               >
-                Right ({cmp.numerator}/{cmp.denominator}) is larger
+                {showLabels ? `Right (${cmp.numerator}/${cmp.denominator}) is larger` : 'Right is larger'}
               </Button>
             </div>
           </div>
@@ -702,8 +757,9 @@ const FractionCircles: React.FC<FractionCirclesProps> = ({ data, className }) =>
                   onSliceClick: handleSliceClick,
                   accentColor: '#10b981',
                 })}
+                {/* Live built tally — withdrawn at hard so the student self-tracks */}
                 <span className="text-slate-200 font-mono text-lg">
-                  {shadedSlices.size}/{equivDen}
+                  {currentChallenge.showWorkingCount !== false ? `${shadedSlices.size}/${equivDen}` : `?/${equivDen}`}
                 </span>
                 <span className="text-slate-500 text-xs">Build equivalent</span>
               </div>

@@ -44,6 +44,10 @@ export interface SlopeTriangleConfig {
   showAngle: boolean;
   notation: 'riseRun' | 'deltaNotation';
   color?: string;
+  /** Tier-controlled measurement overlays (set by support tiers; absent = no-tier default). */
+  showRiseRunLabels?: boolean; // numeric "rise = N"/"run = N" labels on the legs
+  showGridCountOverlay?: boolean; // tick marks counting the rise/run grid units along each leg
+  showFormulaReminder?: boolean; // "slope = rise ÷ run" reminder badge on the canvas
 }
 
 export interface AttachedLine {
@@ -69,6 +73,8 @@ export interface SlopeTriangleChallenge {
   expectedSlope: number;
   instruction: string;
   hint: string;
+  /** Within-mode support tier from the manifest, when present (drives tutor reveal). */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface SlopeTriangleData {
@@ -101,6 +107,21 @@ const PHASE_CONFIG_BY_TYPE: Record<SlopeTriangleChallengeType, PhaseConfig> = {
   calculate:      { label: 'Calculate',      icon: '🧮', accentColor: 'purple' },
   draw_triangle:  { label: 'Draw Triangle',  icon: '✏️', accentColor: 'emerald' },
 };
+
+// ============================================================================
+// Tutor reveal policy — keep the AI tutor in sync with the measurement overlay
+// so it never names what a harder tier withheld.
+// ============================================================================
+
+function tutorRevealClause(type: string, tier?: 'easy' | 'medium' | 'hard'): string {
+  if (!tier) return '';
+  if (tier === 'easy')
+    return ' Support tier EASY: the rise/run overlay is on — you may name the method and walk the first step.';
+  if (tier === 'medium')
+    return ' Support tier MEDIUM: numeric labels are withdrawn — nudge the student to count the grid, do not state rise, run, or the slope value.';
+  // hard — the screen withholds every measurement overlay; the tutor must not leak it.
+  return ' Support tier HARD: no measurement overlay — ask how far the line goes UP vs ACROSS between the corners; do NOT state the rise, the run, or the slope value.';
+}
 
 // ============================================================================
 // Component
@@ -338,13 +359,41 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
     ctx.lineTo(rightPoint.x, rightPoint.y + yDir * angleSize);
     ctx.stroke();
 
-    // Measurements (rise / run labels — shown for identify_slope and calculate,
-    // hidden for draw_triangle so the student has to read them off the grid).
-    const showMeasurements = triangle.showMeasurements;
-    if (showMeasurements) {
-      const rise = y2 - y1;
-      const run = trianglePos.size;
-      const notation = triangle.notation || 'riseRun';
+    const rise = y2 - y1;
+    const run = trianglePos.size;
+    const notation = triangle.notation || 'riseRun';
+
+    // Grid-count overlay (tick marks counting each rise/run grid unit along the
+    // legs). A perception aid the student COUNTS — never prints the answer value.
+    // Tier-gated via showGridCountOverlay (absent = off; no-tier path unchanged).
+    if (triangle.showGridCountOverlay) {
+      ctx.strokeStyle = `${triangleColor}cc`;
+      ctx.lineWidth = 1.5;
+      const tick = 5;
+      // Run leg (horizontal, along base → right corner): a tick per grid unit.
+      for (let u = 1; u <= Math.abs(run); u++) {
+        const ux = basePoint.x + ((rightPoint.x - basePoint.x) * u) / Math.abs(run);
+        ctx.beginPath();
+        ctx.moveTo(ux, rightPoint.y - tick);
+        ctx.lineTo(ux, rightPoint.y + tick);
+        ctx.stroke();
+      }
+      // Rise leg (vertical, along right corner → top corner): a tick per grid unit.
+      const riseUnits = Math.abs(Math.round(rise));
+      for (let u = 1; u <= riseUnits; u++) {
+        const uy = rightPoint.y + ((topPoint.y - rightPoint.y) * u) / riseUnits;
+        ctx.beginPath();
+        ctx.moveTo(rightPoint.x - tick, uy);
+        ctx.lineTo(rightPoint.x + tick, uy);
+        ctx.stroke();
+      }
+    }
+
+    // Numeric rise/run (Δy/Δx) labels. The label VALUE equals the answer for
+    // identify_slope, so the generator never sets showRiseRunLabels for that
+    // mode. No-tier path falls back to the legacy showMeasurements flag.
+    const showLabels = triangle.showRiseRunLabels ?? triangle.showMeasurements;
+    if (showLabels) {
       ctx.fillStyle = '#ffffff';
       ctx.font = '13px monospace';
       ctx.textAlign = 'center';
@@ -356,6 +405,27 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
       ctx.translate(rightPoint.x + 28, (rightPoint.y + topPoint.y) / 2);
       ctx.fillText(riseLabel, 0, 0);
       ctx.restore();
+    }
+
+    // Formula reminder badge ("slope = rise ÷ run"). Tier-gated self-check cue.
+    if (triangle.showFormulaReminder) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+      ctx.strokeStyle = `${triangleColor}88`;
+      ctx.lineWidth = 1;
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const reminder = notation === 'deltaNotation' ? 'slope = Δy ÷ Δx' : 'slope = rise ÷ run';
+      const padX = 8;
+      const w = ctx.measureText(reminder).width + padX * 2;
+      const bx = padding + 6;
+      const by = padding + 6;
+      ctx.beginPath();
+      ctx.rect(bx, by, w, 22);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(reminder, bx + padX, by + 11);
     }
 
     // Drag handles (always — but only the right handle is draggable in draw_triangle,
@@ -485,6 +555,7 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
     gradeBand,
     attemptNumber: currentAttempts + 1,
     notation: currentChallenge?.triangle.notation ?? 'riseRun',
+    supportTier: currentChallenge?.supportTier,
   }), [
     challengeType,
     currentChallengeIndex,
@@ -564,7 +635,8 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
       setFeedbackType('error');
       incrementAttempts();
       sendText(
-        `[ANSWER_INCORRECT] Student answered rise=${rise}, run=${run}. Hint: "Count up from the base point for rise, across for run."`,
+        `[ANSWER_INCORRECT] Student answered rise=${rise}, run=${run}. Hint: "Count up from the base point for rise, across for run."`
+        + tutorRevealClause(currentChallenge.type, currentChallenge.supportTier),
         { silent: true }
       );
     }
@@ -603,7 +675,8 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
       setFeedbackType('error');
       incrementAttempts();
       sendText(
-        `[ANSWER_INCORRECT] Student said slope=${parsed}, actual ${currentChallenge.expectedSlope}. Hint: "Divide rise by run; watch the sign."`,
+        `[ANSWER_INCORRECT] Student said slope=${parsed}, actual ${currentChallenge.expectedSlope}. Hint: "Divide rise by run; watch the sign."`
+        + tutorRevealClause(currentChallenge.type, currentChallenge.supportTier),
         { silent: true }
       );
     }
@@ -629,7 +702,8 @@ const SlopeTriangle: React.FC<SlopeTriangleProps> = ({ data, className }) => {
       setFeedbackType('error');
       incrementAttempts();
       sendText(
-        `[ANSWER_INCORRECT] Student's run=${trianglePos.size}, target run=${currentChallenge.expectedRun}. Coach to drag right handle.`,
+        `[ANSWER_INCORRECT] Student's run=${trianglePos.size}, target run=${currentChallenge.expectedRun}. Coach to drag right handle.`
+        + tutorRevealClause(currentChallenge.type, currentChallenge.supportTier),
         { silent: true }
       );
     }

@@ -43,6 +43,13 @@ export interface PatternBuilderChallenge {
   translationMapping?: Record<string, string>;
   /** Per-challenge selectable tokens (correct answers + distractors). Falls back to top-level tokens.available. */
   availableTokens?: string[];
+  /**
+   * Within-mode support tier ('easy' | 'medium' | 'hard') from the manifest.
+   * easy = unit boundary highlighted + rule named; medium = unit highlighted, no rule;
+   * hard = no unit highlight, no rule (infer from the sequence). Drives the tutor's
+   * reveal level — NEVER changes the pattern length or elements.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface PatternBuilderData {
@@ -249,6 +256,28 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
 
   const currentChallenge = challenges[currentChallengeIndex] || null;
 
+  // Active support tier for the current challenge (drives the tutor's reveal level).
+  const supportTier = currentChallenge?.supportTier;
+
+  // Tutor reveal policy — how much the live tutor may name at this tier.
+  // hard: never name the rule or the unit boundary; ask what repeats; never reveal
+  // the next element (the answer) at any tier.
+  const tutorRevealClause = useMemo(() => {
+    if (supportTier === 'hard') {
+      return 'SUPPORT TIER = HARD: Do NOT name the rule and do NOT point out the repeating unit boundary. '
+        + 'Ask the student what they notice repeating and let them infer the structure. Never reveal the next/missing token.';
+    }
+    if (supportTier === 'medium') {
+      return 'SUPPORT TIER = MEDIUM: You may point to the highlighted repeating unit, but do NOT name the rule in words — '
+        + 'have the student describe the rule themselves. Never reveal the next/missing token.';
+    }
+    if (supportTier === 'easy') {
+      return 'SUPPORT TIER = EASY: You may name the repeating unit and the rule to help the student self-check, '
+        + 'but still never hand them the exact next/missing token — let them place it.';
+    }
+    return 'Never reveal the next/missing token; guide the student to find it.';
+  }, [supportTier]);
+
   // Per-challenge sequence override (single-type eval modes give each challenge its own pattern).
   // Falls back to the top-level sequence for multi-type mode where all challenges share one pattern.
   const activeSequence = useMemo(
@@ -311,10 +340,13 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
     currentPhase,
     studentExtension: extensionAnswers.join(', '),
     studentCreation: createdPattern.join(', '),
+    supportTier: supportTier ?? 'default',
+    tutorRevealPolicy: tutorRevealClause,
   }), [
     patternType, gradeBand, sequence, challenges.length,
     currentChallengeIndex, currentChallenge, currentAttempts,
     currentPhase, extensionAnswers, createdPattern, activeSequence,
+    supportTier, tutorRevealClause,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -444,13 +476,13 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       sendText(
         `[EXTEND_INCORRECT] Student placed: ${extensionAnswers.join(', ')} but expected: ${expected.join(', ')}. `
         + `The given pattern is: ${activeSequence.given.join(', ')}. Core: ${activeSequence.core.join(', ')}. `
-        + `Attempt ${currentAttempts + 1}. `
-        + `Guide pattern finding: "Look at the pattern: ${sequence.given.join(', ')}... what part keeps repeating?"`,
+        + `Attempt ${currentAttempts + 1}. ${tutorRevealClause} `
+        + `Guide pattern finding without revealing the next token: "Look at the pattern: ${sequence.given.join(', ')}... what part keeps repeating?"`,
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, extensionAnswers, currentAttempts, sendText, activeSequence, incrementAttempts]);
+  }, [currentChallenge, extensionAnswers, currentAttempts, sendText, activeSequence, incrementAttempts, tutorRevealClause, sequence.given]);
 
   const checkIdentifyCoreChallenge = useCallback(() => {
     if (!currentChallenge) return false;
@@ -480,13 +512,13 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[CORE_INCORRECT] Student selected: ${selectedTokens.join(', ')} but the core is: ${activeSequence.core.join(', ')}. `
-        + `Attempt ${currentAttempts + 1}. `
-        + `Hint: "The core is the smallest part that keeps repeating. Look for where the pattern starts over."`,
+        + `Attempt ${currentAttempts + 1}. ${tutorRevealClause} `
+        + `Hint without naming the core: "The core is the smallest part that keeps repeating. Look for where the pattern starts over."`,
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, selectedCoreIndices, activeSequence, currentAttempts, sendText, incrementAttempts]);
+  }, [currentChallenge, selectedCoreIndices, activeSequence, currentAttempts, sendText, incrementAttempts, tutorRevealClause]);
 
   const checkCreateChallenge = useCallback(() => {
     if (!currentChallenge) return false;
@@ -569,13 +601,13 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       setFeedbackType('error');
       sendText(
         `[TRANSLATE_INCORRECT] Student translated: ${translatedPattern.join(', ')} but expected: ${expected.join(', ')}. `
-        + `Mapping: ${Object.entries(mapping).map(([k, v]) => `${k}→${v}`).join(', ')}. `
-        + `Hint: "Look at the mapping: each source token becomes a new token."`,
+        + `Mapping: ${Object.entries(mapping).map(([k, v]) => `${k}→${v}`).join(', ')}. ${tutorRevealClause} `
+        + `Hint without revealing the full translation: "Look at the mapping: each source token becomes a new token."`,
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, activeMapping, activeSequence, translatedPattern, currentAttempts, sendText, incrementAttempts]);
+  }, [currentChallenge, activeMapping, activeSequence, translatedPattern, currentAttempts, sendText, incrementAttempts, tutorRevealClause]);
 
   const checkFindRuleChallenge = useCallback(() => {
     if (!currentChallenge) return false;
@@ -603,13 +635,13 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
       sendText(
         `[RULE_INCORRECT] Student placed: ${extensionAnswers.join(', ')} but expected: ${expected.join(', ')}. `
         + `The given pattern is: ${activeSequence.given.join(', ')}. Rule: "${sequence.rule || 'unknown'}". `
-        + `Attempt ${currentAttempts + 1}. `
-        + `Hint: "Look at the numbers: ${activeSequence.given.join(', ')}. What do you do to each number to get the next?"`,
+        + `Attempt ${currentAttempts + 1}. ${tutorRevealClause} `
+        + `Hint without stating the rule or the next number: "Look at the numbers: ${activeSequence.given.join(', ')}. What do you do to each number to get the next?"`,
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, activeSequence, extensionAnswers, sequence.rule, currentAttempts, sendText, incrementAttempts]);
+  }, [currentChallenge, activeSequence, extensionAnswers, sequence.rule, currentAttempts, sendText, incrementAttempts, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation

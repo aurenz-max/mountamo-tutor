@@ -50,6 +50,79 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode SUPPORT TIERS (config.difficulty) — SCAFFOLDING-ONLY axis.
+//
+// Shape-composer is a builder/constructor archetype. Tiers withdraw the
+// on-canvas decomposition seams + piece-snap guides — NEVER the target shape,
+// the piece set, or the answer (those are the eval-mode / task-identity axis).
+//   easy   = decomposition seams + snap guides shown (workspace self-checks)
+//   medium = snap guides only (no seams — student plans where pieces go)
+//   hard   = no seams, no guides (student plans the whole composition unaided)
+// Seam lines ARE the decomposition answer; at hard they are withdrawn (good).
+// The component's checkers validate the assembled geometry independent of the
+// show* flags, so easy seams are a self-check aid, never an auto-solve.
+// See memory: structural-difficulty-not-numeric, add-support-tiers skill.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+const TIER_GUARDRAIL =
+  'This tier ONLY withdraws on-screen scaffolds (decomposition seams, piece-snap guides). '
+  + 'NEVER change the target shape, the picture, the piece set, or the correct answer — '
+  + 'those are the eval-mode (task identity), not the tier.';
+
+/** Scaffolding levers — withdrawn at harder tiers. All display-only; the
+ *  component checkers read geometry, not these flags. */
+interface SupportScaffold {
+  /** Render the decomposition seam lines / piece-target outlines INSIDE the
+   *  target (compose-match piece outlines, decompose division lines). The seam
+   *  IS the answer, so it is shown at easy only. */
+  showSeams: boolean;
+  /** Render the snap-zone / slot outlines that guide where a piece drops
+   *  (compose-picture slot dashes, compose-match snap halos). Shown easy+medium. */
+  showSnapGuides: boolean;
+  promptLines: string[];
+}
+
+function resolveSupportStructure(mode: string, tier: SupportTier): SupportScaffold {
+  const lines: string[] = [TIER_GUARDRAIL];
+  const showSeams = tier === 'easy';
+  const showSnapGuides = tier !== 'hard';
+
+  switch (mode) {
+    case 'compose-match':
+      lines.push(showSeams
+        ? 'Show the SEAM outlines inside the silhouette (each piece\'s landing spot is dashed) so the student can see how the target decomposes, plus snap guides.'
+        : showSnapGuides
+          ? 'Hide the seam outlines — the student must figure out how the pieces tile the silhouette; keep gentle snap guides so a near-correct drop still snaps.'
+          : 'No seams, no snap halos — the student plans the whole tiling and places pieces precisely on their own.');
+      break;
+    case 'compose-picture':
+      lines.push(showSnapGuides
+        ? 'Show the dashed slot outlines marking where each shape goes.'
+        : 'Hide the slot outlines — the student must plan the picture layout from the description alone.');
+      break;
+    case 'decompose':
+      lines.push(showSeams
+        ? 'Show the division-line seams that reveal how the composite splits into its components (self-check aid).'
+        : 'Hide the division-line seams — the student must mentally segment the composite into its parts.');
+      break;
+    default:
+      // free-create / how-many-ways have no on-canvas seams/guides to withdraw.
+      lines.push('No on-canvas seams or guides apply to this mode; the task is unchanged.');
+  }
+  return { showSeams, showSnapGuides, promptLines: lines };
+}
+
+// ---------------------------------------------------------------------------
 // Canvas & shape constants
 // ---------------------------------------------------------------------------
 
@@ -1023,6 +1096,7 @@ async function generateComposeMatchChallenges(
   topic: string,
   gradeLevel: string,
   gradeBand: string,
+  tierSection = "",
 ): Promise<ShapeComposerChallenge[]> {
   const targets =
     gradeBand === "1" ? COMPOSE_MATCH_TARGETS_G1 : COMPOSE_MATCH_TARGETS_K;
@@ -1033,7 +1107,7 @@ Theme: ${randomTheme()}.
 Students drag smaller shapes to fill a target silhouette.
 
 ${gradeShapesPrompt(gradeBand)}
-
+${tierSection}
 For each challenge:
 - Set targetShape to one of: ${targets.join(", ")}
 - Write a warm, encouraging instruction that names the target shape
@@ -1079,6 +1153,7 @@ async function generateComposePictureChallenges(
   topic: string,
   gradeLevel: string,
   gradeBand: string,
+  tierSection = "",
 ): Promise<ShapeComposerChallenge[]> {
   const pictures =
     gradeBand === "1" ? PICTURE_NAMES_G1 : PICTURE_NAMES_K;
@@ -1089,7 +1164,7 @@ Theme: ${randomTheme()}.
 Students build a recognizable picture by placing basic shapes into slots.
 
 ${gradeShapesPrompt(gradeBand)}
-
+${tierSection}
 For each challenge:
 - Set targetPicture to one of: ${pictures.join(", ")}
 - Write a warm instruction that describes what the student is building
@@ -1136,6 +1211,7 @@ async function generateDecomposeChallenges(
   topic: string,
   gradeLevel: string,
   gradeBand: string,
+  tierSection = "",
 ): Promise<ShapeComposerChallenge[]> {
   const descriptions =
     gradeBand === "1"
@@ -1148,7 +1224,7 @@ Theme: ${randomTheme()}.
 Students look at a composite shape and identify which basic shapes make it up.
 
 ${gradeShapesPrompt(gradeBand)}
-
+${tierSection}
 For each challenge:
 - Set compositeDescription to one of: ${descriptions.map((d) => `"${d}"`).join(", ")}
 - Set component0Shape and component0Count (required), optionally component1Shape/Count
@@ -1203,6 +1279,7 @@ async function generateHowManyWaysChallenges(
   topic: string,
   gradeLevel: string,
   gradeBand: string,
+  tierSection = "",
 ): Promise<ShapeComposerChallenge[]> {
   const shapes = gradeShapes(gradeBand);
   const prompt = `
@@ -1212,6 +1289,7 @@ Theme: ${randomTheme()}.
 Students answer how many of a given small shape are needed to build a larger shape.
 
 ${gradeShapesPrompt(gradeBand)}
+${tierSection}
 
 Known correct answers:
 - "square" from triangles: minimumPiecesNeeded = 2
@@ -1283,6 +1361,7 @@ async function generateFreeCreateChallenges(
   topic: string,
   gradeLevel: string,
   _gradeBand: string,
+  _tierSection = "",
 ): Promise<ShapeComposerChallenge[]> {
   const prompt = `
 Create an educational FREE-CREATE shape activity for "${topic}" (${gradeLevel} students).
@@ -1383,7 +1462,16 @@ const FALLBACKS: Record<string, ShapeComposerChallenge> = {
 export const generateShapeComposer = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. SCAFFOLDING-ONLY:
+     * withdraws decomposition seams + snap guides, NEVER the target/piece set.
+     */
+    difficulty?: string;
+  }>,
 ): Promise<ShapeComposerData> => {
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -1397,36 +1485,55 @@ export const generateShapeComposer = async (
   const allowedTypes =
     evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
 
+  // ── Support tier (within-mode scaffolding level) ──
+  const supportTier = normalizeSupportTier(config?.difficulty); // STUDENT's tier — drives application (single OR blend)
+  // pinnedType is for the prompt tone + logging only; each challenge resolves
+  // its scaffold from its OWN mode so blends are described correctly.
+  const pinnedType =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? evalConstraint.allowedTypes[0]
+      : undefined;
+
   // ── Dispatch sub-generators in parallel ──
   const generators: Promise<ShapeComposerChallenge[]>[] = [];
   const typeOrder: string[] = [];
 
   for (const type of allowedTypes) {
     typeOrder.push(type);
+    // Per-mode tier prose (only when this mode is the single pinned mode the
+    // section was built for; blends still apply structure deterministically below).
+    const section = supportTier
+      ? `\n## WITHIN-MODE SUPPORT TIER "${supportTier}" (scaffolding level — NOT the target shape or piece set)\n${resolveSupportStructure(
+          type,
+          supportTier,
+        )
+          .promptLines.map((l) => `- ${l}`)
+          .join("\n")}\n`
+      : "";
     switch (type) {
       case "compose-match":
         generators.push(
-          generateComposeMatchChallenges(topic, gradeLevel, gradeBand),
+          generateComposeMatchChallenges(topic, gradeLevel, gradeBand, section),
         );
         break;
       case "compose-picture":
         generators.push(
-          generateComposePictureChallenges(topic, gradeLevel, gradeBand),
+          generateComposePictureChallenges(topic, gradeLevel, gradeBand, section),
         );
         break;
       case "decompose":
         generators.push(
-          generateDecomposeChallenges(topic, gradeLevel, gradeBand),
+          generateDecomposeChallenges(topic, gradeLevel, gradeBand, section),
         );
         break;
       case "how-many-ways":
         generators.push(
-          generateHowManyWaysChallenges(topic, gradeLevel, gradeBand),
+          generateHowManyWaysChallenges(topic, gradeLevel, gradeBand, section),
         );
         break;
       case "free-create":
         generators.push(
-          generateFreeCreateChallenges(topic, gradeLevel, gradeBand),
+          generateFreeCreateChallenges(topic, gradeLevel, gradeBand, section),
         );
         break;
     }
@@ -1447,6 +1554,29 @@ export const generateShapeComposer = async (
       `[ShapeComposer] No valid challenges — using ${fallbackType} fallback`,
     );
     challenges = [FALLBACKS[fallbackType] ?? FALLBACKS["compose-match"]];
+  }
+
+  // ── Apply support tier deterministically, per challenge from its OWN mode ──
+  // Difficulty is a STUDENT property: a blended/auto session gets it too (single
+  // mode just gives every challenge the same scaffold). Gate ONLY on supportTier
+  // being present — never on pinnedType — so blends aren't silently dropped.
+  // Runs AFTER fallback + ID re-assignment so a hard tier can withdraw the seams
+  // the templates always include. Display-only: the component checkers validate
+  // the assembled geometry independent of these flags (no answer leak/invalidate).
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.supportTier = supportTier;
+      // showSeams: compose-match piece-target outlines + decompose division lines.
+      // showSnapGuides: compose-picture slot outlines + compose-match snap halos.
+      ch.showSeams = sc.showSeams;
+      ch.showSnapGuides = sc.showSnapGuides;
+    }
+    console.log(
+      `[ShapeComposer] Support tier "${supportTier}" applied per-challenge (${
+        pinnedType ? `single-mode ${pinnedType}` : "blended"
+      })`,
+    );
   }
 
   // ── Build title ──

@@ -28,6 +28,13 @@ export interface FactorTreeData {
   showExponentForm?: boolean;
   guidedMode?: boolean;
   allowReset?: boolean;
+  /** Within-mode support tier (#1): running "current factorization" self-check panel.
+   *  Falls back to showExponentForm when absent (no-tier path unchanged). */
+  showRunningFactorization?: boolean;
+  /** Within-mode support tier (#2): divisibility-strategy hint panel (easy, guided modes). */
+  showStrategyHint?: boolean;
+  /** Support tier label ('easy'|'medium'|'hard') for live-tutor reveal calibration. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -102,6 +109,17 @@ const treeDepth = (t: Map<string, TreeNode>, nodeId: string): number => {
   );
 };
 
+/**
+ * Live-tutor reveal calibration per support tier. The tier already withholds on-screen
+ * scaffolds; this keeps the tutor from leaking what the tier hid (Gotcha #2).
+ */
+const tierRevealClause = (tier?: 'easy' | 'medium' | 'hard'): string => {
+  if (tier === 'easy') return ' SUPPORT TIER easy: you may name the divisibility strategy and walk the first split.';
+  if (tier === 'medium') return ' SUPPORT TIER medium: nudge execution only; do not name the full strategy or hand factor pairs unasked.';
+  if (tier === 'hard') return ' SUPPORT TIER hard: do NOT name the strategy or hand factor pairs. Ask what the student notices; never reveal the answer.';
+  return '';
+};
+
 // ============================================================================
 // Phase config (single phase — same challenge type across the session)
 // ============================================================================
@@ -125,6 +143,9 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     showExponentForm = true,
     guidedMode = true,
     allowReset = true,
+    showRunningFactorization,
+    showStrategyHint = false,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -220,7 +241,8 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     guidedMode,
     currentChallengeIndex,
     totalChallenges: challenges.length,
-  }), [currentRootValue, tree, leavesNow, guidedMode, currentChallengeIndex, challenges.length]);
+    supportTier,
+  }), [currentRootValue, tree, leavesNow, guidedMode, currentChallengeIndex, challenges.length, supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'factor-tree',
@@ -236,11 +258,12 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     sendText(
       `[ACTIVITY_START] Factor-tree session with ${challenges.length} challenges. ` +
       `First number: ${currentRootValue}. ` +
-      `Guided mode: ${guidedMode ? 'on (suggested factor pairs shown)' : 'off'}. ` +
+      `Guided mode: ${guidedMode ? 'on (suggested factor pairs shown)' : 'off'}.` +
+      tierRevealClause(supportTier) + ' ' +
       `Briefly introduce the session and the first factorization.`,
       { silent: true }
     );
-  }, [challenges.length, currentRootValue, guidedMode, sendText]);
+  }, [challenges.length, currentRootValue, guidedMode, supportTier, sendText]);
 
   // ── Tree mutations ────────────────────────────────────────────────────────
   const splitNode = useCallback((nodeId: string, factor1: number, factor2: number): boolean => {
@@ -313,11 +336,12 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     const pairs = getFactorPairs(node.value);
     sendText(
       `[NODE_SELECTED] Student selected ${node.value} to split. ` +
-      `Valid pairs: ${pairs.map(([a, b]) => `${a}×${b}`).join(', ')}. ` +
-      `${guidedMode ? 'Suggested pairs are visible.' : 'No hints — student enters factors manually.'}`,
+      `Valid pairs (for YOUR reference only): ${pairs.map(([a, b]) => `${a}×${b}`).join(', ')}. ` +
+      `${guidedMode ? 'Suggested pairs are visible.' : 'No hints — student enters factors manually.'}` +
+      tierRevealClause(supportTier),
       { silent: true }
     );
-  }, [tree, sendText, guidedMode]);
+  }, [tree, sendText, guidedMode, supportTier]);
 
   const resetTree = useCallback(() => {
     if (!currentChallenge) return;
@@ -621,6 +645,21 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
             </div>
           )}
 
+          {/* Divisibility-strategy hint (easy tier, guided modes) — names a rule, never an answer */}
+          {showStrategyHint && currentChallenge && !allChallengesComplete && !treeNowComplete && (
+            <div className="mb-6 p-4 bg-sky-500/15 backdrop-blur-sm rounded-xl border border-sky-400/30 max-w-2xl mx-auto">
+              <p className="text-sky-300 text-xs uppercase tracking-wider font-medium mb-2 text-center">
+                Divisibility strategy — which factor to try
+              </p>
+              <ul className="text-sm text-slate-200 space-y-1.5">
+                <li className="flex items-start gap-2"><span className="text-sky-400 mt-0.5">&#9656;</span><span>Even number? Split off a <strong>2</strong>.</span></li>
+                <li className="flex items-start gap-2"><span className="text-sky-400 mt-0.5">&#9656;</span><span>Ends in 0 or 5? Split off a <strong>5</strong>.</span></li>
+                <li className="flex items-start gap-2"><span className="text-sky-400 mt-0.5">&#9656;</span><span>Digits add to a multiple of 3? Split off a <strong>3</strong>.</span></li>
+                <li className="flex items-start gap-2"><span className="text-sky-400 mt-0.5">&#9656;</span><span>No small factor divides it? It may be prime — a leaf.</span></li>
+              </ul>
+            </div>
+          )}
+
           {/* Tree-complete banner (per-challenge advance UI) */}
           {treeNowComplete && !allChallengesComplete && (
             <div className="mb-6 p-6 bg-green-500/20 backdrop-blur-sm border-2 border-green-400/60 rounded-2xl text-center animate-fade-in shadow-[0_0_30px_rgba(34,197,94,0.3)] relative overflow-hidden">
@@ -733,8 +772,8 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
             </div>
           )}
 
-          {/* Current Factorization */}
-          {!treeNowComplete && showExponentForm && leavesNow.length > 1 && !allChallengesComplete && (
+          {/* Current Factorization (running self-check — withdrawn at hard tier) */}
+          {!treeNowComplete && (showRunningFactorization ?? showExponentForm) && leavesNow.length > 1 && !allChallengesComplete && (
             <div className="mb-6 p-5 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-600/40 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
               <div className="relative z-10">

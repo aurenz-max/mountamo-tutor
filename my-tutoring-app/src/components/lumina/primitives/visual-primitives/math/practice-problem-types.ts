@@ -70,4 +70,34 @@ export interface PracticeProblemSolution {
   difficulty: PracticeDifficulty;
   evalMode: PracticeEvalMode;
   gradeLevel: string;
+
+  /**
+   * Within-mode SUPPORT TIER (config.difficulty from the manifest).
+   * ORTHOGONAL to `evalMode`/`difficulty` (the step-count band): the tier
+   * controls how much of the worked scaffold the canvas REVEALS, never the
+   * problem text, numbers, or step count. Absent → no tier (full scaffold).
+   */
+  supportTier?: PracticeSupportTier;
+  /**
+   * Per-tier reveal flags for the canvas. Display-only: withdrawing a scaffold
+   * never changes the canonical steps the judge compares against. Absent when
+   * no support tier was applied (the workspace shows the full scaffold).
+   */
+  support?: PracticeSupportFlags;
+}
+
+export type PracticeSupportTier = 'easy' | 'medium' | 'hard';
+
+/**
+ * Reveal flags driven by the support tier. The worked-step SKELETON shows step
+ * TITLES only (the method shape) — never a `canonicalBody` or the final answer,
+ * so withdrawing it at hard cannot leak the result.
+ */
+export interface PracticeSupportFlags {
+  /** Show the StepLedger's procedural step titles (the method skeleton). */
+  showStepSkeleton: boolean;
+  /** Surface the first step's title + strategy as an on-canvas starter prompt. */
+  showFirstStepHint: boolean;
+  /** Show the one-line solutionStrategy preview above the canvas. */
+  showStrategyPreview: boolean;
 }

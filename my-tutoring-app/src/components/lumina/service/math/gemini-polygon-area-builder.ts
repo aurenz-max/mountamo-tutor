@@ -53,6 +53,140 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Support tiers (within-mode scaffolding withdrawal) — FIXED harness
+// ---------------------------------------------------------------------------
+// Second axis of the two-field contract: targetEvalMode = WHICH skill (the
+// figure family), config.difficulty = HOW MUCH decomposition scaffolding within
+// it. SCAFFOLDING ONLY — it NEVER changes the polygon's dimensions (the numbers
+// stay from the local randInt builders; magnitude is owned by the eval mode +
+// grade scope). easy = the canvas shows HOW to decompose (cut guidelines + a
+// per-region area sub-label so the student can self-check); hard = guidelines
+// withdrawn, the student chooses the decomposition unaided. The dimension labels
+// needed to COMPUTE the area stay on at every tier (removing them changes the
+// task, not the support).
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Decomposition guidelines: the dashed cut/slot lines that show the student
+   *  WHERE to split the figure (decompose target-slot, composite piece-split
+   *  outlines, trapezoid/coordinate bounding-box & cut lines). Withdrawn at hard
+   *  so the student chooses the decomposition. */
+  showDecompositionGuides: boolean;
+  /** A worked per-region area sub-label on ONE region (composite easy only).
+   *  ANSWER-LEAK GUARD: the regions' areas sum to the asked total, so the
+   *  component shows the sub-area for ONLY the FIRST region — never the full set,
+   *  and never on the answer-bearing figure. */
+  showRegionAreaLabel: boolean;
+  /** Unit grid behind the figure (triangle / parallelogram / trapezoid) so the
+   *  student can count squares to self-check. Composite & coordinate modes draw
+   *  their grid unconditionally (it's intrinsic), so this only gates the three
+   *  ungridded figure families. */
+  showGridOverlay: boolean;
+  /** Prompt lines describing the tier to Gemini (tone only — Gemini writes the
+   *  session title/description, never the dimensions). */
+  promptLines: string[];
+}
+
+const TIER_GUARDRAIL =
+  'This tier changes only the on-screen DECOMPOSITION SCAFFOLDING (cut guidelines, '
+  + 'per-region area sub-labels, a self-check grid) — it NEVER changes the polygon\'s '
+  + 'dimensions or the area. The figures keep the exact same numbers at every tier; '
+  + 'easy just shows MORE of how to break the shape apart.';
+
+/** easy → hard decomposition-support gradient, per challenge type. */
+function resolveSupportStructure(type: PolygonAreaChallengeType, tier: SupportTier): SupportScaffold {
+  switch (type) {
+    case 'decompose':
+      // The dashed target-slot is the guideline that tells the student where the
+      // cut triangle slides. Easy/medium show it; hard hides it so the student
+      // works out the rearrangement (the cut triangle is still draggable).
+      return {
+        showDecompositionGuides: tier !== 'hard',
+        showRegionAreaLabel: false,
+        showGridOverlay: false,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'hard'
+            ? 'HARD: the dashed target slot is hidden — the student figures out where to slide the cut triangle to rebuild the rectangle, unaided.'
+            : 'EASY/MEDIUM: the dashed target slot shows exactly where the cut triangle goes.',
+        ],
+      };
+    case 'composite_area':
+      // Easy/medium render the figure already split into its labelled rectangle
+      // pieces (the decomposition is GIVEN); hard renders the union outline only,
+      // so the student chooses where to cut. Easy adds ONE region's worked area.
+      return {
+        showDecompositionGuides: tier !== 'hard',
+        showRegionAreaLabel: tier === 'easy',
+        showGridOverlay: false, // composite always draws its unit grid intrinsically
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: the figure is pre-split into its rectangle pieces and ONE piece shows its worked area as a model — the student finishes the rest and adds.'
+            : tier === 'medium'
+              ? 'MEDIUM: the figure is pre-split into rectangle pieces (dimensions labelled), but no area is worked for the student.'
+              : 'HARD: the figure is shown as ONE L-shaped outline — the student decides where to cut it into rectangles. Hint must not say where to split.',
+        ],
+      };
+    case 'coordinate_polygon':
+      // Grid + axis labels are intrinsic (needed to read vertices). The guideline
+      // is the bounding-box / decomposition overlay; withdraw it at hard.
+      return {
+        showDecompositionGuides: tier !== 'hard',
+        showRegionAreaLabel: false,
+        showGridOverlay: false, // coordinate always draws its grid intrinsically
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'hard'
+            ? 'HARD: no bounding-box or cut overlay — the student decomposes the plotted polygon on the grid unaided (vertex coordinates and grid stay).'
+            : 'EASY/MEDIUM: a faint bounding-box / decomposition overlay suggests how to break the polygon into a rectangle and triangles.',
+        ],
+      };
+    case 'find_area_trapezoid':
+      return {
+        showDecompositionGuides: tier === 'easy', // easy shows the rect+triangle split lines
+        showRegionAreaLabel: false,
+        showGridOverlay: tier === 'easy',
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: a unit grid plus faint cut lines split the trapezoid into a rectangle and triangles, so the student can count/self-check.'
+            : tier === 'medium'
+              ? 'MEDIUM: no grid, no cut lines — the student applies ½·(b1+b2)·h to the labelled bases and height.'
+              : 'HARD: bare figure with only the dimension labels — the student averages the bases and multiplies by height unaided.',
+        ],
+      };
+    case 'find_area_triangle_parallelogram':
+    default:
+      // Perception/self-check grid behind the figure; the dimension labels and
+      // the dashed perpendicular height stay on at every tier (intrinsic to the
+      // task). Easy shows the grid so the student can count squares.
+      return {
+        showDecompositionGuides: false,
+        showRegionAreaLabel: false,
+        showGridOverlay: tier === 'easy',
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: a faint unit grid sits behind the figure so the student can count squares to self-check the base × height (or ½·b·h).'
+            : tier === 'medium'
+              ? 'MEDIUM: no grid — the student reads the labelled base and height and applies the formula.'
+              : 'HARD: no grid, no extra cues — only the dimension labels and the perpendicular-height mark remain.',
+        ],
+      };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Per-mode instance counts
 // ---------------------------------------------------------------------------
 
@@ -494,6 +628,13 @@ export const generatePolygonAreaBuilder = async (
   config?: {
     instanceCount?: number;
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which figure family,
+     * difficulty = how much decomposition scaffolding within it. NEVER changes the
+     * polygon's dimensions.
+     */
+    difficulty?: string;
   },
 ): Promise<PolygonAreaBuilderData> => {
   const validTypes: PolygonAreaChallengeType[] = [
@@ -520,6 +661,20 @@ export const generatePolygonAreaBuilder = async (
 
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Resolve the support tier (the STUDENT's tier — drives application below) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is for prompt TONE only (a mixed/auto session has no single type).
+  const pinnedType: PolygonAreaChallengeType | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as PolygonAreaChallengeType)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (decomposition scaffolding level — NOT figure size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const prompt = `
 Create the wrapper metadata for a multi-figure polygon-area session on "${topic}" for ${gradeLevel} students.
 
@@ -529,7 +684,7 @@ CONTEXT:
 - Your job is only to write the session-level title and description, and to set the challengeType + gradeBand.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific dimension or area value.
 2. Provide a 1-2 sentence educational description of what students will practice.
@@ -584,6 +739,25 @@ Return ONLY the wrapper fields described above.
       console.warn(`[PolygonAreaBuilder] Area mismatch on ${ch.id} (${ch.figureType}): stored ${ch.expectedArea}, recomputed ${recomputed}. Correcting.`);
       if (recomputed !== null) ch.expectedArea = recomputed;
     }
+  }
+
+  // ── Apply the support tier PER CHALLENGE (each from its OWN type) ──
+  // Gated only on a tier being present, so a blended/auto session gets it too.
+  // SCAFFOLDING ONLY: writes show* display flags + supportTier; never touches a
+  // dimension or expectedArea (the checker reads expectedArea, independent of any
+  // flag — the answer can't leak or be invalidated by a withdrawn scaffold).
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.showDecompositionGuides = sc.showDecompositionGuides;
+      ch.showRegionAreaLabel = sc.showRegionAreaLabel;
+      ch.showGridOverlay = sc.showGridOverlay;
+      ch.supportTier = supportTier;
+    }
+    console.log(
+      `[PolygonAreaBuilder] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'mixed'})`,
+    );
   }
 
   const gradeBand: '6' | '7' = isMixed

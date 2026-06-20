@@ -56,6 +56,17 @@ export interface ThreeDShapeExplorerChallenge {
   }>;
   // shape-riddle (reuses shape3d + options from identify-3d)
   clues?: string[];
+
+  // ── Within-mode support tier (annotation-overlay scaffolding) ──
+  // Set by the generator from config.difficulty. Withdraws the annotation overlay
+  // as the tier hardens; NEVER changes the solid or the answer. The face/edge/vertex
+  // COUNT is never displayed — only element NAME labels + per-face highlight cues.
+  /** Support tier this challenge was generated at ('easy' | 'medium' | 'hard'). */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Show face/edge/vertex NAME labels overlaid on the solid (easy only). */
+  showElementLabels?: boolean;
+  /** Highlight each flat face one at a time to aid counting — never shows a total (easy only). */
+  showFaceHighlight?: boolean;
 }
 
 export interface ThreeDShapeExplorerData {
@@ -263,6 +274,39 @@ function Shape2DSVG({ shape, size = 60 }: { shape: string; size?: number }) {
 }
 
 // ============================================================================
+// Element-label overlay (annotation scaffold — easy tier only)
+// ============================================================================
+// Names the kinds of elements a solid has (flat face, curved surface, edge,
+// vertex/point) as qualitative callouts that AID counting. CRITICAL: it never
+// prints a COUNT — on a "how many faces?" task the count is the answer, so the
+// scaffold may highlight/name elements but the total stays only in the question.
+
+const SHAPE_ELEMENTS: Record<string, string[]> = {
+  cube: ['flat faces', 'edges', 'vertices (corners)'],
+  'rectangular-prism': ['flat faces', 'edges', 'vertices (corners)'],
+  cylinder: ['flat faces (circles)', 'curved surface', 'edges'],
+  cone: ['flat face (circle)', 'curved surface', 'point (apex)'],
+  sphere: ['curved surface'],
+};
+
+function ShapeElementLabels({ shape }: { shape: string }) {
+  const elements = SHAPE_ELEMENTS[shape];
+  if (!elements || elements.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 justify-center mt-1" aria-label="shape element guide">
+      {elements.map((el) => (
+        <Badge
+          key={el}
+          className="bg-blue-500/10 border-blue-400/30 text-blue-200 text-[10px] font-normal"
+        >
+          {el}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
 // Props
 // ============================================================================
 
@@ -367,6 +411,7 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     properties: currentChallenge?.properties ?? null,
     attemptNumber: currentAttempts + 1,
     instruction: currentChallenge?.instruction ?? '',
+    supportTier: currentChallenge?.supportTier ?? null,
   }), [
     gradeBand, challenges.length, currentChallengeIndex, currentChallenge, currentAttempts,
   ]);
@@ -403,6 +448,33 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
     setFeedbackType('');
   }, []);
 
+  // ── Tier-aware tutor reveal clause ─────────────────────────────
+  // Keeps the AI tutor in sync with the annotation tier so it cannot leak what a
+  // harder tier withheld on screen. For faces-and-properties the COUNT is the
+  // answer, so at every tier the tutor never states the count — at hard it must
+  // also withhold the named strategy and ask the student to count a face at a time.
+  const tutorRevealClause = useCallback((type?: string): string => {
+    const tier = currentChallenge?.supportTier;
+    const isCountTask = type === 'faces-and-properties';
+    if (isCountTask) {
+      if (tier === 'hard') {
+        return ' SUPPORT TIER HARD: do NOT state the face/edge/vertex counts and do NOT name a counting strategy. '
+          + 'Ask the student to count just ONE face/edge at a time and tell you what they see. Never reveal the answer count.';
+      }
+      if (tier === 'medium') {
+        return ' SUPPORT TIER MEDIUM: do NOT state the total count. Nudge the student to track their count as they go. Never reveal the answer count.';
+      }
+      return ' SUPPORT TIER EASY: you may name which faces to look at (top, bottom, sides), but NEVER state the total count — let the student count and answer.';
+    }
+    if (tier === 'hard') {
+      return ' SUPPORT TIER HARD: the shape is shown with no labels; ask what the student perceives and have them justify, do not enumerate its features. Never reveal the answer.';
+    }
+    if (tier === 'medium') {
+      return ' SUPPORT TIER MEDIUM: nudge toward the relevant features without listing them all. Never reveal the answer.';
+    }
+    return ' SUPPORT TIER EASY: you may name the visible features (flat faces, curved surfaces, points) to help, but never name the answer outright.';
+  }, [currentChallenge?.supportTier]);
+
   // ── Check Handlers ─────────────────────────────────────────────
 
   const checkIdentify3D = useCallback(() => {
@@ -423,12 +495,13 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student chose "${selectedOption}" but correct is "${currentChallenge.shape3d}". `
-        + `Attempt ${currentAttempts + 1}. Give a hint about the shape's features without revealing the answer.`,
+        + `Attempt ${currentAttempts + 1}. Give a hint about the shape's features without revealing the answer.`
+        + tutorRevealClause('identify-3d'),
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, selectedOption, currentAttempts, sendText, incrementAttempts]);
+  }, [currentChallenge, selectedOption, currentAttempts, sendText, incrementAttempts, tutorRevealClause]);
 
   const check2DVs3D = useCallback(() => {
     if (!currentChallenge?.mixedShapes) return false;
@@ -468,12 +541,13 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
       sendText(
         `[ANSWER_INCORRECT] Sorting errors. Misplaced: ${misplaced.map(s => s.name).join(', ')}. `
         + `Unsorted: ${unsorted.map(s => s.name).join(', ')}. `
-        + `Hint: "Can you pick up a circle? No, it's flat! But you can hold a sphere — it's solid!"`,
+        + `Hint: "Can you pick up a circle? No, it's flat! But you can hold a sphere — it's solid!"`
+        + tutorRevealClause('2d-vs-3d'),
         { silent: true }
       );
     }
     return allCorrect;
-  }, [currentChallenge, sortedShapes, sendText, incrementAttempts]);
+  }, [currentChallenge, sortedShapes, sendText, incrementAttempts, tutorRevealClause]);
 
   const checkMatchToRealWorld = useCallback(() => {
     if (!currentChallenge?.matchPairs) return false;
@@ -505,12 +579,13 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] ${correctCount}/${currentChallenge.matchPairs.length} correct. `
-        + `Give a hint connecting a real-world object to its shape.`,
+        + `Give a hint connecting a real-world object to its shape.`
+        + tutorRevealClause('match-to-real-world'),
         { silent: true }
       );
     }
     return allCorrect;
-  }, [currentChallenge, matchSelections, sendText, incrementAttempts]);
+  }, [currentChallenge, matchSelections, sendText, incrementAttempts, tutorRevealClause]);
 
   const checkFacesAndProperties = useCallback(() => {
     if (!currentChallenge?.propertyQuestions) return false;
@@ -555,12 +630,13 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] ${correctCount}/${total} correct for "${currentChallenge.displayShape}". `
-        + `Attempt ${currentAttempts + 1}. Give a specific hint about one wrong property.`,
+        + `Attempt ${currentAttempts + 1}. Give a specific hint about one wrong property.`
+        + tutorRevealClause('faces-and-properties'),
         { silent: true }
       );
     }
     return allCorrect;
-  }, [currentChallenge, propertyAnswers, currentAttempts, sendText, incrementAttempts]);
+  }, [currentChallenge, propertyAnswers, currentAttempts, sendText, incrementAttempts, tutorRevealClause]);
 
   const checkShapeRiddle = useCallback(() => {
     if (!currentChallenge || !selectedOption) return false;
@@ -580,12 +656,13 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Shape riddle: student guessed "${selectedOption}" but answer is "${currentChallenge.shape3d}". `
-        + `Attempt ${currentAttempts + 1}. Re-read one clue and give a hint without revealing the answer.`,
+        + `Attempt ${currentAttempts + 1}. Re-read one clue and give a hint without revealing the answer.`
+        + tutorRevealClause('shape-riddle'),
         { silent: true }
       );
     }
     return correct;
-  }, [currentChallenge, selectedOption, currentAttempts, sendText, incrementAttempts]);
+  }, [currentChallenge, selectedOption, currentAttempts, sendText, incrementAttempts, tutorRevealClause]);
 
   // ── Main Check Handler ─────────────────────────────────────────
   const handleCheckAnswer = useCallback(() => {
@@ -797,12 +874,13 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
             {/* IDENTIFY-3D */}
             {currentChallenge.type === 'identify-3d' && currentChallenge.shape3d && (
               <div className="space-y-4">
-                <div className="flex justify-center">
-                  <div className={`${show3dRotation ? 'animate-pulse' : ''}`}
+                <div className="flex flex-col items-center">
+                  <div className={`${currentChallenge.showFaceHighlight ? 'rounded-full ring-2 ring-blue-400/40 ring-offset-2 ring-offset-transparent' : ''} ${show3dRotation ? 'animate-pulse' : ''}`}
                     style={show3dRotation ? { animation: 'spin 8s linear infinite', animationName: undefined } : undefined}
                   >
                     <Shape3DSVG shape={currentChallenge.shape3d} size={160} />
                   </div>
+                  {currentChallenge.showElementLabels && <ShapeElementLabels shape={currentChallenge.shape3d} />}
                 </div>
                 <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
                   {currentChallenge.options?.map(opt => (
@@ -935,8 +1013,14 @@ const ThreeDShapeExplorer: React.FC<ThreeDShapeExplorerProps> = ({ data, classNa
             {/* FACES AND PROPERTIES */}
             {currentChallenge.type === 'faces-and-properties' && currentChallenge.displayShape && (
               <div className="space-y-4">
-                <div className="flex justify-center">
-                  <Shape3DSVG shape={currentChallenge.displayShape} size={140} />
+                <div className="flex flex-col items-center">
+                  <div className={`${currentChallenge.showFaceHighlight ? 'rounded-lg ring-2 ring-amber-400/40 ring-offset-2 ring-offset-transparent' : ''} ${show3dRotation ? 'animate-pulse' : ''}`}
+                    style={show3dRotation ? { animation: 'spin 8s linear infinite', animationName: undefined } : undefined}
+                  >
+                    <Shape3DSVG shape={currentChallenge.displayShape} size={140} />
+                  </div>
+                  {/* Element NAME labels only — never a count total (the count is the asked answer). */}
+                  {currentChallenge.showElementLabels && <ShapeElementLabels shape={currentChallenge.displayShape} />}
                 </div>
                 <p className="text-center text-slate-300 text-sm font-medium">
                   {SHAPE_LABELS[currentChallenge.displayShape] || currentChallenge.displayShape}

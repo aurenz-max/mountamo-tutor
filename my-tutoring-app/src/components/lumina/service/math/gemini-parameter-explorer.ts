@@ -22,6 +22,136 @@ import {
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Within-mode SUPPORT TIER (config.difficulty) — second axis of the two-field
+// contract: targetEvalMode = WHICH skill (the prediction task), difficulty =
+// HOW MUCH on-screen explanatory help within it.
+//
+// ParameterExplorer is a LIVING SIMULATION. The hard rule for this archetype
+// (memory [[feedback_living-simulation-pattern]] / [[feedback_direct-manipulation-first]]):
+// a tier WITHDRAWS OVERLAYS (the live output readout, the per-parameter value
+// readouts, the guided-observation annotations, the named-parameter highlight)
+// — it NEVER withdraws the manipulable object itself. The sliders and the
+// formula stay fully live and interactive at EVERY tier; the formula and its
+// parameter ranges (the eval-mode scope) never change. The student always drives
+// the sim; harder tiers just make them PREDICT the effect instead of reading it
+// off a readout.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; current defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** The big focal live OUTPUT readout — the numeric result of the formula at the
+   *  current slider positions. This is the core "effect annotation": it tells the
+   *  student exactly what the parameter did. ANSWER-LEAK GUARD: for predict-value
+   *  / predict-direction, a student could slide to the asked value and read the
+   *  answer off this overlay, so it is shown ONLY at easy (self-check aid), never
+   *  at hard. The component's checker is independent of this flag. */
+  showOutputReadout: boolean;
+  /** The per-parameter numeric value readout printed beside each slider symbol.
+   *  Perception aid — withdrawn at hard so the student tracks slider position by
+   *  feel, not by reading the number back. */
+  showParamReadouts: boolean;
+  /** The guided-observation callouts — explanatory annotations that narrate the
+   *  parameter→output relationship in words. Withdrawn at medium and hard so the
+   *  student articulates the relationship themselves. */
+  showObservations: boolean;
+  /** Amber "watch this slider" cue on the parameter the prompt names. A tracking
+   *  aid for predict modes; withdrawn at hard so the student locates the relevant
+   *  parameter from the instruction alone. */
+  showVaryHighlight: boolean;
+  /** Prompt lines describing the tier to the challenge/observation services
+   *  (scaffolding tone only — never changes the formula or parameter scope). */
+  promptLines: string[];
+}
+
+const TIER_GUARDRAIL =
+  'This tier is SCAFFOLDING ONLY. Keep the EXACT SAME formula, parameters, ranges, ' +
+  'and the asked prediction — never change the math or make numbers bigger. The tier ' +
+  'only withdraws on-screen EXPLANATORY OVERLAYS (the live output readout, the ' +
+  'observation callouts); the student always keeps the live sliders.';
+
+/** easy → hard support gradient, per pinned challenge type (the eval-mode task). */
+function resolveSupportStructure(
+  type: ParameterExplorerChallenge['type'],
+  tier: SupportTier,
+): SupportScaffold {
+  // For PREDICTION tasks the live output readout can BE the answer (slide to the
+  // asked value and read it off). So it is an easy-only self-check aid and is
+  // withdrawn the moment the task is a real prediction (medium/hard).
+  const isPrediction = type === 'predict-direction' || type === 'predict-value';
+
+  switch (type) {
+    case 'explore':
+      // Free exploration: the readouts ARE the lesson (build intuition by
+      // watching numbers move). Never withdraw the output readout here — there
+      // is no answer to leak. The tier only dials the explanatory observations.
+      return {
+        showOutputReadout: true,
+        showParamReadouts: true,
+        showObservations: tier === 'easy',
+        showVaryHighlight: false,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'easy'
+            ? 'EASY: the live output + per-parameter readouts and the guided observation callouts are all on — the student watches the numbers move and the callouts name the relationship.'
+            : tier === 'medium'
+              ? 'MEDIUM: readouts stay on but the observation callouts are withdrawn — the student notices the pattern without prose narration.'
+              : 'HARD: readouts stay on (exploration needs them) but no observation callouts — the student articulates each relationship unaided.',
+        ],
+      };
+
+    case 'identify-relationship':
+      // The student compares parameters' effects. The live output readout is the
+      // tool they use; keep it (it is not the literal answer). Withdraw the
+      // observation annotations (which could name the dominant parameter) and the
+      // per-parameter readouts at hard.
+      return {
+        showOutputReadout: tier !== 'hard',
+        showParamReadouts: tier !== 'hard',
+        showObservations: false, // an observation could name the dominant parameter — off at every tier
+        showVaryHighlight: false,
+        promptLines: [
+          TIER_GUARDRAIL,
+          tier === 'hard'
+            ? 'HARD: no output readout and no value readouts — the student reasons about which parameter dominates from the FORMULA STRUCTURE alone (where each appears, multiplier vs additive, exponent).'
+            : tier === 'easy'
+              ? 'EASY: the live output readout is on so the student can A/B test each slider and SEE which moves the output most.'
+              : 'MEDIUM: output readout on, but the student is nudged to read the formula rather than only brute-force the sliders.',
+        ],
+      };
+
+    case 'predict-direction':
+    case 'predict-value':
+    default:
+      // PREDICTION tasks: the live output readout is the answer if the student
+      // slides to the asked value. Show it only at easy (self-check BEFORE
+      // committing); withdraw the moment it is a real prediction.
+      return {
+        showOutputReadout: tier === 'easy',
+        showParamReadouts: tier !== 'hard',
+        showObservations: tier === 'easy',
+        showVaryHighlight: tier !== 'hard',
+        promptLines: [
+          TIER_GUARDRAIL,
+          isPrediction && tier === 'easy'
+            ? 'EASY: the live output readout, per-parameter readouts, the varied-parameter highlight, and the observation callouts are all on — the student can self-check the effect before answering. The explanation may NAME the relationship (e.g. "directly proportional").'
+            : tier === 'medium'
+              ? 'MEDIUM: the live output readout and observation callouts are WITHDRAWN — the student predicts the effect from the formula before touching the sliders. The varied parameter is still highlighted. Explanation nudges the reasoning without naming the relationship.'
+              : 'HARD: no output readout, no value readouts, no highlight, no observations — the student locates the varied parameter from the instruction and predicts the effect purely from the formula. Explanation states the result without first revealing it.',
+        ],
+      };
+  }
+}
+
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   explore: {
     promptDoc:
@@ -262,6 +392,7 @@ async function runChallengesService(
   formulaContext: string,
   challengeTypeSection: string,
   allowedTypes: string[] | undefined,
+  tierSection: string,
 ): Promise<FlatChallenge[]> {
   // Constrain the schema enum if eval mode restricts types
   let activeSchema = CHALLENGES_SCHEMA;
@@ -294,7 +425,7 @@ async function runChallengesService(
 ${formulaContext}
 
 ${challengeTypeSection}
-
+${tierSection}
 RULES:
 - Generate 3-4 challenges
 - For predict-direction: choose parameters where the direction is UNAMBIGUOUS
@@ -598,7 +729,16 @@ ${paramList}`;
 export const generateParameterExplorer = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which prediction
+     * task, difficulty = how much explanatory overlay within it. NEVER changes
+     * the formula, parameters, or ranges — only withdraws on-screen overlays.
+     */
+    difficulty?: string;
+  }>,
 ): Promise<ParameterExplorerData> => {
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -610,6 +750,21 @@ export const generateParameterExplorer = async (
 
   const allowedTypes = evalConstraint?.allowedTypes;
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+
+  // ── Resolve support tier (the STUDENT's tier — drives per-challenge application
+  //    at the end). pinnedType is ONLY for prompt tone when a single mode is pinned. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ParameterExplorerChallenge['type'])
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT formula/number size)\n`
+      + `${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   console.log(`[ParameterExplorer] Stage 1: Formula service for "${topic}"`);
 
@@ -643,7 +798,7 @@ export const generateParameterExplorer = async (
   );
 
   const [rawChallenges, observations] = await Promise.all([
-    runChallengesService(formulaContext, challengeTypeSection, allowedTypes),
+    runChallengesService(formulaContext, challengeTypeSection, allowedTypes, tierSection),
     runObservationsService(formulaContext),
   ]);
 
@@ -697,6 +852,32 @@ export const generateParameterExplorer = async (
     return buildFallback(allowedTypes);
   }
 
+  // ── Apply the support tier deterministically, PER CHALLENGE, at the very end ──
+  // Gate ONLY on a tier being present (NOT pinnedType) so a blended/auto session
+  // still gets difficulty. Each challenge resolves its OWN overlay set from its
+  // own type. Code owns the OVERLAY structure; the LLM only chose the formula
+  // (unchanged). The sliders + formula (the manipulable sim) are NEVER touched —
+  // the component keeps them live at every tier. The answer-leak guard lives in
+  // resolveSupportStructure (output readout off for real predictions).
+  let suppressObservations = false;
+  if (supportTier) {
+    for (const ch of validChallenges) {
+      const sc = resolveSupportStructure(ch.type, supportTier);
+      ch.showOutputReadout = sc.showOutputReadout;
+      ch.showParamReadouts = sc.showParamReadouts;
+      ch.showVaryHighlight = sc.showVaryHighlight;
+      ch.supportTier = supportTier;
+      // Observations are a session-level overlay; withdraw them if ANY challenge's
+      // tier withdraws them (the strictest challenge wins — never leak the
+      // relationship the hard task asks the student to find).
+      if (!sc.showObservations) suppressObservations = true;
+    }
+    console.log(
+      `[ParameterExplorer] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`,
+    );
+  }
+
   // ── Assemble final data ──
   console.log(`[ParameterExplorer] Assembled: ${parameters.length} params, ${validChallenges.length} challenges, ${observations.length} observations`);
 
@@ -709,7 +890,7 @@ export const generateParameterExplorer = async (
     outputUnit: formulaResult.outputUnit,
     context: formulaResult.context,
     parameters,
-    observations: observations.length > 0 ? observations : undefined,
+    observations: !suppressObservations && observations.length > 0 ? observations : undefined,
     challenges: validChallenges,
   };
 };

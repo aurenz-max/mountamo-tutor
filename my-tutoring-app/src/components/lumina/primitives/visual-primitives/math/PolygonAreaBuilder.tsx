@@ -84,6 +84,21 @@ export interface PolygonAreaChallenge {
 
   /** Pre-computed correct area (single source of truth). */
   expectedArea: number;
+
+  // --- Support-tier scaffolds (set in post-process when config.difficulty present) ---
+  /** Show the dashed decomposition guidelines: the cut-triangle target slot
+   *  (decompose), the pre-split rectangle pieces vs. a single union outline
+   *  (composite), or the bounding-box / cut overlay (trapezoid / coordinate).
+   *  Withdrawn at hard so the student chooses the decomposition. */
+  showDecompositionGuides?: boolean;
+  /** Worked per-region area sub-label on the FIRST composite piece only
+   *  (easy). Leak-guarded: never the full set, so it can't sum to the answer. */
+  showRegionAreaLabel?: boolean;
+  /** Faint unit grid behind triangle / parallelogram / trapezoid figures so the
+   *  student can count squares to self-check (easy). */
+  showGridOverlay?: boolean;
+  /** The student's support tier — read by the AI tutor to calibrate reveal. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface PolygonAreaBuilderData {
@@ -127,6 +142,25 @@ const FIG_STROKE = '#22d3ee';
 const FIG_FILL = 'rgba(34, 211, 238, 0.14)';
 const PART_FILLS = ['rgba(168, 85, 247, 0.18)', 'rgba(245, 158, 11, 0.18)', 'rgba(16, 185, 129, 0.18)'];
 const SNAP_TOLERANCE = 0.35; // figure units — how close the cut triangle must be to snap
+
+// ============================================================================
+// Support-tier tutor reveal clause
+// ============================================================================
+// The live tutor sees the full challenge (including expectedArea), so a tier
+// that hides decomposition cues on the canvas must also calibrate what the tutor
+// will reveal — otherwise the tutor leaks what the tier withheld.
+const tierTutorClause = (tier?: 'easy' | 'medium' | 'hard'): string => {
+  switch (tier) {
+    case 'easy':
+      return ' SUPPORT TIER EASY: you may name how to decompose the figure — point to where to cut it, name the formula, and walk the student through each region step by step.';
+    case 'medium':
+      return ' SUPPORT TIER MEDIUM: the decomposition is shown on screen — nudge the student\'s execution (which formula, what to multiply), but do not solve it for them.';
+    case 'hard':
+      return ' SUPPORT TIER HARD: the decomposition guidelines are withdrawn — do NOT name how to split the shape or give any per-region sub-area; ask the student how the figure could be broken into shapes they know, and NEVER reveal the total area.';
+    default:
+      return '';
+  }
+};
 
 // ============================================================================
 // Geometry helpers
@@ -406,6 +440,46 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
     const b = currentChallenge.base ?? 1;
     const h = currentChallenge.height ?? 1;
 
+    // ---- Support-tier scaffolds (legacy-preserving defaults) ----
+    // When no tier is present these fields are undefined and resolve to the
+    // pre-tier behavior: decompose/composite ALWAYS showed their guidelines, the
+    // coordinate/trapezoid bounding-box overlay and the ungridded grid are NEW
+    // and opt-in (default off).
+    const guidesShown = currentChallenge.showDecompositionGuides ?? true; // decompose/composite legacy = shown
+    const overlayOptIn = currentChallenge.showDecompositionGuides === true; // coord/trap overlay only when explicitly on
+    const regionAreaShown = currentChallenge.showRegionAreaLabel === true;
+    const gridOverlayShown = currentChallenge.showGridOverlay === true;
+
+    // ---- Optional self-check grid behind ungridded figures (easy tier) ----
+    if (
+      gridOverlayShown
+      && (currentChallenge.figureType === 'triangle'
+        || currentChallenge.figureType === 'parallelogram'
+        || currentChallenge.figureType === 'trapezoid')
+    ) {
+      const bounds = getBounds(currentChallenge);
+      ctx.save();
+      ctx.strokeStyle = GRID_COLOR;
+      ctx.lineWidth = 0.5;
+      for (let gx = Math.floor(bounds.minX); gx <= Math.ceil(bounds.maxX); gx++) {
+        const a = toCanvas(gx, bounds.minY);
+        const c = toCanvas(gx, bounds.maxY);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(c.x, c.y);
+        ctx.stroke();
+      }
+      for (let gy = Math.floor(bounds.minY); gy <= Math.ceil(bounds.maxY); gy++) {
+        const a = toCanvas(bounds.minX, gy);
+        const c = toCanvas(bounds.maxX, gy);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(c.x, c.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     // ---- Unit grid (composite + coordinate modes) ----
     if (currentChallenge.figureType === 'composite' || currentChallenge.figureType === 'coordinate') {
       const bounds = getBounds(currentChallenge);
@@ -463,21 +537,24 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
           [{ x: s, y: 0 }, { x: b, y: 0 }, { x: b + s, y: h }, { x: s, y: h }],
           FIG_FILL, FIG_STROKE,
         );
-        // Target slot outline (where the triangle needs to go)
-        ctx.save();
-        ctx.setLineDash([6, 5]);
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
-        ctx.lineWidth = 1.5;
-        const t0 = toCanvas(b, 0);
-        const t1 = toCanvas(b + s, 0);
-        const t2 = toCanvas(b + s, h);
-        ctx.beginPath();
-        ctx.moveTo(t0.x, t0.y);
-        ctx.lineTo(t1.x, t1.y);
-        ctx.lineTo(t2.x, t2.y);
-        ctx.closePath();
-        ctx.stroke();
-        ctx.restore();
+        // Target slot outline (where the triangle needs to go) — the
+        // decomposition guideline. Withdrawn at the hard tier.
+        if (guidesShown) {
+          ctx.save();
+          ctx.setLineDash([6, 5]);
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+          ctx.lineWidth = 1.5;
+          const t0 = toCanvas(b, 0);
+          const t1 = toCanvas(b + s, 0);
+          const t2 = toCanvas(b + s, h);
+          ctx.beginPath();
+          ctx.moveTo(t0.x, t0.y);
+          ctx.lineTo(t1.x, t1.y);
+          ctx.lineTo(t2.x, t2.y);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+        }
         // Movable cut triangle: [(0,0),(s,0),(s,h)] translated by dragOffset
         const off = dragOffset;
         strokePolygon(
@@ -506,27 +583,111 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
         [{ x: 0, y: 0 }, { x: b, y: 0 }, { x: off + b2, y: h }, { x: off, y: h }],
         FIG_FILL, FIG_STROKE,
       );
+      // Easy-tier decomposition overlay: drop faint cut lines from the top-base
+      // corners to split the trapezoid into a rectangle + corner triangles.
+      if (overlayOptIn) {
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+        ctx.lineWidth = 1;
+        for (const fx of [off, off + b2]) {
+          const t = toCanvas(fx, h);
+          const bt = toCanvas(fx, 0);
+          ctx.beginPath();
+          ctx.moveTo(t.x, t.y);
+          ctx.lineTo(bt.x, bt.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
       dashedHeight(off, h, 0, `${h} ${unit}`);
       drawDimLabel(b / 2, 0, `${b} ${unit}`, 0, 22);      // bottom base b1
       drawDimLabel(off + b2 / 2, h, `${b2} ${unit}`, 0, -16); // top base b2
     } else if (currentChallenge.figureType === 'composite') {
       const parts = currentChallenge.parts ?? [];
-      parts.forEach((p, i) => {
-        strokePolygon(
-          [
-            { x: p.x, y: p.y },
-            { x: p.x + p.w, y: p.y },
-            { x: p.x + p.w, y: p.y + p.h },
-            { x: p.x, y: p.y + p.h },
-          ],
-          PART_FILLS[i % PART_FILLS.length], FIG_STROKE,
-        );
-        // label each piece's width (top) and height (left)
-        drawDimLabel(p.x + p.w / 2, p.y + p.h, `${p.w}`, 0, -12, '#cbd5e1');
-        drawDimLabel(p.x, p.y + p.h / 2, `${p.h}`, -12, 0, '#cbd5e1');
-      });
+      if (guidesShown) {
+        // EASY / MEDIUM: the decomposition is GIVEN — each rectangle piece is
+        // drawn and dimension-labelled. easy additionally shows ONE piece's
+        // worked area as a model. (Leak guard: only the FIRST piece, so the
+        // shown sub-area never sums to the asked total.)
+        parts.forEach((p, i) => {
+          strokePolygon(
+            [
+              { x: p.x, y: p.y },
+              { x: p.x + p.w, y: p.y },
+              { x: p.x + p.w, y: p.y + p.h },
+              { x: p.x, y: p.y + p.h },
+            ],
+            PART_FILLS[i % PART_FILLS.length], FIG_STROKE,
+          );
+          // label each piece's width (top) and height (left)
+          drawDimLabel(p.x + p.w / 2, p.y + p.h, `${p.w}`, 0, -12, '#cbd5e1');
+          drawDimLabel(p.x, p.y + p.h / 2, `${p.h}`, -12, 0, '#cbd5e1');
+          // worked area on the FIRST piece only (easy)
+          if (regionAreaShown && i === 0) {
+            drawDimLabel(p.x + p.w / 2, p.y + p.h / 2, `= ${p.w * p.h}`, 0, 0, '#a855f7');
+          }
+        });
+      } else {
+        // HARD: render the L-shaped UNION outline only — the student decides
+        // where to cut. Outer-edge dimension labels stay so the area is still
+        // computable (removing them would change the task, not the support).
+        const bounds = getBounds(currentChallenge);
+        const W = bounds.maxX - bounds.minX;
+        const H = bounds.maxY - bounds.minY;
+        const bottom = parts.find((p) => p.y === bounds.minY) ?? parts[0];
+        const top = parts.find((p) => p !== bottom) ?? parts[parts.length - 1];
+        // Walk the L outline. Bottom rect spans the full width; the top rect sits
+        // on one side. Build the 6-point boundary from the two stacked rects.
+        const leftAligned = top.x === bottom.x;
+        const pts = leftAligned
+          ? [
+              { x: bottom.x, y: bottom.y },
+              { x: bottom.x + bottom.w, y: bottom.y },
+              { x: bottom.x + bottom.w, y: bottom.y + bottom.h },
+              { x: top.x + top.w, y: top.y },
+              { x: top.x + top.w, y: top.y + top.h },
+              { x: top.x, y: top.y + top.h },
+            ]
+          : [
+              { x: bottom.x, y: bottom.y },
+              { x: bottom.x + bottom.w, y: bottom.y },
+              { x: top.x + top.w, y: top.y + top.h },
+              { x: top.x, y: top.y + top.h },
+              { x: top.x, y: top.y },
+              { x: bottom.x, y: bottom.y + bottom.h },
+            ];
+        strokePolygon(pts, FIG_FILL, FIG_STROKE);
+        // Outer overall width (bottom) and height (the taller side)
+        drawDimLabel(bounds.minX + W / 2, bounds.minY, `${W}`, 0, 22, '#cbd5e1');
+        const tallSideX = leftAligned ? bounds.minX : bounds.maxX;
+        drawDimLabel(tallSideX, bounds.minY + H / 2, `${H}`, leftAligned ? -14 : 14, 0, '#cbd5e1');
+        // The notch dimensions (so the L is fully determined)
+        drawDimLabel(top.x + top.w / 2, top.y + top.h, `${top.w}`, 0, -12, '#cbd5e1');
+        drawDimLabel(leftAligned ? top.x + top.w : top.x, top.y + top.h / 2, `${top.h}`, leftAligned ? 14 : -14, 0, '#cbd5e1');
+      }
     } else if (currentChallenge.figureType === 'coordinate') {
       const vs = currentChallenge.vertices ?? [];
+      // Easy-tier decomposition overlay: faint bounding box around the polygon
+      // to suggest the rectangle / triangle decomposition.
+      if (overlayOptIn && vs.length >= 3) {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const v of vs) {
+          minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x);
+          minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
+        }
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.45)';
+        ctx.lineWidth = 1.25;
+        const c0 = toCanvas(minX, minY);
+        const c1 = toCanvas(maxX, maxY);
+        ctx.strokeRect(
+          Math.min(c0.x, c1.x), Math.min(c0.y, c1.y),
+          Math.abs(c1.x - c0.x), Math.abs(c1.y - c0.y),
+        );
+        ctx.restore();
+      }
       strokePolygon(vs, FIG_FILL, FIG_STROKE);
       // vertex dots + coordinate labels
       vs.forEach((v) => {
@@ -661,6 +822,7 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
     unitLabel: currentChallenge?.unitLabel ?? 'units',
     gradeBand,
     attemptNumber: currentAttempts + 1,
+    supportTier: currentChallenge?.supportTier,
   }), [
     challengeType,
     currentChallenge,
@@ -683,10 +845,11 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
     hasIntroducedRef.current = true;
     sendText(
       `[ACTIVITY_START] Polygon area session: ${challenges.length} figures, mode "${challengeType}", grade ${gradeBand}. `
-      + `Introduce briefly: every polygon's area comes from base × height — we'll find each one. Then read the first figure's task.`,
+      + `Introduce briefly: every polygon's area comes from base × height — we'll find each one. Then read the first figure's task.`
+      + tierTutorClause(currentChallenge?.supportTier),
       { silent: true },
     );
-  }, [isConnected, challenges.length, challengeType, gradeBand, sendText]);
+  }, [isConnected, challenges.length, challengeType, gradeBand, sendText, currentChallenge]);
 
   // -------------------------------------------------------------------------
   // Submit handler (handler-driven with stale-state guard)
@@ -776,7 +939,8 @@ const PolygonAreaBuilder: React.FC<PolygonAreaBuilderProps> = ({ data, className
       const next = challenges[nextIdx];
       sendText(
         `[NEXT_ITEM] Figure ${nextIdx + 1} of ${challenges.length}: a ${next?.figureType}. `
-        + `Introduce briefly: "Here's the next figure — same idea, new shape."`,
+        + `Introduce briefly: "Here's the next figure — same idea, new shape."`
+        + tierTutorClause(next?.supportTier),
         { silent: true },
       );
     }

@@ -72,6 +72,131 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Support tiers — within-mode scaffolding + structural problem difficulty.
+//
+// This is a POOL-SERVICE generator: Gemini emits only the session wrapper
+// (title / description / mode flag); every challenge's data + answer key is
+// built deterministically below. So BOTH tier axes are enforced 100% in code
+// (there is no per-challenge LLM output to prompt-shape — no tierSection is
+// injected). Tier NEVER changes magnitude — same data ranges, same bins, same
+// instance counts. It changes (a) how much on-screen help the workspace gives
+// and (b) how structurally clear/ambiguous each problem is.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * Scaffolding axis ("how much help?") — withdraws on-screen aids at harder
+ * tiers without touching the numbers. All three fields are display-only (none
+ * is read by the component's answer checker), so withdrawing them is always
+ * answer-safe.
+ */
+interface SupportScaffold {
+  /** Count labels above each bar. Only meaningful where they aren't the answer
+   *  (identify_shape / estimate_center); ALWAYS off for find_modal_bin &
+   *  read_frequency regardless of tier (they'd reveal the answer). */
+  showFrequencyLabels: boolean;
+  /** The Count / Min / Max / Range panel. Off for estimate_center at every tier
+   *  (it prints the center); withdrawn at hard for the rest. */
+  showStatistics: boolean;
+  /** Whether to attach the hint text. Hard withdraws it → the component shows
+   *  no hint button (zero component change). */
+  includeHint: boolean;
+}
+
+function resolveSupportStructure(
+  mode: HistogramChallengeType,
+  tier: SupportTier,
+): SupportScaffold {
+  const labelsAreAnswer = mode === 'find_modal_bin' || mode === 'read_frequency';
+  const statsRevealAnswer = mode === 'estimate_center';
+  return {
+    showFrequencyLabels: labelsAreAnswer ? false : tier !== 'hard',
+    showStatistics: statsRevealAnswer ? false : tier !== 'hard',
+    includeHint: tier !== 'hard',
+  };
+}
+
+/**
+ * Structural axis ("how hard a problem?") — one in-mode lever per mode, all
+ * about CLARITY / AMBIGUITY (the graph-data archetype lever), never magnitude:
+ *  - identify_shape : how textbook-clean the shape reads (clear → subtle)
+ *  - find_modal_bin : how dominant the peak is over the runner-up
+ *  - read_frequency : whether the queried bin is a tall peak or a short tail
+ *  - estimate_center: symmetric (mean≈median) → skewed (tail pulls the mean)
+ * Every lever stays IN-MODE (same task identity); the answer key is recomputed
+ * against the built data (see computeBinFreqs), so it can never desync.
+ */
+type ShapeClarity = 'clear' | 'moderate' | 'subtle';
+type BinTargeting = 'peak' | 'mid' | 'tail' | 'any';
+
+interface ProblemShape {
+  shapeClarity: ShapeClarity;                 // identify_shape / read_frequency dataset
+  modalFraction: number;                      // find_modal_bin — share of data in the peak bin
+  modalMargin: number;                        // find_modal_bin — required strict-max margin (bars)
+  binTargeting: BinTargeting;                 // read_frequency
+  forceShape: 'symmetric' | 'skewed' | null;  // estimate_center
+}
+
+function resolveProblemShape(tier: SupportTier): ProblemShape {
+  switch (tier) {
+    case 'easy':
+      return { shapeClarity: 'clear',    modalFraction: 0.52, modalMargin: 3, binTargeting: 'peak', forceShape: 'symmetric' };
+    case 'medium':
+      return { shapeClarity: 'moderate', modalFraction: 0.42, modalMargin: 2, binTargeting: 'mid',  forceShape: null };
+    case 'hard':
+      return { shapeClarity: 'subtle',   modalFraction: 0.32, modalMargin: 1, binTargeting: 'tail', forceShape: 'skewed' };
+  }
+}
+
+/** No-tier path — reproduces the historical behavior so an un-tiered
+ *  generation is unchanged (legacy 0.45 peak, random bin pick, mixed shapes). */
+const DEFAULT_SHAPE: ProblemShape = {
+  shapeClarity: 'moderate',
+  modalFraction: 0.45,
+  modalMargin: 1,
+  binTargeting: 'any',
+  forceShape: null,
+};
+
+/** A computed bin (start/end/count) — local mirror of the component's Bin. */
+interface Bin {
+  start: number;
+  end: number;
+  count: number;
+}
+
+/**
+ * Mirror of the component's `computeBins` so the generator can recompute the
+ * EXACT bars the student will see — used to (a) pin find_modal_bin's expected
+ * bin to the actual tallest bar (answer can't desync, Gotcha #1) and (b) target
+ * read_frequency bins by their real height.
+ */
+function computeBinFreqs(data: number[], binWidth: number, binStart: number): Bin[] {
+  if (data.length === 0 || binWidth <= 0) return [];
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const effectiveStart = binStart <= min ? binStart : Math.floor(min / binWidth) * binWidth;
+  const effectiveEnd = Math.ceil((max - effectiveStart) / binWidth) * binWidth + effectiveStart;
+  const numBins = Math.max(1, Math.ceil((effectiveEnd - effectiveStart) / binWidth));
+  const out: Bin[] = [];
+  for (let i = 0; i < numBins; i++) {
+    const start = effectiveStart + i * binWidth;
+    const end = start + binWidth;
+    out.push({ start, end, count: data.filter((v) => v >= start && v < end).length });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -128,25 +253,26 @@ function buildSymmetric(
   return out;
 }
 
-/** Right-skewed: long tail to the right. */
-function buildRightSkewed(min: number, max: number, n: number): number[] {
+/** Right-skewed: long tail to the right. `exp` tunes skew strength (structural
+ *  clarity lever): higher = stronger/cleaner skew, lower = milder. 2 = legacy. */
+function buildRightSkewed(min: number, max: number, n: number, exp = 2): number[] {
   const out: number[] = [];
   for (let i = 0; i < n; i++) {
     const u = Math.random();
-    // u^2 biases mass to the low end, with a thin right tail.
-    const t = u * u;
+    // u^exp biases mass to the low end, with a thin right tail.
+    const t = Math.pow(u, exp);
     const v = clamp(Math.round(min + t * (max - min)), min, max);
     out.push(v);
   }
   return out;
 }
 
-/** Left-skewed: long tail to the left. */
-function buildLeftSkewed(min: number, max: number, n: number): number[] {
+/** Left-skewed: long tail to the left. `exp` tunes skew strength (2 = legacy). */
+function buildLeftSkewed(min: number, max: number, n: number, exp = 2): number[] {
   const out: number[] = [];
   for (let i = 0; i < n; i++) {
     const u = Math.random();
-    const t = 1 - (1 - u) * (1 - u);
+    const t = 1 - Math.pow(1 - u, exp);
     const v = clamp(Math.round(min + t * (max - min)), min, max);
     out.push(v);
   }
@@ -183,19 +309,22 @@ function buildUniform(min: number, max: number, n: number): number[] {
   return out;
 }
 
-/** A dataset with a single clear modal bin at `modalCenter`. */
+/** A dataset with a single clear modal bin at `modalCenter`. `modalFraction`
+ *  controls peak dominance (structural lever): higher = more towering peak. */
 function buildClearMode(
   modalCenter: number,
   binWidth: number,
   min: number,
   max: number,
   n: number,
+  modalFraction = 0.45,
 ): number[] {
-  // Concentrate ~45% inside the modal bin, distribute remainder uniformly.
+  // Concentrate `modalFraction` of the data inside the modal bin, distribute
+  // the remainder uniformly with a slight bias away from the mode.
   const out: number[] = [];
   const modalLo = modalCenter - binWidth / 2;
   const modalHi = modalCenter + binWidth / 2 - 1;
-  const modalCount = Math.round(n * 0.45);
+  const modalCount = Math.round(n * modalFraction);
   for (let i = 0; i < modalCount; i++) {
     out.push(clamp(randInt(Math.ceil(modalLo), Math.floor(modalHi)), min, max));
   }
@@ -248,19 +377,33 @@ function buildDataForShape(
   shape: HistogramShapeKind,
   topic: TopicTemplate,
   n: number,
+  clarity: ShapeClarity = 'moderate',
 ): number[] {
   const { min, max } = topic;
   const span = max - min;
   switch (shape) {
-    case 'symmetric':
-      return buildSymmetric(min + span / 2, span / 5, min, max, n);
-    case 'right-skewed':
-      return buildRightSkewed(min, max, n);
-    case 'left-skewed':
-      return buildLeftSkewed(min, max, n);
-    case 'bimodal':
-      return buildBimodal(min + span * 0.25, min + span * 0.75, span / 8, min, max, n);
+    case 'symmetric': {
+      // clear = tight bell; subtle = broad (closer to flat) but still peaked.
+      const spread = clarity === 'clear' ? span / 6 : clarity === 'subtle' ? span / 4 : span / 5;
+      return buildSymmetric(min + span / 2, spread, min, max, n);
+    }
+    case 'right-skewed': {
+      const exp = clarity === 'clear' ? 2.4 : clarity === 'subtle' ? 1.6 : 2.0;
+      return buildRightSkewed(min, max, n, exp);
+    }
+    case 'left-skewed': {
+      const exp = clarity === 'clear' ? 2.4 : clarity === 'subtle' ? 1.6 : 2.0;
+      return buildLeftSkewed(min, max, n, exp);
+    }
+    case 'bimodal': {
+      // clear = peaks far apart with a deep valley; subtle = closer, shallower.
+      const lo = clarity === 'clear' ? 0.2 : clarity === 'subtle' ? 0.3 : 0.25;
+      const spread = clarity === 'clear' ? span / 10 : clarity === 'subtle' ? span / 7 : span / 8;
+      return buildBimodal(min + span * lo, min + span * (1 - lo), spread, min, max, n);
+    }
     case 'uniform':
+      // Kept clean at every tier — a "subtle" uniform reads as symmetric, which
+      // would make the labeled answer genuinely ambiguous (shape IS the answer).
       return buildUniform(min, max, n);
   }
 }
@@ -275,10 +418,11 @@ function buildIdentifyShape(
   topic: TopicTemplate,
   idx: number,
   forcedShape?: HistogramShapeKind,
+  clarity: ShapeClarity = 'moderate',
 ): ChallengeBuildResult {
   const shape = forcedShape ?? SHAPE_OPTIONS[idx % SHAPE_OPTIONS.length];
   const n = randInt(25, 40);
-  const data = buildDataForShape(shape, topic, n);
+  const data = buildDataForShape(shape, topic, n, clarity);
   return {
     challenge: {
       id: `hg-${idx + 1}`,
@@ -303,15 +447,33 @@ function buildIdentifyShape(
 function buildFindModalBin(
   topic: TopicTemplate,
   idx: number,
+  shape: ProblemShape = DEFAULT_SHAPE,
 ): ChallengeBuildResult {
   const n = randInt(25, 40);
   // Pick a modal bin index that's not at either end (so the peak is unambiguous).
   const numBins = Math.floor((topic.max - topic.min) / topic.binWidth);
-  const modalBin = randInt(1, Math.max(1, numBins - 2));
-  const modalCenter = topic.min + modalBin * topic.binWidth + topic.binWidth / 2;
-  const data = buildClearMode(modalCenter, topic.binWidth, topic.min, topic.max, n);
-  const expectedBinStart = topic.min + modalBin * topic.binWidth;
-  const expectedBinEnd = expectedBinStart + topic.binWidth;
+
+  // Build until the peak is the STRICT tallest bar by the tier's margin, then
+  // pin the answer key to the ACTUAL tallest bar the student will see — the
+  // recompute guarantees the labeled bin can't desync from the rendered bars
+  // even as the peak gets subtler at harder tiers (Gotcha #1, answer-bearing).
+  let data: number[] = [];
+  let bins: Bin[] = [];
+  let modalIdx = 0;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const modalBin = randInt(1, Math.max(1, numBins - 2));
+    const modalCenter = topic.min + modalBin * topic.binWidth + topic.binWidth / 2;
+    data = buildClearMode(modalCenter, topic.binWidth, topic.min, topic.max, n, shape.modalFraction);
+    bins = computeBinFreqs(data, topic.binWidth, topic.min);
+    const counts = bins.map((b) => b.count).sort((a, b) => b - a);
+    const bestCount = counts[0] ?? 0;
+    const second = counts[1] ?? 0;
+    modalIdx = bins.findIndex((b) => b.count === bestCount);
+    if (bestCount - second >= shape.modalMargin) break; // strict peak by margin
+  }
+  const modalBinObj = bins[modalIdx] ?? { start: topic.min, end: topic.min + topic.binWidth, count: 0 };
+  const expectedBinStart = modalBinObj.start;
+  const expectedBinEnd = modalBinObj.end;
   return {
     challenge: {
       id: `hg-${idx + 1}`,
@@ -335,18 +497,40 @@ function buildFindModalBin(
 function buildReadFrequency(
   topic: TopicTemplate,
   idx: number,
+  shape: ProblemShape = DEFAULT_SHAPE,
 ): ChallengeBuildResult {
   const n = randInt(25, 40);
   // Use a varied shape so frequencies are non-trivial.
   const shapes: HistogramShapeKind[] = ['symmetric', 'right-skewed', 'left-skewed'];
-  const shape = shapes[idx % shapes.length];
-  const data = buildDataForShape(shape, topic, n);
-  const numBins = Math.floor((topic.max - topic.min) / topic.binWidth);
-  // Pick a target bin that's not at the very extreme (so frequency > 0).
-  const targetBin = randInt(0, Math.max(0, numBins - 1));
-  const targetBinStart = topic.min + targetBin * topic.binWidth;
-  const targetBinEnd = targetBinStart + topic.binWidth;
-  const targetFrequency = data.filter((v) => v >= targetBinStart && v < targetBinEnd).length;
+  const shapeKind = shapes[idx % shapes.length];
+  const data = buildDataForShape(shapeKind, topic, n, shape.shapeClarity);
+  const bins = computeBinFreqs(data, topic.binWidth, topic.min);
+
+  // Structural lever: WHICH bin we query. easy = a tall peak bin (easy height
+  // read); hard = a short tail bin (subtle read). 'any' = legacy random pick.
+  // Either way the frequency is recomputed from the actual bar, so the answer
+  // is always correct.
+  let target: Bin;
+  if (shape.binTargeting === 'any') {
+    const numBins = Math.floor((topic.max - topic.min) / topic.binWidth);
+    const ti = randInt(0, Math.max(0, numBins - 1));
+    const start = topic.min + ti * topic.binWidth;
+    target = bins.find((b) => b.start === start)
+      ?? { start, end: start + topic.binWidth, count: data.filter((v) => v >= start && v < start + topic.binWidth).length };
+  } else {
+    const nonEmpty = bins.filter((b) => b.count > 0);
+    const pool = nonEmpty.length > 0 ? nonEmpty : bins;
+    const byHeightDesc = [...pool].sort((a, b) => b.count - a.count);
+    target =
+      shape.binTargeting === 'peak'
+        ? byHeightDesc[0]
+        : shape.binTargeting === 'tail'
+          ? byHeightDesc[byHeightDesc.length - 1]
+          : byHeightDesc[Math.floor(byHeightDesc.length / 2)];
+  }
+  const targetBinStart = target.start;
+  const targetBinEnd = target.end;
+  const targetFrequency = target.count;
   return {
     challenge: {
       id: `hg-${idx + 1}`,
@@ -371,12 +555,22 @@ function buildReadFrequency(
 function buildEstimateCenter(
   topic: TopicTemplate,
   idx: number,
+  shape: ProblemShape = DEFAULT_SHAPE,
 ): ChallengeBuildResult {
   const n = randInt(25, 40);
-  // Mix symmetric and skewed shapes so mean ≠ median sometimes.
-  const shapes: HistogramShapeKind[] = ['symmetric', 'right-skewed', 'left-skewed', 'symmetric'];
-  const shape = shapes[idx % shapes.length];
-  const data = buildDataForShape(shape, topic, n);
+  // Structural lever: easy = symmetric (mean ≈ median ≈ visual center, an easy
+  // balance-point read); hard = skewed (the tail pulls the mean off the peak, so
+  // the student must reason about it). 'null' = legacy mix.
+  let shapeKind: HistogramShapeKind;
+  if (shape.forceShape === 'symmetric') {
+    shapeKind = 'symmetric';
+  } else if (shape.forceShape === 'skewed') {
+    shapeKind = idx % 2 === 0 ? 'right-skewed' : 'left-skewed';
+  } else {
+    const shapes: HistogramShapeKind[] = ['symmetric', 'right-skewed', 'left-skewed', 'symmetric'];
+    shapeKind = shapes[idx % shapes.length];
+  }
+  const data = buildDataForShape(shapeKind, topic, n, shape.shapeClarity);
   // Use mean (rounded) as the target. Snap to the nearest bin tick for cleaner UX.
   const rawMean = data.reduce((a, b) => a + b, 0) / data.length;
   const snappedMean = snapToBin(rawMean, topic.min, topic.binWidth);
@@ -417,15 +611,6 @@ function buildEstimateCenter(
   };
 }
 
-const builderFor = (mode: HistogramChallengeType) => {
-  switch (mode) {
-    case 'identify_shape':   return buildIdentifyShape;
-    case 'find_modal_bin':   return buildFindModalBin;
-    case 'read_frequency':   return buildReadFrequency;
-    case 'estimate_center':  return buildEstimateCenter;
-  }
-};
-
 /**
  * Deterministically select N histogram challenges for the given mode.
  *
@@ -433,10 +618,15 @@ const builderFor = (mode: HistogramChallengeType) => {
  * - All challenges use distinct topic contexts (no duplicate topics per session).
  * - For identify_shape: shapes vary across challenges (no duplicates).
  * - Bin width and dataset size fall within the topic's pedagogical range.
+ *
+ * `tier` (when present) drives the STRUCTURAL difficulty axis — each builder
+ * uses it to shape clarity / peak dominance / queried bin / center shape.
+ * Null reproduces the historical (un-tiered) behavior.
  */
 function selectHistogramChallenges(
   mode: HistogramChallengeType,
   count: number,
+  tier: SupportTier | null,
 ): HistogramChallenge[] {
   const target = clamp(count, MIN_INSTANCE_COUNT, MAX_INSTANCE_COUNT);
   const topics = shuffle(TOPIC_POOL).slice(0, target);
@@ -445,26 +635,35 @@ function selectHistogramChallenges(
     topics.push(TOPIC_POOL[topics.length % TOPIC_POOL.length]);
   }
 
-  const build = builderFor(mode);
+  const shapeParams = tier ? resolveProblemShape(tier) : DEFAULT_SHAPE;
   const out: HistogramChallenge[] = [];
   const summaries: string[] = [];
 
-  if (mode === 'identify_shape') {
-    // Force distinct shapes across challenges (cycle through the shape pool).
-    const shapes = shuffle(SHAPE_OPTIONS).slice(0, target);
-    while (shapes.length < target) shapes.push(SHAPE_OPTIONS[shapes.length % SHAPE_OPTIONS.length]);
-    topics.forEach((topic, idx) => {
-      const result = buildIdentifyShape(topic, idx, shapes[idx]);
-      out.push(result.challenge);
-      summaries.push(result.summary);
-    });
-  } else {
-    topics.forEach((topic, idx) => {
-      const result = build(topic, idx);
-      out.push(result.challenge);
-      summaries.push(result.summary);
-    });
+  // For identify_shape, force distinct shapes across challenges (computed once).
+  const distinctShapes = shuffle(SHAPE_OPTIONS).slice(0, target);
+  while (distinctShapes.length < target) {
+    distinctShapes.push(SHAPE_OPTIONS[distinctShapes.length % SHAPE_OPTIONS.length]);
   }
+
+  topics.forEach((topic, idx) => {
+    let result: ChallengeBuildResult;
+    switch (mode) {
+      case 'identify_shape':
+        result = buildIdentifyShape(topic, idx, distinctShapes[idx], shapeParams.shapeClarity);
+        break;
+      case 'find_modal_bin':
+        result = buildFindModalBin(topic, idx, shapeParams);
+        break;
+      case 'read_frequency':
+        result = buildReadFrequency(topic, idx, shapeParams);
+        break;
+      case 'estimate_center':
+        result = buildEstimateCenter(topic, idx, shapeParams);
+        break;
+    }
+    out.push(result.challenge);
+    summaries.push(result.summary);
+  });
 
   console.log(`[Histogram] ${mode} session: ${out.length} challenges → ${summaries.join(' | ')}`);
   return out;
@@ -521,6 +720,13 @@ export const generateHistogram = async (
     targetEvalMode?: string;
     instanceCount?: number;
     gradeBand?: '6-7' | '7-8';
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding + how structurally clear the
+     * problem is within it. NEVER changes numbers/magnitude.
+     */
+    difficulty?: string;
   },
 ): Promise<HistogramData> => {
   // ── Resolve eval mode ──
@@ -530,6 +736,9 @@ export const generateHistogram = async (
     CHALLENGE_TYPE_DOCS,
   );
   logEvalModeResolution('Histogram', config?.targetEvalMode, evalConstraint);
+
+  // ── Resolve the support tier (drives BOTH axes; null = grade-band defaults) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
@@ -627,11 +836,37 @@ Return only the session wrapper.
           MIN_INSTANCE_COUNT,
           MAX_INSTANCE_COUNT,
         );
-  const challenges = selectHistogramChallenges(challengeType, resolvedCount);
+  const challenges = selectHistogramChallenges(challengeType, resolvedCount, supportTier);
 
-  // Mode-specific display flags: hide the stats panel in estimate_center mode
-  // because the panel would literally print the answer.
-  const showStatistics = challengeType !== 'estimate_center';
+  // ── Apply the SCAFFOLDING axis (display-only, answer-safe) ──
+  // Gated only on a tier being present — difficulty is a STUDENT property, so
+  // every session (single-mode here) must honor it. Histogram sessions are
+  // always single-mode (the pool service builds one challengeType), so resolving
+  // the scaffold from the session mode applies it uniformly per challenge.
+  const scaffold = supportTier ? resolveSupportStructure(challengeType, supportTier) : null;
+
+  // Mode-specific display flags. Fallback (no tier) preserves historical
+  // behavior: stats hidden only in estimate_center; freq labels shown for
+  // identify_shape & estimate_center.
+  const showStatistics = scaffold
+    ? scaffold.showStatistics
+    : challengeType !== 'estimate_center';
+  const showFrequencyLabels = scaffold
+    ? scaffold.showFrequencyLabels
+    : challengeType === 'identify_shape' || challengeType === 'estimate_center';
+
+  // Hard tier withdraws the hint → the component shows no hint button.
+  if (scaffold && !scaffold.includeHint) {
+    for (const ch of challenges) delete ch.hint;
+  }
+
+  if (supportTier) {
+    console.log(
+      `[Histogram] Support tier "${supportTier}" applied (mode ${challengeType}): ` +
+        `stats=${showStatistics}, freqLabels=${showFrequencyLabels}, hint=${scaffold?.includeHint}, ` +
+        `shape=${JSON.stringify(resolveProblemShape(supportTier))}`,
+    );
+  }
 
   return {
     title,
@@ -640,5 +875,7 @@ Return only the session wrapper.
     challenges,
     gradeBand: config?.gradeBand ?? gradeBand,
     showStatistics,
+    showFrequencyLabels,
+    supportTier: supportTier ?? undefined,
   };
 };

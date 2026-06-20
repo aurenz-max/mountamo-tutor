@@ -20,6 +20,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 // ============================================================================
 // Data Types — re-exported from the generator's canonical interface
@@ -49,6 +50,9 @@ export interface MatrixDisplayChallenge {
   expectedScalar?: number;
   expectedMatrix?: number[][];
   hint: string;
+  /** Support tier (modality #4): when true, "Show steps" is withheld until the student
+   *  has made at least one attempt. Undefined/false = available up front. */
+  stepsAfterAttempt?: boolean;
 }
 
 export interface MatrixDisplayData {
@@ -58,6 +62,8 @@ export interface MatrixDisplayData {
   challengeType: MatrixChallengeType;
   educationalContext?: string;
   gradeBand?: '7-8' | 'algebra2' | 'precalculus' | 'advanced';
+  /** Within-mode support tier when present (surfaced for a future live tutor). */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer / tester)
   instanceId?: string;
@@ -99,6 +105,41 @@ function numbersEqual(a: number, b: number): boolean {
 /** §6a #11 standard per-challenge score formula. */
 function phaseScore(attempts: number): number {
   return Math.max(20, 100 - (Math.max(0, attempts - 1) * 20));
+}
+
+/**
+ * Tier-aware reveal policy for the AI tutor. Tells the tutor how much of the
+ * method it may surface and — crucially — what it must never state outright, so
+ * the scaffold never leaks the answer the student is computing. Keyed on the
+ * operation because the "never say X" line differs per challenge type.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  mode: MatrixChallengeType,
+): string {
+  if (!tier) return '';
+  const never =
+    mode === 'determinant'
+      ? 'Never state the determinant value for the student.'
+      : 'Never state the result-matrix entries for the student.';
+  const method =
+    mode === 'determinant'
+      ? 'for a 2×2 [[a,b],[c,d]], det = ad − bc'
+      : mode === 'inverse'
+        ? 'A⁻¹ = (1/det) · [[d, −b], [−c, a]] — swap the diagonal, negate the off-diagonal, divide by det'
+        : mode === 'multiply'
+          ? 'each result entry is a row of A dotted with a column of B (multiply matching entries, then sum)'
+          : mode === 'transpose'
+            ? 'row i of A becomes column i of Aᵀ'
+            : 'add or subtract matching entries position by position';
+  switch (tier) {
+    case 'easy':
+      return `SUPPORT TIER easy: maximum scaffolding. You may name the method (${method}) and walk the setup one entry at a time. ${never}`;
+    case 'medium':
+      return `SUPPORT TIER medium: nudge the next entry and let the student do the arithmetic. ${never}`;
+    default:
+      return `SUPPORT TIER hard: the on-screen hint and up-front "Show steps" are withdrawn. Ask the student to recall the rule and map one entry themselves; do not supply the withheld method outright. ${never}`;
+  }
 }
 
 // ============================================================================
@@ -321,6 +362,8 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
     challenges,
     challengeType: sessionChallengeType,
     educationalContext,
+    gradeBand,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -367,6 +410,45 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
   const hintViewedRef = useRef(false);
   const submittedRef = useRef(false);
   const startTimeRef = useRef(Date.now());
+
+  // ── AI tutoring ────────────────────────────────────────────────
+  // aiPrimitiveData carries only session/progress metadata (the catalog
+  // contextKeys), never per-cell matrix values — those would leak the answer
+  // through the silent context update. Mode + tier are session-level, so the
+  // reveal policy is resolved once.
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    challengeType: sessionChallengeType,
+    currentChallengeIndex: currentIndex + 1,
+    totalChallenges: challenges.length,
+    gradeBand: gradeBand ?? null,
+    supportTier: supportTier ?? null,
+  }), [title, sessionChallengeType, currentIndex, challenges.length, gradeBand, supportTier]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'matrix-display',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand,
+  });
+
+  const revealPolicy = tutorRevealPolicy(supportTier, sessionChallengeType);
+
+  // Introduce the session once the tutor connects (one end_of_turn message
+  // carrying the first problem's shape, so the tutor reads a real task).
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
+    hasIntroducedRef.current = true;
+    const first = challenges[0];
+    sendText(
+      `[ACTIVITY_START] Matrix session: ${challenges.length} ${sessionChallengeType} problem(s). `
+      + `Introduce the ${sessionChallengeType} operation briefly, then read the first task `
+      + `(a ${first.rows}×${first.columns} matrix).`
+      + (revealPolicy ? ` ${revealPolicy}` : ''),
+      { silent: true },
+    );
+  }, [isConnected, challenges, sessionChallengeType, revealPolicy, sendText]);
 
   // ── Reset per-challenge state on advance ────────────────────────
   useEffect(() => {
@@ -444,7 +526,14 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
 
     const result = submitResult(overallAccuracy >= 60, overallAccuracy, metrics);
     setSubmittedResult(result);
-  }, [allChallengesComplete, challengeResults, hasSubmitted, sessionChallengeType, submitResult]);
+
+    sendText(
+      `[ALL_COMPLETE] The student finished all ${totalChallenges} ${sessionChallengeType} matrices. `
+      + `Correct: ${correctCount}/${totalChallenges}, first-try: ${firstTryCount}, accuracy: ${overallAccuracy}%. `
+      + `Give a brief, encouraging, matrix-focused summary.`,
+      { silent: true },
+    );
+  }, [allChallengesComplete, challengeResults, hasSubmitted, sessionChallengeType, submitResult, sendText]);
 
   // ── Handle matrix-input cell change ─────────────────────────────
   const handleMatrixInputChange = useCallback((row: number, col: number, value: string) => {
@@ -505,6 +594,11 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
         challengeType: currentChallenge.challengeType,
         hintViewed: hintViewedRef.current,
       });
+      sendText(
+        `[ANSWER_CORRECT] The student solved the ${currentChallenge.challengeType} matrix correctly on attempt ${attempts}. `
+        + `Congratulate briefly and cue them to click "${currentIndex + 1 < challenges.length ? 'Next Matrix →' : 'Finish'}".`,
+        { silent: true },
+      );
     } else {
       SoundManager.playIncorrect();
       setFeedback({
@@ -513,17 +607,40 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
           ? 'Not quite — check each entry and try again.'
           : 'Still off. Open "Show steps" for a walkthrough.',
       });
+      // Describe what's off WITHOUT surfacing the correct value: for a scalar we
+      // can echo the student's own wrong entry; for a matrix we report only the
+      // count of incorrect cells so the hint stays scaffolding, not solving.
+      const wrongDetail = currentChallenge.expectedScalar !== undefined
+        ? `entered "${scalarInput.trim()}"`
+        : perCellCorrect
+          ? `got ${perCellCorrect.flat().filter((ok) => !ok).length} of ${perCellCorrect.flat().length} entries wrong`
+          : 'has some entries off';
+      sendText(
+        `[ANSWER_INCORRECT] On the ${currentChallenge.challengeType} matrix the student ${wrongDetail} (attempt ${attempts}). `
+        + `Point at one specific entry (or the cross-multiplication step) to recheck. Give a hint without revealing the answer.`
+        + (revealPolicy ? ` ${revealPolicy}` : ''),
+        { silent: true },
+      );
     }
-  }, [currentChallenge, currentAttempts, feedback, scalarInput, matrixInput, incrementAttempts, recordResult]);
+  }, [currentChallenge, currentAttempts, currentIndex, challenges.length, feedback, scalarInput, matrixInput, incrementAttempts, recordResult, sendText, revealPolicy]);
 
   // ── Reveal hint / steps ─────────────────────────────────────────
   const handleShowSteps = useCallback(() => {
     SoundManager.pop();
     setShowSteps(true);
     hintViewedRef.current = true;
-  }, []);
+    if (!currentChallenge) return;
+    sendText(
+      `[SHOW_STEPS] The student opened the worked walkthrough for the ${currentChallenge.challengeType} matrix. `
+      + `Reinforce the method in one or two sentences and invite them to finish the remaining entries themselves.`
+      + (revealPolicy ? ` ${revealPolicy}` : ''),
+      { silent: true },
+    );
+  }, [currentChallenge, sendText, revealPolicy]);
 
   // ── Advance to next challenge ───────────────────────────────────
+  // Send exactly one end_of_turn message carrying the NEXT problem's shape, so
+  // the tutor introduces the real problem (the auto context update is silent).
   const handleNext = useCallback(() => {
     if (!currentChallenge) return;
     // If user hasn't gotten it right after multiple attempts, record as incorrect and move on.
@@ -538,8 +655,17 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
         hintViewed: hintViewedRef.current,
       });
     }
+    const next = challenges[currentIndex + 1];
+    if (next) {
+      sendText(
+        `[NEXT_ITEM] Matrix ${currentIndex + 2} of ${challenges.length} (${next.challengeType}, ${next.rows}×${next.columns}). `
+        + `Introduce it briefly — same operation, new numbers.`
+        + (revealPolicy ? ` ${revealPolicy}` : ''),
+        { silent: true },
+      );
+    }
     advanceProgress();
-  }, [advanceProgress, currentAttempts, currentChallenge, recordResult]);
+  }, [advanceProgress, challenges, currentIndex, currentAttempts, currentChallenge, recordResult, sendText, revealPolicy]);
 
   // ── Early return ────────────────────────────────────────────────
   if (!challenges || challenges.length === 0) {
@@ -650,8 +776,11 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
               </div>
             )}
 
-            {/* Hint panel (challenge-specific hint, always available) */}
-            <div className="text-xs text-slate-400 italic">{currentChallenge.hint}</div>
+            {/* Hint panel (challenge-specific). Withdrawn at the hard support tier
+                (generator emits an empty hint), so render only when present. */}
+            {currentChallenge.hint && (
+              <div className="text-xs text-slate-400 italic">{currentChallenge.hint}</div>
+            )}
 
             {/* Show steps reveal */}
             {showSteps && (
@@ -670,7 +799,11 @@ const MatrixDisplay: React.FC<MatrixDisplayProps> = ({ data, className }) => {
                   disabled={!canSubmit}
                 />
               )}
-              {!showSteps && !feedback?.correct && (
+              {/* "Show steps" worked example. At the hard tier (stepsAfterAttempt) it is
+                  withheld until the student has attempted at least once — recovery, not a
+                  free pass. Easy/medium: available up front. */}
+              {!showSteps && !feedback?.correct &&
+                (!currentChallenge.stepsAfterAttempt || currentAttempts >= 1) && (
                 <LuminaButton onClick={handleShowSteps}>
                   Show steps
                 </LuminaButton>

@@ -56,6 +56,144 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tiers (second field of the eval-mode contract:
+// targetEvalMode = WHICH skill, difficulty = HOW MUCH scaffolding within it).
+// Tiers withdraw scaffolding (instruction strategy-naming + visual structure) and
+// reshape problem STRUCTURE (distractor spread, unknown operand, match result gap).
+// They NEVER change raw magnitude — numbers stay within maxNumber.
+// ---------------------------------------------------------------------------
+
+type ChallengeType = MathFactFluencyChallenge['type'];
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** Reworded from the scaffolding-only NUMBERS_NEVER_CHANGE: once the structural
+ *  axis exists, the tier DOES change problem shape — just never magnitude. */
+const TIER_GUARDRAIL =
+  'Keep every number within maxNumber — this tier changes problem STRUCTURE '
+  + '(distractor spread, which operand is unknown, match-result gap) and SCAFFOLDING '
+  + 'TONE (how much the instruction names a strategy, how structured the visual is), '
+  + 'NOT raw magnitude.';
+
+/** Scaffolding withdrawal (#1 perception + #2 instruction-as-scaffold). */
+interface SupportScaffold {
+  /** Preferred visual for picture modes — structured ten-frame (easy) → looser dot-array. */
+  preferredVisualType?: 'ten-frame' | 'dot-array';
+  promptLines: string[];
+}
+
+function resolveSupportStructure(type: ChallengeType, tier: SupportTier): SupportScaffold {
+  const strategyTone =
+    tier === 'easy'
+      ? 'Instruction NAMES a concrete strategy the student can lean on (e.g. count the objects, count on from the bigger number, or think-backwards for a missing number).'
+      : tier === 'hard'
+        ? 'Instruction is BARE — pose the problem only; name NO strategy and give NO procedural hint.'
+        : 'Instruction is neutral and warm — pose the problem without naming a specific strategy.';
+
+  switch (type) {
+    case 'visual-fact':
+    case 'match':
+      return {
+        preferredVisualType: tier === 'easy' ? 'ten-frame' : 'dot-array',
+        promptLines: [
+          strategyTone,
+          tier === 'easy'
+            ? 'Use a TEN-FRAME visual — the most structured, easiest-to-subitize representation.'
+            : 'Use a DOT-ARRAY visual (looser than a ten-frame) so the student leans less on grid structure.',
+        ],
+      };
+    case 'equation-solve':
+    case 'missing-number':
+    case 'speed-round':
+    default:
+      return { promptLines: [strategyTone] };
+  }
+}
+
+/** Structural difficulty (2nd axis): in-mode, structural-only — never magnitude. */
+interface ProblemShape {
+  /** MC distractor closeness: 'far' (off by 2-3, easy) → 'near' (off by 1, harder). */
+  distractorSpread?: 'far' | 'near';
+  /** missing-number unknown: operand2 = count-on (easier), operand1 = start-unknown (harder). */
+  unknownPositionPref?: 'operand1' | 'operand2';
+  /** match: required gap between each distractor result and the correct result. */
+  matchResultGap?: number;
+  promptLines: string[];
+}
+
+function resolveProblemShape(type: ChallengeType, tier: SupportTier): ProblemShape {
+  switch (type) {
+    case 'visual-fact':
+    case 'equation-solve':
+      return {
+        distractorSpread: tier === 'easy' ? 'far' : 'near',
+        promptLines: [
+          tier === 'easy'
+            ? 'Multiple-choice distractors are SPREAD (off by 2-3 from the answer) so the correct option stands out.'
+            : 'Multiple-choice distractors are CLOSE (off by exactly 1) so the student must discriminate carefully.',
+        ],
+      };
+    case 'missing-number':
+      return {
+        unknownPositionPref: tier === 'hard' ? 'operand1' : 'operand2',
+        promptLines: [
+          tier === 'hard'
+            ? 'Make the FIRST operand the unknown ("? + b = c") — a harder start-unknown that forces inverse reasoning.'
+            : 'Make the SECOND operand the unknown ("a + ? = c") — an easier count-on from the known first operand.',
+        ],
+      };
+    case 'match':
+      return {
+        matchResultGap: tier === 'easy' ? 2 : 1,
+        promptLines: [
+          tier === 'easy'
+            ? 'Distractor equations have results FAR from the correct one (gap of 2 or more) — an easy visual discrimination.'
+            : 'Distractor equations have results JUST ONE away from the correct one (still all DIFFERENT) — a subtle discrimination.',
+        ],
+      };
+    case 'speed-round':
+    default:
+      return { promptLines: [] };
+  }
+}
+
+/** Merge scaffolding-tone + problem-shape lines into one tier block for the LLM. */
+function buildTierPromptSection(type: ChallengeType, tier: SupportTier): string {
+  const lines = [
+    ...resolveSupportStructure(type, tier).promptLines,
+    ...resolveProblemShape(type, tier).promptLines,
+  ];
+  return `\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding level — NOT number size)\n`
+    + `- ${TIER_GUARDRAIL}\n`
+    + lines.map((l) => `- ${l}`).join('\n')
+    + '\n';
+}
+
+/** Build a simple in-scope addition equation that evaluates to `r`. */
+function makeEquationForResult(r: number): string {
+  const a = Math.floor(r / 2);
+  const b = r - a;
+  return `${a} + ${b} = ${r}`;
+}
+
+/** Deterministic-enough shuffle so the correct option isn't always first. */
+function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ---------------------------------------------------------------------------
 // Base schema (all challenge types)
 // ---------------------------------------------------------------------------
 
@@ -193,6 +331,12 @@ export const generateMathFactFluency = async (
     gradeBand?: 'K' | '1';
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much scaffolding/structure within it. NEVER changes magnitude.
+     */
+    difficulty?: string;
     /** Intent or title from the manifest item. */
     intent?: string;
   }
@@ -209,6 +353,17 @@ export const generateMathFactFluency = async (
     ? constrainChallengeTypeEnum(mathFactFluencySchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
     : mathFactFluencySchema;
 
+  // ── Resolve the within-mode support tier (the STUDENT's tier — drives application) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType is ONLY for prompt tone (a blended session has no single mode to describe).
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierSection = pinnedType && supportTier
+    ? buildTierPromptSection(pinnedType, supportTier)
+    : '';
+
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
@@ -221,7 +376,7 @@ CONTEXT:
 - The goal is automaticity — recalling facts without counting. There is NO timer and no time pressure; never reference speed deadlines or countdowns in instruction text.
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GRADE GUIDELINES:
 - Kindergarten (gradeBand "K"): maxNumber 3-5, mostly addition, simple warm language
@@ -518,6 +673,48 @@ Return the complete math fact fluency configuration.
     if (config.targetResponseTime !== undefined) data.targetResponseTime = config.targetResponseTime;
     if (config.adaptiveDifficulty !== undefined) data.adaptiveDifficulty = config.adaptiveDifficulty;
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
+  }
+
+  // -------------------------------------------------------------------------
+  // Apply the support tier PER CHALLENGE (mode-correct), gated only on a tier
+  // being present — a blended/auto session gets difficulty too. Code owns the
+  // scaffold STRUCTURE the prompt could not be trusted to hit exactly:
+  //  • #1 perception — force the visual representation (ten-frame → dot-array)
+  //  • structural — code-enforce the match result-gap (LLM can't hit it reliably)
+  // The instruction strategy-tone, MC distractor spread, and missing-number
+  // unknown-operand are prompt-shaped above (no clean numeric handle).
+  // -------------------------------------------------------------------------
+  if (supportTier) {
+    for (const ch of data.challenges as MathFactFluencyChallenge[]) {
+      ch.supportTier = supportTier;
+
+      const scaffold = resolveSupportStructure(ch.type, supportTier);
+      // Force the visual ONLY where a visual already exists (visual-fact / match) —
+      // never add a visual to symbol-only modes, and never withdraw it entirely
+      // (the visual IS visual-fact's eval-mode identity; removing it is a mode jump).
+      if (scaffold.preferredVisualType && ch.visualType) {
+        ch.visualType = scaffold.preferredVisualType;
+      }
+
+      // match: re-synthesize the 3 distractors at the tier's result gap. Keep the
+      // correct equation, keep every distractor result DIFFERENT (the CRITICAL rule),
+      // then shuffle so the answer isn't pinned to the first slot.
+      if (ch.type === 'match' && ch.matchDirection === 'visual-to-equation') {
+        const gap = resolveProblemShape(ch.type, supportTier).matchResultGap ?? 1;
+        const correct = ch.result;
+        const seen = new Set<number>([correct]);
+        const targets: number[] = [];
+        for (const t of [correct + gap, correct - gap, correct + 2 * gap, correct - 2 * gap, correct + gap + 1, correct + 1, correct - 1]) {
+          if (t >= 0 && t <= data.maxNumber + 2 && !seen.has(t)) {
+            seen.add(t);
+            targets.push(t);
+          }
+          if (targets.length === 3) break;
+        }
+        ch.equationOptions = shuffleInPlace([ch.equation, ...targets.map(makeEquationForResult)]);
+      }
+    }
+    console.log(`[MathFactFluency] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
   }
 
   return data;

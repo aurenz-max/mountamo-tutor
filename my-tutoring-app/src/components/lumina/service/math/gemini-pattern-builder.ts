@@ -32,6 +32,109 @@ function resolveCount(mode: ChallengeType | undefined): number {
 }
 
 // ---------------------------------------------------------------------------
+// Within-mode difficulty = structural SUPPORT tier (config.difficulty)
+// ---------------------------------------------------------------------------
+// The two-field contract: config.targetEvalMode says WHICH skill (task identity —
+// extend / identify_core / translate / create / find_rule, matched to the objective
+// by the manifest); config.difficulty says how much on-workspace SUPPORT the student
+// gets while doing it ('easy' = max scaffolding, 'hard' = min). The tier is
+// per-component. It NEVER changes the pattern's LENGTH or ELEMENTS — those are the
+// eval-mode / grade-band / progression axis. A harder tier toggles reveal of the
+// repeating-UNIT boundary and the RULE label, so the student infers the structure
+// from the sequence alone. See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Highlight the repeating-unit boundary: rings the core positions in the GIVEN
+   *  sequence + shows a "Core: …" label. Display-only — only the visible given
+   *  tokens are ringed, NEVER the hidden answer cells, so this can never leak the
+   *  answer. Withdrawing it forces the student to find the unit boundary themselves. */
+  showCore: boolean;
+  /** Reveal the pattern RULE in words (named strategy). Naming the rule hands the
+   *  student the strategy; hiding it makes them infer the rule from the sequence. */
+  showRule: boolean;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-workspace support structure for a tier on a pinned challenge type.
+ * easy  = highlight the repeating unit + name the rule (workspace self-checks).
+ * medium= highlight the unit, but DON'T name the rule.
+ * hard  = no unit highlight, no rule — infer the structure from the sequence alone.
+ * The pattern's LENGTH and ELEMENTS never change with the tier — only the cues do.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const showCore = tier !== 'hard';
+  const showRule = tier === 'easy';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-workspace SCAFFOLDING only (${tier === 'easy' ? 'maximum support: the repeating unit is highlighted and the rule is named so the workspace helps the student self-check' : tier === 'medium' ? 'moderate support: the repeating unit is highlighted, but the student must name the rule themselves' : 'minimum support: no unit highlight and no rule label — the student infers the repeating structure from the sequence alone'}). Keep the pattern's LENGTH, element set, and number of repetitions exactly as the eval mode and grade band require — a harder tier NEVER changes the pattern itself, only how many cues are revealed.`,
+  ];
+  switch (pinnedType) {
+    case 'extend':
+      promptLines.push(
+        tier === 'easy'
+          ? 'The repeating unit is highlighted and the rule is named; instructions/hints may name the core (e.g. "the part that repeats is red-blue").'
+          : tier === 'hard'
+            ? 'No unit highlight and no rule label; hints should ask the student what they notice repeating, never naming the core or the next token.'
+            : 'The repeating unit is highlighted, but hints should NOT name the rule — ask the student to describe what repeats.',
+      );
+      break;
+    case 'identify_core':
+      promptLines.push(
+        tier === 'easy'
+          ? 'A worked unit boundary is highlighted as a model and the rule is named so the student can confirm where the unit starts over.'
+          : tier === 'hard'
+            ? 'No boundary highlight and no rule label; the student must segment the sequence and justify where the smallest repeating unit begins.'
+            : 'The unit boundary is highlighted as a cue, but the rule is not named — the student confirms the smallest repeating group themselves.',
+      );
+      break;
+    case 'translate':
+      promptLines.push(
+        tier === 'easy'
+          ? 'The source repeating unit is highlighted and the rule is named so the student maps a clearly bounded unit.'
+          : tier === 'hard'
+            ? 'No unit highlight and no rule label; the student infers the structure of the source pattern before mapping it.'
+            : 'The source unit is highlighted, but the rule is not named — the student maps the highlighted unit token-by-token.',
+      );
+      break;
+    case 'find_rule':
+      promptLines.push(
+        tier === 'easy'
+          ? 'The rule is named and the first terms are framed as a worked unit so the student can self-check the step.'
+          : tier === 'hard'
+            ? 'No rule label and no term highlight; the student must discover the rule from the sequence and justify the next numbers.'
+            : 'The first terms are framed as a cue, but the rule is NOT named — the student infers and states the rule themselves.',
+      );
+      break;
+    case 'create':
+      promptLines.push(
+        tier === 'easy'
+          ? 'A model repeating unit is highlighted and a rule is named as an example the student can imitate before building their own.'
+          : tier === 'hard'
+            ? 'No model unit or rule is shown; the student invents and justifies their own repeating structure unaided.'
+            : 'A model unit is highlighted as a starting idea, but no rule is named — the student builds a pattern with a repeat of their own.',
+      );
+      break;
+  }
+  return { showCore, showRule, promptLines };
+}
+
+// ---------------------------------------------------------------------------
 // Challenge type documentation registry
 // ---------------------------------------------------------------------------
 
@@ -317,6 +420,13 @@ export const generatePatternBuilder = async (
     tokenType?: string;
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes the
+     * pattern's length or elements — only how many cues (unit highlight, rule) show.
+     */
+    difficulty?: string;
   }
 ): Promise<PatternBuilderData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -336,6 +446,18 @@ export const generatePatternBuilder = async (
     ? (evalConstraint.allowedTypes[0] as ChallengeType)
     : undefined);
   const count = resolveCount(singleMode);
+
+  // ── Resolve the support tier (config.difficulty) ──
+  // supportTier is the STUDENT's tier and DRIVES the per-challenge application below.
+  // pinnedType (singleMode) is ONLY for the prompt tone — a blended session has no
+  // single mode to describe to the LLM, but it still gets the tier applied per challenge.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType = singleMode;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT pattern length/elements)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
 
   // ── Build mode-constrained schema ──
   const baseSchema = buildPatternBuilderSchema(count);
@@ -389,7 +511,7 @@ CONTEXT:
 - Number patterns connect to skip counting and multiplication
 
 ${challengeTypeSection}
-
+${tierSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten to Grade 1 (gradeBand "K-1"):
@@ -609,6 +731,33 @@ Return the complete pattern builder configuration.
   if (config) {
     if (config.patternType !== undefined) data.patternType = config.patternType;
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
+  }
+
+  // ── Apply the support tier deterministically (per challenge) ──
+  // Difficulty is a STUDENT property: a blended/auto session gets it too — single-mode
+  // just happens to give every challenge the same scaffold. We resolve each challenge's
+  // scaffold from its OWN type, then drive the (global) showOptions cues and stamp
+  // `supportTier` on every challenge so the live tutor calibrates its reveal level.
+  // Display-only: showCore rings only the visible GIVEN core tokens (never the hidden
+  // answer cells) and the checkers read sequence.hidden/core independent of these flags,
+  // so withdrawing/adding cues can never leak or invalidate the answer.
+  if (supportTier) {
+    if (!data.showOptions) data.showOptions = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const chs = data.challenges as any[];
+    data.challenges = chs.map((c) => ({ ...c, supportTier }));
+    // showOptions is a single global object; drive it from the tier. All challenges
+    // in a session share the same tier, and showCore/showRule are tier-determined
+    // (identical across modes), so a representative scaffold from the first challenge
+    // is correct for the whole session.
+    const repType = (chs[0]?.type as ChallengeType) ?? 'extend';
+    const repScaffold = resolveSupportStructure(repType, supportTier);
+    data.showOptions.showCore = repScaffold.showCore;
+    data.showOptions.showRule = repScaffold.showRule;
+    console.log(
+      `[PatternBuilder] Support tier "${supportTier}" applied per-challenge `
+      + `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → showCore=${data.showOptions.showCore}, showRule=${data.showOptions.showRule}`,
+    );
   }
 
   // Final summary log

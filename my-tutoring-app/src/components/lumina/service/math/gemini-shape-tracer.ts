@@ -37,6 +37,104 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ============================================================================
+// Within-mode SUPPORT TIER (config.difficulty)
+// ============================================================================
+// Two-field contract: config.targetEvalMode says WHICH skill (the task identity —
+// trace / connect-dots / complete / draw-from-description, matched to the objective
+// by the manifest); config.difficulty says how much on-canvas TRACING SUPPORT the
+// student gets while doing it. The tier withdraws tracing scaffolds (the ghost guide
+// path, the directional ant-trail, the pulsing next-vertex cue, the stroke-order
+// numbers) — it NEVER changes the target shape, its vertices, or the eval mode.
+// easy = the canvas guides the stroke; hard = only the endpoints remain, the student
+// traces from memory of the shape. See memory: structural-difficulty-not-numeric.
+
+type ChallengeType = 'trace' | 'complete' | 'draw-from-description' | 'connect-dots';
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Read the manifest's support tier. The manifest schema enum-constrains
+ * config.difficulty to exactly these values, so this is a STRICT lookup.
+ * Unknown/absent → null (no tier applied; grade-band defaults stand).
+ */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+interface SupportScaffold {
+  /** Ghost outline of the full target shape (the dotted guide path). The strongest
+   *  tracing scaffold — withdrawing it leaves the student tracing vertex-to-vertex. */
+  showGuidePath: boolean;
+  /** Animated directional ant-trail on the guide path (which way the stroke flows). */
+  showDirectionArrows: boolean;
+  /** Pulsing "next vertex / start here" cue ring — tells the student where to go next. */
+  showNextCue: boolean;
+  /** Stroke-order numbers (1,2,3…) on the trace vertices. NOTE: for connect-dots the
+   *  numbers ARE the answer, so they are never withdrawn there (see apply step). */
+  showOrderNumbers: boolean;
+  /** Prompt guidance describing the scaffolding level at this tier. */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the on-canvas tracing-support structure for a tier on a pinned mode.
+ * Support is withdrawn as the tier hardens; the SAME shape stays the target.
+ * easy = guide path + arrows + next cue + order numbers; hard = endpoints only.
+ */
+function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold {
+  const showGuidePath = tier === 'easy';
+  const showDirectionArrows = tier === 'easy';
+  const showNextCue = tier !== 'hard';
+  const showOrderNumbers = tier !== 'hard';
+
+  const promptLines: string[] = [
+    `Support tier: ${tier.toUpperCase()} — this sets on-canvas TRACING SCAFFOLDING only (${tier === 'easy' ? 'maximum support: the dotted guide path, directional flow, the pulsing "start/next" cue, and the stroke-order numbers all help the student form the stroke' : tier === 'medium' ? 'moderate support: the guide path and directional flow are withdrawn, but a faint next-vertex cue and order numbers remain' : 'minimum support: only the endpoints/vertices remain — no guide path, no arrows, no cue, no numbers; the student traces from memory of the shape'}). Keep the SAME target shape and the SAME vertices at every tier — a harder tier withdraws tracing help, it NEVER changes the shape, its size, or the eval mode.`,
+  ];
+  switch (pinnedType) {
+    case 'trace':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep the dotted shape outline and directional flow fully visible; the student traces along the guide with the next-dot cue and the numbered vertices lighting the way.'
+          : tier === 'hard'
+            ? 'Show only the bare vertex endpoints — no guide outline, no directional flow, no pulsing cue, no order numbers; hints should ask the student to recall the shape and decide their own stroke path.'
+            : 'Withdraw the guide outline and directional flow; keep a quiet next-vertex cue and the order numbers so the student tracks their own progress.',
+      );
+      break;
+    case 'connect-dots':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep the pulsing next-dot cue active so the student is led from one numbered dot to the next.'
+          : tier === 'hard'
+            ? 'Withdraw the pulsing next-dot cue; the student must find the order from the dot numbers alone (the numbers stay — they are the puzzle, not a scaffold).'
+            : 'Keep a quiet next-dot cue; the student leans on the numbers to choose the order.',
+      );
+      break;
+    case 'complete':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep the pulsing next-vertex cue and order numbers on the remaining vertices so the student sees where each missing side goes.'
+          : tier === 'hard'
+            ? 'Withdraw the pulsing cue and the order numbers on the remaining vertices; the student decides which side to draw next to close the shape.'
+            : 'Keep a quiet next-vertex cue; the student tracks which sides remain themselves.',
+      );
+      break;
+    case 'draw-from-description':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Keep the vertex order labels and the dashed preview-closing line visible as the student places corners.'
+          : tier === 'hard'
+            ? 'Withdraw the order labels and the dashed preview line; the student judges the closed shape unaided from the description.'
+            : 'Keep the order labels; withdraw the dashed preview line so the student visualizes the closure themselves.',
+      );
+      break;
+  }
+  return { showGuidePath, showDirectionArrows, showNextCue, showOrderNumbers, promptLines };
+}
+
+// ============================================================================
 // Local helper: constrain challengePlan type enum in setup schema
 // ============================================================================
 
@@ -66,6 +164,13 @@ function constrainSetupPlanEnum(
 interface ShapeTracerConfig extends Partial<ShapeTracerData> {
   /** Target eval mode from the IRT calibration system. */
   targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-canvas tracing scaffolding within it.
+   * NEVER changes the target shape, its vertices, or the eval mode.
+   */
+  difficulty?: string;
 }
 
 // ============================================================================
@@ -359,7 +464,7 @@ const clampPoint = (pt: { x: number; y: number }) => ({
   y: Math.max(40, Math.min(360, pt.y ?? 200)),
 });
 
-async function generateTrace(shape: string, setup: SetupResult): Promise<ShapeTracerChallenge> {
+async function generateTrace(shape: string, setup: SetupResult, tierSection = ''): Promise<ShapeTracerChallenge> {
   const prompt = `
 Create a TRACE challenge for a "${shape}" shape tracing activity for ${setup.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}.
 
@@ -370,7 +475,7 @@ The student follows a dotted outline by tapping vertices in order.
 - instruction: warm, encouraging (e.g., "Trace the ${shape} by following the dots!")
 - vertices: ordered points that form the ${shape}. Must be within canvas bounds.
 - tolerance: ${setup.gradeBand === 'K' ? '30-40' : '20-25'} pixels
-`;
+${tierSection}`;
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
@@ -393,7 +498,7 @@ The student follows a dotted outline by tapping vertices in order.
   };
 }
 
-async function generateComplete(shape: string, setup: SetupResult): Promise<ShapeTracerChallenge> {
+async function generateComplete(shape: string, setup: SetupResult, tierSection = ''): Promise<ShapeTracerChallenge> {
   const prompt = `
 Create a COMPLETE challenge for a "${shape}" shape for ${setup.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}.
 
@@ -406,7 +511,7 @@ Some sides are pre-drawn. The student draws the remaining sides to finish the sh
 - remainingVertices: vertices the student connects to complete the shape.
 
 The segments + remaining vertices should form a complete ${shape} when connected.
-`;
+${tierSection}`;
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
@@ -436,7 +541,7 @@ The segments + remaining vertices should form a complete ${shape} when connected
   };
 }
 
-async function generateDrawFromDescription(shape: string, setup: SetupResult): Promise<ShapeTracerChallenge> {
+async function generateDrawFromDescription(shape: string, setup: SetupResult, tierSection = ''): Promise<ShapeTracerChallenge> {
   const prompt = `
 Create a DRAW-FROM-DESCRIPTION challenge for a "${shape}" for ${setup.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}.
 
@@ -447,7 +552,7 @@ The student reads a text description and draws the shape freehand on a grid.
 - corners: number of corners/vertices
 - allSidesEqual: true if all sides should be equal (e.g., square, equilateral triangle)
 - hasCurvedSides: true only for circles
-`;
+${tierSection}`;
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
@@ -473,7 +578,7 @@ The student reads a text description and draws the shape freehand on a grid.
   };
 }
 
-async function generateConnectDots(shape: string, setup: SetupResult): Promise<ShapeTracerChallenge> {
+async function generateConnectDots(shape: string, setup: SetupResult, tierSection = ''): Promise<ShapeTracerChallenge> {
   const prompt = `
 Create a CONNECT-THE-DOTS challenge for a "${shape}" for ${setup.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}.
 
@@ -485,7 +590,7 @@ Numbered dots on canvas. Student connects them in order to reveal the shape.
 - dots: positioned dots with labels "1", "2", "3", etc. Place them to form a ${shape}.
 - correctOrder: zero-based indices [0, 1, 2, ...] matching the label order
 - revealShape: "${shape}"
-`;
+${tierSection}`;
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
@@ -624,16 +729,17 @@ function fallbackConnectDots(shape: string, _setup: SetupResult): ShapeTracerCha
 async function generateChallengeByType(
   plan: { type: string; targetShape: string },
   setup: SetupResult,
+  tierSection = '',
 ): Promise<ShapeTracerChallenge> {
   switch (plan.type) {
     case 'trace':
-      return generateTrace(plan.targetShape, setup);
+      return generateTrace(plan.targetShape, setup, tierSection);
     case 'complete':
-      return generateComplete(plan.targetShape, setup);
+      return generateComplete(plan.targetShape, setup, tierSection);
     case 'draw-from-description':
-      return generateDrawFromDescription(plan.targetShape, setup);
+      return generateDrawFromDescription(plan.targetShape, setup, tierSection);
     case 'connect-dots':
-      return generateConnectDots(plan.targetShape, setup);
+      return generateConnectDots(plan.targetShape, setup, tierSection);
     default:
       return fallbackTrace(plan.targetShape, setup);
   }
@@ -669,17 +775,47 @@ export const generateShapeTracer = async (
   );
   logEvalModeResolution('ShapeTracer', config?.targetEvalMode, evalConstraint);
 
+  // The STUDENT's tier — DRIVES application (single OR blended session).
+  const supportTier = normalizeSupportTier(config?.difficulty);
+
   // Step 1: Setup call (lightweight, with eval mode constraint)
   const setup = await generateSetup(topic, gradeLevel, config, evalConstraint);
 
-  // Step 2: Parallel challenge calls (one per plan entry, focused schemas)
-  const challengePromises = setup.challengePlan.map(plan =>
-    generateChallengeByType(plan, setup)
-  );
+  // Step 2: Parallel challenge calls (one per plan entry, focused schemas).
+  // The tier tunes only the prompt TONE per challenge; the show* scaffolds are
+  // applied deterministically in code below.
+  const challengePromises = setup.challengePlan.map(plan => {
+    const tierSection = supportTier
+      ? `\n## WITHIN-MODE SUPPORT TIER (tracing-scaffolding level — NOT shape size)\n${
+          resolveSupportStructure(plan.type as ChallengeType, supportTier)
+            .promptLines.map(l => `- ${l}`).join('\n')
+        }\n`
+      : '';
+    return generateChallengeByType(plan, setup, tierSection);
+  });
   const challenges = await Promise.all(challengePromises);
 
   // Step 3: Assign IDs
   challenges.forEach((c, i) => { c.id = `c${i + 1}`; });
+
+  // Step 3b: Apply the support tier per-challenge (display-only scaffolds).
+  // Resolve each challenge's scaffold from its OWN mode (ch.type) so blended /
+  // auto sessions get tiered too. Withdraw tracing help; NEVER touch the shape.
+  if (supportTier) {
+    for (const ch of challenges) {
+      const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
+      ch.showGuidePath = sc.showGuidePath;
+      ch.showDirectionArrows = sc.showDirectionArrows;
+      ch.showNextCue = sc.showNextCue;
+      // connect-dots: the order numbers ARE the answer — keep them at every tier.
+      ch.showOrderNumbers = ch.type === 'connect-dots' ? true : sc.showOrderNumbers;
+      ch.supportTier = supportTier;
+    }
+    console.log(
+      `[ShapeTracer] Support tier "${supportTier}" applied per-challenge `
+      + `(${evalConstraint?.allowedTypes.length === 1 ? `single-mode ${evalConstraint.allowedTypes[0]}` : 'blended'})`,
+    );
+  }
 
   // Step 4: Recombine
   const data: ShapeTracerData = {

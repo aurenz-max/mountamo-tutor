@@ -16,6 +16,9 @@ import {
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MultiplicationExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
 
@@ -411,6 +414,20 @@ const DistributiveDisplay: React.FC<{
 
 type Phase = 'groups' | 'array' | 'connect' | 'strategy';
 
+/**
+ * Maps each CHALLENGE type to its display config for the end-of-session
+ * PhaseSummaryPanel. These are the assessed dimensions — distinct from the
+ * Groups/Array/Connect/Strategy navigation phases, which are exploration tabs.
+ */
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  build:          { label: 'Build',          icon: '🔨', accentColor: 'purple' },
+  connect:        { label: 'Connect',        icon: '🔗', accentColor: 'emerald' },
+  commutative:    { label: 'Commutative',    icon: '🔄', accentColor: 'cyan' },
+  distributive:   { label: 'Distributive',   icon: '✂️', accentColor: 'amber' },
+  missing_factor: { label: 'Missing Factor', icon: '❓', accentColor: 'pink' },
+  fluency:        { label: 'Fluency',        icon: '⚡', accentColor: 'orange' },
+};
+
 const PHASE_LABELS: Record<Phase, { label: string; icon: string }> = {
   groups: { label: 'Groups', icon: '1' },
   array: { label: 'Array', icon: '2' },
@@ -527,6 +544,10 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
   const [attemptsCount, setAttemptsCount] = useState(0);
+  // Per-challenge attempt counter (resets on advance) — drives per-challenge scoring.
+  const [challengeAttempts, setChallengeAttempts] = useState(0);
+  // Per-challenge results, recorded once on first correct answer. Feeds PhaseSummaryPanel.
+  const [challengeResults, setChallengeResults] = useState<ChallengeResult[]>([]);
   const [factsCorrect, setFactsCorrect] = useState(0);
   const [factsTotal, setFactsTotal] = useState(0);
   const [missingFactorCorrect, setMissingFactorCorrect] = useState(0);
@@ -563,7 +584,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   });
 
   // Evaluation
-  const { submitResult, hasSubmitted, resetAttempt } = usePrimitiveEvaluation<MultiplicationExplorerMetrics>({
+  const { submitResult, hasSubmitted, submittedResult, elapsedMs, resetAttempt } = usePrimitiveEvaluation<MultiplicationExplorerMetrics>({
     primitiveType: 'multiplication-explorer',
     instanceId: resolvedInstanceId,
     skillId,
@@ -571,6 +592,23 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     objectiveId,
     exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  // Per-challenge-type breakdown for the end-of-session summary. Computes once
+  // the student submits; groups recorded results by challenge type. Per-challenge
+  // score: 100 first try, then -20 per extra attempt, floored at 20.
+  const phaseResults = usePhaseResults<MultiplicationExplorerChallenge>({
+    challenges,
+    results: challengeResults,
+    isComplete: hasSubmitted,
+    getChallengeType: (c) => c.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+    getScore: (rs) =>
+      rs.length === 0
+        ? 0
+        : Math.round(
+            rs.reduce((s, r) => s + Number(r.score ?? (r.correct ? 100 : 0)), 0) / rs.length,
+          ),
   });
 
   // Track representations used
@@ -606,6 +644,8 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
 
     setAttemptsCount((a) => a + 1);
     setFactsTotal((t) => t + 1);
+    const nextChallengeAttempts = challengeAttempts + 1;
+    setChallengeAttempts(nextChallengeAttempts);
 
     if (currentChallenge?.type === 'missing_factor') {
       setMissingFactorTotal((t) => t + 1);
@@ -616,6 +656,20 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       setFactsCorrect((c) => c + 1);
       if (currentChallenge?.type === 'missing_factor') {
         setMissingFactorCorrect((c) => c + 1);
+      }
+
+      // Record this challenge's result once (first correct), for the phase summary.
+      if (currentChallenge && !challengeResults.some((r) => r.challengeId === currentChallenge.id)) {
+        const score = Math.max(20, 100 - (nextChallengeAttempts - 1) * 20);
+        setChallengeResults((prev) => [
+          ...prev,
+          {
+            challengeId: currentChallenge.id,
+            correct: true,
+            attempts: nextChallengeAttempts,
+            score,
+          },
+        ]);
       }
 
       // Fluency timing
@@ -652,7 +706,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         { silent: true }
       );
     }
-  }, [answer, getExpectedAnswer, currentChallenge, fact, attemptsCount, fluencyStart, sendText, supportTier]);
+  }, [answer, getExpectedAnswer, currentChallenge, fact, attemptsCount, challengeAttempts, challengeResults, fluencyStart, sendText, supportTier]);
 
   const handleNextChallenge = useCallback(() => {
     if (challengeIndex < challenges.length - 1) {
@@ -660,6 +714,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       setChallengeIndex((i) => i + 1);
       setAnswer('');
       setFeedback(null);
+      setChallengeAttempts(0);
       setFluencyStart(null);
 
       // AI: next challenge
@@ -779,6 +834,8 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     setAnswer('');
     setFeedback(null);
     setAttemptsCount(0);
+    setChallengeAttempts(0);
+    setChallengeResults([]);
     setFactsCorrect(0);
     setFactsTotal(0);
     setMissingFactorCorrect(0);
@@ -1046,7 +1103,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         </div>
 
         {/* Score Summary */}
-        {factsTotal > 0 && (
+        {factsTotal > 0 && !hasSubmitted && (
           <div className="flex items-center justify-center gap-4 text-sm text-slate-400">
             <span>Score: {factsCorrect}/{factsTotal}</span>
             <span>Reps: {representationsUsed.size}/5</span>
@@ -1068,6 +1125,22 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
             <LuminaActionButton action="retry" onClick={handleReset} />
           )}
         </div>
+
+        {/* End-of-session phase breakdown (by challenge type) */}
+        {hasSubmitted && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score}
+            durationMs={elapsedMs}
+            heading="Multiplication Session Complete"
+            celebrationMessage={
+              challengeResults.length > 0 && challengeResults.every((r) => Number(r.score ?? 0) === 100)
+                ? 'Perfect! You nailed every challenge on the first try.'
+                : 'Great work exploring multiplication across every representation!'
+            }
+            className="mt-4"
+          />
+        )}
       </LuminaCardContent>
     </LuminaCard>
   );

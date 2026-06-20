@@ -49,6 +49,67 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ============================================================================
+// Support Tier Harness (fixed) — second field of the two-field contract:
+//   targetEvalMode = WHICH skill (task identity), difficulty = HOW MUCH support.
+// ============================================================================
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * Per-challenge scaffolding flags (modality #1 perception aids + #3 CPA).
+ * All are display-only — withdrawing them never changes the answer.
+ * Defaults in the component preserve the no-tier render byte-for-byte, so a
+ * field is only meaningful once a tier is applied.
+ */
+interface SupportScaffold {
+  showPositionLabels: boolean; // ordinal labels under each character on the line (identify, relative)
+  showSlotLabels: boolean;     // ordinal labels above the drop slots (build, story)
+  highlightTarget: boolean;    // glow the reference position (relative-position)
+  orderMatchSymbols: boolean;  // render the symbol column in sequence vs shuffled (match)
+}
+
+/** easy = the workspace helps the student self-check; hard = work unaided. */
+function resolveSupportScaffold(type: string, tier: SupportTier): SupportScaffold {
+  const easy = tier === 'easy';
+  const hard = tier === 'hard';
+  switch (type) {
+    case 'identify':
+      // perception aid = ordinal markers on the line; withdrawn at hard → count from front
+      return { showPositionLabels: !hard, showSlotLabels: true, highlightTarget: true, orderMatchSymbols: false };
+    case 'relative-position':
+      // two aids: line markers AND the target glow; both withdrawn at hard
+      return { showPositionLabels: !hard, showSlotLabels: true, highlightTarget: !hard, orderMatchSymbols: false };
+    case 'match':
+      // sequential symbol column at easy turns matching into reading-order; shuffled otherwise
+      return { showPositionLabels: false, showSlotLabels: true, highlightTarget: true, orderMatchSymbols: easy };
+    case 'build-sequence':
+    case 'sequence-story':
+      // slot markers tell the student which slot is "third"; withdrawn at hard → recall
+      return { showPositionLabels: false, showSlotLabels: !hard, highlightTarget: true, orderMatchSymbols: false };
+    default:
+      return { showPositionLabels: false, showSlotLabels: true, highlightTarget: true, orderMatchSymbols: false };
+  }
+}
+
+/** CPA dimension (#3): easy pairs word+symbol (most concrete), hard = symbol only. */
+function resolveTierLabelFormat(
+  tier: SupportTier,
+  current: 'word' | 'symbol' | 'both',
+): 'word' | 'symbol' | 'both' {
+  if (tier === 'easy') return 'both';
+  if (tier === 'hard') return 'symbol';
+  return current; // medium leaves the grade-band default
+}
+
+// ============================================================================
 // Shared Setup Schema (lightweight first call)
 // ============================================================================
 
@@ -681,6 +742,52 @@ function pickDistinctPositions(maxPosition: number, count: number): number[] {
   return pool.slice(0, Math.min(count, maxPosition));
 }
 
+// ---------------------------------------------------------------------------
+// Structural problem difficulty (2nd axis) — in-mode, shape-not-magnitude.
+// Each lever changes WHICH positions / how the parts are ordered, never the
+// number range (bounded by maxPosition either way). Applied only in the
+// code-built single-mode path, where positions/orderings are fully ours.
+// ---------------------------------------------------------------------------
+
+/** identify: easy biases anchor positions (1st/2nd/last — easy to land on),
+ *  hard biases interior positions (must count to them). When count covers the
+ *  whole line (K, maxPosition≤count) every position appears → lever is a no-op. */
+function pickPositionsByTier(
+  maxPosition: number,
+  count: number,
+  tier: SupportTier | null,
+): number[] {
+  const take = Math.min(count, maxPosition);
+  if (!tier || tier === 'medium') return pickDistinctPositions(maxPosition, count);
+
+  const all = Array.from({ length: maxPosition }, (_, i) => i + 1);
+  const anchors = Array.from(new Set([1, 2, maxPosition])).filter((p) => p >= 1 && p <= maxPosition);
+  const interior = shuffleInPlace(all.filter((p) => !anchors.includes(p)));
+  const ordered =
+    tier === 'easy'
+      ? [...anchors, ...interior]
+      : [...interior, ...shuffleInPlace([...anchors])];
+  return ordered.slice(0, take);
+}
+
+/** match / build: number of parts to coordinate. easy → fewest, hard → most. */
+function countByTier(min: number, max: number, tier: SupportTier | null): number {
+  if (!tier) return min + Math.floor(Math.random() * (max - min + 1)); // legacy random
+  if (tier === 'easy') return min;
+  if (tier === 'hard') return max;
+  return Math.round((min + max) / 2);
+}
+
+/** Inversions vs. natural left-to-right order — the "how scrambled" measure for
+ *  build/story orderings. 0 = already sorted; rises with disorder. */
+function inversionCount(positions: number[]): number {
+  let inv = 0;
+  for (let i = 0; i < positions.length; i++)
+    for (let j = i + 1; j < positions.length; j++)
+      if (positions[i] > positions[j]) inv++;
+  return inv;
+}
+
 function contextNoun(context: SetupResult['context']): string {
   switch (context) {
     case 'race':       return 'animal';
@@ -695,8 +802,9 @@ function contextNoun(context: SetupResult['context']): string {
 function buildIdentifyChallenges(
   setup: SetupResult,
   count: number,
+  tier: SupportTier | null,
 ): OrdinalLineChallenge[] {
-  const positions = pickDistinctPositions(setup.maxPosition, count);
+  const positions = pickPositionsByTier(setup.maxPosition, count, tier);
   const noun = contextNoun(setup.context);
   return positions.map((pos, i) => ({
     id: `c${i + 1}`,
@@ -710,6 +818,10 @@ function buildIdentifyChallenges(
   }));
 }
 
+// NOTE: match has no structural lever — its only source of instance distinctness
+// is the position SUBSET, and matching "first"→"1st" is the same recall whether
+// there are 3 pairs or 5. Pair count stays random (preserves distinct instances);
+// match's tier differentiation is the scaffold lever (orderMatchSymbols).
 function buildMatchChallenges(
   setup: SetupResult,
   count: number,
@@ -751,6 +863,7 @@ function buildMatchChallenges(
 function buildRelativeChallenges(
   setup: SetupResult,
   count: number,
+  tier: SupportTier | null,
 ): OrdinalLineChallenge[] {
   // Enumerate all valid (position, query) tuples
   const validTuples: Array<{ pos: number; query: 'before' | 'after' }> = [];
@@ -759,21 +872,38 @@ function buildRelativeChallenges(
     if (p < setup.maxPosition) validTuples.push({ pos: p, query: 'after' });
   }
   shuffleInPlace(validTuples);
+  // structural lever (target shape): easy → reference near an edge (few to count),
+  // hard → interior reference (far from both ends). Query is a minor tiebreak
+  // ("after" for easy). medium → unbiased shuffle.
+  if (tier === 'easy' || tier === 'hard') {
+    const dir = tier === 'easy' ? 1 : -1;
+    const score = (t: { pos: number; query: 'before' | 'after' }) =>
+      Math.min(t.pos - 1, setup.maxPosition - t.pos) + (t.query === 'after' ? 0 : 0.5);
+    validTuples.sort((a, b) => dir * (score(a) - score(b)));
+  }
   const selected = validTuples.slice(0, Math.min(count, validTuples.length));
 
   return selected.map((t, i) => {
     const answerIdx = t.query === 'before' ? t.pos - 2 : t.pos;
     const correctChar = setup.characters[answerIdx];
 
-    // Build 3-4 multiple-choice options: correct + distractors from the lineup
-    const distractors = setup.characters
-      .filter((c) => c.name !== correctChar.name)
-      .map((c) => c.name);
-    shuffleInPlace(distractors);
-    const distractorCount = Math.min(3, distractors.length);
+    // Build 3-4 multiple-choice options. structural lever (distractor similarity):
+    // hard → adjacency-first (the off-by-one trap; pulls in the target char and
+    // the answer's neighbours), easy → farthest-first (clearly eliminable).
+    const others = setup.characters
+      .map((c, idx) => ({ name: c.name, idx }))
+      .filter((o) => o.name !== correctChar.name);
+    if (tier === 'hard') {
+      others.sort((a, b) => Math.abs(a.idx - answerIdx) - Math.abs(b.idx - answerIdx));
+    } else if (tier === 'easy') {
+      others.sort((a, b) => Math.abs(b.idx - answerIdx) - Math.abs(a.idx - answerIdx));
+    } else {
+      shuffleInPlace(others);
+    }
+    const distractorCount = Math.min(3, others.length);
     const options = shuffleInPlace([
       correctChar.name,
-      ...distractors.slice(0, distractorCount),
+      ...others.slice(0, distractorCount).map((o) => o.name),
     ]);
 
     return {
@@ -794,12 +924,15 @@ function buildRelativeChallenges(
 function buildBuildSequenceChallenges(
   setup: SetupResult,
   count: number,
+  tier: SupportTier | null,
 ): OrdinalLineChallenge[] {
-  // Clue count mirrors the original prompt: K → 3, G1 → 4
-  const clueCount = Math.min(
-    setup.gradeBand === 'K' ? 3 : 4,
-    setup.characters.length,
-  );
+  // structural lever: # of clues to coordinate (K base 3 / G1 base 4 → full line).
+  // No-tier keeps the original fixed base count (byte-identical to before).
+  const minClues = Math.min(setup.gradeBand === 'K' ? 3 : 4, setup.characters.length);
+  const maxClues = setup.characters.length;
+  const clueCount = tier
+    ? Math.min(countByTier(minClues, maxClues, tier), setup.characters.length)
+    : minClues;
 
   const challenges: OrdinalLineChallenge[] = [];
   const seenKeys = new Set<string>();
@@ -809,16 +942,22 @@ function buildBuildSequenceChallenges(
     attempts++;
     const shuffled = shuffleInPlace([...setup.characters]).slice(0, clueCount);
     const clues = shuffled.map((c, i) => ({ character: c.name, position: i + 1 }));
+    // dedup on the ASSIGNMENT (position-ascending), independent of clue-list order
     const key = clues.map((c) => `${c.character}@${c.position}`).join('|');
     if (seenKeys.has(key)) continue;
     seenKeys.add(key);
+
+    // structural lever: clue-list presentation order. easy/medium list clues in
+    // position order (read top-to-bottom = front-to-back); hard scrambles the list
+    // so the student can't follow it linearly. Positions/answer are unchanged.
+    const displayClues = tier === 'hard' ? shuffleInPlace([...clues]) : clues;
 
     challenges.push({
       id: `c${challenges.length + 1}`,
       type: 'build-sequence' as const,
       characters: setup.characters,
       instruction: 'Place the animals in the correct order using the clues!',
-      clues,
+      clues: displayClues,
       correctAnswer: 'sequence_complete',
     });
   }
@@ -895,27 +1034,62 @@ async function buildStoryChallenges(
   topic: string,
   gradeLevel: string,
   count: number,
+  tier: SupportTier | null,
 ): Promise<OrdinalLineChallenge[]> {
   // Generate N distinct character orderings before fanning out Gemini calls.
   // Structured-output Gemini converges per call (PRD §6a #2), so variance
   // must come from pre-randomized clues, not from prompt phrasing.
-  const orderings: Array<Array<{ character: string; position: number }>> = [];
   const seenKeys = new Set<string>();
-
-  // First ordering: natural left-to-right
   const natural = setup.characters.map((c, i) => ({ character: c.name, position: i + 1 }));
-  orderings.push(natural);
-  seenKeys.add(natural.map((c) => c.character).join('|'));
 
-  let safety = 0;
-  while (orderings.length < count && safety < count * 30) {
-    safety++;
-    const shuffled = shuffleInPlace([...setup.characters]);
-    const clues = shuffled.map((c, i) => ({ character: c.name, position: i + 1 }));
-    const key = clues.map((c) => c.character).join('|');
-    if (seenKeys.has(key)) continue;
-    seenKeys.add(key);
-    orderings.push(clues);
+  // structural lever: how scrambled the story order is vs. the lineup. easy favours
+  // near-sorted orderings (story tracks the line), hard favours high-inversion ones.
+  // Measured as inversions of each character's story-position in lineup order.
+  const lineupIndex = new Map(setup.characters.map((c, i) => [c.name, i]));
+  const inversionsOf = (ord: Array<{ character: string; position: number }>): number => {
+    const vec = [...ord]
+      .sort((a, b) => (lineupIndex.get(a.character) ?? 0) - (lineupIndex.get(b.character) ?? 0))
+      .map((c) => c.position);
+    return inversionCount(vec);
+  };
+
+  let orderings: Array<Array<{ character: string; position: number }>> = [];
+
+  if (!tier) {
+    // legacy path: natural first, then random distinct (byte-identical to before)
+    orderings.push(natural);
+    seenKeys.add(natural.map((c) => c.character).join('|'));
+    let safety = 0;
+    while (orderings.length < count && safety < count * 30) {
+      safety++;
+      const shuffled = shuffleInPlace([...setup.characters]);
+      const clues = shuffled.map((c, i) => ({ character: c.name, position: i + 1 }));
+      const key = clues.map((c) => c.character).join('|');
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      orderings.push(clues);
+    }
+  } else {
+    // build a larger distinct pool, then pick by inversion per tier
+    const pool: Array<Array<{ character: string; position: number }>> = [natural];
+    seenKeys.add(natural.map((c) => c.character).join('|'));
+    let safety = 0;
+    while (pool.length < count * 4 && safety < count * 60) {
+      safety++;
+      const shuffled = shuffleInPlace([...setup.characters]);
+      const clues = shuffled.map((c, i) => ({ character: c.name, position: i + 1 }));
+      const key = clues.map((c) => c.character).join('|');
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      pool.push(clues);
+    }
+    if (tier === 'medium') {
+      shuffleInPlace(pool);
+    } else {
+      const dir = tier === 'easy' ? 1 : -1;
+      pool.sort((a, b) => dir * (inversionsOf(a) - inversionsOf(b)));
+    }
+    orderings = pool.slice(0, count);
   }
 
   const stories = await Promise.all(
@@ -940,19 +1114,20 @@ async function buildSingleModeChallenges(
   setup: SetupResult,
   topic: string,
   gradeLevel: string,
+  tier: SupportTier | null,
 ): Promise<OrdinalLineChallenge[]> {
   const count = resolveCount(singleType);
   switch (singleType) {
     case 'identify':
-      return buildIdentifyChallenges(setup, count);
+      return buildIdentifyChallenges(setup, count, tier);
     case 'match':
       return buildMatchChallenges(setup, count);
     case 'relative-position':
-      return buildRelativeChallenges(setup, count);
+      return buildRelativeChallenges(setup, count, tier);
     case 'build-sequence':
-      return buildBuildSequenceChallenges(setup, count);
+      return buildBuildSequenceChallenges(setup, count, tier);
     case 'sequence-story':
-      return buildStoryChallenges(setup, topic, gradeLevel, count);
+      return buildStoryChallenges(setup, topic, gradeLevel, count, tier);
     default:
       return [];
   }
@@ -973,6 +1148,13 @@ export const generateOrdinalLine = async (
     gradeBand?: 'K' | '1';
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen scaffolding (+ structural shape) within it.
+     * NEVER changes the number range (bounded by maxPosition either way).
+     */
+    difficulty?: string;
   }
 ): Promise<OrdinalLineData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -983,6 +1165,10 @@ export const generateOrdinalLine = async (
   );
 
   logEvalModeResolution('OrdinalLine', config?.targetEvalMode, evalConstraint);
+
+  // The STUDENT's support tier — drives both the structural shape (single-mode
+  // build path) and the per-challenge scaffold application (both paths).
+  const supportTier = normalizeSupportTier(config?.difficulty);
 
   const allTypes = ['identify', 'match', 'relative-position', 'sequence-story', 'build-sequence'];
   const allowedTypes = new Set(evalConstraint?.allowedTypes ?? allTypes);
@@ -1000,7 +1186,7 @@ export const generateOrdinalLine = async (
 
   if (allowedTypes.size === 1) {
     const [singleType] = Array.from(allowedTypes);
-    challenges = await buildSingleModeChallenges(singleType, setup, topic, gradeLevel);
+    challenges = await buildSingleModeChallenges(singleType, setup, topic, gradeLevel, supportTier);
   } else {
     const [identify, match, relative, story, build] = await Promise.all([
       allowedTypes.has('identify') ? generateIdentify(setup, topic, gradeLevel) : null,
@@ -1062,6 +1248,28 @@ export const generateOrdinalLine = async (
     }
   }
 
+  // ── Apply support tier per challenge (BOTH paths) ──
+  // Difficulty is a STUDENT property, so blended/auto sessions get it too —
+  // single-mode just happens to give every challenge the same scaffold. Each
+  // challenge resolves its scaffold from its OWN mode (ch.type). Display-only:
+  // these flags withdraw on-screen help, never touch correctAnswer.
+  let effectiveLabelFormat = setup.labelFormat;
+  if (supportTier) {
+    effectiveLabelFormat = resolveTierLabelFormat(supportTier, setup.labelFormat);
+    for (const ch of challenges) {
+      const sc = resolveSupportScaffold(ch.type, supportTier);
+      ch.supportTier = supportTier;
+      ch.showPositionLabels = sc.showPositionLabels;
+      ch.showSlotLabels = sc.showSlotLabels;
+      ch.highlightTarget = sc.highlightTarget;
+      ch.orderMatchSymbols = sc.orderMatchSymbols;
+    }
+    console.log(
+      `[OrdinalLine] Support tier "${supportTier}" applied per-challenge `
+      + `(${allowedTypes.size === 1 ? `single-mode ${Array.from(allowedTypes)[0]}` : 'blended'}, labelFormat=${effectiveLabelFormat})`,
+    );
+  }
+
   // Final summary log
   const typeBreakdown = challenges.map(c => c.type).join(', ');
   console.log(`[OrdinalLine] Final: ${challenges.length} challenge(s) → [${typeBreakdown}]`);
@@ -1073,7 +1281,7 @@ export const generateOrdinalLine = async (
     maxPosition: setup.maxPosition,
     context: setup.context,
     showOrdinalLabels: setup.showOrdinalLabels,
-    labelFormat: setup.labelFormat,
+    labelFormat: effectiveLabelFormat,
     gradeBand: setup.gradeBand,
   };
 

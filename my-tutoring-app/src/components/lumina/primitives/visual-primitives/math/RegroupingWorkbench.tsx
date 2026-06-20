@@ -41,6 +41,8 @@ export interface RegroupingChallenge {
   regroupCount: number;
   hint: string;
   narration: string;
+  /** Per-challenge support tier (scaffolding level), stamped by the generator. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface RegroupingWorkbenchData {
@@ -63,6 +65,12 @@ export interface RegroupingWorkbenchData {
     showPlaceColumns?: boolean;
     animateRegrouping?: boolean;
     stepByStepMode?: boolean;
+    /** Per-column "regroup needed here" hint marks (red overflow highlight + the
+     *  carry-box outline above an overflowing column). Withdrawn at the hard tier. */
+    showRegroupHints?: boolean;
+    /** Column-count badges showing how many blocks are stacked in each column
+     *  (the raw stacked count — never the final regrouped answer digit). */
+    showColumnBadges?: boolean;
   };
   wordProblemContext?: {
     enabled?: boolean;
@@ -70,6 +78,8 @@ export interface RegroupingWorkbenchData {
     imagePrompt?: string;
   };
   gradeBand?: '1-2' | '3-4';
+  /** Support tier ('easy' | 'medium' | 'hard') — calibrates the tutor's reveal level. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props
   instanceId?: string;
@@ -148,6 +158,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     showOptions = {},
     wordProblemContext,
     gradeBand = '1-2',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -161,6 +172,10 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     showCarryBorrow = true,
     showPlaceColumns = true,
     stepByStepMode = false,
+    // Default ON so any non-tier (no-difficulty) generation is byte-identical to
+    // before — these only withdraw when the generator explicitly sets them false.
+    showRegroupHints = true,
+    showColumnBadges = false,
   } = showOptions;
 
   // Compute places from maxPlace, but expand if any answer needs more digits
@@ -285,11 +300,32 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     attemptNumber: currentAttempts + 1,
     requiresRegrouping: currentChallenge?.requiresRegrouping ?? false,
     wordProblem: wordProblemContext?.story ?? '',
+    supportTier: currentChallenge?.supportTier ?? supportTier ?? '',
   }), [
     operation, operand1, operand2, correctAnswer, maxPlace, gradeBand,
     blocks, carries, currentPhase, challenges.length, currentChallengeIndex,
-    currentChallenge, currentAttempts, wordProblemContext,
+    currentChallenge, currentAttempts, wordProblemContext, supportTier,
   ]);
+
+  // Tutor reveal level — keep the AI tutor in sync with what each tier hides.
+  // hard: never name WHEN/HOW to regroup; ask what the student sees in each
+  // column; never reveal the answer. easy: name the strategy and walk the setup.
+  const tutorRevealClause = useMemo(() => {
+    const tier = currentChallenge?.supportTier ?? supportTier;
+    if (tier === 'hard') {
+      return ' [TIER hard: the on-screen regroup hints and place-value labels are WITHDRAWN. '
+        + 'Do NOT name which column to carry/borrow or when to regroup. Ask the student what they see in each column '
+        + 'and let them decide. Never reveal the final answer.]';
+    }
+    if (tier === 'medium') {
+      return ' [TIER medium: place labels are shown but regroup hints are off. Nudge the student to check each column '
+        + 'themselves; only confirm once they notice an overflow. Do not pre-name the column to regroup.]';
+    }
+    if (tier === 'easy') {
+      return ' [TIER easy: maximum scaffolding is on. You may name the strategy and walk through the setup column by column.]';
+    }
+    return '';
+  }, [currentChallenge, supportTier]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'regrouping-workbench',
@@ -311,10 +347,11 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
       + `${currentChallenge?.requiresRegrouping ? 'This problem requires regrouping!' : 'No regrouping needed.'} `
       + `${wordProblemContext?.story ? `Story context: "${wordProblemContext.story}". ` : ''}`
       + `Introduce warmly: "Today we're going to practice ${opWord} with blocks! Let's see what happens when we combine numbers." `
-      + `Then read the first problem.`,
+      + `Then read the first problem.`
+      + tutorRevealClause,
       { silent: true }
     );
-  }, [isConnected, challenges.length, operation, operand1, operand2, gradeBand, currentChallenge, wordProblemContext, sendText]);
+  }, [isConnected, challenges.length, operation, operand1, operand2, gradeBand, currentChallenge, wordProblemContext, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Auto-submit evaluation when all challenges complete
@@ -500,11 +537,12 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         `[SOLVE_INCORRECT] Student answered ${studentAnswer} but correct is ${correctAnswer}. `
         + `Problem: ${currentChallenge.problem}. Attempt ${currentAttempts + 1}. `
         + `${regroupedPlaces.size < expectedRegroups ? `Needs ${expectedRegroups - regroupedPlaces.size} more regroup(s). ` : ''}`
-        + `Guide: "Let's check each column. Start with the ${PLACE_LABELS[0].toLowerCase()}: what do you get?"`,
+        + `Guide: "Let's check each column. Start with the ${PLACE_LABELS[0].toLowerCase()}: what do you get?"`
+        + tutorRevealClause,
         { silent: true }
       );
     }
-  }, [currentChallenge, answerDigits, correctAnswer, currentAttempts, challengeStartTime, regroupedPlaces, sendText, incrementAttempts, recordResult]);
+  }, [currentChallenge, answerDigits, correctAnswer, currentAttempts, challengeStartTime, regroupedPlaces, sendText, incrementAttempts, recordResult, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Challenge Navigation
@@ -722,14 +760,26 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                       )}
                     </div>
                     <span className={`text-lg font-bold font-mono ${
-                      needsRegroup(placeIdx) ? 'text-red-400' : 'text-slate-200'
+                      // Red "regroup needed" overflow cue is a HINT MARK — withdrawn at hard.
+                      showRegroupHints && needsRegroup(placeIdx) ? 'text-red-400' : 'text-slate-200'
                     }`}>
                       {blocks[placeIdx]}
                     </span>
+                    {/* Column-count badge: raw stacked count per column (easy tier only).
+                        Never the final answer digit — just how many blocks are here. */}
+                    {showColumnBadges && (
+                      <span className="mt-0.5 text-[9px] px-1.5 rounded-full bg-white/5 border border-white/15 text-slate-400">
+                        {blocks[placeIdx]} {PLACE_LABELS[placeIdx].toLowerCase()}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Regroup button */}
-                  {!isCurrentChallengeComplete && !allChallengesComplete && needsRegroup(placeIdx) && placeIdx < places - 1 && (
+                  {/* Regroup button. When hint marks are shown (easy/medium) it only
+                      appears on the column that actually needs regrouping (a cue).
+                      At hard (showRegroupHints=false) it is available on EVERY
+                      regroupable column — the student must decide WHEN to use it. */}
+                  {!isCurrentChallengeComplete && !allChallengesComplete && placeIdx < places - 1
+                    && (showRegroupHints ? needsRegroup(placeIdx) : true) && (
                     <button
                       type="button"
                       className="mt-1 text-[10px] px-2 py-0.5 h-auto rounded-md bg-orange-500/10 border border-orange-400/30 hover:bg-orange-500/20 text-orange-300 transition-colors"

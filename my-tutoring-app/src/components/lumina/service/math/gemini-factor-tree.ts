@@ -33,6 +33,12 @@ export interface FactorTreeData {
   showExponentForm?: boolean;
   guidedMode?: boolean;
   allowReset?: boolean;
+  /** Within-mode support tier (#1): running "current factorization" self-check panel. */
+  showRunningFactorization?: boolean;
+  /** Within-mode support tier (#2): divisibility-strategy hint panel (guided modes only). */
+  showStrategyHint?: boolean;
+  /** Support tier label, threaded to the live tutor for reveal calibration. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 // ---------------------------------------------------------------------------
@@ -123,6 +129,111 @@ const COUNT_BY_MODE: Record<FactorTreeChallengeType, number> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tiers (config.difficulty) — two axes:
+//   1. scaffolding withdrawal: strategy hint, prime highlighting, running self-check
+//   2. structural problem shape: split-depth bias within the SAME number pool
+// The tier changes HELP and SHAPE (how many splits / tree depth), never magnitude.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** Per-primitive scaffold levers. Session-level — factor-tree runs one mode per session. */
+interface SupportScaffold {
+  /** Divisibility-strategy hint panel (#2 instruction). Guided modes only. */
+  showStrategyHint: boolean;
+  /** Green "this leaf is prime/done" highlighting (#1 perception). */
+  highlightPrimes: boolean;
+  /** Running "current factorization" self-check panel (#1 perception). */
+  showRunningFactorization: boolean;
+}
+
+const GUIDED_MODES = new Set<FactorTreeChallengeType>(['guided_small', 'guided_medium']);
+const ASSESSMENT_MODES = new Set<FactorTreeChallengeType>(['assessment_intro', 'assessment']);
+
+const TIER_GUARDRAIL =
+  "Keep every composite within the eval mode's number pool — this tier changes how much "
+  + 'on-screen help the student gets and the SHAPE of the problem (number of splits / tree depth), '
+  + 'NOT the size of the numbers.';
+
+/**
+ * Axis 1 — scaffolding withdrawal. Mode-aware: assessment modes are one step more
+ * austere at every tier (an on-screen "hint" contradicts the assessment identity),
+ * and the strategy panel only ever appears in guided modes.
+ */
+function resolveSupportStructure(
+  mode: string,
+  tier: SupportTier,
+): { scaffold: SupportScaffold; promptLines: string[] } {
+  const m = mode as FactorTreeChallengeType;
+  const guided = GUIDED_MODES.has(m);
+  const assessment = ASSESSMENT_MODES.has(m);
+
+  const highlightPrimes = assessment ? tier === 'easy' : tier !== 'hard';
+  const showRunningFactorization = assessment ? tier === 'easy' : tier !== 'hard';
+  const showStrategyHint = guided && tier === 'easy';
+
+  const promptLines: string[] = [TIER_GUARDRAIL];
+  if (tier === 'easy') {
+    promptLines.push(
+      'EASY: maximum self-check support — prime leaves highlighted, the running factorization visible'
+      + (guided ? ', plus a divisibility-strategy panel naming which rule to try.' : '.'),
+    );
+  } else if (tier === 'medium') {
+    promptLines.push(
+      'MEDIUM: prime highlighting and the running factorization stay on, but no named strategy — '
+      + 'the student applies divisibility rules from memory.',
+    );
+  } else {
+    promptLines.push(
+      'HARD: the student works unaided — no strategy hint, no prime highlighting, no running '
+      + 'factorization. They judge primality and track their own leaves.',
+    );
+  }
+  return { scaffold: { showStrategyHint, highlightPrimes, showRunningFactorization }, promptLines };
+}
+
+/**
+ * Axis 2 — structural problem shape. Within the mode's pool, bias rootValue selection
+ * by prime-factor COUNT (steps-to-solve / tree depth): low at easy, high at hard.
+ * Structural, not magnitude — 32 (2^5, 5 splits) < 35 (5×7, 1 split) yet 32 is the
+ * harder tree. Enforced deterministically in selectFactorTreeRootValues.
+ */
+function resolveProblemShape(
+  tier: SupportTier,
+): { splitDepthBias: 'low' | 'high' | null; promptLines: string[] } {
+  if (tier === 'easy') {
+    return {
+      splitDepthBias: 'low',
+      promptLines: ['SHAPE: shallow trees — composites with few prime factors (1-2 splits).'],
+    };
+  }
+  if (tier === 'hard') {
+    return {
+      splitDepthBias: 'high',
+      promptLines: ['SHAPE: deep trees — composites with more prime factors (more splits to coordinate).'],
+    };
+  }
+  return { splitDepthBias: null, promptLines: ['SHAPE: mixed tree depths.'] };
+}
+
+/** Merge both axes into one prompt section (tone only — code applies the actual levers). */
+function buildTierPromptSection(mode: string, tier: SupportTier): string {
+  const lines = [
+    ...resolveSupportStructure(mode, tier).promptLines,
+    ...resolveProblemShape(tier).promptLines,
+  ];
+  return `\n## WITHIN-MODE SUPPORT TIER "${tier}" (help level + problem shape — NOT number size)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -158,6 +269,12 @@ export interface SelectRootValuesOptions {
   count?: number;
   /** Force-include this value as the first challenge (e.g. when manifest provides one). */
   primary?: number;
+  /**
+   * Structural support-tier axis: bias selection toward composites with FEWER ('low',
+   * easy) or MORE ('high', hard) prime factors — i.e. shallower vs deeper trees within
+   * the SAME pool. null/absent → no bias (no-tier path is byte-identical to before).
+   */
+  splitDepthBias?: 'low' | 'high' | null;
 }
 
 /**
@@ -180,7 +297,22 @@ export function selectFactorTreeRootValues(
   );
   const pool = CANDIDATE_POOLS[challengeType] ?? CANDIDATE_POOLS.guided_small;
 
-  const shuffled = shuffle(pool);
+  // Structural axis: restrict the candidate subset by split depth before shuffling.
+  // The subset stays generous (≥ target + 1, ~55% of the pool) so the variance and
+  // odd-inclusion guarantees below still hold. No bias → full pool (byte-identical path).
+  let source = pool;
+  if (options.splitDepthBias) {
+    const sorted = [...pool].sort((a, b) => primeFactorCount(a) - primeFactorCount(b));
+    const subsetSize = Math.min(
+      pool.length,
+      Math.max(target + 1, Math.ceil(pool.length * 0.55)),
+    );
+    source = options.splitDepthBias === 'low'
+      ? sorted.slice(0, subsetSize)
+      : sorted.slice(pool.length - subsetSize);
+  }
+
+  const shuffled = shuffle(source);
   const seen = new Set<number>();
   const selected: number[] = [];
 
@@ -303,6 +435,12 @@ export const generateFactorTree = async (
     allowReset?: boolean;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much scaffolding + how deep a tree within it. NEVER changes magnitude.
+     */
+    difficulty?: string;
   }
 ): Promise<FactorTreeData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -320,6 +458,16 @@ export const generateFactorTree = async (
       })
     : factorTreeSchema;
 
+  // ── Resolve within-mode support tier (drives scaffolding + structural shape) ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  // pinnedType describes the single mode to the prompt/scaffold resolver.
+  const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
+    ? (evalConstraint.allowedTypes[0] as FactorTreeChallengeType)
+    : undefined;
+  const tierSection = pinnedType && supportTier
+    ? buildTierPromptSection(pinnedType, supportTier)
+    : '';
+
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
@@ -332,12 +480,13 @@ CONTEXT:
 - Your job is only to write the session-level title and description, and to set the mode flags.
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIREMENTS:
 1. Write a clear, student-friendly title for the whole session. Do NOT name any specific composite number — the session walks through several.
 2. Provide a 1-2 sentence educational description of what students will practice across the session.
 3. Set challengeType to the correct difficulty tier.
 4. Set guidedMode, allowReset, highlightPrimes, showExponentForm to match the tier constraints.
+5. Do NOT mention difficulty, support tiers, or scaffolding level in the title or description.
 
 Return ONLY the wrapper fields described above.
 `;
@@ -382,15 +531,34 @@ Return ONLY the wrapper fields described above.
   }
 
   // ── Pre-select rootValues for the session (local, deterministic-variance) ──
+  // Structural axis (axis 2): bias the candidate split-depth by tier.
+  const problemShape = supportTier ? resolveProblemShape(supportTier) : null;
   const rootValues = selectFactorTreeRootValues(wrapper.challengeType, {
     count: config?.instanceCount,
     primary: config?.rootValue,
+    splitDepthBias: problemShape?.splitDepthBias ?? null,
   });
 
   const challenges: FactorTreeChallenge[] = rootValues.map((rootValue, idx) => ({
     id: `ft-${idx + 1}`,
     rootValue,
   }));
+
+  // ── Apply within-mode support tier — scaffolding axis (axis 1) ──
+  // Session-level: factor-tree runs one eval mode per session, so every challenge shares
+  // the tier. Code owns the scaffold structure; Gemini only authored the wrapper text.
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier).scaffold
+    : null;
+
+  if (tierScaffold) {
+    console.log(
+      `[FactorTree] Support tier "${supportTier}" applied (mode ${pinnedType}): ` +
+      `strategyHint=${tierScaffold.showStrategyHint}, highlightPrimes=${tierScaffold.highlightPrimes}, ` +
+      `runningFactorization=${tierScaffold.showRunningFactorization}, ` +
+      `splitDepthBias=${problemShape?.splitDepthBias ?? 'none'}`
+    );
+  }
 
   console.log(
     `[FactorTree] Final: challengeType=${wrapper.challengeType}, instances=${challenges.length} ` +
@@ -401,8 +569,12 @@ Return ONLY the wrapper fields described above.
     title: wrapper.title,
     description: wrapper.description,
     challenges,
-    highlightPrimes: wrapper.highlightPrimes,
+    // Tier wins over the wrapper/config value when a tier is active.
+    highlightPrimes: tierScaffold ? tierScaffold.highlightPrimes : wrapper.highlightPrimes,
     showExponentForm: wrapper.showExponentForm,
+    showRunningFactorization: tierScaffold ? tierScaffold.showRunningFactorization : undefined,
+    showStrategyHint: tierScaffold ? tierScaffold.showStrategyHint : undefined,
+    supportTier: supportTier ?? undefined,
     guidedMode: wrapper.guidedMode,
     allowReset: wrapper.allowReset,
   };

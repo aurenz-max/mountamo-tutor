@@ -48,6 +48,9 @@ export interface MathFactFluencyChallenge {
   matchDirection?: 'visual-to-equation' | 'equation-to-visual';
   equationOptions?: string[];
   visualOptions?: Array<{ type: string; count: number }>;
+  // Within-mode support tier ('easy' | 'medium' | 'hard'), set by the generator when
+  // the manifest emits config.difficulty. Read by the live tutor to calibrate reveal.
+  supportTier?: 'easy' | 'medium' | 'hard';
 }
 
 export interface MathFactFluencyData {
@@ -193,6 +196,23 @@ function VisualAid({ type, count }: { type?: string; count: number }) {
 function MatchVisualOption({ type, count }: { type: string; count: number }) {
   if (type === 'ten-frame') return <TenFrameVisual count={count} size={80} />;
   return <DotArray count={count} size={80} />;
+}
+
+// ============================================================================
+// Tutor reveal policy — calibrate how much the live tutor scaffolds per support
+// tier so it never re-reveals what a harder tier withheld (Gotcha #2). The
+// instruction text already withholds the strategy at hard; the tutor must match.
+// ============================================================================
+
+function tutorRevealClause(tier?: 'easy' | 'medium' | 'hard'): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return ' SUPPORT TIER easy: you MAY name the strategy and walk the setup step by step.';
+  }
+  if (tier === 'medium') {
+    return ' SUPPORT TIER medium: nudge the next step only — do NOT name the full strategy.';
+  }
+  return ' SUPPORT TIER hard: do NOT name a strategy or reveal the answer — ask the student what they notice and let them reason it out.';
 }
 
 // ============================================================================
@@ -343,6 +363,7 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
     maxNumber,
     gradeBand,
     targetResponseTime,
+    supportTier: currentChallenge?.supportTier ?? null,
   }), [
     currentChallenge, currentAttempts, streak, accuracy, averageTime,
     challenges.length, currentChallengeIndex, maxNumber, gradeBand, targetResponseTime,
@@ -365,7 +386,8 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
       + `${challenges.length} challenges, facts within ${maxNumber}. `
       + `First challenge: "${currentChallenge?.instruction}" (${currentChallenge?.type}). `
       + `This primitive builds automaticity through calm, repeated practice — there is NO timer and NO time pressure. `
-      + `Introduce warmly and reassure the student they can take all the time they need to think.`,
+      + `Introduce warmly and reassure the student they can take all the time they need to think.`
+      + tutorRevealClause(currentChallenge?.supportTier),
       { silent: true }
     );
   }, [isConnected, challenges.length, maxNumber, gradeBand, currentChallenge, sendText]);
@@ -456,7 +478,8 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
           + `Correct answer: ${currentChallenge.correctAnswer}. `
           + `${currentChallenge.unknownPosition === 'operand1' || currentChallenge.unknownPosition === 'operand2'
             ? 'For missing-number, encourage "think backwards" strategy.'
-            : 'Show the correct answer and move on gently. Never punish wrong answers.'}`,
+            : 'Show the correct answer and move on gently. Never punish wrong answers.'}`
+          + tutorRevealClause(currentChallenge.supportTier),
           { silent: true }
         );
       }
@@ -642,7 +665,8 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
       sendText(
         `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
         + `"${nextChallenge.instruction}" (${nextChallenge.type}). `
-        + `Equation: ${nextChallenge.equation}. Introduce it briefly.`,
+        + `Equation: ${nextChallenge.equation}. Introduce it briefly.`
+        + tutorRevealClause(nextChallenge.supportTier),
         { silent: true }
       );
     }
